@@ -166,7 +166,7 @@ router.get(
         ORDER BY al.created_at DESC
         LIMIT ? OFFSET ?
       `,
-        [...params, limit, offset],
+        [...params, limit, offset]
       );
 
       // Total count für Pagination
@@ -176,7 +176,7 @@ router.get(
         FROM activity_logs al
         ${whereClause}
       `,
-        params,
+        params
       );
 
       const total = countResult[0]?.total ?? 0;
@@ -224,7 +224,7 @@ router.get(
         error: "Fehler beim Abrufen der Logs",
       });
     }
-  },
+  }
 );
 
 // Logs löschen (nur für Root)
@@ -284,7 +284,7 @@ router.delete(
       try {
         const [rootUser] = await executeQuery<RootUser[]>(
           'SELECT password FROM users WHERE id = ? AND role = "root"',
-          [req.user.id],
+          [req.user.id]
         );
 
         if (!rootUser.length) {
@@ -297,7 +297,7 @@ router.delete(
 
         const passwordMatch = await bcrypt.compare(
           password,
-          rootUser[0].password,
+          rootUser[0].password
         );
         if (!passwordMatch) {
           res.status(403).json({
@@ -382,7 +382,7 @@ router.delete(
         DELETE FROM activity_logs
         ${whereClause}
       `,
-        params,
+        params
       );
 
       const deletedCount = result.affectedRows ?? 0;
@@ -393,10 +393,10 @@ router.delete(
         // Get username for the filter
         const [userInfo] = await executeQuery<UserInfo[]>(
           'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = ?',
-          [userId],
+          [userId]
         );
         filterDescriptions.push(
-          `Benutzer: ${userInfo[0]?.name ?? `ID ${userId}`}`,
+          `Benutzer: ${userInfo[0]?.name ?? `ID ${userId}`}`
         );
       }
       if (action) {
@@ -428,7 +428,7 @@ router.delete(
           year: "Letztes Jahr",
         };
         filterDescriptions.push(
-          `Zeitraum: ${timeLabels[timerange] ?? timerange}`,
+          `Zeitraum: ${timeLabels[timerange] ?? timerange}`
         );
       }
 
@@ -443,12 +443,12 @@ router.delete(
         undefined,
         detailsText,
         req.ip,
-        req.get("user-agent"),
+        req.get("user-agent")
       );
 
       logger.info(
         `User ${req.user.id} deleted ${deletedCount} logs with filters:`,
-        { userId, action, entityType, timerange },
+        { userId, action, entityType, timerange }
       );
 
       res.json({
@@ -463,7 +463,7 @@ router.delete(
         error: "Fehler beim Löschen der Logs",
       });
     }
-  },
+  }
 );
 
 // Log-Eintrag erstellen (interne Funktion)
@@ -475,7 +475,7 @@ export async function createLog(
   entityId?: number,
   details?: string,
   ipAddress?: string,
-  userAgent?: string,
+  userAgent?: string
 ) {
   try {
     await executeQuery(
@@ -493,7 +493,7 @@ export async function createLog(
         details,
         ipAddress,
         userAgent,
-      ],
+      ]
     );
   } catch (error) {
     logger.error("Error creating log entry:", error);

@@ -52,7 +52,7 @@ class AdminLogService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: AdminLogFilters = {},
+    filters: AdminLogFilters = {}
   ): Promise<AdminLogData[]> {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
@@ -83,7 +83,7 @@ class AdminLogService {
    */
   async create(
     _tenantDb: Pool,
-    data: AdminLogCreateData,
+    data: AdminLogCreateData
   ): Promise<AdminLogData> {
     try {
       const modelData: ModelAdminLogCreateData = {
@@ -126,7 +126,7 @@ class AdminLogService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: AdminLogUpdateData,
+    _data: AdminLogUpdateData
   ): Promise<AdminLogData | null> {
     // TODO: Implement update method in AdminLog model
     return null;

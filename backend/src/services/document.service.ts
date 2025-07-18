@@ -201,7 +201,7 @@ class DocumentService {
         ") as subquery";
       const [countRows] = await executeQuery<RowDataPacket[]>(
         countQuery,
-        params,
+        params
       );
       const total =
         Array.isArray(countRows) && countRows.length > 0
@@ -219,7 +219,7 @@ class DocumentService {
         pagination: formatPaginationResponse(
           total,
           Math.floor(offset / limit) + 1,
-          limit,
+          limit
         ),
       };
     } catch (error) {
@@ -233,7 +233,7 @@ class DocumentService {
    */
   async getDocumentById(
     documentId: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<DocumentData | null> {
     try {
       const doc = await Document.findById(documentId);
@@ -267,7 +267,7 @@ class DocumentService {
    * Create new document record
    */
   async createDocument(
-    documentData: ServiceDocumentCreateData,
+    documentData: ServiceDocumentCreateData
   ): Promise<DocumentData | null> {
     try {
       const modelData: ModelDocumentCreateData = {
@@ -294,7 +294,7 @@ class DocumentService {
   async updateDocument(
     documentId: number,
     updateData: ServiceDocumentUpdateData,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<boolean> {
     try {
       // Check if document exists
@@ -323,7 +323,7 @@ class DocumentService {
    */
   async deleteDocument(
     documentId: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<boolean> {
     try {
       // Get document info before deletion
@@ -369,7 +369,7 @@ class DocumentService {
    */
   async getDocumentsByUser(
     userId: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<DocumentData[]> {
     try {
       const dbDocuments = await Document.findByUserId(userId);
@@ -393,7 +393,7 @@ class DocumentService {
             created_at: doc.upload_date.toISOString(),
             updated_at: doc.upload_date.toISOString(),
             is_deleted: doc.is_archived ?? false,
-          }) as DocumentData,
+          }) as DocumentData
       );
     } catch (error) {
       logger.error("Error in document service getDocumentsByUser:", error);
@@ -434,7 +434,7 @@ class DocumentService {
   async markDocumentAsRead(
     documentId: number,
     userId: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<boolean> {
     try {
       const query = `

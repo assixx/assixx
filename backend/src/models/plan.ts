@@ -157,20 +157,20 @@ export class Plan {
         `UPDATE tenant_plans 
          SET status = 'cancelled', cancelled_at = NOW() 
          WHERE tenant_id = ? AND status IN ('active', 'trial')`,
-        [request.tenantId],
+        [request.tenantId]
       );
 
       // Create new plan subscription
       await executeQuery<ResultSetHeader>(
         `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
          VALUES (?, ?, 'active', ?)`,
-        [request.tenantId, newPlan.id, effectiveDate],
+        [request.tenantId, newPlan.id, effectiveDate]
       );
 
       // Update tenant's current_plan_id
       await executeQuery<ResultSetHeader>(
         "UPDATE tenants SET current_plan_id = ? WHERE id = ?",
-        [newPlan.id, request.tenantId],
+        [newPlan.id, request.tenantId]
       );
 
       // Deactivate features not included in new plan
@@ -185,12 +185,12 @@ export class Plan {
            SET is_active = FALSE 
            WHERE tenant_id = ? 
            AND feature_id NOT IN (${includedFeatureIds.map(() => "?").join(",")})`,
-          [request.tenantId, ...includedFeatureIds],
+          [request.tenantId, ...includedFeatureIds]
         );
       }
 
       logger.info(
-        `Tenant ${request.tenantId} changed plan to ${request.newPlanCode}`,
+        `Tenant ${request.tenantId} changed plan to ${request.newPlanCode}`
       );
       return true;
     } catch (error) {
@@ -217,7 +217,7 @@ export class Plan {
 
   // Update tenant's addons
   static async updateTenantAddons(
-    request: AddonUpdateRequest,
+    request: AddonUpdateRequest
   ): Promise<boolean> {
     try {
       const updates = [];
@@ -254,7 +254,7 @@ export class Plan {
            quantity = VALUES(quantity),
            unit_price = VALUES(unit_price),
            updated_at = NOW()`,
-          [request.tenantId, update.type, update.quantity, update.unitPrice],
+          [request.tenantId, update.type, update.quantity, update.unitPrice]
         );
       }
 
@@ -300,7 +300,7 @@ export class Plan {
       };
     } catch (error) {
       logger.error(
-        `Error calculating tenant cost: ${(error as Error).message}`,
+        `Error calculating tenant cost: ${(error as Error).message}`
       );
       throw error;
     }

@@ -39,7 +39,7 @@ class ChatController {
 
       const users = await chatService.getUsers(
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId || req.user.id
       );
       res.json(users);
     } catch (error) {
@@ -74,7 +74,7 @@ class ChatController {
         req.user.userId || req.user.id,
         participantIds,
         participantIds.length > 1,
-        name,
+        name
       );
 
       res.status(201).json(conversation);
@@ -93,7 +93,7 @@ class ChatController {
 
       const conversations = await chatService.getConversations(
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId || req.user.id
       );
 
       res.json(conversations);
@@ -119,7 +119,7 @@ class ChatController {
         conversationId,
         req.user.userId,
         limit,
-        offset,
+        offset
       );
 
       // Frontend expects just the messages array
@@ -168,7 +168,7 @@ class ChatController {
               name: req.file?.originalname ?? "",
               type: req.file?.mimetype ?? "",
             }
-          : null,
+          : null
       );
 
       res.status(201).json(message);
@@ -180,7 +180,7 @@ class ChatController {
   // Get conversation participants
   async getConversationParticipants(
     req: Request,
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -192,7 +192,7 @@ class ChatController {
 
       const participants = await chatService.getConversationParticipants(
         conversationId,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       res.json(participants);
@@ -221,7 +221,7 @@ class ChatController {
         conversationId,
         userId,
         req.user.userId || req.user.id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       res.json({ message: "Participant added successfully" });
@@ -245,7 +245,7 @@ class ChatController {
         conversationId,
         userId,
         req.user.userId || req.user.id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       res.json({ message: "Participant removed successfully" });
@@ -274,7 +274,7 @@ class ChatController {
         conversationId,
         name,
         req.user.userId || req.user.id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       res.json({ message: "Conversation name updated successfully" });
@@ -320,7 +320,7 @@ class ChatController {
       const unreadCount = await chatService.getUnreadCount(
         (req as TenantAuthenticatedRequest).tenantDb as Pool, // tenantDb parameter is not used but required
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId || req.user.id
       );
 
       res.json({ unreadCount });
@@ -360,7 +360,7 @@ class ChatController {
 
       await chatService.deleteConversation(
         conversationId,
-        req.user.userId || req.user.id,
+        req.user.userId || req.user.id
       );
 
       res.json({ message: "Conversation deleted successfully" });

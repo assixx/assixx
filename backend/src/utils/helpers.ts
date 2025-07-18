@@ -47,7 +47,7 @@ export function parsePagination(query: QueryParams): PaginationResult {
   const page = parseInt(String(query.page)) ?? PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(
     parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
-    PAGINATION.MAX_LIMIT,
+    PAGINATION.MAX_LIMIT
   );
   const offset = (page - 1) * limit;
 
@@ -64,7 +64,7 @@ export function parsePagination(query: QueryParams): PaginationResult {
 export function formatPaginationResponse(
   total: number,
   page: number,
-  limit: number,
+  limit: number
 ): PaginationResponse {
   const totalPages = Math.ceil(total / limit);
 

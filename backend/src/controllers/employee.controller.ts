@@ -279,7 +279,7 @@ class EmployeeController {
         req.tenantDb,
         id,
         tenantId,
-        updateData,
+        updateData
       );
       res.json(result);
     } catch (error) {

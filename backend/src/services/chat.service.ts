@@ -134,7 +134,7 @@ class ChatService {
    */
   async getUsers(
     tenantId: string | number,
-    userId: string | number,
+    userId: string | number
   ): Promise<ChatUser[]> {
     try {
       // Log input parameters
@@ -142,13 +142,13 @@ class ChatService {
         "ChatService.getUsers - tenantId:",
         tenantId,
         "type:",
-        typeof tenantId,
+        typeof tenantId
       );
       console.log(
         "ChatService.getUsers - userId:",
         userId,
         "type:",
-        typeof userId,
+        typeof userId
       );
 
       // Ensure parameters are numbers
@@ -157,7 +157,7 @@ class ChatService {
 
       if (isNaN(numericTenantId) || isNaN(numericUserId)) {
         throw new Error(
-          `Invalid parameters: tenantId=${tenantId}, userId=${userId}`,
+          `Invalid parameters: tenantId=${tenantId}, userId=${userId}`
         );
       }
 
@@ -237,7 +237,7 @@ class ChatService {
 
       console.log(
         "ChatService.getUsers - Executing query with params:",
-        params,
+        params
       );
 
       const [users] = await db.promise().query<ChatUser[]>(query, params);
@@ -255,7 +255,7 @@ class ChatService {
    */
   async getConversations(
     tenantId: string | number,
-    userId: string | number,
+    userId: string | number
   ): Promise<Conversation[]> {
     try {
       console.log("ChatService.getConversations called with:", {
@@ -270,7 +270,7 @@ class ChatService {
 
       if (isNaN(numericTenantId) || isNaN(numericUserId)) {
         throw new Error(
-          `Invalid parameters: tenantId=${tenantId}, userId=${userId}`,
+          `Invalid parameters: tenantId=${tenantId}, userId=${userId}`
         );
       }
 
@@ -335,7 +335,7 @@ class ChatService {
         conversations.map(async (conv) => {
           const participants = await this.getConversationParticipants(
             conv.id,
-            numericTenantId,
+            numericTenantId
           );
 
           // Transform last_message fields into proper object
@@ -367,11 +367,11 @@ class ChatService {
               last_message: lastMessage,
               unread_count: conv.unread_count,
               participants: participants ?? [],
-            },
+            }
           );
 
           return transformedConv;
-        }),
+        })
       );
 
       return conversationsWithParticipants;
@@ -393,7 +393,7 @@ class ChatService {
     userId: number,
     participantIds: number[],
     isGroup: boolean = false,
-    name: string | null = null,
+    name: string | null = null
   ): Promise<ConversationCreationResult> {
     const connection = await db.promise().getConnection();
 
@@ -403,7 +403,7 @@ class ChatService {
       // Hole die Rolle des aktuellen Users
       const [currentUserInfo] = await connection.query<RowDataPacket[]>(
         `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
-        [userId, tenantId],
+        [userId, tenantId]
       );
 
       if (currentUserInfo.length === 0) {
@@ -418,7 +418,7 @@ class ChatService {
         // Prüfe ob bereits eine Konversation mit einem Admin existiert
         const [targetUserInfo] = await connection.query<RowDataPacket[]>(
           `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
-          [participantIds[0], tenantId],
+          [participantIds[0], tenantId]
         );
 
         if (
@@ -427,7 +427,7 @@ class ChatService {
         ) {
           await connection.rollback();
           throw new Error(
-            "Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren",
+            "Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren"
           );
         }
       }
@@ -449,7 +449,7 @@ class ChatService {
                GROUP BY conversation_id 
                HAVING COUNT(*) = 2
              )`,
-          [tenantId, userId, participantIds[0]],
+          [tenantId, userId, participantIds[0]]
         );
 
         if (existing.length > 0) {
@@ -461,7 +461,7 @@ class ChatService {
       // Erstelle neue Konversation
       const [result] = await connection.query<ResultSetHeader>(
         "INSERT INTO conversations (tenant_id, is_group, name) VALUES (?, ?, ?)",
-        [tenantId, isGroup, name],
+        [tenantId, isGroup, name]
       );
 
       const conversationId = result.insertId;
@@ -469,14 +469,14 @@ class ChatService {
       // Füge Ersteller als Teilnehmer hinzu
       await connection.query(
         "INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)",
-        [conversationId, userId],
+        [conversationId, userId]
       );
 
       // Füge andere Teilnehmer hinzu
       for (const participantId of participantIds) {
         await connection.query(
           "INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)",
-          [conversationId, participantId],
+          [conversationId, participantId]
         );
       }
 
@@ -498,7 +498,7 @@ class ChatService {
     conversationId: number,
     userId: number,
     limit: number = 50,
-    offset: number = 0,
+    offset: number = 0
   ): Promise<MessagesResponse> {
     // Prüfe Berechtigung
     const [participant] = await db
@@ -524,7 +524,7 @@ class ChatService {
         AND cp.user_id != ? AND c.is_group = 0
       LEFT JOIN users u ON cp.user_id = u.id
       WHERE c.id = ? AND c.tenant_id = ?`,
-      [userId, conversationId, tenantId],
+      [userId, conversationId, tenantId]
     );
 
     // Hole Nachrichten
@@ -541,7 +541,7 @@ class ChatService {
       WHERE m.conversation_id = ? AND m.tenant_id = ?
       ORDER BY m.created_at DESC
       LIMIT ? OFFSET ?`,
-      [conversationId, tenantId, limit, offset],
+      [conversationId, tenantId, limit, offset]
     );
 
     // Hole Teilnehmer für Gruppenkonversationen
@@ -552,7 +552,7 @@ class ChatService {
          FROM conversation_participants cp
          JOIN users u ON cp.user_id = u.id
          WHERE cp.conversation_id = ?`,
-        [conversationId],
+        [conversationId]
       );
       participants = participantData;
     }
@@ -573,7 +573,7 @@ class ChatService {
     conversationId: number,
     senderId: number,
     content: string,
-    attachment: AttachmentData | null = null,
+    attachment: AttachmentData | null = null
   ): Promise<Message> {
     // Prüfe Berechtigung
     const [participant] = await db
@@ -609,12 +609,12 @@ class ChatService {
          WHERE m.conversation_id = ? 
          AND u.role IN ('admin', 'root')
          AND m.tenant_id = ?`,
-        [conversationId, tenantId],
+        [conversationId, tenantId]
       );
 
       if (adminMessages[0].count === 0) {
         throw new Error(
-          "Mitarbeiter können nur antworten, wenn ein Admin bereits geschrieben hat",
+          "Mitarbeiter können nur antworten, wenn ein Admin bereits geschrieben hat"
         );
       }
     }
@@ -631,7 +631,7 @@ class ChatService {
         attachment?.path ?? null,
         attachment?.name ?? null,
         attachment?.type ?? null,
-      ],
+      ]
     );
 
     // Update conversation updated_at timestamp
@@ -639,7 +639,7 @@ class ChatService {
       .promise()
       .query(
         "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [conversationId],
+        [conversationId]
       );
 
     // Hole die erstellte Nachricht mit Benutzerdetails
@@ -648,7 +648,7 @@ class ChatService {
        FROM messages m
        LEFT JOIN users u ON m.sender_id = u.id
        WHERE m.id = ?`,
-      [result.insertId],
+      [result.insertId]
     );
 
     return message[0];
@@ -662,7 +662,7 @@ class ChatService {
       `INSERT INTO message_status (message_id, user_id, is_read, read_at)
        VALUES (?, ?, 1, NOW())
        ON DUPLICATE KEY UPDATE is_read = 1, read_at = NOW()`,
-      [messageId, userId],
+      [messageId, userId]
     );
   }
 
@@ -674,7 +674,7 @@ class ChatService {
       .promise()
       .query<ResultSetHeader>(
         "UPDATE messages SET deleted_at = NOW() WHERE id = ? AND sender_id = ?",
-        [messageId, userId],
+        [messageId, userId]
       );
 
     return result.affectedRows > 0;
@@ -686,7 +686,7 @@ class ChatService {
   async getUnreadCount(
     _tenantDb: Pool,
     tenantId: string | number,
-    userId: number,
+    userId: number
   ): Promise<number> {
     try {
       // Count messages that don't have a read status for this user
@@ -700,7 +700,7 @@ class ChatService {
            AND m.sender_id != ?
            AND m.deleted_at IS NULL
            AND (ms.id IS NULL OR ms.is_read = 0)`,
-        [userId, userId, tenantId, userId],
+        [userId, userId, tenantId, userId]
       );
 
       return result[0].count;
@@ -715,7 +715,7 @@ class ChatService {
    */
   async markConversationAsRead(
     conversationId: number,
-    userId: number,
+    userId: number
   ): Promise<void> {
     try {
       // First, get all unread messages in this conversation for this user
@@ -726,7 +726,7 @@ class ChatService {
          WHERE m.conversation_id = ? 
            AND m.sender_id != ?
            AND (ms.id IS NULL OR ms.is_read = 0)`,
-        [userId, conversationId, userId],
+        [userId, conversationId, userId]
       );
 
       // Insert or update message_status for each unread message
@@ -735,7 +735,7 @@ class ChatService {
           `INSERT INTO message_status (message_id, user_id, is_read, read_at)
            VALUES (?, ?, 1, NOW())
            ON DUPLICATE KEY UPDATE is_read = 1, read_at = NOW()`,
-          [message.id, userId],
+          [message.id, userId]
         );
       }
     } catch (error) {
@@ -752,7 +752,7 @@ class ChatService {
       `INSERT INTO message_status (message_id, user_id, is_archived, archived_at)
        VALUES (?, ?, 1, NOW())
        ON DUPLICATE KEY UPDATE is_archived = 1, archived_at = NOW()`,
-      [messageId, userId],
+      [messageId, userId]
     );
 
     return true;
@@ -763,7 +763,7 @@ class ChatService {
    */
   async deleteConversation(
     conversationId: number,
-    userId: number,
+    userId: number
   ): Promise<boolean> {
     const connection = await db.promise().getConnection();
 
@@ -781,7 +781,7 @@ class ChatService {
            WHERE conversation_id = ? AND user_id = ?
          )
          GROUP BY c.id`,
-        [conversationId, conversationId, userId],
+        [conversationId, conversationId, userId]
       );
 
       if (!conversation[0]) {
@@ -797,19 +797,19 @@ class ChatService {
         // Delete message status entries
         await connection.query(
           "DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE conversation_id = ?)",
-          [conversationId],
+          [conversationId]
         );
 
         // Delete messages
         await connection.query(
           "DELETE FROM messages WHERE conversation_id = ?",
-          [conversationId],
+          [conversationId]
         );
 
         // Delete participants
         await connection.query(
           "DELETE FROM conversation_participants WHERE conversation_id = ?",
-          [conversationId],
+          [conversationId]
         );
 
         // Delete conversation
@@ -820,7 +820,7 @@ class ChatService {
         // For groups with more than 2 participants, just remove the user
         await connection.query(
           "DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?",
-          [conversationId, userId],
+          [conversationId, userId]
         );
 
         // Archive messages for this user
@@ -830,7 +830,7 @@ class ChatService {
            FROM messages m
            WHERE m.conversation_id = ?
            ON DUPLICATE KEY UPDATE is_archived = 1, archived_at = NOW()`,
-          [userId, conversationId],
+          [userId, conversationId]
         );
       }
 
@@ -847,7 +847,7 @@ class ChatService {
   // Get participants of a conversation
   async getConversationParticipants(
     conversationId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<Participant[]> {
     const query = `
       SELECT u.id, u.username, u.first_name, u.last_name, u.email,
@@ -869,7 +869,7 @@ class ChatService {
     conversationId: number,
     userId: number,
     addedBy: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<void> {
     // Check if user is already in conversation
     const [existing] = await db
@@ -887,7 +887,7 @@ class ChatService {
       .promise()
       .execute(
         "INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW())",
-        [conversationId, userId],
+        [conversationId, userId]
       );
 
     // Add system message about new participant
@@ -906,7 +906,7 @@ class ChatService {
             conversationId,
             addedBy,
             `${userInfo[0].username} wurde zur Unterhaltung hinzugefügt`,
-          ],
+          ]
         );
     }
   }
@@ -916,7 +916,7 @@ class ChatService {
     conversationId: number,
     userId: number,
     removedBy: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<void> {
     // Check if user is in conversation
     const [existing] = await db
@@ -934,7 +934,7 @@ class ChatService {
       .promise()
       .execute(
         "DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?",
-        [conversationId, userId],
+        [conversationId, userId]
       );
 
     // Add system message about removed participant
@@ -953,7 +953,7 @@ class ChatService {
             conversationId,
             removedBy,
             `${userInfo[0].username} hat die Unterhaltung verlassen`,
-          ],
+          ]
         );
     }
   }
@@ -963,7 +963,7 @@ class ChatService {
     conversationId: number,
     name: string,
     updatedBy: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<void> {
     // Update name
     await db
@@ -978,7 +978,7 @@ class ChatService {
       .promise()
       .execute(
         "INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())",
-        [conversationId, updatedBy, `Gruppenname geändert zu "${name}"`],
+        [conversationId, updatedBy, `Gruppenname geändert zu "${name}"`]
       );
   }
 }

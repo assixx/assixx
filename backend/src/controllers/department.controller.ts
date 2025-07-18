@@ -116,7 +116,7 @@ class DepartmentController {
       const result = await departmentService.getAll(
         req.tenantDb,
         tenantId,
-        filters,
+        filters
       );
       res.json(result);
     } catch (error) {
@@ -155,7 +155,7 @@ class DepartmentController {
       const result = await departmentService.getById(
         req.tenantDb,
         id,
-        tenantId,
+        tenantId
       );
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
@@ -193,7 +193,7 @@ class DepartmentController {
       };
       const result = await departmentService.create(
         req.tenantDb,
-        departmentData,
+        departmentData
       );
       res.status(201).json(result);
     } catch (error) {
@@ -242,7 +242,7 @@ class DepartmentController {
         req.tenantDb,
         id,
         tenantId,
-        updateData,
+        updateData
       );
       res.json(result);
     } catch (error) {

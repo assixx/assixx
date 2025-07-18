@@ -117,7 +117,7 @@ export class Blackboard {
   static async getAllEntries(
     tenant_id: number,
     userId: number,
-    options: EntryQueryOptions = {},
+    options: EntryQueryOptions = {}
   ) {
     try {
       const {
@@ -185,7 +185,7 @@ export class Blackboard {
       // Execute query
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
         query,
-        queryParams,
+        queryParams
       );
 
       // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
@@ -242,7 +242,7 @@ export class Blackboard {
 
       const [countResult] = await executeQuery<CountResult[]>(
         countQuery,
-        countParams,
+        countParams
       );
       const totalEntries = countResult[0].total;
 
@@ -267,7 +267,7 @@ export class Blackboard {
   static async getEntryById(
     id: number,
     tenant_id: number,
-    userId: number,
+    userId: number
   ): Promise<DbBlackboardEntry | null> {
     try {
       // Determine user's department and team for access control
@@ -340,7 +340,7 @@ export class Blackboard {
    * Create a new blackboard entry
    */
   static async createEntry(
-    entryData: EntryCreateData,
+    entryData: EntryCreateData
   ): Promise<DbBlackboardEntry | null> {
     try {
       const {
@@ -365,7 +365,7 @@ export class Blackboard {
       // Validate org_id based on org_level
       if (org_level !== "company" && !org_id) {
         throw new Error(
-          "org_id is required for department or team level entries",
+          "org_id is required for department or team level entries"
         );
       }
 
@@ -398,7 +398,7 @@ export class Blackboard {
       const createdEntry = await this.getEntryById(
         result.insertId,
         tenant_id,
-        author_id,
+        author_id
       );
       return createdEntry;
     } catch (error) {
@@ -413,7 +413,7 @@ export class Blackboard {
   static async updateEntry(
     id: number,
     entryData: EntryUpdateData,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<DbBlackboardEntry | null> {
     try {
       const {
@@ -489,7 +489,7 @@ export class Blackboard {
         // Remove existing tags
         await executeQuery(
           "DELETE FROM blackboard_entry_tags WHERE entry_id = ?",
-          [id],
+          [id]
         );
 
         // Add new tags if any
@@ -502,7 +502,7 @@ export class Blackboard {
       const updatedEntry = await this.getEntryById(
         id,
         tenant_id,
-        entryData.author_id ?? 0,
+        entryData.author_id ?? 0
       );
       return updatedEntry;
     } catch (error) {
@@ -539,7 +539,7 @@ export class Blackboard {
       // Check if entry exists and requires confirmation
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
         "SELECT * FROM blackboard_entries WHERE id = ? AND requires_confirmation = 1",
-        [entryId],
+        [entryId]
       );
 
       if (entries.length === 0) {
@@ -549,7 +549,7 @@ export class Blackboard {
       // Check if already confirmed
       const [confirmations] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM blackboard_confirmations WHERE entry_id = ? AND user_id = ?",
-        [entryId, userId],
+        [entryId, userId]
       );
 
       if (confirmations.length > 0) {
@@ -559,7 +559,7 @@ export class Blackboard {
       // Add confirmation
       await executeQuery(
         "INSERT INTO blackboard_confirmations (entry_id, user_id) VALUES (?, ?)",
-        [entryId, userId],
+        [entryId, userId]
       );
 
       return true;
@@ -574,13 +574,13 @@ export class Blackboard {
    */
   static async getConfirmationStatus(
     entryId: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<DbConfirmationUser[]> {
     try {
       // Get the entry first
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
         "SELECT * FROM blackboard_entries WHERE id = ? AND tenant_id = ?",
-        [entryId, tenant_id],
+        [entryId, tenant_id]
       );
 
       if (entries.length === 0 || !entries[0].requires_confirmation) {
@@ -612,7 +612,7 @@ export class Blackboard {
 
       const [users] = await executeQuery<DbConfirmationUser[]>(
         usersQuery,
-        queryParams,
+        queryParams
       );
 
       return users;
@@ -628,7 +628,7 @@ export class Blackboard {
   static async getDashboardEntries(
     tenant_id: number,
     userId: number,
-    limit = 3,
+    limit = 3
   ): Promise<DbBlackboardEntry[]> {
     try {
       // Get user info for access control
@@ -675,7 +675,7 @@ export class Blackboard {
 
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
         query,
-        queryParams,
+        queryParams
       );
 
       // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries) und load attachments for direct attachment entries
@@ -711,7 +711,7 @@ export class Blackboard {
   static async addTagsToEntry(
     entryId: number,
     tagNames: string[],
-    tenant_id: number,
+    tenant_id: number
   ): Promise<void> {
     try {
       for (const tagName of tagNames) {
@@ -721,7 +721,7 @@ export class Blackboard {
         // Link tag to entry
         await executeQuery(
           "INSERT IGNORE INTO blackboard_entry_tags (entry_id, tag_id) VALUES (?, ?)",
-          [entryId, tagId],
+          [entryId, tagId]
         );
       }
     } catch (error) {
@@ -735,13 +735,13 @@ export class Blackboard {
    */
   static async getOrCreateTag(
     tagName: string,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<number> {
     try {
       // Check if tag exists
       const [existingTags] = await executeQuery<DbBlackboardTag[]>(
         "SELECT id FROM blackboard_tags WHERE name = ? AND tenant_id = ?",
-        [tagName, tenant_id],
+        [tagName, tenant_id]
       );
 
       if (existingTags.length > 0) {
@@ -751,7 +751,7 @@ export class Blackboard {
       // Create new tag
       const [result] = await executeQuery<ResultSetHeader>(
         "INSERT INTO blackboard_tags (name, tenant_id, color) VALUES (?, ?, ?)",
-        [tagName, tenant_id, "blue"],
+        [tagName, tenant_id, "blue"]
       );
 
       return result.insertId;
@@ -768,7 +768,7 @@ export class Blackboard {
     try {
       const [tags] = await executeQuery<DbBlackboardTag[]>(
         "SELECT * FROM blackboard_tags WHERE tenant_id = ? ORDER BY name",
-        [tenant_id],
+        [tenant_id]
       );
       return tags;
     } catch (error) {
@@ -789,7 +789,7 @@ export class Blackboard {
         WHERE et.entry_id = ?
         ORDER BY t.name
       `,
-        [entryId],
+        [entryId]
       );
       return tags;
     } catch (error) {
@@ -810,7 +810,7 @@ export class Blackboard {
       mimeType: string;
       filePath: string;
       uploadedBy: number;
-    },
+    }
   ): Promise<number> {
     try {
       const [result] = await executeQuery<ResultSetHeader>(
@@ -825,7 +825,7 @@ export class Blackboard {
           attachment.mimeType,
           attachment.filePath,
           attachment.uploadedBy,
-        ],
+        ]
       );
 
       // Update attachment count manually
@@ -833,7 +833,7 @@ export class Blackboard {
         `UPDATE blackboard_entries 
          SET attachment_count = (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = ?) 
          WHERE id = ?`,
-        [entryId, entryId],
+        [entryId, entryId]
       );
 
       return result.insertId;
@@ -847,7 +847,7 @@ export class Blackboard {
    * Get attachments for an entry
    */
   static async getEntryAttachments(
-    entryId: number,
+    entryId: number
   ): Promise<DbBlackboardAttachment[]> {
     try {
       const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
@@ -856,7 +856,7 @@ export class Blackboard {
          LEFT JOIN users u ON a.uploaded_by = u.id
          WHERE a.entry_id = ?
          ORDER BY a.uploaded_at DESC`,
-        [entryId],
+        [entryId]
       );
       return attachments;
     } catch (error) {
@@ -870,7 +870,7 @@ export class Blackboard {
    */
   static async getAttachmentById(
     attachmentId: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<DbBlackboardAttachment | null> {
     try {
       const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
@@ -878,7 +878,7 @@ export class Blackboard {
          FROM blackboard_attachments a
          INNER JOIN blackboard_entries e ON a.entry_id = e.id
          WHERE a.id = ? AND e.tenant_id = ?`,
-        [attachmentId, tenant_id],
+        [attachmentId, tenant_id]
       );
       return attachments[0] ?? null;
     } catch (error) {
@@ -892,7 +892,7 @@ export class Blackboard {
    */
   static async deleteAttachment(
     attachmentId: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<boolean> {
     try {
       // First get the attachment to ensure it belongs to the tenant
@@ -904,7 +904,7 @@ export class Blackboard {
       // Delete from database
       const [result] = await executeQuery<ResultSetHeader>(
         "DELETE FROM blackboard_attachments WHERE id = ?",
-        [attachmentId],
+        [attachmentId]
       );
 
       // Update attachment count manually
@@ -913,7 +913,7 @@ export class Blackboard {
           `UPDATE blackboard_entries 
            SET attachment_count = (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = ?) 
            WHERE id = ?`,
-          [attachment.entry_id, attachment.entry_id],
+          [attachment.entry_id, attachment.entry_id]
         );
       }
 

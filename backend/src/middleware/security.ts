@@ -189,7 +189,7 @@ export const securityStacks: Record<string, RequestHandler[]> = {
 // Helper function to apply security to entire router
 export function applySecurityToRouter(
   router: Router,
-  defaultSecurity: RequestHandler[],
+  defaultSecurity: RequestHandler[]
 ): void {
   // Store original methods
   const originalGet = router.get.bind(router);

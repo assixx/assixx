@@ -65,12 +65,12 @@ class AuthController {
    */
   async getUserProfile(
     req: AuthenticatedRequest,
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
       const user = await userService.getUserById(
         req.user.id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!user) {
@@ -109,7 +109,7 @@ class AuthController {
       const result = await authService.authenticateUser(
         username,
         password,
-        fingerprint,
+        fingerprint
       );
       console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
 
@@ -142,7 +142,7 @@ class AuthController {
           result.user.id,
           `Erfolgreich angemeldet`,
           req.ip ?? "unknown",
-          req.headers["user-agent"] ?? "unknown",
+          req.headers["user-agent"] ?? "unknown"
         );
       }
 
@@ -217,7 +217,7 @@ class AuthController {
         req.user.id,
         "Abgemeldet",
         req.ip ?? "unknown",
-        req.headers["user-agent"] ?? "unknown",
+        req.headers["user-agent"] ?? "unknown"
       );
     }
 
@@ -285,7 +285,7 @@ class AuthController {
    */
   async validateFingerprint(
     req: AuthenticatedRequest,
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
       const { fingerprint } = req.body as { fingerprint?: string };
@@ -312,7 +312,7 @@ class AuthController {
       // Check session in database
       const [sessions] = await executeQuery<RowDataPacket[]>(
         "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
-        [user.id, sessionId],
+        [user.id, sessionId]
       );
 
       if (sessions.length === 0) {
@@ -326,7 +326,7 @@ class AuthController {
       const storedFingerprint = sessions[0].fingerprint;
       if (storedFingerprint && storedFingerprint !== fingerprint) {
         logger.warn(
-          `[SECURITY] Browser fingerprint mismatch for user ${user.id}`,
+          `[SECURITY] Browser fingerprint mismatch for user ${user.id}`
         );
         res.status(403).json({
           error: "Browser fingerprint mismatch",

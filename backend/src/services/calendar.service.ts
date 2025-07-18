@@ -73,13 +73,13 @@ class CalendarService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: EventFilters = {},
+    _filters: EventFilters = {}
   ): Promise<CalendarEvent[]> {
     try {
       // Extract tenant_id from the connection pool config if possible
       // For now, we'll need to pass it as a parameter in the controller
       console.warn(
-        "CalendarService.getAll: This method requires refactoring to pass tenantId and userId",
+        "CalendarService.getAll: This method requires refactoring to pass tenantId and userId"
       );
       throw new Error("Method needs refactoring - use getAllEvents directly");
     } catch (error) {
@@ -94,7 +94,7 @@ class CalendarService {
   async getAllEvents(
     tenantId: number,
     userId: number,
-    options: EventFilters = {},
+    options: EventFilters = {}
   ): Promise<EventsResponse> {
     try {
       return await getAllEvents(tenantId, userId, options);
@@ -111,7 +111,7 @@ class CalendarService {
   async getById(_tenantDb: Pool, _id: number): Promise<CalendarEvent | null> {
     try {
       console.warn(
-        "CalendarService.getById: This method requires refactoring to pass tenantId and userId",
+        "CalendarService.getById: This method requires refactoring to pass tenantId and userId"
       );
       throw new Error("Method needs refactoring - use getEventById directly");
     } catch (error) {
@@ -126,7 +126,7 @@ class CalendarService {
   async getEventById(
     id: number,
     tenantId: number,
-    userId: number,
+    userId: number
   ): Promise<CalendarEvent | null> {
     try {
       return await getEventById(id, tenantId, userId);
@@ -142,7 +142,7 @@ class CalendarService {
    */
   async create(
     _tenantDb: Pool,
-    data: EventCreateData,
+    data: EventCreateData
   ): Promise<CalendarEvent | null> {
     try {
       return await createEvent(data);
@@ -171,11 +171,11 @@ class CalendarService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: EventUpdateData,
+    _data: EventUpdateData
   ): Promise<CalendarEvent | null> {
     try {
       console.warn(
-        "CalendarService.update: This method requires refactoring to pass tenantId",
+        "CalendarService.update: This method requires refactoring to pass tenantId"
       );
       throw new Error("Method needs refactoring - use updateEvent directly");
     } catch (error) {
@@ -190,7 +190,7 @@ class CalendarService {
   async updateEvent(
     id: number,
     eventData: EventUpdateData,
-    tenantId: number,
+    tenantId: number
   ): Promise<CalendarEvent | null> {
     try {
       return await updateEvent(id, eventData, tenantId);
@@ -207,7 +207,7 @@ class CalendarService {
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     try {
       console.warn(
-        "CalendarService.delete: This method requires refactoring to pass tenantId",
+        "CalendarService.delete: This method requires refactoring to pass tenantId"
       );
       throw new Error("Method needs refactoring - use deleteEvent directly");
     } catch (error) {
@@ -234,7 +234,7 @@ class CalendarService {
   async addEventAttendee(
     eventId: number,
     userId: number,
-    responseStatus?: "pending" | "accepted" | "declined" | "tentative",
+    responseStatus?: "pending" | "accepted" | "declined" | "tentative"
   ): Promise<boolean> {
     try {
       return await addEventAttendee(eventId, userId, responseStatus);
@@ -262,7 +262,7 @@ class CalendarService {
   async respondToEvent(
     eventId: number,
     userId: number,
-    response: string,
+    response: string
   ): Promise<boolean> {
     try {
       return await respondToEvent(eventId, userId, response);
@@ -277,7 +277,7 @@ class CalendarService {
    */
   async getEventAttendees(
     eventId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<EventAttendee[]> {
     try {
       return await getEventAttendees(eventId, tenantId);
@@ -294,7 +294,7 @@ class CalendarService {
     tenantId: number,
     userId: number,
     days?: number,
-    limit?: number,
+    limit?: number
   ): Promise<CalendarEvent[]> {
     try {
       return await getDashboardEvents(tenantId, userId, days, limit);
@@ -310,7 +310,7 @@ class CalendarService {
   async canManageEvent(
     eventId: number,
     userId: number,
-    userInfo?: UserInfo,
+    userInfo?: UserInfo
   ): Promise<boolean> {
     try {
       return await canManageEvent(
@@ -320,7 +320,7 @@ class CalendarService {
           role: null,
           departmentId: null,
           teamId: null,
-        },
+        }
       );
     } catch (error) {
       console.error("Error in CalendarService.canManageEvent:", error);

@@ -23,7 +23,7 @@ interface TenantStatusRow extends RowDataPacket {
 export async function checkTenantStatus(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
@@ -58,7 +58,7 @@ export async function checkTenantStatus(
     // Check tenant status
     const [tenantRows] = await query<TenantStatusRow[]>(
       "SELECT deletion_status, deletion_requested_at, company_name FROM tenants WHERE id = ?",
-      [tenantId],
+      [tenantId]
     );
 
     const tenant = tenantRows[0];
@@ -92,7 +92,7 @@ export async function checkTenantStatus(
 
       case "suspended":
         logger.warn(
-          `Access denied to suspended tenant ${tenantId} by user ${authReq.user.username}`,
+          `Access denied to suspended tenant ${tenantId} by user ${authReq.user.username}`
         );
         res.status(403).json({
           error: "Tenant is suspended and scheduled for deletion",
@@ -105,7 +105,7 @@ export async function checkTenantStatus(
 
       case "deleting":
         logger.warn(
-          `Access denied to deleting tenant ${tenantId} by user ${authReq.user.username}`,
+          `Access denied to deleting tenant ${tenantId} by user ${authReq.user.username}`
         );
         res.status(403).json({
           error: "Tenant is currently being deleted",
@@ -118,7 +118,7 @@ export async function checkTenantStatus(
 
       default:
         logger.error(
-          `Unknown tenant deletion status: ${tenant.deletion_status}`,
+          `Unknown tenant deletion status: ${tenant.deletion_status}`
         );
         next();
     }
@@ -135,7 +135,7 @@ export async function checkTenantStatus(
 export function requireActiveTenant(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   void checkTenantStatus(req, res, (err?: unknown) => {
     if (err) {
@@ -152,7 +152,7 @@ export function requireActiveTenant(
     // Additional check for marked_for_deletion
     query<TenantStatusRow[]>(
       "SELECT deletion_status FROM tenants WHERE id = ?",
-      [authReq.user.tenant_id],
+      [authReq.user.tenant_id]
     )
       .then(([rows]) => {
         const tenant = rows[0];
@@ -182,7 +182,7 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
   try {
     const [tenantRows] = await query<TenantStatusRow[]>(
       "SELECT deletion_status, deletion_requested_at FROM tenants WHERE id = ?",
-      [tenantId],
+      [tenantId]
     );
 
     const tenant = tenantRows[0];
@@ -209,8 +209,8 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
       result.daysRemaining = Math.max(
         0,
         Math.ceil(
-          (scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-        ),
+          (scheduledDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        )
       );
     }
 

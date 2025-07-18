@@ -79,7 +79,7 @@ export class Department {
       const [columns] = await executeQuery<DbColumn[]>("DESCRIBE departments");
       const hasStatus = columns.some((col: DbColumn) => col.Field === "status");
       const hasVisibility = columns.some(
-        (col: DbColumn) => col.Field === "visibility",
+        (col: DbColumn) => col.Field === "visibility"
       );
 
       let query: string;
@@ -118,7 +118,7 @@ export class Department {
   }
 
   static async findAll(
-    tenant_id: number, // PFLICHT!
+    tenant_id: number // PFLICHT!
   ): Promise<DbDepartment[]> {
     logger.info(`Fetching all departments for tenant ${tenant_id}`);
 
@@ -141,7 +141,7 @@ export class Department {
       return rows;
     } catch (error) {
       logger.warn(
-        `Error with extended query: ${(error as Error).message}, falling back to simple query`,
+        `Error with extended query: ${(error as Error).message}, falling back to simple query`
       );
 
       // Fallback to simple query
@@ -158,7 +158,7 @@ export class Department {
 
   static async findById(
     id: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<DbDepartment | null> {
     logger.info(`Fetching department with ID ${id} for tenant ${tenant_id}`);
     const query = "SELECT * FROM departments WHERE id = ? AND tenant_id = ?";
@@ -174,7 +174,7 @@ export class Department {
       return rows[0];
     } catch (error) {
       logger.error(
-        `Error fetching department ${id}: ${(error as Error).message}`,
+        `Error fetching department ${id}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -182,7 +182,7 @@ export class Department {
 
   static async update(
     id: number,
-    departmentData: DepartmentUpdateData,
+    departmentData: DepartmentUpdateData
   ): Promise<boolean> {
     logger.info(`Updating department ${id}`);
     const fields: string[] = [];
@@ -231,7 +231,7 @@ export class Department {
       return true;
     } catch (error) {
       logger.error(
-        `Error updating department ${id}: ${(error as Error).message}`,
+        `Error updating department ${id}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -251,7 +251,7 @@ export class Department {
       return true;
     } catch (error) {
       logger.error(
-        `Error deleting department ${id}: ${(error as Error).message}`,
+        `Error deleting department ${id}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -268,12 +268,12 @@ export class Department {
     try {
       const [rows] = await executeQuery<DbUser[]>(query, [departmentId]);
       logger.info(
-        `Retrieved ${rows.length} users for department ${departmentId}`,
+        `Retrieved ${rows.length} users for department ${departmentId}`
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching users for department ${departmentId}: ${(error as Error).message}`,
+        `Error fetching users for department ${departmentId}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -287,12 +287,12 @@ export class Department {
       }
       const [rows] = await executeQuery<CountResult[]>(
         "SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?",
-        [tenant_id],
+        [tenant_id]
       );
       return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(
-        `Error counting departments by tenant: ${(error as Error).message}`,
+        `Error counting departments by tenant: ${(error as Error).message}`
       );
       return 0;
     }
@@ -306,12 +306,12 @@ export class Department {
       }
       const [rows] = await executeQuery<CountResult[]>(
         "SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?",
-        [tenant_id],
+        [tenant_id]
       );
       return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(
-        `Error counting teams by tenant: ${(error as Error).message}`,
+        `Error counting teams by tenant: ${(error as Error).message}`
       );
       return 0;
     }

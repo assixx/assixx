@@ -53,7 +53,7 @@ export function safeJsonParse<T>(json: string, defaultValue: T): T {
 export function createApiResponse<T>(
   success: boolean,
   data?: T,
-  error?: string,
+  error?: string
 ) {
   return {
     success,

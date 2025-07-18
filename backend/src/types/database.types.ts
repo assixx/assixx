@@ -23,27 +23,27 @@ export interface DatabaseConfig {
       string: (encoding?: string) => string;
       buffer: () => Buffer;
     },
-    next: () => unknown,
+    next: () => unknown
   ) => unknown;
 }
 
 export interface MockDatabase {
   query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
     sql: string,
-    params?: unknown[],
+    params?: unknown[]
   ): Promise<[T, FieldPacket[]]>;
   execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
     sql: string,
-    params?: unknown[],
+    params?: unknown[]
   ): Promise<[T, FieldPacket[]]>;
   getConnection(): Promise<{
     query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
       sql: string,
-      params?: unknown[],
+      params?: unknown[]
     ): Promise<[T, FieldPacket[]]>;
     execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
       sql: string,
-      params?: unknown[],
+      params?: unknown[]
     ): Promise<[T, FieldPacket[]]>;
     beginTransaction(): Promise<void>;
     commit(): Promise<void>;

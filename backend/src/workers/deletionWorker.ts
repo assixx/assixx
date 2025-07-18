@@ -50,7 +50,7 @@ class DeletionWorker {
 
       logger.info("✅ Deletion Worker ready and running");
       logger.info(
-        `⏰ Checking for queued deletions every ${this.processingInterval / 1000} seconds`,
+        `⏰ Checking for queued deletions every ${this.processingInterval / 1000} seconds`
       );
 
       // Main processing loop
@@ -99,13 +99,13 @@ class DeletionWorker {
               timestamp: new Date().toISOString(),
               isProcessing: this.isProcessing,
               pid: process.pid,
-            }),
+            })
           );
         } else {
           res.writeHead(404);
           res.end("Not found");
         }
-      },
+      }
     );
 
     server.listen(healthPort, () => {
@@ -119,7 +119,7 @@ class DeletionWorker {
 
   private async shutdown(signal: string): Promise<void> {
     logger.info(
-      `⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`,
+      `⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`
     );
 
     this.isRunning = false;

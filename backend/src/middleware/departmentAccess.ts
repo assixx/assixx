@@ -29,7 +29,7 @@ interface AuthenticatedRequest extends Request {
 export const checkDepartmentAccess = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   const authReq = req as AuthenticatedRequest;
   const { user } = authReq;
@@ -85,12 +85,12 @@ export const checkDepartmentAccess = async (
         user.id,
         department_id,
         user.tenant_id,
-        requiredPermission,
+        requiredPermission
       );
 
       if (!hasAccess) {
         logger.warn(
-          `Admin ${user.id} attempted to access department ${department_id} without permission (${requiredPermission})`,
+          `Admin ${user.id} attempted to access department ${department_id} without permission (${requiredPermission})`
         );
         res.status(403).json({
           error: "Keine Berechtigung für diese Abteilung",
@@ -114,7 +114,7 @@ export const checkDepartmentAccess = async (
 export const filterDepartmentResults = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   const authReq = req as AuthenticatedRequest;
   const { user } = authReq;
@@ -131,7 +131,7 @@ export const filterDepartmentResults = async (
   // Get departments upfront for the admin
   const { departments } = await adminPermissionService.getAdminDepartments(
     user.id,
-    user.tenant_id,
+    user.tenant_id
   );
   const allowedDeptIds = new Set(departments.map((d) => d.id));
 
@@ -140,7 +140,7 @@ export const filterDepartmentResults = async (
 
   // Override the json method to filter results - type cast required for complex override
   (res as Response & { json: (data: unknown) => Response }).json = function (
-    data: unknown,
+    data: unknown
   ): Response {
     // If data is an array of items with department_id
     if (Array.isArray(data)) {
@@ -181,11 +181,11 @@ export const filterDepartmentResults = async (
  */
 export const getAllowedDepartmentIds = async (
   userId: number,
-  tenantId: number,
+  tenantId: number
 ): Promise<number[]> => {
   const { departments } = await adminPermissionService.getAdminDepartments(
     userId,
-    tenantId,
+    tenantId
   );
 
   return departments.map((d) => d.id);

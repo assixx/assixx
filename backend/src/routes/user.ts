@@ -73,7 +73,7 @@ const storage = multer.diskStorage({
 const fileFilter = (
   _req: unknown,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback,
+  cb: multer.FileFilterCallback
 ) => {
   // Accept only specific image formats
   const allowedMimeTypes = [
@@ -139,7 +139,7 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
       // Verwende db statt req.tenantDb
       const [departments] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM departments WHERE id = ?",
-        [user.department_id],
+        [user.department_id]
       );
 
       if (departments && departments.length > 0) {
@@ -153,7 +153,7 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
       // Verwende db statt req.tenantDb
       const [teams] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM teams WHERE id = ?",
-        [user.team_id],
+        [user.team_id]
       );
 
       if (teams && teams.length > 0) {
@@ -166,7 +166,7 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
     if (user.tenant_id) {
       const [tenants] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM tenants WHERE id = ?",
-        [user.tenant_id],
+        [user.tenant_id]
       );
 
       if (tenants && tenants.length > 0) {
@@ -279,7 +279,7 @@ router.get(
       console.error("Error fetching profile picture:", getErrorMessage(error));
       res.status(500).json({ message: "Internal server error" });
     }
-  },
+  }
 );
 
 /**
@@ -313,14 +313,14 @@ router.post(
           process.cwd(),
           user.profile_picture_url.startsWith("/")
             ? user.profile_picture_url.substring(1)
-            : user.profile_picture_url,
+            : user.profile_picture_url
         );
         try {
           await safeDeleteFile(oldFilePath);
         } catch (unlinkError) {
           console.warn(
             "Could not delete old profile picture:",
-            getErrorMessage(unlinkError),
+            getErrorMessage(unlinkError)
           );
         }
       }
@@ -331,7 +331,7 @@ router.post(
         {
           profile_picture: profilePictureUrl,
         },
-        authReq.user.tenant_id,
+        authReq.user.tenant_id
       );
 
       if (success) {
@@ -357,7 +357,7 @@ router.post(
         } catch (unlinkError) {
           console.error(
             "Error deleting temporary file:",
-            getErrorMessage(unlinkError),
+            getErrorMessage(unlinkError)
           );
         }
       }
@@ -367,7 +367,7 @@ router.post(
           getErrorMessage(error) || "Fehler beim Hochladen des Profilbildes",
       });
     }
-  },
+  }
 );
 
 /**
@@ -396,14 +396,14 @@ router.delete(
           process.cwd(),
           user.profile_picture_url.startsWith("/")
             ? user.profile_picture_url.substring(1)
-            : user.profile_picture_url,
+            : user.profile_picture_url
         );
         try {
           await safeDeleteFile(filePath);
         } catch (unlinkError) {
           console.warn(
             "Could not delete profile picture file:",
-            getErrorMessage(unlinkError),
+            getErrorMessage(unlinkError)
           );
         }
       }
@@ -414,7 +414,7 @@ router.delete(
         {
           profile_picture: undefined,
         },
-        authReq.user.tenant_id,
+        authReq.user.tenant_id
       );
 
       if (success) {
@@ -430,7 +430,7 @@ router.delete(
         message: "Fehler beim Löschen des Profilbildes",
       });
     }
-  },
+  }
 );
 
 export default router;
