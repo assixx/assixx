@@ -5,6 +5,7 @@
     "lib": ["ES2020"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "isolatedModules": true,
 
     // Modules
     "module": "ES2022",

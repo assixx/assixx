@@ -15,7 +15,6 @@ module.exports = {
           resolveJsonModule: true,
           strict: false,
         },
-        isolatedModules: true,
         diagnostics: {
           ignoreCodes: [1343]
         }

@@ -8,13 +8,17 @@ import { fileURLToPath } from "url";
 
 import swaggerJsdoc from "swagger-jsdoc";
 
-// Get current directory for ESM modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Get current directory - handle both ESM and CommonJS for Jest
+const currentFilePath = typeof __filename !== 'undefined' 
+  ? __filename 
+  : fileURLToPath(import.meta.url);
+const currentDirName = typeof __dirname !== 'undefined' 
+  ? __dirname 
+  : dirname(currentFilePath);
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(__dirname, "../../../package.json"), "utf-8")
+  readFileSync(join(currentDirName, "../../../package.json"), "utf-8")
 );
 
 const options: swaggerJsdoc.Options = {
@@ -1127,13 +1131,13 @@ const options: swaggerJsdoc.Options = {
     ],
   },
   apis: [
-    join(__dirname, "../routes/*.ts"),
-    join(__dirname, "../routes/*.js"),
-    join(__dirname, "../routes/**/*.ts"),
-    join(__dirname, "../routes/**/*.js"),
-    join(__dirname, "../models/*.ts"),
-    join(__dirname, "../models/*.js"),
-    join(__dirname, "../types/*.ts"),
+    join(currentDirName, "../routes/*.ts"),
+    join(currentDirName, "../routes/*.js"),
+    join(currentDirName, "../routes/**/*.ts"),
+    join(currentDirName, "../routes/**/*.js"),
+    join(currentDirName, "../models/*.ts"),
+    join(currentDirName, "../models/*.js"),
+    join(currentDirName, "../types/*.ts"),
   ],
 };
 
