@@ -8,7 +8,10 @@ import fs from "fs";
 import path from "path";
 
 // Handle both ESM and CommonJS environments
-const __dirname = process.cwd();
+// In GitHub Actions, we're in the project root, not in backend directory
+const projectRoot = process.cwd().endsWith('backend') 
+  ? path.dirname(process.cwd()) 
+  : process.cwd();
 
 async function setupTestDatabase() {
   console.log("Setting up test database...");
@@ -25,7 +28,7 @@ async function setupTestDatabase() {
   try {
 
     // First, try to use the current schema export
-    const databaseDir = path.join(__dirname, "database");
+    const databaseDir = path.join(projectRoot, "database");
     const schemaFiles = fs
       .readdirSync(databaseDir)
       .filter(
