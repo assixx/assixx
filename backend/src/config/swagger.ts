@@ -7,12 +7,12 @@ import { join } from "path";
 
 import swaggerJsdoc from "swagger-jsdoc";
 
-// Get current directory - handle both ESM and CommonJS for Jest
-const currentDirName = __dirname || process.cwd() + "/src/config";
+// Get project root directory
+const projectRoot = process.cwd();
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(currentDirName, "../../package.json"), "utf-8")
+  readFileSync(join(projectRoot, "package.json"), "utf-8")
 );
 
 const options: swaggerJsdoc.Options = {
@@ -1125,13 +1125,13 @@ const options: swaggerJsdoc.Options = {
     ],
   },
   apis: [
-    join(currentDirName, "../routes/*.ts"),
-    join(currentDirName, "../routes/*.js"),
-    join(currentDirName, "../routes/**/*.ts"),
-    join(currentDirName, "../routes/**/*.js"),
-    join(currentDirName, "../models/*.ts"),
-    join(currentDirName, "../models/*.js"),
-    join(currentDirName, "../types/*.ts"),
+    join(projectRoot, "backend/src/routes/*.ts"),
+    join(projectRoot, "backend/src/routes/*.js"),
+    join(projectRoot, "backend/src/routes/**/*.ts"),
+    join(projectRoot, "backend/src/routes/**/*.js"),
+    join(projectRoot, "backend/src/models/*.ts"),
+    join(projectRoot, "backend/src/models/*.js"),
+    join(projectRoot, "backend/src/types/*.ts"),
   ],
 };
 

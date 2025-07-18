@@ -4,7 +4,6 @@
  */
 
 import path from "path";
-import { fileURLToPath } from "url";
 
 import express, { Router, Request, Response } from "express";
 
@@ -13,9 +12,8 @@ import { rateLimiter } from "../middleware/rateLimiter";
 
 const router: Router = express.Router();
 
-// ES modules fix for __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get project root directory
+const projectRoot = process.cwd();
 
 // Extended Request interfaces - removed unused types
 
@@ -25,8 +23,8 @@ const servePage =
   (_req: Request, res: Response): void => {
     // Always serve from dist directory (built files)
     const distPath = path.join(
-      __dirname,
-      "../../../frontend/dist/pages",
+      projectRoot,
+      "frontend/dist/pages",
       `${pageName}.html`
     );
     res.sendFile(distPath);

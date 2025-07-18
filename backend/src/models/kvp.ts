@@ -5,17 +5,15 @@
 
 import * as fs from "fs/promises";
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 import * as dotenv from "dotenv";
 import * as mysql from "mysql2/promise";
 import { RowDataPacket, ResultSetHeader, Connection } from "mysql2/promise";
 
-// ES modules equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get project root directory
+const projectRoot = process.cwd();
 
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config({ path: path.join(projectRoot, "backend", ".env") });
 
 // Database configuration
 const dbConfig: mysql.ConnectionOptions = {

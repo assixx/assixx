@@ -7,7 +7,6 @@
 import fs from "fs";
 import http, { Server } from "http";
 import path from "path";
-import { fileURLToPath } from "url";
 
 import app from "./app";
 import { logger } from "./utils/logger";
@@ -19,9 +18,8 @@ import { ChatWebSocketServer } from "./websocket";
 
 // import { Application } from 'express';
 
-// ES modules equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get project root directory
+const projectRoot = process.cwd();
 
 // Import app and WebSocket setup
 // Create HTTP server
@@ -51,12 +49,12 @@ server.listen(PORT, (): void => {
 // Create required directories
 function createRequiredDirectories(): void {
   const dirs: string[] = [
-    path.join(__dirname, "../../uploads"),
-    path.join(__dirname, "../../uploads/profile_pictures"),
-    path.join(__dirname, "../../uploads/documents"),
-    path.join(__dirname, "../../uploads/chat-attachments"),
-    path.join(__dirname, "../../uploads/kvp-attachments"),
-    path.join(__dirname, "../logs"),
+    path.join(projectRoot, "uploads"),
+    path.join(projectRoot, "uploads/profile_pictures"),
+    path.join(projectRoot, "uploads/documents"),
+    path.join(projectRoot, "uploads/chat-attachments"),
+    path.join(projectRoot, "uploads/kvp-attachments"),
+    path.join(projectRoot, "backend/logs"),
   ];
 
   dirs.forEach((dir: string): void => {
