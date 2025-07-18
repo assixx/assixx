@@ -21,7 +21,7 @@ const features = [
 // Service Template
 const serviceTemplate = (
   name,
-  model
+  model,
 ) => `const ${model} = require('../models/${name}');
 const db = require('../database');
 
@@ -108,7 +108,7 @@ module.exports = new ${model}Service();`;
 // Controller Template
 const controllerTemplate = (
   name,
-  model
+  model,
 ) => `const ${name}Service = require('../services/${name}.service');
 
 class ${model}Controller {
@@ -215,7 +215,7 @@ async function generateAll() {
   for (const feature of features) {
     const controllerFile = path.join(
       controllersPath,
-      `${feature.name}.controller.js`
+      `${feature.name}.controller.js`,
     );
     const serviceFile = path.join(servicesPath, `${feature.name}.service.js`);
 
@@ -227,7 +227,7 @@ async function generateAll() {
       // Erstelle Controller
       await fs.writeFile(
         controllerFile,
-        controllerTemplate(feature.name, feature.model)
+        controllerTemplate(feature.name, feature.model),
       );
       console.log(`✓ ${feature.name}.controller.js erstellt`);
     }
@@ -239,7 +239,7 @@ async function generateAll() {
       // Erstelle Service
       await fs.writeFile(
         serviceFile,
-        serviceTemplate(feature.name, feature.model)
+        serviceTemplate(feature.name, feature.model),
       );
       console.log(`✓ ${feature.name}.service.js erstellt`);
     }

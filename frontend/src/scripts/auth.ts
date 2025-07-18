@@ -3,8 +3,9 @@
  */
 
 import type { User, JWTPayload } from '../types/api.types';
-import SessionManager from './utils/session-manager';
+
 import { BrowserFingerprint } from './utils/browser-fingerprint';
+import SessionManager from './utils/session-manager';
 
 // Extend window for auth functions
 declare global {
@@ -201,7 +202,7 @@ export async function loadUserInfo(): Promise<User> {
       } else {
         // Clear the loading promise on error
         profileLoadingPromise = null;
-        throw new Error(data.message || 'Fehler beim Laden der Benutzerdaten');
+        throw new Error(data.message ?? 'Fehler beim Laden der Benutzerdaten');
       }
     })();
 

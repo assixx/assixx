@@ -5,9 +5,9 @@
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import UserModel from "../models/user";
+
 import { authenticateUser as authUser, generateToken } from "../auth";
-import { logger } from "../utils/logger";
+import UserModel from "../models/user";
 import {
   AuthResult,
   UserRegistrationData,
@@ -15,6 +15,7 @@ import {
 } from "../types/auth.types";
 import { DatabaseUser } from "../types/models";
 import { execute, ResultSetHeader } from "../utils/db";
+import { logger } from "../utils/logger";
 
 class AuthService {
   /**
@@ -26,7 +27,7 @@ class AuthService {
   async authenticateUser(
     username: string,
     password: string,
-    fingerprint?: string
+    fingerprint?: string,
   ): Promise<AuthResult> {
     try {
       // Use existing auth function
@@ -64,7 +65,7 @@ class AuthService {
         try {
           await execute<ResultSetHeader>(
             "INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
-            [result.user.id, sessionId, fingerprint]
+            [result.user.id, sessionId, fingerprint],
           );
         } catch (error) {
           logger.warn("Failed to store session info:", error);
@@ -82,7 +83,7 @@ class AuthService {
         success: true,
         token,
         user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(userWithoutPassword)
+          this.dbUserToDatabaseUser(userWithoutPassword),
         ) as unknown as AuthResult["user"],
       };
     } catch (error) {
@@ -173,7 +174,7 @@ class AuthService {
       return {
         success: true,
         user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(userWithTenantId)
+          this.dbUserToDatabaseUser(userWithTenantId),
         ) as unknown as AuthResult["user"],
       };
     } catch (error) {

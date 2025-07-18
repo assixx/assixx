@@ -83,7 +83,7 @@ class KvpDetailPage {
     }
 
     this.suggestionId = parseInt(id);
-    this.init();
+    void this.init();
   }
 
   private async init(): Promise<void> {
@@ -336,7 +336,7 @@ class KvpDetailPage {
       if (!response.ok) throw new Error('Failed to load comments');
 
       const data = await response.json();
-      this.renderComments(data.comments || []);
+      this.renderComments(data.comments ?? []);
     } catch (error) {
       console.error('Error loading comments:', error);
     }
@@ -396,7 +396,7 @@ class KvpDetailPage {
       if (!response.ok) throw new Error('Failed to load attachments');
 
       const data = await response.json();
-      this.renderAttachments(data.attachments || []);
+      this.renderAttachments(data.attachments ?? []);
     } catch (error) {
       console.error('Error loading attachments:', error);
     }
@@ -464,7 +464,9 @@ class KvpDetailPage {
       container.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
           const id = item.getAttribute('data-id');
-          if (id) this.downloadAttachment(parseInt(id));
+          if (id) {
+            void this.downloadAttachment(parseInt(id));
+          }
         });
       });
     }
@@ -482,9 +484,11 @@ class KvpDetailPage {
   private setupEventListeners(): void {
     // Comment form
     const commentForm = document.getElementById('commentForm') as HTMLFormElement;
-    commentForm.addEventListener('submit', async (e) => {
+    commentForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      await this.addComment();
+      void (async () => {
+        await this.addComment();
+      })();
     });
 
     // Action buttons
@@ -493,24 +497,32 @@ class KvpDetailPage {
       alert('Bearbeiten-Funktion noch nicht implementiert');
     });
 
-    document.getElementById('shareBtn')?.addEventListener('click', async () => {
-      await this.shareSuggestion();
+    document.getElementById('shareBtn')?.addEventListener('click', () => {
+      void (async () => {
+        await this.shareSuggestion();
+      })();
     });
 
-    document.getElementById('unshareBtn')?.addEventListener('click', async () => {
-      await this.unshareSuggestion();
+    document.getElementById('unshareBtn')?.addEventListener('click', () => {
+      void (async () => {
+        await this.unshareSuggestion();
+      })();
     });
 
-    document.getElementById('archiveBtn')?.addEventListener('click', async () => {
-      await this.archiveSuggestion();
+    document.getElementById('archiveBtn')?.addEventListener('click', () => {
+      void (async () => {
+        await this.archiveSuggestion();
+      })();
     });
 
     // Status change listener for custom dropdown
-    document.addEventListener('statusChange', async (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail?.status) {
-        await this.updateStatus(customEvent.detail.status);
-      }
+    document.addEventListener('statusChange', (e: Event) => {
+      void (async () => {
+        const customEvent = e as CustomEvent;
+        if (customEvent.detail?.status) {
+          await this.updateStatus(customEvent.detail.status);
+        }
+      })();
     });
   }
 
@@ -669,7 +681,7 @@ class KvpDetailPage {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update status');
+        throw new Error(errorData.error ?? 'Failed to update status');
       }
 
       const data = await response.json();

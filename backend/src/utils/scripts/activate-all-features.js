@@ -26,7 +26,7 @@ async function activateAllFeatures(tenantId) {
   try {
     // Get all available features
     const [features] = await connection.execute(
-      "SELECT id, code, name FROM features WHERE is_active = true"
+      "SELECT id, code, name FROM features WHERE is_active = true",
     );
 
     console.log(`Found ${features.length} features to activate`);
@@ -36,7 +36,7 @@ async function activateAllFeatures(tenantId) {
       // Check if already exists
       const [existing] = await connection.execute(
         "SELECT id FROM tenant_features WHERE tenant_id = ? AND feature_id = ?",
-        [tenantId, feature.id]
+        [tenantId, feature.id],
       );
 
       if (existing.length > 0) {
@@ -47,7 +47,7 @@ async function activateAllFeatures(tenantId) {
                expires_at = NULL,
                updated_at = NOW()
            WHERE tenant_id = ? AND feature_id = ?`,
-          [tenantId, feature.id]
+          [tenantId, feature.id],
         );
         console.log(`✓ Updated feature: ${feature.name} (${feature.code})`);
       } else {
@@ -56,7 +56,7 @@ async function activateAllFeatures(tenantId) {
           `INSERT INTO tenant_features 
            (tenant_id, feature_id, is_active, activated_at, expires_at)
            VALUES (?, ?, TRUE, NOW(), NULL)`,
-          [tenantId, feature.id]
+          [tenantId, feature.id],
         );
         console.log(`✓ Activated feature: ${feature.name} (${feature.code})`);
       }

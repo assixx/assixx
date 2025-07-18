@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken } from './auth';
 
 interface AdminUser extends User {
@@ -59,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event-Listener hinzufügen
   if (createAdminForm) {
-    createAdminForm.addEventListener('submit', createAdmin);
+    createAdminForm.addEventListener('submit', (e) => void createAdmin(e));
   }
 
   if (logoutBtn) {
@@ -74,16 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load user info in header
-  loadHeaderUserInfo();
+  void loadHeaderUserInfo();
 
   // Check if employee number needs to be set
-  checkEmployeeNumber();
+  void checkEmployeeNumber();
 
   // Daten laden
-  loadDashboardData();
-  loadAdmins();
-  loadDashboardStats();
-  loadActivityLogs();
+  void loadDashboardData();
+  void loadAdmins();
+  void loadDashboardStats();
+  void loadActivityLogs();
 
   // Check if user has temporary employee number
   async function checkEmployeeNumber(): Promise<void> {
@@ -125,39 +126,41 @@ document.addEventListener('DOMContentLoaded', () => {
       target.value = target.value.replace(/[^0-9]/g, '');
     });
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    form.addEventListener('submit', (e) => {
+      void (async () => {
+        e.preventDefault();
 
-      const employeeNumber = input.value;
+        const employeeNumber = input.value;
 
-      if (employeeNumber.length !== 6) {
-        alert('Die Personalnummer muss genau 6 Ziffern lang sein.');
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/users/me', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ employee_number: employeeNumber }),
-        });
-
-        if (response.ok) {
-          alert('Personalnummer erfolgreich gespeichert.');
-          modal.style.display = 'none';
-          // Reload to update UI
-          window.location.reload();
-        } else {
-          const error = await response.json();
-          alert(`Fehler: ${error.message ?? 'Personalnummer konnte nicht gespeichert werden.'}`);
+        if (employeeNumber.length !== 6) {
+          alert('Die Personalnummer muss genau 6 Ziffern lang sein.');
+          return;
         }
-      } catch (error) {
-        console.error('Error updating employee number:', error);
-        alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-      }
+
+        try {
+          const response = await fetch('/api/users/me', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ employee_number: employeeNumber }),
+          });
+
+          if (response.ok) {
+            alert('Personalnummer erfolgreich gespeichert.');
+            modal.style.display = 'none';
+            // Reload to update UI
+            window.location.reload();
+          } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message ?? 'Personalnummer konnte nicht gespeichert werden.'}`);
+          }
+        } catch (error) {
+          console.error('Error updating employee number:', error);
+          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+        }
+      })();
     });
   }
 
@@ -209,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         alert('Admin erfolgreich erstellt');
         createAdminForm.reset();
-        loadAdmins();
+        void loadAdmins();
       } else {
         const error = await response.json();
 
@@ -263,8 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const adminsData = await adminsResponse.json();
         const usersData = await usersResponse.json();
 
-        const admins: AdminUser[] = adminsData.data ?? (adminsData || []);
-        const users: User[] = usersData.data ?? (usersData || []);
+        const admins: AdminUser[] = adminsData.data ?? adminsData ?? [];
+        const users: User[] = usersData.data ?? usersData ?? [];
 
         // Update counters
         const adminCount = document.getElementById('admin-count');
@@ -296,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const data = await response.json();
-        const admins: AdminUser[] = data.data ?? (data || []);
+        const admins: AdminUser[] = data.data ?? data ?? [];
         console.info('Loaded admins:', admins);
         displayAdmins(admins);
 
@@ -362,11 +365,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const userData = (await response.json()) as { data?: User; user?: User } & User;
-        const user = userData.data ?? (userData.user || userData);
+        const user = userData.data ?? userData.user ?? userData;
 
         // Update username with full name if available
         if (user.first_name || user.last_name) {
-          const fullName = `${user.first_name ?? ''} ${user.last_name || ''}`.trim();
+          const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
           userNameElement.textContent = fullName ?? (user.username || 'Root');
         } else {
           userNameElement.textContent = user.username ?? 'Root';

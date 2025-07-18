@@ -5,8 +5,9 @@
 
 import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
-import adminService from "../services/admin.service";
+
 import type { AdminLogCreateData } from "../models/adminLog";
+import adminService from "../services/admin.service";
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {

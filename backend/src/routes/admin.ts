@@ -7,29 +7,31 @@
  *   description: Admin-specific operations and management
  */
 
+import { promises as fs } from "fs";
+import path from "path";
+
 import express, { Router, Request } from "express";
 import multer from "multer";
-import path from "path";
-import { promises as fs } from "fs";
+
 import { security } from "../middleware/security";
+import { apiLimiter } from "../middleware/security-enhanced";
 import {
   validateCreateEmployee,
   validateUpdateEmployee,
 } from "../middleware/validators";
-import { logger } from "../utils/logger";
+import Department from "../models/department";
+import Document from "../models/document";
+import User from "../models/user";
 import { getErrorMessage } from "../utils/errorHandler";
-import { typed } from "../utils/routeHandlers";
+import { logger } from "../utils/logger";
 import {
   sanitizeFilename,
   getUploadDirectory,
   safeDeleteFile,
 } from "../utils/pathSecurity";
-import { apiLimiter } from "../middleware/security-enhanced";
+import { typed } from "../utils/routeHandlers";
 
 // Import models (now ES modules)
-import User from "../models/user";
-import Document from "../models/document";
-import Department from "../models/department";
 
 const router: Router = express.Router();
 
@@ -236,7 +238,7 @@ router.post(
       };
       const employeeId = await User.create(employeeData);
       logger.info(
-        `Admin ${adminId} created new employee with ID: ${employeeId}`
+        `Admin ${adminId} created new employee with ID: ${employeeId}`,
       );
 
       res.status(201).json({
@@ -245,7 +247,7 @@ router.post(
       });
     } catch (error) {
       logger.error(
-        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`
+        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`,
       );
       const dbError = error as { code?: string };
       if (dbError.code === "ER_DUP_ENTRY") {
@@ -260,7 +262,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -331,7 +333,7 @@ router.get(
       const employees = await User.findByRole(
         "employee",
         false,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       console.log(`Retrieved ${employees.length} employees:`, employees);
@@ -346,7 +348,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -423,14 +425,14 @@ router.get(
       res.json(employee);
     } catch (error) {
       logger.error(
-        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`
+        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         message: "Fehler beim Abrufen des Mitarbeiters",
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -564,12 +566,12 @@ router.put(
       const success = await User.update(
         employeeId,
         req.body,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
         logger.info(
-          `Employee ${employeeId} updated successfully by Admin ${adminId}`
+          `Employee ${employeeId} updated successfully by Admin ${adminId}`,
         );
         res.json({
           message: "Mitarbeiter erfolgreich aktualisiert",
@@ -584,7 +586,7 @@ router.put(
       }
     } catch (error) {
       logger.error(
-        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
+        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         message: "Fehler beim Aktualisieren des Mitarbeiters",
@@ -592,7 +594,7 @@ router.put(
         success: false,
       });
     }
-  })
+  }),
 );
 
 /**
@@ -713,7 +715,7 @@ router.post(
     const employeeId = parseInt(req.params.employeeId, 10);
 
     logger.info(
-      `Admin ${adminId} attempting to upload document for Employee ${employeeId}`
+      `Admin ${adminId} attempting to upload document for Employee ${employeeId}`,
     );
 
     try {
@@ -748,7 +750,7 @@ router.post(
       await safeDeleteFile(filePath);
 
       logger.info(
-        `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`
+        `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`,
       );
       res.status(201).json({
         message: "Dokument erfolgreich hochgeladen",
@@ -756,7 +758,7 @@ router.post(
       });
     } catch (error) {
       logger.error(
-        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
+        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
       );
 
       if (req.file?.path) {
@@ -764,7 +766,7 @@ router.post(
           await safeDeleteFile(req.file.path);
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
           );
         }
       }
@@ -774,7 +776,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -888,7 +890,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Note: Dashboard statistics endpoint removed - duplicate of above route
@@ -912,7 +914,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 export default router;

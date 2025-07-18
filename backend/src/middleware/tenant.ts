@@ -4,9 +4,10 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+
 import TenantModel from "../models/tenant";
-import { logger } from "../utils/logger";
 import { TenantInfo } from "../types/tenant.types";
+import { logger } from "../utils/logger";
 
 // Request interface is already extended in types/express-extensions.d.ts
 
@@ -39,7 +40,7 @@ function getTenantFromHost(hostname: string): string | null {
 export async function tenantMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     // 1. Tenant identifizieren (Priorität: Subdomain > Header > Query)
@@ -138,7 +139,7 @@ export async function tenantMiddleware(
     }
 
     logger.info(
-      `Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`
+      `Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`,
     );
 
     next();
@@ -157,7 +158,7 @@ export async function tenantMiddleware(
 export function skipTenantCheck(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   // Setze einen Default-Tenant für öffentliche Routen
   req.tenantId = null;

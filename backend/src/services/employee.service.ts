@@ -8,18 +8,24 @@
  */
 
 // TODO: Fix import - employee model doesn't exist, using user model instead
-import User from "../models/user";
 import { Pool } from "mysql2/promise";
+
+import User, { DbUser, UserCreateData, UserFilter } from "../models/user";
+/**
+ * Employee Service
+ * Handles employee-related business logic
+ *
+ * NOTE: This service currently imports '../models/employee' which doesn't exist.
+ * It should probably use '../models/user' instead.
+ * This needs to be fixed in a separate refactoring step.
+ */
+
+// TODO: Fix import - employee model doesn't exist, using user model instead
 
 // Interfaces
 // Re-export types from User model for consistency
-import type {
-  DbUser as EmployeeData,
-  UserCreateData,
-  UserFilter,
-} from "../models/user";
-
 // Map employee-specific types to User model types
+type EmployeeData = DbUser;
 type EmployeeCreateData = UserCreateData;
 type EmployeeUpdateData = Partial<UserCreateData>;
 type EmployeeFilters = UserFilter;
@@ -32,7 +38,7 @@ class UserService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: EmployeeFilters
+    filters: EmployeeFilters,
   ): Promise<EmployeeData[]> {
     try {
       // Use the search method which supports filtering
@@ -49,7 +55,7 @@ class UserService {
   async getById(
     _tenantDb: Pool,
     id: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id, tenantId);
@@ -65,7 +71,7 @@ class UserService {
    */
   async create(
     _tenantDb: Pool,
-    data: EmployeeCreateData
+    data: EmployeeCreateData,
   ): Promise<EmployeeData> {
     try {
       if (!data.tenant_id) {
@@ -90,7 +96,7 @@ class UserService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    data: EmployeeUpdateData
+    data: EmployeeUpdateData,
   ): Promise<EmployeeData | null> {
     try {
       const success = await User.update(id, data, tenantId);

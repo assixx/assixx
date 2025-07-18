@@ -4,16 +4,17 @@
  */
 
 import express, { Router } from "express";
-import { security } from "../middleware/security";
 import { body, param } from "express-validator";
+
+import { security } from "../middleware/security";
+import { authLimiter, apiLimiter } from "../middleware/security-enhanced";
 import { createValidation } from "../middleware/validation";
+import Tenant from "../models/tenant";
 import { successResponse, errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
 import { typed } from "../utils/routeHandlers";
-import { authLimiter, apiLimiter } from "../middleware/security-enhanced";
 
 // Import models (keeping require pattern for compatibility)
-import Tenant from "../models/tenant";
 
 const router: Router = express.Router();
 
@@ -58,7 +59,7 @@ const signupValidation = createValidation([
     .notEmpty()
     .matches(/^[a-z0-9-]+$/)
     .withMessage(
-      "Subdomain darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten"
+      "Subdomain darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten",
     ),
   body("email")
     .isEmail()
@@ -78,7 +79,7 @@ const signupValidation = createValidation([
     .trim()
     .matches(/^\+[0-9]{7,29}$/)
     .withMessage(
-      "Telefonnummer muss mit + beginnen und 7-29 Ziffern enthalten (z.B. +491234567890)"
+      "Telefonnummer muss mit + beginnen und 7-29 Ziffern enthalten (z.B. +491234567890)",
     ),
 ]);
 
@@ -99,7 +100,7 @@ router.post(
     try {
       logger.info(
         "[DEBUG] Signup request received at " + new Date().toISOString(),
-        { body: req.body }
+        { body: req.body },
       );
 
       // Debug DB connection (removed in production)
@@ -130,9 +131,9 @@ router.post(
           .status(400)
           .json(
             errorResponse(
-              subdomainValidation.error || "Ungültige Subdomain",
-              400
-            )
+              subdomainValidation.error ?? "Ungültige Subdomain",
+              400,
+            ),
           );
         return;
       }
@@ -175,7 +176,7 @@ router.post(
       logger.error("Signup-Fehler:", error);
       res.status(500).json(errorResponse("Fehler bei der Registrierung", 500));
     }
-  })
+  }),
 );
 
 // Subdomain-Verfügbarkeit prüfen
@@ -205,7 +206,7 @@ router.get(
       logger.error("Subdomain-Check-Fehler:", error);
       res.status(500).json(errorResponse("Fehler bei der Überprüfung", 500));
     }
-  })
+  }),
 );
 
 export default router;

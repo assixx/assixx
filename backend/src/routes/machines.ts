@@ -4,6 +4,7 @@
  */
 
 import express, { Router, Request } from "express";
+
 import { authenticateToken } from "../auth";
 import { getErrorMessage } from "../utils/errorHandler";
 
@@ -58,7 +59,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
 
     if (departmentId) {
       filteredMachines = machines.filter(
-        (machine) => machine.department_id == parseInt(String(departmentId))
+        (machine) => machine.department_id == parseInt(String(departmentId)),
       );
     }
 

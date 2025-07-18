@@ -68,7 +68,7 @@ class KvpPage {
   private departments: Department[] = [];
 
   constructor() {
-    this.init();
+    void this.init();
   }
 
   private async init(): Promise<void> {
@@ -88,7 +88,7 @@ class KvpPage {
       // Load statistics if admin (but not in employee mode)
       const effectiveRole = this.getEffectiveRole();
       if (effectiveRole === 'admin' || effectiveRole === 'root') {
-        this.loadStatistics();
+        void this.loadStatistics();
       }
     } catch (error) {
       console.error('Error initializing KVP page:', error);
@@ -351,7 +351,9 @@ class KvpPage {
         e.stopPropagation();
         const action = btn.getAttribute('data-action');
         const id = btn.getAttribute('data-id');
-        if (action && id) this.handleAction(action, parseInt(id));
+        if (action && id) {
+          void this.handleAction(action, parseInt(id));
+        }
       });
     });
   }
@@ -477,13 +479,13 @@ class KvpPage {
 
       if (totalEl) totalEl.textContent = data.company.total.toString();
       if (openEl)
-        openEl.textContent = ((data.company.byStatus.new ?? 0) + (data.company.byStatus.in_review || 0)).toString();
+        openEl.textContent = ((data.company.byStatus.new ?? 0) + (data.company.byStatus.in_review ?? 0)).toString();
       if (implementedEl) implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
       if (savingsEl)
         savingsEl.textContent = new Intl.NumberFormat('de-DE', {
           style: 'currency',
           currency: 'EUR',
-        }).format(data.company.totalSavings || 0);
+        }).format(data.company.totalSavings ?? 0);
     } catch (error) {
       console.error('Error loading statistics:', error);
     }
@@ -520,7 +522,7 @@ class KvpPage {
         document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.currentFilter = btn.getAttribute('data-filter') ?? 'all';
-        this.loadSuggestions();
+        void this.loadSuggestions();
       });
     });
 
@@ -528,7 +530,9 @@ class KvpPage {
     ['statusFilterValue', 'categoryFilterValue', 'departmentFilterValue'].forEach((id) => {
       const element = document.getElementById(id);
       if (element) {
-        element.addEventListener('change', () => this.loadSuggestions());
+        element.addEventListener('change', () => {
+          void this.loadSuggestions();
+        });
       }
     });
 
@@ -537,7 +541,9 @@ class KvpPage {
     const searchInput = document.getElementById('searchFilter') as HTMLInputElement;
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimeout);
-      searchTimeout = window.setTimeout(() => this.loadSuggestions(), 300);
+      searchTimeout = window.setTimeout(() => {
+        void this.loadSuggestions();
+      }, 300);
     });
 
     // Create new button
@@ -551,9 +557,11 @@ class KvpPage {
     // Create form submission
     const createForm = document.getElementById('createKvpForm') as HTMLFormElement;
     if (createForm) {
-      createForm.addEventListener('submit', async (e) => {
+      createForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        await this.createSuggestion();
+        void (async () => {
+          await this.createSuggestion();
+        })();
       });
     }
   }
@@ -646,7 +654,7 @@ class KvpPage {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Fehler beim Erstellen des Vorschlags');
+        throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
       }
 
       const result = await response.json();
@@ -707,7 +715,7 @@ class KvpPage {
 
       if (!response.ok) {
         console.error('Fehler beim Hochladen der Fotos:', responseData);
-        throw new Error(responseData.message || 'Upload fehlgeschlagen');
+        throw new Error(responseData.message ?? 'Upload fehlgeschlagen');
       }
     } catch (error) {
       console.error('Error uploading photos:', error);

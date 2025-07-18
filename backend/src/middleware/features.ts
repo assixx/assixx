@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+
 import Feature from "../models/feature.js";
-import { logger } from "../utils/logger.js";
-import { query, RowDataPacket } from "../utils/db.js";
 import { AuthenticatedRequest } from "../types/request.types.js";
+import { query, RowDataPacket } from "../utils/db.js";
+import { logger } from "../utils/logger.js";
 
 export interface FeatureCheckOptions {
   sendUpgradeHint?: boolean;
@@ -30,7 +31,7 @@ export const checkFeature =
 
       // Debug logging
       logger.info(
-        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenant_id: req.user.tenant_id } : null)}`
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenant_id: req.user.tenant_id } : null)}`,
       );
 
       if (req.tenantId) {
@@ -42,7 +43,7 @@ export const checkFeature =
           // Use database query
           const [tenantRows] = await query<RowDataPacket[]>(
             "SELECT id FROM tenants WHERE subdomain = ?",
-            [req.tenantId]
+            [req.tenantId],
           );
 
           if (tenantRows.length === 0) {
@@ -54,7 +55,7 @@ export const checkFeature =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (req.user && req.user.tenant_id) {
+      } else if (req.user?.tenant_id) {
         // Fallback: Verwende tenant_id aus JWT Token
         numericTenantId = req.user.tenant_id;
       } else {
@@ -64,22 +65,22 @@ export const checkFeature =
       }
 
       logger.info(
-        `Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`
+        `Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`,
       );
 
       // Prüfe ob Feature aktiv ist
       const hasFeature = await Feature.checkTenantAccess(
         numericTenantId,
-        featureCode
+        featureCode,
       );
 
       if (!hasFeature) {
         const errorMessage =
-          options.customErrorMessage ||
+          options.customErrorMessage ??
           `Diese Funktion (${featureCode}) ist für Ihren Tarif nicht verfügbar.`;
 
         logger.warn(
-          `Feature '${featureCode}' not available for tenant ${numericTenantId}`
+          `Feature '${featureCode}' not available for tenant ${numericTenantId}`,
         );
 
         const response: {
@@ -99,7 +100,7 @@ export const checkFeature =
       }
 
       logger.info(
-        `Feature '${featureCode}' is active for tenant ${numericTenantId}`
+        `Feature '${featureCode}' is active for tenant ${numericTenantId}`,
       );
       return next();
     } catch (error) {
@@ -126,7 +127,7 @@ export const checkAnyFeature =
           // Use database query
           const [tenantRows] = await query<RowDataPacket[]>(
             "SELECT id FROM tenants WHERE subdomain = ?",
-            [req.tenantId]
+            [req.tenantId],
           );
 
           if (tenantRows.length === 0) {
@@ -138,7 +139,7 @@ export const checkAnyFeature =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (req.user && req.user.tenant_id) {
+      } else if (req.user?.tenant_id) {
         numericTenantId = req.user.tenant_id;
       } else {
         return res.status(400).json({
@@ -150,11 +151,11 @@ export const checkAnyFeature =
       for (const featureCode of featureCodes) {
         const hasFeature = await Feature.checkTenantAccess(
           numericTenantId,
-          featureCode
+          featureCode,
         );
         if (hasFeature) {
           logger.info(
-            `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`
+            `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`,
           );
           return next();
         }
@@ -162,15 +163,15 @@ export const checkAnyFeature =
 
       // Keine der Features ist aktiv
       const errorMessage =
-        options.customErrorMessage ||
+        options.customErrorMessage ??
         `Keine der erforderlichen Funktionen (${featureCodes.join(
-          ", "
+          ", ",
         )}) ist für Ihren Tarif verfügbar.`;
 
       logger.warn(
         `None of the features [${featureCodes.join(
-          ", "
-        )}] are available for tenant ${numericTenantId}`
+          ", ",
+        )}] are available for tenant ${numericTenantId}`,
       );
 
       return res.status(403).json({
@@ -202,7 +203,7 @@ export const checkAllFeatures =
           // Use database query
           const [tenantRows] = await query<RowDataPacket[]>(
             "SELECT id FROM tenants WHERE subdomain = ?",
-            [req.tenantId]
+            [req.tenantId],
           );
 
           if (tenantRows.length === 0) {
@@ -214,7 +215,7 @@ export const checkAllFeatures =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (req.user && req.user.tenant_id) {
+      } else if (req.user?.tenant_id) {
         numericTenantId = req.user.tenant_id;
       } else {
         return res.status(400).json({
@@ -227,7 +228,7 @@ export const checkAllFeatures =
       for (const featureCode of featureCodes) {
         const hasFeature = await Feature.checkTenantAccess(
           numericTenantId,
-          featureCode
+          featureCode,
         );
         if (!hasFeature) {
           missingFeatures.push(featureCode);
@@ -236,15 +237,15 @@ export const checkAllFeatures =
 
       if (missingFeatures.length > 0) {
         const errorMessage =
-          options.customErrorMessage ||
+          options.customErrorMessage ??
           `Die folgenden Funktionen sind für Ihren Tarif nicht verfügbar: ${missingFeatures.join(
-            ", "
+            ", ",
           )}`;
 
         logger.warn(
           `Features [${missingFeatures.join(
-            ", "
-          )}] are not available for tenant ${numericTenantId}`
+            ", ",
+          )}] are not available for tenant ${numericTenantId}`,
         );
 
         return res.status(403).json({
@@ -257,8 +258,8 @@ export const checkAllFeatures =
 
       logger.info(
         `All features [${featureCodes.join(
-          ", "
-        )}] are active for tenant ${numericTenantId}`
+          ", ",
+        )}] are active for tenant ${numericTenantId}`,
       );
       return next();
     } catch (error) {

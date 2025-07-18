@@ -3,26 +3,25 @@
  * Separated from server.js for better testing
  */
 
-import "dotenv/config";
-import express, { Application, Request, Response, NextFunction } from "express";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import morgan from "morgan";
-import fs from "fs";
 
-// ES modules equivalent of __dirname - only define if not already defined
-const __filename =
-  typeof global.__filename !== "undefined"
-    ? global.__filename
-    : fileURLToPath(import.meta.url);
-const __dirname =
-  typeof global.__dirname !== "undefined"
-    ? global.__dirname
-    : path.dirname(__filename);
-import cors from "cors";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import "dotenv/config";
+import express, { Application, Request, Response, NextFunction } from "express";
+import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 
-// Security middleware
+import { swaggerSpec } from "./config/swagger";
+import authController from "./controllers/auth.controller";
+import {
+  protectPage,
+  contentSecurityPolicy,
+  redirectToDashboard,
+} from "./middleware/pageAuth";
+import { rateLimiter } from "./middleware/rateLimiter";
 import {
   securityHeaders,
   corsOptions,
@@ -33,18 +32,29 @@ import {
   validateCSRFToken,
   sanitizeInputs,
 } from "./middleware/security-enhanced";
-import { rateLimiter } from "./middleware/rateLimiter";
-
-// Page protection middleware
-import { protectPage, contentSecurityPolicy } from "./middleware/pageAuth";
-
-// Routes
+import { checkTenantStatus } from "./middleware/tenantStatus";
 import routes from "./routes";
+import htmlRoutes from "./routes/html.routes";
+import legacyRoutes from "./routes/legacy.routes";
+import roleSwitchRoutes from "./routes/role-switch";
+/**
+ * Express Application Setup
+ * Separated from server.js for better testing
+ */
 
+// ES modules equivalent of __dirname - only define if not already defined
+const __filename =
+  typeof global.__filename !== "undefined"
+    ? global.__filename
+    : fileURLToPath(import.meta.url);
+const __dirname =
+  typeof global.__dirname !== "undefined"
+    ? global.__dirname
+    : path.dirname(__filename);
+// Security middleware
+// Page protection middleware
+// Routes
 // Swagger documentation
-import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./config/swagger";
-
 // Create Express app
 const app: Application = express();
 
@@ -73,7 +83,7 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
       cleanPath +
         (req.originalUrl.includes("?")
           ? req.originalUrl.substring(req.originalUrl.indexOf("?"))
-          : "")
+          : ""),
     );
     return;
   }
@@ -89,7 +99,7 @@ app.use(
       return protectPage(req, res, next);
     }
     next();
-  }
+  },
 );
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
@@ -112,7 +122,7 @@ app.use(
         res.setHeader("Content-Type", "text/html");
       }
     },
-  })
+  }),
 );
 
 // Handle /js/ requests - map to TypeScript files in development
@@ -176,7 +186,7 @@ app.use("/js", rateLimiter.public, (req: Request, res: Response): void => {
   res
     .type("application/javascript")
     .send(
-      `// Module ${escapedFileName} not found\nconsole.warn('Module ${escapedFileName} not found');`
+      `// Module ${escapedFileName} not found\nconsole.warn('Module ${escapedFileName} not found');`,
     );
 });
 
@@ -228,7 +238,7 @@ app.use(
       actualTsPath = path.resolve(
         srcPath,
         "scripts",
-        sanitizedPath.replace(/^\/scripts\//, "")
+        sanitizedPath.replace(/^\/scripts\//, ""),
       );
     }
 
@@ -249,7 +259,7 @@ app.use(
         // Remove TypeScript-only import type statements
         .replace(
           /import\s+type\s+\{[^}]+\}\s+from\s+['""][^'""]+['""];?\s*/g,
-          ""
+          "",
         )
         // Remove declare global blocks (more robust regex)
         .replace(/declare\s+global\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, "")
@@ -257,14 +267,14 @@ app.use(
         .replace(/from\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g, "from '$1.ts'")
         .replace(
           /import\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g,
-          "import '$1.ts'"
+          "import '$1.ts'",
         );
 
       res.type("application/javascript").send(transformedContent);
     } else {
       // For missing files, return empty module to avoid syntax errors
       console.warn(
-        `[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`
+        `[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`,
       );
 
       // Escape filename to prevent XSS
@@ -281,10 +291,10 @@ app.use(
       res
         .type("application/javascript")
         .send(
-          `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`
+          `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`,
         );
     }
-  }
+  },
 );
 
 // Fallback to src directory for assets (images, etc.)
@@ -305,7 +315,7 @@ app.use(
         res.setHeader("Content-Type", "application/json");
       }
     },
-  })
+  }),
 );
 
 // Uploads directory (always served)
@@ -369,7 +379,7 @@ app.use(
       return;
     }
     authLimiter(req, res, next);
-  }
+  },
 );
 
 app.use("/api/login", authLimiter);
@@ -387,7 +397,7 @@ app.use((req: Request, _res: Response, next: NextFunction): void => {
     req.method,
     req.originalUrl,
     "- Body:",
-    req.body ? Object.keys(req.body) : "No body"
+    req.body ? Object.keys(req.body) : "No body",
   );
   next();
 });
@@ -431,8 +441,6 @@ app.post("/api/test", (req: Request, res: Response): void => {
 });
 
 // Import auth controller directly for legacy endpoint
-import authController from "./controllers/auth.controller";
-
 // Legacy login endpoints (for backward compatibility) - MUST BE BEFORE OTHER ROUTES
 app.get("/login", (_req: Request, res: Response): void => {
   console.log("[DEBUG] GET /login - serving login page");
@@ -456,19 +464,11 @@ app.post(
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
-  }
+  },
 );
 
 // Legacy routes for backward compatibility - MUST BE BEFORE main routes
-import legacyRoutes from "./routes/legacy.routes";
-console.log("[DEBUG] Mounting legacy routes");
-app.use(legacyRoutes);
-
 // Role Switch Routes - BEFORE CSRF Protection
-import roleSwitchRoutes from "./routes/role-switch";
-console.log("[DEBUG] Mounting role-switch routes at /api/role-switch");
-app.use("/api/role-switch", roleSwitchRoutes);
-
 // Swagger API Documentation - BEFORE CSRF Protection
 if (process.env.NODE_ENV === "development") {
   console.log("[DEBUG] Mounting Swagger UI at /api-docs");
@@ -494,7 +494,7 @@ if (process.env.NODE_ENV === "development") {
         tryItOutEnabled: true,
         persistAuthorization: true,
       },
-    })
+    }),
   );
 }
 
@@ -503,23 +503,30 @@ console.log("[DEBUG] Applying CSRF protection");
 app.use(validateCSRFToken);
 
 // Tenant Status Middleware - check tenant deletion status
-import { checkTenantStatus } from "./middleware/tenantStatus";
 console.log("[DEBUG] Applying tenant status middleware");
 app.use("/api", checkTenantStatus);
+
+// Legacy routes
+console.log("[DEBUG] Mounting legacy routes");
+app.use(legacyRoutes);
+
+// Role switch routes
+console.log("[DEBUG] Mounting role-switch routes at /api/role-switch");
+app.use("/api/role-switch", roleSwitchRoutes);
 
 // API Routes - Use centralized routing
 console.log("[DEBUG] Mounting main routes at /");
 app.use(routes);
 
-// Root and dashboard redirect - send users to appropriate dashboard or landing page
-import { redirectToDashboard } from "./middleware/pageAuth";
+// Root and dashboard redirects
 app.get("/", redirectToDashboard);
 app.get("/dashboard", redirectToDashboard);
 
-// HTML Routes - Serve pages (AFTER root redirect)
-import htmlRoutes from "./routes/html.routes";
+// HTML Routes
 app.use(htmlRoutes);
 
+// Root and dashboard redirect - send users to appropriate dashboard or landing page
+// HTML Routes - Serve pages (AFTER root redirect)
 // Error handling middleware
 app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
@@ -528,7 +535,7 @@ app.use(
       message: "Internal Server Error",
       error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
-  }
+  },
 );
 
 // Express Router with stack property interface (removed - not used)
@@ -546,7 +553,7 @@ app.use((req: Request, res: Response): void => {
 // Error handler
 app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
-    console.error("[ERROR]", err.stack || err.message || err);
+    console.error("[ERROR]", err.stack ?? (err.message || err));
 
     const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -555,7 +562,7 @@ app.use(
       message: isDevelopment ? err.message : "Something went wrong",
       ...(isDevelopment && { stack: err.stack }),
     });
-  }
+  },
 );
 
 export default app;

@@ -5,15 +5,16 @@
 
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { executeQuery } from "../config/database";
 import { RowDataPacket } from "mysql2/promise";
+
+import { executeQuery } from "../config/database";
+import { TokenPayload } from "../types/auth.types";
+import { AuthenticationMiddleware } from "../types/middleware.types";
 import {
   AuthenticatedRequest,
   PublicRequest,
   AuthUser,
 } from "../types/request.types";
-import { TokenPayload } from "../types/auth.types";
-import { AuthenticationMiddleware } from "../types/middleware.types";
 import { errorResponse } from "../types/response.types";
 
 // Get JWT secret with proper fallback
@@ -34,7 +35,7 @@ function extractToken(req: PublicRequest): string | null {
   // Check cookie as fallback
   const cookieToken = req.cookies?.token;
 
-  return bearerToken ?? (cookieToken || null);
+  return bearerToken ?? cookieToken ?? null;
 }
 
 // Helper to verify JWT token
@@ -53,7 +54,7 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
 // Helper to validate session (optional)
 async function validateSession(
   userId: number,
-  sessionId?: string
+  sessionId?: string,
 ): Promise<boolean> {
   if (!sessionId || process.env.VALIDATE_SESSIONS !== "true") {
     return true;
@@ -62,7 +63,7 @@ async function validateSession(
   try {
     const [sessions] = await executeQuery<RowDataPacket[]>(
       "SELECT id FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
-      [userId, sessionId]
+      [userId, sessionId],
     );
     return sessions.length > 0;
   } catch (error) {
@@ -74,7 +75,7 @@ async function validateSession(
 
 // Helper to get user details from database
 async function getUserDetails(
-  userId: number
+  userId: number,
 ): Promise<Partial<AuthUser> | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
@@ -86,7 +87,7 @@ async function getUserDetails(
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ? AND u.status = 'active'`,
-      [userId]
+      [userId],
     );
 
     if (users.length === 0) {
@@ -117,7 +118,7 @@ async function getUserDetails(
 export const authenticateToken: AuthenticationMiddleware = async function (
   req: PublicRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     // Extract token
@@ -147,7 +148,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       res
         .status(403)
         .json(
-          errorResponse("Session expired or not found", 403, "SESSION_EXPIRED")
+          errorResponse("Session expired or not found", 403, "SESSION_EXPIRED"),
         );
       return;
     }
@@ -159,7 +160,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       res
         .status(403)
         .json(
-          errorResponse("User not found or inactive", 403, "USER_NOT_FOUND")
+          errorResponse("User not found or inactive", 403, "USER_NOT_FOUND"),
         );
       return;
     }
@@ -170,7 +171,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       userId: userDetails.id ?? 0,
       username: userDetails.username ?? "",
       email: userDetails.email ?? "",
-      role: decoded.activeRole ?? (userDetails.role || ""), // Support role switching
+      role: decoded.activeRole ?? userDetails.role ?? "", // Support role switching
       tenant_id: userDetails.tenant_id ?? 0,
       tenantName: userDetails.tenantName,
       first_name: userDetails.first_name,
@@ -197,7 +198,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 export async function optionalAuth(
   req: PublicRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const token = extractToken(req);
 
@@ -224,13 +225,13 @@ export function requireRole(allowedRoles: string | string[]) {
   return (
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): void => {
     if (!req.user) {
       res
         .status(401)
         .json(
-          errorResponse("Authentication required", 401, "NOT_AUTHENTICATED")
+          errorResponse("Authentication required", 401, "NOT_AUTHENTICATED"),
         );
       return;
     }

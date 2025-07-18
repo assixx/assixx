@@ -4,12 +4,13 @@
  */
 
 import { Request, Response } from "express";
-import documentService from "../services/document.service";
-import { logger } from "../utils/logger";
-import { parsePagination } from "../utils/helpers";
-import { HTTP_STATUS } from "../utils/constants";
-import { AuthenticatedRequest } from "../types/request.types";
+
 import Team from "../models/team";
+import documentService from "../services/document.service";
+import { AuthenticatedRequest } from "../types/request.types";
+import { HTTP_STATUS } from "../utils/constants";
+import { parsePagination } from "../utils/helpers";
+import { logger } from "../utils/logger";
 
 // Extended request interface for file upload
 interface DocumentUploadRequest extends AuthenticatedRequest {
@@ -57,7 +58,7 @@ class DocumentController {
           page?: string | number;
           limit?: string | number;
           [key: string]: string | number | undefined;
-        }
+        },
       );
       const category = req.query.category as string | undefined;
       const userId = req.query.userId as string | undefined;
@@ -115,7 +116,7 @@ class DocumentController {
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!document) {
@@ -144,7 +145,7 @@ class DocumentController {
    */
   async uploadDocument(
     req: Request & Partial<DocumentUploadRequest>,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -170,9 +171,9 @@ class DocumentController {
         mimetype: req.file.mimetype,
         size: req.file.size,
         category:
-          (req.body as DocumentUploadRequest["body"])?.category || "general", // Provide default if undefined
+          (req.body as DocumentUploadRequest["body"])?.category ?? "general", // Provide default if undefined
         description:
-          (req.body as DocumentUploadRequest["body"])?.description || null,
+          (req.body as DocumentUploadRequest["body"])?.description ?? null,
         userId: (() => {
           const bodyUserId = (req.body as DocumentUploadRequest["body"])
             ?.userId;
@@ -206,7 +207,7 @@ class DocumentController {
    */
   async updateDocument(
     req: Request & Partial<DocumentUpdateRequest>,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -226,7 +227,7 @@ class DocumentController {
       const result = await documentService.updateDocument(
         parseInt(id, 10),
         updateData,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!result) {
@@ -267,7 +268,7 @@ class DocumentController {
 
       const result = await documentService.deleteDocument(
         parseInt(id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!result) {
@@ -308,7 +309,7 @@ class DocumentController {
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!document) {
@@ -349,7 +350,7 @@ class DocumentController {
       const success = await documentService.markDocumentAsRead(
         parseInt(id, 10),
         req.user.id,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!success) {

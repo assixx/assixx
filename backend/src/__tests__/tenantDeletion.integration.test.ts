@@ -28,12 +28,12 @@ const mockRedisClient = {
 function generateTestToken(
   userId: number,
   tenantId: number,
-  role: string = "root"
+  role: string = "root",
 ): string {
   return jwt.sign(
     { userId, tenantId, role },
     process.env.JWT_SECRET ?? "test-secret",
-    { expiresIn: "1h" }
+    { expiresIn: "1h" },
   );
 }
 
@@ -43,7 +43,7 @@ async function cleanupTestData(tenantId: number): Promise<void> {
     // Clean up in reverse order of foreign keys
     await query(
       "DELETE FROM tenant_deletion_log WHERE queue_id IN (SELECT id FROM tenant_deletion_queue WHERE tenant_id = ?)",
-      [tenantId]
+      [tenantId],
     );
     await query("DELETE FROM deletion_audit_trail WHERE tenant_id = ?", [
       tenantId,
@@ -56,7 +56,7 @@ async function cleanupTestData(tenantId: number): Promise<void> {
     ]);
     await query(
       'UPDATE tenants SET deletion_status = "active", deletion_requested_at = NULL WHERE id = ?',
-      [tenantId]
+      [tenantId],
     );
   } catch (error) {
     console.error("Cleanup error:", error);
@@ -75,7 +75,7 @@ describe("Tenant Deletion Integration Tests", () => {
     // Create test tenant and user
     const [tenantResult] = await query(
       "INSERT INTO tenants (company_name, subdomain, created_at) VALUES (?, ?, NOW())",
-      ["Test Deletion Company", "test-deletion-co"]
+      ["Test Deletion Company", "test-deletion-co"],
     );
     testTenantId = (tenantResult as any).insertId;
 
@@ -87,7 +87,7 @@ describe("Tenant Deletion Integration Tests", () => {
         "root@test-deletion.com",
         "hashed_password",
         "root",
-      ]
+      ],
     );
     testUserId = (userResult as any).insertId;
 
@@ -129,13 +129,13 @@ describe("Tenant Deletion Integration Tests", () => {
       // Verify database state
       const [tenant] = await query(
         "SELECT deletion_status FROM tenants WHERE id = ?",
-        [testTenantId]
+        [testTenantId],
       );
       expect(tenant.deletion_status).toBe("marked_for_deletion");
 
       const [queueEntry] = await query(
         "SELECT * FROM tenant_deletion_queue WHERE tenant_id = ?",
-        [testTenantId]
+        [testTenantId],
       );
       expect(queueEntry).toBeDefined();
       expect(queueEntry.status).toBe("queued");
@@ -145,7 +145,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Create an admin user for the tenant
       await query(
         "INSERT INTO users (tenant_id, username, email, role) VALUES (?, ?, ?, ?)",
-        [testTenantId, "test-admin", "admin@test-deletion.com", "admin"]
+        [testTenantId, "test-admin", "admin@test-deletion.com", "admin"],
       );
 
       await request(app)
@@ -158,7 +158,7 @@ describe("Tenant Deletion Integration Tests", () => {
           to: expect.stringContaining("admin@test-deletion.com"),
           subject: expect.stringContaining("Löschung geplant"),
           html: expect.stringContaining("30 Tage"),
-        })
+        }),
       );
     });
 
@@ -206,7 +206,7 @@ describe("Tenant Deletion Integration Tests", () => {
       await tenantDeletionService.markTenantForDeletion(
         testTenantId,
         testUserId,
-        "Status test"
+        "Status test",
       );
     });
 
@@ -230,7 +230,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Update queue to processing
       await query(
         "UPDATE tenant_deletion_queue SET status = ?, progress = ?, current_step = ? WHERE tenant_id = ?",
-        ["processing", 45, "deleteDocuments", testTenantId]
+        ["processing", 45, "deleteDocuments", testTenantId],
       );
 
       const response = await request(app)
@@ -249,7 +249,7 @@ describe("Tenant Deletion Integration Tests", () => {
       await tenantDeletionService.markTenantForDeletion(
         testTenantId,
         testUserId,
-        "Cancel test"
+        "Cancel test",
       );
     });
 
@@ -265,13 +265,13 @@ describe("Tenant Deletion Integration Tests", () => {
       // Verify database state
       const [tenant] = await query(
         "SELECT deletion_status FROM tenants WHERE id = ?",
-        [testTenantId]
+        [testTenantId],
       );
       expect(tenant.deletion_status).toBe("active");
 
       const [queueEntry] = await query(
         "SELECT status FROM tenant_deletion_queue WHERE tenant_id = ? ORDER BY id DESC LIMIT 1",
-        [testTenantId]
+        [testTenantId],
       );
       expect(queueEntry.status).toBe("cancelled");
     });
@@ -280,7 +280,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Manually set deletion date to past
       await query(
         "UPDATE tenants SET deletion_requested_at = DATE_SUB(NOW(), INTERVAL 31 DAY) WHERE id = ?",
-        [testTenantId]
+        [testTenantId],
       );
 
       const response = await request(app)
@@ -326,7 +326,7 @@ describe("Tenant Deletion Integration Tests", () => {
     it("should add warning headers for marked tenants", async () => {
       await query(
         "UPDATE tenants SET deletion_status = ?, deletion_requested_at = NOW() WHERE id = ?",
-        ["marked_for_deletion", testTenantId]
+        ["marked_for_deletion", testTenantId],
       );
 
       const response = await request(app)
@@ -343,18 +343,18 @@ describe("Tenant Deletion Integration Tests", () => {
       // Create test data
       await query(
         "INSERT INTO documents (tenant_id, filename, uploaded_by) VALUES (?, ?, ?)",
-        [testTenantId, "test.pdf", testUserId]
+        [testTenantId, "test.pdf", testUserId],
       );
 
       // Mark for deletion with past date
       await query(
         "UPDATE tenants SET deletion_status = ?, deletion_requested_at = DATE_SUB(NOW(), INTERVAL 31 DAY) WHERE id = ?",
-        ["marked_for_deletion", testTenantId]
+        ["marked_for_deletion", testTenantId],
       );
 
       await query(
         "INSERT INTO tenant_deletion_queue (tenant_id, created_by, reason, created_at) VALUES (?, ?, ?, DATE_SUB(NOW(), INTERVAL 31 DAY))",
-        [testTenantId, testUserId, "Flow test"]
+        [testTenantId, testUserId, "Flow test"],
       );
 
       // Mock filesystem operations
@@ -374,7 +374,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Verify queue is completed
       const [queueEntry] = await query(
         "SELECT status, progress FROM tenant_deletion_queue WHERE tenant_id = ? ORDER BY id DESC LIMIT 1",
-        [testTenantId]
+        [testTenantId],
       );
       expect(queueEntry.status).toBe("completed");
       expect(queueEntry.progress).toBe(100);
@@ -382,7 +382,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Verify audit trail exists
       const auditEntries = await query(
         "SELECT COUNT(*) as count FROM deletion_audit_trail WHERE tenant_id = ?",
-        [testTenantId]
+        [testTenantId],
       );
       expect(auditEntries[0].count).toBeGreaterThan(0);
     });
@@ -393,7 +393,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Create a failed queue entry
       const [queueResult] = await query(
         "INSERT INTO tenant_deletion_queue (tenant_id, created_by, reason, status, error_message) VALUES (?, ?, ?, ?, ?)",
-        [testTenantId, testUserId, "Retry test", "failed", "Test failure"]
+        [testTenantId, testUserId, "Retry test", "failed", "Test failure"],
       );
       const queueId = (queueResult as any).insertId;
 
@@ -407,7 +407,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Verify queue status reset
       const [queueEntry] = await query(
         "SELECT status, retry_count FROM tenant_deletion_queue WHERE id = ?",
-        [queueId]
+        [queueId],
       );
       expect(queueEntry.status).toBe("queued");
       expect(queueEntry.retry_count).toBe(1);
@@ -427,7 +427,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Create queue entry
       await query(
         "INSERT INTO tenant_deletion_queue (tenant_id, created_by, reason) VALUES (?, ?, ?)",
-        [testTenantId, testUserId, "Partial failure test"]
+        [testTenantId, testUserId, "Partial failure test"],
       );
 
       await tenantDeletionService.processQueue();
@@ -435,7 +435,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Should be marked as failed
       const [queueEntry] = await query(
         "SELECT status, error_message FROM tenant_deletion_queue WHERE tenant_id = ? ORDER BY id DESC LIMIT 1",
-        [testTenantId]
+        [testTenantId],
       );
       expect(queueEntry.status).toBe("failed");
       expect(queueEntry.error_message).toContain("Critical step failed");

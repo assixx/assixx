@@ -43,10 +43,10 @@ async function connectToMySQL(user, password) {
       }
     } else {
       console.log(
-        "\nThe assixx database does not exist. Would you like to create it?"
+        "\nThe assixx database does not exist. Would you like to create it?",
       );
       console.log(
-        "To create it, run these commands in the MySQL command line:"
+        "To create it, run these commands in the MySQL command line:",
       );
       console.log("  CREATE DATABASE assixx;");
       console.log("  USE assixx;");
@@ -70,7 +70,7 @@ function updateEnvFile(user, password) {
     envContent = envContent.replace(/DB_USER=.*$/m, `DB_USER=${user}`);
     envContent = envContent.replace(
       /DB_PASSWORD=.*$/m,
-      `DB_PASSWORD=${password}`
+      `DB_PASSWORD=${password}`,
     );
 
     // Update USE_MOCK_DB to false
@@ -78,7 +78,7 @@ function updateEnvFile(user, password) {
 
     fs.writeFileSync(envPath, envContent);
     console.log(
-      "✅ .env file updated successfully with your MySQL credentials."
+      "✅ .env file updated successfully with your MySQL credentials.",
     );
   } catch (error) {
     console.error("❌ Failed to update .env file:", error.message);
@@ -100,7 +100,7 @@ function promptUser() {
               updateEnvFile(user, password);
             }
             rl.close();
-          }
+          },
         );
       } else {
         rl.question("Do you want to try again? (y/n): ", (answer) => {
@@ -118,6 +118,6 @@ function promptUser() {
 console.log("MySQL Connection Test");
 console.log("====================");
 console.log(
-  "This script will help you test your MySQL connection and update your .env file."
+  "This script will help you test your MySQL connection and update your .env file.",
 );
 promptUser();

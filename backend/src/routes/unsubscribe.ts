@@ -3,13 +3,14 @@
  */
 
 import express, { Router } from "express";
-import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
-import { logger } from "../utils/logger";
+import jwt from "jsonwebtoken";
+
+import User from "../models/user";
 import { getErrorMessage } from "../utils/errorHandler";
+import { logger } from "../utils/logger";
 
 // Import models (keeping require pattern for compatibility)
-import User from "../models/user";
 
 // Explicit rate limiter for unsubscribe endpoint
 const unsubscribeRateLimiter = rateLimit({
@@ -79,7 +80,7 @@ router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
     // Token verifizieren
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET ?? "default-secret"
+      process.env.JWT_SECRET ?? "default-secret",
     ) as unknown as UnsubscribeToken;
 
     if (
@@ -126,7 +127,7 @@ router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
     */
 
     logger.info(
-      `Benutzer ${user.email} hat sich von ${notificationType === "all" ? "allen Benachrichtigungen" : `${notificationType}-Benachrichtigungen`} abgemeldet`
+      `Benutzer ${user.email} hat sich von ${notificationType === "all" ? "allen Benachrichtigungen" : `${notificationType}-Benachrichtigungen`} abgemeldet`,
     );
 
     // Erfolgsseite anzeigen
@@ -152,7 +153,7 @@ router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
     `);
   } catch (error) {
     logger.error(
-      `Fehler bei der Abmeldung von Benachrichtigungen: ${getErrorMessage(error)}`
+      `Fehler bei der Abmeldung von Benachrichtigungen: ${getErrorMessage(error)}`,
     );
 
     res.status(400).send(`

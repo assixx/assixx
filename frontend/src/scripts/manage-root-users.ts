@@ -31,7 +31,7 @@ async function loadRootUsers() {
 
     const data = await response.json();
     // successResponse wraps data in data property
-    const rootUsers = data.data?.users ?? (data.users || []);
+    const rootUsers = data.data?.users ?? data.users ?? [];
 
     displayRootUsers(rootUsers);
   } catch (error) {
@@ -79,14 +79,14 @@ function displayRootUsers(users: RootUser[]) {
           <tr>
             <td>${user.first_name} ${user.last_name}</td>
             <td>${user.email}</td>
-            <td>${user.position || '-'}</td>
+            <td>${user.position ?? '-'}</td>
             <td>
               <span class="status-badge ${user.is_active ? 'active' : 'inactive'}">
                 ${user.is_active ? 'Aktiv' : 'Inaktiv'}
               </span>
             </td>
             <td style="font-family: monospace; font-size: 12px; color: var(--text-secondary);">
-              ${user.employee_id || '-'}
+              ${user.employee_id ?? '-'}
             </td>
             <td>${new Date(user.created_at).toLocaleDateString('de-DE')}</td>
           </tr>
@@ -178,12 +178,12 @@ async function handleFormSubmit(event: Event) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Fehler beim Speichern');
+      throw new Error(data.error ?? 'Fehler beim Speichern');
     }
 
     showSuccess(currentEditId ? 'Root-Benutzer aktualisiert' : 'Root-Benutzer erstellt');
     closeRootModal();
-    loadRootUsers();
+    void loadRootUsers();
   } catch (error) {
     showError(error instanceof Error ? error.message : 'Fehler beim Speichern des Root-Benutzers');
   }
@@ -203,12 +203,14 @@ function closeRootModal() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  loadRootUsers();
+  void loadRootUsers();
 
   // Attach form submit handler
   const form = document.getElementById('rootForm');
   if (form) {
-    form.addEventListener('submit', handleFormSubmit);
+    form.addEventListener('submit', (e) => {
+      void handleFormSubmit(e);
+    });
   }
 });
 

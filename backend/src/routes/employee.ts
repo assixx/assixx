@@ -8,17 +8,18 @@
  */
 
 import express, { Router } from "express";
+import { RowDataPacket } from "mysql2/promise";
+
+import { executeQuery } from "../config/database.js";
 import { security } from "../middleware/security";
-import { logger } from "../utils/logger";
-import { getErrorMessage } from "../utils/errorHandler";
+import Document from "../models/document";
+import User from "../models/user";
 import { successResponse, errorResponse } from "../types/response.types";
+import { getErrorMessage } from "../utils/errorHandler";
+import { logger } from "../utils/logger";
 import { typed } from "../utils/routeHandlers";
 
 // Import models (now ES modules)
-import User from "../models/user";
-import Document from "../models/document";
-import { executeQuery } from "../config/database.js";
-import { RowDataPacket } from "mysql2/promise";
 
 const router: Router = express.Router();
 
@@ -89,15 +90,18 @@ router.get(
       res.json(successResponse(employeeData));
     } catch (error) {
       logger.error(
-        `Error retrieving information for Employee: ${getErrorMessage(error)}`
+        `Error retrieving information for Employee: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Abrufen der Mitarbeiterinformationen", 500)
+          errorResponse(
+            "Fehler beim Abrufen der Mitarbeiterinformationen",
+            500,
+          ),
         );
     }
-  })
+  }),
 );
 
 /**
@@ -146,29 +150,29 @@ router.get(
       const employeeId = req.user.id;
       const tenantId = req.user.tenant_id;
       logger.info(
-        `Employee ${employeeId} requesting their accessible documents`
+        `Employee ${employeeId} requesting their accessible documents`,
       );
 
       // Use the new method that includes team, department, and company documents
       const documents = await Document.findByEmployeeWithAccess(
         employeeId,
-        tenantId
+        tenantId,
       );
 
       logger.info(
-        `Retrieved ${documents.length} accessible documents for Employee ${employeeId}`
+        `Retrieved ${documents.length} accessible documents for Employee ${employeeId}`,
       );
       res.json(successResponse(documents));
     } catch (error) {
       const employeeId2 = req.user?.id ?? "unknown";
       logger.error(
-        `Error retrieving documents for Employee ${employeeId2}: ${getErrorMessage(error)}`
+        `Error retrieving documents for Employee ${employeeId2}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Dokumente", 500));
     }
-  })
+  }),
 );
 
 // Mark all documents as read for employee
@@ -180,13 +184,13 @@ router.post(
       const employeeId = req.user.id;
       const tenantId = req.user.tenant_id;
       logger.info(
-        `Employee ${employeeId} marking all accessible documents as read`
+        `Employee ${employeeId} marking all accessible documents as read`,
       );
 
       // Get all accessible documents
       const documents = await Document.findByEmployeeWithAccess(
         employeeId,
-        tenantId
+        tenantId,
       );
 
       // Mark each document as read
@@ -195,22 +199,22 @@ router.post(
       }
 
       logger.info(
-        `Marked ${documents.length} documents as read for Employee ${employeeId}`
+        `Marked ${documents.length} documents as read for Employee ${employeeId}`,
       );
       res.json(
-        successResponse({ success: true, markedCount: documents.length })
+        successResponse({ success: true, markedCount: documents.length }),
       );
     } catch (error) {
       logger.error(
-        `Error marking documents as read: ${getErrorMessage(error)}`
+        `Error marking documents as read: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Markieren der Dokumente als gelesen", 500)
+          errorResponse("Fehler beim Markieren der Dokumente als gelesen", 500),
         );
     }
-  })
+  }),
 );
 
 // Get unread documents count for employee
@@ -225,17 +229,17 @@ router.get(
       // Get real unread count from database
       const unreadCount = await Document.getUnreadCountForUser(
         employeeId,
-        tenantId
+        tenantId,
       );
 
       res.json(successResponse({ unreadCount }));
     } catch (error) {
       logger.error(
-        `Error getting unread document count: ${getErrorMessage(error)}`
+        `Error getting unread document count: ${getErrorMessage(error)}`,
       );
       res.json(successResponse({ unreadCount: 0 }));
     }
-  })
+  }),
 );
 
 // Search employee documents (including team, department, and company documents)
@@ -248,7 +252,7 @@ router.get(
       const tenantId = req.user.tenant_id;
       const { query } = req.query;
       logger.info(
-        `Employee ${employeeId} searching accessible documents with query: ${query}`
+        `Employee ${employeeId} searching accessible documents with query: ${query}`,
       );
       if (!query) {
         logger.warn(`Employee ${employeeId} attempted search without query`);
@@ -260,23 +264,23 @@ router.get(
       const documents = await Document.searchWithEmployeeAccess(
         employeeId,
         tenantId,
-        String(query)
+        String(query),
       );
 
       logger.info(
-        `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${query}`
+        `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${query}`,
       );
       res.json(successResponse(documents));
     } catch (error) {
       const employeeId3 = req.user?.id ?? "unknown";
       logger.error(
-        `Error searching documents for Employee ${employeeId3}: ${getErrorMessage(error)}`
+        `Error searching documents for Employee ${employeeId3}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler bei der Dokumentensuche", 500));
     }
-  })
+  }),
 );
 
 // Get employee salary documents
@@ -289,30 +293,30 @@ router.get(
       const archived = req.query.archived === "true";
 
       logger.info(
-        `Employee ${employeeId} requesting their salary documents (archived: ${archived})`
+        `Employee ${employeeId} requesting their salary documents (archived: ${archived})`,
       );
 
       const documents = await Document.findByUserIdAndCategory(
         employeeId,
         "salary",
-        archived
+        archived,
       );
       logger.info(
-        `Retrieved ${documents.length} salary documents for Employee ${employeeId}`
+        `Retrieved ${documents.length} salary documents for Employee ${employeeId}`,
       );
       res.json(successResponse(documents));
     } catch (error) {
       const employeeId4 = req.user?.id ?? "unknown";
       logger.error(
-        `Error retrieving salary documents for Employee ${employeeId4}: ${getErrorMessage(error)}`
+        `Error retrieving salary documents for Employee ${employeeId4}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Abrufen der Gehaltsabrechnungen", 500)
+          errorResponse("Fehler beim Abrufen der Gehaltsabrechnungen", 500),
         );
     }
-  })
+  }),
 );
 
 // Download individual document
@@ -326,7 +330,7 @@ router.get(
       const { inline } = req.query; // Option zum Anzeigen im Browser statt herunterzuladen
 
       logger.info(
-        `Employee ${employeeId} attempting to download document ${documentId}`
+        `Employee ${employeeId} attempting to download document ${documentId}`,
       );
 
       // Dokument suchen
@@ -343,7 +347,7 @@ router.get(
       let hasAccess = false;
       const tenantId = req.user.tenant_id;
 
-      switch (document.recipient_type || "user") {
+      switch (document.recipient_type ?? "user") {
         case "user":
           // Persönliche Dokumente
           hasAccess = document.user_id == employeeId;
@@ -354,12 +358,12 @@ router.get(
           try {
             const [teamMembership] = await executeQuery<RowDataPacket[]>(
               "SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ? AND tenant_id = ?",
-              [employeeId, document.team_id, tenantId]
+              [employeeId, document.team_id, tenantId],
             );
             hasAccess = teamMembership.length > 0;
           } catch (err) {
             logger.error(
-              `Error checking team membership: ${(err as Error).message}`
+              `Error checking team membership: ${(err as Error).message}`,
             );
           }
           break;
@@ -369,12 +373,12 @@ router.get(
           try {
             const [userDept] = await executeQuery<RowDataPacket[]>(
               "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
-              [employeeId, tenantId]
+              [employeeId, tenantId],
             );
             hasAccess = userDept[0]?.department_id == document.department_id;
           } catch (err) {
             logger.error(
-              `Error checking department membership: ${(err as Error).message}`
+              `Error checking department membership: ${(err as Error).message}`,
             );
           }
           break;
@@ -387,7 +391,7 @@ router.get(
 
       if (!hasAccess) {
         logger.warn(
-          `Access denied: Employee ${employeeId} attempted to access document ${documentId} (type: ${document.recipient_type})`
+          `Access denied: Employee ${employeeId} attempted to access document ${documentId} (type: ${document.recipient_type})`,
         );
         res.status(403).json(errorResponse("Zugriff verweigert", 403));
         return;
@@ -403,7 +407,7 @@ router.get(
       const disposition = inline === "true" ? "inline" : "attachment";
       res.setHeader(
         "Content-Disposition",
-        `${disposition}; filename=${encodeURIComponent(document.file_name)}`
+        `${disposition}; filename=${encodeURIComponent(document.file_name)}`,
       );
 
       // Optional: Cache-Control Header für häufig abgerufene Dokumente
@@ -415,7 +419,7 @@ router.get(
       }
 
       logger.info(
-        `Employee ${employeeId} successfully downloading document ${documentId}`
+        `Employee ${employeeId} successfully downloading document ${documentId}`,
       );
 
       // Für alle Dateien einfach den gesamten Inhalt auf einmal senden
@@ -424,13 +428,13 @@ router.get(
       const employeeId5 = req.user?.id ?? "unknown";
       const documentId2 = req.params?.documentId ?? "unknown";
       logger.error(
-        `Error downloading document ${documentId2} for Employee ${employeeId5}: ${getErrorMessage(error)}`
+        `Error downloading document ${documentId2} for Employee ${employeeId5}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Herunterladen des Dokuments", 500));
     }
-  })
+  }),
 );
 
 export default router;

@@ -3,6 +3,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken } from './auth';
 
 interface Department {
@@ -45,12 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (departmentFilter) {
     departmentFilter.addEventListener('change', handleSearch);
     // Abteilungen laden
-    loadDepartments();
+    void loadDepartments();
   }
 
   // Initialen Suchvorgang ausführen
   if (searchForm) {
-    loadEmployees();
+    void loadEmployees();
   }
 
   // Funktion zum Laden der Abteilungen
@@ -143,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e) {
       e.preventDefault();
     }
-    loadEmployees(1); // Bei neuer Suche immer auf Seite 1 zurücksetzen
+    void loadEmployees(1); // Bei neuer Suche immer auf Seite 1 zurücksetzen
   }
 
   // Funktion zum Anzeigen der Mitarbeiter
@@ -163,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Profilbild oder Platzhalter
       const profileImage = employee.profile_picture
         ? `<img src="/${employee.profile_picture}" class="profile-thumbnail" alt="${employee.first_name}" width="40" height="40">`
-        : `<div class="profile-placeholder">${(employee.first_name ?? '').charAt(0)}${(employee.last_name || '').charAt(0)}</div>`;
+        : `<div class="profile-placeholder">${(employee.first_name ?? '').charAt(0)}${(employee.last_name ?? '').charAt(0)}</div>`;
 
       // Abteilungsinformation
       const departmentInfo = employee.department_name
@@ -175,27 +176,27 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="d-flex align-items-center">
             ${profileImage}
             <div class="ml-3">
-              <div class="employee-name">${employee.first_name ?? ''} ${employee.last_name || ''}</div>
+              <div class="employee-name">${employee.first_name ?? ''} ${employee.last_name ?? ''}</div>
               <div class="employee-position">${employee.position ?? ''}</div>
             </div>
           </div>
         </td>
         <td>${employee.email}</td>
         <td>
-          ${employee.employee_id || ''}
+          ${employee.employee_id ?? ''}
           ${departmentInfo}
         </td>
-        <td>${employee.phone || '-'}</td>
+        <td>${employee.phone ?? '-'}</td>
         <td>
           <button onclick="uploadDocumentFor('${employee.id}')" class="btn btn-sm btn-primary">Dokument hochladen</button>
           <button class="delete-btn btn btn-sm btn-danger" 
                   data-id="${employee.id}" 
-                  data-name="${employee.first_name ?? ''} ${employee.last_name || ''}">
+                  data-name="${employee.first_name ?? ''} ${employee.last_name ?? ''}">
               Löschen
           </button>
           <button class="edit-btn btn btn-sm btn-secondary" 
                   data-id="${employee.id}" 
-                  data-name="${employee.first_name ?? ''} ${employee.last_name || ''}">
+                  data-name="${employee.first_name ?? ''} ${employee.last_name ?? ''}">
               Bearbeiten
           </button>
         </td>
@@ -206,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event-Listener für die Lösch-Buttons hinzufügen
     document.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach((button) => {
-      button.addEventListener('click', deleteEmployee);
+      button.addEventListener('click', (e) => void deleteEmployee(e));
     });
 
     // Event-Listener für die Bearbeiten-Buttons hinzufügen
@@ -238,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentPage > 1) {
       prevLink.addEventListener('click', (e: Event) => {
         e.preventDefault();
-        loadEmployees(currentPage - 1);
+        void loadEmployees(currentPage - 1);
       });
     }
     prevLi.appendChild(prevLink);
@@ -258,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       link.textContent = i.toString();
       link.addEventListener('click', (e: Event) => {
         e.preventDefault();
-        loadEmployees(i);
+        void loadEmployees(i);
       });
       li.appendChild(link);
       ul.appendChild(li);
@@ -274,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentPage < pagination.pages) {
       nextLink.addEventListener('click', (e: Event) => {
         e.preventDefault();
-        loadEmployees(currentPage + 1);
+        void loadEmployees(currentPage + 1);
       });
     }
     nextLi.appendChild(nextLink);
@@ -309,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         alert(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht.`);
         // Mitarbeiterliste neu laden
-        loadEmployees();
+        void loadEmployees();
       } else {
         const error = await response.json();
 

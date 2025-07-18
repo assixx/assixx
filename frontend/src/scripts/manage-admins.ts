@@ -228,7 +228,7 @@
       if (!tenant) return;
       const option = document.createElement('option');
       option.value = tenant.id.toString();
-      option.textContent = `${tenant.company_name ?? (tenant.name || 'Unnamed')} (${tenant.subdomain})`;
+      option.textContent = `${tenant.company_name ?? tenant.name ?? 'Unnamed'} (${tenant.subdomain})`;
       select.appendChild(option);
     });
   }
@@ -275,7 +275,7 @@
       <tbody>
         ${admins
           .map((admin) => {
-            const fullName = `${admin.first_name ?? ''} ${admin.last_name || ''}`.trim() || '-';
+            const fullName = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim() || '-';
             return `
           <tr>
             <td>${admin.id}</td>
@@ -316,7 +316,9 @@
         console.log('Edit button clicked!');
         const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0');
         console.log('Admin ID:', adminId);
-        if (adminId) editAdminHandler(adminId);
+        if (adminId) {
+          void editAdminHandler(adminId);
+        }
       });
     });
 
@@ -327,7 +329,9 @@
         console.log('Delete button clicked!');
         const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0');
         console.log('Admin ID:', adminId);
-        if (adminId) deleteAdminHandler(adminId);
+        if (adminId) {
+          void deleteAdminHandler(adminId);
+        }
       });
     });
 
@@ -343,7 +347,7 @@
         if (adminId) {
           e.preventDefault();
           e.stopPropagation();
-          showPermissionsModal(adminId);
+          void showPermissionsModal(adminId);
         }
       });
     });
@@ -524,7 +528,7 @@
         await loadAdmins();
       } else {
         const error = await response.json();
-        showError(error.message || 'Fehler beim Löschen des Administrators');
+        showError(error.message ?? 'Fehler beim Löschen des Administrators');
       }
     } catch (error) {
       console.error('Fehler:', error);
@@ -665,9 +669,9 @@
     if (groupContainer) groupContainer.style.display = type === 'groups' ? 'block' : 'none';
 
     if (type === 'specific') {
-      loadAndPopulateDepartments();
+      void loadAndPopulateDepartments();
     } else if (type === 'groups') {
-      loadAndPopulateGroups();
+      void loadAndPopulateGroups();
     }
   }
 
@@ -739,7 +743,7 @@
     const nameEl = document.getElementById('permAdminName');
     const emailEl = document.getElementById('permAdminEmail');
 
-    if (nameEl) nameEl.textContent = `${admin.first_name ?? ''} ${admin.last_name || ''} (${admin.username})`.trim();
+    if (nameEl) nameEl.textContent = `${admin.first_name ?? ''} ${admin.last_name ?? ''} (${admin.username})`.trim();
     if (emailEl) emailEl.textContent = admin.email ?? '-';
 
     // Load departments and current permissions
@@ -936,130 +940,111 @@
   };
 
   // Admin-Formular submit
-  document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  document.getElementById('adminForm')?.addEventListener('submit', (e) => {
+    void (async () => {
+      e.preventDefault();
 
-    // Validate email match
-    const email = (document.getElementById('adminEmail') as HTMLInputElement).value;
-    const emailConfirm = (document.getElementById('adminEmailConfirm') as HTMLInputElement).value;
-    if (email !== emailConfirm) {
-      showError('Die E-Mail-Adressen stimmen nicht überein!');
-      return;
-    }
-
-    // Validate password match (only for new admins or if password is being changed)
-    const password = (document.getElementById('adminPassword') as HTMLInputElement).value;
-    const passwordConfirm = (document.getElementById('adminPasswordConfirm') as HTMLInputElement).value;
-    if (password && password !== passwordConfirm) {
-      showError('Die Passwörter stimmen nicht überein!');
-      return;
-    }
-
-    interface AdminFormData {
-      first_name: string;
-      last_name: string;
-      email: string;
-      password?: string;
-      position: string;
-      notes: string;
-      role: string;
-      is_active?: boolean;
-    }
-
-    const formData: AdminFormData = {
-      first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
-      last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
-      email,
-      password,
-      position: (document.getElementById('positionDropdownValue') as HTMLInputElement).value,
-      notes: (document.getElementById('adminNotes') as HTMLTextAreaElement).value,
-      role: 'admin',
-    };
-
-    // Include is_active only when updating
-    if (currentAdminId) {
-      const checkbox = document.getElementById('adminIsActive') as HTMLInputElement;
-      console.log('Checkbox element:', checkbox);
-      console.log('Checkbox checked state:', checkbox.checked);
-      formData.is_active = checkbox.checked;
-    }
-
-    console.log('Sending form data:', formData);
-    console.log('Current admin ID:', currentAdminId);
-    console.log('is_active value being sent:', formData.is_active);
-
-    try {
-      const token = localStorage.getItem('token');
-      const url = currentAdminId ? `/api/root/admins/${currentAdminId}` : '/api/root/admins';
-
-      const method = currentAdminId ? 'PUT' : 'POST';
-
-      // Bei Update: Passwort nur senden wenn ausgefüllt
-      if (currentAdminId && !formData.password) {
-        delete formData.password;
+      // Validate email match
+      const email = (document.getElementById('adminEmail') as HTMLInputElement).value;
+      const emailConfirm = (document.getElementById('adminEmailConfirm') as HTMLInputElement).value;
+      if (email !== emailConfirm) {
+        showError('Die E-Mail-Adressen stimmen nicht überein!');
+        return;
       }
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Validate password match (only for new admins or if password is being changed)
+      const password = (document.getElementById('adminPassword') as HTMLInputElement).value;
+      const passwordConfirm = (document.getElementById('adminPasswordConfirm') as HTMLInputElement).value;
+      if (password && password !== passwordConfirm) {
+        showError('Die Passwörter stimmen nicht überein!');
+        return;
+      }
 
-      if (response.ok) {
-        const result = await response.json();
-        const adminId = currentAdminId ?? (result.adminId || result.id);
+      interface AdminFormData {
+        first_name: string;
+        last_name: string;
+        email: string;
+        password?: string;
+        position: string;
+        notes: string;
+        role: string;
+        is_active?: boolean;
+      }
 
-        // Set permissions for both new and existing admins
-        const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)
-          ?.value;
-        console.log('🔵 Permission type selected:', permissionType);
+      const formData: AdminFormData = {
+        first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
+        last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
+        email,
+        password,
+        position: (document.getElementById('positionDropdownValue') as HTMLInputElement).value,
+        notes: (document.getElementById('adminNotes') as HTMLTextAreaElement).value,
+        role: 'admin',
+      };
 
-        if (adminId && permissionType) {
-          // Always update permissions based on form selection
-          if (permissionType !== 'none') {
-            let departmentIds: number[] = [];
-            let groupIds: number[] = [];
+      // Include is_active only when updating
+      if (currentAdminId) {
+        const checkbox = document.getElementById('adminIsActive') as HTMLInputElement;
+        console.log('Checkbox element:', checkbox);
+        console.log('Checkbox checked state:', checkbox.checked);
+        formData.is_active = checkbox.checked;
+      }
 
-            if (permissionType === 'specific') {
-              const select = document.getElementById('departmentSelect') as HTMLSelectElement;
-              departmentIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value));
-            } else if (permissionType === 'groups') {
-              const checkboxes = document.querySelectorAll('input[name="groupSelect"]:checked');
-              groupIds = Array.from(checkboxes).map((cb) => parseInt((cb as HTMLInputElement).value));
-            } else if (permissionType === 'all') {
-              // Get all departments
-              const allDepts = await loadDepartments();
-              departmentIds = allDepts.map((d) => d.id);
-            }
+      console.log('Sending form data:', formData);
+      console.log('Current admin ID:', currentAdminId);
+      console.log('is_active value being sent:', formData.is_active);
 
-            // Set permissions
-            console.log('🔵 Setting department permissions for admin:', adminId);
-            console.log('Department IDs:', departmentIds);
+      try {
+        const token = localStorage.getItem('token');
+        const url = currentAdminId ? `/api/root/admins/${currentAdminId}` : '/api/root/admins';
 
-            const permResponse = await fetch('/api/admin-permissions', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                adminId,
-                departmentIds,
-                permissions: { can_read: true, can_write: false, can_delete: false },
-              }),
-            });
+        const method = currentAdminId ? 'PUT' : 'POST';
 
-            if (permResponse.ok) {
-              console.log('✅ Department permissions updated successfully');
-            } else {
-              console.error('❌ Failed to update department permissions');
-            }
+        // Bei Update: Passwort nur senden wenn ausgefüllt
+        if (currentAdminId && !formData.password) {
+          delete formData.password;
+        }
 
-            if (groupIds.length > 0) {
-              await fetch('/api/admin-permissions/groups', {
+        const response = await fetch(url, {
+          method,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const adminId = currentAdminId ?? result.adminId ?? result.id;
+
+          // Set permissions for both new and existing admins
+          const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)
+            ?.value;
+          console.log('🔵 Permission type selected:', permissionType);
+
+          if (adminId && permissionType) {
+            // Always update permissions based on form selection
+            if (permissionType !== 'none') {
+              let departmentIds: number[] = [];
+              let groupIds: number[] = [];
+
+              if (permissionType === 'specific') {
+                const select = document.getElementById('departmentSelect') as HTMLSelectElement;
+                departmentIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value));
+              } else if (permissionType === 'groups') {
+                const checkboxes = document.querySelectorAll('input[name="groupSelect"]:checked');
+                groupIds = Array.from(checkboxes).map((cb) => parseInt((cb as HTMLInputElement).value));
+              } else if (permissionType === 'all') {
+                // Get all departments
+                const allDepts = await loadDepartments();
+                departmentIds = allDepts.map((d) => d.id);
+              }
+
+              // Set permissions
+              console.log('🔵 Setting department permissions for admin:', adminId);
+              console.log('Department IDs:', departmentIds);
+
+              const permResponse = await fetch('/api/admin-permissions', {
                 method: 'POST',
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -1067,49 +1052,70 @@
                 },
                 body: JSON.stringify({
                   adminId,
-                  groupIds,
+                  departmentIds,
                   permissions: { can_read: true, can_write: false, can_delete: false },
                 }),
               });
-            }
-          } else {
-            // Permission type is 'none' - remove all permissions
-            console.log('🔵 Removing all department permissions for admin:', adminId);
 
-            const permResponse = await fetch('/api/admin-permissions', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                adminId,
-                departmentIds: [], // Empty array removes all permissions
-                permissions: { can_read: true, can_write: false, can_delete: false },
-              }),
-            });
+              if (permResponse.ok) {
+                console.log('✅ Department permissions updated successfully');
+              } else {
+                console.error('❌ Failed to update department permissions');
+              }
 
-            if (permResponse.ok) {
-              console.log('✅ All department permissions removed');
+              if (groupIds.length > 0) {
+                await fetch('/api/admin-permissions/groups', {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    adminId,
+                    groupIds,
+                    permissions: { can_read: true, can_write: false, can_delete: false },
+                  }),
+                });
+              }
             } else {
-              console.error('❌ Failed to remove department permissions');
+              // Permission type is 'none' - remove all permissions
+              console.log('🔵 Removing all department permissions for admin:', adminId);
+
+              const permResponse = await fetch('/api/admin-permissions', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  adminId,
+                  departmentIds: [], // Empty array removes all permissions
+                  permissions: { can_read: true, can_write: false, can_delete: false },
+                }),
+              });
+
+              if (permResponse.ok) {
+                console.log('✅ All department permissions removed');
+              } else {
+                console.error('❌ Failed to remove department permissions');
+              }
             }
           }
-        }
 
-        showSuccess(currentAdminId ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
-        const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
-        if (closeModal) closeModal();
-        // Seite neu laden für vollständige Aktualisierung
-        window.location.reload();
-      } else {
-        const error = await response.json();
-        showError(error.message || 'Fehler beim Speichern');
+          showSuccess(currentAdminId ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
+          const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
+          if (closeModal) closeModal();
+          // Seite neu laden für vollständige Aktualisierung
+          window.location.reload();
+        } else {
+          const error = await response.json();
+          showError(error.message ?? 'Fehler beim Speichern');
+        }
+      } catch (error) {
+        console.error('Fehler:', error);
+        showError('Netzwerkfehler beim Speichern');
       }
-    } catch (error) {
-      console.error('Fehler:', error);
-      showError('Netzwerkfehler beim Speichern');
-    }
+    })();
   });
 
   // Hilfsfunktionen für Benachrichtigungen
@@ -1131,18 +1137,22 @@
   });
 
   // Initialisierung
-  document.addEventListener('DOMContentLoaded', async () => {
-    // Assign global functions to handlers after DOM is ready
-    (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
-    (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
+  document.addEventListener('DOMContentLoaded', () => {
+    void (async () => {
+      // Assign global functions to handlers after DOM is ready
+      (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
+      (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
 
-    // Daten laden
-    await loadAdmins();
-    await loadTenants();
+      // Daten laden
+      await loadAdmins();
+      await loadTenants();
 
-    // Add event listeners for permission type radio buttons
-    document.querySelectorAll('input[name="permissionType"]').forEach((radio) => {
-      radio.addEventListener('change', handlePermissionTypeChange);
-    });
+      // Add event listeners for permission type radio buttons
+      document.querySelectorAll('input[name="permissionType"]').forEach((radio) => {
+        radio.addEventListener('change', handlePermissionTypeChange);
+      });
+    })();
   });
-})(); // End of IIFE
+})();
+
+// End of IIFE

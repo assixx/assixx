@@ -52,7 +52,7 @@ describe("TenantDeletionService", () => {
       const result = await tenantDeletionService.markTenantForDeletion(
         tenantId,
         requestedBy,
-        reason
+        reason,
       );
 
       expect(result.success).toBe(true);
@@ -62,15 +62,15 @@ describe("TenantDeletionService", () => {
       // Verify tenant was marked
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining(
-          "UPDATE tenants SET deletion_status = 'marked_for_deletion'"
+          "UPDATE tenants SET deletion_status = 'marked_for_deletion'",
         ),
-        [tenantId]
+        [tenantId],
       );
 
       // Verify queue entry was created
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO tenant_deletion_queue"),
-        expect.arrayContaining([tenantId, requestedBy, reason])
+        expect.arrayContaining([tenantId, requestedBy, reason]),
       );
     });
 
@@ -86,7 +86,7 @@ describe("TenantDeletionService", () => {
       const result = await tenantDeletionService.markTenantForDeletion(
         1,
         100,
-        "Test"
+        "Test",
       );
 
       expect(result.success).toBe(false);
@@ -103,7 +103,7 @@ describe("TenantDeletionService", () => {
       const result = await tenantDeletionService.markTenantForDeletion(
         1,
         100,
-        "Test"
+        "Test",
       );
 
       expect(result.success).toBe(false);
@@ -121,7 +121,7 @@ describe("TenantDeletionService", () => {
       const result = await tenantDeletionService.markTenantForDeletion(
         1,
         100,
-        "Test"
+        "Test",
       );
 
       expect(result.success).toBe(false);
@@ -172,9 +172,9 @@ describe("TenantDeletionService", () => {
       // Verify tenant status was restored
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining(
-          "UPDATE tenants SET deletion_status = 'active'"
+          "UPDATE tenants SET deletion_status = 'active'",
         ),
-        [1]
+        [1],
       );
     });
 
@@ -244,14 +244,14 @@ describe("TenantDeletionService", () => {
 
       const processSpy = jest.spyOn(
         tenantDeletionService as any,
-        "processTenantDeletion"
+        "processTenantDeletion",
       );
 
       await tenantDeletionService.processQueue();
 
       expect(processSpy).not.toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining("still in grace period")
+        expect.stringContaining("still in grace period"),
       );
     });
 
@@ -276,9 +276,9 @@ describe("TenantDeletionService", () => {
       // Should update queue status to failed
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining(
-          "UPDATE tenant_deletion_queue SET status = 'failed'"
+          "UPDATE tenant_deletion_queue SET status = 'failed'",
         ),
-        expect.arrayContaining(["Processing failed"])
+        expect.arrayContaining(["Processing failed"]),
       );
     });
   });
@@ -353,19 +353,19 @@ describe("TenantDeletionService", () => {
         (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
 
         const step = (tenantDeletionService as any).deletionSteps.find(
-          (s: any) => s.name === "createDataExport"
+          (s: any) => s.name === "createDataExport",
         );
 
         const result = await (tenantDeletionService as any).executeStep(
           step,
           1,
-          1
+          1,
         );
 
         expect(result.success).toBe(true);
         expect(fs.writeFile).toHaveBeenCalledWith(
           expect.stringContaining("users.json"),
-          expect.any(String)
+          expect.any(String),
         );
       });
     });
@@ -379,13 +379,13 @@ describe("TenantDeletionService", () => {
         ]);
 
         const step = (tenantDeletionService as any).deletionSteps.find(
-          (s: any) => s.name === "cleanupRedis"
+          (s: any) => s.name === "cleanupRedis",
         );
 
         const result = await (tenantDeletionService as any).executeStep(
           step,
           1,
-          1
+          1,
         );
 
         expect(result.success).toBe(true);
@@ -402,20 +402,20 @@ describe("TenantDeletionService", () => {
         (query as jest.Mock).mockResolvedValueOnce({ affectedRows: 15 });
 
         const step = (tenantDeletionService as any).deletionSteps.find(
-          (s: any) => s.name === "deleteUsers"
+          (s: any) => s.name === "deleteUsers",
         );
 
         const result = await (tenantDeletionService as any).executeStep(
           step,
           1,
-          1
+          1,
         );
 
         expect(result.success).toBe(true);
         expect(result.recordsDeleted).toBe(15);
         expect(query).toHaveBeenCalledWith(
           expect.stringContaining("DELETE u FROM users u"),
-          [1]
+          [1],
         );
       });
     });
@@ -425,19 +425,19 @@ describe("TenantDeletionService", () => {
         (fs.rm as jest.Mock).mockResolvedValue(undefined);
 
         const step = (tenantDeletionService as any).deletionSteps.find(
-          (s: any) => s.name === "cleanupFilesystem"
+          (s: any) => s.name === "cleanupFilesystem",
         );
 
         const result = await (tenantDeletionService as any).executeStep(
           step,
           1,
-          1
+          1,
         );
 
         expect(result.success).toBe(true);
         expect(fs.rm).toHaveBeenCalledWith(
           expect.stringContaining("/uploads/tenants/1"),
-          { recursive: true, force: true }
+          { recursive: true, force: true },
         );
       });
 
@@ -445,13 +445,13 @@ describe("TenantDeletionService", () => {
         (fs.rm as jest.Mock).mockRejectedValue({ code: "ENOENT" });
 
         const step = (tenantDeletionService as any).deletionSteps.find(
-          (s: any) => s.name === "cleanupFilesystem"
+          (s: any) => s.name === "cleanupFilesystem",
         );
 
         const result = await (tenantDeletionService as any).executeStep(
           step,
           1,
-          1
+          1,
         );
 
         expect(result.success).toBe(true);
@@ -468,14 +468,14 @@ describe("TenantDeletionService", () => {
       const result = await tenantDeletionService.markTenantForDeletion(
         1,
         100,
-        "Test"
+        "Test",
       );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Database connection lost");
       expect(logger.error).toHaveBeenCalledWith(
         "Error marking tenant for deletion:",
-        dbError
+        dbError,
       );
     });
 
@@ -509,7 +509,7 @@ describe("TenantDeletionService", () => {
 
       // Should still mark as completed if only non-critical steps failed
       expect(logger.warn).toHaveBeenCalledWith(
-        expect.stringContaining("Non-critical step failed")
+        expect.stringContaining("Non-critical step failed"),
       );
     });
   });
@@ -529,19 +529,19 @@ describe("TenantDeletionService", () => {
         .mockResolvedValueOnce({ insertId: 1 }); // Insert rollback
 
       const step = (tenantDeletionService as any).deletionSteps.find(
-        (s: any) => s.name === "createRollbackInfo"
+        (s: any) => s.name === "createRollbackInfo",
       );
 
       const result = await (tenantDeletionService as any).executeStep(
         step,
         1,
-        1
+        1,
       );
 
       expect(result.success).toBe(true);
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO tenant_deletion_rollback"),
-        expect.arrayContaining([1, expect.any(String)])
+        expect.arrayContaining([1, expect.any(String)]),
       );
     });
   });

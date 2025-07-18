@@ -4,6 +4,7 @@
  */
 
 import { Request, Response } from "express";
+
 import availabilityService from "../services/availability.service";
 import { AuthenticatedRequest } from "../types/request.types";
 
@@ -86,7 +87,7 @@ class AvailabilityController {
       const summary = await availabilityService.getAvailabilitySummary(
         tenantId,
         start_date as string,
-        end_date as string
+        end_date as string,
       );
       res.json({ summary });
     } catch (error) {

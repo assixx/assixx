@@ -78,7 +78,7 @@ describe("Blackboard Model", () => {
           "high",
           "red",
           1,
-        ]
+        ],
       );
     });
 
@@ -126,7 +126,7 @@ describe("Blackboard Model", () => {
 
       expect(executeQuery).toHaveBeenCalledWith(
         expect.any(String),
-        expect.arrayContaining([1, "Team Meeting", "Weekly sync", "team", 10])
+        expect.arrayContaining([1, "Team Meeting", "Weekly sync", "team", 10]),
       );
     });
 
@@ -138,7 +138,7 @@ describe("Blackboard Model", () => {
       } as any;
 
       await expect(Blackboard.createEntry(invalidData)).rejects.toThrow(
-        "Missing required fields"
+        "Missing required fields",
       );
     });
 
@@ -153,7 +153,7 @@ describe("Blackboard Model", () => {
       };
 
       await expect(Blackboard.createEntry(invalidData)).rejects.toThrow(
-        "org_id is required for department or team level entries"
+        "org_id is required for department or team level entries",
       );
     });
 
@@ -179,7 +179,7 @@ describe("Blackboard Model", () => {
       expect(Blackboard.addTagsToEntry).toHaveBeenCalledWith(
         126,
         ["tag1", "tag2", "tag3"],
-        1
+        1,
       );
     });
 
@@ -213,7 +213,7 @@ describe("Blackboard Model", () => {
           "normal", // priority default
           "blue", // color default
           0, // requires_confirmation default (false)
-        ])
+        ]),
       );
     });
   });
@@ -420,7 +420,7 @@ describe("Blackboard Model", () => {
       expect(result).toBe(true);
       expect(executeQuery).toHaveBeenCalledWith(
         "DELETE FROM blackboard_entries WHERE id = ? AND tenant_id = ?",
-        [1, 1]
+        [1, 1],
       );
     });
 
@@ -445,7 +445,7 @@ describe("Blackboard Model", () => {
       expect(result).toBe(true);
       expect(executeQuery).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO blackboard_confirmations"),
-        [1, 1]
+        [1, 1],
       );
     });
 
@@ -476,11 +476,11 @@ describe("Blackboard Model", () => {
       (executeQuery as jest.Mock).mockRejectedValue(dbError);
 
       await expect(Blackboard.getAllEntries(1, 1)).rejects.toThrow(
-        "Database connection lost"
+        "Database connection lost",
       );
       expect(logger.error).toHaveBeenCalledWith(
         "Error in getAllEntries:",
-        dbError
+        dbError,
       );
     });
   });

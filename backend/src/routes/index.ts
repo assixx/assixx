@@ -7,35 +7,38 @@ import express, { Router, Request, Response } from "express";
 
 const router: Router = express.Router();
 
-// Import all route modules
-import authRoutes from "./auth.routes";
 import adminRoutes from "./admin";
+import adminPermissionsRoutes from "./admin-permissions.js";
+import areaRoutes from "./areas";
+import authRoutes from "./auth.routes";
+import availabilityRoutes from "./availability";
 import blackboardRoutes from "./blackboard";
-import signupRoutes from "./signup";
-
-// Import remaining routes (now ES modules)
-import userRoutes from "./users";
-import userProfileRoutes from "./user";
-import documentRoutes from "./documents";
 import calendarRoutes from "./calendar";
 import chatRoutes from "./chat";
-import kvpRoutes from "./kvp";
-import shiftRoutes from "./shifts";
-import surveyRoutes from "./surveys";
-import featureRoutes from "./features";
-import departmentRoutes from "./departments";
-import teamRoutes from "./teams";
-import rootRoutes from "./root";
-import employeeRoutes from "./employee";
-import machineRoutes from "./machines";
-import areaRoutes from "./areas";
-import planRoutes from "./plans";
-import availabilityRoutes from "./availability";
-import adminPermissionsRoutes from "./admin-permissions.js";
 import departmentGroupsRoutes from "./department-groups.js";
+import departmentRoutes from "./departments";
+import documentRoutes from "./documents";
+import employeeRoutes from "./employee";
+import featureRoutes from "./features";
+import kvpRoutes from "./kvp";
 import logsRoutes from "./logs.js";
+import machineRoutes from "./machines";
+import planRoutes from "./plans";
+import rootRoutes from "./root";
+import shiftRoutes from "./shifts";
+import signupRoutes from "./signup";
+import surveyRoutes from "./surveys";
+import teamRoutes from "./teams";
 import unsubscribeRoutes from "./unsubscribe";
+import userProfileRoutes from "./user";
+import userRoutes from "./users";
+/**
+ * Central Route Registry
+ * All API routes are registered here
+ */
 
+// Import all route modules
+// Import remaining routes (now ES modules)
 // API Version prefix
 const API_PREFIX = "/api";
 

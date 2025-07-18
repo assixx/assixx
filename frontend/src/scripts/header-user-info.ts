@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, parseJwt } from './auth';
 
 /**
@@ -44,7 +45,7 @@ async function loadHeaderUserInfo(): Promise<void> {
 
       // Update with full name
       if (userNameElement && (user.first_name || user.last_name)) {
-        const fullName = `${user.first_name ?? ''} ${user.last_name || ''}`.trim();
+        const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
         userNameElement.textContent = fullName ?? (user.username || payload.username);
       }
 
@@ -72,7 +73,7 @@ async function loadHeaderUserInfo(): Promise<void> {
 
       // Load department badge for admins
       if (payload.role === 'admin') {
-        loadDepartmentBadge();
+        void loadDepartmentBadge();
       }
     }
   } catch (error) {
@@ -140,7 +141,7 @@ async function loadDepartmentBadge(): Promise<void> {
 
 // Automatically execute when page loads
 document.addEventListener('DOMContentLoaded', () => {
-  loadHeaderUserInfo();
+  void loadHeaderUserInfo();
 });
 
 // Export function for manual calls

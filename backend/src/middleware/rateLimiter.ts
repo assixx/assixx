@@ -3,14 +3,15 @@
  * Provides different rate limiting strategies for various endpoint types
  */
 
-import rateLimit from "express-rate-limit";
 import { Request } from "express";
+import rateLimit from "express-rate-limit";
+
+import { isAuthenticated } from "../types/middleware.types";
 import {
   RateLimiterMiddleware,
   RateLimiterType,
   RateLimitMiddleware,
 } from "../types/security.types";
-import { isAuthenticated } from "../types/middleware.types";
 
 // Rate limiter configurations
 const rateLimiterConfigs = {
@@ -121,7 +122,7 @@ const rateLimiters = Object.entries(rateLimiterConfigs).reduce(
     ...acc,
     [type]: rateLimit(config),
   }),
-  {} as Record<RateLimiterType, RateLimitMiddleware>
+  {} as Record<RateLimiterType, RateLimitMiddleware>,
 );
 
 // TODO: Implement advanced rate limiting with redis store
@@ -138,7 +139,7 @@ export const rateLimiter: RateLimiterMiddleware = Object.assign(
     api: rateLimiters[RateLimiterType.API],
     upload: rateLimiters[RateLimiterType.UPLOAD],
     download: rateLimiters[RateLimiterType.DOWNLOAD],
-  }
+  },
 );
 
 // TODO: Implement brute force protection with redis store

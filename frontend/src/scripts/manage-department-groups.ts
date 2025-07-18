@@ -157,7 +157,7 @@
     </div>
 
     <div class="detail-section">
-      <h4>Zugeordnete Abteilungen (${group.departments?.length || 0})</h4>
+      <h4>Zugeordnete Abteilungen (${group.departments?.length ?? 0})</h4>
       <div>
         ${
           group.departments && group.departments.length > 0
@@ -244,7 +244,7 @@
 
     // Update selects
     updateParentGroupSelect(groupId);
-    updateDepartmentChecklist(group.departments?.map((d) => d.id) || []);
+    updateDepartmentChecklist(group.departments?.map((d) => d.id) ?? []);
 
     document.getElementById('createGroupModal')?.classList.add('active');
   };
@@ -299,44 +299,46 @@
   };
 
   // Form submit
-  document.getElementById('createGroupForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  document.getElementById('createGroupForm')?.addEventListener('submit', (e) => {
+    void (async () => {
+      e.preventDefault();
 
-    const formData = {
-      name: (document.getElementById('groupName') as HTMLInputElement).value,
-      description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
-      parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value ?? null,
-      departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
-        parseInt((cb as HTMLInputElement).value),
-      ),
-    };
+      const formData = {
+        name: (document.getElementById('groupName') as HTMLInputElement).value,
+        description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
+        parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value ?? null,
+        departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
+          parseInt((cb as HTMLInputElement).value),
+        ),
+      };
 
-    try {
-      const url = editingGroupId ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
+      try {
+        const url = editingGroupId ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
 
-      const method = editingGroupId ? 'PUT' : 'POST';
+        const method = editingGroupId ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+        const response = await fetch(url, {
+          method,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
 
-      if (response.ok) {
-        showSuccess(editingGroupId ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
-        closeModal();
-        await loadGroups();
-      } else {
-        const error = await response.json();
-        showError(error.error || 'Fehler beim Speichern');
+        if (response.ok) {
+          showSuccess(editingGroupId ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
+          closeModal();
+          await loadGroups();
+        } else {
+          const error = await response.json();
+          showError(error.error ?? 'Fehler beim Speichern');
+        }
+      } catch (error) {
+        console.error('Error saving group:', error);
+        showError('Netzwerkfehler beim Speichern');
       }
-    } catch (error) {
-      console.error('Error saving group:', error);
-      showError('Netzwerkfehler beim Speichern');
-    }
+    })();
   });
 
   // Delete group
@@ -374,7 +376,7 @@
         }
       } else {
         const error = await response.json();
-        showError(error.error || 'Fehler beim Löschen');
+        showError(error.error ?? 'Fehler beim Löschen');
       }
     } catch (error) {
       console.error('Error deleting group:', error);
@@ -398,9 +400,11 @@
   }
 
   // Initialize
-  document.addEventListener('DOMContentLoaded', async () => {
-    await loadDepartments();
-    await loadGroups();
+  document.addEventListener('DOMContentLoaded', () => {
+    void (async () => {
+      await loadDepartments();
+      await loadGroups();
+    })();
   });
 
   // Close modal on outside click

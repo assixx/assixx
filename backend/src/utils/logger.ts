@@ -3,9 +3,10 @@
  * Winston-based logging system with file rotation and console output
  */
 
-import winston from "winston";
 import path from "path";
 import { fileURLToPath } from "url";
+
+import winston from "winston";
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -50,7 +51,7 @@ const customFormat = winston.format.printf(
       msg += ` ${JSON.stringify(metadata)}`;
     }
     return msg;
-  }
+  },
 );
 
 // Logger configuration interface
@@ -68,7 +69,7 @@ const logger: winston.Logger = winston.createLogger({
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
-    customFormat
+    customFormat,
   ),
   defaultMeta: { service: "assixx-backend" } as LogMetadata,
   transports: [
@@ -94,9 +95,9 @@ if (process.env.NODE_ENV !== "production") {
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.simple()
+        winston.format.simple(),
       ),
-    })
+    }),
   );
 }
 

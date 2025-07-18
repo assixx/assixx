@@ -7,9 +7,11 @@
  *   description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess)
  */
 
+import path from "path";
+
 import express, { Router } from "express";
 import multer from "multer";
-import path from "path";
+
 import { authenticateToken } from "../auth.js";
 import kvpController from "../controllers/kvp.controller.js";
 import { sanitizeFilename, getUploadDirectory } from "../utils/pathSecurity";
@@ -456,11 +458,11 @@ router.get("/:id/attachments", kvpController.getAttachments);
 router.post(
   "/:id/attachments",
   upload.array("photos", 5),
-  kvpController.uploadAttachment as unknown as express.RequestHandler // Multer adds files to request
+  kvpController.uploadAttachment as unknown as express.RequestHandler, // Multer adds files to request
 ); // Max 5 photos
 router.get(
   "/attachments/:attachmentId/download",
-  kvpController.downloadAttachment
+  kvpController.downloadAttachment,
 );
 
 export default router;

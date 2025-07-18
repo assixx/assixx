@@ -34,30 +34,32 @@ const positionMap: PositionMap = {
 };
 
 // Initialize on DOM load
-document.addEventListener('DOMContentLoaded', async () => {
-  console.info('Admin profile script loaded');
+document.addEventListener('DOMContentLoaded', () => {
+  void (async () => {
+    console.info('Admin profile script loaded');
 
-  // Check authentication
-  const token = getAuthToken();
-  const userRole = localStorage.getItem('userRole');
+    // Check authentication
+    const token = getAuthToken();
+    const userRole = localStorage.getItem('userRole');
 
-  if (!token || userRole !== 'admin') {
-    window.location.href = '/login';
-    return;
-  }
+    if (!token || userRole !== 'admin') {
+      window.location.href = '/login';
+      return;
+    }
 
-  // Set initial placeholder
-  const display = document.getElementById('profile-picture-display') as HTMLElement;
-  if (display && !display.innerHTML.trim()) {
-    display.innerHTML = '...';
-  }
+    // Set initial placeholder
+    const display = document.getElementById('profile-picture-display') as HTMLElement;
+    if (display && !display.innerHTML.trim()) {
+      display.innerHTML = '...';
+    }
 
-  // Load user profile
-  await loadUserProfile();
+    // Load user profile
+    await loadUserProfile();
 
-  // Setup form handlers
-  setupFormHandlers();
-  setupProfilePictureHandlers();
+    // Setup form handlers
+    setupFormHandlers();
+    setupProfilePictureHandlers();
+  })();
 });
 
 /**
@@ -74,16 +76,16 @@ async function loadUserProfile(): Promise<void> {
 
     if (response.ok) {
       const data = await response.json();
-      const profile = data.data ?? (data.user || data);
+      const profile = data.data ?? data.user ?? data;
 
       populateProfileForm(profile);
 
       // Try different possible field names for profile picture
       const pictureUrl =
-        profile.profile_picture_url ||
-        profile.profilePictureUrl ||
-        profile.profile_picture ||
-        profile.avatar ||
+        profile.profile_picture_url ??
+        profile.profilePictureUrl ??
+        profile.profile_picture ??
+        profile.avatar ??
         profile.picture;
 
       updateProfilePicture(pictureUrl, profile.first_name, profile.last_name);
@@ -163,8 +165,8 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
  * Show initials in the profile picture display
  */
 function showInitials(display: HTMLElement, firstName?: string, lastName?: string): void {
-  const firstInitial = (firstName || '').charAt(0).toUpperCase() || '';
-  const lastInitial = (lastName || '').charAt(0).toUpperCase() || '';
+  const firstInitial = (firstName ?? '').charAt(0).toUpperCase() || '';
+  const lastInitial = (lastName ?? '').charAt(0).toUpperCase() || '';
   const initials = `${firstInitial}${lastInitial}` || 'U';
 
   display.classList.add('avatar-initials');
@@ -177,27 +179,29 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
 function setupFormHandlers(): void {
   // Profile form
   const profileForm = document.getElementById('profile-form') as HTMLFormElement;
-  profileForm.addEventListener('submit', handleProfileUpdate);
+  profileForm.addEventListener('submit', (e) => void handleProfileUpdate(e));
 
   // Password form
   const passwordForm = document.getElementById('password-form') as HTMLFormElement;
-  passwordForm.addEventListener('submit', handlePasswordChange);
+  passwordForm.addEventListener('submit', (e) => void handlePasswordChange(e));
 
   // Logout button
   const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      try {
-        // Import and use the logout function from auth module
-        const { logout } = await import('./auth.js');
-        await logout();
-      } catch (error) {
-        console.error('Logout error:', error);
-        // Fallback
-        window.location.href = '/login';
+  logoutBtn?.addEventListener('click', (e) => {
+    void (async () => {
+      e.preventDefault();
+      if (confirm('Möchten Sie sich wirklich abmelden?')) {
+        try {
+          // Import and use the logout function from auth module
+          const { logout } = await import('./auth.js');
+          await logout();
+        } catch (error) {
+          console.error('Logout error:', error);
+          // Fallback
+          window.location.href = '/login';
+        }
       }
-    }
+    })();
   });
 }
 
@@ -209,25 +213,29 @@ function setupProfilePictureHandlers(): void {
   const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement;
 
   // File upload
-  fileInput.addEventListener('change', async (event) => {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
+  fileInput.addEventListener('change', (e) => {
+    void (async () => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
 
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showMessage('Datei zu groß (max. 5MB)', 'error');
-        return;
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          showMessage('Datei zu groß (max. 5MB)', 'error');
+          return;
+        }
+
+        await uploadProfilePicture(file);
       }
-
-      await uploadProfilePicture(file);
-    }
+    })();
   });
 
   // Remove picture
-  removeBtn.addEventListener('click', async () => {
-    if (confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) {
-      await removeProfilePicture();
-    }
+  removeBtn.addEventListener('click', () => {
+    void (async () => {
+      if (confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) {
+        await removeProfilePicture();
+      }
+    })();
   });
 }
 
@@ -263,7 +271,7 @@ async function handleProfileUpdate(event: Event): Promise<void> {
       setTimeout(() => window.location.reload(), 1500);
     } else {
       const error = await response.json();
-      showMessage(error.message || 'Fehler beim Aktualisieren des Profils', 'error');
+      showMessage(error.message ?? 'Fehler beim Aktualisieren des Profils', 'error');
     }
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -314,7 +322,7 @@ async function handlePasswordChange(event: Event): Promise<void> {
       form.reset();
     } else {
       const error = await response.json();
-      showMessage(error.message || 'Fehler beim Ändern des Passworts', 'error');
+      showMessage(error.message ?? 'Fehler beim Ändern des Passworts', 'error');
     }
   } catch (error) {
     console.error('Error changing password:', error);
@@ -343,14 +351,19 @@ async function uploadProfilePicture(file: File): Promise<void> {
       const result = await response.json();
       // Check different possible response formats
       const pictureUrl =
-        result.profilePictureUrl || result.profile_picture_url || result.url || result.data?.profile_picture_url;
-      updateProfilePicture(pictureUrl, profile.first_name, profile.last_name);
+        result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
+      // Get current name values for initials
+      const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
+      const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+      updateProfilePicture(pictureUrl, firstName, lastName);
       showMessage('Profilbild erfolgreich hochgeladen', 'success');
       // Reload profile to ensure we have the latest data
-      setTimeout(() => loadUserProfile(), 500);
+      setTimeout(() => {
+        void loadUserProfile();
+      }, 500);
     } else {
       const error = await response.json();
-      showMessage(error.message || 'Fehler beim Hochladen des Profilbilds', 'error');
+      showMessage(error.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
     }
   } catch (error) {
     console.error('Error uploading profile picture:', error);
@@ -379,7 +392,7 @@ async function removeProfilePicture(): Promise<void> {
       showMessage('Profilbild erfolgreich entfernt', 'success');
     } else {
       const error = await response.json();
-      showMessage(error.message || 'Fehler beim Entfernen des Profilbilds', 'error');
+      showMessage(error.message ?? 'Fehler beim Entfernen des Profilbilds', 'error');
     }
   } catch (error) {
     console.error('Error removing profile picture:', error);

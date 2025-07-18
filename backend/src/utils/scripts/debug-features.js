@@ -94,7 +94,7 @@ async function debugFeatures() {
             feature.description,
             feature.base_price,
             feature.is_active,
-          ]
+          ],
         );
         console.log(`Inserted: ${feature.code}`);
       }
@@ -102,7 +102,7 @@ async function debugFeatures() {
 
     // Check tenants
     const [tenants] = await db.query(
-      "SELECT id, subdomain, company_name FROM tenants"
+      "SELECT id, subdomain, company_name FROM tenants",
     );
     console.log(`\n\nTenants count: ${tenants.length}`);
     if (tenants.length > 0) {

@@ -209,7 +209,7 @@ class ModalManager {
               : ''
           }
           <div class="modal-body">
-            ${config.content || ''}
+            ${config.content ?? ''}
           </div>
         </div>
       </div>
@@ -231,7 +231,7 @@ class ModalManager {
       // Close button clicked
       if (target.matches('[data-action="close"]') ?? target.closest('[data-action="close"]')) {
         const modal = target.closest('.modal-overlay') as HTMLElement;
-        if (modal && modal.id) {
+        if (modal?.id) {
           this.hide(modal.id);
         }
       }

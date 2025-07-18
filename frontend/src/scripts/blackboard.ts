@@ -4,9 +4,10 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError } from './auth';
-import { closeModal as dashboardCloseModal } from './dashboard-scripts';
 import { escapeHtml } from './common';
+import { closeModal as dashboardCloseModal } from './dashboard-scripts';
 
 /**
  * Escapes a string for safe use in JavaScript string literals
@@ -209,7 +210,7 @@ function initializeBlackboard() {
           }
 
           // Load departments and teams for form dropdowns
-          loadDepartmentsAndTeams();
+          void loadDepartmentsAndTeams();
         } catch (error) {
           console.error('[Blackboard] Error parsing stored user data:', error);
           // Fallback: fetch user data if localStorage is corrupted
@@ -229,7 +230,7 @@ function initializeBlackboard() {
               } else {
                 console.log('[Blackboard] newEntryBtn not found after API call!');
               }
-              loadDepartmentsAndTeams();
+              void loadDepartmentsAndTeams();
             })
             .catch((error) => {
               console.error('[Blackboard] Error loading user data:', error);
@@ -257,7 +258,7 @@ function initializeBlackboard() {
             } else {
               console.log('[Blackboard] No localStorage - newEntryBtn not found!');
             }
-            loadDepartmentsAndTeams();
+            void loadDepartmentsAndTeams();
           })
           .catch((error) => {
             console.error('[Blackboard] Error loading user data:', error);
@@ -267,7 +268,7 @@ function initializeBlackboard() {
 
       // Always load entries on page load
       entriesLoadingEnabled = true;
-      loadEntries().then(() => {
+      void loadEntries().then(() => {
         // Check if we have an entry parameter in the URL
         const urlParams = new URLSearchParams(window.location.search);
         const entryId = urlParams.get('entry');
@@ -297,7 +298,7 @@ function initializeBlackboard() {
       if (retryLoadBtn) {
         retryLoadBtn.addEventListener('click', () => {
           entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
-          loadEntries();
+          void loadEntries();
         });
       }
 
@@ -363,7 +364,7 @@ function setupEventListeners(): void {
 
       // Nur laden, wenn es aktiviert wurde
       if (entriesLoadingEnabled) {
-        loadEntries();
+        void loadEntries();
       }
     });
   });
@@ -376,7 +377,7 @@ function setupEventListeners(): void {
 
       // Nur laden, wenn es aktiviert wurde
       if (entriesLoadingEnabled) {
-        loadEntries();
+        void loadEntries();
       }
     });
   } else {
@@ -394,7 +395,7 @@ function setupEventListeners(): void {
 
       // Nur laden, wenn es aktiviert wurde
       if (entriesLoadingEnabled) {
-        loadEntries();
+        void loadEntries();
       }
     });
 
@@ -405,7 +406,7 @@ function setupEventListeners(): void {
 
         // Nur laden, wenn es aktiviert wurde
         if (entriesLoadingEnabled) {
-          loadEntries();
+          void loadEntries();
         }
       }
     });
@@ -437,7 +438,7 @@ function setupEventListeners(): void {
   const saveEntryBtn = document.getElementById('saveEntryBtn') as HTMLButtonElement | null;
   if (saveEntryBtn) {
     saveEntryBtn.addEventListener('click', () => {
-      saveEntry();
+      void saveEntry();
     });
   } else {
     console.error('Save entry button not found');
@@ -490,7 +491,7 @@ function setupFileUploadHandlers(): void {
   // File input change
   fileInput.addEventListener('change', (event) => {
     const target = event.target as HTMLInputElement | null;
-    if (target && target.files) {
+    if (target?.files) {
       handleFileSelection(Array.from(target.files));
     }
   });
@@ -1048,7 +1049,7 @@ function updatePagination(pagination: PaginationInfo): void {
 function changePage(page: number): void {
   currentPage = page;
   entriesLoadingEnabled = true;
-  loadEntries();
+  void loadEntries();
 }
 
 /**
@@ -1078,7 +1079,7 @@ function openEntryForm(entryId?: number): void {
 
   if (entryId) {
     // Load entry data for editing
-    loadEntryForEdit(entryId);
+    void loadEntryForEdit(entryId);
   } else {
     // New entry - reset org dropdown
     updateOrgIdDropdown('all');
@@ -1186,10 +1187,10 @@ async function saveEntry(): Promise<void> {
       updateAttachmentPreview();
 
       entriesLoadingEnabled = true;
-      loadEntries();
+      void loadEntries();
     } else {
       const error = await response.json();
-      showError(error.message || 'Fehler beim Speichern des Eintrags');
+      showError(error.message ?? 'Fehler beim Speichern des Eintrags');
     }
   } catch (error) {
     console.error('Error saving entry:', error);
@@ -1272,7 +1273,7 @@ async function uploadAttachments(entryId: number): Promise<void> {
 
     if (!response.ok) {
       const error = await response.json();
-      showError(error.message || 'Fehler beim Hochladen der Anhänge');
+      showError(error.message ?? 'Fehler beim Hochladen der Anhänge');
     }
   } catch (error) {
     console.error('Error uploading attachments:', error);
@@ -1326,10 +1327,10 @@ async function deleteEntry(entryId: number): Promise<void> {
     if (response.ok) {
       showSuccess('Eintrag erfolgreich gelöscht!');
       entriesLoadingEnabled = true;
-      loadEntries();
+      void loadEntries();
     } else {
       const error = await response.json();
-      showError(error.message || 'Fehler beim Löschen des Eintrags');
+      showError(error.message ?? 'Fehler beim Löschen des Eintrags');
     }
   } catch (error) {
     console.error('Error deleting entry:', error);
@@ -1386,7 +1387,7 @@ async function viewEntry(entryId: number): Promise<void> {
           <div class="entry-detail-header">
             <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
             <div class="entry-detail-meta">
-              <span><i class="fas fa-user"></i> ${escapeHtml(entry.author_full_name ?? (entry.author_name || 'Unknown'))}</span>
+              <span><i class="fas fa-user"></i> ${escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown')}</span>
               <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
             </div>
           </div>
@@ -1510,10 +1511,10 @@ async function viewEntry(entryId: number): Promise<void> {
               // Call preview function
               if (typeof window.previewAttachment === 'function') {
                 console.log('[Blackboard] Calling window.previewAttachment');
-                window.previewAttachment(attachmentId, mimeType, filename);
+                void window.previewAttachment(attachmentId, mimeType, filename);
               } else if (typeof previewAttachment === 'function') {
                 console.log('[Blackboard] Calling previewAttachment directly');
-                previewAttachment(attachmentId, mimeType, filename);
+                void previewAttachment(attachmentId, mimeType, filename);
               } else {
                 console.error('[Blackboard] previewAttachment function not found!');
               }
@@ -1940,7 +1941,7 @@ function setupDirectAttachHandlers(): void {
   directAttachHandlers.fileInputChange = (event: Event) => {
     const target = event.target as HTMLInputElement | null;
     console.log('[DirectAttach] File input changed:', target?.files?.length);
-    if (target && target.files && target.files[0]) {
+    if (target?.files?.[0]) {
       handleDirectAttachFile(target.files[0]);
     }
   };
@@ -2071,7 +2072,7 @@ function clearDirectAttachment(): void {
  */
 async function saveDirectAttachment(): Promise<void> {
   console.log('[DirectAttach] saveDirectAttachment called');
-  console.log('[DirectAttach] Global file:', directAttachmentFile?.name || 'none');
+  console.log('[DirectAttach] Global file:', directAttachmentFile?.name ?? 'none');
 
   const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
   const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement | null;
@@ -2100,9 +2101,9 @@ async function saveDirectAttachment(): Promise<void> {
   const formData = new FormData();
   formData.append('title', title);
   formData.append('content', `[Attachment:${size}]`); // Special content format
-  formData.append('org_level', orgLevelSelect?.value || 'company');
+  formData.append('org_level', orgLevelSelect?.value ?? 'company');
   formData.append('org_id', '1'); // TODO: Get actual org_id based on level
-  formData.append('priority_level', prioritySelect?.value || 'normal');
+  formData.append('priority_level', prioritySelect?.value ?? 'normal');
   formData.append('color', 'white'); // White background for images
   formData.append('tags', 'attachment,image');
   formData.append('attachment', file);
@@ -2124,7 +2125,7 @@ async function saveDirectAttachment(): Promise<void> {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Fehler beim Speichern');
+      throw new Error(error.message ?? 'Fehler beim Speichern');
     }
 
     showSuccess('Datei erfolgreich angeheftet!');
@@ -2145,7 +2146,7 @@ async function saveDirectAttachment(): Promise<void> {
 
     // Reload entries
     entriesLoadingEnabled = true;
-    loadEntries();
+    void loadEntries();
   } catch (error) {
     console.error('Error saving direct attachment:', error);
     showError(error instanceof Error ? error.message : 'Fehler beim Speichern');
@@ -2203,49 +2204,51 @@ function setupFullscreenControls(): void {
   }
 
   // Enter fullscreen
-  fullscreenBtn.addEventListener('click', async () => {
-    try {
-      // Add fullscreen mode class to body
-      document.body.classList.add('fullscreen-mode');
+  fullscreenBtn.addEventListener('click', (_e) => {
+    void (async () => {
+      try {
+        // Add fullscreen mode class to body
+        document.body.classList.add('fullscreen-mode');
 
-      // Request fullscreen
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
-      } else if (
-        (document.documentElement as Document['documentElement'] & { webkitRequestFullscreen?: () => Promise<void> })
-          .webkitRequestFullscreen
-      ) {
-        const elem = document.documentElement as Document['documentElement'] & {
-          webkitRequestFullscreen?: () => Promise<void>;
-        };
-        if (elem.webkitRequestFullscreen) {
-          await elem.webkitRequestFullscreen();
+        // Request fullscreen
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (
+          (document.documentElement as Document['documentElement'] & { webkitRequestFullscreen?: () => Promise<void> })
+            .webkitRequestFullscreen
+        ) {
+          const elem = document.documentElement as Document['documentElement'] & {
+            webkitRequestFullscreen?: () => Promise<void>;
+          };
+          if (elem.webkitRequestFullscreen) {
+            await elem.webkitRequestFullscreen();
+          }
+        } else if (
+          (document.documentElement as Document['documentElement'] & { msRequestFullscreen?: () => Promise<void> })
+            .msRequestFullscreen
+        ) {
+          const elem = document.documentElement as Document['documentElement'] & {
+            msRequestFullscreen?: () => Promise<void>;
+          };
+          if (elem.msRequestFullscreen) {
+            await elem.msRequestFullscreen();
+          }
         }
-      } else if (
-        (document.documentElement as Document['documentElement'] & { msRequestFullscreen?: () => Promise<void> })
-          .msRequestFullscreen
-      ) {
-        const elem = document.documentElement as Document['documentElement'] & {
-          msRequestFullscreen?: () => Promise<void>;
-        };
-        if (elem.msRequestFullscreen) {
-          await elem.msRequestFullscreen();
+
+        // Start auto-refresh (every 60 minutes)
+        startAutoRefresh();
+
+        // Update button icon
+        const icon = fullscreenBtn.querySelector('i');
+        if (icon) {
+          icon.classList.remove('fa-expand');
+          icon.classList.add('fa-compress');
         }
+      } catch (error) {
+        console.error('[Fullscreen] Error entering fullscreen:', error);
+        document.body.classList.remove('fullscreen-mode');
       }
-
-      // Start auto-refresh (every 60 minutes)
-      startAutoRefresh();
-
-      // Update button icon
-      const icon = fullscreenBtn.querySelector('i');
-      if (icon) {
-        icon.classList.remove('fa-expand');
-        icon.classList.add('fa-compress');
-      }
-    } catch (error) {
-      console.error('[Fullscreen] Error entering fullscreen:', error);
-      document.body.classList.remove('fullscreen-mode');
-    }
+    })();
   });
 
   // Exit fullscreen
@@ -2272,9 +2275,9 @@ function setupFullscreenControls(): void {
  */
 function handleFullscreenChange(): void {
   const isFullscreen = !!(
-    document.fullscreenElement ||
-    (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
-    (document as Document & { mozFullScreenElement?: Element }).mozFullScreenElement ||
+    document.fullscreenElement ??
+    (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement ??
+    (document as Document & { mozFullScreenElement?: Element }).mozFullScreenElement ??
     (document as Document & { msFullscreenElement?: Element }).msFullscreenElement
   );
 
@@ -2300,7 +2303,7 @@ function handleFullscreenChange(): void {
  */
 function exitFullscreen(): void {
   if (document.exitFullscreen) {
-    document.exitFullscreen();
+    void document.exitFullscreen();
   } else if ((document as Document & { webkitExitFullscreen?: () => void }).webkitExitFullscreen) {
     const doc = document as Document & { webkitExitFullscreen?: () => void };
     if (doc.webkitExitFullscreen) {
@@ -2328,14 +2331,14 @@ function exitFullscreen(): void {
 function startAutoRefresh(): void {
   // Initial load
   if (entriesLoadingEnabled) {
-    loadEntries();
+    void loadEntries();
   }
 
   // Set up interval for 60 minutes (3600000 ms)
   fullscreenAutoRefreshInterval = setInterval(() => {
     console.log('[AutoRefresh] Reloading entries...');
     if (entriesLoadingEnabled) {
-      loadEntries();
+      void loadEntries();
     }
   }, 3600000); // 60 minutes
 

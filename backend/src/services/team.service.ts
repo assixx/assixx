@@ -3,16 +3,19 @@
  * Handles team-related business logic
  */
 
-import Team from "../models/team";
 import { Pool } from "mysql2/promise";
 
-// Import types from Team model
-import type {
+import Team, {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,
   TeamUpdateData as ModelTeamUpdateData,
 } from "../models/team";
+/**
+ * Team Service
+ * Handles team-related business logic
+ */
 
+// Import types from Team model
 // Service-specific interfaces
 interface TeamData extends DbTeam {
   team_lead_id?: number | null;
@@ -43,7 +46,7 @@ class TeamService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: TeamFilters = {}
+    _filters: TeamFilters = {},
   ): Promise<TeamData[]> {
     try {
       // Get tenant_id from filters or extract from tenantDb
@@ -112,7 +115,7 @@ class TeamService {
   async update(
     tenantDb: Pool,
     id: number,
-    data: TeamUpdateData
+    data: TeamUpdateData,
   ): Promise<TeamData | null> {
     try {
       const modelData: ModelTeamUpdateData = {

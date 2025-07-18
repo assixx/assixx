@@ -1,3 +1,4 @@
+import * as dotenv from "dotenv";
 import * as mysql from "mysql2/promise";
 import {
   PoolOptions,
@@ -5,7 +6,7 @@ import {
   ResultSetHeader,
   FieldPacket,
 } from "mysql2/promise";
-import * as dotenv from "dotenv";
+
 import { DatabasePool, MockDatabase } from "./types/database.types";
 
 dotenv.config();
@@ -134,7 +135,7 @@ if (USE_MOCK_DB) {
         return [[[]], []] as unknown as [T, FieldPacket[]];
       } else if (
         sql.includes(
-          "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?"
+          "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?",
         )
       ) {
         // Mock für findById
@@ -257,7 +258,7 @@ if (USE_MOCK_DB) {
         field.type === "LONG_BLOB"
       ) {
         const value = field.string("utf8");
-        return value === null ? null : value;
+        return value ?? null;
       }
       // Use default handling for all other types
       return next();
@@ -295,13 +296,13 @@ if (USE_MOCK_DB) {
       async getConnection(): Promise<{
         query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
           sql: string,
-          params?: unknown[]
+          params?: unknown[],
         ): Promise<[T, FieldPacket[]]>;
         execute<
           T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
         >(
           sql: string,
-          params?: unknown[]
+          params?: unknown[],
         ): Promise<[T, FieldPacket[]]>;
         beginTransaction(): Promise<void>;
         commit(): Promise<void>;

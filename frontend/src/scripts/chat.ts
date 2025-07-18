@@ -4,10 +4,8 @@
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken } from './auth';
-// import { showSuccess, showError } from './auth';
 
-// Import UnifiedNavigation type
+import { getAuthToken } from './auth';
 import type UnifiedNavigation from './components/unified-navigation';
 
 declare global {
@@ -89,12 +87,12 @@ class ChatClient {
   private typingTimer: NodeJS.Timeout | null;
   private emojiCategories: EmojiCategories;
   private isCreatingConversation: boolean = false;
-
   constructor() {
     this.ws = null;
     this.token = getAuthToken();
     this.currentUser = JSON.parse(localStorage.getItem('user') ?? '{}');
 
+    // Import UnifiedNavigation type
     // Fallback für currentUserId wenn user object nicht komplett ist
     if (!this.currentUser.id && this.token && this.token !== 'test-mode') {
       try {
@@ -1129,7 +1127,7 @@ class ChatClient {
     if (!message.sender && msgWithExtra.sender_id) {
       message.sender = {
         id: msgWithExtra.sender_id,
-        username: msgWithExtra.username ?? (msgWithExtra.sender_name || 'Unknown'),
+        username: msgWithExtra.username ?? msgWithExtra.sender_name ?? 'Unknown',
         first_name: msgWithExtra.first_name,
         last_name: msgWithExtra.last_name,
         profile_picture_url: msgWithExtra.profile_image_url ?? msgWithExtra.profile_picture_url,
@@ -1202,9 +1200,7 @@ class ChatClient {
     const conversation = this.conversations.find((c) => c.id === data.conversationId);
 
     if (conversation) {
-      if (!conversation.typing_users) {
-        conversation.typing_users = [];
-      }
+      conversation.typing_users ??= [];
 
       if (!conversation.typing_users.includes(data.userId)) {
         conversation.typing_users.push(data.userId);
@@ -1276,7 +1272,7 @@ class ChatClient {
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
       if (message) {
-        this.sendMessage(message.content);
+        void this.sendMessage(message.content);
       }
     }
   }
@@ -1343,7 +1339,7 @@ class ChatClient {
 
       // Update the navigation badge
       if (window.unifiedNav) {
-        window.unifiedNav.updateUnreadMessages();
+        void window.unifiedNav.updateUnreadMessages();
       }
     } catch (error) {
       console.error('Error marking conversation as read:', error);
@@ -1843,7 +1839,7 @@ class ChatClient {
       }
 
       const displayName = conversation.is_group
-        ? conversation.name || 'Gruppenchat'
+        ? (conversation.name ?? 'Gruppenchat')
         : this.getConversationDisplayName(conversation);
 
       let lastMessageText = 'Keine Nachrichten';
@@ -1865,7 +1861,7 @@ class ChatClient {
         const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
         if (otherParticipant) {
           if (otherParticipant.profile_picture_url || otherParticipant.profile_image_url) {
-            const imgUrl = otherParticipant.profile_picture_url || otherParticipant.profile_image_url;
+            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url;
             avatarHtml = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName ?? '')}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
           } else if (otherParticipant.first_name || otherParticipant.last_name) {
             const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
@@ -1896,7 +1892,7 @@ class ChatClient {
       `;
 
       item.addEventListener('click', () => {
-        this.selectConversation(conversation.id);
+        void this.selectConversation(conversation.id);
       });
 
       conversationsList.appendChild(item);
@@ -1914,7 +1910,7 @@ class ChatClient {
     if (!conversation) return;
 
     const displayName = conversation.is_group
-      ? conversation.name || 'Gruppenchat'
+      ? (conversation.name ?? 'Gruppenchat')
       : this.getConversationDisplayName(conversation);
 
     // Update name
@@ -1929,7 +1925,7 @@ class ChatClient {
         if (otherParticipant) {
           // Show profile picture if available
           if (otherParticipant.profile_picture_url || otherParticipant.profile_image_url) {
-            const imgUrl = otherParticipant.profile_picture_url || otherParticipant.profile_image_url;
+            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url;
             chatAvatar.innerHTML = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
             chatAvatar.style.display = 'flex';
           } else if (otherParticipant.first_name || otherParticipant.last_name) {
@@ -1980,7 +1976,7 @@ class ChatClient {
       const deleteBtn = document.getElementById('deleteConversationBtn');
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-          this.deleteCurrentConversation();
+          void this.deleteCurrentConversation();
         });
       }
     }
@@ -2002,7 +1998,7 @@ class ChatClient {
       const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
       if (otherParticipant) {
         return (
-          `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username
+          `${otherParticipant.first_name ?? ''} ${otherParticipant.last_name ?? ''}`.trim() || otherParticipant.username
         );
       }
     }
@@ -2036,7 +2032,7 @@ class ChatClient {
     this.resetModalState();
 
     // Load departments
-    this.loadDepartments();
+    void this.loadDepartments();
 
     // Load admins
     this.loadAdmins();
@@ -2180,14 +2176,14 @@ class ChatClient {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
           option.onclick = () => {
-            const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+            const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
             if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
-              window.selectChatDropdownOption('employee', employee.id, name, employee.department || '');
+              window.selectChatDropdownOption('employee', employee.id, name, employee.department ?? '');
             }
           };
           option.innerHTML = `
             <div class="option-info">
-              <div class="option-name">${this.escapeHtml(`${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username)}</div>
+              <div class="option-name">${this.escapeHtml(`${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username)}</div>
               <div class="option-meta">${this.escapeHtml(employee.position ?? 'Mitarbeiter')}</div>
             </div>
           `;
@@ -2211,14 +2207,14 @@ class ChatClient {
         const option = document.createElement('div');
         option.className = 'dropdown-option';
         option.onclick = () => {
-          const name = `${admin.first_name ?? ''} ${admin.last_name || ''}`.trim() || admin.username;
+          const name = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim() || admin.username;
           if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
             window.selectChatDropdownOption('admin', admin.id, name, admin.role);
           }
         };
         option.innerHTML = `
           <div class="option-info">
-            <div class="option-name">${this.escapeHtml(`${admin.first_name ?? ''} ${admin.last_name || ''}`.trim() || admin.username)}</div>
+            <div class="option-name">${this.escapeHtml(`${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim() || admin.username)}</div>
             <div class="option-meta">${this.escapeHtml(admin.role === 'root' ? 'Root Administrator' : 'Administrator')}</div>
           </div>
         `;
@@ -2269,7 +2265,7 @@ class ChatClient {
       const isGroup = false;
       const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement | null;
       const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
-      const requestBody: any = {
+      const requestBody: { participant_ids: number[]; is_group: boolean; name?: string } = {
         participant_ids: [selectedUserId],
         is_group: isGroup,
       };
@@ -2298,10 +2294,10 @@ class ChatClient {
         await this.loadInitialData();
 
         // Select new conversation
-        this.selectConversation(result.id);
+        void this.selectConversation(result.id);
       } else {
         const error = await response.json();
-        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+        throw new Error(error.error ?? `HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error('❌ Error creating conversation:', error);
@@ -2367,7 +2363,7 @@ class ChatClient {
       messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          this.sendMessage();
+          void this.sendMessage();
         }
       });
 
@@ -2383,7 +2379,7 @@ class ChatClient {
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
         console.log('Send button clicked');
-        this.sendMessage();
+        void this.sendMessage();
       });
     } else {
       console.warn('Send button not found');
@@ -2463,7 +2459,7 @@ class ChatClient {
     const createConvBtn = document.getElementById('createConversationBtn');
     if (createConvBtn) {
       createConvBtn.addEventListener('click', () => {
-        this.createConversation();
+        void this.createConversation();
       });
     }
 
@@ -2490,7 +2486,7 @@ class ChatClient {
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
           console.log('Delete button clicked');
-          this.deleteCurrentConversation();
+          void this.deleteCurrentConversation();
         });
       }
     }
@@ -2630,7 +2626,7 @@ class ChatClient {
         notification.close();
       };
     } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission();
+      void Notification.requestPermission();
     }
   }
 
@@ -2722,10 +2718,10 @@ class ChatClient {
       type: (data.type ?? 'text') as 'text' | 'file' | 'system',
       attachments: data.attachments ?? [],
       sender:
-        data.sender ||
+        data.sender ??
         ({
           id: data.sender_id,
-          username: data.username ?? (data.sender_name || 'Unknown'),
+          username: data.username ?? data.sender_name ?? 'Unknown',
           first_name: data.first_name,
           last_name: data.last_name,
           email: '',
@@ -2803,7 +2799,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatClient = new ChatClient();
 
     // Initialize the chat client
-    chatClient.init();
+    void chatClient.init();
 
     // Export to window for backwards compatibility
     if (typeof window !== 'undefined') {

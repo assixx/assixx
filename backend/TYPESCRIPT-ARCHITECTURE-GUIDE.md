@@ -44,7 +44,7 @@ router.get(
   typed.auth(async (req, res) => {
     // req is AuthenticatedRequest
     // req.user is fully typed
-  })
+  }),
 );
 
 // For routes with params
@@ -53,7 +53,7 @@ router.get(
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
     const userId = req.params.id; // typed as string
-  })
+  }),
 );
 
 // For routes with body
@@ -62,7 +62,7 @@ router.post(
   ...security.admin(validateCreateUser),
   typed.body<CreateUserBody>(async (req, res) => {
     const { email, password } = req.body; // fully typed
-  })
+  }),
 );
 ```
 
@@ -124,7 +124,7 @@ router.post(
     } catch (error) {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 ```
 
@@ -133,22 +133,35 @@ router.post(
 **IMPORTANT**: Due to TypeScript union type issues between mysql2 Pool and MockDatabase, always use the centralized database utilities from `/src/utils/db.ts`:
 
 ```typescript
-import { execute, query, getConnection, transaction, RowDataPacket, ResultSetHeader } from "../utils/db";
+import {
+  execute,
+  query,
+  getConnection,
+  transaction,
+  RowDataPacket,
+  ResultSetHeader,
+} from "../utils/db";
 
 // SELECT queries - use execute or query
-const [rows] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE id = ?", [userId]);
+const [rows] = await execute<RowDataPacket[]>(
+  "SELECT * FROM users WHERE id = ?",
+  [userId],
+);
 
 // INSERT/UPDATE/DELETE queries
-const [result] = await execute<ResultSetHeader>("INSERT INTO users (email, password) VALUES (?, ?)", [
-  email,
-  hashedPassword,
-]);
+const [result] = await execute<ResultSetHeader>(
+  "INSERT INTO users (email, password) VALUES (?, ?)",
+  [email, hashedPassword],
+);
 const insertId = result.insertId;
 
 // Transactions
 await transaction(async (connection) => {
   await connection.execute("INSERT INTO users (email) VALUES (?)", [email]);
-  await connection.execute("INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())", []);
+  await connection.execute(
+    "INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())",
+    [],
+  );
 });
 ```
 
@@ -177,9 +190,14 @@ try {
 ### Old Pattern:
 
 ```typescript
-router.post("/endpoint", authenticateToken as any, authorizeRole("admin") as any, async (req: any, res: any) => {
-  // Untyped implementation
-});
+router.post(
+  "/endpoint",
+  authenticateToken as any,
+  authorizeRole("admin") as any,
+  async (req: any, res: any) => {
+    // Untyped implementation
+  },
+);
 ```
 
 ### New Pattern:
@@ -190,7 +208,7 @@ router.post(
   ...security.admin(validationRules),
   typed.body<RequestBody>(async (req, res) => {
     // Fully typed implementation
-  })
+  }),
 );
 ```
 
@@ -237,10 +255,10 @@ backend/src/
 ```typescript
 import { execute, RowDataPacket } from "../utils/db";
 
-const [users] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE tenant_id = ? AND role = ?", [
-  req.user.tenant_id,
-  "employee",
-]);
+const [users] = await execute<RowDataPacket[]>(
+  "SELECT * FROM users WHERE tenant_id = ? AND role = ?",
+  [req.user.tenant_id, "employee"],
+);
 ```
 
 ### File Upload Pattern
@@ -255,7 +273,7 @@ router.post(
       return res.status(400).json(errorResponse("No file uploaded", 400));
     }
     // Process file
-  })
+  }),
 );
 ```
 
@@ -274,7 +292,7 @@ router.get(
     const page = parseInt(req.query.page || "1");
     const limit = parseInt(req.query.limit || "10");
     // Implementation
-  })
+  }),
 );
 ```
 
@@ -288,11 +306,14 @@ import app from "../app";
 
 describe("User Routes", () => {
   it("should create user with proper types", async () => {
-    const response = await request(app).post("/api/users").set("Authorization", `Bearer ${token}`).send({
-      email: "test@example.com",
-      password: "SecurePass123",
-      role: "employee",
-    });
+    const response = await request(app)
+      .post("/api/users")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        email: "test@example.com",
+        password: "SecurePass123",
+        role: "employee",
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);

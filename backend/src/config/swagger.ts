@@ -2,10 +2,11 @@
  * Swagger/OpenAPI Configuration for Assixx API
  */
 
-import swaggerJsdoc from "swagger-jsdoc";
 import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+import swaggerJsdoc from "swagger-jsdoc";
 
 // Get current directory for ESM modules
 const __filename = fileURLToPath(import.meta.url);
@@ -13,7 +14,7 @@ const __dirname = dirname(__filename);
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(__dirname, "../../../package.json"), "utf-8")
+  readFileSync(join(__dirname, "../../../package.json"), "utf-8"),
 );
 
 const options: swaggerJsdoc.Options = {

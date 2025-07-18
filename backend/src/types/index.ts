@@ -29,12 +29,13 @@ export type * from "./models";
 
 // Convenience type for any authenticated handler
 import { Response, NextFunction } from "express";
+
 import { AuthenticatedRequest } from "./request.types";
 
 export type AuthenticatedHandler = (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => Promise<void> | void;
 
 // Re-export commonly used types for convenience

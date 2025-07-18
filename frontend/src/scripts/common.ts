@@ -4,6 +4,7 @@
  */
 
 import type { User, BlackboardEntry } from '../types/api.types';
+
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
 
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize page protection first
   initPageProtection();
 
-  loadNavigation();
+  void loadNavigation();
   setupEventListeners();
   checkTokenExpiry();
 });
@@ -24,7 +25,7 @@ function setupEventListeners(): void {
   document.addEventListener('click', (e: MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target && target.id === 'logoutBtn') {
-      logout();
+      void logout();
     }
   });
 }
@@ -71,7 +72,7 @@ async function loadNavigation(): Promise<void> {
     initializeBootstrapComponents();
 
     // Check for unread notifications
-    checkUnreadNotifications();
+    void checkUnreadNotifications();
   } catch (error) {
     console.error('Error loading navigation:', error);
   }
@@ -395,7 +396,7 @@ function checkTokenExpiry(): void {
 
     if (currentTime >= expiryTime) {
       console.info('Token expired, logging out...');
-      logout();
+      void logout();
     }
   } catch (error) {
     console.error('Error checking token expiry:', error);

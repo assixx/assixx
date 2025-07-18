@@ -1,11 +1,12 @@
 import express, { Router } from "express";
-import { security } from "../middleware/security";
 import { body, param } from "express-validator";
-import { createValidation } from "../middleware/validation";
-import { successResponse, errorResponse } from "../types/response.types";
-import { Plan } from "../models/plan";
-import { logger } from "../utils/logger";
 import { RowDataPacket } from "mysql2";
+
+import { security } from "../middleware/security";
+import { createValidation } from "../middleware/validation";
+import { Plan } from "../models/plan";
+import { successResponse, errorResponse } from "../types/response.types";
+import { logger } from "../utils/logger";
 import { typed } from "../utils/routeHandlers";
 
 const router: Router = express.Router();
@@ -58,7 +59,7 @@ router.get(
   "/test",
   typed.public((_req, res) => {
     res.json(successResponse({ message: "Plans API is working!" }));
-  })
+  }),
 );
 
 // Simple available route
@@ -119,13 +120,13 @@ router.get(
             max_admins: null,
             features: [{ feature_code: "all", feature_name: "Alle Features" }],
           },
-        ])
+        ]),
       );
     } catch (error) {
       console.error("Simple route error:", error);
       res.status(500).json(errorResponse("Fehler beim Abrufen der Pläne", 500));
     }
-  })
+  }),
 );
 
 // Get all available plans (public)
@@ -153,7 +154,7 @@ router.get(
             ...plan,
             features: features.filter((f) => f.is_included),
           };
-        })
+        }),
       );
 
       res.json(successResponse(plansWithFeatures));
@@ -161,7 +162,7 @@ router.get(
       logger.error(`Error fetching plans: ${(error as Error).message}`);
       res.status(500).json(errorResponse("Fehler beim Abrufen der Pläne", 500));
     }
-  })
+  }),
 );
 
 // Get current plan for authenticated tenant
@@ -193,7 +194,7 @@ router.get(
           },
           addons,
           costs,
-        })
+        }),
       );
     } catch (error) {
       logger.error(`Error fetching current plan: ${(error as Error).message}`);
@@ -201,7 +202,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen des aktuellen Plans", 500));
     }
-  })
+  }),
 );
 
 // Get plan for specific tenant (root only)
@@ -210,7 +211,7 @@ router.get(
   ...security.root(
     createValidation([
       param("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
-    ])
+    ]),
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
@@ -236,7 +237,7 @@ router.get(
           },
           addons,
           costs,
-        })
+        }),
       );
     } catch (error) {
       logger.error(`Error fetching tenant plan: ${(error as Error).message}`);
@@ -244,7 +245,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen des Tenant-Plans", 500));
     }
-  })
+  }),
 );
 
 // Change plan (root and admin only)
@@ -265,8 +266,8 @@ router.post(
           .json(
             errorResponse(
               "Admins können nur den Plan ihrer eigenen Organisation ändern",
-              403
-            )
+              403,
+            ),
           );
         return;
       }
@@ -287,14 +288,14 @@ router.post(
             plan: updatedPlan,
             costs,
           },
-          "Plan erfolgreich geändert"
-        )
+          "Plan erfolgreich geändert",
+        ),
       );
     } catch (error) {
       logger.error(`Error changing plan: ${(error as Error).message}`);
       res.status(500).json(errorResponse("Fehler beim Ändern des Plans", 500));
     }
-  })
+  }),
 );
 
 // Get addons for authenticated tenant
@@ -313,7 +314,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Add-ons", 500));
     }
-  })
+  }),
 );
 
 // Update addons (root and admin only)
@@ -334,8 +335,8 @@ router.post(
           .json(
             errorResponse(
               "Admins können nur Add-ons ihrer eigenen Organisation ändern",
-              403
-            )
+              403,
+            ),
           );
         return;
       }
@@ -357,8 +358,8 @@ router.post(
             addons: updatedAddons,
             costs,
           },
-          "Add-ons erfolgreich aktualisiert"
-        )
+          "Add-ons erfolgreich aktualisiert",
+        ),
       );
     } catch (error) {
       logger.error(`Error updating addons: ${(error as Error).message}`);
@@ -366,7 +367,7 @@ router.post(
         .status(500)
         .json(errorResponse("Fehler beim Aktualisieren der Add-ons", 500));
     }
-  })
+  }),
 );
 
 // Calculate costs for a tenant
@@ -375,7 +376,7 @@ router.get(
   ...security.user(
     createValidation([
       param("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
-    ])
+    ]),
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
@@ -396,7 +397,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Berechnen der Kosten", 500));
     }
-  })
+  }),
 );
 
 export default router;

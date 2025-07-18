@@ -13,5 +13,5 @@ document.addEventListener('DOMContentLoaded', () => {
     'Ihre persönlichen Gehaltsabrechnungen',
     false,
   );
-  payrollPage.initialize();
+  void payrollPage.initialize();
 });

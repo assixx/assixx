@@ -28,8 +28,8 @@ declare module "express-validator" {
     custom(
       validator: (
         value: any,
-        { req }: { req: Request }
-      ) => boolean | Promise<boolean>
+        { req }: { req: Request },
+      ) => boolean | Promise<boolean>,
     ): ValidationChain;
     notEmpty(): ValidationChain;
     trim(): ValidationChain;
@@ -42,7 +42,7 @@ declare module "express-validator" {
     if(
       condition:
         | ValidationChain
-        | ((value: any, { req }: { req: Request }) => boolean)
+        | ((value: any, { req }: { req: Request }) => boolean),
     ): ValidationChain;
     exists(options?: {
       checkNull?: boolean;
@@ -52,7 +52,7 @@ declare module "express-validator" {
 
   export function body(
     field?: string | string[],
-    message?: string
+    message?: string,
   ): ValidationChain;
   export function param(field: string, message?: string): ValidationChain;
   export function query(field: string, message?: string): ValidationChain;
@@ -60,7 +60,7 @@ declare module "express-validator" {
   export function cookie(field: string, message?: string): ValidationChain;
   export function check(
     field: string | string[],
-    message?: string
+    message?: string,
   ): ValidationChain;
   export function validationResult(req: Request): Result;
   export function matchedData(req: Request): any;

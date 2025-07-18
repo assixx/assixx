@@ -8,5 +8,5 @@ import { DocumentBase } from './document-base';
 // Initialize department documents page
 document.addEventListener('DOMContentLoaded', () => {
   const departmentPage = new DocumentBase('department', 'Abteilungsdokumente', 'Dokumente für Ihre Abteilung', false);
-  departmentPage.initialize();
+  void departmentPage.initialize();
 });

@@ -4,20 +4,26 @@
  */
 
 // import { Application } from 'express';
-import http, { Server } from "http";
 import fs from "fs";
+import http, { Server } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+
+import app from "./app";
 import { logger } from "./utils/logger";
+import { ChatWebSocketServer } from "./websocket";
+/**
+ * Server Entry Point
+ * Starts the Express server and WebSocket
+ */
+
+// import { Application } from 'express';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Import app and WebSocket setup
-import app from "./app";
-import { ChatWebSocketServer } from "./websocket";
-
 // Create HTTP server
 const server: Server = http.createServer(app);
 
@@ -35,7 +41,7 @@ server.listen(PORT, (): void => {
   // Log environment
   logger.info(`Environment: ${process.env.NODE_ENV ?? "development"}`);
   logger.info(
-    "🚀 Live-Reload is working! Changed at: " + new Date().toISOString()
+    "🚀 Live-Reload is working! Changed at: " + new Date().toISOString(),
   );
 
   // Create required directories

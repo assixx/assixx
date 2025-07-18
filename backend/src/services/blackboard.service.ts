@@ -3,6 +3,8 @@
  * Handles blackboard business logic
  */
 
+import { Pool } from "mysql2/promise";
+
 import {
   getAllEntries,
   getEntryById,
@@ -13,7 +15,6 @@ import {
   type EntryQueryOptions,
   type EntryCreateData as ModelEntryCreateData,
 } from "../models/blackboard";
-import { Pool } from "mysql2/promise";
 
 // Service-specific interfaces
 type BlackboardEntry = DbBlackboardEntry;
@@ -55,7 +56,7 @@ class BlackboardService {
     _tenantDb: Pool,
     filters: BlackboardFilters = {},
     tenantId: number,
-    userId: number
+    userId: number,
   ): Promise<BlackboardEntry[]> {
     try {
       const result = await getAllEntries(tenantId, userId, filters);
@@ -73,7 +74,7 @@ class BlackboardService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    userId: number
+    userId: number,
   ): Promise<BlackboardEntry | null> {
     try {
       const entry = await getEntryById(id, tenantId, userId);
@@ -89,7 +90,7 @@ class BlackboardService {
    */
   async create(
     _tenantDb: Pool,
-    data: BlackboardCreateData
+    data: BlackboardCreateData,
   ): Promise<BlackboardEntry> {
     try {
       // Map service data to model data
@@ -99,7 +100,7 @@ class BlackboardService {
         content: data.content,
         org_level: data.org_level,
         org_id: data.org_id,
-        author_id: data.author_id ?? (data.created_by || 0),
+        author_id: data.author_id ?? data.created_by ?? 0,
         expires_at:
           data.expires_at instanceof Date
             ? data.expires_at
@@ -130,7 +131,7 @@ class BlackboardService {
     _tenantDb: Pool,
     id: number,
     data: BlackboardUpdateData,
-    tenantId: number
+    tenantId: number,
   ): Promise<BlackboardEntry | null> {
     try {
       // Remove service-specific fields before passing to model
@@ -160,7 +161,7 @@ class BlackboardService {
   async delete(
     _tenantDb: Pool,
     id: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     try {
       return await deleteEntry(id, tenantId);

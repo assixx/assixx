@@ -27,7 +27,7 @@ export class SessionSecurity {
    */
   static async checkSession(
     _req: Request,
-    _userId: number
+    _userId: number,
   ): Promise<{
     isValid: boolean;
     shouldWarn: boolean;

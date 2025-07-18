@@ -22,7 +22,7 @@ async function setupTenants() {
       __dirname,
       "..",
       "database",
-      "create_tenants_table.sql"
+      "create_tenants_table.sql",
     );
     const sql = await fs.readFile(sqlPath, "utf8");
 

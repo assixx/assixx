@@ -3,8 +3,9 @@
  * Central document management with smart filters
  */
 
-import { fetchWithAuth, showError, showSuccess } from './auth';
 import type { Document } from '../types/api.types';
+
+import { fetchWithAuth, showError, showSuccess } from './auth';
 
 // Document scope type
 type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
@@ -19,7 +20,7 @@ let currentSearch = '';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-  initializeDocuments();
+  void initializeDocuments();
   setupEventListeners();
 });
 
@@ -197,8 +198,8 @@ function applyFilters(): void {
   if (currentSearch) {
     filteredDocuments = filteredDocuments.filter(
       (doc) =>
-        doc.file_name.toLowerCase().includes(currentSearch) ||
-        doc.description?.toLowerCase().includes(currentSearch) ||
+        (doc.file_name.toLowerCase().includes(currentSearch) ||
+          doc.description?.toLowerCase().includes(currentSearch)) ??
         doc.uploaded_by_name?.toLowerCase().includes(currentSearch),
     );
   }
@@ -265,7 +266,7 @@ function renderDocuments(): void {
 function createDocumentCard(doc: Document): HTMLElement {
   const card = document.createElement('div');
   card.className = 'document-card';
-  card.onclick = () => viewDocument(doc.id);
+  card.onclick = () => void viewDocument(doc.id);
 
   const icon = getFileIcon(doc.mime_type ?? doc.file_name);
   const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
@@ -285,7 +286,7 @@ function createDocumentCard(doc: Document): HTMLElement {
       </div>
       <div class="document-meta-item">
         <i class="fas fa-user"></i>
-        <span>${escapeHtml(doc.uploaded_by_name || 'System')}</span>
+        <span>${escapeHtml(doc.uploaded_by_name ?? 'System')}</span>
       </div>
       ${
         doc.file_size
@@ -391,7 +392,7 @@ function showDocumentModal(doc: Document): void {
   updateElement('modalDocumentTitle', doc.file_name || 'Dokument');
   updateElement('modalFileName', doc.file_name);
   updateElement('modalFileSize', formatFileSize(doc.file_size || 0));
-  updateElement('modalUploadedBy', doc.uploaded_by_name || 'System');
+  updateElement('modalUploadedBy', doc.uploaded_by_name ?? 'System');
   updateElement('modalUploadDate', formatDate(doc.created_at));
 
   // Setup preview
@@ -671,6 +672,6 @@ declare global {
 
 // Make functions available globally
 window.closeDocumentModal = closeDocumentModal;
-window.downloadDocument = downloadDocument;
+window.downloadDocument = (docId?: string | number) => void downloadDocument(docId);
 
 export { loadDocuments, setActiveFilter, viewDocument };

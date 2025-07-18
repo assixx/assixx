@@ -70,7 +70,7 @@ describe("Blackboard API Routes", () => {
       };
 
       (blackboardModel.getAllEntries as jest.Mock).mockResolvedValue(
-        mockEntries
+        mockEntries,
       );
 
       const response = await request(app).get("/api/blackboard").expect(200);
@@ -87,7 +87,7 @@ describe("Blackboard API Routes", () => {
           limit: 10,
           sortBy: "created_at",
           sortDir: "DESC",
-        })
+        }),
       );
     });
 
@@ -99,7 +99,7 @@ describe("Blackboard API Routes", () => {
 
       await request(app)
         .get(
-          "/api/blackboard?status=archived&filter=department&search=test&page=2&limit=20"
+          "/api/blackboard?status=archived&filter=department&search=test&page=2&limit=20",
         )
         .expect(200);
 
@@ -112,7 +112,7 @@ describe("Blackboard API Routes", () => {
           search: "test",
           page: 2,
           limit: 20,
-        })
+        }),
       );
     });
   });
@@ -140,7 +140,7 @@ describe("Blackboard API Routes", () => {
       };
 
       (blackboardModel.createEntry as jest.Mock).mockResolvedValue(
-        createdEntry
+        createdEntry,
       );
 
       const response = await request(app)
@@ -160,7 +160,7 @@ describe("Blackboard API Routes", () => {
           priority: "high", // Should map priority_level to priority
           color: "red",
           tags: ["important", "announcement"],
-        })
+        }),
       );
     });
 
@@ -189,7 +189,7 @@ describe("Blackboard API Routes", () => {
           org_level: "department",
           org_id: 5, // Should convert string to number
           priority: "normal",
-        })
+        }),
       );
     });
 
@@ -213,7 +213,7 @@ describe("Blackboard API Routes", () => {
         expect.objectContaining({
           org_level: "team",
           org_id: 10,
-        })
+        }),
       );
     });
 
@@ -224,7 +224,7 @@ describe("Blackboard API Routes", () => {
       };
 
       (blackboardModel.createEntry as jest.Mock).mockRejectedValue(
-        new Error("Missing required fields")
+        new Error("Missing required fields"),
       );
 
       const response = await request(app)
@@ -253,7 +253,7 @@ describe("Blackboard API Routes", () => {
           tags: [], // Default
           requires_confirmation: false, // Default
           expires_at: null, // Default
-        })
+        }),
       );
     });
   });
@@ -306,7 +306,7 @@ describe("Blackboard API Routes", () => {
       });
 
       (blackboardModel.updateEntry as jest.Mock).mockResolvedValue(
-        updatedEntry
+        updatedEntry,
       );
 
       const response = await request(app)
@@ -318,7 +318,7 @@ describe("Blackboard API Routes", () => {
       expect(blackboardModel.updateEntry).toHaveBeenCalledWith(
         1,
         expect.objectContaining(updateData),
-        1
+        1,
       );
     });
   });
@@ -408,7 +408,7 @@ describe("Blackboard API Routes", () => {
         .expect(403);
 
       expect(response.body.message).toContain(
-        "Only admins can create company-wide entries"
+        "Only admins can create company-wide entries",
       );
     });
   });
@@ -417,7 +417,7 @@ describe("Blackboard API Routes", () => {
 describe("Edge Cases", () => {
   it("should handle database errors gracefully", async () => {
     (blackboardModel.getAllEntries as jest.Mock).mockRejectedValue(
-      new Error("Database connection failed")
+      new Error("Database connection failed"),
     );
 
     const response = await request(app).get("/api/blackboard").expect(500);
@@ -454,7 +454,7 @@ describe("Edge Cases", () => {
     expect(blackboardModel.createEntry).toHaveBeenCalledWith(
       expect.objectContaining({
         content: longContent,
-      })
+      }),
     );
   });
 });

@@ -50,13 +50,13 @@ async function createEmployee() {
     try {
       const [result] = await connection.query(query, values);
       console.log(
-        `Mitarbeiter erfolgreich erstellt mit ID: ${result.insertId}`
+        `Mitarbeiter erfolgreich erstellt mit ID: ${result.insertId}`,
       );
     } catch (error) {
       // Wenn der Mitarbeiter bereits existiert, aktualisieren wir ihn stattdessen
       if (error.code === "ER_DUP_ENTRY") {
         console.log(
-          "Mitarbeiter existiert bereits. Aktualisiere stattdessen..."
+          "Mitarbeiter existiert bereits. Aktualisiere stattdessen...",
         );
 
         // Aktualisierungsabfrage ohne Passwort und Benutzername (eindeutige Felder)
@@ -71,10 +71,10 @@ async function createEmployee() {
 
         const [updateResult] = await connection.query(
           updateQuery,
-          updateValues
+          updateValues,
         );
         console.log(
-          `Mitarbeiter erfolgreich aktualisiert. Betroffene Zeilen: ${updateResult.affectedRows}`
+          `Mitarbeiter erfolgreich aktualisiert. Betroffene Zeilen: ${updateResult.affectedRows}`,
         );
       } else {
         throw error;

@@ -3,11 +3,12 @@
  * Handles all database operations for the KVP system
  */
 
-import * as mysql from "mysql2/promise";
-import * as path from "path";
 import * as fs from "fs/promises";
-import * as dotenv from "dotenv";
+import * as path from "path";
 import { fileURLToPath } from "url";
+
+import * as dotenv from "dotenv";
+import * as mysql from "mysql2/promise";
 import { RowDataPacket, ResultSetHeader, Connection } from "mysql2/promise";
 
 // ES modules equivalent of __dirname
@@ -156,7 +157,7 @@ export class KVPModel {
     try {
       const [rows] = await connection.execute<DbCategory[]>(
         "SELECT * FROM kvp_categories WHERE tenant_id = ? ORDER BY name ASC",
-        [tenant_id]
+        [tenant_id],
       );
       return rows;
     } finally {
@@ -166,7 +167,7 @@ export class KVPModel {
 
   // Create new suggestion
   static async createSuggestion(
-    data: SuggestionCreateData
+    data: SuggestionCreateData,
   ): Promise<SuggestionCreateData & { id: number }> {
     const connection = await this.getConnection();
     try {
@@ -184,10 +185,10 @@ export class KVPModel {
           data.org_level,
           data.org_id,
           data.submitted_by,
-          data.priority || "normal",
-          data.expected_benefit || null,
-          data.estimated_cost || null,
-        ]
+          data.priority ?? "normal",
+          data.expected_benefit ?? null,
+          data.estimated_cost ?? null,
+        ],
       );
 
       return { id: result.insertId, ...data };
@@ -201,7 +202,7 @@ export class KVPModel {
     tenant_id: number,
     userId: number,
     userRole: string,
-    filters: SuggestionFilters = {}
+    filters: SuggestionFilters = {},
   ): Promise<DbSuggestion[]> {
     const connection = await this.getConnection();
     try {
@@ -268,7 +269,7 @@ export class KVPModel {
     id: number,
     tenant_id: number,
     userId: number,
-    userRole: string
+    userRole: string,
   ): Promise<DbSuggestion | null> {
     const connection = await this.getConnection();
     try {
@@ -311,7 +312,7 @@ export class KVPModel {
     tenant_id: number,
     status: string,
     userId: number,
-    changeReason: string | null = null
+    changeReason: string | null = null,
   ): Promise<boolean> {
     const connection = await this.getConnection();
     try {
@@ -320,7 +321,7 @@ export class KVPModel {
       // Get current status for history
       const [currentRows] = await connection.execute<DbSuggestion[]>(
         "SELECT status FROM kvp_suggestions WHERE id = ? AND tenant_id = ?",
-        [id, tenant_id]
+        [id, tenant_id],
       );
 
       if (currentRows.length === 0) {
@@ -336,7 +337,7 @@ export class KVPModel {
         SET status = ?, assigned_to = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND tenant_id = ?
       `,
-        [status, userId, id, tenant_id]
+        [status, userId, id, tenant_id],
       );
 
       // Add to history
@@ -346,7 +347,7 @@ export class KVPModel {
         (suggestion_id, old_status, new_status, changed_by, change_reason)
         VALUES (?, ?, ?, ?, ?)
       `,
-        [id, oldStatus, status, userId, changeReason]
+        [id, oldStatus, status, userId, changeReason],
       );
 
       await connection.commit();
@@ -362,7 +363,7 @@ export class KVPModel {
   // Add attachment to suggestion
   static async addAttachment(
     suggestionId: number,
-    fileData: FileData
+    fileData: FileData,
   ): Promise<FileData & { id: number }> {
     const connection = await this.getConnection();
     try {
@@ -379,7 +380,7 @@ export class KVPModel {
           fileData.file_type,
           fileData.file_size,
           fileData.uploaded_by,
-        ]
+        ],
       );
 
       return { id: result.insertId, ...fileData };
@@ -400,7 +401,7 @@ export class KVPModel {
         WHERE a.suggestion_id = ?
         ORDER BY a.uploaded_at DESC
       `,
-        [suggestionId]
+        [suggestionId],
       );
 
       return rows;
@@ -414,7 +415,7 @@ export class KVPModel {
     suggestionId: number,
     userId: number,
     comment: string,
-    isInternal = false
+    isInternal = false,
   ): Promise<number> {
     const connection = await this.getConnection();
     try {
@@ -424,7 +425,7 @@ export class KVPModel {
         (suggestion_id, user_id, comment, is_internal)
         VALUES (?, ?, ?, ?)
       `,
-        [suggestionId, userId, comment, isInternal]
+        [suggestionId, userId, comment, isInternal],
       );
 
       return result.insertId;
@@ -436,7 +437,7 @@ export class KVPModel {
   // Get comments for suggestion
   static async getComments(
     suggestionId: number,
-    userRole: string
+    userRole: string,
   ): Promise<DbComment[]> {
     const connection = await this.getConnection();
     try {
@@ -466,7 +467,7 @@ export class KVPModel {
   // Get user points summary
   static async getUserPoints(
     tenant_id: number,
-    userId: number
+    userId: number,
   ): Promise<DbPointsSummary> {
     const connection = await this.getConnection();
     try {
@@ -479,7 +480,7 @@ export class KVPModel {
         FROM kvp_points 
         WHERE tenant_id = ? AND user_id = ?
       `,
-        [tenant_id, userId]
+        [tenant_id, userId],
       );
 
       return (rows[0] ?? {
@@ -499,7 +500,7 @@ export class KVPModel {
     suggestionId: number,
     points: number,
     reason: string,
-    awardedBy: number
+    awardedBy: number,
   ): Promise<number> {
     const connection = await this.getConnection();
     try {
@@ -509,7 +510,7 @@ export class KVPModel {
         (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
         VALUES (?, ?, ?, ?, ?, ?)
       `,
-        [tenant_id, userId, suggestionId, points, reason, awardedBy]
+        [tenant_id, userId, suggestionId, points, reason, awardedBy],
       );
 
       return result.insertId;
@@ -534,7 +535,7 @@ export class KVPModel {
         FROM kvp_suggestions 
         WHERE tenant_id = ?
       `,
-        [tenant_id]
+        [tenant_id],
       );
 
       return stats[0];
@@ -547,7 +548,7 @@ export class KVPModel {
   static async deleteSuggestion(
     suggestionId: number,
     tenant_id: number,
-    userId: number
+    userId: number,
   ): Promise<boolean> {
     const connection = await this.getConnection();
     try {
@@ -559,7 +560,7 @@ export class KVPModel {
         SELECT submitted_by FROM kvp_suggestions 
         WHERE id = ? AND tenant_id = ? AND submitted_by = ?
       `,
-        [suggestionId, tenant_id, userId]
+        [suggestionId, tenant_id, userId],
       );
 
       if (ownerCheck.length === 0) {
@@ -571,13 +572,13 @@ export class KVPModel {
         `
         SELECT file_path FROM kvp_attachments WHERE suggestion_id = ?
       `,
-        [suggestionId]
+        [suggestionId],
       );
 
       // Delete database records (cascading will handle related records)
       await connection.execute(
         "DELETE FROM kvp_suggestions WHERE id = ? AND tenant_id = ?",
-        [suggestionId, tenant_id]
+        [suggestionId, tenant_id],
       );
 
       await connection.commit();
@@ -606,7 +607,7 @@ export class KVPModel {
     attachmentId: number,
     tenant_id: number,
     userId: number,
-    userRole: string
+    userRole: string,
   ): Promise<DbAttachment | null> {
     const connection = await this.getConnection();
     try {
@@ -617,7 +618,7 @@ export class KVPModel {
         JOIN kvp_suggestions s ON a.suggestion_id = s.id
         WHERE a.id = ? AND s.tenant_id = ?
       `,
-        [attachmentId, tenant_id]
+        [attachmentId, tenant_id],
       );
 
       if (attachments.length === 0) {

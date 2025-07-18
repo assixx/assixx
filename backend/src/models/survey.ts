@@ -168,7 +168,7 @@ export class Survey {
   static async create(
     surveyData: SurveyCreateData,
     tenantId: number,
-    createdBy: number
+    createdBy: number,
   ): Promise<number> {
     // Check if we're using mock database
     let connection: PoolConnection;
@@ -192,14 +192,14 @@ export class Survey {
         [
           tenantId,
           surveyData.title,
-          surveyData.description || null,
+          surveyData.description ?? null,
           createdBy,
-          surveyData.status || "draft",
-          surveyData.is_anonymous || false,
-          surveyData.is_mandatory || false,
-          surveyData.start_date || null,
-          surveyData.end_date || null,
-        ]
+          surveyData.status ?? "draft",
+          surveyData.is_anonymous ?? false,
+          surveyData.is_mandatory ?? false,
+          surveyData.start_date ?? null,
+          surveyData.end_date ?? null,
+        ],
       );
 
       const surveyId = surveyResult.insertId;
@@ -219,11 +219,11 @@ export class Survey {
               question.question_text,
               question.question_type,
               question.is_required !== false,
-              question.order_position || index + 1,
+              question.order_position ?? index + 1,
               question.options && question.options.length > 0
                 ? JSON.stringify(question.options)
                 : null,
-            ]
+            ],
           );
 
           // No need to insert options separately - they're stored as JSON in the questions table
@@ -243,10 +243,10 @@ export class Survey {
               tenantId,
               surveyId,
               assignment.type,
-              assignment.department_id || null,
-              assignment.team_id || null,
-              assignment.user_id || null,
-            ]
+              assignment.department_id ?? null,
+              assignment.team_id ?? null,
+              assignment.user_id ?? null,
+            ],
           );
         }
       }
@@ -266,7 +266,7 @@ export class Survey {
    */
   static async getAllByTenant(
     tenantId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<DbSurvey[]> {
     const { status, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
@@ -309,7 +309,7 @@ export class Survey {
   static async getAllByTenantForEmployee(
     tenantId: number,
     employeeUserId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<DbSurvey[]> {
     const { status, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
@@ -317,7 +317,7 @@ export class Survey {
     // First get employee's department info
     const [userInfo] = await typedQuery<RowDataPacket[]>(
       `SELECT department_id FROM users WHERE id = ? AND tenant_id = ?`,
-      [employeeUserId, tenantId]
+      [employeeUserId, tenantId],
     );
 
     if (userInfo.length === 0) {
@@ -382,7 +382,7 @@ export class Survey {
   static async getAllByTenantForAdmin(
     tenantId: number,
     adminUserId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<DbSurvey[]> {
     const { status, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
@@ -431,7 +431,7 @@ export class Survey {
    */
   static async getById(
     surveyId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<DbSurvey | null> {
     const [surveys] = await typedQuery<DbSurvey[]>(
       `
@@ -442,7 +442,7 @@ export class Survey {
       LEFT JOIN users u ON s.created_by = u.id
       WHERE s.id = ? AND s.tenant_id = ?
     `,
-      [surveyId, tenantId]
+      [surveyId, tenantId],
     );
 
     if (!surveys || !Array.isArray(surveys) || surveys.length === 0) {
@@ -463,7 +463,7 @@ export class Survey {
       WHERE survey_id = ?
       ORDER BY order_index
     `,
-      [surveyId]
+      [surveyId],
     );
 
     // Parse options from JSON and convert Buffer to string for each question
@@ -498,7 +498,7 @@ export class Survey {
       SELECT * FROM survey_assignments
       WHERE survey_id = ?
     `,
-      [surveyId]
+      [surveyId],
     );
 
     survey.assignments = assignments as DbSurveyAssignment[];
@@ -512,7 +512,7 @@ export class Survey {
   static async update(
     surveyId: number,
     surveyData: SurveyUpdateData,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     // Check if we're using mock database
     let connection: PoolConnection;
@@ -539,14 +539,14 @@ export class Survey {
       `,
         [
           surveyData.title,
-          surveyData.description || null,
-          surveyData.status || "draft",
-          surveyData.is_anonymous || false,
-          surveyData.start_date || null,
-          surveyData.end_date || null,
+          surveyData.description ?? null,
+          surveyData.status ?? "draft",
+          surveyData.is_anonymous ?? false,
+          surveyData.start_date ?? null,
+          surveyData.end_date ?? null,
           surveyId,
           tenantId,
-        ]
+        ],
       );
 
       // Update questions if provided
@@ -554,7 +554,7 @@ export class Survey {
         // Delete existing questions and options (cascade will handle options)
         await connection.query(
           "DELETE FROM survey_questions WHERE survey_id = ?",
-          [surveyId]
+          [surveyId],
         );
 
         // Add new questions
@@ -571,11 +571,11 @@ export class Survey {
               question.question_text,
               question.question_type,
               question.is_required !== false,
-              question.order_position || index + 1,
+              question.order_position ?? index + 1,
               question.options && question.options.length > 0
                 ? JSON.stringify(question.options)
                 : null,
-            ]
+            ],
           );
 
           // No need to insert options separately - they're stored as JSON in the questions table
@@ -598,7 +598,7 @@ export class Survey {
   static async delete(surveyId: number, tenantId: number): Promise<boolean> {
     const [result] = await typedQuery<ResultSetHeader>(
       "DELETE FROM surveys WHERE id = ? AND tenant_id = ?",
-      [surveyId, tenantId]
+      [surveyId, tenantId],
     );
     return result.affectedRows > 0;
   }
@@ -613,7 +613,7 @@ export class Survey {
       WHERE tenant_id = ? OR is_public = 1
       ORDER BY name
     `,
-      [tenantId]
+      [tenantId],
     );
     return templates;
   }
@@ -624,14 +624,14 @@ export class Survey {
   static async createFromTemplate(
     templateId: number,
     tenantId: number,
-    createdBy: number
+    createdBy: number,
   ): Promise<number> {
     const [templates] = await typedQuery<DbSurveyTemplate[]>(
       `
       SELECT * FROM survey_templates
       WHERE id = ? AND (tenant_id = ? OR is_public = 1)
     `,
-      [templateId, tenantId]
+      [templateId, tenantId],
     );
 
     if (templates.length === 0) {
@@ -656,7 +656,7 @@ export class Survey {
    */
   static async getStatistics(
     surveyId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<SurveyStatistics> {
     try {
       // Get basic statistics
@@ -671,7 +671,7 @@ export class Survey {
         LEFT JOIN survey_responses sr ON s.id = sr.survey_id
         WHERE s.id = ? AND s.tenant_id = ?
       `,
-        [surveyId, tenantId]
+        [surveyId, tenantId],
       );
 
       // Get survey details with questions
@@ -705,7 +705,7 @@ export class Survey {
 
       const questionStats: QuestionStatistic[] = [];
 
-      for (const question of survey.questions || []) {
+      for (const question of survey.questions ?? []) {
         const questionStat: QuestionStatistic = {
           id: question.id,
           question_text: question.question_text,
@@ -732,7 +732,7 @@ export class Survey {
             WHERE sa.question_id = ?
             AND sa.answer_options IS NOT NULL
           `,
-            [question.id]
+            [question.id],
           );
 
           // Count responses per option
@@ -757,7 +757,7 @@ export class Survey {
               option_id: index,
               option_text: optionText,
               count: optionCounts[index] ?? 0,
-            })
+            }),
           );
         } else if (question.question_type === "text") {
           // Get text responses
@@ -773,7 +773,7 @@ export class Survey {
             LEFT JOIN users u ON sr.user_id = u.id
             WHERE sa.question_id = ? AND sa.answer_text IS NOT NULL
           `,
-            [question.id]
+            [question.id],
           );
           questionStat.responses = textResponses.map((row) => ({
             answer_text: row.answer_text?.toString(),
@@ -793,7 +793,7 @@ export class Survey {
             FROM survey_answers sa
             WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
           `,
-            [question.id]
+            [question.id],
           );
           const stats = numericStats[0];
           questionStat.statistics = {
@@ -815,7 +815,7 @@ export class Survey {
         completion_rate:
           stats[0].total_responses > 0
             ? Math.round(
-                (stats[0].completed_responses / stats[0].total_responses) * 100
+                (stats[0].completed_responses / stats[0].total_responses) * 100,
               )
             : 0,
         first_response: stats[0].first_response,

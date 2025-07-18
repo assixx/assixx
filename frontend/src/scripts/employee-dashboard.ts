@@ -4,6 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
+
 import { getAuthToken, showError } from './auth';
 import { formatDate, escapeHtml } from './common';
 
@@ -82,39 +83,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Search functionality - only add if search form exists
   if (searchForm && searchInput) {
-    searchForm.addEventListener('submit', async (e: Event) => {
-      e.preventDefault();
-      const query = searchInput.value.trim();
+    searchForm.addEventListener('submit', (e) => {
+      void (async () => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
 
-      if (query) {
-        await searchDocuments(query);
-      }
+        if (query) {
+          await searchDocuments(query);
+        }
+      })();
     });
   }
 
   // Logout button
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      if (confirm('Möchten Sie sich wirklich abmelden?')) {
-        try {
-          // Import and use the logout function from auth module
-          const { logout } = await import('./auth.js');
-          await logout();
-        } catch (error) {
-          console.error('Logout error:', error);
-          // Fallback
-          window.location.href = '/login';
+    logoutBtn.addEventListener('click', (e) => {
+      void (async () => {
+        e.preventDefault();
+        if (confirm('Möchten Sie sich wirklich abmelden?')) {
+          try {
+            // Import and use the logout function from auth module
+            const { logout } = await import('./auth.js');
+            await logout();
+          } catch (error) {
+            console.error('Logout error:', error);
+            // Fallback
+            window.location.href = '/login';
+          }
         }
-      }
+      })();
     });
   } else {
     console.error('Logout-Button nicht gefunden');
   }
 
   // Load initial data
-  loadEmployeeInfo();
-  loadDocuments();
+  void loadEmployeeInfo();
+  void loadDocuments();
 
   /**
    * Search documents
@@ -135,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayDocuments(documents);
       } else {
         const error = await response.json();
-        showError(error.message || 'Fehler bei der Dokumentensuche');
+        showError(error.message ?? 'Fehler bei der Dokumentensuche');
       }
     } catch (error) {
       console.error('Fehler bei der Dokumentensuche:', error);
@@ -162,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayEmployeeInfo(employeeInfo);
       } else {
         const error = await response.json();
-        showError(error.message || 'Fehler beim Laden der Mitarbeiterinformationen');
+        showError(error.message ?? 'Fehler beim Laden der Mitarbeiterinformationen');
       }
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiterinformationen:', error);
@@ -178,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update username in header
       const employeeName = document.getElementById('employee-name');
       if (employeeName) {
-        const fullName = `${info.first_name ?? ''} ${info.last_name || ''}`.trim();
+        const fullName = `${info.first_name ?? ''} ${info.last_name ?? ''}`.trim();
         employeeName.textContent = fullName ?? info.username;
       }
 
@@ -192,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const employeeDetails = document.getElementById('employee-details');
       if (employeeDetails) {
         employeeDetails.innerHTML = `
-          <p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name || '')}</p>
+          <p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name ?? '')}</p>
           <p><strong>E-Mail:</strong> ${escapeHtml(info.email)}</p>
           ${info.department ? `<p><strong>Abteilung:</strong> ${escapeHtml(info.department)}</p>` : ''}
           ${info.team ? `<p><strong>Team:</strong> ${escapeHtml(info.team)}</p>` : ''}

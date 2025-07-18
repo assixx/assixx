@@ -7,9 +7,8 @@
 import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
-import { switchRoleForRoot } from '../role-switch';
-// Import loadUserInfo for cached profile loading
 import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
+import { switchRoleForRoot } from '../role-switch';
 
 // Declare global type for window
 declare global {
@@ -204,7 +203,7 @@ class UnifiedNavigation {
    */
   public enforcePageAccess(): void {
     const currentPath = window.location.pathname;
-    const activeRole = (localStorage.getItem('activeRole') ?? (localStorage.getItem('userRole') || 'employee')) as
+    const activeRole = (localStorage.getItem('activeRole') ?? localStorage.getItem('userRole') ?? 'employee') as
       | 'admin'
       | 'employee'
       | 'root';
@@ -248,18 +247,18 @@ class UnifiedNavigation {
 
     // Update badge counts
     setTimeout(() => {
-      this.updateUnreadMessages();
-      this.updatePendingSurveys();
-      this.updateUnreadDocuments();
-      this.updateNewKvpSuggestions();
+      void this.updateUnreadMessages();
+      void this.updatePendingSurveys();
+      void this.updateUnreadDocuments();
+      void this.updateNewKvpSuggestions();
     }, 1000);
 
     // Update badges every 30 seconds
     setInterval(() => {
-      this.updateUnreadMessages();
-      this.updatePendingSurveys();
-      this.updateUnreadDocuments();
-      this.updateNewKvpSuggestions();
+      void this.updateUnreadMessages();
+      void this.updatePendingSurveys();
+      void this.updateUnreadDocuments();
+      void this.updateNewKvpSuggestions();
     }, 30000);
 
     // Listen for BroadcastChannel messages to update navigation
@@ -375,7 +374,7 @@ class UnifiedNavigation {
         });
 
         // Also try to load full user profile
-        this.loadFullUserProfile();
+        void this.loadFullUserProfile();
       } catch (error) {
         console.error('Error parsing token:', error);
       }
@@ -409,29 +408,29 @@ class UnifiedNavigation {
         // Update company info (new)
         const companyElement = document.getElementById('sidebar-company-name');
         if (companyElement) {
-          const companyName = userData.company_name ?? (userData.data?.company_name || 'Firmenname');
+          const companyName = userData.company_name ?? userData.data?.company_name ?? 'Firmenname';
           companyElement.textContent = companyName;
         }
 
         const domainElement = document.getElementById('sidebar-domain');
         if (domainElement) {
-          const subdomain = userData.subdomain ?? (userData.data?.subdomain || 'demo');
+          const subdomain = userData.subdomain ?? userData.data?.subdomain ?? 'demo';
           domainElement.textContent = `${subdomain}.assixx.de`;
         }
 
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          const email = userData.email ?? (userData.data?.email || user.email || this.currentUser?.email || 'User');
+          const email = userData.email ?? userData.data?.email ?? user.email ?? this.currentUser?.email ?? 'User';
           sidebarUserName.textContent = email;
         }
 
         const sidebarFullName = document.getElementById('sidebar-user-fullname');
         if (sidebarFullName) {
           const firstName =
-            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
           const lastName =
-            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             sidebarFullName.textContent = fullName;
@@ -444,11 +443,10 @@ class UnifiedNavigation {
         const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
         if (sidebarEmployeeNumber) {
           const employeeNumber =
-            userData.employee_number ||
-            userData.data?.employee_number ||
-            userData.employeeNumber ||
-            (user as User).employeeNumber ||
-            '';
+            userData.employee_number ??
+            userData.data?.employee_number ??
+            userData.employeeNumber ??
+            ((user as User).employeeNumber || '');
           if (employeeNumber && employeeNumber !== '000001') {
             sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
           } else if (employeeNumber === '000001') {
@@ -462,9 +460,9 @@ class UnifiedNavigation {
         if (headerUserName) {
           // Same logic as sidebar-user-fullname which works correctly
           const firstName =
-            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
           const lastName =
-            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
           console.log('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
           if (firstName || lastName) {
@@ -473,10 +471,10 @@ class UnifiedNavigation {
             console.log('[UnifiedNav] Set header name to:', fullName);
           } else {
             // Fallback auf Email oder Username wenn keine Namen vorhanden
-            const email = userData.email ?? (userData.data?.email || user.email || this.currentUser?.email);
-            const username = userData.username ?? (user.username || this.currentUser?.username);
-            headerUserName.textContent = email ?? (username || 'User');
-            console.log('[UnifiedNav] Fallback to email/username:', email || username);
+            const email = userData.email ?? userData.data?.email ?? user.email ?? this.currentUser?.email;
+            const username = userData.username ?? user.username ?? this.currentUser?.username;
+            headerUserName.textContent = email ?? username ?? 'User';
+            console.log('[UnifiedNav] Fallback to email/username:', email ?? username);
           }
         }
 
@@ -484,15 +482,15 @@ class UnifiedNavigation {
         const sidebarAvatar = document.getElementById('sidebar-user-avatar');
         if (sidebarAvatar) {
           const profilePic =
-            userData.profile_picture ||
-            userData.data?.profile_picture ||
-            userData.profilePicture ||
-            (user as User).profilePicture ||
+            userData.profile_picture ??
+            userData.data?.profile_picture ??
+            userData.profilePicture ??
+            (user as User).profilePicture ??
             null;
           const firstName =
-            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
           const lastName =
-            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
           this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
         }
 
@@ -500,15 +498,15 @@ class UnifiedNavigation {
         const headerAvatar = document.getElementById('user-avatar');
         if (headerAvatar) {
           const profilePic =
-            userData.profile_picture ||
-            userData.data?.profile_picture ||
-            userData.profilePicture ||
-            (user as User).profilePicture ||
+            userData.profile_picture ??
+            userData.data?.profile_picture ??
+            userData.profilePicture ??
+            (user as User).profilePicture ??
             null;
           const firstName =
-            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
           const lastName =
-            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
           this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
         }
 
@@ -1009,10 +1007,10 @@ class UnifiedNavigation {
       setTimeout(() => {
         console.log('[UnifiedNav] Re-attaching event listeners for navigation-container');
         this.attachEventListeners();
-        this.updateUnreadMessages();
-        this.updatePendingSurveys();
-        this.updateUnreadDocuments();
-        this.updateNewKvpSuggestions();
+        void this.updateUnreadMessages();
+        void this.updatePendingSurveys();
+        void this.updateUnreadDocuments();
+        void this.updateNewKvpSuggestions();
       }, 100);
 
       return;
@@ -1036,11 +1034,11 @@ class UnifiedNavigation {
     // Use the actual stored role for determining which UI elements to show
     const userRole = storedUserRole ?? 'employee';
 
-    const userName = this.userProfileData?.username ?? (this.currentUser?.username || 'User');
-    const firstName = this.userProfileData?.first_name ?? (this.userProfileData?.firstName || '');
-    const lastName = this.userProfileData?.last_name ?? (this.userProfileData?.lastName || '');
+    const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
+    const firstName = this.userProfileData?.first_name ?? this.userProfileData?.firstName ?? '';
+    const lastName = this.userProfileData?.last_name ?? this.userProfileData?.lastName ?? '';
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
-    const profilePicture = this.userProfileData?.profile_picture || this.userProfileData?.profilePicture || null;
+    const profilePicture = this.userProfileData?.profile_picture ?? this.userProfileData?.profilePicture ?? null;
 
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =
@@ -1372,7 +1370,7 @@ class UnifiedNavigation {
         // Check if admin/root clicked on KVP submenu item
         const submenuNavId = submenuLink.getAttribute('data-nav-id');
         if (submenuNavId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
-          this.resetKvpBadge();
+          void this.resetKvpBadge();
         }
       }
 
@@ -1576,7 +1574,7 @@ class UnifiedNavigation {
       const dropdownOptions = document.getElementById('roleSwitchDropdown');
 
       // Check if already initialized
-      if (dropdownDisplay && dropdownDisplay.hasAttribute('data-initialized')) {
+      if (dropdownDisplay?.hasAttribute('data-initialized')) {
         console.log('[UnifiedNav] Role switch dropdown already initialized, skipping');
         return;
       }
@@ -1615,31 +1613,36 @@ class UnifiedNavigation {
         // Handle option selection
         const options = dropdownOptions.querySelectorAll('.dropdown-option');
         options.forEach((option) => {
-          option.addEventListener('click', async (e) => {
-            e.stopPropagation();
+          option.addEventListener('click', (e) => {
+            void (async () => {
+              e.stopPropagation();
 
-            const selectedRole = (e.target as HTMLElement).getAttribute('data-value') as 'root' | 'admin' | 'employee';
-            console.log('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
+              const selectedRole = (e.target as HTMLElement).getAttribute('data-value') as
+                | 'root'
+                | 'admin'
+                | 'employee';
+              console.log('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
 
-            // Update display text
-            const displayText = dropdownDisplay.querySelector('span');
-            if (displayText) {
-              displayText.textContent = (e.target as HTMLElement).textContent ?? '';
-            }
+              // Update display text
+              const displayText = dropdownDisplay.querySelector('span');
+              if (displayText) {
+                displayText.textContent = (e.target as HTMLElement).textContent ?? '';
+              }
 
-            // Close dropdown
-            dropdownDisplay.classList.remove('active');
-            dropdownOptions.classList.remove('active');
+              // Close dropdown
+              dropdownDisplay.classList.remove('active');
+              dropdownOptions.classList.remove('active');
 
-            // Update hidden input
-            const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement;
-            if (hiddenInput) {
-              hiddenInput.value = selectedRole;
-            }
+              // Update hidden input
+              const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement;
+              if (hiddenInput) {
+                hiddenInput.value = selectedRole;
+              }
 
-            // Call the role switch function
-            console.log('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
-            await switchRoleForRoot(selectedRole);
+              // Call the role switch function
+              console.log('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
+              await switchRoleForRoot(selectedRole);
+            })();
           });
         });
 
@@ -1662,7 +1665,7 @@ class UnifiedNavigation {
         console.log('[UnifiedNav] Initializing role switch button for admin user');
 
         // Import role-switch module to ensure it's initialized
-        import('../role-switch.js').then(() => {
+        void import('../role-switch.js').then(() => {
           console.log('[UnifiedNav] Role switch module loaded for admin');
         });
       }
@@ -1688,7 +1691,7 @@ class UnifiedNavigation {
 
       // If user clicked on documents, mark all as read
       if (navId === 'documents' && this.currentRole === 'employee') {
-        this.markAllDocumentsAsRead();
+        void this.markAllDocumentsAsRead();
       }
 
       // If admin/root clicked on KVP, reset the badge
@@ -1925,10 +1928,10 @@ class UnifiedNavigation {
       setTimeout(() => {
         this.attachEventListeners();
         this.updateActiveNavigation();
-        this.updateUnreadMessages();
-        this.updatePendingSurveys();
-        this.updateUnreadDocuments();
-        this.updateNewKvpSuggestions();
+        void this.updateUnreadMessages();
+        void this.updatePendingSurveys();
+        void this.updateUnreadDocuments();
+        void this.updateNewKvpSuggestions();
 
         // Restore sidebar state
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -2137,7 +2140,7 @@ class UnifiedNavigation {
       if (response.ok) {
         const result = await response.json();
         // Backend returns {data: Document[], pagination: {...}}
-        const documents = result.data ?? (result.documents || []);
+        const documents = result.data ?? result.documents ?? [];
 
         // Count unread documents by category
         const unreadCounts = {
@@ -2276,7 +2279,7 @@ class UnifiedNavigation {
     const activeRole = localStorage.getItem('activeRole');
 
     // For root users, ALWAYS use root role regardless of activeRole
-    const currentRole = userRole === 'root' ? 'root' : (activeRole ?? (userRole || this.currentRole));
+    const currentRole = userRole === 'root' ? 'root' : (activeRole ?? userRole ?? this.currentRole);
 
     // Find all logo containers - expanded selector to catch all cases
     const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
@@ -3066,7 +3069,6 @@ const unifiedNavigationCSS = `
         margin-left: 0px;
         overflow: hidden;
         position: relative;
-        margin-bottom: 8px;
     }
 
     /* Header avatar specific size */
@@ -3131,6 +3133,7 @@ const unifiedNavigationCSS = `
         text-overflow: ellipsis;
         text-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
         white-space: normal;
+        margin-top: 8px;
     }
 
     .company-domain {
@@ -3609,8 +3612,10 @@ if (document.readyState === 'loading') {
 const setupPeriodicUpdates = () => {
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
-    window.unifiedNav.updateUnreadMessages();
-    setInterval(() => window.unifiedNav?.updateUnreadMessages(), 30000); // Alle 30 Sekunden
+    void window.unifiedNav.updateUnreadMessages();
+    setInterval(() => {
+      void window.unifiedNav?.updateUnreadMessages();
+    }, 30000); // Alle 30 Sekunden
   }
 
   // Offene Umfragen beim Start und periodisch aktualisieren
@@ -3619,8 +3624,10 @@ const setupPeriodicUpdates = () => {
     'updatePendingSurveys' in window.unifiedNav &&
     typeof window.unifiedNav.updatePendingSurveys === 'function'
   ) {
-    window.unifiedNav.updatePendingSurveys();
-    setInterval(() => window.unifiedNav?.updatePendingSurveys?.(), 30000); // Alle 30 Sekunden
+    void window.unifiedNav.updatePendingSurveys();
+    setInterval(() => {
+      void window.unifiedNav?.updatePendingSurveys?.();
+    }, 30000); // Alle 30 Sekunden
   }
 
   // Storage-Informationen für Root User beim Start und periodisch aktualisieren
@@ -3629,8 +3636,10 @@ const setupPeriodicUpdates = () => {
     'updateStorageInfo' in window.unifiedNav &&
     typeof window.unifiedNav.updateStorageInfo === 'function'
   ) {
-    window.unifiedNav.updateStorageInfo();
-    setInterval(() => window.unifiedNav?.updateStorageInfo?.(), 60000); // Alle 60 Sekunden
+    void window.unifiedNav.updateStorageInfo();
+    setInterval(() => {
+      void window.unifiedNav?.updateStorageInfo?.();
+    }, 60000); // Alle 60 Sekunden
   }
 };
 

@@ -5,6 +5,7 @@
 
 import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
+
 import blackboardService from "../services/blackboard.service";
 
 // Extended Request interface with tenant database
@@ -91,7 +92,7 @@ class BlackboardController {
         req.tenantDb,
         filters,
         req.user.tenant_id,
-        req.user.id
+        req.user.id,
       );
       res.json(result);
     } catch (error) {
@@ -124,7 +125,7 @@ class BlackboardController {
         req.tenantDb,
         id,
         req.user.tenant_id,
-        req.user.id
+        req.user.id,
       );
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
@@ -213,7 +214,7 @@ class BlackboardController {
         req.tenantDb,
         id,
         updateData,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
       res.json(result);
     } catch (error) {

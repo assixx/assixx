@@ -260,7 +260,7 @@ export class BrowserFingerprint {
    */
   private static async hashString(str: string): Promise<string> {
     // Use crypto API if available
-    if (crypto.subtle && crypto.subtle.digest) {
+    if (crypto.subtle?.digest) {
       const msgBuffer = new TextEncoder().encode(str);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));

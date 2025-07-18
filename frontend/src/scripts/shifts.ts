@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError, showInfo } from './auth';
 import { openModal } from './utils/modal-manager';
 
@@ -111,7 +112,7 @@ class ShiftPlanningSystem {
 
     this.weeklyNotes = '';
 
-    this.init();
+    void this.init();
   }
 
   async init(): Promise<void> {
@@ -293,8 +294,8 @@ class ShiftPlanningSystem {
     this.setupNotesEvents();
 
     // Admin actions
-    document.getElementById('saveScheduleBtn')?.addEventListener('click', () => this.saveSchedule());
-    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => this.resetSchedule());
+    document.getElementById('saveScheduleBtn')?.addEventListener('click', () => void this.saveSchedule());
+    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => void this.resetSchedule());
 
     // Remove logout functionality - handled by unified navigation
   }
@@ -397,7 +398,7 @@ class ShiftPlanningSystem {
     departmentSelect?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
       this.selectedContext.departmentId = target.value ? parseInt(target.value) : null;
-      this.onContextChange();
+      void this.onContextChange();
       this.togglePlanningAreaVisibility();
     });
 
@@ -594,11 +595,11 @@ class ShiftPlanningSystem {
       if (weekNavigation) weekNavigation.style.display = 'flex';
 
       // Load data for the selected department
-      this.loadCurrentWeekData().then(() => {
+      void this.loadCurrentWeekData().then(() => {
         // Load notes after shift data is loaded
         if (this.selectedContext.departmentId) {
           console.log('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
-          this.loadWeeklyNotes();
+          void this.loadWeeklyNotes();
         }
       });
     } else {
@@ -737,7 +738,7 @@ class ShiftPlanningSystem {
         item.classList.add('unavailable', `status-${employee.availability_status}`);
       }
 
-      const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+      const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
       const statusIcon = this.getAvailabilityIcon(employee.availability_status);
       const statusBadge = this.getAvailabilityBadge(employee.availability_status);
 
@@ -827,7 +828,7 @@ class ShiftPlanningSystem {
     employeeItem.classList.add('selected');
 
     const employeeId = parseInt(employeeItem.dataset.employeeId ?? '0');
-    this.selectedEmployee = this.employees.find((e) => e.id === employeeId) || null;
+    this.selectedEmployee = this.employees.find((e) => e.id === employeeId) ?? null;
   }
 
   assignEmployeeToShift(shiftCell: HTMLElement): void {
@@ -882,7 +883,7 @@ class ShiftPlanningSystem {
           unavailable: 'Beurlaubt',
         }[employee.availability_status] || employee.availability_status;
 
-      const employeeName = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+      const employeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
 
       showError(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
       return;
@@ -890,7 +891,7 @@ class ShiftPlanningSystem {
 
     // Check if employee already has a shift on this day
     const shiftsOnThisDay = this.weeklyShifts[date] ?? {};
-    const employeeName = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+    const employeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
 
     // Check all shifts on this day
     for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
@@ -981,11 +982,11 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = await response.json();
         console.log('[SHIFTS DEBUG] API Response:', data);
-        console.log('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length || 0);
+        console.log('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
         if (data.shifts && data.shifts.length > 0) {
           console.log('[SHIFTS DEBUG] First shift:', data.shifts[0]);
         }
-        this.processShiftData(data.shifts || []);
+        this.processShiftData(data.shifts ?? []);
         this.renderWeekView();
       } else {
         throw new Error('Failed to load shift data');
@@ -1237,7 +1238,7 @@ class ShiftPlanningSystem {
     card.className = 'employee-card';
     card.dataset.employeeId = employee.id.toString();
 
-    const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+    const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
 
     card.innerHTML = `
       <div class="employee-name">${this.escapeHtml(name)}</div>
@@ -1337,7 +1338,7 @@ class ShiftPlanningSystem {
         await this.loadCurrentWeekData();
       } else {
         const error = await response.json();
-        showError(error.message || 'Fehler beim Speichern des Schichtplans');
+        showError(error.message ?? 'Fehler beim Speichern des Schichtplans');
       }
     } catch (error) {
       console.error('Error saving schedule:', error);
@@ -1577,7 +1578,7 @@ class ShiftPlanningSystem {
       .map((id) => {
         const employee = this.employees.find((e) => e.id === id);
         if (employee) {
-          const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+          const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
           return this.escapeHtml(name);
         }
         return '';

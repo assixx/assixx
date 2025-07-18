@@ -456,6 +456,8 @@ export default [
       // Backend Scripts - bleiben CommonJS
       "backend/scripts/**/*.js",
       "backend/src/utils/scripts/**/*.js",
+      // Fix scripts - CommonJS
+      "scripts/fix-*.js",
       // Entry Points - bleiben als .js für Stabilität
       "backend/src/app.js",
       "backend/src/auth.js",

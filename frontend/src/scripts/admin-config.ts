@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError } from './auth';
 import { formatDateTime } from './common';
 
@@ -87,13 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Load logs
       const days = tabId === 'logs-3days' ? 3 : tabId === 'logs-10days' ? 10 : tabId === 'logs-30days' ? 30 : 0; // 0 for "all"
-      loadAdminLogs(adminId, days);
+      void loadAdminLogs(adminId, days);
     });
   });
 
   // Event listeners
   if (updateAdminForm) {
-    updateAdminForm.addEventListener('submit', updateAdmin);
+    updateAdminForm.addEventListener('submit', (e) => void updateAdmin(e));
   }
 
   if (backBtn) {
@@ -103,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load data
-  loadAdminDetails(adminId);
-  loadAdminLogs(adminId, 3); // Default: load last 3 days
+  void loadAdminDetails(adminId);
+  void loadAdminLogs(adminId, 3); // Default: load last 3 days
 
   /**
    * Load admin details
@@ -126,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         populateAdminForm(admin);
       } else {
         const error = await response.json();
-        showError(error.message || 'Fehler beim Laden der Admin-Details');
+        showError(error.message ?? 'Fehler beim Laden der Admin-Details');
       }
     } catch (error) {
       console.error('Fehler beim Laden der Admin-Details:', error);
@@ -216,10 +217,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showSuccess('Admin-Daten erfolgreich aktualisiert!');
         // Reload details to show updated data
         if (adminId) {
-          loadAdminDetails(adminId);
+          void loadAdminDetails(adminId);
         }
       } else {
-        showError(result.error || 'Fehler beim Aktualisieren der Admin-Daten');
+        showError(result.error ?? 'Fehler beim Aktualisieren der Admin-Daten');
       }
     } catch (error) {
       console.error('Fehler beim Aktualisieren:', error);

@@ -3,6 +3,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, removeAuthToken } from './auth';
 // import { formatDate as formatDateUtil } from './common';
 

@@ -4,10 +4,11 @@
  */
 
 import express, { Router } from "express";
-import { authenticateToken } from "../middleware/auth.js";
-import User from "../models/user.js";
-import AdminLog from "../models/adminLog.js";
 import jwt from "jsonwebtoken";
+
+import { authenticateToken } from "../middleware/auth.js";
+import AdminLog from "../models/adminLog.js";
+import User from "../models/user.js";
 import { getErrorMessage } from "../utils/errorHandler.js";
 import { typed } from "../utils/routeHandlers";
 
@@ -70,7 +71,7 @@ router.post(
           isRoleSwitched: true,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -107,7 +108,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -147,7 +148,7 @@ router.post(
           isRoleSwitched: false,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -182,7 +183,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -222,7 +223,7 @@ router.post(
           isRoleSwitched: false,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -257,7 +258,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -295,7 +296,7 @@ router.post(
           isRoleSwitched: true,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -330,7 +331,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 export default router;

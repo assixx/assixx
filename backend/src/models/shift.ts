@@ -8,13 +8,14 @@ import {
   RowDataPacket,
   ResultSetHeader,
 } from "../utils/db";
+
 import User from "./user";
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
  */
 export function formatDateForMysql(
-  dateString: string | Date | null
+  dateString: string | Date | null,
 ): string | null {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -25,7 +26,7 @@ export function formatDateForMysql(
  * Format date only for MySQL
  */
 export function formatDateOnlyForMysql(
-  dateString: string | Date | null
+  dateString: string | Date | null,
 ): string | null {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -239,7 +240,7 @@ interface CountResult extends RowDataPacket {
  * Get all shift templates for a tenant
  */
 export async function getShiftTemplates(
-  tenantId: number
+  tenantId: number,
 ): Promise<DbShiftTemplate[]> {
   try {
     const query = `
@@ -262,7 +263,7 @@ export async function getShiftTemplates(
  * Create a new shift template
  */
 export async function createShiftTemplate(
-  templateData: ShiftTemplateData
+  templateData: ShiftTemplateData,
 ): Promise<DbShiftTemplate> {
   try {
     const {
@@ -299,19 +300,19 @@ export async function createShiftTemplate(
     const [result] = await executeQuery<ResultSetHeader>(query, [
       tenant_id,
       name,
-      description || null,
+      description ?? null,
       start_time,
       end_time,
       duration_hours,
-      break_duration_minutes || 0,
-      color || "#3498db",
+      break_duration_minutes ?? 0,
+      color ?? "#3498db",
       created_by,
     ]);
 
     // Get the created template
     const [created] = await executeQuery<DbShiftTemplate[]>(
       "SELECT * FROM shift_templates WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
 
     return created[0];
@@ -327,7 +328,7 @@ export async function createShiftTemplate(
 export async function getShiftPlans(
   tenantId: number,
   userId: number,
-  options: ShiftPlanFilters = {}
+  options: ShiftPlanFilters = {},
 ): Promise<{
   plans: DbShiftPlan[];
   pagination: {
@@ -376,7 +377,7 @@ export async function getShiftPlans(
         // Regular employees can only see published plans for their department/team
         query +=
           ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
-        queryParams.push(departmentId || 0, teamId || 0);
+        queryParams.push(departmentId ?? 0, teamId ?? 0);
       }
     }
 
@@ -431,7 +432,7 @@ export async function getShiftPlans(
       } else {
         countQuery +=
           ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
-        countParams.push(departmentId || 0, teamId || 0);
+        countParams.push(departmentId ?? 0, teamId ?? 0);
       }
     }
 
@@ -463,7 +464,7 @@ export async function getShiftPlans(
 
     const [countResult] = await executeQuery<CountResult[]>(
       countQuery,
-      countParams
+      countParams,
     );
     const total = countResult[0].total;
 
@@ -486,7 +487,7 @@ export async function getShiftPlans(
  * Create a new shift plan
  */
 export async function createShiftPlan(
-  planData: ShiftPlanData
+  planData: ShiftPlanData,
 ): Promise<DbShiftPlan> {
   try {
     const {
@@ -519,18 +520,18 @@ export async function createShiftPlan(
     const [result] = await executeQuery<ResultSetHeader>(query, [
       tenant_id,
       name,
-      description || null,
+      description ?? null,
       formatDateOnlyForMysql(start_date),
       formatDateOnlyForMysql(end_date),
-      department_id || null,
-      team_id || null,
+      department_id ?? null,
+      team_id ?? null,
       created_by,
     ]);
 
     // Get the created plan
     const [created] = await executeQuery<DbShiftPlan[]>(
       "SELECT * FROM shift_plans WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
 
     return created[0];
@@ -546,7 +547,7 @@ export async function createShiftPlan(
 export async function getShiftsByPlan(
   planId: number,
   tenantId: number,
-  userId: number
+  userId: number,
 ): Promise<DbShift[]> {
   try {
     // Check if user can access this plan
@@ -632,18 +633,18 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
     const [result] = await executeQuery<ResultSetHeader>(query, [
       tenant_id,
       plan_id,
-      template_id || null,
+      template_id ?? null,
       formatDateOnlyForMysql(date),
       start_time,
       end_time,
-      required_employees || 1,
+      required_employees ?? 1,
       created_by,
     ]);
 
     // Get the created shift
     const [created] = await executeQuery<DbShift[]>(
       "SELECT * FROM shifts WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
 
     return created[0];
@@ -657,7 +658,7 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
  * Assign employee to a shift
  */
 export async function assignEmployeeToShift(
-  assignmentData: ShiftAssignmentData
+  assignmentData: ShiftAssignmentData,
 ): Promise<DbShiftAssignment> {
   try {
     const { tenant_id, shift_id, user_id, assigned_by } = assignmentData;
@@ -670,7 +671,7 @@ export async function assignEmployeeToShift(
     // Check if already assigned to this specific shift
     const [existing] = await executeQuery<RowDataPacket[]>(
       "SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?",
-      [shift_id, user_id]
+      [shift_id, user_id],
     );
 
     if (existing.length > 0) {
@@ -680,7 +681,7 @@ export async function assignEmployeeToShift(
     // Check if employee is already assigned to another shift on the same day
     const [shiftInfo] = await executeQuery<DbShift[]>(
       "SELECT date FROM shifts WHERE id = ?",
-      [shift_id]
+      [shift_id],
     );
 
     if (shiftInfo.length > 0) {
@@ -693,12 +694,12 @@ export async function assignEmployeeToShift(
         JOIN shifts s ON sa.shift_id = s.id
         WHERE sa.user_id = ? AND s.date = ? AND s.tenant_id = ?
       `,
-        [user_id, shiftDate, tenant_id]
+        [user_id, shiftDate, tenant_id],
       );
 
       if (dayAssignments.length > 0) {
         throw new Error(
-          "Employee is already assigned to another shift on this day"
+          "Employee is already assigned to another shift on this day",
         );
       }
     }
@@ -724,7 +725,7 @@ export async function assignEmployeeToShift(
       JOIN users u ON sa.user_id = u.id
       WHERE sa.id = ?
     `,
-      [result.insertId]
+      [result.insertId],
     );
 
     return created[0];
@@ -741,7 +742,7 @@ export async function getEmployeeAvailability(
   tenantId: number,
   userId: number,
   startDate: string | Date,
-  endDate: string | Date
+  endDate: string | Date,
 ): Promise<DbEmployeeAvailability[]> {
   try {
     const query = `
@@ -769,7 +770,7 @@ export async function getEmployeeAvailability(
  * Set employee availability
  */
 export async function setEmployeeAvailability(
-  availabilityData: EmployeeAvailabilityData
+  availabilityData: EmployeeAvailabilityData,
 ): Promise<DbEmployeeAvailability> {
   try {
     const {
@@ -790,7 +791,7 @@ export async function setEmployeeAvailability(
     // Check if availability already exists for this date
     const [existing] = await executeQuery<DbEmployeeAvailability[]>(
       "SELECT * FROM employee_availability WHERE tenant_id = ? AND user_id = ? AND date = ?",
-      [tenant_id, user_id, formatDateOnlyForMysql(date)]
+      [tenant_id, user_id, formatDateOnlyForMysql(date)],
     );
 
     if (existing.length > 0) {
@@ -803,9 +804,9 @@ export async function setEmployeeAvailability(
 
       await executeQuery(query, [
         availability_type,
-        start_time || null,
-        end_time || null,
-        notes || null,
+        start_time ?? null,
+        end_time ?? null,
+        notes ?? null,
         existing[0].id,
       ]);
 
@@ -829,14 +830,14 @@ export async function setEmployeeAvailability(
         user_id,
         formatDateOnlyForMysql(date),
         availability_type,
-        start_time || null,
-        end_time || null,
-        notes || null,
+        start_time ?? null,
+        end_time ?? null,
+        notes ?? null,
       ]);
 
       const [created] = await executeQuery<DbEmployeeAvailability[]>(
         "SELECT * FROM employee_availability WHERE id = ?",
-        [result.insertId]
+        [result.insertId],
       );
 
       return created[0];
@@ -853,7 +854,7 @@ export async function setEmployeeAvailability(
 export async function getShiftExchangeRequests(
   tenantId: number,
   userId: number,
-  options: ShiftExchangeFilters = {}
+  options: ShiftExchangeFilters = {},
 ): Promise<DbShiftExchangeRequest[]> {
   try {
     const { status = "pending", limit = 50 } = options;
@@ -893,7 +894,7 @@ export async function getShiftExchangeRequests(
  * Create shift exchange request
  */
 export async function createShiftExchangeRequest(
-  requestData: ShiftExchangeRequestData
+  requestData: ShiftExchangeRequestData,
 ): Promise<DbShiftExchangeRequest> {
   try {
     const {
@@ -921,16 +922,16 @@ export async function createShiftExchangeRequest(
       tenant_id,
       shift_id,
       requester_id,
-      target_user_id || null,
+      target_user_id ?? null,
       exchange_type,
-      target_shift_id || null,
-      message || null,
+      target_shift_id ?? null,
+      message ?? null,
     ]);
 
     // Get the created request
     const [created] = await executeQuery<DbShiftExchangeRequest[]>(
       "SELECT * FROM shift_exchange_requests WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
 
     return created[0];
@@ -945,7 +946,7 @@ export async function createShiftExchangeRequest(
  */
 export async function canAccessShiftPlan(
   planId: number,
-  userId: number
+  userId: number,
 ): Promise<boolean> {
   try {
     // Get user info and plan info
@@ -954,7 +955,7 @@ export async function canAccessShiftPlan(
 
     const [plans] = await executeQuery<DbShiftPlan[]>(
       "SELECT * FROM shift_plans WHERE id = ?",
-      [planId]
+      [planId],
     );
 
     if (plans.length === 0) {
@@ -1000,7 +1001,7 @@ export async function getEmployeeShifts(
   tenantId: number,
   userId: number,
   startDate: string | Date,
-  endDate: string | Date
+  endDate: string | Date,
 ): Promise<DbShift[]> {
   try {
     const query = `
@@ -1034,7 +1035,7 @@ export async function getEmployeeShifts(
 async function getShiftsForDateRange(
   tenantId: number,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<ShiftQueryResult[]> {
   try {
     const query = `
@@ -1072,7 +1073,7 @@ async function getShiftsForDateRange(
 async function getWeekNotes(
   tenantId: number,
   weekStart: string,
-  weekEnd: string
+  weekEnd: string,
 ): Promise<Record<string, string>> {
   try {
     const query = `

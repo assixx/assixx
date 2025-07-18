@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
 
@@ -222,7 +223,7 @@ function initializeApp() {
         }
 
         // Load departments and teams for form dropdowns
-        loadDepartmentsAndTeams();
+        void loadDepartmentsAndTeams();
 
         // Initialize calendar - wrapped to prevent redirect on calendar errors
         try {
@@ -233,7 +234,7 @@ function initializeApp() {
         }
 
         // Load upcoming events
-        loadUpcomingEvents();
+        void loadUpcomingEvents();
 
         // Setup event listeners
         console.log('Calendar: Setting up event listeners...');
@@ -354,9 +355,15 @@ function initializeCalendar(): void {
           console.log('Calendar: User is not admin, ignoring selection');
         }
       },
-      events: loadCalendarEvents,
+      events(
+        fetchInfo: FullCalendarFetchInfo,
+        successCallback: (events: FullCalendarEventInput[]) => void,
+        failureCallback: (error: Error) => void,
+      ) {
+        loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
+      },
       eventClick(info: FullCalendarEventClickInfo) {
-        viewEvent(parseInt(info.event.id, 10));
+        void viewEvent(parseInt(info.event.id, 10));
       },
       eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
         // Show tooltip on hover
@@ -364,7 +371,7 @@ function initializeCalendar(): void {
         tooltip.className = 'event-tooltip';
         tooltip.innerHTML = `
         <strong>${info.event.title}</strong><br>
-        ${info.event.extendedProps?.description || ''}
+        ${info.event.extendedProps?.description ?? ''}
         ${info.event.extendedProps?.location ? `<br><i class="fas fa-map-marker-alt"></i> ${info.event.extendedProps.location}` : ''}
       `;
         document.body.appendChild(tooltip);
@@ -474,7 +481,7 @@ function setupEventListeners(): void {
   const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement;
   if (saveEventBtn) {
     saveEventBtn.addEventListener('click', () => {
-      saveEvent();
+      void saveEvent();
     });
   }
 
@@ -515,7 +522,7 @@ function setupEventListeners(): void {
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
       modalManager.show('attendeesModal');
-      loadEmployeesForAttendees();
+      void loadEmployeesForAttendees();
     });
   }
 
@@ -813,7 +820,7 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
 
     // Add click event
     eventItem.addEventListener('click', () => {
-      viewEvent(event.id);
+      void viewEvent(event.id);
     });
 
     container.appendChild(eventItem);
@@ -949,7 +956,7 @@ async function viewEvent(eventId: number): Promise<void> {
 
       event.attendees.forEach((attendee) => {
         const name =
-          `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim() || attendee.username || 'Unknown';
+          (`${attendee.first_name ?? ''} ${attendee.last_name ?? ''}`.trim() || attendee.username) ?? 'Unknown';
         const statusIcon = getAttendeeStatusIcon(attendee.response);
         modalContent += `
           <div class="attendee-item">
@@ -1068,10 +1075,10 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
 
       // Refresh calendar and upcoming events
       calendar.refetchEvents();
-      loadUpcomingEvents();
+      void loadUpcomingEvents();
     } else {
       const error = await apiResponse.json();
-      showError(error.message || 'Fehler beim Speichern der Antwort');
+      showError(error.message ?? 'Fehler beim Speichern der Antwort');
     }
   } catch (error) {
     console.error('Error responding to event:', error);
@@ -1126,7 +1133,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       modalTitle.textContent = 'Termin bearbeiten';
     }
     // Load event data for editing
-    loadEventForEdit(eventId);
+    void loadEventForEdit(eventId);
   } else {
     // Update modal title for new event
     const modalTitle = modal.querySelector('.modal-title');
@@ -1402,10 +1409,10 @@ async function saveEvent(): Promise<void> {
 
       // Refresh calendar
       calendar.refetchEvents();
-      loadUpcomingEvents();
+      void loadUpcomingEvents();
     } else {
       const error = await response.json();
-      showError(error.message || 'Fehler beim Speichern des Termins');
+      showError(error.message ?? 'Fehler beim Speichern des Termins');
     }
   } catch (error) {
     console.error('Error saving event:', error);
@@ -1498,7 +1505,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // Update org dropdown
       updateOrgIdDropdown(event.org_level);
       if (event.org_id) {
-        const orgName = event.department_name ?? (event.team_name || '');
+        const orgName = event.department_name ?? event.team_name ?? '';
         selectOrgId(event.org_id, orgName);
       }
 
@@ -1601,10 +1608,10 @@ async function confirmDeleteEvent(eventId: number): Promise<void> {
 
       // Refresh calendar
       calendar.refetchEvents();
-      loadUpcomingEvents();
+      void loadUpcomingEvents();
     } else {
       const error = await response.json();
-      showError(error.message || 'Fehler beim Löschen des Termins');
+      showError(error.message ?? 'Fehler beim Löschen des Termins');
     }
   } catch (error) {
     console.error('Error deleting event:', error);
@@ -1626,7 +1633,7 @@ function searchAttendees(query: string): void {
 
   // Filter employees based on query
   const filteredEmployees = employees.filter((emp) => {
-    const fullName = `${emp.first_name ?? ''} ${emp.last_name || ''}`.toLowerCase();
+    const fullName = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.toLowerCase();
     const username = (emp.username ?? '').toLowerCase();
     const email = (emp.email ?? '').toLowerCase();
     return (
@@ -1643,7 +1650,7 @@ function searchAttendees(query: string): void {
 
     const item = document.createElement('div');
     item.className = 'search-result-item';
-    const name = `${emp.first_name ?? ''} ${emp.last_name || ''}`.trim() || emp.username;
+    const name = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.username;
     item.innerHTML = `
       <span>${escapeHtml(name)}</span>
       <button class="btn btn-sm btn-primary" onclick="addAttendee(${emp.id}, '${escapeHtml(name)}')">
@@ -1849,7 +1856,7 @@ function setupModalEventListeners(): void {
       e.preventDefault();
       e.stopPropagation();
       console.log('Save button clicked');
-      saveEvent();
+      void saveEvent();
     });
   }
 
@@ -1863,7 +1870,7 @@ function setupModalEventListeners(): void {
       e.preventDefault();
       e.stopPropagation();
       modalManager.show('attendeesModal');
-      loadEmployeesForAttendees();
+      void loadEmployeesForAttendees();
     });
   }
 
@@ -2069,7 +2076,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
           <div class="attendee-option">
             <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
             <label for="attendee-${user.id}">
-              ${escapeHtml(user.first_name || '')} ${escapeHtml(user.last_name || '')} 
+              ${escapeHtml(user.first_name ?? '')} ${escapeHtml(user.last_name ?? '')} 
               (${escapeHtml(user.username)})
             </label>
           </div>
@@ -2101,7 +2108,7 @@ function updateSelectedAttendees(): void {
         return `
         <div class="attendee-item">
           <span class="attendee-name">
-            ${escapeHtml(employee.first_name || '')} ${escapeHtml(employee.last_name || '')}
+            ${escapeHtml(employee.first_name ?? '')} ${escapeHtml(employee.last_name ?? '')}
           </span>
           <button type="button" class="remove-attendee" onclick="removeAttendee(${userId})">
             <i class="fas fa-times"></i>

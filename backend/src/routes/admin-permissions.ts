@@ -4,14 +4,15 @@
  */
 
 import express, { Router } from "express";
+import { RowDataPacket } from "mysql2/promise";
+
+import { executeQuery } from "../config/database.js";
 import { security } from "../middleware/security";
 import { createValidation, body, param } from "../middleware/validation";
-import { successResponse, errorResponse } from "../types/response.types";
 import adminPermissionService from "../services/adminPermission.service.js";
-import { logger } from "../utils/logger.js";
+import { successResponse, errorResponse } from "../types/response.types";
 import { getErrorMessage } from "../utils/errorHandler.js";
-import { executeQuery } from "../config/database.js";
-import { RowDataPacket } from "mysql2/promise";
+import { logger } from "../utils/logger.js";
 import { typed } from "../utils/routeHandlers";
 
 const router: Router = express.Router();
@@ -49,7 +50,7 @@ router.get(
   ...security.root(
     createValidation([
       param("adminId").isInt({ min: 1 }).withMessage("Ungültige Admin-ID"),
-    ])
+    ]),
   ),
   typed.params<{ adminId: string }>(async (req, res) => {
     const adminId = parseInt(req.params.adminId);
@@ -58,7 +59,7 @@ router.get(
       // Get the tenant_id from the admin being queried
       const [adminRows] = await executeQuery<RowDataPacket[]>(
         "SELECT tenant_id FROM users WHERE id = ?",
-        [adminId]
+        [adminId],
       );
 
       if (!adminRows || adminRows.length === 0) {
@@ -73,7 +74,7 @@ router.get(
 
       const result = await adminPermissionService.getAdminDepartments(
         adminId,
-        targetTenantId
+        targetTenantId,
       );
 
       res.json(successResponse(result));
@@ -82,10 +83,13 @@ router.get(
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Abrufen der Abteilungsberechtigungen", 500)
+          errorResponse(
+            "Fehler beim Abrufen der Abteilungsberechtigungen",
+            500,
+          ),
         );
     }
-  })
+  }),
 );
 
 // Get current admin's departments (for sidebar badge)
@@ -99,7 +103,7 @@ router.get(
         successResponse({
           departments: [],
           hasAllAccess: req.user.role === "root",
-        })
+        }),
       );
       return;
     }
@@ -107,7 +111,7 @@ router.get(
     try {
       const result = await adminPermissionService.getAdminDepartments(
         req.user.id,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       res.json(successResponse(result));
@@ -116,10 +120,10 @@ router.get(
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Abrufen der eigenen Abteilungen", 500)
+          errorResponse("Fehler beim Abrufen der eigenen Abteilungen", 500),
         );
     }
-  })
+  }),
 );
 
 // Set permissions for an admin
@@ -161,7 +165,7 @@ router.post(
       // Get the tenant_id from the admin being modified
       const [adminRows] = await executeQuery<RowDataPacket[]>(
         "SELECT tenant_id FROM users WHERE id = ?",
-        [adminId]
+        [adminId],
       );
 
       if (!adminRows || adminRows.length === 0) {
@@ -180,12 +184,12 @@ router.post(
         departmentIds,
         req.user.id,
         targetTenantId,
-        permissions
+        permissions,
       );
 
       if (success) {
         logger.info(
-          `Root user ${req.user.id} set permissions for admin ${adminId}`
+          `Root user ${req.user.id} set permissions for admin ${adminId}`,
         );
         res.json(successResponse(null, "Berechtigungen erfolgreich gesetzt"));
       } else {
@@ -199,7 +203,7 @@ router.post(
         .status(500)
         .json(errorResponse("Fehler beim Setzen der Berechtigungen", 500));
     }
-  })
+  }),
 );
 
 // Set group permissions for an admin
@@ -235,12 +239,12 @@ router.post(
         groupIds,
         req.user.id,
         req.user.tenant_id,
-        permissions
+        permissions,
       );
 
       if (success) {
         logger.info(
-          `Root user ${req.user.id} set group permissions for admin ${adminId}`
+          `Root user ${req.user.id} set group permissions for admin ${adminId}`,
         );
         res.json({
           success: true,
@@ -254,14 +258,14 @@ router.post(
       }
     } catch (error) {
       logger.error(
-        `Error setting admin group permissions: ${getErrorMessage(error)}`
+        `Error setting admin group permissions: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler beim Setzen der Gruppenberechtigungen",
       });
     }
-  })
+  }),
 );
 
 // Remove specific department permission
@@ -273,7 +277,7 @@ router.delete(
       param("departmentId")
         .isInt({ min: 1 })
         .withMessage("Ungültige Abteilungs-ID"),
-    ])
+    ]),
   ),
   typed.params<{ adminId: string; departmentId: string }>(async (req, res) => {
     const adminId = parseInt(req.params.adminId);
@@ -283,7 +287,7 @@ router.delete(
       const success = await adminPermissionService.removePermission(
         adminId,
         departmentId,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
@@ -293,7 +297,7 @@ router.delete(
           departmentId,
           "department",
           req.user.id,
-          req.user.tenant_id
+          req.user.tenant_id,
         );
 
         res.json({
@@ -308,14 +312,14 @@ router.delete(
       }
     } catch (error) {
       logger.error(
-        `Error removing admin permission: ${getErrorMessage(error)}`
+        `Error removing admin permission: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler beim Entfernen der Berechtigung",
       });
     }
-  })
+  }),
 );
 
 // Remove specific group permission
@@ -325,7 +329,7 @@ router.delete(
     createValidation([
       param("adminId").isInt({ min: 1 }).withMessage("Ungültige Admin-ID"),
       param("groupId").isInt({ min: 1 }).withMessage("Ungültige Gruppen-ID"),
-    ])
+    ]),
   ),
   typed.params<{ adminId: string; groupId: string }>(async (req, res) => {
     const adminId = parseInt(req.params.adminId);
@@ -335,7 +339,7 @@ router.delete(
       const success = await adminPermissionService.removeGroupPermission(
         adminId,
         groupId,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
@@ -345,7 +349,7 @@ router.delete(
           groupId,
           "group",
           req.user.id,
-          req.user.tenant_id
+          req.user.tenant_id,
         );
 
         res.json({
@@ -360,14 +364,14 @@ router.delete(
       }
     } catch (error) {
       logger.error(
-        `Error removing admin group permission: ${getErrorMessage(error)}`
+        `Error removing admin group permission: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler beim Entfernen der Gruppenberechtigung",
       });
     }
-  })
+  }),
 );
 
 // Bulk operations
@@ -405,7 +409,7 @@ router.post(
       body("permissions.can_read").optional().isBoolean(),
       body("permissions.can_write").optional().isBoolean(),
       body("permissions.can_delete").optional().isBoolean(),
-    ])
+    ]),
   ),
   typed.auth(async (req, res) => {
     const {
@@ -428,7 +432,7 @@ router.post(
       let successCount = 0;
       const errors: string[] = [];
 
-      for (const adminId of adminIds || []) {
+      for (const adminId of adminIds ?? []) {
         try {
           if (operation === "assign") {
             const success = await adminPermissionService.setPermissions(
@@ -436,7 +440,7 @@ router.post(
               departmentIds,
               req.user.id,
               req.user.tenant_id,
-              permissions
+              permissions,
             );
             if (success) successCount++;
           } else {
@@ -445,7 +449,7 @@ router.post(
               adminId,
               [],
               req.user.id,
-              req.user.tenant_id
+              req.user.tenant_id,
             );
             if (success) successCount++;
           }
@@ -456,19 +460,19 @@ router.post(
 
       res.json({
         success: true,
-        message: `${successCount} von ${adminIds?.length || 0} Admins erfolgreich bearbeitet`,
+        message: `${successCount} von ${adminIds?.length ?? 0} Admins erfolgreich bearbeitet`,
         errors: errors.length > 0 ? errors : undefined,
       });
     } catch (error) {
       logger.error(
-        `Error in bulk permission operation: ${getErrorMessage(error)}`
+        `Error in bulk permission operation: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler bei der Bulk-Operation",
       });
     }
-  })
+  }),
 );
 
 export default router;

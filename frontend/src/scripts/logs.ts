@@ -68,7 +68,7 @@
 
   // Load logs on page load
   document.addEventListener('DOMContentLoaded', () => {
-    loadLogs();
+    void loadLogs();
     setupFilterListeners();
     updateDeleteButtonState();
   });
@@ -211,7 +211,7 @@
               <td>
                 <span class="action-badge action-${log.action}">${getActionLabel(log.action)}</span>
               </td>
-              <td>${log.entity_type || '-'}</td>
+              <td>${log.entity_type ?? '-'}</td>
               <td>
                 ${
                   log.details
@@ -246,7 +246,7 @@
               </td>
               <td>
                 <span style="font-size: 12px; color: var(--text-secondary);">
-                  ${log.ip_address || '-'}
+                  ${log.ip_address ?? '-'}
                 </span>
               </td>
             </tr>
@@ -311,7 +311,7 @@
     updateDeleteButtonState();
 
     currentOffset = 0;
-    loadLogs();
+    void loadLogs();
   }
 
   // Reset filters
@@ -354,7 +354,7 @@
     // Update delete button state
     updateDeleteButtonState();
 
-    loadLogs();
+    void loadLogs();
   }
 
   // Delete filtered logs
@@ -497,11 +497,11 @@
         }
 
         // Show success message
-        alert(`✅ ${result.deletedCount || 0} Logs wurden erfolgreich gelöscht.`);
+        alert(`✅ ${result.deletedCount ?? 0} Logs wurden erfolgreich gelöscht.`);
 
         // Reload logs to show updated list
         currentOffset = 0;
-        loadLogs();
+        void loadLogs();
       } else {
         const error = await response.json();
         alert(`❌ Fehler beim Löschen der Logs: ${error.error ?? 'Unbekannter Fehler'}`);
@@ -522,14 +522,14 @@
   function loadPreviousPage() {
     if (currentOffset >= limit) {
       currentOffset -= limit;
-      loadLogs();
+      void loadLogs();
     }
   }
 
   // Load next page
   function loadNextPage() {
     currentOffset += limit;
-    loadLogs();
+    void loadLogs();
   }
 
   // Helper function to get readable action labels

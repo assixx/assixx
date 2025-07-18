@@ -5,11 +5,12 @@
  */
 
 import "dotenv/config";
-import { tenantDeletionService } from "../services/tenantDeletion.service";
-import { logger } from "../utils/logger";
-import pool from "../database";
 import * as http from "http";
 import { IncomingMessage, ServerResponse } from "http";
+
+import pool from "../database";
+import { tenantDeletionService } from "../services/tenantDeletion.service";
+import { logger } from "../utils/logger";
 
 class DeletionWorker {
   private isRunning = true;
@@ -18,18 +19,18 @@ class DeletionWorker {
 
   constructor() {
     // Setup graceful shutdown handlers
-    process.on("SIGTERM", () => this.shutdown("SIGTERM"));
-    process.on("SIGINT", () => this.shutdown("SIGINT"));
+    process.on("SIGTERM", () => void this.shutdown("SIGTERM"));
+    process.on("SIGINT", () => void this.shutdown("SIGINT"));
     process.on("uncaughtException", (error) => {
       logger.error("Uncaught exception in deletion worker:", error);
-      this.shutdown("uncaughtException");
+      void this.shutdown("uncaughtException");
     });
     process.on("unhandledRejection", (reason, promise) => {
       logger.error("Unhandled rejection in deletion worker:", {
         reason,
         promise,
       });
-      this.shutdown("unhandledRejection");
+      void this.shutdown("unhandledRejection");
     });
   }
 
@@ -49,7 +50,7 @@ class DeletionWorker {
 
       logger.info("✅ Deletion Worker ready and running");
       logger.info(
-        `⏰ Checking for queued deletions every ${this.processingInterval / 1000} seconds`
+        `⏰ Checking for queued deletions every ${this.processingInterval / 1000} seconds`,
       );
 
       // Main processing loop
@@ -98,13 +99,13 @@ class DeletionWorker {
               timestamp: new Date().toISOString(),
               isProcessing: this.isProcessing,
               pid: process.pid,
-            })
+            }),
           );
         } else {
           res.writeHead(404);
           res.end("Not found");
         }
-      }
+      },
     );
 
     server.listen(healthPort, () => {
@@ -118,7 +119,7 @@ class DeletionWorker {
 
   private async shutdown(signal: string): Promise<void> {
     logger.info(
-      `⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`
+      `⚠️  Deletion Worker received ${signal} signal, shutting down gracefully...`,
     );
 
     this.isRunning = false;

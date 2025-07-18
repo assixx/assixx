@@ -129,7 +129,7 @@ export function initPageProtection(): void {
       const token = getAuthToken();
       if (token) {
         const tokenData = parseJwt(token);
-        if (tokenData && tokenData.exp) {
+        if (tokenData?.exp) {
           const now = Date.now() / 1000;
           if (tokenData.exp < now) {
             console.warn('Token expired, redirecting to login');

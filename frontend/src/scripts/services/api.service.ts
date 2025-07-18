@@ -85,7 +85,7 @@ export class ApiService {
     data?: unknown,
     options?: RequestOptions,
   ): Promise<T> {
-    const { params, ...fetchOptions } = options || {};
+    const { params, ...fetchOptions } = options ?? {};
     const url = this.buildUrl(endpoint, params);
 
     const requestOptions: RequestInit = {
@@ -124,7 +124,7 @@ export class ApiService {
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseData.error || responseData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(responseData.error ?? responseData.message ?? `HTTP error! status: ${response.status}`);
       }
 
       return responseData as T;

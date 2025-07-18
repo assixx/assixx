@@ -13,5 +13,5 @@ document.addEventListener('DOMContentLoaded', () => {
     'Dokumente die für alle Mitarbeiter sichtbar sind',
     false,
   );
-  companyPage.initialize();
+  void companyPage.initialize();
 });

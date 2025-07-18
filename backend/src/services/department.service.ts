@@ -3,16 +3,19 @@
  * Handles department-related business logic
  */
 
-import Department from "../models/department";
 import { Pool } from "mysql2/promise";
 
-// Import types from Department model
-import type {
+import Department, {
   DbDepartment as DepartmentData,
   DepartmentCreateData,
   DepartmentUpdateData,
 } from "../models/department";
+/**
+ * Department Service
+ * Handles department-related business logic
+ */
 
+// Import types from Department model
 // Service-specific interfaces
 interface DepartmentFilters {
   search?: string;
@@ -30,7 +33,7 @@ class DepartmentService {
   async getAll(
     _tenantDb: Pool,
     tenantId: number,
-    _filters: DepartmentFilters = {}
+    _filters: DepartmentFilters = {},
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
@@ -48,7 +51,7 @@ class DepartmentService {
   async getById(
     _tenantDb: Pool,
     id: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<DepartmentData | null> {
     try {
       return await Department.findById(id, tenantId);
@@ -63,7 +66,7 @@ class DepartmentService {
    */
   async create(
     _tenantDb: Pool,
-    data: DepartmentCreateData
+    data: DepartmentCreateData,
   ): Promise<DepartmentData> {
     try {
       const id = await Department.create(data);
@@ -85,7 +88,7 @@ class DepartmentService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    data: DepartmentUpdateData
+    data: DepartmentUpdateData,
   ): Promise<DepartmentData | null> {
     try {
       const success = await Department.update(id, data);

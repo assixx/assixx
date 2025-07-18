@@ -3,15 +3,18 @@
  * Handles admin log business logic
  */
 
-import AdminLog from "../models/adminLog";
 import { Pool } from "mysql2/promise";
 
-// Import types from AdminLog model
-import type {
+import AdminLog, {
   DbAdminLog,
   AdminLogCreateData as ModelAdminLogCreateData,
 } from "../models/adminLog";
+/**
+ * Admin Log Service
+ * Handles admin log business logic
+ */
 
+// Import types from AdminLog model
 // Service-specific interfaces
 interface AdminLogData extends Omit<DbAdminLog, "tenant_id"> {
   tenant_id: number;
@@ -49,7 +52,7 @@ class AdminLogService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: AdminLogFilters = {}
+    filters: AdminLogFilters = {},
   ): Promise<AdminLogData[]> {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
@@ -80,7 +83,7 @@ class AdminLogService {
    */
   async create(
     _tenantDb: Pool,
-    data: AdminLogCreateData
+    data: AdminLogCreateData,
   ): Promise<AdminLogData> {
     try {
       const modelData: ModelAdminLogCreateData = {
@@ -123,7 +126,7 @@ class AdminLogService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: AdminLogUpdateData
+    _data: AdminLogUpdateData,
   ): Promise<AdminLogData | null> {
     // TODO: Implement update method in AdminLog model
     return null;

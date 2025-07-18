@@ -23,7 +23,7 @@ async function createFeatureTables() {
       __dirname,
       "..",
       "database",
-      "feature_management_schema.sql"
+      "feature_management_schema.sql",
     );
     const sql = await fs.readFile(sqlPath, "utf8");
 
@@ -38,7 +38,7 @@ async function createFeatureTables() {
     console.log(`\n${features.length} Features hinzugefügt:`);
     features.forEach((feature) => {
       console.log(
-        `- ${feature.name} (${feature.code}) - ${feature.category} - €${feature.base_price}`
+        `- ${feature.name} (${feature.code}) - ${feature.category} - €${feature.base_price}`,
       );
     });
 
@@ -63,7 +63,7 @@ createFeatureTables()
   .then(() => {
     console.log("\nFeature-Management System erfolgreich eingerichtet!");
     console.log(
-      "Sie können jetzt Features über /feature-management.html verwalten"
+      "Sie können jetzt Features über /feature-management.html verwalten",
     );
     process.exit(0);
   })

@@ -150,7 +150,7 @@ export class Document {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching documents for user ${userId}: ${(error as Error).message}`
+        `Error fetching documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -159,10 +159,10 @@ export class Document {
   static async findByUserIdAndCategory(
     userId: number,
     category: string,
-    archived = false
+    archived = false,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Fetching ${category} documents for user ${userId} (archived: ${archived})`
+      `Fetching ${category} documents for user ${userId} (archived: ${archived})`,
     );
     const query =
       'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
@@ -173,12 +173,12 @@ export class Document {
         archived,
       ]);
       logger.info(
-        `Retrieved ${rows.length} ${category} documents for user ${userId}`
+        `Retrieved ${rows.length} ${category} documents for user ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching ${category} documents for user ${userId}: ${(error as Error).message}`
+        `Error fetching ${category} documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -197,7 +197,7 @@ export class Document {
       return rows[0];
     } catch (error) {
       logger.error(
-        `Error fetching document ${id}: ${(error as Error).message}`
+        `Error fetching document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -217,7 +217,7 @@ export class Document {
       return true;
     } catch (error) {
       logger.error(
-        `Error incrementing download count for document ${id}: ${(error as Error).message}`
+        `Error incrementing download count for document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -233,7 +233,7 @@ export class Document {
       year,
       month,
       isArchived,
-    }: DocumentUpdateData
+    }: DocumentUpdateData,
   ): Promise<boolean> {
     logger.info(`Updating document ${id}`);
     let query = "UPDATE documents SET ";
@@ -287,7 +287,7 @@ export class Document {
       return true;
     } catch (error) {
       logger.error(
-        `Error updating document ${id}: ${(error as Error).message}`
+        `Error updating document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -316,7 +316,7 @@ export class Document {
       return true;
     } catch (error) {
       logger.error(
-        `Error deleting document ${id}: ${(error as Error).message}`
+        `Error deleting document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -324,7 +324,7 @@ export class Document {
 
   static async findAll(category: string | null = null): Promise<DbDocument[]> {
     logger.info(
-      `Fetching all documents${category ? ` of category ${category}` : ""}`
+      `Fetching all documents${category ? ` of category ${category}` : ""}`,
     );
     let query = `
       SELECT d.*, u.first_name, u.last_name, 
@@ -344,7 +344,7 @@ export class Document {
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, params);
       logger.info(
-        `Retrieved ${rows.length} documents${category ? ` of category ${category}` : ""}`
+        `Retrieved ${rows.length} documents${category ? ` of category ${category}` : ""}`,
       );
       return rows;
     } catch (error) {
@@ -355,10 +355,10 @@ export class Document {
 
   static async search(
     userId: number,
-    searchTerm: string
+    searchTerm: string,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Searching documents for user ${userId} with term: ${searchTerm}`
+      `Searching documents for user ${userId} with term: ${searchTerm}`,
     );
     const query =
       "SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND (file_name LIKE ? OR description LIKE ?)";
@@ -369,12 +369,12 @@ export class Document {
         `%${searchTerm}%`,
       ]);
       logger.info(
-        `Found ${rows.length} documents matching search for user ${userId}`
+        `Found ${rows.length} documents matching search for user ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error searching documents for user ${userId}: ${(error as Error).message}`
+        `Error searching documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -384,10 +384,10 @@ export class Document {
   static async searchWithEmployeeAccess(
     userId: number,
     tenant_id: number,
-    searchTerm: string
+    searchTerm: string,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Searching accessible documents for employee ${userId} with term: ${searchTerm}`
+      `Searching accessible documents for employee ${userId} with term: ${searchTerm}`,
     );
 
     const query = `
@@ -440,12 +440,12 @@ export class Document {
         tenant_id,
       ]);
       logger.info(
-        `Found ${rows.length} accessible documents matching search for employee ${userId}`
+        `Found ${rows.length} accessible documents matching search for employee ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error searching accessible documents for employee ${userId}: ${(error as Error).message}`
+        `Error searching accessible documents for employee ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -458,12 +458,12 @@ export class Document {
       try {
         const [rows] = await executeQuery<RowDataPacket[]>(
           "SELECT COUNT(*) as count FROM documents",
-          []
+          [],
         );
         return rows[0]?.count ?? 0;
       } catch (error) {
         logger.error(
-          `Error counting all documents: ${(error as Error).message}`
+          `Error counting all documents: ${(error as Error).message}`,
         );
         return 0;
       }
@@ -505,10 +505,10 @@ export class Document {
   // Find all documents accessible to an employee (personal, team, department, company)
   static async findByEmployeeWithAccess(
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`
+      `Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`,
     );
 
     const query = `
@@ -558,12 +558,12 @@ export class Document {
         tenant_id,
       ]);
       logger.info(
-        `Retrieved ${rows.length} accessible documents for employee ${userId}`
+        `Retrieved ${rows.length} accessible documents for employee ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`
+        `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -574,12 +574,12 @@ export class Document {
     try {
       const [rows] = await executeQuery<RowDataPacket[]>(
         "SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?",
-        [tenant_id]
+        [tenant_id],
       );
       return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(
-        `Error counting documents by tenant: ${(error as Error).message}`
+        `Error counting documents by tenant: ${(error as Error).message}`,
       );
       return 0;
     }
@@ -591,14 +591,14 @@ export class Document {
     try {
       const [rows] = await executeQuery<RowDataPacket[]>(
         "SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?",
-        [tenant_id]
+        [tenant_id],
       );
       const totalSize = rows[0]?.total_size ?? 0;
       logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
       return totalSize;
     } catch (error) {
       logger.error(
-        `Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`
+        `Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`,
       );
       return 0;
     }
@@ -606,7 +606,7 @@ export class Document {
 
   // Find documents with flexible filters
   static async findWithFilters(
-    filters: DocumentFilters
+    filters: DocumentFilters,
   ): Promise<DbDocument[]> {
     logger.info("Finding documents with filters", filters);
 
@@ -701,7 +701,7 @@ export class Document {
       return rows;
     } catch (error) {
       logger.error(
-        `Error finding documents with filters: ${(error as Error).message}`
+        `Error finding documents with filters: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -711,7 +711,7 @@ export class Document {
   static async markAsRead(
     documentId: number,
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<void> {
     const query = `
       INSERT INTO document_read_status (document_id, user_id, tenant_id)
@@ -725,7 +725,7 @@ export class Document {
   static async isReadByUser(
     documentId: number,
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<boolean> {
     const query = `
       SELECT 1 FROM document_read_status
@@ -743,7 +743,7 @@ export class Document {
   // Get unread documents count for a user
   static async getUnreadCountForUser(
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<number> {
     const query = `
       SELECT COUNT(DISTINCT d.id) as unread_count

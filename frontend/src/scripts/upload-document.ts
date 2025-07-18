@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken } from './auth';
 
 interface UploadFormElements extends HTMLFormControlsCollection {
@@ -23,13 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   console.info('Upload document script loaded');
 
   // Load employees for dropdown
-  loadEmployees();
+  void loadEmployees();
 
   // Register form events
   const uploadForm = document.getElementById('upload-form') as UploadForm;
   if (uploadForm) {
     console.info('Upload form found');
-    uploadForm.addEventListener('submit', uploadDocument);
+    uploadForm.addEventListener('submit', (e) => void uploadDocument(e));
   } else {
     console.error('Upload form not found');
   }
@@ -79,7 +80,7 @@ async function loadEmployees(): Promise<void> {
         employees.forEach((employee: User) => {
           const option = document.createElement('option');
           option.value = employee.id.toString();
-          option.textContent = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
+          option.textContent = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
           userSelect.appendChild(option);
         });
 

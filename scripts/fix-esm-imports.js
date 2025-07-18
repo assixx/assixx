@@ -26,7 +26,7 @@ async function fixImports(dir) {
             }
           }
           return `from '${importPath}.js'`;
-        }
+        },
       );
 
       await writeFile(path, content);

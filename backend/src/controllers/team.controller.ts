@@ -5,6 +5,7 @@
 
 import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
+
 import teamService from "../services/team.service";
 
 // Extended Request interface with tenant database

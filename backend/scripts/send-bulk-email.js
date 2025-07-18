@@ -51,11 +51,11 @@ async function sendBulkEmails() {
     // Feature-Prüfung
     const hasEmailFeature = await Feature.checkTenantAccess(
       tenantId,
-      "email_notifications"
+      "email_notifications",
     );
     if (!hasEmailFeature) {
       logger.error(
-        `Tenant ${tenantId} hat keine Berechtigung für E-Mail-Benachrichtigungen.`
+        `Tenant ${tenantId} hat keine Berechtigung für E-Mail-Benachrichtigungen.`,
       );
       process.exit(1);
     }
@@ -77,7 +77,7 @@ async function sendBulkEmails() {
 
     if (users.length === 0) {
       logger.warn(
-        "Keine Benutzer gefunden, die den Filterkriterien entsprechen"
+        "Keine Benutzer gefunden, die den Filterkriterien entsprechen",
       );
       process.exit(0);
     }
@@ -100,7 +100,7 @@ async function sendBulkEmails() {
     // E-Mails senden
     const result = await emailService.sendBulkNotification(
       users,
-      messageOptions
+      messageOptions,
     );
 
     if (result.success) {

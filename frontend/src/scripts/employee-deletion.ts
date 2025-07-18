@@ -6,6 +6,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
+
 import { getAuthToken } from './auth';
 
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
@@ -38,7 +39,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       return response.json();
     })
     .then((employee: User) => {
-      selectedEmployeeName = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim();
+      selectedEmployeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
 
       // Prüfen, ob der Mitarbeiter Dokumente hat
       return fetch(`/api/documents?user_id=${employeeId}`, {
@@ -221,12 +222,12 @@ function processEmployeeDeletion(): void {
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
-              windowWithTables2.loadEmployeesTable();
+              void windowWithTables2.loadEmployeesTable();
             }
 
             // Dashboard-Statistiken aktualisieren
             if (typeof windowWithTables2.loadDashboardStats === 'function') {
-              windowWithTables2.loadDashboardStats();
+              void windowWithTables2.loadDashboardStats();
             }
           } else {
             // Handle error response
@@ -274,12 +275,12 @@ function processEmployeeDeletion(): void {
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
-              windowWithTables2.loadEmployeesTable();
+              void windowWithTables2.loadEmployeesTable();
             }
 
             // Dashboard-Statistiken aktualisieren
             if (typeof windowWithTables2.loadDashboardStats === 'function') {
-              windowWithTables2.loadDashboardStats();
+              void windowWithTables2.loadDashboardStats();
             }
           } else {
             // Handle error response

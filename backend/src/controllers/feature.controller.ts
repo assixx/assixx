@@ -5,6 +5,7 @@
 
 import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
+
 import featureService from "../services/feature.service";
 
 // Extended Request interface with tenant database
@@ -153,9 +154,8 @@ class FeatureController {
 
       const featureData = {
         tenant_id: req.user?.tenantId ?? 0,
-        feature_key: req.body.feature_key ?? (req.body.key || "new_feature"),
-        is_enabled:
-          req.body.is_enabled !== undefined ? req.body.is_enabled : false,
+        feature_key: req.body.feature_key ?? req.body.key ?? "new_feature",
+        is_enabled: req.body.is_enabled ?? false,
         enabled_by: req.body.is_enabled ? (req.user?.id ?? null) : null,
       };
       const result = await featureService.create(req.tenantDb, featureData);

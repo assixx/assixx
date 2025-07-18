@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError } from './auth';
 
 interface ProfilePictureElements {
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Load user's profile picture
-  loadProfilePicture(elements);
+  void loadProfilePicture(elements);
 
   // Add event listeners
   if (elements.fileInput) {
@@ -35,11 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (elements.form) {
-    elements.form.addEventListener('submit', (e) => uploadProfilePicture(e, elements));
+    elements.form.addEventListener('submit', (e) => void uploadProfilePicture(e, elements));
   }
 
   if (elements.removeButton) {
-    elements.removeButton.addEventListener('click', () => removeProfilePicture(elements));
+    elements.removeButton.addEventListener('click', () => void removeProfilePicture(elements));
   }
 });
 
@@ -86,7 +87,7 @@ async function loadProfilePicture(elements: ProfilePictureElements): Promise<voi
       }
 
       // Also update other profile images on the page
-      updateAllProfileImages(userData.profile_picture || null);
+      updateAllProfileImages(userData.profile_picture ?? null);
     } else {
       console.error('Failed to load user data');
     }
@@ -199,9 +200,9 @@ async function uploadProfilePicture(e: Event, elements: ProfilePictureElements):
       }
 
       // Update all profile images on the page
-      updateAllProfileImages(result.profile_picture || result.url);
+      updateAllProfileImages(result.profile_picture ?? result.url);
     } else {
-      showError(result.error || 'Fehler beim Hochladen des Profilbilds.');
+      showError(result.error ?? 'Fehler beim Hochladen des Profilbilds.');
     }
   } catch (error) {
     console.error('Error uploading profile picture:', error);
@@ -238,13 +239,13 @@ async function removeProfilePicture(elements: ProfilePictureElements): Promise<v
       showSuccess('Profilbild erfolgreich entfernt!');
 
       // Reload profile to show initials
-      loadProfilePicture(elements);
+      void loadProfilePicture(elements);
 
       // Update all profile images on the page
       updateAllProfileImages(null);
     } else {
       const result = await response.json();
-      showError(result.error || 'Fehler beim Entfernen des Profilbilds.');
+      showError(result.error ?? 'Fehler beim Entfernen des Profilbilds.');
     }
   } catch (error) {
     console.error('Error removing profile picture:', error);

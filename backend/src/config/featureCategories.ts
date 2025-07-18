@@ -151,7 +151,7 @@ export const featureCategories: Record<string, FeatureCategory> = {
  * @returns Category and feature information
  */
 export function getFeatureCategory(
-  featureCode: string
+  featureCode: string,
 ): FeatureCategoryInfo | null {
   for (const [categoryKey, category] of Object.entries(featureCategories)) {
     if (category.features[featureCode]) {

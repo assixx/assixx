@@ -6,8 +6,9 @@
 
 import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
-import employeeService from "../services/employee.service";
+
 import type { UserCreateData } from "../models/user";
+import employeeService from "../services/employee.service";
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -201,7 +202,7 @@ class EmployeeController {
       const employeeData: UserCreateData = {
         username: req.body.username,
         email: req.body.email,
-        password: req.body.password ?? (req.body.password_hash || ""),
+        password: req.body.password ?? req.body.password_hash ?? "",
         first_name: req.body.first_name ?? "",
         last_name: req.body.last_name ?? "",
         role: req.body.role ?? "user",
@@ -249,7 +250,7 @@ class EmployeeController {
         role: req.body.role,
         department_id: req.body.department_id ?? undefined,
         profile_picture:
-          req.body.profile_picture || req.body.avatar_url || undefined,
+          req.body.profile_picture ?? req.body.avatar_url ?? undefined,
         position: req.body.position,
         phone: req.body.phone,
         status:
@@ -278,7 +279,7 @@ class EmployeeController {
         req.tenantDb,
         id,
         tenantId,
-        updateData
+        updateData,
       );
       res.json(result);
     } catch (error) {

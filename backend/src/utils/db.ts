@@ -9,6 +9,7 @@ import {
   FieldPacket,
   PoolConnection,
 } from "mysql2/promise";
+
 import pool from "../database";
 
 /**
@@ -19,7 +20,7 @@ import pool from "../database";
  */
 export async function query<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: unknown[]
+  params?: unknown[],
 ): Promise<[T, FieldPacket[]]> {
   // Handle both Pool and MockDatabase
   if ("query" in pool && typeof pool.query === "function") {
@@ -47,7 +48,7 @@ export async function query<T extends RowDataPacket[] | ResultSetHeader>(
  */
 export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: unknown[]
+  params?: unknown[],
 ): Promise<[T, FieldPacket[]]> {
   // Handle both Pool and MockDatabase
   if ("execute" in pool && typeof pool.execute === "function") {
@@ -86,7 +87,7 @@ export async function getConnection(): Promise<PoolConnection> {
  * @returns Promise with transaction result
  */
 export async function transaction<T>(
-  callback: (connection: PoolConnection) => Promise<T>
+  callback: (connection: PoolConnection) => Promise<T>,
 ): Promise<T> {
   const connection = await getConnection();
 

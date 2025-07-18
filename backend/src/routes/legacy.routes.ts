@@ -4,20 +4,23 @@
  */
 
 import express, { Router } from "express";
-import { security } from "../middleware/security";
-import { logger } from "../utils/logger";
-import { successResponse, errorResponse } from "../types/response.types";
-import { typed } from "../utils/routeHandlers";
-
-// Import models (now ES modules)
-import User from "../models/user";
-import Document from "../models/document";
-import Department from "../models/department";
-import Team from "../models/team";
-import { DbUser } from "../models/user";
 
 const router: Router = express.Router();
 
+import { security } from "../middleware/security";
+import Department from "../models/department";
+import Document from "../models/document";
+import Team from "../models/team";
+import User, { DbUser } from "../models/user";
+import { successResponse, errorResponse } from "../types/response.types";
+import { logger } from "../utils/logger";
+import { typed } from "../utils/routeHandlers";
+/**
+ * Legacy Routes
+ * Handles old API endpoints for backward compatibility
+ */
+
+// Import models (now ES modules)
 // Response interfaces
 interface AuthCheckResponse {
   authenticated: boolean;
@@ -69,7 +72,7 @@ router.get(
       },
     };
     res.json(successResponse(response));
-  })
+  }),
 );
 
 // User profile endpoint
@@ -91,7 +94,7 @@ router.get(
       console.error("Error fetching user profile:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Test DB endpoints (for admin dashboard)
@@ -108,7 +111,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 router.get(
@@ -133,7 +136,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 router.get(
@@ -148,7 +151,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 router.get(
@@ -161,7 +164,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Teams endpoint
@@ -175,7 +178,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Admin employees endpoint
@@ -189,7 +192,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Root admins endpoint - legacy location
@@ -207,7 +210,7 @@ router.get(
       console.error("Error fetching admins:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Root dashboard data endpoint
@@ -229,7 +232,7 @@ router.get(
       console.error("Error fetching root dashboard data:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Root create admin endpoint
@@ -272,7 +275,7 @@ router.post(
       console.error("Error creating admin:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Root delete admin endpoint
@@ -289,7 +292,7 @@ router.delete(
       console.error("Error deleting admin:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Documents endpoint
@@ -303,7 +306,7 @@ router.get(
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Admin employees endpoint (duplicate - different response format)
@@ -334,7 +337,7 @@ router.get(
       logger.error("Error fetching employees:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 // Teams endpoint (duplicate - empty response)
@@ -350,7 +353,7 @@ router.get(
       logger.error("Error fetching teams:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 export default router;

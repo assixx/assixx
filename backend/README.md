@@ -28,7 +28,7 @@ router.get(
   ...security.public(),
   typed.handler(async (req, res) => {
     res.json(successResponse({ status: "ok" }));
-  })
+  }),
 );
 
 // Authenticated endpoint
@@ -39,7 +39,7 @@ router.get(
     // req.user is fully typed
     const userId = req.user.id;
     // Implementation
-  })
+  }),
 );
 
 // Admin endpoint with validation
@@ -50,7 +50,7 @@ router.post(
     // req.body is typed as CreateUserDto
     const { email, password } = req.body;
     // Implementation
-  })
+  }),
 );
 ```
 

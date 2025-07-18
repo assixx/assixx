@@ -5,11 +5,14 @@
  * Sie ersetzt sowohl auth.js als auch middleware/auth.js, um Inkonsistenzen zu vermeiden.
  */
 
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
+
+import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+
 import UserModel from "./models/user";
+import type { DbUser } from "./models/user";
 import { DatabaseUser } from "./types";
 import { TokenPayload, TokenValidationResult } from "./types/auth.types";
 import { AuthUser } from "./types/request.types";
@@ -22,17 +25,16 @@ const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "JWT_SECRET must be set in production and be at least 32 characters long!"
+      "JWT_SECRET must be set in production and be at least 32 characters long!",
     );
   } else {
     console.warn(
-      "⚠️  WARNING: Using insecure default JWT_SECRET for development only!"
+      "⚠️  WARNING: Using insecure default JWT_SECRET for development only!",
     );
   }
 }
 
 // Import DbUser type from user model
-import type { DbUser } from "./models/user";
 
 // Helper function to convert DbUser to DatabaseUser
 function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
@@ -70,7 +72,7 @@ export interface AuthUserResult {
 
 export async function authenticateUser(
   usernameOrEmail: string,
-  password: string
+  password: string,
 ): Promise<AuthUserResult> {
   console.log("[DEBUG] authenticateUser called with:", usernameOrEmail);
   try {
@@ -95,7 +97,7 @@ export async function authenticateUser(
       "tenant_id:",
       user.tenant_id,
       "is_active:",
-      user.is_active
+      user.is_active,
     );
     const isValid = await bcrypt.compare(password, user.password);
     console.log("[DEBUG] Password comparison result:", isValid);
@@ -114,7 +116,7 @@ export async function authenticateUser(
       "Error during authentication for user",
       usernameOrEmail,
       ":",
-      error
+      error,
     );
     throw error;
   }
@@ -126,7 +128,7 @@ export async function authenticateUser(
 export function generateToken(
   user: DatabaseUser,
   fingerprint?: string,
-  sessionId?: string
+  sessionId?: string,
 ): string {
   try {
     const payload: TokenPayload = {
@@ -138,7 +140,7 @@ export function generateToken(
         : null,
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
-        sessionId ||
+        sessionId ??
         `sess_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`, // Cryptographically secure session ID
     };
 
@@ -154,11 +156,11 @@ export function generateToken(
 /**
  * Middleware zur Token-Authentifizierung
  */
-export function authenticateToken(
+export async function authenticateToken(
   req: Request,
   res: Response,
-  next: NextFunction
-): void {
+  next: NextFunction,
+): Promise<void> {
   const authHeader = req.headers["authorization"];
 
   // Try to get token from Authorization header first
@@ -217,7 +219,7 @@ export function authenticateToken(
           requestFingerprint !== user.fingerprint
         ) {
           console.info(
-            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`
+            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
           );
 
           // Nur bei verdächtigen Mustern warnen/blockieren:
@@ -232,7 +234,7 @@ export function authenticateToken(
         if (process.env.VALIDATE_SESSIONS === "true") {
           const [sessions] = await executeQuery<RowDataPacket[]>(
             "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
-            [user.id, user.sessionId]
+            [user.id, user.sessionId],
           );
 
           if (sessions.length === 0) {

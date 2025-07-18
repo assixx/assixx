@@ -5,10 +5,11 @@
 
 import { Router } from "express";
 import type { Router as ExpressRouter, RequestHandler } from "express";
+
 import kvpController from "../controllers/kvp.controller";
 import { authenticateToken } from "../middleware/auth";
-import { checkRole } from "../middleware/role.middleware";
 import { rateLimiter } from "../middleware/rateLimiter";
+import { checkRole } from "../middleware/role.middleware";
 
 const router: ExpressRouter = Router();
 
@@ -21,18 +22,18 @@ router.get(
   "/",
   rateLimiter.authenticated,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
-  kvpController.getAll
+  kvpController.getAll,
 );
 router.get(
   "/categories",
   rateLimiter.authenticated,
-  kvpController.getCategories
+  kvpController.getCategories,
 );
 router.get(
   "/stats",
   rateLimiter.admin,
   checkRole(["admin", "root"]),
-  kvpController.getStatistics
+  kvpController.getStatistics,
 );
 router.get("/:id", rateLimiter.authenticated, kvpController.getById);
 
@@ -50,37 +51,37 @@ router.post(
   "/:id/share",
   rateLimiter.admin,
   checkRole(["admin", "root"]),
-  kvpController.shareSuggestion
+  kvpController.shareSuggestion,
 );
 router.post(
   "/:id/unshare",
   rateLimiter.admin,
   checkRole(["admin", "root"]),
-  kvpController.unshareSuggestion
+  kvpController.unshareSuggestion,
 );
 
 // Comments
 router.get(
   "/:id/comments",
   rateLimiter.authenticated,
-  kvpController.getComments
+  kvpController.getComments,
 );
 router.post(
   "/:id/comments",
   rateLimiter.authenticated,
-  kvpController.addComment
+  kvpController.addComment,
 );
 
 // Attachments
 router.get(
   "/:id/attachments",
   rateLimiter.authenticated,
-  kvpController.getAttachments
+  kvpController.getAttachments,
 );
 router.post(
   "/:id/attachments",
   rateLimiter.upload,
-  kvpController.uploadAttachment as unknown as RequestHandler
+  kvpController.uploadAttachment as unknown as RequestHandler,
 );
 
 // Download attachment - with explicit rate limiting for file operations
@@ -91,7 +92,7 @@ router.get(
   rateLimiter.download,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
   // Controller handler that performs file system access
-  kvpController.downloadAttachment as unknown as RequestHandler
+  kvpController.downloadAttachment as unknown as RequestHandler,
 );
 
 export default router;

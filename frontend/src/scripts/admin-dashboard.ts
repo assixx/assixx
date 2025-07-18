@@ -4,6 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError } from './auth';
 import { showSection } from './show-section';
 
@@ -178,7 +179,7 @@ const showNewEmployeeModal = function (): void {
     modal.style.display = 'flex';
 
     // Abteilungen für das Formular laden
-    loadDepartmentsForEmployeeSelect();
+    void loadDepartmentsForEmployeeSelect();
   } else {
     console.error('employee-modal element not found!');
 
@@ -197,9 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // }
 
   // Für Testzwecke ohne Token
-  if (!token) {
-    token = 'test-mode';
-  }
+  token ??= 'test-mode';
 
   // User info in header is handled by unified-navigation.ts
   // loadHeaderUserInfo(); // Removed to avoid redundancy
@@ -217,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event-Listener für Formulare
   if (createEmployeeForm) {
-    createEmployeeForm.addEventListener('submit', createEmployee);
+    createEmployeeForm.addEventListener('submit', (e) => void createEmployee(e));
 
     // Live-Validierung für E-Mail und Passwort hinzufügen
     const emailInput = document.getElementById('email') as HTMLInputElement | null;
@@ -259,8 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // TODO: uploadDocument function needs to be implemented
   // if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
-  if (departmentForm) departmentForm.addEventListener('submit', createDepartment);
-  if (teamForm) teamForm.addEventListener('submit', createTeam);
+  if (departmentForm) departmentForm.addEventListener('submit', (e) => void createDepartment(e));
+  if (teamForm) teamForm.addEventListener('submit', (e) => void createTeam(e));
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -290,15 +289,15 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     try {
       console.log('[Admin Dashboard] Starting initial loads...');
-      loadDashboardStats();
-      loadRecentEmployees();
-      loadRecentDocuments();
-      loadDepartments();
-      loadTeams();
-      loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
-      loadBlackboardPreview(); // Laden der Blackboard-Einträge
+      void loadDashboardStats();
+      void loadRecentEmployees();
+      void loadRecentDocuments();
+      void loadDepartments();
+      void loadTeams();
+      void loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
+      void loadBlackboardPreview(); // Laden der Blackboard-Einträge
       console.log('[Admin Dashboard] Calling loadBlackboardWidget...');
-      loadBlackboardWidget(); // Laden des Blackboard-Widgets
+      void loadBlackboardWidget(); // Laden des Blackboard-Widgets
     } catch (error) {
       console.error('[Admin Dashboard] Error in initial loads:', error);
     }
@@ -802,8 +801,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.style.display = 'none';
 
         // Listen neu laden
-        loadRecentEmployees();
-        loadDashboardStats();
+        void loadRecentEmployees();
+        void loadDashboardStats();
 
         // Seite neu laden für komplette Aktualisierung
         setTimeout(() => {
@@ -811,7 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000); // Kurze Verzögerung damit die Erfolgsmeldung noch sichtbar ist
       } else {
         const error = await response.json();
-        showError(error.message || 'Fehler beim Erstellen des Mitarbeiters');
+        showError(error.message ?? 'Fehler beim Erstellen des Mitarbeiters');
       }
     } catch (error) {
       console.error('Fehler beim Erstellen des Mitarbeiters:', error);
@@ -845,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      const employees = Array.isArray(data) ? data : (data.users ?? (data.employees || []));
+      const employees = Array.isArray(data) ? data : (data.users ?? data.employees ?? []);
 
       // Fill compact card
       const employeeCard = document.getElementById('recent-employees');
@@ -878,7 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
           employees.slice(0, 10).forEach((emp: User) => {
             const listItem = document.createElement('li');
             listItem.innerHTML = `
-              <strong>${emp.first_name} ${emp.last_name}</strong> - ${emp.position || 'Mitarbeiter'}
+              <strong>${emp.first_name} ${emp.last_name}</strong> - ${emp.position ?? 'Mitarbeiter'}
               <span class="text-muted">(${emp.department ?? 'Keine Abteilung'})</span>
             `;
             employeeDetailList.appendChild(listItem);
@@ -1086,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create department');
+        throw new Error(error.message ?? 'Failed to create department');
       }
 
       await response.json();
@@ -1131,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create team');
+        throw new Error(error.message ?? 'Failed to create team');
       }
 
       await response.json();

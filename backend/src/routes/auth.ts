@@ -7,15 +7,16 @@
  */
 
 import express, { Router } from "express";
+
+import authController from "../controllers/auth.controller";
 import { security } from "../middleware/security";
 import { validationSchemas } from "../middleware/validation";
+import User from "../models/user";
 import { successResponse, errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
-import authController from "../controllers/auth.controller";
 import { typed } from "../utils/routeHandlers";
 
 // Import models (now ES modules)
-import User from "../models/user";
 
 const router: Router = express.Router();
 
@@ -80,8 +81,8 @@ router.get(
               tenant_id: req.user.tenant_id,
             },
           },
-          "Token is valid"
-        )
+          "Token is valid",
+        ),
       );
     } catch (error) {
       logger.error("Token validation error:", error);
@@ -89,7 +90,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler bei der Token-Validierung", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -118,7 +119,7 @@ router.get(
       console.error("Error in get user profile:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -204,7 +205,7 @@ router.get(
 router.post(
   "/login",
   ...security.auth(validationSchemas.login),
-  authController.login
+  authController.login,
 );
 
 /**
@@ -281,7 +282,7 @@ router.post(
 router.post(
   "/register",
   ...security.auth(validationSchemas.signup),
-  authController.register
+  authController.register,
 );
 
 /**
@@ -322,7 +323,7 @@ router.get(
   ...security.public(),
   typed.public((_req, res) => {
     res.json(successResponse(null, "Logout successful"));
-  })
+  }),
 );
 
 export default router;

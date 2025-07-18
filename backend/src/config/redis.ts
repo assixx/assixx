@@ -3,6 +3,7 @@
  */
 
 import { createClient, RedisClientType } from "redis";
+
 import { logger } from "../utils/logger";
 
 let redisClient: RedisClientType | null = null;
@@ -36,7 +37,7 @@ export async function connectRedis(): Promise<RedisClientType> {
 
 export async function disconnectRedis() {
   if (redisClient) {
-    await redisClient.destroy();
+    await redisClient.disconnect();
     redisClient = null;
     logger.info("Redis disconnected");
   }

@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (userRole === 'admin' && switchBtn) {
     switchBtn.style.display = 'flex';
-    switchBtn.addEventListener('click', switchRole);
+    switchBtn.addEventListener('click', () => void switchRole());
     updateRoleUI();
   } else if (switchBtn) {
     // Hide button for non-admins
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switchSelect.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
       const selectedRole = target.value as 'root' | 'admin' | 'employee';
-      switchRoleForRoot(selectedRole);
+      void switchRoleForRoot(selectedRole);
     });
 
     updateRoleUI();

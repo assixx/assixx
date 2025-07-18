@@ -4,10 +4,12 @@
  */
 
 import { RequestHandler, Router } from "express";
-import { authenticateToken, requireRole } from "./auth-refactored";
-import { rateLimiter } from "./rateLimiter";
+
 import { ValidationMiddleware } from "../types/middleware.types";
 import { RateLimiterType } from "../types/security.types";
+
+import { authenticateToken, requireRole } from "./auth-refactored";
+import { rateLimiter } from "./rateLimiter";
 
 // Security middleware stacks for different endpoint types
 export const security = {
@@ -187,7 +189,7 @@ export const securityStacks: Record<string, RequestHandler[]> = {
 // Helper function to apply security to entire router
 export function applySecurityToRouter(
   router: Router,
-  defaultSecurity: RequestHandler[]
+  defaultSecurity: RequestHandler[],
 ): void {
   // Store original methods
   const originalGet = router.get.bind(router);

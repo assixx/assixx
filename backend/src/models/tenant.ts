@@ -1,3 +1,10 @@
+import * as fs from "fs/promises";
+import * as path from "path";
+
+import bcrypt from "bcryptjs";
+
+import { DatabaseTenant } from "../types/models";
+import { TenantTrialStatus } from "../types/tenant.types";
 import {
   query as executeQuery,
   getConnection,
@@ -6,11 +13,6 @@ import {
   PoolConnection,
 } from "../utils/db";
 import { logger } from "../utils/logger";
-import bcrypt from "bcryptjs";
-import { DatabaseTenant } from "../types/models";
-import { TenantTrialStatus } from "../types/tenant.types";
-import * as fs from "fs/promises";
-import * as path from "path";
 
 // Extended interface for internal use
 interface TenantTrialStatusComplete extends TenantTrialStatus {
@@ -52,7 +54,7 @@ interface TenantCreateResult {
 export class Tenant {
   // Neuen Tenant erstellen (Self-Service)
   static async create(
-    tenantData: TenantCreateData
+    tenantData: TenantCreateData,
   ): Promise<TenantCreateResult> {
     logger.info("[DEBUG] Starting tenant creation...");
     const connection = await getConnection();
@@ -76,7 +78,7 @@ export class Tenant {
       // 1. Prüfe ob Subdomain bereits existiert
       const [existing] = await connection.query<RowDataPacket[]>(
         "SELECT id FROM tenants WHERE subdomain = ?",
-        [subdomain]
+        [subdomain],
       );
 
       if (existing.length > 0) {
@@ -98,7 +100,7 @@ export class Tenant {
           address,
           trialEndsAt,
           admin_email,
-        ]
+        ],
       );
 
       const tenantId = tenantResult.insertId;
@@ -119,7 +121,7 @@ export class Tenant {
           tenantId,
           phone,
           "000001", // Temporäre Personalnummer für Root-User
-        ]
+        ],
       );
 
       const userId = userResult.insertId;
@@ -139,14 +141,14 @@ export class Tenant {
       // 4. Verknüpfe Admin mit Tenant
       await connection.query(
         "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, TRUE)",
-        [tenantId, userId]
+        [tenantId, userId],
       );
 
       // 5. Weise Basic-Plan zu
       // Hole Basic Plan ID
       const [plans] = await connection.query<RowDataPacket[]>(
         "SELECT id FROM plans WHERE code = ? AND is_active = true",
-        ["basic"]
+        ["basic"],
       );
 
       if (plans.length > 0) {
@@ -156,13 +158,13 @@ export class Tenant {
         await connection.query(
           `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
            VALUES (?, ?, 'trial', NOW())`,
-          [tenantId, basicPlanId]
+          [tenantId, basicPlanId],
         );
 
         // Update tenant mit current_plan_id
         await connection.query(
           "UPDATE tenants SET current_plan_id = ? WHERE id = ?",
-          [basicPlanId, tenantId]
+          [basicPlanId, tenantId],
         );
       }
 
@@ -182,7 +184,7 @@ export class Tenant {
     } catch (error) {
       await connection.rollback();
       logger.error(
-        `Fehler beim Erstellen des Tenants: ${(error as Error).message}`
+        `Fehler beim Erstellen des Tenants: ${(error as Error).message}`,
       );
       throw error;
     } finally {
@@ -193,14 +195,14 @@ export class Tenant {
   // Trial-Features aktivieren
   static async activateTrialFeatures(
     tenantId: number,
-    connection: PoolConnection | null = null
+    connection: PoolConnection | null = null,
   ): Promise<void> {
     const conn = connection ?? (await getConnection());
 
     // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
     // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
     const [features] = await conn.query<RowDataPacket[]>(
-      `SELECT id FROM features`
+      `SELECT id FROM features`,
     );
 
     // Aktiviere alle Features für 14 Tage Trial
@@ -208,7 +210,7 @@ export class Tenant {
       await conn.query(
         `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at) 
          VALUES (?, ?, TRUE, DATE_ADD(NOW(), INTERVAL 14 DAY))`,
-        [tenantId, feature.id]
+        [tenantId, feature.id],
       );
     }
   }
@@ -254,18 +256,18 @@ export class Tenant {
   static async isSubdomainAvailable(subdomain: string): Promise<boolean> {
     const [result] = await executeQuery<RowDataPacket[]>(
       "SELECT id FROM tenants WHERE subdomain = ?",
-      [subdomain]
+      [subdomain],
     );
     return result.length === 0;
   }
 
   // Finde Tenant by Subdomain
   static async findBySubdomain(
-    subdomain: string
+    subdomain: string,
   ): Promise<DatabaseTenant | null> {
     const [tenants] = await executeQuery<DbTenant[]>(
       'SELECT * FROM tenants WHERE subdomain = ? AND status != "cancelled"',
-      [subdomain]
+      [subdomain],
     );
     return tenants[0] ?? null;
   }
@@ -274,7 +276,7 @@ export class Tenant {
   static async findById(tenantId: number): Promise<DatabaseTenant | null> {
     const [tenants] = await executeQuery<DbTenant[]>(
       'SELECT * FROM tenants WHERE id = ? AND status != "cancelled"',
-      [tenantId]
+      [tenantId],
     );
     return tenants[0] ?? null;
   }
@@ -282,14 +284,14 @@ export class Tenant {
   // Alle Tenants abrufen
   static async findAll(): Promise<DatabaseTenant[]> {
     const [tenants] = await executeQuery<DbTenant[]>(
-      'SELECT * FROM tenants WHERE status != "cancelled" ORDER BY company_name'
+      'SELECT * FROM tenants WHERE status != "cancelled" ORDER BY company_name',
     );
     return tenants;
   }
 
   // Trial-Status prüfen
   static async checkTrialStatus(
-    tenantId: number
+    tenantId: number,
   ): Promise<TenantTrialStatusComplete | null> {
     interface TrialResult extends RowDataPacket {
       trial_ends_at: Date;
@@ -298,7 +300,7 @@ export class Tenant {
 
     const [result] = await executeQuery<TrialResult[]>(
       "SELECT trial_ends_at, status FROM tenants WHERE id = ?",
-      [tenantId]
+      [tenantId],
     );
 
     if (!result[0]) return null;
@@ -311,7 +313,7 @@ export class Tenant {
       isInTrial: tenant.status === "trial",
       trialEndsAt: trialEnd,
       daysRemaining: Math.ceil(
-        (trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        (trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
       ),
       isExpired: now > trialEnd,
     };
@@ -322,7 +324,7 @@ export class Tenant {
     tenantId: number,
     plan: string,
     stripeCustomerId: string,
-    stripeSubscriptionId: string
+    stripeSubscriptionId: string,
   ): Promise<void> {
     await executeQuery(
       `UPDATE tenants 
@@ -331,7 +333,7 @@ export class Tenant {
            stripe_customer_id = ?, 
            stripe_subscription_id = ?
        WHERE id = ?`,
-      [plan, stripeCustomerId, stripeSubscriptionId, tenantId]
+      [plan, stripeCustomerId, stripeSubscriptionId, tenantId],
     );
 
     // Aktiviere Plan-Features
@@ -341,12 +343,12 @@ export class Tenant {
   // Plan-Features aktivieren
   static async activatePlanFeatures(
     tenantId: number,
-    plan: string
+    plan: string,
   ): Promise<void> {
     // Deaktiviere alle aktuellen Features
     await executeQuery(
       "UPDATE tenant_features SET is_active = FALSE WHERE tenant_id = ?",
-      [tenantId]
+      [tenantId],
     );
 
     // Hole Features für den Plan
@@ -355,7 +357,7 @@ export class Tenant {
        FROM plan_features pf
        JOIN subscription_plans sp ON pf.plan_id = sp.id
        WHERE sp.name = ?`,
-      [plan]
+      [plan],
     );
 
     // Aktiviere neue Features
@@ -364,7 +366,7 @@ export class Tenant {
         `INSERT INTO tenant_features (tenant_id, feature_id, is_active) 
          VALUES (?, ?, TRUE)
          ON DUPLICATE KEY UPDATE is_active = TRUE, expires_at = NULL`,
-        [tenantId, feature.feature_id]
+        [tenantId, feature.feature_id],
       );
     }
   }
@@ -373,7 +375,7 @@ export class Tenant {
   private static async safeDelete(
     connection: PoolConnection,
     query: string,
-    params: unknown[]
+    params: unknown[],
   ): Promise<void> {
     try {
       await connection.query(query, params);
@@ -402,7 +404,7 @@ export class Tenant {
       // 1. Get all user IDs for this tenant (for file cleanup)
       const [users] = await connection.query<RowDataPacket[]>(
         "SELECT id FROM users WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
       const userIds = users.map((u) => u.id);
 
@@ -412,188 +414,188 @@ export class Tenant {
       await this.safeDelete(
         connection,
         "DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))",
-        [userIds.length > 0 ? userIds : [0]]
+        [userIds.length > 0 ? userIds : [0]],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM messages WHERE sender_id IN (?)",
-        [userIds.length > 0 ? userIds : [0]]
+        [userIds.length > 0 ? userIds : [0]],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM conversation_participants WHERE user_id IN (?)",
-        [userIds.length > 0 ? userIds : [0]]
+        [userIds.length > 0 ? userIds : [0]],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM conversations WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete survey-related data
       await this.safeDelete(
         connection,
         "DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM survey_assignments WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM survey_reminders WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM survey_templates WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM surveys WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete KVP-related data
       await this.safeDelete(
         connection,
         "DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM kvp_suggestions WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete shift-related data
       await this.safeDelete(
         connection,
         "DELETE FROM shift_trades WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM shift_assignments WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM shift_notes WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM shifts WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM shift_templates WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
       // Delete shift_types
       await this.safeDelete(
         connection,
         "DELETE FROM shift_types WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete calendar events
       await this.safeDelete(
         connection,
         "DELETE FROM calendar_events WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete blackboard entries
       await this.safeDelete(
         connection,
         "DELETE FROM blackboard_entries WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete documents
       await this.safeDelete(
         connection,
         "DELETE FROM documents WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete admin logs (using admin_id column)
       await this.safeDelete(
         connection,
         "DELETE FROM admin_logs WHERE admin_id IN (?)",
-        [userIds.length > 0 ? userIds : [0]]
+        [userIds.length > 0 ? userIds : [0]],
       );
 
       // Delete feature assignments
       await this.safeDelete(
         connection,
         "DELETE FROM tenant_features WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete department/team relationships
       await this.safeDelete(
         connection,
         "DELETE FROM user_teams WHERE user_id IN (?)",
-        [userIds.length > 0 ? userIds : [0]]
+        [userIds.length > 0 ? userIds : [0]],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM user_departments WHERE user_id IN (?)",
-        [userIds.length > 0 ? userIds : [0]]
+        [userIds.length > 0 ? userIds : [0]],
       );
 
       // Delete teams and departments
       await this.safeDelete(
         connection,
         "DELETE FROM teams WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
       await this.safeDelete(
         connection,
         "DELETE FROM departments WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete tenant admin associations
       await this.safeDelete(
         connection,
         "DELETE FROM tenant_admins WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Delete all users
       await this.safeDelete(
         connection,
         "DELETE FROM users WHERE tenant_id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       // Finally, delete the tenant itself
       const [result] = await connection.query<ResultSetHeader>(
         "DELETE FROM tenants WHERE id = ?",
-        [tenantId]
+        [tenantId],
       );
 
       await connection.commit();
@@ -605,12 +607,12 @@ export class Tenant {
         // Log error but don't fail the deletion
         logger.error(
           `Error cleaning up files for tenant ${tenantId}:`,
-          fileError
+          fileError,
         );
       }
 
       logger.warn(
-        `Successfully deleted tenant ${tenantId} and all associated data`
+        `Successfully deleted tenant ${tenantId} and all associated data`,
       );
       return result.affectedRows > 0;
     } catch (error) {
@@ -625,7 +627,7 @@ export class Tenant {
   // Clean up uploaded files for a tenant
   private static async cleanupTenantFiles(
     tenantId: number,
-    userIds: number[]
+    userIds: number[],
   ): Promise<void> {
     const uploadsDir = path.join(__dirname, "../../../../uploads");
 
@@ -634,7 +636,7 @@ export class Tenant {
       const documentsDir = path.join(
         uploadsDir,
         "documents",
-        tenantId.toString()
+        tenantId.toString(),
       );
       await this.removeDirectory(documentsDir);
 

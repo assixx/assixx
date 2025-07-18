@@ -3,8 +3,9 @@
  * Shared functionality for all document category pages
  */
 
-import { fetchWithAuth, showError, showSuccess } from './auth';
 import type { Document } from '../types/api.types';
+
+import { fetchWithAuth, showError, showSuccess } from './auth';
 
 // Document scope type
 export type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
@@ -111,7 +112,7 @@ export class DocumentBase {
           const target = e.target as HTMLInputElement | null;
           if (target) {
             this.currentSearch = target.value.toLowerCase();
-            this.performSearch();
+            void this.performSearch();
           }
         });
 
@@ -125,13 +126,13 @@ export class DocumentBase {
     if (sortDropdown) {
       sortDropdown.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
-        if (target && target.classList.contains('dropdown-option')) {
+        if (target?.classList.contains('dropdown-option')) {
           const sortValue = target.dataset.sort as SortOption;
           if (sortValue) {
             this.currentSort = sortValue;
             this.sortDocuments();
             this.renderDocuments();
-            this.updateSortDisplay(target.textContent || '');
+            this.updateSortDisplay(target.textContent ?? '');
           }
         }
       });
@@ -160,7 +161,7 @@ export class DocumentBase {
       const result = await response.json();
 
       // Backend returns {data: Document[], pagination: {...}}
-      this.allDocuments = result.data ?? (result.documents || []);
+      this.allDocuments = result.data ?? result.documents ?? [];
 
       // Filter based on scope
       this.filterDocumentsByScope();
@@ -214,8 +215,8 @@ export class DocumentBase {
       // Search across all documents
       this.filteredDocuments = this.allDocuments.filter(
         (doc) =>
-          doc.file_name.toLowerCase().includes(this.currentSearch) ||
-          doc.description?.toLowerCase().includes(this.currentSearch) ||
+          (doc.file_name.toLowerCase().includes(this.currentSearch) ||
+            doc.description?.toLowerCase().includes(this.currentSearch)) ??
           doc.uploaded_by_name?.toLowerCase().includes(this.currentSearch),
       );
 
@@ -347,7 +348,7 @@ export class DocumentBase {
         </div>
         <div class="document-meta-item">
           <i class="fas fa-user"></i>
-          <span>${this.escapeHtml(doc.uploaded_by_name || 'System')}</span>
+          <span>${this.escapeHtml(doc.uploaded_by_name ?? 'System')}</span>
         </div>
         ${
           doc.file_size
@@ -405,7 +406,7 @@ export class DocumentBase {
     this.updateElement('modalDocumentTitle', doc.file_name || 'Dokument');
     this.updateElement('modalFileName', doc.file_name);
     this.updateElement('modalFileSize', this.formatFileSize(doc.file_size || 0));
-    this.updateElement('modalUploadedBy', doc.uploaded_by_name || 'System');
+    this.updateElement('modalUploadedBy', doc.uploaded_by_name ?? 'System');
     this.updateElement('modalUploadDate', this.formatDate(doc.created_at));
 
     // Setup preview
@@ -608,51 +609,53 @@ window.closeDocumentModal = function (): void {
 };
 
 // Download document
-window.downloadDocument = async function (docId?: string | number): Promise<void> {
-  let documentId: string;
+window.downloadDocument = function (docId?: string | number): void {
+  void (async () => {
+    let documentId: string;
 
-  if (docId) {
-    documentId = String(docId);
-  } else {
-    const downloadBtn = document.getElementById('downloadButton');
-    if (!downloadBtn) {
-      console.error('Download button not found');
-      return;
-    }
-    const dataId = downloadBtn.getAttribute('data-document-id');
-    if (!dataId) {
-      console.error('No document ID found');
-      return;
-    }
-    documentId = dataId;
-  }
-
-  try {
-    const response = await fetchWithAuth(`/api/documents/download/${documentId}`);
-
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.status}`);
+    if (docId) {
+      documentId = String(docId);
+    } else {
+      const downloadBtn = document.getElementById('downloadButton');
+      if (!downloadBtn) {
+        console.error('Download button not found');
+        return;
+      }
+      const dataId = downloadBtn.getAttribute('data-document-id');
+      if (!dataId) {
+        console.error('No document ID found');
+        return;
+      }
+      documentId = dataId;
     }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'document.pdf';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
+    try {
+      const response = await fetchWithAuth(`/api/documents/download/${documentId}`);
 
-    setTimeout(() => {
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    }, 100);
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
 
-    showSuccess('Dokument wird heruntergeladen');
-  } catch (error) {
-    console.error('Error downloading document:', error);
-    showError('Fehler beim Herunterladen des Dokuments');
-  }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'document.pdf';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+
+      showSuccess('Dokument wird heruntergeladen');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      showError('Fehler beim Herunterladen des Dokuments');
+    }
+  })();
 };
 
 // Toggle dropdown
