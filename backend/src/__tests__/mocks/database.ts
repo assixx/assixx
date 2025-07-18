@@ -32,13 +32,13 @@ export interface MockTenant extends RowDataPacket {
   updated_at: Date;
 }
 
-// Test database configuration
+// Test database configuration - matches GitHub Actions MySQL service
 const TEST_DB_CONFIG = {
   host: process.env.DB_HOST || "localhost",
   port: parseInt(process.env.DB_PORT || "3306"),
-  user: process.env.DB_USER || "test_user",
-  password: process.env.DB_PASSWORD || "test_password",
-  database: process.env.DB_NAME || "assixx_test",
+  user: process.env.DB_USER || "assixx_user",
+  password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
+  database: process.env.DB_NAME || "main_test",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

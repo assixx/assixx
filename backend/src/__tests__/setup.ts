@@ -7,11 +7,18 @@
 
 // Set test environment
 process.env["NODE_ENV"] = "test";
-process.env["JWT_SECRET"] = "test-secret";
-process.env["DB_HOST"] = "localhost";
-process.env["DB_USER"] = "test";
-process.env["DB_PASSWORD"] = "test";
-process.env["DB_NAME"] = "main_test";
+process.env["JWT_SECRET"] = process.env["JWT_SECRET"] || "test-secret-key-for-testing";
+
+// Database configuration - use GitHub Actions values or local defaults
+process.env["DB_HOST"] = process.env["DB_HOST"] || "localhost";
+process.env["DB_PORT"] = process.env["DB_PORT"] || "3306";
+process.env["DB_USER"] = process.env["DB_USER"] || "assixx_user";
+process.env["DB_PASSWORD"] = process.env["DB_PASSWORD"] || "AssixxP@ss2025!";
+process.env["DB_NAME"] = process.env["DB_NAME"] || "main_test";
+
+// Redis configuration
+process.env["REDIS_HOST"] = process.env["REDIS_HOST"] || "localhost";
+process.env["REDIS_PORT"] = process.env["REDIS_PORT"] || "6379";
 
 // Mock console methods to reduce noise during tests
 global.console = {

@@ -119,6 +119,27 @@ jobs:
       run: |
         pnpm install --frozen-lockfile
         
+    - name: Wait for MySQL
+      run: |
+        for i in {1..30}; do
+          if mysql -h localhost -P 3306 -u assixx_user -pAssixxP@ss2025! -e "SELECT 1" &> /dev/null; then
+            echo "MySQL is ready!"
+            break
+          fi
+          echo "Waiting for MySQL... ($i/30)"
+          sleep 2
+        done
+        
+    - name: Setup test database
+      env:
+        DB_HOST: localhost
+        DB_USER: assixx_user
+        DB_PASSWORD: AssixxP@ss2025!
+        DB_NAME: main_test
+      run: |
+        cd backend
+        node src/__tests__/setup-test-db.js
+        
     - name: Run test file
       env:
         NODE_ENV: test
