@@ -18,26 +18,40 @@ async function setupTestDatabase() {
   });
 
   try {
-    // Execute all migrations in order
     const fs = require('fs');
     const path = require('path');
-    const migrationsDir = path.join(__dirname, '../../../../database/migrations');
     
-    console.log('Running migrations...');
-    const migrationFiles = fs.readdirSync(migrationsDir)
-      .filter(file => file.endsWith('.sql'))
-      .sort(); // Alphabetical order (001-, 002-, etc.)
+    // First, try to use the current schema export
+    const databaseDir = path.join(__dirname, '../../../../database');
+    const schemaFiles = fs.readdirSync(databaseDir)
+      .filter(file => file.startsWith('current-schema-') && file.endsWith('.sql'))
+      .sort()
+      .reverse(); // Get the newest first
     
-    for (const file of migrationFiles) {
-      console.log(`Executing migration: ${file}`);
-      const migrationPath = path.join(migrationsDir, file);
-      const migration = fs.readFileSync(migrationPath, 'utf8');
+    if (schemaFiles.length > 0) {
+      // Use the most recent schema export
+      const currentSchemaPath = path.join(databaseDir, schemaFiles[0]);
+      console.log(`Using current schema: ${schemaFiles[0]}`);
+      const schema = fs.readFileSync(currentSchemaPath, 'utf8');
+      await connection.query(schema);
+    } else {
+      // Fallback to migrations if no schema export exists
+      console.log('No current schema found, falling back to migrations...');
+      const migrationsDir = path.join(databaseDir, 'migrations');
+      const migrationFiles = fs.readdirSync(migrationsDir)
+        .filter(file => file.endsWith('.sql'))
+        .sort();
       
-      try {
-        await connection.query(migration);
-      } catch (error) {
-        console.error(`Error in migration ${file}:`, error.message);
-        // Continue with next migration - some might fail if already applied
+      for (const file of migrationFiles) {
+        console.log(`Executing migration: ${file}`);
+        const migrationPath = path.join(migrationsDir, file);
+        const migration = fs.readFileSync(migrationPath, 'utf8');
+        
+        try {
+          await connection.query(migration);
+        } catch (error) {
+          console.error(`Error in migration ${file}:`, error.message);
+        }
       }
     }
     
