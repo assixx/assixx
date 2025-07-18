@@ -138,7 +138,7 @@ for (const [filePath, errors] of filesToFix) {
           }
           // fetchAndDisplay type calls
           else if (
-            line.match(/fetch(And\w+)*\(/) &&
+            line.match(/fetch(?:And\w+)?\(/) &&
             !line.includes("void") &&
             !line.includes("await")
           ) {
