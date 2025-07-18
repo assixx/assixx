@@ -1664,10 +1664,7 @@ class UnifiedNavigation {
       if (switchBtn) {
         console.log('[UnifiedNav] Initializing role switch button for admin user');
 
-        // Import role-switch module to ensure it's initialized
-        void import('../role-switch.js').then(() => {
-          console.log('[UnifiedNav] Role switch module loaded for admin');
-        });
+        // Role-switch module is already imported statically at the top
       }
     }
   }
