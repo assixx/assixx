@@ -3,6 +3,9 @@
 > **Zeitaufwand:** ~2-3 Minuten mit Status-Script  
 > **Primäre Methode:** Docker (Empfohlen)
 
+## ⚠️ WICHTIG: ALLE Befehle müssen ausgeführt werden!
+**Nicht nur lesen - JEDEN Befehl durchführen, besonders den TypeScript Check!**
+
 ## ⚡ Quick Start (Empfohlen)
 
 ```bash
@@ -28,7 +31,7 @@ cd /home/scs/projects/Assixx/docker
 docker-compose ps
 curl -s http://localhost:3000/health | jq '.'
 
-# Code Quality Check
+# Code Quality Check - NICHT VERGESSEN! Dieser Befehl ist KRITISCH!
 docker exec assixx-backend pnpm run type-check
 
 # Bei TypeScript Errors (außer den 56 bekannten Test-Errors):
