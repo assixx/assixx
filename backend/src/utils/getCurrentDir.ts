@@ -16,7 +16,7 @@ export function getCurrentDirPath(): string {
 
   // In production Docker container, the app runs from /app
   if (baseDir === "/app") {
-    return path.join(baseDir, "src");
+    return path.join(baseDir, "backend", "src");
   }
 
   // In local development, find the src directory

@@ -119,6 +119,33 @@ app.use(
   }),
 );
 
+// Serve styles directory
+app.use("/styles", express.static(path.join(srcPath, "styles"), {
+  setHeaders: (res: Response, filePath: string): void => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    if (filePath.endsWith(".css")) {
+      res.setHeader("Content-Type", "text/css");
+    }
+  },
+}));
+
+// Serve scripts directory for regular JS files
+app.use("/scripts", express.static(path.join(srcPath, "scripts"), {
+  setHeaders: (res: Response, filePath: string): void => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    if (filePath.endsWith(".js")) {
+      res.setHeader("Content-Type", "application/javascript");
+    }
+  },
+}));
+
+// Serve assets directory
+app.use("/assets", express.static(path.join(srcPath, "assets"), {
+  setHeaders: (res: Response): void => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  },
+}));
+
 // Handle /js/ requests - map to TypeScript files in development
 app.use("/js", rateLimiter.public, (req: Request, res: Response): void => {
   // lgtm[js/missing-rate-limiting]
@@ -438,7 +465,10 @@ app.post("/api/test", (req: Request, res: Response): void => {
 // Legacy login endpoints (for backward compatibility) - MUST BE BEFORE OTHER ROUTES
 app.get("/login", (_req: Request, res: Response): void => {
   console.log("[DEBUG] GET /login - serving login page");
-  res.sendFile(path.join(currentDirPath, "../../frontend/src/pages", "login.html"));
+  // Fix path for Docker environment
+  const projectRoot = process.cwd(); // In Docker this is /app
+  const loginPath = path.join(projectRoot, "frontend", "src", "pages", "login.html");
+  res.sendFile(loginPath);
 });
 
 app.post(
