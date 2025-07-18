@@ -5,9 +5,9 @@
 
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
 import cookieParser from "cookie-parser";
+import { getCurrentDirPath } from "./utils/getCurrentDir.js";
 import cors from "cors";
 import "dotenv/config";
 import express, { Application, Request, Response, NextFunction } from "express";
@@ -42,13 +42,9 @@ import roleSwitchRoutes from "./routes/role-switch";
  * Separated from server.js for better testing
  */
 
-// Handle both ESM and CommonJS environments for Jest compatibility
-const currentFilePath = typeof __filename !== 'undefined' 
-  ? __filename 
-  : fileURLToPath(import.meta.url);
-const currentDirPath = typeof __dirname !== 'undefined' 
-  ? __dirname 
-  : path.dirname(currentFilePath);
+// Get current directory path using helper function
+// This avoids import.meta issues with Jest
+const currentDirPath = getCurrentDirPath();
 // Security middleware
 // Page protection middleware
 // Routes
