@@ -26,10 +26,14 @@ describe("Blackboard Integration Tests", () => {
   beforeAll(async () => {
     // Setup test database
     testDb = await createTestDatabase();
-    
+
     // Create test tenant
-    tenantId = await createTestTenant(testDb, "blackboardtest", "Test Blackboard Company");
-    
+    tenantId = await createTestTenant(
+      testDb,
+      "blackboardtest",
+      "Test Blackboard Company"
+    );
+
     // Create test users
     const adminResult = await createTestUser(testDb, {
       username: "admin",
@@ -41,7 +45,7 @@ describe("Blackboard Integration Tests", () => {
       last_name: "User",
     });
     adminUserId = adminResult.id;
-    
+
     const employeeResult = await createTestUser(testDb, {
       username: "employee",
       email: "employee@test.com",
@@ -57,7 +61,11 @@ describe("Blackboard Integration Tests", () => {
 
     // Get auth tokens
     adminToken = await getAuthToken(app, adminResult.username, "TestPass123!");
-    employeeToken = await getAuthToken(app, employeeResult.username, "TestPass123!");
+    employeeToken = await getAuthToken(
+      app,
+      employeeResult.username,
+      "TestPass123!"
+    );
   });
 
   afterAll(async () => {
