@@ -277,7 +277,7 @@ jobs:
     - name: Test Docker Compose
       run: |
         cd docker
-        docker-compose config
+        docker compose config
         
   # Separate job for checking code quality
   code-quality:
