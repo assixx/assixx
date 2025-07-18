@@ -9,12 +9,12 @@ import { fileURLToPath } from "url";
 import swaggerJsdoc from "swagger-jsdoc";
 
 // Get current directory - handle both ESM and CommonJS for Jest
-const currentFilePath = typeof __filename !== 'undefined' 
-  ? __filename 
-  : fileURLToPath(import.meta.url);
-const currentDirName = typeof __dirname !== 'undefined' 
-  ? __dirname 
-  : dirname(currentFilePath);
+const currentFilePath =
+  typeof __filename !== "undefined"
+    ? __filename
+    : fileURLToPath(import.meta.url);
+const currentDirName =
+  typeof __dirname !== "undefined" ? __dirname : dirname(currentFilePath);
 
 // Read package.json to get version
 const packageJson = JSON.parse(
