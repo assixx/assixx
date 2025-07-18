@@ -279,23 +279,43 @@ async function createCalendarTables(db: Pool): Promise<void> {
  */
 async function createKVPTables(db: Pool): Promise<void> {
   await db.execute(`
+    CREATE TABLE IF NOT EXISTS kvp_categories (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(100) NOT NULL UNIQUE,
+      description TEXT,
+      color VARCHAR(20) DEFAULT '#3498db',
+      icon VARCHAR(10) DEFAULT '💡',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.execute(`
     CREATE TABLE IF NOT EXISTS kvp_suggestions (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT NOT NULL,
       title VARCHAR(255) NOT NULL,
       description TEXT NOT NULL,
-      category VARCHAR(100) NOT NULL,
-      user_id INT NOT NULL,
-      tenant_id INT NOT NULL,
-      is_anonymous BOOLEAN DEFAULT FALSE,
-      status ENUM('submitted', 'in_review', 'approved', 'rejected', 'implemented') DEFAULT 'submitted',
-      priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+      category_id INT DEFAULT NULL,
       department_id INT DEFAULT NULL,
-      points_awarded INT DEFAULT 0,
+      org_level ENUM('company', 'department', 'team') NOT NULL,
+      org_id INT NOT NULL,
+      submitted_by INT NOT NULL,
+      assigned_to INT DEFAULT NULL,
+      status ENUM('new', 'in_review', 'approved', 'implemented', 'rejected', 'archived') DEFAULT 'new',
+      priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+      expected_benefit TEXT,
+      estimated_cost DECIMAL(10,2) DEFAULT NULL,
+      actual_savings DECIMAL(10,2) DEFAULT NULL,
+      implementation_date DATE DEFAULT NULL,
+      rejection_reason TEXT,
+      shared_by INT DEFAULT NULL,
+      shared_at TIMESTAMP NULL DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (department_id) REFERENCES departments(id)
+      FOREIGN KEY (submitted_by) REFERENCES users(id),
+      FOREIGN KEY (department_id) REFERENCES departments(id),
+      FOREIGN KEY (category_id) REFERENCES kvp_categories(id)
     )
   `);
 
@@ -326,6 +346,21 @@ async function createKVPTables(db: Pool): Promise<void> {
       FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id),
       FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS kvp_ratings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      suggestion_id INT NOT NULL,
+      user_id INT NOT NULL,
+      rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      tenant_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+      UNIQUE KEY unique_user_suggestion (user_id, suggestion_id)
     )
   `);
 }
