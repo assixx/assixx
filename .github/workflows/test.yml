@@ -7,8 +7,61 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test:
+  # Job to discover all test files dynamically
+  discover-tests:
     runs-on: ubuntu-latest
+    outputs:
+      test-matrix: ${{ steps.discover.outputs.test-matrix }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Discover test files
+      id: discover
+      run: |
+        # Find all test files and create a matrix with file paths and clean names
+        echo "Discovering test files..."
+        test_matrix='{"include":['
+        first=true
+        
+        while IFS= read -r file; do
+          if [ "$first" = true ]; then
+            first=false
+          else
+            test_matrix+=','
+          fi
+          
+          # Extract clean name from file path
+          clean_name=$(echo "$file" | sed -E '
+            s|backend/src/||
+            s|/__tests__/||
+            s|\.test\.ts$||
+            s|/| - |g
+            s|^routes - |Routes: |
+            s|^middleware - |Middleware: |
+            s|^services - |Services: |
+            s|^models - |Models: |
+            s|^utils - |Utils: |
+            s|^|Tests: |
+          ')
+          
+          test_matrix+="{\"file\":\"$file\",\"name\":\"$clean_name\"}"
+        done < <(find backend/src -name "*.test.ts" -type f | sort)
+        
+        test_matrix+=']}'
+        
+        echo "test-matrix=$test_matrix" >> $GITHUB_OUTPUT
+        echo "Test matrix:"
+        echo "$test_matrix" | jq .
+
+  # Run each test file as a separate job
+  test:
+    needs: discover-tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-tests.outputs.test-matrix) }}
+    
+    name: ${{ matrix.name }}
     
     services:
       mysql:
@@ -67,17 +120,7 @@ jobs:
         cd backend
         pnpm install --frozen-lockfile
         
-    - name: Run TypeScript check
-      run: |
-        cd backend
-        pnpm run typecheck
-        
-    - name: Run ESLint
-      run: |
-        cd backend
-        pnpm run lint
-        
-    - name: Run tests with coverage
+    - name: Run test file
       env:
         NODE_ENV: test
         JWT_SECRET: test-secret-key-for-github-actions
@@ -89,22 +132,90 @@ jobs:
         REDIS_PORT: 6379
       run: |
         cd backend
-        pnpm test:coverage
+        echo "Running: ${{ matrix.name }}"
+        echo "Test file: ${{ matrix.file }}"
+        pnpm jest "${{ matrix.file }}" --coverage --coverageDirectory=coverage-single
         
-    - name: Upload coverage reports
+    - name: Upload individual coverage
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-report
-        path: backend/coverage/
+        name: coverage-${{ strategy.job-index }}
+        path: backend/coverage-single/
+        retention-days: 1
         
-    - name: Upload coverage to Codecov
-      if: always()
+  # Aggregate coverage reports
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all coverage reports
+      uses: actions/download-artifact@v4
+      with:
+        pattern: coverage-*
+        path: coverage-reports
+        
+    - name: Merge coverage reports
+      run: |
+        echo "Coverage reports collected from individual test runs"
+        ls -la coverage-reports/
+        
+    - name: Upload to Codecov
       uses: codecov/codecov-action@v4
       with:
-        file: ./backend/coverage/lcov.info
+        directory: coverage-reports
         flags: backend
         name: backend-coverage
+
+  # Static code analysis (TypeScript, ESLint)
+  code-analysis:
+    runs-on: ubuntu-latest
+    name: Code Analysis
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+          
+    - name: Install dependencies
+      run: |
+        cd backend
+        pnpm install --frozen-lockfile
+        
+    - name: Run TypeScript check
+      run: |
+        cd backend
+        pnpm run typecheck
+        
+    - name: Run ESLint
+      run: |
+        cd backend
+        pnpm run lint
         
   # Docker build test
   docker-build:
