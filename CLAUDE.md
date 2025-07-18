@@ -158,7 +158,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 6. TypeScript Standards
 7. README.md
 8. Database Migration Guide
-9. BEFORE-STARTING-DEV befolgen (Anleitung lesen und Befehle durchführen)
+9. BEFORE-STARTING-DEV befolgen (Anleitung lesen und Befehle durchführen)!!!!
 10. Entwicklung beginnen
 
 ## ZENTRALE DOKUMENTATION

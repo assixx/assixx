@@ -3,7 +3,7 @@
 FROM node:20-alpine AS builder
 
 # pnpm installieren
-RUN npm install -g pnpm@10.12.1
+RUN npm install -g pnpm@10.13.1
 
 # Arbeitsverzeichnis setzen
 WORKDIR /app
@@ -37,7 +37,7 @@ RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
 FROM node:20-alpine
 
 # pnpm installieren
-RUN npm install -g pnpm@10.12.1
+RUN npm install -g pnpm@10.13.1
 
 # Security: Non-root user erstellen
 RUN addgroup -g 1001 -S nodejs && \

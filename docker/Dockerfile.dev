@@ -5,7 +5,7 @@ FROM node:20-alpine
 RUN apk add --no-cache curl jq
 
 # Install pnpm and development tools globally
-RUN npm install -g pnpm@10.12.1 tsx nodemon
+RUN npm install -g pnpm@10.13.1 tsx nodemon
 
 # Arbeitsverzeichnis
 WORKDIR /app
