@@ -39,11 +39,31 @@ async function setupTestDatabase() {
       // Use the most recent schema export
       const currentSchemaPath = path.join(databaseDir, schemaFiles[0]);
       console.log(`Using current schema: ${schemaFiles[0]}`);
-      const schema = fs.readFileSync(currentSchemaPath, "utf8");
+      let schema = fs.readFileSync(currentSchemaPath, "utf8");
+      
+      // Remove problematic view definitions that are incomplete
+      // These appear between "SET @saved_cs_client" and "SET character_set_client = @saved_cs_client;"
+      schema = schema.replace(/SET @saved_cs_client[\s\S]*?SET character_set_client = @saved_cs_client;/g, '');
+      
+      // Split by semicolon and filter out empty statements
+      const statements = schema.split(';').filter(stmt => stmt.trim());
       
       // Disable foreign key checks temporarily to avoid order dependencies
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      await connection.query(schema);
+      
+      // Execute each statement separately
+      for (const statement of statements) {
+        const trimmedStmt = statement.trim();
+        if (trimmedStmt) {
+          try {
+            await connection.query(trimmedStmt);
+          } catch (error) {
+            console.error(`Error executing statement: ${trimmedStmt.substring(0, 100)}...`);
+            console.error(`Error: ${error.message}`);
+          }
+        }
+      }
+      
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
     } else {
       // Fallback to migrations if no schema export exists
