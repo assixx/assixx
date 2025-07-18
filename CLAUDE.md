@@ -112,6 +112,24 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 2. docker exec assixx-backend pnpm run format
 3. docker exec assixx-backend pnpm run type-check
 
+## UNIT TESTS & GITHUB ACTIONS
+
+**Matrix Test Strategy:** 
+- Jeder Test läuft als separater GitHub Check
+- Dynamische Test-Discovery findet alle *.test.ts Dateien
+- Parallele Ausführung mit fail-fast: false
+- Human-readable Namen: "Tests: Routes: auth" statt "test"
+- Coverage wird aggregiert aus allen Test-Runs
+- Ermöglicht gezieltes Re-run einzelner fehlgeschlagener Tests
+
+**Workflow-Struktur:**
+1. Discover Tests (findet alle Test-Dateien)
+2. Matrix Tests (jeder Test als eigener Job)
+3. Coverage Aggregation
+4. Code Analysis (TypeScript, ESLint)
+5. Docker Build Tests
+6. Code Quality Checks
+
 ## WENN-DANN ANWEISUNGEN
 
 **WENN User fragt nach Feature-Status**
