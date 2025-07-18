@@ -1,22 +1,29 @@
 import path from "path";
-import { fileURLToPath } from "url";
 
 /**
- * Get the current directory path
- * Handles both CommonJS and ESM environments
+ * Get the current directory path for the app
+ * Returns a consistent path that works in all environments
  */
 export function getCurrentDirPath(): string {
-  // In test environment, use relative path from backend root
+  // For both test and production, use a path relative to backend/src
+  // This avoids all import.meta issues
+  const baseDir = process.cwd();
+  
+  // In tests, we're already in the backend directory
   if (process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID) {
-    return path.join(process.cwd(), "src");
+    return path.join(baseDir, "src");
   }
-
-  // In CommonJS environment
-  if (typeof __dirname !== "undefined") {
-    return __dirname;
+  
+  // In production Docker container, the app runs from /app
+  if (baseDir === "/app") {
+    return path.join(baseDir, "src");
   }
-
-  // In ESM environment - this line will never be reached in tests
-  // because tests run in CommonJS mode
-  return path.dirname(fileURLToPath(import.meta.url));
+  
+  // In local development, find the src directory
+  if (baseDir.includes("backend")) {
+    return path.join(baseDir.split("backend")[0], "backend", "src");
+  }
+  
+  // Fallback - assume we're in the project root
+  return path.join(baseDir, "backend", "src");
 }
