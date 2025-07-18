@@ -7,7 +7,8 @@
 
 // Set test environment
 process.env["NODE_ENV"] = "test";
-process.env["JWT_SECRET"] = process.env["JWT_SECRET"] || "test-secret-key-for-testing";
+process.env["JWT_SECRET"] =
+  process.env["JWT_SECRET"] || "test-secret-key-for-testing";
 
 // Database configuration - use GitHub Actions values or local defaults
 process.env["DB_HOST"] = process.env["DB_HOST"] || "localhost";
