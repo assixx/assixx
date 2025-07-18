@@ -3,22 +3,16 @@
  */
 
 import { readFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 
 import swaggerJsdoc from "swagger-jsdoc";
 
 // Get current directory - handle both ESM and CommonJS for Jest
-const currentFilePath =
-  typeof __filename !== "undefined"
-    ? __filename
-    : fileURLToPath(import.meta.url);
-const currentDirName =
-  typeof __dirname !== "undefined" ? __dirname : dirname(currentFilePath);
+const currentDirName = __dirname || process.cwd() + "/src/config";
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(currentDirName, "../../../package.json"), "utf-8")
+  readFileSync(join(currentDirName, "../../package.json"), "utf-8")
 );
 
 const options: swaggerJsdoc.Options = {
