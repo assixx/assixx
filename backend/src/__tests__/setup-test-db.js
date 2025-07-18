@@ -26,7 +26,7 @@ async function setupTestDatabase() {
   try {
 
     // First, try to use the current schema export
-    const databaseDir = path.join(__dirname, "../../../../database");
+    const databaseDir = path.join(__dirname, "../../../database");
     const schemaFiles = fs
       .readdirSync(databaseDir)
       .filter(
