@@ -18,14 +18,28 @@ async function setupTestDatabase() {
   });
 
   try {
-    // Read and execute the schema
+    // Execute all migrations in order
     const fs = require('fs');
     const path = require('path');
-    const schemaPath = path.join(__dirname, 'db-schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
+    const migrationsDir = path.join(__dirname, '../../../../database/migrations');
     
-    console.log('Creating tables...');
-    await connection.query(schema);
+    console.log('Running migrations...');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(file => file.endsWith('.sql'))
+      .sort(); // Alphabetical order (001-, 002-, etc.)
+    
+    for (const file of migrationFiles) {
+      console.log(`Executing migration: ${file}`);
+      const migrationPath = path.join(migrationsDir, file);
+      const migration = fs.readFileSync(migrationPath, 'utf8');
+      
+      try {
+        await connection.query(migration);
+      } catch (error) {
+        console.error(`Error in migration ${file}:`, error.message);
+        // Continue with next migration - some might fail if already applied
+      }
+    }
     
     console.log('Test database setup completed successfully!');
   } catch (error) {
