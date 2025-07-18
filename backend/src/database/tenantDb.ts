@@ -97,7 +97,13 @@ export async function initializeTenantDatabase(
     await connection.query(`USE assixx_${tenantId}`);
 
     // Tabellen erstellen (Schema aus schema.sql verwenden)
-    const schemaPath = path.join(projectRoot, "backend", "src", "database", "schema.sql");
+    const schemaPath = path.join(
+      projectRoot,
+      "backend",
+      "src",
+      "database",
+      "schema.sql"
+    );
     const schema = fs.readFileSync(schemaPath, "utf8");
     const statements = schema.split(";").filter((stmt: string) => stmt.trim());
 
