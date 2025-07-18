@@ -29,6 +29,8 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
   maxWorkers: 1,
   testTimeout: 30000,
+  forceExit: true,
+  detectOpenHandles: true,
   collectCoverage: false, // Enable with --coverage flag
   collectCoverageFrom: [
     "src/**/*.{js,ts}",
