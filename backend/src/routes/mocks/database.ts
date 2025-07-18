@@ -117,6 +117,7 @@ async function initializeSchema(db: Pool): Promise<void> {
     `);
 
     // Create other necessary tables
+    await createAuthTables(db);
     await createBlackboardTables(db);
     await createCalendarTables(db);
     await createKVPTables(db);
@@ -128,6 +129,51 @@ async function initializeSchema(db: Pool): Promise<void> {
     console.error("Error initializing test database schema:", error);
     throw error;
   }
+}
+
+/**
+ * Create authentication related tables
+ */
+async function createAuthTables(db: Pool): Promise<void> {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      session_id VARCHAR(255) NOT NULL,
+      fingerprint VARCHAR(255),
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_session_id (session_id),
+      INDEX idx_user_active (user_id, is_active)
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(255) NOT NULL,
+      ip_address VARCHAR(45),
+      success BOOLEAN DEFAULT FALSE,
+      attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_username_attempts (username, attempted_at)
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      token VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_token (token),
+      INDEX idx_user_expires (user_id, expires_at)
+    )
+  `);
 }
 
 /**
