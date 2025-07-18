@@ -1,13 +1,31 @@
 # Assixx TODO-Liste
 
+## 🔴 WICHTIG - HIER WEITERMACHEN (19.07.2025)
+
+**Branch:** unit-tests--Github-Actions  
+**Problem:** Jest Tests hängen in GitHub Actions (laufen ewig, brechen nicht ab)  
+**Gelöst:** 
+- ✅ Alle import.meta.url Fehler behoben
+- ✅ Jest läuft, aber Tests hängen wegen offener DB-Verbindungen
+- ✅ forceExit und detectOpenHandles zu jest.config.cjs hinzugefügt
+
+**Nächste Schritte:**
+1. GitHub Actions Workflow Ergebnisse prüfen (sollte mit forceExit jetzt funktionieren)
+2. Fehlgeschlagene Tests debuggen (vermutlich Auth/Mock Probleme)
+3. DB Verbindungen in Tests richtig schließen (cleanupTestData)
+
+**Status:** 6 Tests erfolgreich, 11 fehlgeschlagen, 7 hingen fest
+
+---
+
 ## AKTUELLE PHASE
 
 Was: Kompletter Testdurchlauf v0.1.0 - Stabilität sichern
 Ziel: Neuer Tenant erstellen und ALLE Features bis Tenant-Löschung testen
 Status: Erster Testdurchlauf abgeschlossen - Jetzt systematisches Debugging
-Branch: debugging/v0.1.0--R2Stable
+Branch: debugging/v0.1.0--R2Stable (Haupt-Branch) / unit-tests--Github-Actions (aktuell)
 Fokus: Stabilität, Debugging, Unit Tests einführen
-Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
+Nächster Schritt: Unit Tests zum Laufen bringen, dann neuen Tenant erstellen und kompletten Durchlauf starten
 
 ## AKTUELLER FOKUS
 
