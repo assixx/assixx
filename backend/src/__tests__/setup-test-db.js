@@ -54,12 +54,31 @@ async function setupTestDatabase() {
       // Execute each statement separately
       for (const statement of statements) {
         const trimmedStmt = statement.trim();
-        if (trimmedStmt) {
+        if (trimmedStmt && !trimmedStmt.includes('1 AS `')) {
           try {
             await connection.query(trimmedStmt);
           } catch (error) {
             console.error(`Error executing statement: ${trimmedStmt.substring(0, 100)}...`);
             console.error(`Error: ${error.message}`);
+          }
+        }
+      }
+      
+      // Now create the views from the proper view definitions
+      const viewsPath = path.join(databaseDir, 'schema/03-views/views.sql');
+      if (fs.existsSync(viewsPath)) {
+        console.log('Creating database views...');
+        const viewsSQL = fs.readFileSync(viewsPath, 'utf8');
+        const viewStatements = viewsSQL.split(';').filter(stmt => stmt.trim());
+        
+        for (const viewStmt of viewStatements) {
+          const trimmedView = viewStmt.trim();
+          if (trimmedView && (trimmedView.includes('CREATE VIEW') || trimmedView.includes('CREATE OR REPLACE VIEW'))) {
+            try {
+              await connection.query(trimmedView);
+            } catch (error) {
+              console.error(`Error creating view: ${error.message}`);
+            }
           }
         }
       }
