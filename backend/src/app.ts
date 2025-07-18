@@ -42,9 +42,13 @@ import roleSwitchRoutes from "./routes/role-switch";
  * Separated from server.js for better testing
  */
 
-// ES modules equivalent of __dirname - use different variable names to avoid conflicts
-const currentFilePath = fileURLToPath(import.meta.url);
-const currentDirPath = path.dirname(currentFilePath);
+// Handle both ESM and CommonJS environments for Jest compatibility
+const currentFilePath = typeof __filename !== 'undefined' 
+  ? __filename 
+  : fileURLToPath(import.meta.url);
+const currentDirPath = typeof __dirname !== 'undefined' 
+  ? __dirname 
+  : path.dirname(currentFilePath);
 // Security middleware
 // Page protection middleware
 // Routes

@@ -45,6 +45,11 @@ async function setupTestDatabase() {
       // These appear between "SET @saved_cs_client" and "SET character_set_client = @saved_cs_client;"
       schema = schema.replace(/SET @saved_cs_client[\s\S]*?SET character_set_client = @saved_cs_client;/g, '');
       
+      // Remove DELIMITER statements and handle stored procedures/triggers
+      schema = schema.replace(/DELIMITER\s+.*$/gm, '');
+      schema = schema.replace(/\$\$/g, ';');
+      schema = schema.replace(/\/\*/g, ';');
+      
       // Split by semicolon and filter out empty statements
       const statements = schema.split(';').filter(stmt => stmt.trim());
       
