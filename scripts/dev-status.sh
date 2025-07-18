@@ -48,9 +48,16 @@ else
 fi
 echo ""
 
-# 4. TypeScript Status (nur Info)
-echo "4️⃣  TypeScript Status:"
-echo -e "   ${YELLOW}ℹ️  56 Test-Fehler bekannt (werden ignoriert für v0.1.0)${NC}"
+# 4. TypeScript Check - KRITISCH!
+echo "4️⃣  TypeScript Check:"
+echo "   🔍 Führe type-check aus..."
+if docker exec assixx-backend pnpm run type-check > /dev/null 2>&1; then
+    echo -e "   ${GREEN}✅ TypeScript Check erfolgreich${NC}"
+    echo -e "   ${YELLOW}ℹ️  56 Test-Fehler bekannt (werden ignoriert)${NC}"
+else
+    echo -e "   ${RED}❌ TypeScript Check fehlgeschlagen${NC}"
+    echo "   → Führe aus: docker exec assixx-backend pnpm run type-check"
+fi
 echo ""
 
 # 5. Aktuelle Phase

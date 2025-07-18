@@ -1,22 +1,29 @@
 # 🚀 Before Starting Development
 
-> **Zeitaufwand:** ~2-3 Minuten mit Status-Script  
-> **Primäre Methode:** Docker (Empfohlen)
+> **Zeitaufwand:** ~3 Minuten (inklusive TypeScript Check)  
+> **Primäre Methode:** Ein einziger Befehl führt alle Checks aus!
 
-## ⚠️ WICHTIG: ALLE Befehle müssen ausgeführt werden!
-**Nicht nur lesen - JEDEN Befehl durchführen, besonders den TypeScript Check!**
-
-## ⚡ Quick Start (Empfohlen)
+## ⚠️ PFLICHT: Diesen einen Befehl IMMER ausführen!
 
 ```bash
-# 1. Status-Script ausführen (prüft alles automatisch)
+# Führt ALLE Checks aus (inklusive TypeScript Check!)
 /home/scs/projects/Assixx/scripts/dev-status.sh
+```
 
-# 2. Bei Fehlern: Code automatisch fixen
+**Das Script prüft automatisch:**
+- ✅ Docker Container Status
+- ✅ API Health Check  
+- ✅ Git Status
+- ✅ **TypeScript Check** (NEU - wird jetzt automatisch ausgeführt!)
+- ✅ Aktuelle Phase Info
+
+**Bei Problemen:**
+```bash
+# TypeScript Errors fixen (außer den 56 Test-Errors)
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
 
-# 3. Git Status prüfen
-git status
+# Docker neu starten
+cd /home/scs/projects/Assixx/docker && docker-compose down && docker-compose up -d
 ```
 
 ## 🐳 Docker Development (Standard)
@@ -124,4 +131,4 @@ git branch --show-current
 
 ---
 
-**Zuletzt aktualisiert:** 17.07.2025
+**Zuletzt aktualisiert:** 18.07.2025 - dev-status.sh führt jetzt TypeScript Check automatisch aus!
