@@ -40,7 +40,11 @@ async function setupTestDatabase() {
       const currentSchemaPath = path.join(databaseDir, schemaFiles[0]);
       console.log(`Using current schema: ${schemaFiles[0]}`);
       const schema = fs.readFileSync(currentSchemaPath, "utf8");
+      
+      // Disable foreign key checks temporarily to avoid order dependencies
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
       await connection.query(schema);
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
     } else {
       // Fallback to migrations if no schema export exists
       console.log("No current schema found, falling back to migrations...");
