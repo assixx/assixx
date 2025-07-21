@@ -154,15 +154,8 @@ router.post(
       .notEmpty()
       .withMessage("Refresh token ist erforderlich"),
   ]),
-  typed.body<{ refreshToken: string }>(async (_req, res) => {
-    // TODO: Implement refresh token logic
-    res.status(200).json({
-      success: true,
-      data: {
-        token: "new-mock-token",
-        refreshToken: "new-mock-refresh-token",
-      },
-    });
+  typed.body<{ refreshToken: string }>(async (req, res) => {
+    await authController.refreshToken(req, res);
   }),
 );
 

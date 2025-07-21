@@ -81,13 +81,20 @@ class AuthController {
         return;
       }
 
-      // Get tenant name
-      const [tenantRows] = await executeQuery<RowDataPacket[]>(
-        "SELECT company_name FROM companies WHERE id = ?",
-        [req.user.tenant_id],
-      );
-
-      const tenantName = tenantRows[0]?.company_name ?? "";
+      // Get tenant name - handle both column names for compatibility
+      let tenantName = "";
+      try {
+        const [tenantRows] = await executeQuery<RowDataPacket[]>(
+          "SELECT * FROM tenants WHERE id = ?",
+          [req.user.tenant_id],
+        );
+        
+        if (tenantRows[0]) {
+          tenantName = tenantRows[0].company_name ?? tenantRows[0].name ?? "";
+        }
+      } catch (error) {
+        logger.warn("Failed to get tenant name:", error);
+      }
 
       res.json(
         successResponse({
@@ -122,16 +129,31 @@ class AuthController {
         return;
       }
 
-      // Authenticate user with fingerprint
+      // Get tenant subdomain from header if provided
+      const tenantSubdomain = req.headers["x-tenant-subdomain"] as string | undefined;
+      
+      // Authenticate user with fingerprint and tenant validation
       console.log("[DEBUG] Calling authService.authenticateUser");
+      console.log("[DEBUG] Tenant subdomain from header:", tenantSubdomain);
       const result = await authService.authenticateUser(
         username,
         password,
         fingerprint,
+        tenantSubdomain,
       );
       console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
 
       if (!result.success) {
+        // Track failed login attempt
+        try {
+          await executeQuery(
+            "INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())",
+            [username, req.ip ?? "unknown", false],
+          );
+        } catch (trackError) {
+          logger.error("Failed to track login attempt:", trackError);
+        }
+        
         res
           .status(401)
           .json(errorResponse(result.message ?? "Ungültige Anmeldedaten", 401));
@@ -164,13 +186,24 @@ class AuthController {
           req.ip ?? "unknown",
           req.headers["user-agent"] ?? "unknown",
         );
+        
+        // Track successful login attempt
+        try {
+          await executeQuery(
+            "INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())",
+            [username, req.ip ?? "unknown", true],
+          );
+        } catch (trackError) {
+          logger.error("Failed to track successful login attempt:", trackError);
+        }
       }
 
-      // Return user data and token with standardized response format
+      // Return user data and tokens with standardized response format
       res.json(
         successResponse(
           {
             token: result.token,
+            refreshToken: result.refreshToken,
             role: result.user?.role,
             user: result.user,
           },
@@ -406,6 +439,49 @@ class AuthController {
       res
         .status(500)
         .json(errorResponse("Serverfehler beim Passwort-Reset", 500));
+    }
+  }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  async refreshToken(req: Request, res: Response): Promise<void> {
+    try {
+      const { refreshToken } = req.body as { refreshToken: string };
+
+      if (!refreshToken) {
+        res
+          .status(400)
+          .json(errorResponse("Refresh token ist erforderlich", 400));
+        return;
+      }
+
+      // Attempt to refresh the access token
+      const result = await authService.refreshAccessToken(refreshToken);
+
+      if (!result) {
+        res
+          .status(401)
+          .json(errorResponse("Ungültiger oder abgelaufener Refresh token", 401));
+        return;
+      }
+
+      // Return new tokens with standardized response format
+      res.json(
+        successResponse(
+          {
+            token: result.token,
+            refreshToken: result.refreshToken,
+            user: result.user,
+          },
+          "Token erfolgreich erneuert",
+        ),
+      );
+    } catch (error) {
+      logger.error("Refresh token error:", error);
+      res
+        .status(500)
+        .json(errorResponse("Serverfehler beim Token-Refresh", 500));
     }
   }
 }
