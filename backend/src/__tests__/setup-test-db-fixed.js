@@ -132,18 +132,20 @@ async function setupTestDatabase() {
     CREATE TABLE IF NOT EXISTS blackboard_entries (
       id INT PRIMARY KEY AUTO_INCREMENT,
       tenant_id INT NOT NULL,
-      user_id INT NOT NULL,
+      author_id INT NOT NULL,
       title VARCHAR(255) NOT NULL,
       content TEXT NOT NULL,
-      org_level VARCHAR(50) DEFAULT 'company',
+      org_level ENUM('company', 'department', 'team') DEFAULT 'company',
       org_id INT NULL,
-      priority VARCHAR(50) DEFAULT 'normal',
-      color VARCHAR(50),
+      priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+      color VARCHAR(50) DEFAULT '#0066cc',
       requires_confirmation BOOLEAN DEFAULT FALSE,
+      status ENUM('active', 'archived') DEFAULT 'active',
+      expires_at TIMESTAMP NULL DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
     -- Blackboard confirmations table
@@ -271,6 +273,27 @@ async function setupTestDatabase() {
       filename VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (entry_id) REFERENCES blackboard_entries(id) ON DELETE CASCADE
+    );
+    
+    -- Blackboard tags table
+    CREATE TABLE IF NOT EXISTS blackboard_tags (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(100) NOT NULL,
+      tenant_id INT NOT NULL,
+      color VARCHAR(50) DEFAULT '#666666',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_tag_name_tenant (name, tenant_id)
+    );
+    
+    -- Blackboard entry tags junction table
+    CREATE TABLE IF NOT EXISTS blackboard_entry_tags (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      entry_id INT NOT NULL,
+      tag_id INT NOT NULL,
+      FOREIGN KEY (entry_id) REFERENCES blackboard_entries(id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_id) REFERENCES blackboard_tags(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_entry_tag (entry_id, tag_id)
     );
     
     -- User availability table
