@@ -12,7 +12,8 @@ process.env["JWT_SECRET"] =
 
 // Database configuration - use GitHub Actions values or local defaults
 process.env["DB_HOST"] = process.env["DB_HOST"] || "localhost";
-process.env["DB_PORT"] = process.env["DB_PORT"] || (process.env["CI"] ? "3306" : "3307");
+process.env["DB_PORT"] =
+  process.env["DB_PORT"] || (process.env["CI"] ? "3306" : "3307");
 process.env["DB_USER"] = process.env["DB_USER"] || "assixx_user";
 process.env["DB_PASSWORD"] = process.env["DB_PASSWORD"] || "AssixxP@ss2025!";
 process.env["DB_NAME"] = process.env["DB_NAME"] || "main_test";
