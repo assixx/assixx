@@ -88,7 +88,7 @@ describe("Blackboard Integration Tests", () => {
           org_id: null,
           priority: "high",
           color: "red",
-          tags: ["important", "announcement"]
+          tags: ["important", "announcement"],
         })
         .expect(201);
 
