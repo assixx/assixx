@@ -91,6 +91,9 @@ export async function authenticateUser(
     if (!user) {
       console.log("[DEBUG] Not found by username, trying email...");
       user = await UserModel.findByEmail(usernameOrEmail);
+      if (user) {
+        console.log("[DEBUG] User found by email:", user.email);
+      }
     }
 
     if (!user) {

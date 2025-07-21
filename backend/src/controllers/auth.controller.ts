@@ -136,6 +136,7 @@ class AuthController {
 
       // Authenticate user with fingerprint and tenant validation
       console.log("[DEBUG] Calling authService.authenticateUser");
+      console.log("[DEBUG] Username/Email:", username);
       console.log("[DEBUG] Tenant subdomain from header:", tenantSubdomain);
       const result = await authService.authenticateUser(
         username,
@@ -144,6 +145,7 @@ class AuthController {
         tenantSubdomain,
       );
       console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
+      console.log("[DEBUG] Auth result details:", JSON.stringify(result));
 
       if (!result.success) {
         // Track failed login attempt

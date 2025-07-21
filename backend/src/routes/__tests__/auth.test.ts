@@ -37,6 +37,33 @@ describe("Authentication API Endpoints", () => {
       console.error("Database connection failed:", error);
     }
 
+    // Clean up any existing test users with our test emails
+    // First delete related records due to foreign key constraints
+    const [existingUsers] = await testDb.execute(
+      "SELECT id FROM users WHERE email IN (?, ?)",
+      ["testuser1@authtest1.de", "testuser2@authtest2.de"]
+    ) as any;
+    
+    if (existingUsers.length > 0) {
+      const userIds = existingUsers.map((u: any) => u.id);
+      const placeholders = userIds.map(() => '?').join(',');
+      
+      // Delete related records first
+      await testDb.execute(`DELETE FROM activity_logs WHERE user_id IN (${placeholders})`, userIds);
+      await testDb.execute(`DELETE FROM admin_logs WHERE user_id IN (${placeholders})`, userIds);
+      await testDb.execute(`DELETE FROM user_sessions WHERE user_id IN (${placeholders})`, userIds);
+      await testDb.execute(`DELETE FROM login_attempts WHERE username IN (?, ?)`, [
+        "testuser1@authtest1.de",
+        "testuser2@authtest2.de"
+      ]);
+      
+      // Now delete the users
+      await testDb.execute("DELETE FROM users WHERE email IN (?, ?)", [
+        "testuser1@authtest1.de",
+        "testuser2@authtest2.de"
+      ]);
+    }
+
     // Create test tenants
     tenant1Id = await createTestTenant(
       testDb,
@@ -49,9 +76,9 @@ describe("Authentication API Endpoints", () => {
       "Auth Test Company 2",
     );
 
-    // Create test users
+    // Create test users - WICHTIG: In unserer DB sind username und email IMMER GLEICH!
     testUser1 = await createTestUser(testDb, {
-      username: "testuser1",
+      username: "testuser1@authtest1.de",
       email: "testuser1@authtest1.de",
       password: "TestPass123!",
       role: "admin",
@@ -60,8 +87,10 @@ describe("Authentication API Endpoints", () => {
       last_name: "User1",
     });
 
+    console.log("Created testUser1 with email:", testUser1.email);
+
     testUser2 = await createTestUser(testDb, {
-      username: "testuser2",
+      username: "testuser2@authtest2.de",
       email: "testuser2@authtest2.de",
       password: "TestPass456!",
       role: "employee",

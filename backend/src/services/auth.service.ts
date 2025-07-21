@@ -134,7 +134,11 @@ class AuthService {
       };
     } catch (error) {
       logger.error("Authentication error:", error);
-      throw error;
+      return {
+        success: false,
+        user: null,
+        message: "Ungültige Anmeldedaten",
+      };
     }
   }
 
