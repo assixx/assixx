@@ -370,7 +370,7 @@ class AuthController {
   /**
    * Reset password with token
    */
-  async resetPassword(req: Request, res: Response): Promise<void> {
+  async resetPassword(_req: Request, res: Response): Promise<void> {
     try {
       // const { token, newPassword } = req.body;
       
