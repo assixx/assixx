@@ -183,40 +183,34 @@ async function createAuthTables(db: Pool): Promise<void> {
     )
   `);
 
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NOT NULL,
-      token VARCHAR(255) NOT NULL,
-      expires_at TIMESTAMP NOT NULL,
-      used BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      INDEX idx_token (token),
-      INDEX idx_user_expires (user_id, expires_at)
-    )
-  `);
+  // Skip password_reset_tokens table creation if it doesn't exist in production  
+  // This table was removed due to foreign key issues
+  console.log("Skipping password_reset_tokens table creation (removed from production)");
 
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS oauth_tokens (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      tenant_id INT NOT NULL,
-      user_id INT NOT NULL,
-      token TEXT NOT NULL,
-      token_type ENUM('access', 'refresh') NOT NULL,
-      expires_at TIMESTAMP NOT NULL,
-      revoked BOOLEAN DEFAULT FALSE,
-      revoked_at TIMESTAMP NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      INDEX idx_user_type (user_id, token_type),
-      INDEX idx_expires (expires_at)
-    )
-  `);
+  // Skip oauth_tokens table creation if it doesn't exist in production
+  // This table was removed due to foreign key issues
+  console.log("Skipping oauth_tokens table creation (removed from production)");
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS activity_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT,
+      user_id INT NOT NULL,
+      action VARCHAR(255) NOT NULL,
+      entity_type VARCHAR(255),
+      entity_id INT,
+      details TEXT,
+      ip_address VARCHAR(45),
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_user_action (user_id, action),
+      INDEX idx_created (created_at)
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS admin_logs (
       id INT AUTO_INCREMENT PRIMARY KEY,
       tenant_id INT,
       user_id INT NOT NULL,
