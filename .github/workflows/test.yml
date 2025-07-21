@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, master, 'unit-tests--Github-Actions' ]
+    branches: [main, master, "unit-tests--Github-Actions"]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   # Job to discover all test files dynamically
@@ -13,45 +13,45 @@ jobs:
     outputs:
       test-matrix: ${{ steps.discover.outputs.test-matrix }}
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Discover test files
-      id: discover
-      run: |
-        # Find all test files and create a matrix with file paths and clean names
-        echo "Discovering test files..."
-        test_matrix='{"include":['
-        first=true
-        
-        while IFS= read -r file; do
-          if [ "$first" = true ]; then
-            first=false
-          else
-            test_matrix+=','
-          fi
-          
-          # Extract clean name from file path
-          clean_name=$(echo "$file" | sed -E '
-            s|backend/src/||
-            s|/__tests__/||
-            s|\.test\.ts$||
-            s|/| - |g
-            s|^routes - |Routes: |
-            s|^middleware - |Middleware: |
-            s|^services - |Services: |
-            s|^models - |Models: |
-            s|^utils - |Utils: |
-            s|^|Tests: |
-          ')
-          
-          test_matrix+="{\"file\":\"$file\",\"name\":\"$clean_name\"}"
-        done < <(find backend/src -name "*.test.ts" -type f | sort)
-        
-        test_matrix+=']}'
-        
-        echo "test-matrix=$test_matrix" >> $GITHUB_OUTPUT
-        echo "Test matrix:"
-        echo "$test_matrix" | jq .
+      - uses: actions/checkout@v4
+
+      - name: Discover test files
+        id: discover
+        run: |
+          # Find all test files and create a matrix with file paths and clean names
+          echo "Discovering test files..."
+          test_matrix='{"include":['
+          first=true
+
+          while IFS= read -r file; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              test_matrix+=','
+            fi
+            
+            # Extract clean name from file path
+            clean_name=$(echo "$file" | sed -E '
+              s|backend/src/||
+              s|/__tests__/||
+              s|\.test\.ts$||
+              s|/| - |g
+              s|^routes - |Routes: |
+              s|^middleware - |Middleware: |
+              s|^services - |Services: |
+              s|^models - |Models: |
+              s|^utils - |Utils: |
+              s|^|Tests: |
+            ')
+            
+            test_matrix+="{\"file\":\"$file\",\"name\":\"$clean_name\"}"
+          done < <(find backend/src -name "*.test.ts" -type f | sort)
+
+          test_matrix+=']}'
+
+          echo "test-matrix=$test_matrix" >> $GITHUB_OUTPUT
+          echo "Test matrix:"
+          echo "$test_matrix" | jq .
 
   # Run each test file as a separate job
   test:
@@ -60,9 +60,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-tests.outputs.test-matrix) }}
-    
+
     name: ${{ matrix.name }}
-    
+
     services:
       mysql:
         image: mysql:8.0
@@ -78,7 +78,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-          
+
       redis:
         image: redis:7-alpine
         ports:
@@ -90,217 +90,217 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10.13.1
-        
-    - name: Get pnpm store directory
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-        
-    - name: Setup pnpm cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-
-          
-    - name: Install dependencies
-      run: |
-        pnpm install --frozen-lockfile
-        
-    - name: Wait for MySQL
-      run: |
-        for i in {1..30}; do
-          if mysql -h localhost -P 3306 -u assixx_user -pAssixxP@ss2025! -e "SELECT 1" &> /dev/null; then
-            echo "MySQL is ready!"
-            break
-          fi
-          echo "Waiting for MySQL... ($i/30)"
-          sleep 2
-        done
-        
-    - name: Setup test database
-      env:
-        DB_HOST: localhost
-        DB_USER: assixx_user
-        DB_PASSWORD: AssixxP@ss2025!
-        DB_NAME: main_test
-      run: |
-        cd backend
-        node src/__tests__/setup-test-db-fixed.js
-        
-    - name: Run test file
-      env:
-        NODE_ENV: test
-        JWT_SECRET: test-secret-key-for-github-actions
-        DB_HOST: localhost
-        DB_USER: assixx_user
-        DB_PASSWORD: AssixxP@ss2025!
-        DB_NAME: main_test
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
-      run: |
-        cd backend
-        echo "Running: ${{ matrix.name }}"
-        echo "Test file: ${{ matrix.file }}"
-        pnpm jest "${{ matrix.file }}" --coverage --coverageDirectory=coverage-single
-        
-    - name: Upload individual coverage
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-${{ strategy.job-index }}
-        path: backend/coverage-single/
-        retention-days: 1
-        
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.13.1
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysql -h localhost -P 3306 -u assixx_user -pAssixxP@ss2025! -e "SELECT 1" &> /dev/null; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Setup test database
+        env:
+          DB_HOST: localhost
+          DB_USER: assixx_user
+          DB_PASSWORD: AssixxP@ss2025!
+          DB_NAME: main_test
+        run: |
+          cd backend
+          node src/__tests__/setup-test-db-fixed.js
+
+      - name: Run test file
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-github-actions
+          DB_HOST: localhost
+          DB_USER: assixx_user
+          DB_PASSWORD: AssixxP@ss2025!
+          DB_NAME: main_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          cd backend
+          echo "Running: ${{ matrix.name }}"
+          echo "Test file: ${{ matrix.file }}"
+          pnpm jest "${{ matrix.file }}" --coverage --coverageDirectory=coverage-single
+
+      - name: Upload individual coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ strategy.job-index }}
+          path: backend/coverage-single/
+          retention-days: 1
+
   # Aggregate coverage reports
   coverage:
     needs: test
     runs-on: ubuntu-latest
     # Only run if at least one test job completed
     if: always()
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download all coverage reports
-      uses: actions/download-artifact@v4
-      with:
-        pattern: coverage-*
-        path: coverage-reports
-      continue-on-error: true
-        
-    - name: Check for coverage reports
-      id: check-coverage
-      run: |
-        if [ -d "coverage-reports" ] && [ "$(ls -A coverage-reports 2>/dev/null)" ]; then
-          echo "has_coverage=true" >> $GITHUB_OUTPUT
-          echo "Coverage reports found:"
-          ls -la coverage-reports/ || true
-        else
-          echo "has_coverage=false" >> $GITHUB_OUTPUT
-          echo "No coverage reports found - tests may have failed"
-        fi
-        
-    - name: Merge coverage reports
-      if: steps.check-coverage.outputs.has_coverage == 'true'
-      run: |
-        echo "Merging coverage reports from individual test runs"
-        # List all coverage directories
-        find coverage-reports -name "lcov.info" -type f || true
-        
-    - name: Upload to Codecov
-      if: steps.check-coverage.outputs.has_coverage == 'true'
-      uses: codecov/codecov-action@v4
-      with:
-        directory: ./coverage-reports
-        flags: backend
-        name: backend-coverage
-        fail_ci_if_error: false
+      - uses: actions/checkout@v4
+
+      - name: Download all coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-reports
+        continue-on-error: true
+
+      - name: Check for coverage reports
+        id: check-coverage
+        run: |
+          if [ -d "coverage-reports" ] && [ "$(ls -A coverage-reports 2>/dev/null)" ]; then
+            echo "has_coverage=true" >> $GITHUB_OUTPUT
+            echo "Coverage reports found:"
+            ls -la coverage-reports/ || true
+          else
+            echo "has_coverage=false" >> $GITHUB_OUTPUT
+            echo "No coverage reports found - tests may have failed"
+          fi
+
+      - name: Merge coverage reports
+        if: steps.check-coverage.outputs.has_coverage == 'true'
+        run: |
+          echo "Merging coverage reports from individual test runs"
+          # List all coverage directories
+          find coverage-reports -name "lcov.info" -type f || true
+
+      - name: Upload to Codecov
+        if: steps.check-coverage.outputs.has_coverage == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./coverage-reports
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
 
   # Static code analysis (TypeScript, ESLint)
   code-analysis:
     runs-on: ubuntu-latest
     name: Code Analysis
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10.13.1
-        
-    - name: Get pnpm store directory
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-        
-    - name: Setup pnpm cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-
-          
-    - name: Install dependencies
-      run: |
-        pnpm install --frozen-lockfile
-        
-    - name: Run TypeScript check
-      run: |
-        cd backend
-        pnpm run typecheck
-        
-    - name: Run ESLint
-      run: |
-        cd backend
-        pnpm run lint
-        
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.13.1
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Run TypeScript check
+        run: |
+          cd backend
+          pnpm run typecheck
+
+      - name: Run ESLint
+        run: |
+          cd backend
+          pnpm run lint
+
   # Docker build test
   docker-build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build Backend Docker Image
-      run: |
-        cd docker
-        docker build -f Dockerfile -t assixx-backend-test:latest ..
-        
-    - name: Build Frontend Docker Image
-      run: |
-        # Frontend wird im gleichen Dockerfile gebaut oder separates Frontend-Dockerfile prüfen
-        echo "Skipping separate frontend build - included in main Dockerfile"
-        
-    - name: Test Docker Compose
-      run: |
-        cd docker
-        docker compose config
-        
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        run: |
+          cd docker
+          docker build -f Dockerfile -t assixx-backend-test:latest ..
+
+      - name: Build Frontend Docker Image
+        run: |
+          # Frontend wird im gleichen Dockerfile gebaut oder separates Frontend-Dockerfile prüfen
+          echo "Skipping separate frontend build - included in main Dockerfile"
+
+      - name: Test Docker Compose
+        run: |
+          cd docker
+          docker compose config
+
   # Separate job for checking code quality
   code-quality:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10.13.1
-        
-    - name: Install dependencies
-      run: |
-        pnpm install --frozen-lockfile
-        
-    - name: Check formatting
-      run: |
-        cd backend
-        pnpm run prettier
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.13.1
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: |
+          cd backend
+          pnpm run prettier

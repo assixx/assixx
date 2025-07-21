@@ -32,25 +32,25 @@ async function setupTestDatabase() {
 
   try {
     console.log("Connected to MySQL successfully");
-    
+
     // Disable foreign key checks
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
     console.log("Foreign key checks disabled");
-    
+
     // Drop all existing tables to start fresh
     const [tables] = await connection.query(`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = DATABASE()
     `);
-    
+
     console.log(`Found ${tables.length} existing tables`);
     for (const table of tables) {
       console.log(`Dropping table: ${table.TABLE_NAME}`);
       await connection.query(`DROP TABLE IF EXISTS \`${table.TABLE_NAME}\``);
     }
     console.log("All tables dropped");
-    
+
     // Create minimal schema for tests
     const createTablesSQL = `
     -- Tenants table
@@ -261,7 +261,7 @@ async function setupTestDatabase() {
     console.log("Creating test tables...");
     await connection.query(createTablesSQL);
     console.log("All tables created successfully");
-    
+
     // Create additional tables that might be needed
     const additionalTablesSQL = `
     -- Blackboard attachments table (referenced in schema)
@@ -327,10 +327,10 @@ async function setupTestDatabase() {
       INDEX idx_user_expires (user_id, expires_at)
     );
     `;
-    
+
     console.log("Creating additional tables...");
     await connection.query(additionalTablesSQL);
-    
+
     // Create trigger to sync name and company_name
     const createTriggerSQL = `
     CREATE TRIGGER sync_tenant_names
@@ -345,15 +345,17 @@ async function setupTestDatabase() {
       END IF;
     END;
     `;
-    
+
     try {
       console.log("Creating sync trigger for tenant names...");
       await connection.query("DROP TRIGGER IF EXISTS sync_tenant_names");
       await connection.query(createTriggerSQL);
     } catch (err) {
-      console.log("Trigger creation skipped (might not be supported in test env)");
+      console.log(
+        "Trigger creation skipped (might not be supported in test env)",
+      );
     }
-    
+
     // Re-enable foreign key checks
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
     console.log("Foreign key checks re-enabled");
@@ -363,7 +365,9 @@ async function setupTestDatabase() {
       SELECT COUNT(*) as count FROM information_schema.tables 
       WHERE table_schema = DATABASE()
     `);
-    console.log(`Test database setup completed! Created ${createdTables[0].count} tables`);
+    console.log(
+      `Test database setup completed! Created ${createdTables[0].count} tables`,
+    );
   } catch (error) {
     console.error("Error setting up test database:", error);
     console.error("SQL Error Details:", error.sqlMessage || error.message);

@@ -11,13 +11,15 @@
 ```
 
 **Das Script prüft automatisch:**
+
 - ✅ Docker Container Status
-- ✅ API Health Check  
+- ✅ API Health Check
 - ✅ Git Status
 - ✅ **TypeScript Check** (NEU - wird jetzt automatisch ausgeführt!)
 - ✅ Aktuelle Phase Info
 
 **Bei Problemen:**
+
 ```bash
 # TypeScript Errors fixen (außer den 56 Test-Errors)
 docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"

@@ -277,7 +277,7 @@ export async function getAdminDepartments(adminId: number): Promise<number[]> {
     FROM admin_department_permissions 
     WHERE admin_user_id = ? AND can_read = TRUE
   `,
-    [adminId]
+    [adminId],
   );
 
   // Group-basierte Permissions
@@ -288,7 +288,7 @@ export async function getAdminDepartments(adminId: number): Promise<number[]> {
     JOIN department_group_members dgm ON agp.group_id = dgm.group_id
     WHERE agp.admin_user_id = ? AND agp.can_read = TRUE
   `,
-    [adminId]
+    [adminId],
   );
 
   // Kombiniere und dedupliziere
@@ -303,7 +303,7 @@ export async function canAdminEditKVP(adminId: number, suggestionId: number): Pr
     FROM kvp_suggestions 
     WHERE id = ?
   `,
-    [suggestionId]
+    [suggestionId],
   );
 
   if (!suggestion) return false;
@@ -315,7 +315,7 @@ export async function canAdminEditKVP(adminId: number, suggestionId: number): Pr
       SELECT 1 FROM kvp_suggestions 
       WHERE id = ? AND shared_by = ?
     `,
-      [suggestionId, adminId]
+      [suggestionId, adminId],
     );
     return !!isOriginalAdmin;
   }

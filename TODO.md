@@ -4,12 +4,14 @@
 
 **Branch:** unit-tests--Github-Actions  
 **Problem:** Jest Tests hängen in GitHub Actions (laufen ewig, brechen nicht ab)  
-**Gelöst:** 
+**Gelöst:**
+
 - ✅ Alle import.meta.url Fehler behoben
 - ✅ Jest läuft, aber Tests hängen wegen offener DB-Verbindungen
 - ✅ forceExit und detectOpenHandles zu jest.config.cjs hinzugefügt
 
 **Nächste Schritte:**
+
 1. GitHub Actions Workflow Ergebnisse prüfen (sollte mit forceExit jetzt funktionieren)
 2. Fehlgeschlagene Tests debuggen (vermutlich Auth/Mock Probleme)
 3. DB Verbindungen in Tests richtig schließen (cleanupTestData)

@@ -1,7 +1,9 @@
 # API Test Plan for Assixx
 
 ## Overview
+
 This document outlines the comprehensive API testing strategy for all Assixx endpoints. Each endpoint will have tests covering:
+
 - ✅ Successful operations
 - 🔐 Authentication and authorization
 - 🏢 Multi-tenant isolation
@@ -14,6 +16,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ### 🔴 Critical Endpoints (Must Test)
 
 #### 1. **Tenant Creation** - `/api/signup`
+
 - [ ] POST /api/signup - Create new tenant with admin user
 - [ ] GET /api/check-subdomain/:subdomain - Check subdomain availability
 - **Critical Tests:**
@@ -24,6 +27,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
   - Trial period setup
 
 #### 2. **Authentication** - `/api/auth`
+
 - [ ] POST /api/auth/login - User login
 - [ ] POST /api/auth/logout - User logout
 - [ ] GET /api/auth/me - Get current user
@@ -36,6 +40,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
   - Session management
 
 #### 3. **Document Management** - `/api/documents`
+
 - [ ] POST /api/documents/upload - Upload document
 - [ ] GET /api/documents - List documents
 - [ ] GET /api/documents/:id - Get specific document
@@ -51,6 +56,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ### 🟡 Important Endpoints
 
 #### 4. **User Management** - `/api/users`
+
 - [ ] GET /api/users - List users
 - [ ] POST /api/users - Create user
 - [ ] GET /api/users/:id - Get user details
@@ -63,6 +69,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
   - Department assignment
 
 #### 5. **Blackboard** - `/api/blackboard`
+
 - [ ] GET /api/blackboard - List entries
 - [ ] POST /api/blackboard - Create entry
 - [ ] PUT /api/blackboard/:id - Update entry
@@ -73,6 +80,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
   - Read status tracking
 
 #### 6. **Calendar** - `/api/calendar`
+
 - [ ] GET /api/calendar/events - List events
 - [ ] POST /api/calendar/events - Create event
 - [ ] PUT /api/calendar/events/:id - Update event
@@ -83,6 +91,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
   - Conflict detection
 
 #### 7. **KVP (Suggestions)** - `/api/kvp`
+
 - [ ] GET /api/kvp/suggestions - List suggestions
 - [ ] POST /api/kvp/suggestions - Create suggestion
 - [ ] PUT /api/kvp/suggestions/:id - Update suggestion
@@ -93,6 +102,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
   - Attachment handling
 
 #### 8. **Shift Planning** - `/api/shifts`
+
 - [ ] GET /api/shifts/templates - List templates
 - [ ] POST /api/shifts/plans - Create shift plan
 - [ ] PUT /api/shifts/plans/:id - Update plan
@@ -105,24 +115,28 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ### 🟢 Standard Endpoints
 
 #### 9. **Departments** - `/api/departments`
+
 - [ ] GET /api/departments - List departments
 - [ ] POST /api/departments - Create department
 - [ ] PUT /api/departments/:id - Update department
 - [ ] DELETE /api/departments/:id - Delete department
 
 #### 10. **Teams** - `/api/teams`
+
 - [ ] GET /api/teams - List teams
 - [ ] POST /api/teams - Create team
 - [ ] PUT /api/teams/:id - Update team
 - [ ] DELETE /api/teams/:id - Delete team
 
 #### 11. **Chat** - `/api/chat`
+
 - [ ] GET /api/chat/conversations - List conversations
 - [ ] POST /api/chat/conversations - Create conversation
 - [ ] POST /api/chat/messages - Send message
 - [ ] GET /api/chat/messages/:conversationId - Get messages
 
 #### 12. **Surveys** - `/api/surveys`
+
 - [ ] GET /api/surveys - List surveys
 - [ ] POST /api/surveys - Create survey
 - [ ] POST /api/surveys/:id/responses - Submit response
@@ -131,12 +145,14 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ### 🔵 Administrative Endpoints
 
 #### 13. **Admin Operations** - `/api/admin`
+
 - [ ] GET /api/admin/tenants - List all tenants
 - [ ] PUT /api/admin/tenants/:id - Update tenant
 - [ ] GET /api/admin/statistics - System statistics
 - [ ] POST /api/admin/backup - Trigger backup
 
 #### 14. **Root Operations** - `/api/root`
+
 - [ ] POST /api/root/tenants - Create tenant (admin)
 - [ ] DELETE /api/root/tenants/:id - Delete tenant
 - [ ] POST /api/root/maintenance - Toggle maintenance mode
@@ -144,24 +160,28 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ## Test Implementation Strategy
 
 ### Phase 1: Critical Path (Week 1)
+
 1. Tenant Creation Tests
 2. Authentication Tests
 3. Document Upload Tests
 4. Basic User Management Tests
 
 ### Phase 2: Core Features (Week 2)
+
 1. Blackboard Tests
 2. Calendar Tests
 3. KVP Tests
 4. Department/Team Tests
 
 ### Phase 3: Advanced Features (Week 3)
+
 1. Shift Planning Tests
 2. Chat Tests
 3. Survey Tests
 4. Admin/Root Tests
 
 ### Phase 4: Integration & E2E (Week 4)
+
 1. Multi-tenant isolation scenarios
 2. Role-based access scenarios
 3. Performance benchmarks
@@ -170,30 +190,30 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ## Test Utilities Needed
 
 ### 1. Test Data Factories
+
 ```typescript
-- createTestTenant()
-- createTestUser(role, tenantId)
-- createTestDocument(category, targetId)
-- createTestDepartment(tenantId)
+-createTestTenant() -
+  createTestUser(role, tenantId) -
+  createTestDocument(category, targetId) -
+  createTestDepartment(tenantId);
 ```
 
 ### 2. Authentication Helpers
+
 ```typescript
-- getAuthToken(username, password)
-- withAuth(request, token)
-- expectUnauthorized(response)
+-getAuthToken(username, password) - withAuth(request, token) - expectUnauthorized(response);
 ```
 
 ### 3. Multi-tenant Assertions
+
 ```typescript
-- expectTenantIsolation(resource, tenantId)
-- expectCrossTenantRejection(request)
+-expectTenantIsolation(resource, tenantId) - expectCrossTenantRejection(request);
 ```
 
 ### 4. File Upload Helpers
+
 ```typescript
-- createTestFile(type, size)
-- uploadFile(endpoint, file, metadata)
+-createTestFile(type, size) - uploadFile(endpoint, file, metadata);
 ```
 
 ## Success Metrics
@@ -207,6 +227,7 @@ This document outlines the comprehensive API testing strategy for all Assixx end
 ## Swagger Integration
 
 The API is already documented with Swagger/OpenAPI. We should:
+
 1. Ensure all endpoints have proper Swagger annotations
 2. Set up Swagger UI at `/api-docs`
 3. Generate API client from OpenAPI spec

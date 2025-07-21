@@ -118,7 +118,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -130,7 +130,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM user_chat_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -144,7 +144,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM chat_notifications WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -158,7 +158,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM activity_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -170,7 +170,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM api_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -182,7 +182,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM security_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -205,7 +205,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM message_read_receipts WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -217,7 +217,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM message_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -229,7 +229,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM messages WHERE sender_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -241,7 +241,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM conversation_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -264,7 +264,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM document_read_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -288,7 +288,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM kvp_comments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -300,7 +300,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM kvp_ratings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -312,7 +312,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM kvp_points WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -324,7 +324,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM kvp_status_history WHERE changed_by IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -336,7 +336,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM kvp_attachments WHERE uploaded_by IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -359,7 +359,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM calendar_attendees WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -371,7 +371,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM calendar_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -383,7 +383,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM calendar_reminders WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -395,7 +395,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM calendar_shares WHERE calendar_owner_id IN (SELECT id FROM users WHERE tenant_id = ?) OR shared_with_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId, tenantId]
+          [tenantId, tenantId],
         );
         return result.affectedRows;
       },
@@ -418,7 +418,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM shift_assignments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -430,7 +430,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM shift_notes WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -442,7 +442,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM weekly_shift_notes WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -465,7 +465,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM blackboard_confirmations WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -477,7 +477,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM blackboard_attachments WHERE uploaded_by IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -500,7 +500,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM survey_comments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -512,7 +512,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM survey_responses WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -524,7 +524,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM survey_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -536,7 +536,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM survey_assignments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -548,7 +548,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -571,7 +571,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM user_settings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -583,7 +583,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM notification_preferences WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -597,7 +597,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM employee_availability WHERE employee_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -609,7 +609,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM feature_usage_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -623,7 +623,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM admin_permission_logs WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?) OR changed_by IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId, tenantId]
+          [tenantId, tenantId],
         );
         return result.affectedRows;
       },
@@ -635,7 +635,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM admin_department_permissions WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -647,7 +647,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM admin_group_permissions WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -661,7 +661,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM user_teams WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -673,7 +673,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM department_group_members WHERE added_by IN (SELECT id FROM users WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -705,7 +705,7 @@ export class TenantDeletionService {
         // Department Groups
         await conn.query(
           "UPDATE department_groups SET created_by = NULL WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
 
         // Tenant Features
@@ -726,7 +726,7 @@ export class TenantDeletionService {
       handler: async (tenantId, conn) => {
         const result = await conn.query(
           "DELETE FROM department_groups WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)",
-          [tenantId]
+          [tenantId],
         );
         return result.affectedRows;
       },
@@ -820,7 +820,7 @@ export class TenantDeletionService {
       // 3. Create queue entry
       const result = await connection.query(
         "INSERT INTO tenant_deletion_queue (tenant_id, created_by, total_steps) VALUES (?, ?, ?)",
-        [tenantId, requestedBy, this.steps.length]
+        [tenantId, requestedBy, this.steps.length],
       );
 
       // 4. Log out all users of this tenant
@@ -853,7 +853,7 @@ export class TenantDeletionService {
         `SELECT * FROM tenant_deletion_queue 
          WHERE status = 'queued' 
          ORDER BY created_at ASC 
-         LIMIT 1`
+         LIMIT 1`,
       );
 
       if (!queueItem) {
@@ -913,7 +913,7 @@ export class TenantDeletionService {
             `INSERT INTO tenant_deletion_log 
              (queue_id, step_name, table_name, records_deleted, duration_ms, status) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, "success"]
+            [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, "success"],
           );
 
           completedSteps++;
@@ -925,7 +925,7 @@ export class TenantDeletionService {
             `INSERT INTO tenant_deletion_log 
              (queue_id, step_name, table_name, duration_ms, status, error_message) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [queueId, step.name, step.name, Date.now() - startTime, "failed", error.message]
+            [queueId, step.name, step.name, Date.now() - startTime, "failed", error.message],
           );
 
           if (step.critical) {
@@ -937,7 +937,7 @@ export class TenantDeletionService {
       // 5. Mark as completed
       await connection.query(
         "UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW(), progress = 100 WHERE id = ?",
-        ["completed", queueId]
+        ["completed", queueId],
       );
 
       logger.info(`Tenant ${tenantId} deletion completed successfully`);
@@ -979,7 +979,7 @@ export class TenantDeletionService {
        WHERE q.tenant_id = ?
        ORDER BY q.created_at DESC
        LIMIT 1`,
-      [tenantId]
+      [tenantId],
     );
 
     return status;
@@ -991,7 +991,7 @@ export class TenantDeletionService {
   async retryDeletion(queueId: number): Promise<void> {
     await db.query(
       "UPDATE tenant_deletion_queue SET status = ?, retry_count = retry_count + 1 WHERE id = ? AND status = ?",
-      ["queued", queueId, "failed"]
+      ["queued", queueId, "failed"],
     );
   }
 }
@@ -1457,7 +1457,7 @@ class DeletionWorker {
        WHERE status = 'queued' 
        AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
        ORDER BY created_at ASC 
-       LIMIT 1`
+       LIMIT 1`,
     );
 
     if (nextItem) {
@@ -1614,7 +1614,7 @@ async function checkSharedResources(tenantId: number) {
   // Cross-tenant document shares
   const sharedDocs = await db.query(
     "SELECT COUNT(*) as count FROM document_shares WHERE owner_tenant_id = ? AND shared_with_tenant_id != ?",
-    [tenantId, tenantId]
+    [tenantId, tenantId],
   );
 
   if (sharedDocs[0].count > 0) {
@@ -1851,7 +1851,7 @@ async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
         created_at: tenantInfo[0].created_at,
         plan: tenantInfo[0].current_plan_id,
       }),
-    ]
+    ],
   );
 }
 ```
@@ -2260,7 +2260,7 @@ class DeletionWorker {
        SET status = 'emergency_stopped', 
            error_message = 'Emergency stop requested by administrator'
        WHERE id = ?`,
-      [queueId]
+      [queueId],
     );
 
     // Trigger Rollback
@@ -2285,7 +2285,7 @@ router.post("/deletion-queue/:id/emergency-stop", auth, requireRole("root"), asy
       `INSERT INTO tenant_deletion_log 
        (queue_id, step_name, status, error_message) 
        VALUES (?, 'EMERGENCY_STOP', 'triggered', ?)`,
-      [queueId, `Emergency stop by user ${req.user.id}`]
+      [queueId, `Emergency stop by user ${req.user.id}`],
     );
 
     res.json({

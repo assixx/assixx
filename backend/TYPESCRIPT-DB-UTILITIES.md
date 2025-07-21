@@ -21,23 +21,14 @@ Created `/src/utils/db.ts` to provide type-safe wrappers that handle both Pool a
 import { execute, query, RowDataPacket, ResultSetHeader } from "../utils/db";
 
 // SELECT queries
-const [users] = await execute<RowDataPacket[]>(
-  "SELECT * FROM users WHERE tenant_id = ?",
-  [tenantId],
-);
+const [users] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE tenant_id = ?", [tenantId]);
 
 // INSERT queries
-const [result] = await execute<ResultSetHeader>(
-  "INSERT INTO users (email, name) VALUES (?, ?)",
-  [email, name],
-);
+const [result] = await execute<ResultSetHeader>("INSERT INTO users (email, name) VALUES (?, ?)", [email, name]);
 const userId = result.insertId;
 
 // UPDATE queries
-const [updateResult] = await execute<ResultSetHeader>(
-  "UPDATE users SET name = ? WHERE id = ?",
-  [newName, userId],
-);
+const [updateResult] = await execute<ResultSetHeader>("UPDATE users SET name = ? WHERE id = ?", [newName, userId]);
 const affectedRows = updateResult.affectedRows;
 ```
 
@@ -48,14 +39,9 @@ import { transaction } from "../utils/db";
 
 const result = await transaction(async (connection) => {
   // All queries in this block are part of the transaction
-  const [userResult] = await connection.execute<ResultSetHeader>(
-    "INSERT INTO users (email) VALUES (?)",
-    [email],
-  );
+  const [userResult] = await connection.execute<ResultSetHeader>("INSERT INTO users (email) VALUES (?)", [email]);
 
-  await connection.execute("INSERT INTO profiles (user_id) VALUES (?)", [
-    userResult.insertId,
-  ]);
+  await connection.execute("INSERT INTO profiles (user_id) VALUES (?)", [userResult.insertId]);
 
   return userResult.insertId;
 });

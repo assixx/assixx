@@ -3,7 +3,7 @@
  * Tests login, logout, token refresh, and multi-tenant authentication
  */
 
-import '../../__tests__/test-env-setup'; // Must be first import
+import "../../__tests__/test-env-setup"; // Must be first import
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { Pool } from "mysql2/promise";

@@ -58,7 +58,7 @@ router.get(
   ...security.user(), // Enthält bereits rateLimiter.authenticated
   async (req, res) => {
     // Handler code
-  }
+  },
 );
 ```
 

@@ -53,13 +53,13 @@ async function setupTestDatabase() {
       schema = schema.replace(/DELIMITER\s+.*$/gm, "");
       schema = schema.replace(/\$\$/g, ";");
       schema = schema.replace(/\/\*/g, ";");
-      
+
       // Remove problematic UPDATE statements that reference non-existent tables
       schema = schema.replace(/UPDATE blackboard_entries[\s\S]*?;/g, "");
-      
+
       // Remove stored procedures completely - they're not needed for tests
       schema = schema.replace(/CREATE DEFINER[\s\S]*?END\s*;?/g, "");
-      
+
       // Remove any stray END statements
       schema = schema.replace(/^\s*END\s*\*?\/?\s*;?\s*$/gm, "");
 
