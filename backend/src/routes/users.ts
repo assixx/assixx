@@ -738,6 +738,70 @@ router.put(
   }),
 );
 
+/**
+ * @route PATCH /api/users/me
+ * @desc Update current user's employee number (for root users on first login)
+ * @access Private
+ */
+router.patch(
+  "/me",
+  ...security.user(),
+  typed.body<{ employee_number: string }>(async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const tenantId = req.user.tenant_id;
+      
+      // Extract and validate employee number
+      const { employee_number } = req.body;
+      
+      if (!employee_number) {
+        res.status(400).json(errorResponse("Personalnummer ist erforderlich", 400));
+        return;
+      }
+
+      // Validate employee number format: max 8 chars, alphanumeric + one hyphen allowed
+      // Allow leading zeros like "01", "0002", "0002-22x"
+      const employeeNumberRegex = /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)?$/;
+      if (!employeeNumberRegex.test(employee_number) || employee_number.length > 8) {
+        res.status(400).json(
+          errorResponse(
+            "Ungültiges Format. Max. 8 Zeichen, nur Buchstaben, Zahlen und ein Bindestrich erlaubt",
+            400
+          )
+        );
+        return;
+      }
+
+      // Update user's employee number
+      const success = await User.update(
+        userId,
+        { employee_number },
+        tenantId
+      );
+
+      if (success) {
+        logger.info(`User ${userId} updated their employee number`);
+        res.json(
+          successResponse(
+            { employee_number },
+            "Personalnummer erfolgreich aktualisiert"
+          )
+        );
+      } else {
+        res.status(500).json(
+          errorResponse("Fehler beim Aktualisieren der Personalnummer", 500)
+        );
+      }
+
+    } catch (error) {
+      logger.error(`Error updating employee number: ${getErrorMessage(error)}`);
+      res.status(500).json(
+        errorResponse("Serverfehler beim Aktualisieren der Personalnummer", 500)
+      );
+    }
+  })
+);
+
 export default router;
 
 // CommonJS compatibility

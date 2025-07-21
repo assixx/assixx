@@ -466,13 +466,14 @@
       }
 
       .modal-content {
-        background: var(--background-light);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
         width: 90%;
         max-width: 500px;
         /* animation: modalFadeIn 0.3s ease; */
+        box-shadow: var(--glass-card-shadow);
+        background: var(--glass-card-bg);
+        border: var(--glass-card-border);
+        border-radius: var(--glass-card-radius);
+        backdrop-filter: var(--glass-backdrop);
       }
 
       @keyframes modalFadeIn {

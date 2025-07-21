@@ -83,7 +83,7 @@ async function getUserDetails(
         u.id, u.username, u.email, u.role, u.tenant_id,
         u.first_name as firstName, u.last_name as lastName,
         u.department_id, u.position,
-        COALESCE(t.company_name, t.name) as tenantName
+        t.company_name as tenantName
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ? AND u.is_active = 1`,

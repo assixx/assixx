@@ -183,9 +183,11 @@ async function createAuthTables(db: Pool): Promise<void> {
     )
   `);
 
-  // Skip password_reset_tokens table creation if it doesn't exist in production  
+  // Skip password_reset_tokens table creation if it doesn't exist in production
   // This table was removed due to foreign key issues
-  console.log("Skipping password_reset_tokens table creation (removed from production)");
+  console.log(
+    "Skipping password_reset_tokens table creation (removed from production)",
+  );
 
   // Skip oauth_tokens table creation if it doesn't exist in production
   // This table was removed due to foreign key issues
@@ -862,20 +864,26 @@ export async function createTestUser(
   },
 ): Promise<{ id: number; username: string; email: string }> {
   const hashedPassword = await bcrypt.hash(userData.password, 10);
-  
+
   // For auth tests, we need predictable emails
-  const isAuthTest = userData.email.includes('@authtest');
+  const isAuthTest = userData.email.includes("@authtest");
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 1000);
-  
+
   // In Assixx sind username und email IMMER gleich!
-  const uniqueUsername = isAuthTest && (userData.username === "testuser1@authtest1.de" || userData.username === "testuser2@authtest2.de")
-    ? userData.username 
-    : `${userData.username}_${timestamp}_${randomSuffix}`;
-    
-  const uniqueEmail = isAuthTest && (userData.email === "testuser1@authtest1.de" || userData.email === "testuser2@authtest2.de")
-    ? userData.email
-    : userData.email.replace("@", `_${timestamp}_${randomSuffix}@`);
+  const uniqueUsername =
+    isAuthTest &&
+    (userData.username === "testuser1@authtest1.de" ||
+      userData.username === "testuser2@authtest2.de")
+      ? userData.username
+      : `${userData.username}_${timestamp}_${randomSuffix}`;
+
+  const uniqueEmail =
+    isAuthTest &&
+    (userData.email === "testuser1@authtest1.de" ||
+      userData.email === "testuser2@authtest2.de")
+      ? userData.email
+      : userData.email.replace("@", `_${timestamp}_${randomSuffix}@`);
 
   // Generate unique employee number
   const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));

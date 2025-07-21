@@ -190,14 +190,14 @@
 
           if (response.ok) {
             // Store token for JavaScript API calls
-            localStorage.setItem('token', data.token);
+            localStorage.setItem('token', data.data.token);
 
             // Store role separately for easy access
-            localStorage.setItem('userRole', data.role);
+            localStorage.setItem('userRole', data.data.role);
 
             // Also store user info
-            if (data.user) {
-              localStorage.setItem('user', JSON.stringify(data.user));
+            if (data.data.user) {
+              localStorage.setItem('user', JSON.stringify(data.data.user));
             }
 
             // Clear any stored navigation state to ensure dashboard is active
@@ -205,7 +205,7 @@
             localStorage.removeItem('activeRole'); // Clear role switching state
 
             // Redirect based on role
-            switch (data.role) {
+            switch (data.data.role) {
               case 'root':
                 window.location.href = '/root-dashboard';
                 break;

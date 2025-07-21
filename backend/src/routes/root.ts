@@ -263,7 +263,7 @@ router.get(
         admins.map(async (admin) => {
           if (admin.tenant_id) {
             const tenant = await Tenant.findById(admin.tenant_id);
-            admin.tenant_name = tenant ? tenant.name : null;
+            admin.tenant_name = tenant ? tenant.company_name : null;
           }
           return admin;
         }),

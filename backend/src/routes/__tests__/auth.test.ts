@@ -39,47 +39,56 @@ describe("Authentication API Endpoints", () => {
 
     // Clean up any existing test users with our test emails
     // First delete related records due to foreign key constraints
-    const [existingUsers] = await testDb.execute(
+    const [existingUsers] = (await testDb.execute(
       "SELECT id FROM users WHERE email IN (?, ?)",
-      ["testuser1@authtest1.de", "testuser2@authtest2.de"]
-    ) as any;
-    
+      ["testuser1@authtest1.de", "testuser2@authtest2.de"],
+    )) as any;
+
     if (existingUsers.length > 0) {
       const userIds = existingUsers.map((u: any) => u.id);
-      const placeholders = userIds.map(() => '?').join(',');
-      
+      const placeholders = userIds.map(() => "?").join(",");
+
       // Delete related records first (handle missing tables gracefully)
       try {
-        await testDb.execute(`DELETE FROM activity_logs WHERE user_id IN (${placeholders})`, userIds);
+        await testDb.execute(
+          `DELETE FROM activity_logs WHERE user_id IN (${placeholders})`,
+          userIds,
+        );
       } catch (e: any) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
-      
+
       try {
-        await testDb.execute(`DELETE FROM admin_logs WHERE user_id IN (${placeholders})`, userIds);
+        await testDb.execute(
+          `DELETE FROM admin_logs WHERE user_id IN (${placeholders})`,
+          userIds,
+        );
       } catch (e: any) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
-      
+
       try {
-        await testDb.execute(`DELETE FROM user_sessions WHERE user_id IN (${placeholders})`, userIds);
+        await testDb.execute(
+          `DELETE FROM user_sessions WHERE user_id IN (${placeholders})`,
+          userIds,
+        );
       } catch (e: any) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
-      
+
       try {
-        await testDb.execute(`DELETE FROM login_attempts WHERE username IN (?, ?)`, [
-          "testuser1@authtest1.de",
-          "testuser2@authtest2.de"
-        ]);
+        await testDb.execute(
+          `DELETE FROM login_attempts WHERE username IN (?, ?)`,
+          ["testuser1@authtest1.de", "testuser2@authtest2.de"],
+        );
       } catch (e: any) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
-      
+
       // Now delete the users
       await testDb.execute("DELETE FROM users WHERE email IN (?, ?)", [
         "testuser1@authtest1.de",
-        "testuser2@authtest2.de"
+        "testuser2@authtest2.de",
       ]);
     }
 
@@ -94,7 +103,7 @@ describe("Authentication API Endpoints", () => {
       console.error("Failed to create tenant1:", error);
       throw error;
     }
-    
+
     try {
       tenant2Id = await createTestTenant(
         testDb,
