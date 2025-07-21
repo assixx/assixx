@@ -80,6 +80,7 @@ async function setupTestDatabase() {
       department_id INT NULL,
       team_id INT NULL,
       is_active BOOLEAN DEFAULT TRUE,
+      status ENUM('active', 'inactive') DEFAULT 'active',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_username_tenant (username, tenant_id),
       FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
@@ -301,6 +302,29 @@ async function setupTestDatabase() {
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       UNIQUE KEY unique_participant (conversation_id, user_id)
+    );
+    
+    -- Login attempts table (for rate limiting and tracking)
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      username VARCHAR(255) NOT NULL,
+      ip_address VARCHAR(45),
+      success BOOLEAN DEFAULT FALSE,
+      attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_username_attempts (username, attempted_at)
+    );
+    
+    -- Password reset tokens table
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      user_id INT NOT NULL,
+      token VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_token (token),
+      INDEX idx_user_expires (user_id, expires_at)
     );
     `;
     
