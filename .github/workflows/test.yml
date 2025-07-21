@@ -138,7 +138,7 @@ jobs:
         DB_NAME: main_test
       run: |
         cd backend
-        node src/__tests__/setup-test-db.js
+        node src/__tests__/setup-test-db-fixed.js
         
     - name: Run test file
       env:
