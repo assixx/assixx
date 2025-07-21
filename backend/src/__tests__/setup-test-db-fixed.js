@@ -57,8 +57,11 @@ async function setupTestDatabase() {
     CREATE TABLE IF NOT EXISTS tenants (
       id INT PRIMARY KEY AUTO_INCREMENT,
       company_name VARCHAR(255) NOT NULL,
+      name VARCHAR(255) NOT NULL, -- Alias for company_name, needed by tests
       subdomain VARCHAR(100) UNIQUE NOT NULL,
+      status ENUM('active', 'inactive', 'trial') DEFAULT 'active',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       deletion_status VARCHAR(50) DEFAULT 'active',
       deletion_requested_at TIMESTAMP NULL,
       current_plan_id INT NULL
