@@ -241,13 +241,13 @@ export class User {
         [username],
       );
       console.log("[DEBUG] Query completed, rows found:", rows.length);
-      
+
       if (rows[0]) {
         // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
         rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
         rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
       }
-      
+
       return rows[0];
     } catch (error) {
       console.error("[DEBUG] findByUsername error:", error);
@@ -346,13 +346,13 @@ export class User {
         "SELECT * FROM users WHERE email = ? AND is_archived = false",
         [email],
       );
-      
+
       if (rows[0]) {
         // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
         rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
         rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
       }
-      
+
       return rows[0];
     } catch (error) {
       logger.error(`Error finding user by email: ${(error as Error).message}`);

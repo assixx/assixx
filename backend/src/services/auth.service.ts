@@ -62,24 +62,26 @@ class AuthService {
         // Get tenant by subdomain
         const [tenantRows] = await execute<RowDataPacket[]>(
           "SELECT id FROM tenants WHERE subdomain = ?",
-          [tenantSubdomain]
+          [tenantSubdomain],
         );
-        
+
         if (tenantRows.length === 0) {
-          logger.warn(`Login attempt with invalid subdomain: ${tenantSubdomain}`);
+          logger.warn(
+            `Login attempt with invalid subdomain: ${tenantSubdomain}`,
+          );
           return {
             success: false,
             user: null,
             message: "Ungültige Anmeldedaten",
           };
         }
-        
+
         const tenantId = tenantRows[0].id;
-        
+
         // Check if user belongs to the specified tenant
         if (result.user.tenant_id !== tenantId) {
           logger.warn(
-            `User ${username} attempted to login to tenant ${tenantId} but belongs to tenant ${result.user.tenant_id}`
+            `User ${username} attempted to login to tenant ${tenantId} but belongs to tenant ${result.user.tenant_id}`,
           );
           return {
             success: false,
@@ -98,7 +100,10 @@ class AuthService {
       const token = generateToken(result.user, fingerprint, sessionId);
 
       // Generate refresh token
-      const refreshToken = await this.generateRefreshToken(result.user.id, result.user.tenant_id);
+      const refreshToken = await this.generateRefreshToken(
+        result.user.id,
+        result.user.tenant_id,
+      );
 
       // Store session info if fingerprint provided
       if (fingerprint) {
@@ -364,24 +369,27 @@ class AuthService {
    * @param {number} tenantId - Tenant ID
    * @returns {Promise<string>} Refresh token
    */
-  async generateRefreshToken(userId: number, tenantId: number): Promise<string> {
+  async generateRefreshToken(
+    userId: number,
+    tenantId: number,
+  ): Promise<string> {
     try {
       const crypto = await import("crypto");
-      
+
       // Generate a secure random token
       const refreshToken = crypto.randomBytes(32).toString("hex");
-      
+
       // Hash the token before storing (for security)
       const hashedToken = await bcrypt.hash(refreshToken, 10);
-      
+
       // Store in oauth_tokens table with 7 day expiry
       await execute<ResultSetHeader>(
         `INSERT INTO oauth_tokens 
         (tenant_id, user_id, token, token_type, expires_at, created_at) 
         VALUES (?, ?, ?, 'refresh', DATE_ADD(NOW(), INTERVAL 7 DAY), NOW())`,
-        [tenantId, userId, hashedToken]
+        [tenantId, userId, hashedToken],
       );
-      
+
       return refreshToken;
     } catch (error) {
       logger.error("Failed to generate refresh token:", error);
@@ -409,9 +417,9 @@ class AuthService {
          WHERE ot.token_type = 'refresh' 
          AND ot.revoked = 0 
          AND ot.expires_at > NOW()
-         ORDER BY ot.created_at DESC`
+         ORDER BY ot.created_at DESC`,
       );
-      
+
       // Find matching token by comparing hashes
       let validToken = null;
       for (const token of tokens) {
@@ -421,22 +429,22 @@ class AuthService {
           break;
         }
       }
-      
+
       if (!validToken) {
         return null;
       }
-      
+
       // Check if user is active
       if (!validToken.is_active) {
         return null;
       }
-      
+
       // Revoke old refresh token
       await execute<ResultSetHeader>(
         "UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE id = ?",
-        [validToken.id]
+        [validToken.id],
       );
-      
+
       // Create user object for token generation
       const user = {
         id: validToken.user_id,
@@ -449,22 +457,20 @@ class AuthService {
         department_id: validToken.department_id,
         position: validToken.position,
       };
-      
+
       // Generate new access token
       const newAccessToken = generateToken(user);
-      
+
       // Generate new refresh token
       const newRefreshToken = await this.generateRefreshToken(
         validToken.user_id,
-        validToken.tenant_id
+        validToken.tenant_id,
       );
-      
+
       return {
         token: newAccessToken,
         refreshToken: newRefreshToken,
-        user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(user),
-        ),
+        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(user)),
       };
     } catch (error) {
       logger.error("Failed to refresh access token:", error);

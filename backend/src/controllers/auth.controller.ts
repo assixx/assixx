@@ -88,7 +88,7 @@ class AuthController {
           "SELECT * FROM tenants WHERE id = ?",
           [req.user.tenant_id],
         );
-        
+
         if (tenantRows[0]) {
           tenantName = tenantRows[0].company_name ?? tenantRows[0].name ?? "";
         }
@@ -130,8 +130,10 @@ class AuthController {
       }
 
       // Get tenant subdomain from header if provided
-      const tenantSubdomain = req.headers["x-tenant-subdomain"] as string | undefined;
-      
+      const tenantSubdomain = req.headers["x-tenant-subdomain"] as
+        | string
+        | undefined;
+
       // Authenticate user with fingerprint and tenant validation
       console.log("[DEBUG] Calling authService.authenticateUser");
       console.log("[DEBUG] Tenant subdomain from header:", tenantSubdomain);
@@ -153,7 +155,7 @@ class AuthController {
         } catch (trackError) {
           logger.error("Failed to track login attempt:", trackError);
         }
-        
+
         res
           .status(401)
           .json(errorResponse(result.message ?? "Ungültige Anmeldedaten", 401));
@@ -186,7 +188,7 @@ class AuthController {
           req.ip ?? "unknown",
           req.headers["user-agent"] ?? "unknown",
         );
-        
+
         // Track successful login attempt
         try {
           await executeQuery(
@@ -462,7 +464,9 @@ class AuthController {
       if (!result) {
         res
           .status(401)
-          .json(errorResponse("Ungültiger oder abgelaufener Refresh token", 401));
+          .json(
+            errorResponse("Ungültiger oder abgelaufener Refresh token", 401),
+          );
         return;
       }
 

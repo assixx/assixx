@@ -26,10 +26,8 @@ export function validateTenantIsolation(
     }
 
     // Get the requested tenant ID from various sources
-    const requestedTenantId = 
-      req.headers["x-tenant-id"] || 
-      req.params.tenantId || 
-      req.query.tenant_id;
+    const requestedTenantId =
+      req.headers["x-tenant-id"] || req.params.tenantId || req.query.tenant_id;
 
     // If a specific tenant is requested, validate access
     if (requestedTenantId) {
@@ -40,12 +38,14 @@ export function validateTenantIsolation(
       if (requestedId !== userTenantId) {
         logger.warn(
           `Tenant isolation violation: User ${req.user.id} from tenant ${userTenantId} ` +
-          `attempted to access tenant ${requestedId}`
+            `attempted to access tenant ${requestedId}`,
         );
-        
-        res.status(403).json(
-          errorResponse("Sie haben keinen Zugriff auf diese Ressourcen", 403)
-        );
+
+        res
+          .status(403)
+          .json(
+            errorResponse("Sie haben keinen Zugriff auf diese Ressourcen", 403),
+          );
         return;
       }
     }
@@ -54,9 +54,9 @@ export function validateTenantIsolation(
     next();
   } catch (error) {
     logger.error("Tenant isolation middleware error:", error);
-    res.status(500).json(
-      errorResponse("Fehler bei der Tenant-Validierung", 500)
-    );
+    res
+      .status(500)
+      .json(errorResponse("Fehler bei der Tenant-Validierung", 500));
   }
 }
 
