@@ -137,7 +137,7 @@ async function setupTestDatabase() {
       content TEXT NOT NULL,
       org_level ENUM('company', 'department', 'team') DEFAULT 'company',
       org_id INT NULL,
-      priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+      priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
       color VARCHAR(50) DEFAULT '#0066cc',
       requires_confirmation BOOLEAN DEFAULT FALSE,
       status ENUM('active', 'archived') DEFAULT 'active',
