@@ -354,6 +354,7 @@ class AuthController {
       
       // TODO: Implement password reset logic
       // For now, just return success for tests
+      console.log(`[AUTH] Password reset requested for email: ${email}`);
       res.status(200).json({
         success: true,
         message: "Password reset E-Mail wurde gesendet",
@@ -371,7 +372,7 @@ class AuthController {
    */
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
-      const { token, newPassword } = req.body;
+      // const { token, newPassword } = req.body;
       
       // TODO: Implement password reset logic
       // For now, just return success for tests

@@ -152,7 +152,7 @@ router.post(
   createValidation([
     body("refreshToken").notEmpty().withMessage("Refresh token ist erforderlich"),
   ]),
-  typed.body<{ refreshToken: string }>(async (req, res) => {
+  typed.body<{ refreshToken: string }>(async (_req, res) => {
     // TODO: Implement refresh token logic
     res.status(200).json({
       success: true,
