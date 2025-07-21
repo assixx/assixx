@@ -99,10 +99,10 @@ class AuthService {
       // Generate JWT token with fingerprint and session ID
       const token = generateToken(result.user, fingerprint, sessionId);
 
-      // Generate refresh token
+      // Generate refresh token - tenant_id is guaranteed to exist after successful auth
       const refreshToken = await this.generateRefreshToken(
         result.user.id,
-        result.user.tenant_id!,
+        result.user.tenant_id as number,
       );
 
       // Store session info if fingerprint provided
@@ -405,7 +405,7 @@ class AuthService {
   async refreshAccessToken(refreshToken: string): Promise<{
     token: string;
     refreshToken: string;
-    user: any;
+    user: ReturnType<AuthService["mapDatabaseUserToAppUser"]>;
   } | null> {
     try {
       // Get all non-revoked, non-expired refresh tokens from database
@@ -459,7 +459,9 @@ class AuthService {
       };
 
       // Generate new access token
-      const newAccessToken = generateToken(user as any);
+      const newAccessToken = generateToken(
+        user as Parameters<typeof generateToken>[0],
+      );
 
       // Generate new refresh token
       const newRefreshToken = await this.generateRefreshToken(
@@ -486,7 +488,9 @@ class AuthService {
       return {
         token: newAccessToken,
         refreshToken: newRefreshToken,
-        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(completeUser)),
+        user: this.mapDatabaseUserToAppUser(
+          this.dbUserToDatabaseUser(completeUser),
+        ),
       };
     } catch (error) {
       logger.error("Failed to refresh access token:", error);
