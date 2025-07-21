@@ -76,7 +76,7 @@ describe("Authentication API Endpoints", () => {
   describe("POST /api/auth/login", () => {
     it("should successfully login with valid credentials", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
         fingerprint: "test-fingerprint-123",
       });
@@ -88,8 +88,8 @@ describe("Authentication API Endpoints", () => {
         data: {
           user: {
             id: testUser1.id,
-            username: "testuser1",
-            email: "testuser1@authtest1.de",
+            username: testUser1.username,
+            email: testUser1.email,
             role: "admin",
             tenant_id: tenant1Id,
             first_name: "Test",
@@ -110,7 +110,7 @@ describe("Authentication API Endpoints", () => {
 
     it("should verify JWT token contains correct claims", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
 
@@ -121,14 +121,14 @@ describe("Authentication API Endpoints", () => {
         id: testUser1.id,
         tenant_id: tenant1Id,
         role: "admin",
-        username: "testuser1",
+        username: testUser1.username,
       });
       expect(decoded.exp).toBeGreaterThan(Date.now() / 1000);
     });
 
     it("should create session record in database", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
         fingerprint: "unique-fingerprint",
       });
@@ -164,7 +164,7 @@ describe("Authentication API Endpoints", () => {
 
     it("should reject invalid password", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "WrongPassword123!",
       });
 
@@ -183,7 +183,7 @@ describe("Authentication API Endpoints", () => {
       );
 
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
 
@@ -199,7 +199,7 @@ describe("Authentication API Endpoints", () => {
     it("should handle login attempts with missing fields", async () => {
       const response1 = await request(app)
         .post("/api/auth/login")
-        .send({ username: "testuser1" });
+        .send({ username: testUser1.username });
 
       expect(response1.status).toBe(400);
       expect(response1.body.errors).toBeDefined();
@@ -216,7 +216,7 @@ describe("Authentication API Endpoints", () => {
         .fill(null)
         .map(() =>
           request(app).post("/api/auth/login").send({
-            username: "testuser1",
+            username: testUser1.username,
             password: "WrongPass",
           }),
         );
@@ -230,7 +230,7 @@ describe("Authentication API Endpoints", () => {
       // Make failed attempts
       for (let i = 0; i < 3; i++) {
         await request(app).post("/api/auth/login").send({
-          username: "testuser1",
+          username: testUser1.username,
           password: "WrongPass",
         });
       }
@@ -238,7 +238,7 @@ describe("Authentication API Endpoints", () => {
       // Check failed attempts were logged
       const [rows] = await testDb.execute(
         "SELECT COUNT(*) as count FROM login_attempts WHERE username = ? AND success = 0",
-        ["testuser1"],
+        [testUser1.username],
       );
       const attempts = asTestRows<any>(rows);
       expect(attempts[0].count).toBeGreaterThanOrEqual(3);
@@ -246,12 +246,12 @@ describe("Authentication API Endpoints", () => {
 
     it("should support email login as alternative to username", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1@authtest1.de",
+        username: testUser1.email,
         password: "TestPass123!",
       });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.user.email).toBe("testuser1@authtest1.de");
+      expect(response.body.data.user.email).toBe(testUser1.email);
     });
   });
 
@@ -261,7 +261,7 @@ describe("Authentication API Endpoints", () => {
     beforeEach(async () => {
       // Login first to get token
       const loginResponse = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
       authToken = loginResponse.body.data.token;
@@ -318,13 +318,13 @@ describe("Authentication API Endpoints", () => {
     beforeEach(async () => {
       // Login both users
       const login1 = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
       authToken1 = login1.body.data.token;
 
       const login2 = await request(app).post("/api/auth/login").send({
-        username: "testuser2",
+        username: testUser2.username,
         password: "TestPass456!",
       });
       authToken2 = login2.body.data.token;
@@ -340,8 +340,8 @@ describe("Authentication API Endpoints", () => {
         success: true,
         data: {
           id: testUser1.id,
-          username: "testuser1",
-          email: "testuser1@authtest1.de",
+          username: testUser1.username,
+          email: testUser1.email,
           role: "admin",
           tenant_id: tenant1Id,
           tenantName: "Auth Test Company 1",
@@ -395,7 +395,7 @@ describe("Authentication API Endpoints", () => {
 
     beforeEach(async () => {
       const loginResponse = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
       authToken = loginResponse.body.data.token;
@@ -469,7 +469,7 @@ describe("Authentication API Endpoints", () => {
         .post("/api/auth/login")
         .set("X-Tenant-Subdomain", "authtest2")
         .send({
-          username: "testuser1",
+          username: testUser1.username,
           password: "TestPass123!",
         });
 
@@ -479,7 +479,7 @@ describe("Authentication API Endpoints", () => {
     it("should not allow cross-tenant token usage", async () => {
       // Get token for user1 (tenant1)
       const login1 = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
       const token1 = login1.body.data.token;
@@ -499,7 +499,7 @@ describe("Authentication API Endpoints", () => {
       const response = await request(app)
         .post("/api/auth/forgot-password")
         .send({
-          email: "testuser1@authtest1.de",
+          email: testUser1.email,
         });
 
       expect(response.status).toBe(200);
@@ -537,7 +537,7 @@ describe("Authentication API Endpoints", () => {
 
       // Verify can login with new password
       const loginResponse = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "NewSecurePass123!",
       });
       expect(loginResponse.status).toBe(200);
@@ -547,7 +547,7 @@ describe("Authentication API Endpoints", () => {
   describe("Security Headers", () => {
     it("should include security headers in auth responses", async () => {
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
 
@@ -560,7 +560,7 @@ describe("Authentication API Endpoints", () => {
       process.env.NODE_ENV = "production";
 
       const response = await request(app).post("/api/auth/login").send({
-        username: "testuser1",
+        username: testUser1.username,
         password: "TestPass123!",
       });
 
