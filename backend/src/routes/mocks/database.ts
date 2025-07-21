@@ -4,7 +4,7 @@
  */
 
 import bcrypt from "bcryptjs";
-import { Express, Application } from "express";
+import { Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
 

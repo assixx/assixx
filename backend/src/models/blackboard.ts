@@ -22,7 +22,7 @@ interface DbBlackboardEntry extends RowDataPacket {
   org_id: number;
   author_id: number;
   expires_at?: Date | null;
-  priority: "low" | "normal" | "high" | "urgent";
+  priority: "low" | "medium" | "high" | "urgent";
   color: string;
   requires_confirmation: boolean | number;
   status: "active" | "archived";
@@ -86,7 +86,7 @@ export interface EntryCreateData {
   org_id: number | null;
   author_id: number;
   expires_at?: Date | null;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: "low" | "medium" | "high" | "urgent";
   color?: string;
   tags?: string[];
   requires_confirmation?: boolean;
@@ -98,7 +98,7 @@ export interface EntryUpdateData {
   org_level?: "company" | "department" | "team";
   org_id?: number;
   expires_at?: Date | null;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: "low" | "medium" | "high" | "urgent";
   color?: string;
   status?: "active" | "archived";
   requires_confirmation?: boolean;
@@ -351,7 +351,7 @@ export class Blackboard {
         org_id,
         author_id,
         expires_at = null,
-        priority = "normal",
+        priority = "medium",
         color = "blue",
         tags = [],
         requires_confirmation = false,

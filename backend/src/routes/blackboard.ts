@@ -696,7 +696,7 @@ router.put(
         org_id: req.body.org_id,
         priority: req.body.priority as
           | "low"
-          | "normal"
+          | "medium"
           | "high"
           | "urgent"
           | undefined,
