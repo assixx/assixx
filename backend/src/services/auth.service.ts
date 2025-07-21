@@ -394,9 +394,12 @@ class AuthService {
           VALUES (?, ?, ?, 'refresh', DATE_ADD(NOW(), INTERVAL 7 DAY), NOW())`,
           [tenantId, userId, hashedToken],
         );
-      } catch (error: any) {
-        if (error.code === 'ER_NO_SUCH_TABLE') {
-          logger.warn("oauth_tokens table does not exist, skipping refresh token storage");
+      } catch (error) {
+        const dbError = error as { code?: string };
+        if (dbError.code === "ER_NO_SUCH_TABLE") {
+          logger.warn(
+            "oauth_tokens table does not exist, skipping refresh token storage",
+          );
           // Return a dummy refresh token for tests
           return `test_refresh_${userId}_${Date.now()}`;
         }
