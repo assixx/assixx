@@ -13,34 +13,40 @@ import {
   RateLimitMiddleware,
 } from "../types/security.types";
 
+// Check if we're in test environment
+const isTestEnv = process.env.NODE_ENV === "test";
+
 // Rate limiter configurations
 const rateLimiterConfigs = {
   // Public endpoints (login, signup, password reset)
   [RateLimiterType.PUBLIC]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10000, // Increased to 10000 for development testing
+    max: isTestEnv ? 100000 : 10000, // Very high limit for tests
     message: "Too many requests from this IP, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTestEnv, // Skip rate limiting in tests
   },
 
   // Authentication endpoints (login, signup)
   [RateLimiterType.AUTH]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Increased to 500 for development testing
+    max: isTestEnv ? 100000 : 500, // Very high limit for tests
     message: "Too many authentication attempts, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful logins
+    skip: () => isTestEnv, // Skip rate limiting in tests
   },
 
   // Authenticated user endpoints
   [RateLimiterType.AUTHENTICATED]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20000, // 20000 requests per user for development testing
+    max: isTestEnv ? 100000 : 20000, // Very high limit for tests
     message: "Rate limit exceeded, please slow down.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTestEnv, // Skip rate limiting in tests
     keyGenerator: (req: Request) => {
       // Use user ID if authenticated, otherwise IP
       if (isAuthenticated(req)) {
@@ -53,10 +59,11 @@ const rateLimiterConfigs = {
   // Admin endpoints
   [RateLimiterType.ADMIN]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 2000, // Higher limit for admins
+    max: isTestEnv ? 100000 : 2000, // Very high limit for tests
     message: "Admin rate limit exceeded.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTestEnv, // Skip rate limiting in tests
     keyGenerator: (req: Request) => {
       if (isAuthenticated(req)) {
         return `admin_${req.user.id}`;
@@ -68,10 +75,11 @@ const rateLimiterConfigs = {
   // API endpoints (for external integrations)
   [RateLimiterType.API]: {
     windowMs: 60 * 1000, // 1 minute
-    max: 60, // 60 requests per minute
+    max: isTestEnv ? 100000 : 60, // Very high limit for tests
     message: "API rate limit exceeded.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTestEnv, // Skip rate limiting in tests
     keyGenerator: (req: Request) => {
       // Use API key if present, otherwise user ID or IP
       const apiKey = req.headers["x-api-key"];
@@ -88,10 +96,11 @@ const rateLimiterConfigs = {
   // File upload endpoints
   [RateLimiterType.UPLOAD]: {
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 20, // 20 uploads per hour
+    max: isTestEnv ? 100000 : 20, // Very high limit for tests
     message: "Upload limit exceeded, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTestEnv, // Skip rate limiting in tests
     keyGenerator: (req: Request) => {
       if (isAuthenticated(req)) {
         return `upload_${req.user.id}`;
@@ -103,10 +112,11 @@ const rateLimiterConfigs = {
   // File download endpoints
   [RateLimiterType.DOWNLOAD]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 downloads per 15 minutes
+    max: isTestEnv ? 100000 : 100, // Very high limit for tests
     message: "Download limit exceeded, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => isTestEnv, // Skip rate limiting in tests
     keyGenerator: (req: Request) => {
       if (isAuthenticated(req)) {
         return `download_${req.user.id}`;

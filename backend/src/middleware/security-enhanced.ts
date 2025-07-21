@@ -217,17 +217,18 @@ const createTenantRateLimiter = (
     message: "Too many requests from this tenant/IP, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === "test", // Skip rate limiting in tests
   });
 
 // API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 50000 : 1000,
-); // 50000 requests per 15 minutes in dev (erhöht für Testing), 1000 in prod
+  process.env.NODE_ENV === "test" ? 100000 : process.env.NODE_ENV === "development" ? 50000 : 1000,
+); // 100000 requests per 15 minutes in test, 50000 in dev (erhöht für Testing), 1000 in prod
 export const authLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 100 : 5,
-); // 100 auth attempts in dev, 5 in prod
+  process.env.NODE_ENV === "test" ? 100000 : process.env.NODE_ENV === "development" ? 100 : 5,
+); // 100000 auth attempts in test, 100 in dev, 5 in prod
 export const uploadLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
   process.env.NODE_ENV === "development" ? 100 : 10,
