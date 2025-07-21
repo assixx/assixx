@@ -86,10 +86,9 @@ describe("Blackboard Integration Tests", () => {
           content: "This is an important announcement for all employees",
           org_level: "company",
           org_id: null,
-          priority_level: "high",
+          priority: "high",
           color: "red",
-          tags: ["important", "announcement"],
-          requires_confirmation: true,
+          tags: ["important", "announcement"]
         })
         .expect(201);
 
@@ -182,7 +181,7 @@ describe("Blackboard Integration Tests", () => {
           content: "Monthly department sync",
           org_level: "department",
           org_id: 1,
-          priority: "normal",
+          priority: "medium",
         })
         .expect(201);
 
@@ -266,10 +265,10 @@ describe("Blackboard Integration Tests", () => {
       // Create multiple entries for testing
       const entries = [
         { title: "First Entry", content: "Content 1", priority: "low" },
-        { title: "Second Entry", content: "Content 2", priority: "normal" },
+        { title: "Second Entry", content: "Content 2", priority: "medium" },
         { title: "Third Entry", content: "Content 3", priority: "high" },
         { title: "Fourth Entry", content: "Content 4", priority: "urgent" },
-        { title: "Fifth Entry", content: "Content 5", priority: "normal" },
+        { title: "Fifth Entry", content: "Content 5", priority: "medium" },
       ];
 
       for (const entry of entries) {

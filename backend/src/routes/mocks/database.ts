@@ -4,14 +4,14 @@
  */
 
 import bcrypt from "bcryptjs";
-import { Express } from "express";
+import { Express, Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
 
 // Test database configuration
 const TEST_DB_CONFIG: PoolOptions = {
   host: process.env.DB_HOST ?? "localhost",
-  port: parseInt(process.env.DB_PORT ?? "3306"),
+  port: parseInt(process.env.DB_PORT ?? "3307"),
   user: process.env.DB_USER ?? "assixx_user",
   password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
   database: process.env.DB_NAME ?? "main_test",
@@ -857,7 +857,7 @@ export async function createTestTeam(
  * Get authentication token for a user
  */
 export async function getAuthToken(
-  app: Express,
+  app: Application,
   username: string,
   password: string,
 ): Promise<string> {
