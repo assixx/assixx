@@ -798,11 +798,14 @@ export async function createTestUser(
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 1000);
   const uniqueUsername = `${userData.username}_${timestamp}_${randomSuffix}`;
-  const uniqueEmail = userData.email.replace("@", `_${timestamp}_${randomSuffix}@`);
+  const uniqueEmail = userData.email.replace(
+    "@",
+    `_${timestamp}_${randomSuffix}@`,
+  );
 
   // Generate unique employee number
   const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));
-  
+
   const [result] = await db.execute(
     `INSERT INTO users 
     (username, email, password, role, tenant_id, department_id, first_name, last_name, status, employee_number) 

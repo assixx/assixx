@@ -86,8 +86,8 @@ class AuthController {
         "SELECT company_name FROM companies WHERE id = ?",
         [req.user.tenant_id],
       );
-      
-      const tenantName = tenantRows[0]?.company_name || "";
+
+      const tenantName = tenantRows[0]?.company_name ?? "";
 
       res.json(
         successResponse({
@@ -114,9 +114,11 @@ class AuthController {
       // Validate input
       if (!username || !password) {
         console.log("[DEBUG] Missing username or password");
-        res.status(400).json(
-          errorResponse("Benutzername und Passwort sind erforderlich", 400),
-        );
+        res
+          .status(400)
+          .json(
+            errorResponse("Benutzername und Passwort sind erforderlich", 400),
+          );
         return;
       }
 
@@ -130,17 +132,17 @@ class AuthController {
       console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
 
       if (!result.success) {
-        res.status(401).json(
-          errorResponse(result.message ?? "Ungültige Anmeldedaten", 401),
-        );
+        res
+          .status(401)
+          .json(errorResponse(result.message ?? "Ungültige Anmeldedaten", 401));
         return;
       }
 
       // Set token as httpOnly cookie for HTML pages
       if (!result.token) {
-        res.status(500).json(
-          errorResponse("Token-Generierung fehlgeschlagen", 500),
-        );
+        res
+          .status(500)
+          .json(errorResponse("Token-Generierung fehlgeschlagen", 500));
         return;
       }
       res.cookie("token", result.token, {
@@ -181,9 +183,7 @@ class AuthController {
         error instanceof Error ? error.message : "Unknown error";
       const errorStack = error instanceof Error ? error.stack : undefined;
       console.error("[DEBUG] Login error details:", errorMessage, errorStack);
-      res.status(500).json(
-        errorResponse("Serverfehler beim Login", 500),
-      );
+      res.status(500).json(errorResponse("Serverfehler beim Login", 500));
     }
   }
 
@@ -207,23 +207,27 @@ class AuthController {
       const result = await authService.registerUser(userData);
 
       if (!result.success) {
-        res.status(400).json(
-          errorResponse(result.message ?? "Registrierung fehlgeschlagen", 400),
-        );
+        res
+          .status(400)
+          .json(
+            errorResponse(
+              result.message ?? "Registrierung fehlgeschlagen",
+              400,
+            ),
+          );
         return;
       }
 
-      res.status(201).json(
-        successResponse(
-          { user: result.user },
-          "Registrierung erfolgreich",
-        ),
-      );
+      res
+        .status(201)
+        .json(
+          successResponse({ user: result.user }, "Registrierung erfolgreich"),
+        );
     } catch (error) {
       logger.error("Registration error:", error);
-      res.status(500).json(
-        errorResponse("Serverfehler bei der Registrierung", 500),
-      );
+      res
+        .status(500)
+        .json(errorResponse("Serverfehler bei der Registrierung", 500));
     }
   }
 
@@ -266,17 +270,13 @@ class AuthController {
       const user = await userService.getUserById(userId, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json(
-          errorResponse("Benutzer nicht gefunden", 404),
-        );
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
       // Check if user is active
       if (!user.is_active) {
-        res.status(403).json(
-          errorResponse("Benutzerkonto ist inaktiv", 403),
-        );
+        res.status(403).json(errorResponse("Benutzerkonto ist inaktiv", 403));
         return;
       }
 
@@ -297,9 +297,7 @@ class AuthController {
       );
     } catch (error) {
       logger.error("[AUTH] Validation error:", error);
-      res.status(500).json(
-        errorResponse("Interner Serverfehler", 500),
-      );
+      res.status(500).json(errorResponse("Interner Serverfehler", 500));
     }
   }
 
@@ -378,14 +376,14 @@ class AuthController {
       // TODO: Implement password reset logic
       // For now, just return success for tests
       console.log(`[AUTH] Password reset requested for email: ${email}`);
-      res.status(200).json(
-        successResponse(null, "Password reset E-Mail wurde gesendet"),
-      );
+      res
+        .status(200)
+        .json(successResponse(null, "Password reset E-Mail wurde gesendet"));
     } catch (error) {
       logger.error("Forgot password error:", error);
-      res.status(500).json(
-        errorResponse("Serverfehler beim Passwort-Reset", 500),
-      );
+      res
+        .status(500)
+        .json(errorResponse("Serverfehler beim Passwort-Reset", 500));
     }
   }
 
@@ -398,14 +396,16 @@ class AuthController {
 
       // TODO: Implement password reset logic
       // For now, just return success for tests
-      res.status(200).json(
-        successResponse(null, "Passwort wurde erfolgreich zurückgesetzt"),
-      );
+      res
+        .status(200)
+        .json(
+          successResponse(null, "Passwort wurde erfolgreich zurückgesetzt"),
+        );
     } catch (error) {
       logger.error("Reset password error:", error);
-      res.status(500).json(
-        errorResponse("Serverfehler beim Passwort-Reset", 500),
-      );
+      res
+        .status(500)
+        .json(errorResponse("Serverfehler beim Passwort-Reset", 500));
     }
   }
 }

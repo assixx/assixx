@@ -39,7 +39,10 @@ class AuthService {
         if (result.error === "USER_INACTIVE") {
           message =
             "Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.";
-        } else if (result.error === "USER_NOT_FOUND" || result.error === "INVALID_PASSWORD") {
+        } else if (
+          result.error === "USER_NOT_FOUND" ||
+          result.error === "INVALID_PASSWORD"
+        ) {
           message = "Ungültige Anmeldedaten";
         }
 
