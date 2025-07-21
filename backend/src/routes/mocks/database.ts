@@ -72,6 +72,7 @@ async function initializeSchema(db: Pool): Promise<void> {
         first_name VARCHAR(100),
         last_name VARCHAR(100),
         phone VARCHAR(50),
+        employee_number VARCHAR(32) UNIQUE,
         is_active BOOLEAN DEFAULT TRUE,
         status ENUM('active', 'inactive') DEFAULT 'active',
         deleted_at TIMESTAMP NULL DEFAULT NULL,
