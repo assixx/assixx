@@ -299,10 +299,6 @@ async function setupTestDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       UNIQUE KEY unique_participant (conversation_id, user_id)
     );
-    
-    -- Update messages table to have proper structure
-    ALTER TABLE messages ADD COLUMN IF NOT EXISTS conversation_id INT;
-    ALTER TABLE messages ADD FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE;
     `;
     
     console.log("Creating additional tables...");
