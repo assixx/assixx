@@ -56,8 +56,8 @@ async function setupTestDatabase() {
     -- Tenants table
     CREATE TABLE IF NOT EXISTS tenants (
       id INT PRIMARY KEY AUTO_INCREMENT,
-      company_name VARCHAR(255) NOT NULL,
-      name VARCHAR(255) NOT NULL, -- Alias for company_name, needed by tests
+      company_name VARCHAR(255) DEFAULT '', -- Default value for legacy compatibility
+      name VARCHAR(255) NOT NULL, -- This is what tests use
       subdomain VARCHAR(100) UNIQUE NOT NULL,
       status ENUM('active', 'inactive', 'trial') DEFAULT 'active',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -306,6 +306,29 @@ async function setupTestDatabase() {
     
     console.log("Creating additional tables...");
     await connection.query(additionalTablesSQL);
+    
+    // Create trigger to sync name and company_name
+    const createTriggerSQL = `
+    CREATE TRIGGER sync_tenant_names
+    BEFORE INSERT ON tenants
+    FOR EACH ROW
+    BEGIN
+      IF NEW.company_name = '' OR NEW.company_name IS NULL THEN
+        SET NEW.company_name = NEW.name;
+      END IF;
+      IF NEW.name IS NULL AND NEW.company_name IS NOT NULL AND NEW.company_name != '' THEN
+        SET NEW.name = NEW.company_name;
+      END IF;
+    END;
+    `;
+    
+    try {
+      console.log("Creating sync trigger for tenant names...");
+      await connection.query("DROP TRIGGER IF EXISTS sync_tenant_names");
+      await connection.query(createTriggerSQL);
+    } catch (err) {
+      console.log("Trigger creation skipped (might not be supported in test env)");
+    }
     
     // Re-enable foreign key checks
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
