@@ -150,7 +150,9 @@ router.post(
 router.post(
   "/refresh",
   createValidation([
-    body("refreshToken").notEmpty().withMessage("Refresh token ist erforderlich"),
+    body("refreshToken")
+      .notEmpty()
+      .withMessage("Refresh token ist erforderlich"),
   ]),
   typed.body<{ refreshToken: string }>(async (_req, res) => {
     // TODO: Implement refresh token logic
@@ -169,7 +171,10 @@ router.post(
   "/forgot-password",
   strictAuthLimiter,
   createValidation([
-    body("email").isEmail().normalizeEmail().withMessage("Gültige E-Mail-Adresse erforderlich"),
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Gültige E-Mail-Adresse erforderlich"),
   ]),
   typed.body<{ email: string }>(async (req, res) => {
     await authController.forgotPassword(req, res);
@@ -181,7 +186,9 @@ router.post(
   strictAuthLimiter,
   createValidation([
     body("token").notEmpty().withMessage("Token ist erforderlich"),
-    body("newPassword").isLength({ min: 8 }).withMessage("Passwort muss mindestens 8 Zeichen lang sein"),
+    body("newPassword")
+      .isLength({ min: 8 })
+      .withMessage("Passwort muss mindestens 8 Zeichen lang sein"),
   ]),
   typed.body<{ token: string; newPassword: string }>(async (req, res) => {
     await authController.resetPassword(req, res);

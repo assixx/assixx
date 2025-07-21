@@ -162,7 +162,10 @@ class AuthController {
       res.status(500).json({
         message: "Server error during login",
         error:
-          process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test" ? errorMessage : undefined,
+          process.env.NODE_ENV === "development" ||
+          process.env.NODE_ENV === "test"
+            ? errorMessage
+            : undefined,
       });
     }
   }
@@ -351,7 +354,7 @@ class AuthController {
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       const { email } = req.body;
-      
+
       // TODO: Implement password reset logic
       // For now, just return success for tests
       console.log(`[AUTH] Password reset requested for email: ${email}`);
@@ -373,7 +376,7 @@ class AuthController {
   async resetPassword(_req: Request, res: Response): Promise<void> {
     try {
       // const { token, newPassword } = req.body;
-      
+
       // TODO: Implement password reset logic
       // For now, just return success for tests
       res.status(200).json({
