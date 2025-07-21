@@ -157,13 +157,12 @@ async function createAuthTables(db: Pool): Promise<void> {
       user_id INT NOT NULL,
       session_id VARCHAR(255) NOT NULL,
       fingerprint VARCHAR(255),
-      is_active BOOLEAN DEFAULT TRUE,
-      expires_at TIMESTAMP NOT NULL,
+      expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 30 MINUTE),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id),
       INDEX idx_session_id (session_id),
-      INDEX idx_user_active (user_id, is_active)
+      INDEX idx_user_expires (user_id, expires_at)
     )
   `);
 
@@ -189,6 +188,42 @@ async function createAuthTables(db: Pool): Promise<void> {
       FOREIGN KEY (user_id) REFERENCES users(id),
       INDEX idx_token (token),
       INDEX idx_user_expires (user_id, expires_at)
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS oauth_tokens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT NOT NULL,
+      user_id INT NOT NULL,
+      token TEXT NOT NULL,
+      token_type ENUM('access', 'refresh') NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      revoked BOOLEAN DEFAULT FALSE,
+      revoked_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_user_type (user_id, token_type),
+      INDEX idx_expires (expires_at)
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT,
+      user_id INT NOT NULL,
+      action VARCHAR(255) NOT NULL,
+      entity_type VARCHAR(255),
+      entity_id INT,
+      details TEXT,
+      ip_address VARCHAR(45),
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_user_action (user_id, action),
+      INDEX idx_created (created_at)
     )
   `);
 }

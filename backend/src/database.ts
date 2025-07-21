@@ -228,19 +228,24 @@ if (USE_MOCK_DB) {
 } else {
   // Echte Datenbankverbindung
   console.log("[DEBUG] Database config:", {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT ?? 3306,
+    host: process.env.DB_HOST ?? "localhost",
+    user: process.env.DB_USER ?? "assixx_user",
+    database: process.env.DB_NAME ?? (process.env.NODE_ENV === "test" ? "main_test" : "main"),
+    port: process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307"),
+    NODE_ENV: process.env.NODE_ENV,
+    CI: process.env.CI,
   });
 
   // Initialize pool immediately with config
+  // Use port 3306 for CI, 3307 for local development
+  const defaultPort = process.env.CI ? "3306" : "3307";
+  const defaultDatabase = process.env.NODE_ENV === "test" ? "main_test" : "main";
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(process.env.DB_PORT ?? "3306"),
-    user: process.env.DB_USER ?? "root",
-    password: process.env.DB_PASSWORD ?? "",
-    database: process.env.DB_NAME ?? "main",
+    port: parseInt(process.env.DB_PORT ?? defaultPort),
+    user: process.env.DB_USER ?? "assixx_user",
+    password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
+    database: process.env.DB_NAME ?? defaultDatabase,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
