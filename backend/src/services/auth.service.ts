@@ -5,6 +5,7 @@
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { RowDataPacket } from "mysql2/promise";
 
 import { authenticateUser as authUser, generateToken } from "../auth";
 import UserModel from "../models/user";
@@ -16,7 +17,6 @@ import {
 import { DatabaseUser } from "../types/models";
 import { execute, ResultSetHeader } from "../utils/db";
 import { logger } from "../utils/logger";
-import { RowDataPacket } from "mysql2/promise";
 
 class AuthService {
   /**
@@ -473,7 +473,7 @@ class AuthService {
       const completeUser = {
         ...user,
         password: "", // Not needed for mapping
-        is_active: validToken.is_active || true,
+        is_active: validToken.is_active ?? true,
         is_archived: false,
         profile_picture: null,
         phone: null,

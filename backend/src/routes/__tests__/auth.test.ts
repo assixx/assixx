@@ -28,7 +28,7 @@ describe("Authentication API Endpoints", () => {
     testDb = await createTestDatabase();
     // JWT_SECRET is already set in test-env-setup.ts
     process.env.SESSION_SECRET = "test-session-secret";
-    
+
     // Test database connection
     try {
       const [rows] = await testDb.execute("SELECT 1");
@@ -141,11 +141,10 @@ describe("Authentication API Endpoints", () => {
 
     it("should create session record in database", async () => {
       // Clean up any existing sessions for this user
-      await testDb.execute(
-        "DELETE FROM user_sessions WHERE user_id = ?",
-        [testUser1.id],
-      );
-      
+      await testDb.execute("DELETE FROM user_sessions WHERE user_id = ?", [
+        testUser1.id,
+      ]);
+
       const response = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
@@ -195,10 +194,9 @@ describe("Authentication API Endpoints", () => {
 
     it("should reject inactive user", async () => {
       // Deactivate user
-      await testDb.execute(
-        "UPDATE users SET is_active = 0 WHERE id = ?",
-        [testUser1.id],
-      );
+      await testDb.execute("UPDATE users SET is_active = 0 WHERE id = ?", [
+        testUser1.id,
+      ]);
 
       const response = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
@@ -291,12 +289,12 @@ describe("Authentication API Endpoints", () => {
         .post("/api/auth/logout")
         .set("Authorization", `Bearer ${authToken}`)
         .set("Content-Type", "application/json")
-        .send({});  // Send empty body
+        .send({}); // Send empty body
 
       if (response.status !== 200) {
         console.log("Logout response:", response.status, response.body);
       }
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
         success: true,

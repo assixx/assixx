@@ -4,6 +4,7 @@
  */
 
 import { Response, NextFunction } from "express";
+
 import { AuthenticatedRequest } from "../types/request.types";
 import { errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
@@ -19,7 +20,7 @@ export function validateTenantIsolation(
 ): void {
   try {
     // Check if user is authenticated
-    if (!req.user || !req.user.tenant_id) {
+    if (!req.user?.tenant_id) {
       logger.warn("Tenant isolation: No user or tenant_id in request");
       res.status(401).json(errorResponse("Nicht authentifiziert", 401));
       return;
@@ -27,7 +28,7 @@ export function validateTenantIsolation(
 
     // Get the requested tenant ID from various sources
     const requestedTenantId =
-      req.headers["x-tenant-id"] || req.params.tenantId || req.query.tenant_id;
+      req.headers["x-tenant-id"] ?? req.params.tenantId ?? req.query.tenant_id;
 
     // If a specific tenant is requested, validate access
     if (requestedTenantId) {

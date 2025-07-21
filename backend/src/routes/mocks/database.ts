@@ -99,7 +99,7 @@ async function initializeSchema(db: Pool): Promise<void> {
       await db.execute(`
         ALTER TABLE users ADD UNIQUE KEY idx_employee_number (employee_number)
       `);
-    } catch (err: any) {
+    } catch {
       // Column already exists, ignore the error
     }
 
@@ -833,9 +833,13 @@ export async function createTestTenant(
       [uniqueSubdomain, name, "active"],
     );
     return (result as ResultSetHeader).insertId;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // If it fails, try with 'name' field (GitHub Actions schema)
-    if (err.message?.includes("Unknown column 'company_name'") || err.message?.includes("Field 'name' doesn't have a default value")) {
+    const error = err as Error;
+    if (
+      error.message?.includes("Unknown column 'company_name'") ||
+      error.message?.includes("Field 'name' doesn't have a default value")
+    ) {
       const [result] = await db.execute(
         "INSERT INTO tenants (subdomain, name, status) VALUES (?, ?, ?)",
         [uniqueSubdomain, name, "active"],
@@ -898,8 +902,9 @@ export async function createTestUser(
       username: uniqueUsername,
       email: uniqueEmail,
     };
-  } catch (err: any) {
-    if (err.message?.includes("Unknown column 'employee_number'")) {
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (error.message?.includes("Unknown column 'employee_number'")) {
       // Fallback for environments where the column does not exist
       const [result] = await db.execute(
         `INSERT INTO users 
