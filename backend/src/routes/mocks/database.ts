@@ -11,7 +11,7 @@ import request from "supertest";
 // Test database configuration
 const TEST_DB_CONFIG: PoolOptions = {
   host: process.env.DB_HOST ?? "localhost",
-  port: parseInt(process.env.DB_PORT ?? "3307"),
+  port: parseInt(process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307")),
   user: process.env.DB_USER ?? "assixx_user",
   password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
   database: process.env.DB_NAME ?? "main_test",
