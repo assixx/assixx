@@ -131,8 +131,8 @@ export class User {
       emergency_contact,
       profile_picture,
       status = "active",
-      is_archived = false,
-      is_active = true,
+      is_archived = 0,
+      is_active = 1,
     } = userData;
 
     // Always use email as username
@@ -321,7 +321,7 @@ export class User {
       const params: unknown[] = [role, tenant_id];
 
       if (!includeArchived) {
-        query += ` AND u.is_archived = false`;
+        query += ` AND u.is_archived = 0`;
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, params);
@@ -343,7 +343,7 @@ export class User {
   static async findByEmail(email: string): Promise<DbUser | undefined> {
     try {
       const [rows] = await executeQuery<DbUser[]>(
-        "SELECT * FROM users WHERE email = ? AND is_archived = false",
+        "SELECT * FROM users WHERE email = ? AND is_archived = 0",
         [email],
       );
 
@@ -489,7 +489,7 @@ export class User {
         values.push(filters.is_archived);
       } else {
         // Standardmäßig nur nicht-archivierte Benutzer anzeigen
-        query += ` AND u.is_archived = false`;
+        query += ` AND u.is_archived = 0`;
       }
 
       // Weitere Filter hinzufügen
@@ -602,7 +602,7 @@ export class User {
         values.push(filters.is_archived);
       } else {
         // Standardmäßig nur nicht-archivierte Benutzer anzeigen
-        query += ` AND u.is_archived = false`;
+        query += ` AND u.is_archived = 0`;
       }
 
       if (filters.role) {

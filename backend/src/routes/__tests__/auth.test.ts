@@ -312,7 +312,7 @@ describe("Authentication API Endpoints", () => {
       // Create session first
       const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as any;
       await testDb.execute(
-        "INSERT INTO user_sessions (user_id, session_id, fingerprint) VALUES (?, ?, ?)",
+        "INSERT INTO user_sessions (user_id, session_id, fingerprint, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
         [decoded.id, decoded.sessionId || "test-session", "test-fingerprint"],
       );
 
