@@ -50,7 +50,7 @@ async function initializeSchema(db: Pool): Promise<void> {
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_name VARCHAR(255) NOT NULL,
         subdomain VARCHAR(100) UNIQUE NOT NULL,
-        email VARCHAR(255) NOT NULL,
+        email VARCHAR(255) DEFAULT NULL,
         phone VARCHAR(30) DEFAULT NULL,
         address TEXT,
         status ENUM('trial', 'active', 'suspended', 'cancelled') DEFAULT 'trial',
@@ -771,8 +771,8 @@ export async function createTestTenant(
   const randomSuffix = Math.floor(Math.random() * 1000);
   const uniqueSubdomain = `${subdomain}_${timestamp}_${randomSuffix}`;
   const [result] = await db.execute(
-    "INSERT INTO tenants (subdomain, company_name, email, status) VALUES (?, ?, ?, ?)",
-    [uniqueSubdomain, name, `${subdomain}@test.com`, "active"],
+    "INSERT INTO tenants (subdomain, company_name, status) VALUES (?, ?, ?)",
+    [uniqueSubdomain, name, "active"],
   );
   return (result as ResultSetHeader).insertId;
 }
