@@ -85,6 +85,18 @@ async function initializeSchema(db: Pool): Promise<void> {
       )
     `);
 
+    // Try to add employee_number column if it doesn't exist (for existing tables)
+    try {
+      await db.execute(`
+        ALTER TABLE users ADD COLUMN employee_number VARCHAR(6) NOT NULL
+      `);
+      await db.execute(`
+        ALTER TABLE users ADD UNIQUE KEY idx_employee_number (employee_number)
+      `);
+    } catch (err: any) {
+      // Column already exists, ignore the error
+    }
+
     await db.execute(`
       CREATE TABLE IF NOT EXISTS departments (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -822,29 +834,56 @@ export async function createTestUser(
   // Generate unique employee number
   const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));
 
-  const [result] = await db.execute(
-    `INSERT INTO users 
-    (username, email, password, role, tenant_id, department_id, first_name, last_name, status, employee_number) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      uniqueUsername,
-      uniqueEmail,
-      hashedPassword,
-      userData.role,
-      userData.tenant_id,
-      userData.department_id ?? null,
-      userData.first_name ?? userData.username,
-      userData.last_name ?? "User",
-      userData.status ?? "active",
-      employeeNumber,
-    ],
-  );
-
-  return {
-    id: (result as ResultSetHeader).insertId,
-    username: uniqueUsername,
-    email: uniqueEmail,
-  };
+  try {
+    const [result] = await db.execute(
+      `INSERT INTO users 
+      (username, email, password, role, tenant_id, department_id, first_name, last_name, status, employee_number) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        uniqueUsername,
+        uniqueEmail,
+        hashedPassword,
+        userData.role,
+        userData.tenant_id,
+        userData.department_id ?? null,
+        userData.first_name ?? userData.username,
+        userData.last_name ?? "User",
+        userData.status ?? "active",
+        employeeNumber,
+      ],
+    );
+    return {
+      id: (result as ResultSetHeader).insertId,
+      username: uniqueUsername,
+      email: uniqueEmail,
+    };
+  } catch (err: any) {
+    if (err.message?.includes("Unknown column 'employee_number'")) {
+      // Fallback for environments where the column does not exist
+      const [result] = await db.execute(
+        `INSERT INTO users 
+        (username, email, password, role, tenant_id, department_id, first_name, last_name, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          uniqueUsername,
+          uniqueEmail,
+          hashedPassword,
+          userData.role,
+          userData.tenant_id,
+          userData.department_id ?? null,
+          userData.first_name ?? userData.username,
+          userData.last_name ?? "User",
+          userData.status ?? "active",
+        ],
+      );
+      return {
+        id: (result as ResultSetHeader).insertId,
+        username: uniqueUsername,
+        email: uniqueEmail,
+      };
+    }
+    throw err;
+  }
 }
 
 /**
