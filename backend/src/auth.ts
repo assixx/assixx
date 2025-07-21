@@ -48,7 +48,10 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
     role: dbUser.role as "admin" | "employee" | "root",
     tenant_id: dbUser.tenant_id ?? null,
     department_id: dbUser.department_id ?? null,
-    is_active: dbUser.is_active === 1 || dbUser.is_active === true || (dbUser.is_active === undefined ? true : false),
+    is_active: typeof dbUser.is_active === 'number' ? dbUser.is_active === 1 : 
+               typeof dbUser.is_active === 'string' ? dbUser.is_active === "1" :
+               typeof dbUser.is_active === 'boolean' ? dbUser.is_active :
+               true,
     is_archived: dbUser.is_archived ?? false,
     profile_picture: dbUser.profile_picture ?? null,
     phone_number: dbUser.phone ?? null,

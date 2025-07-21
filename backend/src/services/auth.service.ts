@@ -102,7 +102,7 @@ class AuthService {
       // Generate refresh token
       const refreshToken = await this.generateRefreshToken(
         result.user.id,
-        result.user.tenant_id,
+        result.user.tenant_id!,
       );
 
       // Store session info if fingerprint provided
@@ -459,7 +459,7 @@ class AuthService {
       };
 
       // Generate new access token
-      const newAccessToken = generateToken(user);
+      const newAccessToken = generateToken(user as any);
 
       // Generate new refresh token
       const newRefreshToken = await this.generateRefreshToken(
@@ -467,10 +467,26 @@ class AuthService {
         validToken.tenant_id,
       );
 
+      // Create a complete user object with all required fields
+      const completeUser = {
+        ...user,
+        password: "", // Not needed for mapping
+        is_active: validToken.is_active || true,
+        is_archived: false,
+        profile_picture: null,
+        phone: null,
+        landline: null,
+        employee_number: "",
+        hire_date: null,
+        birthday: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
       return {
         token: newAccessToken,
         refreshToken: newRefreshToken,
-        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(user)),
+        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(completeUser)),
       };
     } catch (error) {
       logger.error("Failed to refresh access token:", error);
