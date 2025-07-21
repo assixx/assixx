@@ -87,7 +87,7 @@ class AvailabilityController {
       const summary = await availabilityService.getAvailabilitySummary(
         tenantId,
         start_date as string,
-        end_date as string
+        end_date as string,
       );
       res.json({ summary });
     } catch (error) {

@@ -16,8 +16,8 @@ module.exports = {
           strict: false,
         },
         diagnostics: {
-          ignoreCodes: [1343]
-        }
+          ignoreCodes: [1343],
+        },
       },
     ],
   },

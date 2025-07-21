@@ -12,7 +12,7 @@ const projectRoot = process.cwd();
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(projectRoot, "package.json"), "utf-8")
+  readFileSync(join(projectRoot, "package.json"), "utf-8"),
 );
 
 const options: swaggerJsdoc.Options = {

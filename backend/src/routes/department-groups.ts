@@ -49,7 +49,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const groups = await departmentGroupService.getGroupHierarchy(
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       res.json({
@@ -58,14 +58,14 @@ router.get(
       });
     } catch (error) {
       logger.error(
-        `Error getting department groups: ${getErrorMessage(error)}`
+        `Error getting department groups: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler beim Abrufen der Abteilungsgruppen",
       });
     }
-  })
+  }),
 );
 
 // Get hierarchical structure
@@ -76,7 +76,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const hierarchy = await departmentGroupService.getGroupHierarchy(
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       res.json({
@@ -90,7 +90,7 @@ router.get(
         error: "Fehler beim Abrufen der Gruppenhierarchie",
       });
     }
-  })
+  }),
 );
 
 // Create a new group
@@ -119,7 +119,7 @@ router.post(
         description ?? null,
         parentGroupId ?? null,
         req.user.tenant_id,
-        req.user.id
+        req.user.id,
       );
 
       if (!groupId) {
@@ -136,12 +136,12 @@ router.post(
           groupId,
           departmentIds,
           req.user.tenant_id,
-          req.user.id
+          req.user.id,
         );
       }
 
       logger.info(
-        `Root user ${req.user.id} created department group ${groupId}`
+        `Root user ${req.user.id} created department group ${groupId}`,
       );
 
       res.status(201).json({
@@ -162,7 +162,7 @@ router.post(
         });
       } else {
         logger.error(
-          `Error creating department group: ${getErrorMessage(error)}`
+          `Error creating department group: ${getErrorMessage(error)}`,
         );
         res.status(500).json({
           success: false,
@@ -170,7 +170,7 @@ router.post(
         });
       }
     }
-  })
+  }),
 );
 
 // Update a group
@@ -206,7 +206,7 @@ router.put(
           groupId,
           name,
           description ?? null,
-          req.user.tenant_id
+          req.user.tenant_id,
         );
 
         if (success) {
@@ -228,7 +228,7 @@ router.put(
           });
         } else {
           logger.error(
-            `Error updating department group: ${getErrorMessage(error)}`
+            `Error updating department group: ${getErrorMessage(error)}`,
           );
           res.status(500).json({
             success: false,
@@ -236,8 +236,8 @@ router.put(
           });
         }
       }
-    }
-  )
+    },
+  ),
 );
 
 // Delete a group
@@ -258,12 +258,12 @@ router.delete(
     try {
       const success = await departmentGroupService.deleteGroup(
         groupId,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
         logger.info(
-          `Root user ${req.user.id} deleted department group ${groupId}`
+          `Root user ${req.user.id} deleted department group ${groupId}`,
         );
         res.json({
           success: true,
@@ -295,7 +295,7 @@ router.delete(
         });
       } else {
         logger.error(
-          `Error deleting department group: ${getErrorMessage(error)}`
+          `Error deleting department group: ${getErrorMessage(error)}`,
         );
         res.status(500).json({
           success: false,
@@ -303,7 +303,7 @@ router.delete(
         });
       }
     }
-  })
+  }),
 );
 
 // Add departments to a group
@@ -334,7 +334,7 @@ router.post(
           groupId,
           departmentIds,
           req.user.tenant_id,
-          req.user.id
+          req.user.id,
         );
 
         if (success) {
@@ -350,15 +350,15 @@ router.post(
         }
       } catch (error) {
         logger.error(
-          `Error adding departments to group: ${getErrorMessage(error)}`
+          `Error adding departments to group: ${getErrorMessage(error)}`,
         );
         res.status(500).json({
           success: false,
           error: "Fehler beim Hinzufügen der Abteilungen",
         });
       }
-    }
-  )
+    },
+  ),
 );
 
 // Remove department from a group
@@ -382,7 +382,7 @@ router.delete(
       const success = await departmentGroupService.removeDepartmentsFromGroup(
         groupId,
         [departmentId],
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
@@ -398,14 +398,14 @@ router.delete(
       }
     } catch (error) {
       logger.error(
-        `Error removing department from group: ${getErrorMessage(error)}`
+        `Error removing department from group: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler beim Entfernen der Abteilung",
       });
     }
-  })
+  }),
 );
 
 // Get departments in a group
@@ -428,7 +428,7 @@ router.get(
       const departments = await departmentGroupService.getGroupDepartments(
         groupId,
         req.user.tenant_id,
-        includeSubgroups
+        includeSubgroups,
       );
 
       res.json({
@@ -437,14 +437,14 @@ router.get(
       });
     } catch (error) {
       logger.error(
-        `Error getting group departments: ${getErrorMessage(error)}`
+        `Error getting group departments: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         success: false,
         error: "Fehler beim Abrufen der Abteilungen",
       });
     }
-  })
+  }),
 );
 
 export default router;

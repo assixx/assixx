@@ -49,7 +49,7 @@ export class Feature {
   static async findAll(): Promise<DbFeature[]> {
     try {
       const [features] = await executeQuery<DbFeature[]>(
-        "SELECT * FROM features WHERE is_active = true ORDER BY category, name"
+        "SELECT * FROM features WHERE is_active = true ORDER BY category, name",
       );
       return features;
     } catch (error) {
@@ -63,12 +63,12 @@ export class Feature {
     try {
       const [features] = await executeQuery<DbFeature[]>(
         "SELECT * FROM features WHERE code = ?",
-        [code]
+        [code],
       );
       return features[0];
     } catch (error) {
       logger.error(
-        `Error finding feature by code: ${(error as Error).message}`
+        `Error finding feature by code: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -77,7 +77,7 @@ export class Feature {
   // Prüfen ob Tenant ein Feature hat
   static async checkTenantAccess(
     tenant_id: number,
-    featureCode: string
+    featureCode: string,
   ): Promise<boolean> {
     try {
       const query = `
@@ -109,7 +109,7 @@ export class Feature {
         feature.current_usage >= feature.usage_limit
       ) {
         logger.warn(
-          `Feature ${featureCode} usage limit reached for tenant ${tenant_id}`
+          `Feature ${featureCode} usage limit reached for tenant ${tenant_id}`,
         );
         return false;
       }
@@ -117,7 +117,7 @@ export class Feature {
       return true;
     } catch (error) {
       logger.error(
-        `Error checking tenant feature access: ${(error as Error).message}`
+        `Error checking tenant feature access: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -127,7 +127,7 @@ export class Feature {
   static async activateForTenant(
     tenant_id: number,
     featureCode: string,
-    options: FeatureActivationOptions = {}
+    options: FeatureActivationOptions = {},
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -162,7 +162,7 @@ export class Feature {
       return true;
     } catch (error) {
       logger.error(
-        `Error activating feature for tenant: ${(error as Error).message}`
+        `Error activating feature for tenant: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -171,7 +171,7 @@ export class Feature {
   // Feature für Tenant deaktivieren
   static async deactivateForTenant(
     tenant_id: number,
-    featureCode: string
+    featureCode: string,
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -190,7 +190,7 @@ export class Feature {
       return true;
     } catch (error) {
       logger.error(
-        `Error deactivating feature for tenant: ${(error as Error).message}`
+        `Error deactivating feature for tenant: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -201,7 +201,7 @@ export class Feature {
     tenant_id: number,
     featureCode: string,
     userId: number | null = null,
-    metadata: Record<string, unknown> = {}
+    metadata: Record<string, unknown> = {},
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -212,13 +212,13 @@ export class Feature {
       // Log erstellen
       await executeQuery(
         "INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)",
-        [tenant_id, feature.id, userId, JSON.stringify(metadata)]
+        [tenant_id, feature.id, userId, JSON.stringify(metadata)],
       );
 
       // Current usage erhöhen
       await executeQuery(
         "UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?",
-        [tenant_id, feature.id]
+        [tenant_id, feature.id],
       );
 
       return true;
@@ -230,7 +230,7 @@ export class Feature {
 
   // Alle Features eines Tenants abrufen
   static async getTenantFeatures(
-    tenant_id: number
+    tenant_id: number,
   ): Promise<DbTenantFeature[]> {
     try {
       const query = `
@@ -256,7 +256,7 @@ export class Feature {
       return features;
     } catch (error) {
       logger.error(
-        `Error fetching tenant features: ${(error as Error).message}`
+        `Error fetching tenant features: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -267,7 +267,7 @@ export class Feature {
     tenant_id: number,
     featureCode: string,
     startDate: Date | string,
-    endDate: Date | string
+    endDate: Date | string,
   ): Promise<FeatureUsageStat[]> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -304,14 +304,14 @@ export class Feature {
   // Check if a feature is enabled for a specific tenant
   static async isEnabledForTenant(
     featureKey: string,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<boolean> {
     try {
       // Use the existing checkTenantAccess method which does exactly what we need
       return await this.checkTenantAccess(tenant_id, featureKey);
     } catch (error) {
       logger.error(
-        `Error checking if feature ${featureKey} is enabled for tenant ${tenant_id}: ${(error as Error).message}`
+        `Error checking if feature ${featureKey} is enabled for tenant ${tenant_id}: ${(error as Error).message}`,
       );
       return false;
     }

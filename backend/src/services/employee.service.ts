@@ -38,7 +38,7 @@ class UserService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: EmployeeFilters
+    filters: EmployeeFilters,
   ): Promise<EmployeeData[]> {
     try {
       // Use the search method which supports filtering
@@ -55,7 +55,7 @@ class UserService {
   async getById(
     _tenantDb: Pool,
     id: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id, tenantId);
@@ -71,7 +71,7 @@ class UserService {
    */
   async create(
     _tenantDb: Pool,
-    data: EmployeeCreateData
+    data: EmployeeCreateData,
   ): Promise<EmployeeData> {
     try {
       if (!data.tenant_id) {
@@ -96,7 +96,7 @@ class UserService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    data: EmployeeUpdateData
+    data: EmployeeUpdateData,
   ): Promise<EmployeeData | null> {
     try {
       const success = await User.update(id, data, tenantId);

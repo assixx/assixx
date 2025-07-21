@@ -62,7 +62,7 @@ export const COUNTRY_CODES = {
 export async function isPhoneUnique(
   phone: string,
   userId?: number,
-  connection?: Pool | PoolConnection
+  connection?: Pool | PoolConnection,
 ): Promise<boolean> {
   const { query } = await import("./db");
 

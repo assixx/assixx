@@ -42,7 +42,7 @@ router.get(
       // First get the user's department_id
       const [userInfo] = await execute<RowDataPacket[]>(
         "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
-        [userId, tenantId]
+        [userId, tenantId],
       );
 
       const userDepartmentId = userInfo[0]?.department_id ?? null;
@@ -60,7 +60,7 @@ router.get(
          OR (sa.assignment_type = 'department' AND sa.department_id = ?)
          OR (sa.assignment_type = 'user' AND sa.user_id = ?)
        )`,
-        [tenantId, userDepartmentId, userId]
+        [tenantId, userDepartmentId, userId],
       );
 
       // Count surveys not yet completed by the user
@@ -68,7 +68,7 @@ router.get(
       for (const survey of surveys) {
         const [response] = await execute<RowDataPacket[]>(
           "SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND status = 'completed'",
-          [survey.id, userId]
+          [survey.id, userId],
         );
 
         if (response.length === 0) {
@@ -83,7 +83,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der offenen Umfragen", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -200,7 +200,7 @@ router.get(
               : undefined,
             page: page ? parseInt(String(page)) : 1,
             limit: limit ? parseInt(String(limit)) : 20,
-          }
+          },
         );
       }
       // Employee users see surveys assigned to them
@@ -214,7 +214,7 @@ router.get(
               : undefined,
             page: page ? parseInt(String(page)) : 1,
             limit: limit ? parseInt(String(limit)) : 20,
-          }
+          },
         );
       }
       // Other roles don't have access
@@ -230,7 +230,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Umfragen", 500));
     }
-  })
+  }),
 );
 
 // Get survey templates
@@ -248,7 +248,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Vorlagen", 500));
     }
-  })
+  }),
 );
 
 // Get single survey
@@ -260,7 +260,7 @@ router.get(
     try {
       const survey = await Survey.getById(
         parseInt(req.params.id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
       if (!survey) {
         res.status(404).json(errorResponse("Umfrage nicht gefunden", 404));
@@ -273,7 +273,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Umfrage", 500));
     }
-  })
+  }),
 );
 
 // Get survey statistics (admin only)
@@ -285,7 +285,7 @@ router.get(
     try {
       const stats = await Survey.getStatistics(
         parseInt(req.params.id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
       res.json(successResponse(stats));
     } catch (error) {
@@ -294,7 +294,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Statistiken", 500));
     }
-  })
+  }),
 );
 
 // Create survey (admin only)
@@ -333,7 +333,7 @@ router.post(
         const [adminDepts] = await execute<RowDataPacket[]>(
           `SELECT department_id FROM admin_department_permissions 
            WHERE admin_user_id = ? AND tenant_id = ? AND can_write = 1`,
-          [req.user.id, req.user.tenant_id]
+          [req.user.id, req.user.tenant_id],
         );
 
         const authorizedDeptIds = adminDepts.map((d) => d.department_id);
@@ -362,14 +362,14 @@ router.post(
       const surveyId = await Survey.create(
         req.body,
         req.user.tenant_id,
-        req.user.id
+        req.user.id,
       );
 
       res.status(201).json(
         successResponse({
           id: surveyId,
           message: "Umfrage erfolgreich erstellt",
-        })
+        }),
       );
     } catch (error) {
       console.error("Error creating survey:", error);
@@ -381,7 +381,7 @@ router.post(
         .status(500)
         .json(errorResponse("Fehler beim Erstellen der Umfrage", 500));
     }
-  })
+  }),
 );
 
 // Create survey from template (admin only)
@@ -394,24 +394,24 @@ router.post(
       const surveyId = await Survey.createFromTemplate(
         parseInt(req.params.templateId, 10),
         req.user.tenant_id,
-        req.user.id
+        req.user.id,
       );
 
       res.status(201).json(
         successResponse({
           id: surveyId,
           message: "Umfrage aus Vorlage erstellt",
-        })
+        }),
       );
     } catch (error) {
       console.error("Error creating survey from template:", error);
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Erstellen der Umfrage aus Vorlage", 500)
+          errorResponse("Fehler beim Erstellen der Umfrage aus Vorlage", 500),
         );
     }
-  })
+  }),
 );
 
 // Update survey (admin only)
@@ -434,7 +434,7 @@ router.put(
       const success = await Survey.update(
         parseInt(req.params.id, 10),
         req.body,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!success) {
@@ -443,7 +443,7 @@ router.put(
       }
 
       res.json(
-        successResponse({ message: "Umfrage erfolgreich aktualisiert" })
+        successResponse({ message: "Umfrage erfolgreich aktualisiert" }),
       );
     } catch (error) {
       console.error("Error updating survey:", error);
@@ -451,7 +451,7 @@ router.put(
         .status(500)
         .json(errorResponse("Fehler beim Aktualisieren der Umfrage", 500));
     }
-  })
+  }),
 );
 
 // Delete survey (admin only)
@@ -463,7 +463,7 @@ router.delete(
     try {
       const success = await Survey.delete(
         parseInt(req.params.id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!success) {
@@ -478,7 +478,7 @@ router.delete(
         .status(500)
         .json(errorResponse("Fehler beim Löschen der Umfrage", 500));
     }
-  })
+  }),
 );
 
 // Submit survey response
@@ -528,7 +528,7 @@ router.post(
       console.log(
         "Survey is_anonymous:",
         survey.is_anonymous,
-        typeof survey.is_anonymous
+        typeof survey.is_anonymous,
       );
 
       // Check if user already responded (unless anonymous)
@@ -540,7 +540,7 @@ router.post(
       if (!isAnonymous) {
         const [existing] = await execute<RowDataPacket[]>(
           "SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?",
-          [surveyId, userId]
+          [surveyId, userId],
         );
 
         if (existing.length > 0) {
@@ -549,8 +549,8 @@ router.post(
             .json(
               errorResponse(
                 "Sie haben bereits an dieser Umfrage teilgenommen",
-                400
-              )
+                400,
+              ),
             );
           return;
         }
@@ -573,7 +573,7 @@ router.post(
             isAnonymous
               ? `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
               : null,
-          ]
+          ],
         );
 
         const responseId = (responseResult as ResultSetHeader).insertId;
@@ -609,25 +609,25 @@ router.post(
                 : null,
               answer.answer_number ?? null,
               answer.answer_date ?? null,
-            ]
+            ],
           );
         }
 
         // Mark response as complete
         await connection.execute(
           "UPDATE survey_responses SET status = 'completed', completed_at = NOW() WHERE id = ?",
-          [responseId]
+          [responseId],
         );
 
         await connection.commit();
         console.log(
-          `Response ${responseId} saved successfully for user ${userId} on survey ${surveyId}`
+          `Response ${responseId} saved successfully for user ${userId} on survey ${surveyId}`,
         );
         res.json(
           successResponse({
             message: "Antworten erfolgreich gespeichert",
             responseId,
-          })
+          }),
         );
       } catch (error) {
         await connection.rollback();
@@ -642,7 +642,7 @@ router.post(
         .status(500)
         .json(errorResponse("Fehler beim Speichern der Antworten", 500));
     }
-  })
+  }),
 );
 
 // Get user's response to a survey
@@ -656,7 +656,7 @@ router.get(
       const userId = req.user.id;
 
       console.log(
-        `Checking response for survey ${surveyId} and user ${userId}`
+        `Checking response for survey ${surveyId} and user ${userId}`,
       );
 
       const [responses] = await execute<RowDataPacket[]>(
@@ -667,11 +667,11 @@ router.get(
       LEFT JOIN survey_answers sa ON sr.id = sa.response_id
       WHERE sr.survey_id = ? AND sr.user_id = ?
     `,
-        [surveyId, userId]
+        [surveyId, userId],
       );
 
       console.log(
-        `Found ${responses.length} responses for user ${userId} on survey ${surveyId}`
+        `Found ${responses.length} responses for user ${userId} on survey ${surveyId}`,
       );
 
       if (responses.length === 0) {
@@ -696,7 +696,7 @@ router.get(
               answer_date: r.answer_date,
             })),
           },
-        })
+        }),
       );
     } catch (error) {
       console.error("Error fetching user response:", error);
@@ -704,7 +704,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Antwort", 500));
     }
-  })
+  }),
 );
 
 // Export survey results to Excel - with rate limiting
@@ -728,7 +728,7 @@ router.get(
       // Get statistics with all responses
       const statistics = await Survey.getStatistics(
         surveyId,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (format === "excel") {
@@ -791,13 +791,13 @@ router.get(
              LEFT JOIN survey_responses sr ON sa.response_id = sr.id
              LEFT JOIN users u ON sr.user_id = u.id
              WHERE sa.question_id = ?`,
-              [question.id]
+              [question.id],
             );
 
             // Add details based on question type
             if (
               ["single_choice", "multiple_choice"].includes(
-                question.question_type
+                question.question_type,
               ) &&
               question.options
             ) {
@@ -872,11 +872,11 @@ router.get(
         // Set response headers
         res.setHeader(
           "Content-Type",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         );
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename=umfrage_${surveyId}_export.xlsx`
+          `attachment; filename=umfrage_${surveyId}_export.xlsx`,
         );
 
         // Write to response
@@ -891,7 +891,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Exportieren der Umfrage", 500));
     }
-  })
+  }),
 );
 
 export default router;

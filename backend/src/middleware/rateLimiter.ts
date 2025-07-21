@@ -122,7 +122,7 @@ const rateLimiters = Object.entries(rateLimiterConfigs).reduce(
     ...acc,
     [type]: rateLimit(config),
   }),
-  {} as Record<RateLimiterType, RateLimitMiddleware>
+  {} as Record<RateLimiterType, RateLimitMiddleware>,
 );
 
 // TODO: Implement advanced rate limiting with redis store
@@ -139,7 +139,7 @@ export const rateLimiter: RateLimiterMiddleware = Object.assign(
     api: rateLimiters[RateLimiterType.API],
     upload: rateLimiters[RateLimiterType.UPLOAD],
     download: rateLimiters[RateLimiterType.DOWNLOAD],
-  }
+  },
 );
 
 // TODO: Implement brute force protection with redis store

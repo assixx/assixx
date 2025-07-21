@@ -71,7 +71,7 @@ router.post(
           isRoleSwitched: true,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -108,7 +108,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -148,7 +148,7 @@ router.post(
           isRoleSwitched: false,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -183,7 +183,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -223,7 +223,7 @@ router.post(
           isRoleSwitched: false,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -258,7 +258,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 /**
@@ -296,7 +296,7 @@ router.post(
           isRoleSwitched: true,
         },
         process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" }
+        { expiresIn: "24h" },
       );
 
       // Log the action
@@ -331,7 +331,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 export default router;

@@ -19,7 +19,7 @@ import { ValidationErrorResponse } from "../types/response.types";
 export function handleValidationErrors(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   const errors = validationResult(req);
 
@@ -77,7 +77,7 @@ export const commonValidations = {
     .withMessage("Password must be at least 8 characters")
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number",
     ),
 
   // Username
@@ -86,7 +86,7 @@ export const commonValidations = {
     .withMessage("Username must be between 3 and 30 characters")
     .matches(/^[a-zA-Z0-9_-]+$/)
     .withMessage(
-      "Username can only contain letters, numbers, underscores, and hyphens"
+      "Username can only contain letters, numbers, underscores, and hyphens",
     ),
 
   // Text fields
@@ -119,7 +119,7 @@ export const commonValidations = {
     if (min !== undefined) validation = validation.isInt({ min });
     if (max !== undefined) validation = validation.isInt({ max });
     return validation.withMessage(
-      `${field} must be an integer${min ? ` >= ${min}` : ""}${max ? ` <= ${max}` : ""}`
+      `${field} must be an integer${min ? ` >= ${min}` : ""}${max ? ` <= ${max}` : ""}`,
     );
   },
 };
@@ -145,7 +145,7 @@ export const validationSchemas = {
       .notEmpty()
       .matches(/^[a-z0-9-]+$/)
       .withMessage(
-        "Subdomain can only contain lowercase letters, numbers, and hyphens"
+        "Subdomain can only contain lowercase letters, numbers, and hyphens",
       ),
     handleValidationErrors,
   ] as ValidationMiddleware,
@@ -264,7 +264,7 @@ export const validationSchemas = {
       .withMessage("Password must be at least 8 characters")
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .withMessage(
-        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number",
       ),
     body("confirmPassword")
       .notEmpty()
@@ -338,7 +338,7 @@ export const validationSchemas = {
 
 // Helper to create custom validation middleware
 export function createValidation(
-  validations: ValidationChain[]
+  validations: ValidationChain[],
 ): ValidationMiddleware {
   return [...validations, handleValidationErrors] as ValidationMiddleware;
 }

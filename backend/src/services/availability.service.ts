@@ -57,7 +57,7 @@ class AvailabilityService {
           filter.startDate,
           filter.endDate,
           filter.startDate,
-          filter.endDate
+          filter.endDate,
         );
       }
 
@@ -106,7 +106,7 @@ class AvailabilityService {
    */
   async getById(
     id: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<EmployeeAvailability | null> {
     try {
       const query = `
@@ -166,7 +166,7 @@ class AvailabilityService {
   async update(
     id: number,
     tenantId: number,
-    data: Partial<EmployeeAvailability>
+    data: Partial<EmployeeAvailability>,
   ): Promise<boolean> {
     try {
       const dbData = camelToSnake(data) as DatabaseEmployeeAvailability;
@@ -264,7 +264,7 @@ class AvailabilityService {
   async getAvailabilitySummary(
     tenantId: number,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<RowDataPacket[]> {
     try {
       const query = `
@@ -294,7 +294,7 @@ class AvailabilityService {
     } catch (error) {
       console.error(
         "Error in AvailabilityService.getAvailabilitySummary:",
-        error
+        error,
       );
       throw error;
     }

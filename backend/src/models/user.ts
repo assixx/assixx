@@ -150,14 +150,14 @@ export class User {
       // Get subdomain from tenant
       const [tenantResult] = await executeQuery<RowDataPacket[]>(
         "SELECT subdomain FROM tenants WHERE id = ?",
-        [userData.tenant_id]
+        [userData.tenant_id],
       );
 
       if (tenantResult.length > 0) {
         const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
         const { tempId } = generateTempEmployeeId(
           subdomain,
-          role || "employee"
+          role || "employee",
         );
         finalEmployeeId = tempId;
       }
@@ -207,7 +207,7 @@ export class User {
       if (!employee_id && finalEmployeeId?.includes("TEMP")) {
         const [tenantResult] = await executeQuery<RowDataPacket[]>(
           "SELECT subdomain FROM tenants WHERE id = ?",
-          [userData.tenant_id]
+          [userData.tenant_id],
         );
 
         if (tenantResult.length > 0) {
@@ -215,7 +215,7 @@ export class User {
           const newEmployeeId = generateEmployeeId(
             subdomain,
             role || "employee",
-            result.insertId
+            result.insertId,
           );
 
           await executeQuery("UPDATE users SET employee_id = ? WHERE id = ?", [
@@ -238,14 +238,14 @@ export class User {
       console.log("[DEBUG] About to execute query");
       const [rows] = await executeQuery<DbUser[]>(
         "SELECT * FROM users WHERE username = ?",
-        [username]
+        [username],
       );
       console.log("[DEBUG] Query completed, rows found:", rows.length);
       return rows[0];
     } catch (error) {
       console.error("[DEBUG] findByUsername error:", error);
       logger.error(
-        `Error finding user by username: ${(error as Error).message}`
+        `Error finding user by username: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -253,17 +253,17 @@ export class User {
 
   static async findById(
     id: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<DbUser | undefined> {
     try {
       // Validate inputs with detailed logging
       console.log(
-        `[DEBUG] User.findById called with: id=${id} (type: ${typeof id}), tenant_id=${tenant_id} (type: ${typeof tenant_id})`
+        `[DEBUG] User.findById called with: id=${id} (type: ${typeof id}), tenant_id=${tenant_id} (type: ${typeof tenant_id})`,
       );
 
       if (!id || !tenant_id || isNaN(id) || isNaN(tenant_id)) {
         logger.error(
-          `Invalid parameters for User.findById: id=${id}, tenant_id=${tenant_id}, idType=${typeof id}, tenantType=${typeof tenant_id}`
+          `Invalid parameters for User.findById: id=${id}, tenant_id=${tenant_id}, idType=${typeof id}, tenantType=${typeof tenant_id}`,
         );
         throw new Error(`Invalid user ID (${id}) or tenant ID (${tenant_id})`);
       }
@@ -277,7 +277,7 @@ export class User {
         LEFT JOIN tenants t ON u.tenant_id = t.id
         WHERE u.id = ? AND u.tenant_id = ?
       `,
-        [id, tenant_id]
+        [id, tenant_id],
       );
 
       if (rows[0]) {
@@ -296,7 +296,7 @@ export class User {
   static async findByRole(
     role: string,
     includeArchived = false,
-    tenant_id: number // PFLICHT - nicht mehr optional!
+    tenant_id: number, // PFLICHT - nicht mehr optional!
   ): Promise<DbUser[]> {
     try {
       let query = `
@@ -337,7 +337,7 @@ export class User {
     try {
       const [rows] = await executeQuery<DbUser[]>(
         "SELECT * FROM users WHERE email = ? AND is_archived = false",
-        [email]
+        [email],
       );
       return rows[0];
     } catch (error) {
@@ -350,12 +350,12 @@ export class User {
     try {
       const [result] = await executeQuery<ResultSetHeader>(
         "DELETE FROM users WHERE id = ?",
-        [id]
+        [id],
       );
       return result.affectedRows > 0;
     } catch (error) {
       logger.error(
-        `Error deleting user with ID ${id}: ${(error as Error).message}`
+        `Error deleting user with ID ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -364,7 +364,7 @@ export class User {
   static async update(
     id: number,
     userData: Partial<UserCreateData>,
-    tenantId: number // SECURITY FIX: Made tenantId mandatory to prevent cross-tenant updates
+    tenantId: number, // SECURITY FIX: Made tenantId mandatory to prevent cross-tenant updates
   ): Promise<boolean> {
     try {
       // Define allowed fields for update to prevent SQL injection
@@ -409,7 +409,7 @@ export class User {
           // Special handling for boolean fields
           if (key === "is_active" || key === "is_archived") {
             logger.info(
-              `Special handling for ${key} field - received value: ${value}, type: ${typeof value}`
+              `Special handling for ${key} field - received value: ${value}, type: ${typeof value}`,
             );
             // Use backticks to escape column names properly
             fields.push(`\`${key}\` = ?`);
@@ -446,7 +446,7 @@ export class User {
       return result.affectedRows > 0;
     } catch (error) {
       logger.error(
-        `Error updating user with ID ${id}: ${(error as Error).message}`
+        `Error updating user with ID ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -559,7 +559,7 @@ export class User {
   static async updateProfilePicture(
     userId: number,
     picturePath: string,
-    tenantId: number // SECURITY FIX: Made tenantId mandatory
+    tenantId: number, // SECURITY FIX: Made tenantId mandatory
   ): Promise<boolean> {
     try {
       // SECURITY: Always include tenant_id in WHERE clause
@@ -570,7 +570,7 @@ export class User {
       return result.affectedRows > 0;
     } catch (error) {
       logger.error(
-        `Error updating profile picture for user ${userId}: ${(error as Error).message}`
+        `Error updating profile picture for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -629,7 +629,7 @@ export class User {
   // Neue Methode: Benutzer archivieren
   static async archiveUser(
     userId: number,
-    tenantId: number // SECURITY FIX: Made tenantId mandatory
+    tenantId: number, // SECURITY FIX: Made tenantId mandatory
   ): Promise<boolean> {
     logger.info(`Archiving user ${userId}`);
     return this.update(userId, { is_archived: true }, tenantId);
@@ -638,7 +638,7 @@ export class User {
   // Neue Methode: Benutzer aus dem Archiv wiederherstellen
   static async unarchiveUser(
     userId: number,
-    tenantId: number // SECURITY FIX: Made tenantId mandatory
+    tenantId: number, // SECURITY FIX: Made tenantId mandatory
   ): Promise<boolean> {
     logger.info(`Unarchiving user ${userId}`);
     return this.update(userId, { is_archived: false }, tenantId);
@@ -647,7 +647,7 @@ export class User {
   // Neue Methode: Alle archivierten Benutzer auflisten
   static async findArchivedUsers(
     tenantId: number, // SECURITY FIX: Added mandatory tenantId parameter
-    role: string | null = null
+    role: string | null = null,
   ): Promise<DbUser[]> {
     try {
       let query = `
@@ -692,7 +692,7 @@ export class User {
       return rows[0].document_count > 0;
     } catch (error) {
       logger.error(
-        `Error checking if user ${userId} has documents: ${(error as Error).message}`
+        `Error checking if user ${userId} has documents: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -712,7 +712,7 @@ export class User {
       return rows[0].document_count;
     } catch (error) {
       logger.error(
-        `Error counting documents for user ${userId}: ${(error as Error).message}`
+        `Error counting documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -767,7 +767,7 @@ export class User {
       };
     } catch (error) {
       logger.error(
-        `Error getting user department and team: ${(error as Error).message}`
+        `Error getting user department and team: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -778,7 +778,7 @@ export class User {
     userId: number,
     tenantId: number,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<{
     success: boolean;
     message: string;
@@ -793,7 +793,7 @@ export class User {
       // Aktuelles Passwort überprüfen
       const isValidPassword = await bcrypt.compare(
         currentPassword,
-        user.password
+        user.password,
       );
       if (!isValidPassword) {
         return { success: false, message: "Aktuelles Passwort ist incorrect" };
@@ -817,7 +817,7 @@ export class User {
       }
     } catch (error) {
       logger.error(
-        `Error changing password for user ${userId}: ${(error as Error).message}`
+        `Error changing password for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -827,7 +827,7 @@ export class User {
   static async updateOwnProfile(
     userId: number,
     tenantId: number,
-    userData: Partial<UserCreateData>
+    userData: Partial<UserCreateData>,
   ): Promise<{
     success: boolean;
     message: string;
@@ -894,7 +894,7 @@ export class User {
       }
     } catch (error) {
       logger.error(
-        `Error updating profile for user ${userId}: ${(error as Error).message}`
+        `Error updating profile for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -938,7 +938,7 @@ export class User {
          FROM users u 
          LEFT JOIN departments d ON u.department_id = d.id 
          WHERE u.tenant_id = ?`,
-        [tenantId]
+        [tenantId],
       );
 
       // Normalize boolean fields
@@ -951,7 +951,7 @@ export class User {
       return normalizedRows;
     } catch (error) {
       logger.error(
-        `Error finding users by tenant: ${(error as Error).message}`
+        `Error finding users by tenant: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -987,7 +987,7 @@ export class User {
       }
       const [rows] = await executeQuery<CountResult[]>(
         "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND is_active = 1",
-        [tenantId]
+        [tenantId],
       );
       return rows[0]?.count ?? 0;
     } catch (error) {
@@ -1004,7 +1004,7 @@ export class User {
       availability_start?: string;
       availability_end?: string;
       availability_notes?: string;
-    }
+    },
   ): Promise<boolean> {
     try {
       const [result] = await executeQuery<ResultSetHeader>(
@@ -1022,7 +1022,7 @@ export class User {
           availabilityData.availability_notes ?? null,
           userId,
           tenantId,
-        ]
+        ],
       );
 
       return result.affectedRows > 0;

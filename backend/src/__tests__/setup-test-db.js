@@ -9,8 +9,8 @@ import path from "path";
 
 // Handle both ESM and CommonJS environments
 // In GitHub Actions, we're in the project root, not in backend directory
-const projectRoot = process.cwd().endsWith('backend') 
-  ? path.dirname(process.cwd()) 
+const projectRoot = process.cwd().endsWith("backend")
+  ? path.dirname(process.cwd())
   : process.cwd();
 
 async function setupTestDatabase() {
@@ -26,7 +26,6 @@ async function setupTestDatabase() {
   });
 
   try {
-
     // First, try to use the current schema export
     const databaseDir = path.join(projectRoot, "database");
     const schemaFiles = fs
@@ -42,45 +41,56 @@ async function setupTestDatabase() {
       const currentSchemaPath = path.join(databaseDir, schemaFiles[0]);
       console.log(`Using current schema: ${schemaFiles[0]}`);
       let schema = fs.readFileSync(currentSchemaPath, "utf8");
-      
+
       // Remove problematic view definitions that are incomplete
       // These appear between "SET @saved_cs_client" and "SET character_set_client = @saved_cs_client;"
-      schema = schema.replace(/SET @saved_cs_client[\s\S]*?SET character_set_client = @saved_cs_client;/g, '');
-      
+      schema = schema.replace(
+        /SET @saved_cs_client[\s\S]*?SET character_set_client = @saved_cs_client;/g,
+        "",
+      );
+
       // Remove DELIMITER statements and handle stored procedures/triggers
-      schema = schema.replace(/DELIMITER\s+.*$/gm, '');
-      schema = schema.replace(/\$\$/g, ';');
-      schema = schema.replace(/\/\*/g, ';');
-      
+      schema = schema.replace(/DELIMITER\s+.*$/gm, "");
+      schema = schema.replace(/\$\$/g, ";");
+      schema = schema.replace(/\/\*/g, ";");
+
       // Split by semicolon and filter out empty statements
-      const statements = schema.split(';').filter(stmt => stmt.trim());
-      
+      const statements = schema.split(";").filter((stmt) => stmt.trim());
+
       // Disable foreign key checks temporarily to avoid order dependencies
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      
+
       // Execute each statement separately
       for (const statement of statements) {
         const trimmedStmt = statement.trim();
-        if (trimmedStmt && !trimmedStmt.includes('1 AS `')) {
+        if (trimmedStmt && !trimmedStmt.includes("1 AS `")) {
           try {
             await connection.query(trimmedStmt);
           } catch (error) {
-            console.error(`Error executing statement: ${trimmedStmt.substring(0, 100)}...`);
+            console.error(
+              `Error executing statement: ${trimmedStmt.substring(0, 100)}...`,
+            );
             console.error(`Error: ${error.message}`);
           }
         }
       }
-      
+
       // Now create the views from the proper view definitions
-      const viewsPath = path.join(databaseDir, 'schema/03-views/views.sql');
+      const viewsPath = path.join(databaseDir, "schema/03-views/views.sql");
       if (fs.existsSync(viewsPath)) {
-        console.log('Creating database views...');
-        const viewsSQL = fs.readFileSync(viewsPath, 'utf8');
-        const viewStatements = viewsSQL.split(';').filter(stmt => stmt.trim());
-        
+        console.log("Creating database views...");
+        const viewsSQL = fs.readFileSync(viewsPath, "utf8");
+        const viewStatements = viewsSQL
+          .split(";")
+          .filter((stmt) => stmt.trim());
+
         for (const viewStmt of viewStatements) {
           const trimmedView = viewStmt.trim();
-          if (trimmedView && (trimmedView.includes('CREATE VIEW') || trimmedView.includes('CREATE OR REPLACE VIEW'))) {
+          if (
+            trimmedView &&
+            (trimmedView.includes("CREATE VIEW") ||
+              trimmedView.includes("CREATE OR REPLACE VIEW"))
+          ) {
             try {
               await connection.query(trimmedView);
             } catch (error) {
@@ -89,7 +99,7 @@ async function setupTestDatabase() {
           }
         }
       }
-      
+
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
     } else {
       // Fallback to migrations if no schema export exists
@@ -123,7 +133,7 @@ async function setupTestDatabase() {
 }
 
 // Run if called directly
-if (process.argv[1] && process.argv[1].endsWith('setup-test-db.js')) {
+if (process.argv[1] && process.argv[1].endsWith("setup-test-db.js")) {
   setupTestDatabase();
 }
 

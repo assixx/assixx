@@ -43,7 +43,7 @@ class FeatureService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: FeatureFilters = {}
+    _filters: FeatureFilters = {},
   ): Promise<FeatureData[]> {
     try {
       // TODO: Feature.getAll doesn't exist in the model
@@ -89,7 +89,7 @@ class FeatureService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: FeatureUpdateData
+    _data: FeatureUpdateData,
   ): Promise<FeatureData | null> {
     try {
       // TODO: Feature.update doesn't exist in the model

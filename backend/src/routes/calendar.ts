@@ -149,7 +149,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
     const canManage = await calendarModel.canManageEvent(
       parseInt(eventId, 10),
       req.user.id,
-      userInfo
+      userInfo,
     );
 
     if (!canManage) {
@@ -158,8 +158,8 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
         .json(
           errorResponse(
             "Sie haben keine Berechtigung, dieses Event zu verwalten",
-            403
-          )
+            403,
+          ),
         );
       return;
     }
@@ -168,7 +168,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
     const event = await calendarModel.getEventById(
       parseInt(eventId, 10),
       tenantId,
-      req.user.id
+      req.user.id,
     );
 
     if (!event) {
@@ -182,7 +182,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
   } catch (error) {
     console.error(
       "Error in canManageEvent middleware:",
-      getErrorMessage(error)
+      getErrorMessage(error),
     );
     res.status(500).json(errorResponse("Interner Serverfehler", 500));
   }
@@ -333,7 +333,7 @@ router.get(
       const result = await calendarModel.getAllEvents(
         tenantId,
         req.user.id,
-        options
+        options,
       );
 
       res.json(successResponse(result));
@@ -343,7 +343,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Kalendereinträge", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -357,7 +357,7 @@ router.get(
     createValidation([
       query("days").optional().isInt({ min: 1, max: 365 }),
       query("limit").optional().isInt({ min: 1, max: 50 }),
-    ])
+    ]),
   ),
   typed.auth(async (req, res) => {
     try {
@@ -370,20 +370,20 @@ router.get(
         tenantId,
         req.user.id,
         days,
-        limit
+        limit,
       );
 
       res.json(successResponse(events));
     } catch (error) {
       console.error(
         "Error in GET /api/calendar/dashboard:",
-        getErrorMessage(error)
+        getErrorMessage(error),
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Dashboard-Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -396,7 +396,7 @@ router.get(
   ...security.user(
     createValidation([
       param("id").isInt({ min: 1 }).withMessage("Ungültige Event-ID"),
-    ])
+    ]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -405,7 +405,7 @@ router.get(
       const event = await calendarModel.getEventById(
         parseInt(req.params.id, 10),
         tenantId,
-        req.user.id
+        req.user.id,
       );
 
       if (!event) {
@@ -420,7 +420,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen des Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -471,7 +471,7 @@ router.post(
         .status(500)
         .json(errorResponse("Fehler beim Erstellen des Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -511,7 +511,7 @@ router.put(
       const updatedEvent = await calendarModel.updateEvent(
         parseInt(req.params.id, 10),
         eventData,
-        tenantId
+        tenantId,
       );
 
       res.json(successResponse(updatedEvent, "Event erfolgreich aktualisiert"));
@@ -521,7 +521,7 @@ router.put(
         .status(500)
         .json(errorResponse("Fehler beim Aktualisieren des Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -534,7 +534,7 @@ router.delete(
   ...security.user(
     createValidation([
       param("id").isInt({ min: 1 }).withMessage("Ungültige Event-ID"),
-    ])
+    ]),
   ),
   canManageEvent,
   typed.params<{ id: string }>(async (req, res) => {
@@ -542,7 +542,7 @@ router.delete(
       const tenantId = getTenantId(req.user);
       const success = await calendarModel.deleteEvent(
         parseInt(req.params.id, 10),
-        tenantId
+        tenantId,
       );
 
       if (!success) {
@@ -554,13 +554,13 @@ router.delete(
     } catch (error) {
       console.error(
         "Error in DELETE /api/calendar/:id:",
-        getErrorMessage(error)
+        getErrorMessage(error),
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Löschen des Events", 500));
     }
-  })
+  }),
 );
 
 export default router;

@@ -163,7 +163,7 @@ router.get(
   ...security.user(searchUsersValidation),
   typed.auth(async (req, res) => {
     await chatController.getUsers(req as ChatUsersRequest, res);
-  })
+  }),
 );
 
 /**
@@ -199,7 +199,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     await chatController.getConversations(req as GetConversationsRequest, res);
-  })
+  }),
 );
 
 /**
@@ -262,9 +262,9 @@ router.post(
   typed.body<CreateConversationBody>(async (req, res) => {
     await chatController.createConversation(
       req as CreateConversationRequest,
-      res
+      res,
     );
-  })
+  }),
 );
 /**
  * @swagger
@@ -343,7 +343,7 @@ router.get(
   ...security.user(getMessagesValidation),
   typed.params<{ id: string }>(async (req, res) => {
     await chatController.getMessages(req as GetMessagesRequest, res);
-  })
+  }),
 );
 /**
  * @swagger
@@ -450,7 +450,7 @@ router.post(
   upload.single("attachment"),
   typed.paramsBody<{ id: string }, SendMessageBody>(async (req, res) => {
     await chatController.sendMessage(req as SendMessageRequest, res);
-  })
+  }),
 );
 /**
  * @swagger
@@ -547,11 +547,11 @@ router.get(
   ...security.user(
     createValidation([
       param("filename").notEmpty().withMessage("Dateiname erforderlich"),
-    ])
+    ]),
   ),
   typed.params<{ filename: string }>(async (req, res) => {
     await chatController.downloadFile(req, res);
-  })
+  }),
 );
 // TODO: Implement these routes when controller methods are ready
 // router.put('/messages/:id/read', ...security.user(), chatController.markAsRead);
@@ -602,7 +602,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     await chatController.getUnreadCount(req, res);
-  })
+  }),
 );
 /**
  * @swagger
@@ -666,11 +666,11 @@ router.post(
   ...security.user(
     createValidation([
       param("id").isInt({ min: 1 }).withMessage("Ungültige Konversations-ID"),
-    ])
+    ]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     await chatController.markConversationAsRead(req, res);
-  })
+  }),
 );
 // TODO: Implement when controller method is ready
 // router.put('/messages/:id/archive', ...security.user(), chatController.archiveMessage);
@@ -733,11 +733,11 @@ router.delete(
   ...security.user(
     createValidation([
       param("id").isInt({ min: 1 }).withMessage("Ungültige Konversations-ID"),
-    ])
+    ]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     await chatController.deleteConversation(req, res);
-  })
+  }),
 );
 
 export default router;

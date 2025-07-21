@@ -96,12 +96,12 @@ router.get(
         // Employees only see users from their department
         const currentUser = await User.findById(
           req.user.id,
-          req.user.tenant_id
+          req.user.tenant_id,
         );
         if (currentUser?.department_id) {
           const allUsers = await User.findAllByTenant(req.user.tenant_id);
           users = allUsers.filter(
-            (u) => u.department_id === currentUser.department_id
+            (u) => u.department_id === currentUser.department_id,
           );
         }
       } else {
@@ -151,7 +151,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Get current user data (alias for /profile) - for frontend compatibility
@@ -191,13 +191,13 @@ router.get(
       res.json({ user: userProfile });
     } catch (error) {
       logger.error(
-        `Error retrieving profile for user: ${getErrorMessage(error)}`
+        `Error retrieving profile for user: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Abrufen des Profils", 500));
     }
-  })
+  }),
 );
 
 // Get specific user by ID (admin only)
@@ -222,14 +222,14 @@ router.get(
       res.json(userProfile);
     } catch (error) {
       logger.error(
-        `Error fetching user ${req.params.id}: ${getErrorMessage(error)}`
+        `Error fetching user ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
         message: "Fehler beim Abrufen des Benutzers",
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Update user by ID (admin only)
@@ -278,7 +278,7 @@ router.put(
         const saltRounds = 10;
         updateData.password = await bcrypt.hash(password, saltRounds);
         logger.info(
-          `Password updated for user ${userId} by admin ${req.user.id}`
+          `Password updated for user ${userId} by admin ${req.user.id}`,
         );
       } else {
         // Remove empty password field
@@ -297,13 +297,13 @@ router.put(
       res.json({ message: "Benutzer erfolgreich aktualisiert" });
     } catch (error) {
       logger.error(
-        `Error updating user ${req.params.id}: ${getErrorMessage(error)}`
+        `Error updating user ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Aktualisieren des Benutzers", 500));
     }
-  })
+  }),
 );
 
 // Delete user by ID (admin only)
@@ -343,13 +343,13 @@ router.delete(
       res.json(successResponse(null, "Benutzer erfolgreich gelöscht"));
     } catch (error) {
       logger.error(
-        `Error deleting user ${req.params.id}: ${getErrorMessage(error)}`
+        `Error deleting user ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Löschen des Benutzers", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -391,7 +391,7 @@ router.get(
       console.log("[DEBUG] /api/users/profile - req.user.id:", req.user?.id);
       console.log(
         "[DEBUG] /api/users/profile - typeof req.user.id:",
-        typeof req.user?.id
+        typeof req.user?.id,
       );
 
       // Use the same logic as /me route which works
@@ -419,13 +419,13 @@ router.get(
       res.json(successResponse(userProfile));
     } catch (error) {
       logger.error(
-        `Error retrieving profile for user: ${getErrorMessage(error)}`
+        `Error retrieving profile for user: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Abrufen des Profils", 500));
     }
-  })
+  }),
 );
 
 // Configure multer for profile picture uploads
@@ -507,13 +507,13 @@ router.put(
       }
     } catch (error) {
       logger.error(
-        `Error updating profile for user ${req.user.id}: ${getErrorMessage(error)}`
+        `Error updating profile for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Aktualisieren des Profils", 500));
     }
-  })
+  }),
 );
 
 // Upload profile picture
@@ -540,7 +540,7 @@ router.post(
         {
           profile_picture: filePath,
         },
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
@@ -560,7 +560,7 @@ router.post(
       }
     } catch (error) {
       logger.error(
-        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${getErrorMessage(error)}`
+        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${getErrorMessage(error)}`,
       );
 
       // Clean up uploaded file
@@ -569,7 +569,7 @@ router.post(
           await safeDeleteFile(req.file.path);
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
           );
         }
       }
@@ -579,7 +579,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Delete profile picture
@@ -604,14 +604,14 @@ router.delete(
           __dirname,
           "..",
           "..",
-          user.profile_picture_url
+          user.profile_picture_url,
         );
 
         try {
           await safeDeleteFile(oldFilePath);
         } catch (unlinkError) {
           logger.warn(
-            `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`
+            `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`,
           );
         }
       }
@@ -620,7 +620,7 @@ router.delete(
       const success = await User.update(
         userId,
         { profile_picture: undefined },
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
@@ -633,13 +633,13 @@ router.delete(
       }
     } catch (error) {
       logger.error(
-        `Error deleting profile picture for user ${req.user.id}: ${getErrorMessage(error)}`
+        `Error deleting profile picture for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Löschen des Profilbildes", 500));
     }
-  })
+  }),
 );
 
 // Change password
@@ -660,7 +660,7 @@ router.put(
         userId,
         req.user.tenant_id,
         currentPassword,
-        newPassword
+        newPassword,
       );
 
       if (result.success) {
@@ -671,13 +671,13 @@ router.put(
       }
     } catch (error) {
       logger.error(
-        `Error changing password for user ${req.user.id}: ${getErrorMessage(error)}`
+        `Error changing password for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(errorResponse("Fehler beim Ändern des Passworts", 500));
     }
-  })
+  }),
 );
 
 // Update employee availability
@@ -712,30 +712,30 @@ router.put(
           availability_start,
           availability_end,
           availability_notes,
-        }
+        },
       );
 
       if (success) {
         logger.info(
-          `Admin ${req.user.id} updated availability for employee ${employeeId}`
+          `Admin ${req.user.id} updated availability for employee ${employeeId}`,
         );
         res.json(
-          successResponse(null, "Verfügbarkeit erfolgreich aktualisiert")
+          successResponse(null, "Verfügbarkeit erfolgreich aktualisiert"),
         );
       } else {
         res.status(404).json(errorResponse("Mitarbeiter nicht gefunden", 404));
       }
     } catch (error) {
       logger.error(
-        `Error updating availability for employee ${req.params.id}: ${getErrorMessage(error)}`
+        `Error updating availability for employee ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Aktualisieren der Verfügbarkeit", 500)
+          errorResponse("Fehler beim Aktualisieren der Verfügbarkeit", 500),
         );
     }
-  })
+  }),
 );
 
 export default router;

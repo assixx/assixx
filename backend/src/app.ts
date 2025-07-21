@@ -7,7 +7,6 @@ import fs from "fs";
 import path from "path";
 
 import cookieParser from "cookie-parser";
-import { getCurrentDirPath } from "./utils/getCurrentDir.js";
 import cors from "cors";
 import "dotenv/config";
 import express, { Application, Request, Response, NextFunction } from "express";
@@ -37,6 +36,7 @@ import routes from "./routes";
 import htmlRoutes from "./routes/html.routes";
 import legacyRoutes from "./routes/legacy.routes";
 import roleSwitchRoutes from "./routes/role-switch";
+import { getCurrentDirPath } from "./utils/getCurrentDir.js";
 /**
  * Express Application Setup
  * Separated from server.js for better testing
@@ -120,31 +120,40 @@ app.use(
 );
 
 // Serve styles directory
-app.use("/styles", express.static(path.join(srcPath, "styles"), {
-  setHeaders: (res: Response, filePath: string): void => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    if (filePath.endsWith(".css")) {
-      res.setHeader("Content-Type", "text/css");
-    }
-  },
-}));
+app.use(
+  "/styles",
+  express.static(path.join(srcPath, "styles"), {
+    setHeaders: (res: Response, filePath: string): void => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (filePath.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      }
+    },
+  }),
+);
 
 // Serve scripts directory for regular JS files
-app.use("/scripts", express.static(path.join(srcPath, "scripts"), {
-  setHeaders: (res: Response, filePath: string): void => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    if (filePath.endsWith(".js")) {
-      res.setHeader("Content-Type", "application/javascript");
-    }
-  },
-}));
+app.use(
+  "/scripts",
+  express.static(path.join(srcPath, "scripts"), {
+    setHeaders: (res: Response, filePath: string): void => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+    },
+  }),
+);
 
 // Serve assets directory
-app.use("/assets", express.static(path.join(srcPath, "assets"), {
-  setHeaders: (res: Response): void => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-  },
-}));
+app.use(
+  "/assets",
+  express.static(path.join(srcPath, "assets"), {
+    setHeaders: (res: Response): void => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+    },
+  }),
+);
 
 // Handle /js/ requests - map to TypeScript files in development
 app.use("/js", rateLimiter.public, (req: Request, res: Response): void => {
@@ -467,7 +476,13 @@ app.get("/login", (_req: Request, res: Response): void => {
   console.log("[DEBUG] GET /login - serving login page");
   // Fix path for Docker environment
   const projectRoot = process.cwd(); // In Docker this is /app
-  const loginPath = path.join(projectRoot, "frontend", "src", "pages", "login.html");
+  const loginPath = path.join(
+    projectRoot,
+    "frontend",
+    "src",
+    "pages",
+    "login.html",
+  );
   res.sendFile(loginPath);
 });
 

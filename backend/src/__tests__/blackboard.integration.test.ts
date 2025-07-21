@@ -31,7 +31,7 @@ describe("Blackboard Integration Tests", () => {
     tenantId = await createTestTenant(
       testDb,
       "blackboardtest",
-      "Test Blackboard Company"
+      "Test Blackboard Company",
     );
 
     // Create test users
@@ -64,7 +64,7 @@ describe("Blackboard Integration Tests", () => {
     employeeToken = await getAuthToken(
       app,
       employeeResult.username,
-      "TestPass123!"
+      "TestPass123!",
     );
   });
 
@@ -115,7 +115,7 @@ describe("Blackboard Integration Tests", () => {
         expect.objectContaining({
           id: createdEntryId,
           title: "Company-wide Announcement",
-        })
+        }),
       );
     });
 
@@ -232,7 +232,7 @@ describe("Blackboard Integration Tests", () => {
         .expect(403);
 
       expect(response.body.message).toContain(
-        "Only admins can create company-wide entries"
+        "Only admins can create company-wide entries",
       );
     });
 
@@ -362,7 +362,7 @@ describe("Blackboard Integration Tests", () => {
         .expect(500);
 
       expect(response.body.error).toContain(
-        "org_id is required for department or team level entries"
+        "org_id is required for department or team level entries",
       );
     });
 

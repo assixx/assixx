@@ -80,7 +80,7 @@ export class AlertingService {
         alert.channel,
         alert.title,
         alert.message,
-        response.status
+        response.status,
       );
     } catch (error) {
       logger.error("Failed to send Slack alert:", error);
@@ -91,7 +91,7 @@ export class AlertingService {
         alert.title,
         alert.message,
         0,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       throw error;
     }
@@ -142,7 +142,7 @@ export class AlertingService {
         "teams",
         alert.title,
         alert.message,
-        response.status
+        response.status,
       );
     } catch (error) {
       logger.error("Failed to send Teams alert:", error);
@@ -153,7 +153,7 @@ export class AlertingService {
         alert.title,
         alert.message,
         0,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       throw error;
     }
@@ -208,7 +208,7 @@ export class AlertingService {
             "Content-Type": "application/json",
             From: process.env.PAGERDUTY_EMAIL ?? "assixx@example.com",
           },
-        }
+        },
       );
 
       logger.info(`PagerDuty incident created: ${response.data.incident.id}`);
@@ -220,7 +220,7 @@ export class AlertingService {
         "incident",
         incident.summary,
         JSON.stringify(incident.details),
-        response.status
+        response.status,
       );
     } catch (error) {
       logger.error("Failed to create PagerDuty incident:", error);
@@ -231,7 +231,7 @@ export class AlertingService {
         incident.summary,
         JSON.stringify(incident.details),
         0,
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       throw error;
     }
@@ -243,7 +243,7 @@ export class AlertingService {
   async sendCriticalAlert(
     title: string,
     message: string,
-    details: Record<string, unknown>
+    details: Record<string, unknown>,
   ): Promise<void> {
     const promises: Promise<void>[] = [];
 
@@ -259,11 +259,11 @@ export class AlertingService {
             acc[key] = String(value);
             return acc;
           },
-          {} as Record<string, string>
+          {} as Record<string, string>,
         ),
       }).catch((error) => {
         logger.error("Slack critical alert failed:", error);
-      })
+      }),
     );
 
     promises.push(
@@ -277,7 +277,7 @@ export class AlertingService {
         })),
       }).catch((error) => {
         logger.error("Teams critical alert failed:", error);
-      })
+      }),
     );
 
     promises.push(
@@ -290,7 +290,7 @@ export class AlertingService {
         },
       }).catch((error) => {
         logger.error("PagerDuty critical alert failed:", error);
-      })
+      }),
     );
 
     await Promise.allSettled(promises);
@@ -306,7 +306,7 @@ export class AlertingService {
     title: string,
     message: string,
     responseCode: number,
-    errorMessage?: string
+    errorMessage?: string,
   ): Promise<void> {
     try {
       await execute(
@@ -322,7 +322,7 @@ export class AlertingService {
           message,
           responseCode,
           errorMessage ?? null,
-        ]
+        ],
       );
     } catch (error) {
       logger.error("Failed to log alert to database:", error);

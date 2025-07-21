@@ -46,7 +46,7 @@ export class AlertingService {
       alert.channel,
       alert.title,
       alert.message,
-      200
+      200,
     );
   }
 
@@ -61,7 +61,7 @@ export class AlertingService {
       "teams",
       alert.title,
       alert.message,
-      200
+      200,
     );
   }
 
@@ -76,7 +76,7 @@ export class AlertingService {
       "incident",
       incident.summary,
       JSON.stringify(incident.details),
-      200
+      200,
     );
   }
 
@@ -86,7 +86,7 @@ export class AlertingService {
   async sendCriticalAlert(
     title: string,
     message: string,
-    details: Record<string, unknown>
+    details: Record<string, unknown>,
   ): Promise<void> {
     logger.error(`[STUB] Critical Alert: ${title} - ${message}`, details);
 
@@ -101,7 +101,7 @@ export class AlertingService {
             acc[key] = String(value);
             return acc;
           },
-          {} as Record<string, string>
+          {} as Record<string, string>,
         ),
       }),
       this.sendTeamsAlert({
@@ -134,7 +134,7 @@ export class AlertingService {
     title: string,
     message: string,
     responseCode: number,
-    errorMessage?: string
+    errorMessage?: string,
   ): Promise<void> {
     try {
       await execute(
@@ -150,7 +150,7 @@ export class AlertingService {
           message,
           responseCode,
           errorMessage ?? null,
-        ]
+        ],
       );
     } catch (error) {
       logger.error("Failed to log alert to database:", error);

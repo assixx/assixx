@@ -164,16 +164,16 @@ class SurveyService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: SurveyFilters = {}
+    _filters: SurveyFilters = {},
   ): Promise<SurveyData[]> {
     try {
       // The actual Survey model doesn't have a generic getAll method
       console.warn(
-        "SurveyService.getAll: This method should use getAllByTenant from the Survey model"
+        "SurveyService.getAll: This method should use getAllByTenant from the Survey model",
       );
       // Redirect to getAllByTenant but we need tenantId
       throw new Error(
-        "Method needs refactoring - use getAllByTenant instead with proper tenantId"
+        "Method needs refactoring - use getAllByTenant instead with proper tenantId",
       );
     } catch (error) {
       console.error("Error in SurveyService.getAll:", error);
@@ -188,11 +188,11 @@ class SurveyService {
   async getById(_tenantDb: Pool, _id: number): Promise<SurveyData | null> {
     try {
       console.warn(
-        "SurveyService.getById: This method needs tenantId parameter"
+        "SurveyService.getById: This method needs tenantId parameter",
       );
       // Survey.getById expects (surveyId, tenantId)
       throw new Error(
-        "Method needs refactoring - getById requires tenantId parameter"
+        "Method needs refactoring - getById requires tenantId parameter",
       );
     } catch (error) {
       console.error("Error in SurveyService.getById:", error);
@@ -207,10 +207,10 @@ class SurveyService {
   async create(_tenantDb: Pool, _data: SurveyCreateData): Promise<number> {
     try {
       console.warn(
-        "SurveyService.create: This method needs tenantId and createdBy parameters"
+        "SurveyService.create: This method needs tenantId and createdBy parameters",
       );
       throw new Error(
-        "Method needs refactoring - create requires tenantId and createdBy parameters"
+        "Method needs refactoring - create requires tenantId and createdBy parameters",
       );
     } catch (error) {
       console.error("Error in SurveyService.create:", error);
@@ -225,14 +225,14 @@ class SurveyService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: SurveyUpdateData
+    _data: SurveyUpdateData,
   ): Promise<boolean> {
     try {
       console.warn(
-        "SurveyService.update: This method needs tenantId parameter"
+        "SurveyService.update: This method needs tenantId parameter",
       );
       throw new Error(
-        "Method needs refactoring - update requires tenantId parameter"
+        "Method needs refactoring - update requires tenantId parameter",
       );
     } catch (error) {
       console.error("Error in SurveyService.update:", error);
@@ -247,10 +247,10 @@ class SurveyService {
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     try {
       console.warn(
-        "SurveyService.delete: This method needs tenantId parameter"
+        "SurveyService.delete: This method needs tenantId parameter",
       );
       throw new Error(
-        "Method needs refactoring - delete requires tenantId parameter"
+        "Method needs refactoring - delete requires tenantId parameter",
       );
     } catch (error) {
       console.error("Error in SurveyService.delete:", error);
@@ -263,7 +263,7 @@ class SurveyService {
    */
   async getAllByTenant(
     tenantId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<SurveyData[]> {
     try {
       return await Survey.getAllByTenant(tenantId, filters);
@@ -278,7 +278,7 @@ class SurveyService {
    */
   async getSurveyById(
     surveyId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<SurveyData | null> {
     try {
       return await Survey.getById(surveyId, tenantId);
@@ -294,7 +294,7 @@ class SurveyService {
   async createSurvey(
     surveyData: SurveyCreateData,
     tenantId: number,
-    createdBy: number
+    createdBy: number,
   ): Promise<number> {
     try {
       return await Survey.create(surveyData, tenantId, createdBy);
@@ -310,13 +310,13 @@ class SurveyService {
   async updateSurvey(
     surveyId: number,
     surveyData: SurveyUpdateData,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     try {
       return await Survey.update(
         surveyId,
         surveyData as SurveyCreateData,
-        tenantId
+        tenantId,
       );
     } catch (error) {
       console.error("Error in SurveyService.updateSurvey:", error);
@@ -354,7 +354,7 @@ class SurveyService {
   async createFromTemplate(
     templateId: number,
     tenantId: number,
-    createdBy: number
+    createdBy: number,
   ): Promise<number> {
     try {
       return await Survey.createFromTemplate(templateId, tenantId, createdBy);
@@ -369,7 +369,7 @@ class SurveyService {
    */
   async getStatistics(
     surveyId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<SurveyStatistics> {
     try {
       return await Survey.getStatistics(surveyId, tenantId);

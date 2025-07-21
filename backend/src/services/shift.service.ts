@@ -110,15 +110,15 @@ class ShiftService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: ShiftFilters = {}
+    _filters: ShiftFilters = {},
   ): Promise<ShiftEntry[]> {
     try {
       // The actual Shift model doesn't have a generic getAll method
       console.warn(
-        "ShiftService.getAll: This method should use specific Shift model methods"
+        "ShiftService.getAll: This method should use specific Shift model methods",
       );
       throw new Error(
-        "Method needs refactoring - use getShiftPlans or getShiftTemplates instead"
+        "Method needs refactoring - use getShiftPlans or getShiftTemplates instead",
       );
     } catch (error) {
       console.error("Error in ShiftService.getAll:", error);
@@ -133,10 +133,10 @@ class ShiftService {
   async getById(_tenantDb: Pool, _id: number): Promise<ShiftEntry | null> {
     try {
       console.warn(
-        "ShiftService.getById: This method should use specific Shift model methods"
+        "ShiftService.getById: This method should use specific Shift model methods",
       );
       throw new Error(
-        "Method needs refactoring - use specific getter methods instead"
+        "Method needs refactoring - use specific getter methods instead",
       );
     } catch (error) {
       console.error("Error in ShiftService.getById:", error);
@@ -151,10 +151,10 @@ class ShiftService {
   async create(_tenantDb: Pool, _data: ShiftCreateData): Promise<ShiftEntry> {
     try {
       console.warn(
-        "ShiftService.create: This method should use specific Shift model methods"
+        "ShiftService.create: This method should use specific Shift model methods",
       );
       throw new Error(
-        "Method needs refactoring - use createShift, createShiftPlan, or createShiftTemplate instead"
+        "Method needs refactoring - use createShift, createShiftPlan, or createShiftTemplate instead",
       );
     } catch (error) {
       console.error("Error in ShiftService.create:", error);
@@ -169,14 +169,14 @@ class ShiftService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: ShiftUpdateData
+    _data: ShiftUpdateData,
   ): Promise<ShiftEntry | null> {
     try {
       console.warn(
-        "ShiftService.update: This method should use specific Shift model methods"
+        "ShiftService.update: This method should use specific Shift model methods",
       );
       throw new Error(
-        "Method needs refactoring - Shift model does not have generic update methods"
+        "Method needs refactoring - Shift model does not have generic update methods",
       );
     } catch (error) {
       console.error("Error in ShiftService.update:", error);
@@ -191,10 +191,10 @@ class ShiftService {
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     try {
       console.warn(
-        "ShiftService.delete: This method should use specific Shift model methods"
+        "ShiftService.delete: This method should use specific Shift model methods",
       );
       throw new Error(
-        "Method needs refactoring - Shift model does not have generic delete methods"
+        "Method needs refactoring - Shift model does not have generic delete methods",
       );
     } catch (error) {
       console.error("Error in ShiftService.delete:", error);
@@ -257,7 +257,7 @@ class ShiftService {
   async getShiftPlans(
     tenantId: number,
     userId: number,
-    options?: ShiftFilters
+    options?: ShiftFilters,
   ): Promise<{
     plans: ShiftPlan[];
     pagination: {
@@ -302,7 +302,7 @@ class ShiftService {
   async getShiftsByPlan(
     planId: number,
     tenantId: number,
-    userId: number
+    userId: number,
   ): Promise<ShiftEntry[]> {
     try {
       const shifts = await getShiftsByPlan(planId, tenantId, userId);
@@ -331,7 +331,7 @@ class ShiftService {
    * Create a shift
    */
   async createShift(
-    shiftData: ShiftCreateData & { created_by: number }
+    shiftData: ShiftCreateData & { created_by: number },
   ): Promise<ShiftEntry> {
     try {
       // Map ShiftCreateData to ShiftData expected by model
@@ -410,7 +410,7 @@ class ShiftService {
     tenantId: number,
     userId: number,
     startDate: string | Date,
-    endDate: string | Date
+    endDate: string | Date,
   ): Promise<
     Array<{
       id: number;

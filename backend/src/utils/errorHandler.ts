@@ -51,7 +51,7 @@ export function isErrorWithCode(error: unknown, code: string): boolean {
  * Type guard for database errors
  */
 export function isDatabaseError(
-  error: unknown
+  error: unknown,
 ): error is { code: string; errno?: number; sqlMessage?: string } {
   return (
     error !== null &&

@@ -65,7 +65,7 @@ router.post(
   typed.body<LoginBody>(async (req, res) => {
     console.log("[DEBUG] /api/auth/login endpoint hit");
     await authController.login(req, res);
-  })
+  }),
 );
 router.post(
   "/register",
@@ -73,21 +73,21 @@ router.post(
   ...validateSignup,
   typed.body<RegisterBody>(async (req, res) => {
     await authController.register(req, res);
-  })
+  }),
 );
 router.get(
   "/logout",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.logout(req, res);
-  })
+  }),
 );
 router.post(
   "/logout",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.logout(req, res);
-  })
+  }),
 ); // Support both GET and POST
 
 // CSRF Token endpoint
@@ -101,10 +101,10 @@ router.get(
         {
           csrfToken: res.locals.csrfToken,
         },
-        "CSRF token generated successfully"
-      )
+        "CSRF token generated successfully",
+      ),
     );
-  })
+  }),
 );
 
 // Protected routes
@@ -113,14 +113,14 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.checkAuth(req, res);
-  })
+  }),
 );
 router.get(
   "/user",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.getUserProfile(req, res);
-  })
+  }),
 );
 
 // Session validation endpoints
@@ -129,14 +129,14 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.validateToken(req, res);
-  })
+  }),
 );
 router.post(
   "/validate-fingerprint",
   ...security.user(validateFingerprintValidation),
   typed.body<ValidateFingerprintBody>(async (req, res) => {
     await authController.validateFingerprint(req, res);
-  })
+  }),
 );
 
 export default router;

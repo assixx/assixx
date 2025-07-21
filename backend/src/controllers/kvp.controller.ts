@@ -129,7 +129,7 @@ class KvpController {
       } else if (filter === "department" && role !== "root") {
         const [userInfo] = await executeQuery<RowDataPacket[]>(
           "SELECT department_id FROM users WHERE id = ?",
-          [userId]
+          [userId],
         );
         if (userInfo[0]?.department_id) {
           additionalWhere = " AND s.department_id = ?";
@@ -206,7 +206,7 @@ class KvpController {
             s.shared_by_firstname && s.shared_by_lastname
               ? `${s.shared_by_firstname} ${s.shared_by_lastname}`
               : null,
-        })
+        }),
       );
 
       // Get total count
@@ -261,7 +261,7 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canView) {
@@ -288,7 +288,7 @@ class KvpController {
          LEFT JOIN departments d ON s.department_id = d.id
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
-        [id]
+        [id],
       );
 
       if (suggestions.length === 0) {
@@ -322,7 +322,7 @@ class KvpController {
       // Get user's department
       const [userInfo] = await executeQuery<RowDataPacket[]>(
         "SELECT department_id FROM users WHERE id = ?",
-        [userId]
+        [userId],
       );
 
       const departmentId = req.body.department_id ?? userInfo[0]?.department_id;
@@ -347,7 +347,7 @@ class KvpController {
           req.body.priority ?? "normal",
           req.body.expected_benefit ?? null,
           req.body.estimated_cost ?? null,
-        ]
+        ],
       );
 
       // Get created suggestion
@@ -364,7 +364,7 @@ class KvpController {
          LEFT JOIN departments d ON s.department_id = d.id
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
-        [result.insertId]
+        [result.insertId],
       );
 
       // Log the creation
@@ -384,7 +384,7 @@ class KvpController {
           }),
           req.ip ?? req.socket.remoteAddress,
           req.headers["user-agent"] ?? null,
-        ]
+        ],
       );
 
       res.status(201).json({
@@ -422,7 +422,7 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canEdit) {
@@ -462,7 +462,7 @@ class KvpController {
           "kvp_suggestion",
           req.user.tenant_id,
           null,
-          { status: req.body.status }
+          { status: req.body.status },
         );
       }
       if (req.body.expected_benefit !== undefined) {
@@ -499,7 +499,7 @@ class KvpController {
 
       await executeQuery<ResultSetHeader>(
         `UPDATE kvp_suggestions SET ${updateFields.join(", ")} WHERE id = ?`,
-        updateValues
+        updateValues,
       );
 
       // Get updated suggestion
@@ -516,7 +516,7 @@ class KvpController {
          LEFT JOIN departments d ON s.department_id = d.id
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
-        [id]
+        [id],
       );
 
       res.json({
@@ -554,7 +554,7 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canEdit) {
@@ -565,7 +565,7 @@ class KvpController {
       // Archive instead of delete
       await executeQuery<ResultSetHeader>(
         "UPDATE kvp_suggestions SET status = ? WHERE id = ?",
-        ["archived", id]
+        ["archived", id],
       );
 
       // Log action
@@ -574,7 +574,7 @@ class KvpController {
         "archive",
         id,
         "kvp_suggestion",
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       res.status(204).send();
@@ -608,7 +608,7 @@ class KvpController {
       const canShare = await kvpPermissionService.canShareSuggestion(
         req.user.id,
         id,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canShare) {
@@ -621,7 +621,7 @@ class KvpController {
       // Get suggestion details for logging
       const [suggestions] = await executeQuery<RowDataPacket[]>(
         "SELECT title, department_id FROM kvp_suggestions WHERE id = ?",
-        [id]
+        [id],
       );
 
       // Update to company-wide visibility
@@ -632,7 +632,7 @@ class KvpController {
              shared_by = ?,
              shared_at = NOW()
          WHERE id = ?`,
-        [req.user.tenant_id, req.user.id, id]
+        [req.user.tenant_id, req.user.id, id],
       );
 
       // Log action
@@ -641,7 +641,7 @@ class KvpController {
         "share_company_wide",
         id,
         "kvp_suggestion",
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       // Log the sharing action
@@ -661,7 +661,7 @@ class KvpController {
           }),
           req.ip ?? req.socket.remoteAddress,
           req.headers["user-agent"] ?? null,
-        ]
+        ],
       );
 
       res.json({
@@ -699,7 +699,7 @@ class KvpController {
       // Get suggestion details
       const [suggestions] = await executeQuery<RowDataPacket[]>(
         "SELECT department_id, shared_by, org_level FROM kvp_suggestions WHERE id = ?",
-        [id]
+        [id],
       );
 
       if (suggestions.length === 0) {
@@ -733,7 +733,7 @@ class KvpController {
              shared_by = NULL,
              shared_at = NULL
          WHERE id = ?`,
-        [id]
+        [id],
       );
 
       // Log action
@@ -742,7 +742,7 @@ class KvpController {
         "unshare_company_wide",
         id,
         "kvp_suggestion",
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       res.json({
@@ -781,7 +781,7 @@ class KvpController {
       if (role === "admin") {
         departmentIds = await kvpPermissionService.getAdminDepartments(
           userId,
-          tenantId
+          tenantId,
         );
       }
 
@@ -789,7 +789,7 @@ class KvpController {
       const companyStats = await kvpPermissionService.getSuggestionStats(
         "company",
         tenantId,
-        tenantId
+        tenantId,
       );
 
       // Get department stats
@@ -803,14 +803,14 @@ class KvpController {
         // Get all departments
         const [departments] = await executeQuery<RowDataPacket[]>(
           "SELECT id, name FROM departments WHERE tenant_id = ?",
-          [tenantId]
+          [tenantId],
         );
 
         for (const dept of departments) {
           const stats = await kvpPermissionService.getSuggestionStats(
             "department",
             dept.id,
-            tenantId
+            tenantId,
           );
           departmentStats.push({
             department_id: dept.id,
@@ -823,14 +823,14 @@ class KvpController {
         for (const deptId of departmentIds) {
           const [deptInfo] = await executeQuery<RowDataPacket[]>(
             "SELECT name FROM departments WHERE id = ?",
-            [deptId]
+            [deptId],
           );
 
           if (deptInfo.length > 0) {
             const stats = await kvpPermissionService.getSuggestionStats(
               "department",
               deptId,
-              tenantId
+              tenantId,
             );
             departmentStats.push({
               department_id: deptId,
@@ -866,7 +866,7 @@ class KvpController {
       }
 
       const [categories] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM kvp_categories ORDER BY name"
+        "SELECT * FROM kvp_categories ORDER BY name",
       );
 
       res.json({
@@ -904,7 +904,7 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canView) {
@@ -954,7 +954,7 @@ class KvpController {
       params: { id: string };
       body: { comment: string; is_internal?: boolean };
     },
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -980,7 +980,7 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canView) {
@@ -994,7 +994,7 @@ class KvpController {
 
       const [result] = await executeQuery<ResultSetHeader>(
         "INSERT INTO kvp_comments (suggestion_id, user_id, comment, is_internal) VALUES (?, ?, ?, ?)",
-        [id, req.user.id, comment.trim(), isInternal ? 1 : 0]
+        [id, req.user.id, comment.trim(), isInternal ? 1 : 0],
       );
 
       res.status(201).json({
@@ -1033,7 +1033,7 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!canView) {
@@ -1049,7 +1049,7 @@ class KvpController {
          LEFT JOIN users u ON a.uploaded_by = u.id
          WHERE a.suggestion_id = ?
          ORDER BY a.uploaded_at DESC`,
-        [id]
+        [id],
       );
 
       res.json({
@@ -1074,7 +1074,7 @@ class KvpController {
       params: { id: string };
       files?: Express.Multer.File[];
     },
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       console.log("=== KVP Upload Attachment Start ===");
@@ -1082,7 +1082,7 @@ class KvpController {
       console.log("Suggestion ID:", req.params.id);
       console.log(
         "Files received:",
-        Array.isArray(req.files) ? req.files.length : 0
+        Array.isArray(req.files) ? req.files.length : 0,
       );
 
       if (!req.user) {
@@ -1115,7 +1115,7 @@ class KvpController {
         req.user.id,
         suggestionId,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       console.log("Has permission:", hasPermission);
@@ -1148,7 +1148,7 @@ class KvpController {
             file.mimetype,
             file.size,
             req.user.id,
-          ]
+          ],
         );
 
         attachments.push({
@@ -1180,7 +1180,7 @@ class KvpController {
    */
   async downloadAttachment(
     req: TenantRequest & { params: { attachmentId: string } },
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -1196,7 +1196,7 @@ class KvpController {
          FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
          WHERE ka.id = ?`,
-        [attachmentId]
+        [attachmentId],
       );
 
       if (attachments.length === 0) {
@@ -1212,7 +1212,7 @@ class KvpController {
         req.user.id,
         attachment.suggestion_id,
         req.user.role,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!hasPermission) {

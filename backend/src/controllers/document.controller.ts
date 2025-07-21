@@ -58,7 +58,7 @@ class DocumentController {
           page?: string | number;
           limit?: string | number;
           [key: string]: string | number | undefined;
-        }
+        },
       );
       const category = req.query.category as string | undefined;
       const userId = req.query.userId as string | undefined;
@@ -116,7 +116,7 @@ class DocumentController {
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!document) {
@@ -145,7 +145,7 @@ class DocumentController {
    */
   async uploadDocument(
     req: Request & Partial<DocumentUploadRequest>,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -207,7 +207,7 @@ class DocumentController {
    */
   async updateDocument(
     req: Request & Partial<DocumentUpdateRequest>,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -227,7 +227,7 @@ class DocumentController {
       const result = await documentService.updateDocument(
         parseInt(id, 10),
         updateData,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!result) {
@@ -268,7 +268,7 @@ class DocumentController {
 
       const result = await documentService.deleteDocument(
         parseInt(id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!result) {
@@ -309,7 +309,7 @@ class DocumentController {
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!document) {
@@ -350,7 +350,7 @@ class DocumentController {
       const success = await documentService.markDocumentAsRead(
         parseInt(id, 10),
         req.user.id,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!success) {

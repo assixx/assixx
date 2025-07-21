@@ -42,7 +42,7 @@ function generateToken(_req: ExtendedRequest, _res: Response): string {
 function doubleCsrfProtection(
   _req: ExtendedRequest,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   // Skip CSRF for now - implement proper CSRF protection in production
   next();
@@ -52,7 +52,7 @@ function doubleCsrfProtection(
 export const generateCSRFTokenMiddleware = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   try {
     const token = generateToken(req as ExtendedRequest, res);
@@ -68,7 +68,7 @@ export const generateCSRFTokenMiddleware = (
 export const validateCSRFToken = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   // Skip CSRF validation for API endpoints that use Bearer token authentication
   if (req.headers.authorization?.startsWith("Bearer ")) {
@@ -97,7 +97,7 @@ export const validateCSRFToken = (
 export const attachCSRFToken = (
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   if (res.locals.csrfToken) {
     res.setHeader("X-CSRF-Token", res.locals.csrfToken);
@@ -109,7 +109,7 @@ export const attachCSRFToken = (
 export const enforceHTTPS = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   if (
     req.header("x-forwarded-proto") !== "https" &&
@@ -206,7 +206,7 @@ export const corsOptions: cors.CorsOptions = {
 // Enhanced Rate Limiting per Tenant
 const createTenantRateLimiter = (
   windowMs: number,
-  max: number
+  max: number,
 ): RateLimitRequestHandler =>
   rateLimit({
     windowMs,
@@ -222,29 +222,29 @@ const createTenantRateLimiter = (
 // API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 50000 : 1000
+  process.env.NODE_ENV === "development" ? 50000 : 1000,
 ); // 50000 requests per 15 minutes in dev (erhöht für Testing), 1000 in prod
 export const authLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 100 : 5
+  process.env.NODE_ENV === "development" ? 100 : 5,
 ); // 100 auth attempts in dev, 5 in prod
 export const uploadLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 100 : 10
+  process.env.NODE_ENV === "development" ? 100 : 10,
 ); // 100 uploads per 15 minutes in dev, 10 in prod
 
 // Specific API endpoint rate limiters
 export const strictAuthLimiter = createTenantRateLimiter(
   5 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 50 : 3
+  process.env.NODE_ENV === "development" ? 50 : 3,
 ); // 50 login attempts in dev, 3 in prod
 export const apiLimiter = createTenantRateLimiter(
   60 * 1000,
-  process.env.NODE_ENV === "development" ? 1000 : 100
+  process.env.NODE_ENV === "development" ? 1000 : 100,
 ); // 1000 API requests per minute in dev, 100 in prod
 export const searchLimiter = createTenantRateLimiter(
   60 * 1000,
-  process.env.NODE_ENV === "development" ? 300 : 30
+  process.env.NODE_ENV === "development" ? 300 : 30,
 ); // 300 search requests per minute in dev, 30 in prod
 export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 5); // 5 bulk operations per hour
 export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 20); // 20 reports per hour
@@ -252,7 +252,7 @@ export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 20); // 20 
 // Progressive Rate Limiting - increases delay based on violations
 const createProgressiveRateLimiter = (
   windowMs: number,
-  max: number
+  max: number,
 ): RateLimitRequestHandler =>
   rateLimit({
     windowMs,
@@ -305,18 +305,18 @@ export const suspiciousActivityLimiter = rateLimit({
 // Enhanced progressive limiters
 export const progressiveApiLimiter = createProgressiveRateLimiter(
   60 * 1000,
-  200
+  200,
 ); // 200 requests per minute
 export const progressiveAuthLimiter = createProgressiveRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 100 : 10
+  process.env.NODE_ENV === "development" ? 100 : 10,
 ); // 100 auth attempts in dev, 10 in prod
 
 // Tenant Context Validation
 export const validateTenantContext = (
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   if (req.user && req.tenant) {
     const userTenant = req.user.tenant_id;
@@ -351,7 +351,7 @@ export const auditLogger =
     const endFunction = function (
       chunk?: string | Buffer | (() => void),
       encoding?: globalThis.BufferEncoding | (() => void),
-      cb?: () => void
+      cb?: () => void,
     ): Response {
       // Handle different argument patterns
       if (typeof chunk === "function") {
@@ -368,31 +368,31 @@ export const auditLogger =
           originalEnd as (
             chunk: string | Buffer,
             encoding: globalThis.BufferEncoding,
-            cb: () => void
+            cb: () => void,
           ) => Response
         ).call(
           res,
           chunk as string | Buffer,
           encoding as globalThis.BufferEncoding,
-          cb
+          cb,
         );
       } else if (encoding !== undefined) {
         // end(chunk, encoding)
         (
           originalEnd as (
             chunk: string | Buffer,
-            encoding: globalThis.BufferEncoding
+            encoding: globalThis.BufferEncoding,
           ) => Response
         ).call(
           res,
           chunk as string | Buffer,
-          encoding as globalThis.BufferEncoding
+          encoding as globalThis.BufferEncoding,
         );
       } else if (chunk !== undefined) {
         // end(chunk)
         (originalEnd as (chunk: string | Buffer) => Response).call(
           res,
-          chunk as string | Buffer
+          chunk as string | Buffer,
         );
       } else {
         // end()
@@ -437,18 +437,18 @@ export const sanitizeInputs: RequestHandler = hpp(); // Prevent HTTP Parameter P
 export const apiSecurityHeaders = (
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader(
     "Strict-Transport-Security",
-    "max-age=31536000; includeSubDomains"
+    "max-age=31536000; includeSubDomains",
   );
   res.setHeader(
     "Cache-Control",
-    "no-store, no-cache, must-revalidate, private"
+    "no-store, no-cache, must-revalidate, private",
   );
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
@@ -472,7 +472,7 @@ export const validateContentType =
 export const fileUploadSecurity = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   if (!req.files || Object.keys(req.files).length === 0) {
     return next();

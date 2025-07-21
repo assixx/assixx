@@ -89,7 +89,7 @@ class CalendarController {
       }
 
       console.warn(
-        "CalendarController.getAll: This method should be refactored to use specific event methods"
+        "CalendarController.getAll: This method should be refactored to use specific event methods",
       );
       // The calendarService.getAll method will throw an error as it needs refactoring
       try {
@@ -155,7 +155,7 @@ class CalendarController {
       }
 
       console.warn(
-        "CalendarController.getById: This method should be refactored to use getEventById"
+        "CalendarController.getById: This method should be refactored to use getEventById",
       );
       try {
         const result = await calendarService.getById(req.tenantDb, id);
@@ -194,7 +194,7 @@ class CalendarController {
       }
 
       console.warn(
-        "CalendarController.create: This method should be refactored to use createEvent"
+        "CalendarController.create: This method should be refactored to use createEvent",
       );
       try {
         const result = await calendarService.create(req.tenantDb, req.body);
@@ -232,7 +232,7 @@ class CalendarController {
       }
 
       console.warn(
-        "CalendarController.update: This method should be refactored to use updateEvent"
+        "CalendarController.update: This method should be refactored to use updateEvent",
       );
       try {
         const result = await calendarService.update(req.tenantDb, id, req.body);
@@ -273,7 +273,7 @@ class CalendarController {
       }
 
       console.warn(
-        "CalendarController.delete: This method should be refactored to use deleteEvent"
+        "CalendarController.delete: This method should be refactored to use deleteEvent",
       );
       try {
         await calendarService.delete(req.tenantDb, id);
@@ -303,7 +303,7 @@ class CalendarController {
    */
   async getAllEvents(
     _req: CalendarEventQueryRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       // This would need tenantId and userId from the request

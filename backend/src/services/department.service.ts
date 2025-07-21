@@ -33,7 +33,7 @@ class DepartmentService {
   async getAll(
     _tenantDb: Pool,
     tenantId: number,
-    _filters: DepartmentFilters = {}
+    _filters: DepartmentFilters = {},
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
@@ -51,7 +51,7 @@ class DepartmentService {
   async getById(
     _tenantDb: Pool,
     id: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<DepartmentData | null> {
     try {
       return await Department.findById(id, tenantId);
@@ -66,7 +66,7 @@ class DepartmentService {
    */
   async create(
     _tenantDb: Pool,
-    data: DepartmentCreateData
+    data: DepartmentCreateData,
   ): Promise<DepartmentData> {
     try {
       const id = await Department.create(data);
@@ -88,7 +88,7 @@ class DepartmentService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    data: DepartmentUpdateData
+    data: DepartmentUpdateData,
   ): Promise<DepartmentData | null> {
     try {
       const success = await Department.update(id, data);

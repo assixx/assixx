@@ -40,7 +40,7 @@ function getDateTimeString(): string {
 export function generateEmployeeId(
   subdomain: string,
   role: string,
-  userId: number
+  userId: number,
 ): string {
   const domain = subdomain.toUpperCase().slice(0, 10);
   const roleCode = getRoleAbbreviation(role);
@@ -57,7 +57,7 @@ export function generateEmployeeId(
  */
 export function generateTempEmployeeId(
   subdomain: string,
-  role: string
+  role: string,
 ): { tempId: string; timestamp: string } {
   const domain = subdomain.toUpperCase().slice(0, 10);
   const roleCode = getRoleAbbreviation(role);
