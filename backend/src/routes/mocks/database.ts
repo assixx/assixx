@@ -72,7 +72,7 @@ async function initializeSchema(db: Pool): Promise<void> {
         first_name VARCHAR(100),
         last_name VARCHAR(100),
         phone VARCHAR(50),
-        employee_number VARCHAR(32) UNIQUE,
+        employee_number VARCHAR(6) NOT NULL,
         is_active BOOLEAN DEFAULT TRUE,
         status ENUM('active', 'inactive') DEFAULT 'active',
         deleted_at TIMESTAMP NULL DEFAULT NULL,
@@ -80,7 +80,8 @@ async function initializeSchema(db: Pool): Promise<void> {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (tenant_id) REFERENCES tenants(id),
         UNIQUE KEY unique_username_tenant (username, tenant_id),
-        UNIQUE KEY unique_email_tenant (email, tenant_id)
+        UNIQUE KEY unique_email_tenant (email, tenant_id),
+        UNIQUE KEY idx_employee_number (employee_number)
       )
     `);
 
