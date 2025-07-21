@@ -11,6 +11,7 @@ import { createLog } from "../routes/logs.js";
 import authService from "../services/auth.service";
 import userService from "../services/user.service";
 import { AuthenticatedRequest } from "../types/request.types";
+import { successResponse, errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
 
 // Type guard to check if request has authenticated user

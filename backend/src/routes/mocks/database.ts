@@ -22,8 +22,6 @@ const TEST_DB_CONFIG: PoolOptions = {
 };
 
 let testDb: Pool | null = null;
-let tenantCounter = 1000;
-let userCounter = 1000;
 
 /**
  * Create and initialize test database connection
