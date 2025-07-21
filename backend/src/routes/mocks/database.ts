@@ -770,11 +770,25 @@ export async function createTestTenant(
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 1000);
   const uniqueSubdomain = `${subdomain}_${timestamp}_${randomSuffix}`;
-  const [result] = await db.execute(
-    "INSERT INTO tenants (subdomain, company_name, status) VALUES (?, ?, ?)",
-    [uniqueSubdomain, name, "active"],
-  );
-  return (result as ResultSetHeader).insertId;
+  // Try to handle both 'name' and 'company_name' field variations
+  try {
+    // First try with company_name (production schema)
+    const [result] = await db.execute(
+      "INSERT INTO tenants (subdomain, company_name, status) VALUES (?, ?, ?)",
+      [uniqueSubdomain, name, "active"],
+    );
+    return (result as ResultSetHeader).insertId;
+  } catch (err: any) {
+    // If it fails, try with 'name' field (GitHub Actions schema)
+    if (err.message?.includes("Unknown column 'company_name'") || err.message?.includes("Field 'name' doesn't have a default value")) {
+      const [result] = await db.execute(
+        "INSERT INTO tenants (subdomain, name, status) VALUES (?, ?, ?)",
+        [uniqueSubdomain, name, "active"],
+      );
+      return (result as ResultSetHeader).insertId;
+    }
+    throw err;
+  }
 }
 
 /**
