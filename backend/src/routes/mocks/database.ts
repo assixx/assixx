@@ -50,9 +50,13 @@ async function initializeSchema(db: Pool): Promise<void> {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS tenants (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        company_name VARCHAR(255) NOT NULL,
         subdomain VARCHAR(100) UNIQUE NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        status ENUM('active', 'inactive', 'trial') DEFAULT 'active',
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(30) DEFAULT NULL,
+        address TEXT,
+        status ENUM('trial', 'active', 'suspended', 'cancelled') DEFAULT 'trial',
+        trial_ends_at DATETIME DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
@@ -67,7 +71,6 @@ async function initializeSchema(db: Pool): Promise<void> {
         role ENUM('root', 'admin', 'employee') NOT NULL,
         tenant_id INT NOT NULL,
         department_id INT DEFAULT NULL,
-        team_id INT DEFAULT NULL,
         first_name VARCHAR(100),
         last_name VARCHAR(100),
         phone VARCHAR(50),
@@ -766,10 +769,12 @@ export async function createTestTenant(
   subdomain: string,
   name: string,
 ): Promise<number> {
-  const uniqueSubdomain = `${subdomain}_${tenantCounter++}`;
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(Math.random() * 1000);
+  const uniqueSubdomain = `${subdomain}_${timestamp}_${randomSuffix}`;
   const [result] = await db.execute(
-    "INSERT INTO tenants (subdomain, name, status) VALUES (?, ?, ?)",
-    [uniqueSubdomain, name, "active"],
+    "INSERT INTO tenants (subdomain, company_name, email, status) VALUES (?, ?, ?, ?)",
+    [uniqueSubdomain, name, `${subdomain}@test.com`, "active"],
   );
   return (result as ResultSetHeader).insertId;
 }
@@ -786,19 +791,23 @@ export async function createTestUser(
     role: "root" | "admin" | "employee";
     tenant_id: number;
     department_id?: number;
-    team_id?: number;
     first_name?: string;
     last_name?: string;
     status?: "active" | "inactive";
   },
 ): Promise<{ id: number; username: string; email: string }> {
   const hashedPassword = await bcrypt.hash(userData.password, 10);
-  const uniqueUsername = `${userData.username}_${userCounter++}`;
-  const uniqueEmail = userData.email.replace("@", `_${userCounter}@`);
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(Math.random() * 1000);
+  const uniqueUsername = `${userData.username}_${timestamp}_${randomSuffix}`;
+  const uniqueEmail = userData.email.replace("@", `_${timestamp}_${randomSuffix}@`);
 
+  // Generate unique employee number
+  const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));
+  
   const [result] = await db.execute(
     `INSERT INTO users 
-    (username, email, password, role, tenant_id, department_id, team_id, first_name, last_name, status) 
+    (username, email, password, role, tenant_id, department_id, first_name, last_name, status, employee_number) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       uniqueUsername,
@@ -807,10 +816,10 @@ export async function createTestUser(
       userData.role,
       userData.tenant_id,
       userData.department_id ?? null,
-      userData.team_id ?? null,
       userData.first_name ?? userData.username,
       userData.last_name ?? "User",
       userData.status ?? "active",
+      employeeNumber,
     ],
   );
 

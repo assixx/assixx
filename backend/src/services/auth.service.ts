@@ -35,14 +35,12 @@ class AuthService {
 
       if (!result.user) {
         // Provide specific error messages based on error type
-        let message = "Invalid username or password";
+        let message = "Ungültige Anmeldedaten";
         if (result.error === "USER_INACTIVE") {
           message =
             "Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.";
-        } else if (result.error === "USER_NOT_FOUND") {
-          message = "Benutzer nicht gefunden";
-        } else if (result.error === "INVALID_PASSWORD") {
-          message = "Falsches Passwort";
+        } else if (result.error === "USER_NOT_FOUND" || result.error === "INVALID_PASSWORD") {
+          message = "Ungültige Anmeldedaten";
         }
 
         return {
@@ -64,7 +62,7 @@ class AuthService {
       if (fingerprint) {
         try {
           await execute<ResultSetHeader>(
-            "INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
+            "INSERT INTO user_sessions (user_id, session_id, fingerprint, is_active, created_at, expires_at) VALUES (?, ?, ?, 1, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
             [result.user.id, sessionId, fingerprint],
           );
         } catch (error) {

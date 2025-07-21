@@ -46,17 +46,19 @@ class AuthController {
   async checkAuth(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // If middleware passes, user is authenticated
-      res.json({
-        authenticated: true,
-        user: {
-          id: req.user.id,
-          username: req.user.username,
-          role: req.user.role,
-        },
-      });
+      res.json(
+        successResponse({
+          authenticated: true,
+          user: {
+            id: req.user.id,
+            username: req.user.username,
+            role: req.user.role,
+          },
+        }),
+      );
     } catch (error) {
       logger.error("Error in auth check:", error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json(errorResponse("Serverfehler", 500));
     }
   }
 
@@ -74,14 +76,27 @@ class AuthController {
       );
 
       if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
-      res.json(user);
+      // Get tenant name
+      const [tenantRows] = await executeQuery<RowDataPacket[]>(
+        "SELECT company_name FROM companies WHERE id = ?",
+        [req.user.tenant_id],
+      );
+      
+      const tenantName = tenantRows[0]?.company_name || "";
+
+      res.json(
+        successResponse({
+          ...user,
+          tenantName,
+        }),
+      );
     } catch (error) {
       logger.error("Error in get user profile:", error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json(errorResponse("Serverfehler", 500));
     }
   }
 
@@ -98,9 +113,9 @@ class AuthController {
       // Validate input
       if (!username || !password) {
         console.log("[DEBUG] Missing username or password");
-        res.status(400).json({
-          message: "Username and password are required",
-        });
+        res.status(400).json(
+          errorResponse("Benutzername und Passwort sind erforderlich", 400),
+        );
         return;
       }
 
@@ -114,15 +129,17 @@ class AuthController {
       console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
 
       if (!result.success) {
-        res.status(401).json({
-          message: result.message ?? "Invalid credentials",
-        });
+        res.status(401).json(
+          errorResponse(result.message ?? "Ungültige Anmeldedaten", 401),
+        );
         return;
       }
 
       // Set token as httpOnly cookie for HTML pages
       if (!result.token) {
-        res.status(500).json({ message: "Token generation failed" });
+        res.status(500).json(
+          errorResponse("Token-Generierung fehlgeschlagen", 500),
+        );
         return;
       }
       res.cookie("token", result.token, {
@@ -146,27 +163,26 @@ class AuthController {
         );
       }
 
-      // Return user data and token (compatible with legacy frontend)
-      res.json({
-        message: "Login erfolgreich",
-        token: result.token,
-        role: result.user?.role,
-        user: result.user,
-      });
+      // Return user data and token with standardized response format
+      res.json(
+        successResponse(
+          {
+            token: result.token,
+            role: result.user?.role,
+            user: result.user,
+          },
+          "Login erfolgreich",
+        ),
+      );
     } catch (error) {
       logger.error("Login error:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       const errorStack = error instanceof Error ? error.stack : undefined;
       console.error("[DEBUG] Login error details:", errorMessage, errorStack);
-      res.status(500).json({
-        message: "Server error during login",
-        error:
-          process.env.NODE_ENV === "development" ||
-          process.env.NODE_ENV === "test"
-            ? errorMessage
-            : undefined,
-      });
+      res.status(500).json(
+        errorResponse("Serverfehler beim Login", 500),
+      );
     }
   }
 
@@ -190,19 +206,23 @@ class AuthController {
       const result = await authService.registerUser(userData);
 
       if (!result.success) {
-        res.status(400).json({
-          message: result.message ?? "Registration failed",
-        });
+        res.status(400).json(
+          errorResponse(result.message ?? "Registrierung fehlgeschlagen", 400),
+        );
         return;
       }
 
-      res.status(201).json({
-        message: "Registration successful",
-        user: result.user,
-      });
+      res.status(201).json(
+        successResponse(
+          { user: result.user },
+          "Registrierung erfolgreich",
+        ),
+      );
     } catch (error) {
       logger.error("Registration error:", error);
-      res.status(500).json({ message: "Server error during registration" });
+      res.status(500).json(
+        errorResponse("Serverfehler bei der Registrierung", 500),
+      );
     }
   }
 
@@ -231,7 +251,7 @@ class AuthController {
       sameSite: "strict",
     });
 
-    res.json({ message: "Logout successful" });
+    res.json(successResponse(null, "Erfolgreich abgemeldet"));
   }
 
   /**
@@ -245,41 +265,40 @@ class AuthController {
       const user = await userService.getUserById(userId, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json({
-          error: "User not found",
-          valid: false,
-        });
+        res.status(404).json(
+          errorResponse("Benutzer nicht gefunden", 404),
+        );
         return;
       }
 
       // Check if user is active
       if (!user.is_active) {
-        res.status(403).json({
-          error: "User account is inactive",
-          valid: false,
-        });
+        res.status(403).json(
+          errorResponse("Benutzerkonto ist inaktiv", 403),
+        );
         return;
       }
 
-      res.json({
-        valid: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          tenant_id: user.tenant_id,
-          department_id: user.department_id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-        },
-      });
+      res.json(
+        successResponse({
+          valid: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            tenant_id: user.tenant_id,
+            department_id: user.department_id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+          },
+        }),
+      );
     } catch (error) {
       logger.error("[AUTH] Validation error:", error);
-      res.status(500).json({
-        error: "Internal server error",
-        valid: false,
-      });
+      res.status(500).json(
+        errorResponse("Interner Serverfehler", 500),
+      );
     }
   }
 
@@ -358,15 +377,14 @@ class AuthController {
       // TODO: Implement password reset logic
       // For now, just return success for tests
       console.log(`[AUTH] Password reset requested for email: ${email}`);
-      res.status(200).json({
-        success: true,
-        message: "Password reset E-Mail wurde gesendet",
-      });
+      res.status(200).json(
+        successResponse(null, "Password reset E-Mail wurde gesendet"),
+      );
     } catch (error) {
       logger.error("Forgot password error:", error);
-      res.status(500).json({
-        message: "Server error during password reset",
-      });
+      res.status(500).json(
+        errorResponse("Serverfehler beim Passwort-Reset", 500),
+      );
     }
   }
 
@@ -379,15 +397,14 @@ class AuthController {
 
       // TODO: Implement password reset logic
       // For now, just return success for tests
-      res.status(200).json({
-        success: true,
-        message: "Passwort wurde erfolgreich zurückgesetzt",
-      });
+      res.status(200).json(
+        successResponse(null, "Passwort wurde erfolgreich zurückgesetzt"),
+      );
     } catch (error) {
       logger.error("Reset password error:", error);
-      res.status(500).json({
-        message: "Server error during password reset",
-      });
+      res.status(500).json(
+        errorResponse("Serverfehler beim Passwort-Reset", 500),
+      );
     }
   }
 }

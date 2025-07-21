@@ -28,6 +28,14 @@ describe("Authentication API Endpoints", () => {
     testDb = await createTestDatabase();
     process.env.JWT_SECRET = "test-secret-key-for-auth-tests";
     process.env.SESSION_SECRET = "test-session-secret";
+    
+    // Test database connection
+    try {
+      const [rows] = await testDb.execute("SELECT 1");
+      console.log("Database connection successful");
+    } catch (error) {
+      console.error("Database connection failed:", error);
+    }
 
     // Create test tenants
     tenant1Id = await createTestTenant(
@@ -75,12 +83,17 @@ describe("Authentication API Endpoints", () => {
 
   describe("POST /api/auth/login", () => {
     it("should successfully login with valid credentials", async () => {
+      console.log("Attempting login with username:", testUser1.username);
       const response = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
         fingerprint: "test-fingerprint-123",
       });
 
+      if (response.status !== 200) {
+        console.error("Login failed with:", response.status, response.body);
+        console.error("Test user data:", testUser1);
+      }
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
         success: true,
