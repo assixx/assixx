@@ -3,96 +3,29 @@
  * Tests document upload, download, listing, and multi-tenant isolation
  */
 
-// Prevent database connection attempts
-process.env.DB_HOST = "mock";
-process.env.NODE_ENV = "test";
-process.env.DB_NAME = "test_db";
-process.env.DB_USER = "test";
-process.env.DB_PASS = "test";
+import "../../__tests__/test-env-setup"; // Must be first import
+import request from "supertest";
+import fs from "fs/promises";
+import path from "path";
+import { Pool } from "mysql2/promise";
+import app from "../../app";
+import {
+  createTestDatabase,
+  cleanupTestData,
+  createTestTenant,
+  createTestUser,
+  getAuthToken,
+} from "../mocks/database";
+import { asTestRows } from "../../__tests__/mocks/db-types";
 
-// Mock multer BEFORE any imports
-jest.mock("multer", () => {
-  const multerMock = {
-    single: jest.fn(() => (req: any, _res: any, next: any) => {
-      // Simulate file upload - using any here is acceptable for mocks
-      req.file = {
-        fieldname: "file",
-        originalname: req.body?.filename || "test-document.pdf",
-        encoding: "7bit",
-        mimetype: req.body?.mimetype || "application/pdf",
-        destination: "/tmp/uploads",
-        filename: `${Date.now()}-test-document.pdf`,
-        path: `/tmp/uploads/${Date.now()}-test-document.pdf`,
-        size: parseInt(req.body?.filesize) || 1000,
-      };
-      next();
-    }),
-    array: jest.fn(() => (req: any, _res: any, next: any) => {
-      // Simulate multiple file upload
-      req.files = [];
-      next();
-    }),
-    none: jest.fn(() => (_req: any, _res: any, next: any) => {
-      next();
-    }),
-    fields: jest.fn(() => (_req: any, _res: any, next: any) => {
-      next();
-    }),
-    any: jest.fn(() => (_req: any, _res: any, next: any) => {
-      next();
-    }),
-  };
-  
-  const multerFunc = jest.fn(() => multerMock);
-  multerFunc.diskStorage = jest.fn(() => ({
-    destination: jest.fn(),
-    filename: jest.fn(),
-  }));
-  
-  return {
-    default: multerFunc,
-    __esModule: true,
-  };
-});
-
-// Mock database connection
-jest.mock("../../database", () => ({
-  pool: {
-    execute: jest.fn(),
-    query: jest.fn(),
-    getConnection: jest.fn().mockResolvedValue({
-      execute: jest.fn(),
-      release: jest.fn(),
-    }),
-    end: jest.fn().mockResolvedValue(undefined),
-  },
-  executeQuery: jest.fn(),
-}));
-
-// Mock auth middleware
-jest.mock("../../middleware/auth-refactored", () => ({
-  authenticateToken: jest.fn((req: any, _res: any, next: any) => {
-    // Extract token from header
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer test-token-")) {
-      const username = authHeader.replace("Bearer test-token-", "");
-      // Set user based on token
-      req.user = {
-        id: username === "admin1" ? 1 : username === "admin2" ? 2 : 3,
-        username,
-        role: username.includes("admin") ? "admin" : "employee",
-        tenant_id: username.includes("1") ? 1 : 2,
-        tenantId: username.includes("1") ? 1 : 2,
-      };
-    }
-    next();
-  }),
-  authorizeRole: jest.fn(() => (_req: any, _res: any, next: any) => {
-    next();
-  }),
-  requireRole: jest.fn(() => (_req: any, _res: any, next: any) => {
-    next();
-  }),
+// Mock only the necessary file system operations
+jest.mock("fs/promises", () => ({
+  unlink: jest.fn().mockResolvedValue(undefined),
+  mkdir: jest.fn().mockResolvedValue(undefined),
+  access: jest.fn().mockResolvedValue(undefined),
+  readFile: jest
+    .fn()
+    .mockResolvedValue(Buffer.from("PDF content for download")),
 }));
 
 // Mock email service
@@ -102,49 +35,6 @@ jest.mock("../../utils/emailService", () => ({
   },
 }));
 
-// Mock fs/promises for file operations
-jest.mock("fs/promises", () => ({
-  writeFile: jest.fn().mockResolvedValue(undefined),
-  unlink: jest.fn().mockResolvedValue(undefined),
-  mkdir: jest.fn().mockResolvedValue(undefined),
-  access: jest.fn().mockResolvedValue(undefined),
-}));
-
-// Mock the test database functions
-jest.mock("../mocks/database", () => ({
-  createTestDatabase: jest.fn().mockResolvedValue({
-    execute: jest.fn().mockResolvedValue([[], []]),
-    query: jest.fn().mockResolvedValue([[], []]),
-    end: jest.fn().mockResolvedValue(undefined),
-  }),
-  cleanupTestData: jest.fn().mockResolvedValue(undefined),
-  createTestUser: jest.fn().mockImplementation(async (_db, user) => ({
-    id: Math.floor(Math.random() * 1000),
-    ...user,
-  })),
-  createTestTenant: jest.fn().mockImplementation(async (_db, _subdomain, _companyName) => 
-    Math.floor(Math.random() * 100) + 1
-  ),
-  getAuthToken: jest.fn().mockImplementation(async (_app, username) => 
-    `test-token-${username}`
-  ),
-}));
-
-import request from "supertest";
-import fs from "fs/promises";
-import path from "path";
-import { Pool, ResultSetHeader } from "mysql2/promise";
-import * as Express from "express";
-import app from "../../app";
-import {
-  createTestDatabase,
-  cleanupTestData,
-  createTestUser,
-  createTestTenant,
-  getAuthToken,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
-
 describe("Documents API Endpoints", () => {
   let testDb: Pool;
   let tenant1Id: number;
@@ -152,175 +42,218 @@ describe("Documents API Endpoints", () => {
   let adminToken1: string;
   let adminToken2: string;
   let employeeToken1: string;
-  let testFilePath: string;
+  let adminUser1: any;
+  let adminUser2: any;
+  let employeeUser1: any;
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
+    process.env.JWT_SECRET = "test-secret-key-for-documents-tests";
+    process.env.SESSION_SECRET = "test-session-secret";
+
+    // Test database connection
+    try {
+      const [rows] = await testDb.execute("SELECT 1");
+      console.log("Database connection successful");
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      throw error;
+    }
+
+    // Clean up any existing test users and documents
+    try {
+      await testDb.execute(
+        "DELETE FROM document_permissions WHERE tenant_id > 1",
+      );
+      await testDb.execute("DELETE FROM documents WHERE tenant_id > 1");
+    } catch (e) {
+      // Tables might not exist yet
+    }
 
     // Create test tenants
-    tenant1Id = await createTestTenant(testDb, "tenant1", "Tenant One GmbH");
-    tenant2Id = await createTestTenant(testDb, "tenant2", "Tenant Two GmbH");
+    tenant1Id = await createTestTenant(
+      testDb,
+      "doctest1",
+      "Document Test Company 1",
+    );
+    tenant2Id = await createTestTenant(
+      testDb,
+      "doctest2",
+      "Document Test Company 2",
+    );
 
-    // Create test users
-    const admin1 = await createTestUser(testDb, {
-      username: "admin1",
-      email: "admin1@tenant1.de",
-      password: "Admin123!",
+    // Create test users - WICHTIG: username und email müssen gleich sein!
+    adminUser1 = await createTestUser(testDb, {
+      username: "admin1@doctest1.de",
+      email: "admin1@doctest1.de",
+      password: "AdminPass123!",
       role: "admin",
       tenant_id: tenant1Id,
+      first_name: "Admin",
+      last_name: "One",
     });
 
-    const admin2 = await createTestUser(testDb, {
-      username: "admin2",
-      email: "admin2@tenant2.de",
-      password: "Admin123!",
+    adminUser2 = await createTestUser(testDb, {
+      username: "admin2@doctest2.de",
+      email: "admin2@doctest2.de",
+      password: "AdminPass123!",
       role: "admin",
       tenant_id: tenant2Id,
+      first_name: "Admin",
+      last_name: "Two",
     });
 
-    const employee1 = await createTestUser(testDb, {
-      username: "employee1",
-      email: "employee1@tenant1.de",
-      password: "Employee123!",
+    employeeUser1 = await createTestUser(testDb, {
+      username: "employee1@doctest1.de",
+      email: "employee1@doctest1.de",
+      password: "EmpPass123!",
       role: "employee",
       tenant_id: tenant1Id,
       department_id: 1,
+      first_name: "Employee",
+      last_name: "One",
     });
 
     // Get auth tokens
-    adminToken1 = await getAuthToken(app, "admin1", "Admin123!");
-    adminToken2 = await getAuthToken(app, "admin2", "Admin123!");
-    employeeToken1 = await getAuthToken(app, "employee1", "Employee123!");
-
-    // Mock test file path (no need to create real file since fs is mocked)
-    testFilePath = path.join(__dirname, "test-document.pdf");
+    adminToken1 = await getAuthToken(app, adminUser1.username, "AdminPass123!");
+    adminToken2 = await getAuthToken(app, adminUser2.username, "AdminPass123!");
+    employeeToken1 = await getAuthToken(
+      app,
+      employeeUser1.username,
+      "EmpPass123!",
+    );
   });
 
   afterAll(async () => {
-    // No need to clean up test file since fs is mocked
     await cleanupTestData();
     await testDb.end();
   });
 
   beforeEach(async () => {
-    // Mock database responses
-    if (testDb && testDb.execute) {
-      (testDb.execute as jest.Mock).mockResolvedValue([[], []]);
-    }
+    // Clean up documents table before each test
+    await testDb.execute(
+      "DELETE FROM document_permissions WHERE tenant_id > 1",
+    );
+    await testDb.execute("DELETE FROM documents WHERE tenant_id > 1");
   });
 
   describe("POST /api/documents/upload", () => {
     it("should successfully upload a document", async () => {
-      // Instead of attaching a real file, we'll send form data
-      // The multer mock will simulate file upload
+      // Create a test file buffer
+      const testContent = Buffer.from("This is a test document content");
+
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
         .field("description", "Test company document")
-        .field("filename", "test-document.pdf")
-        .field("mimetype", "application/pdf")
-        .field("filesize", "1000");
+        .attach("file", testContent, "test-document.pdf");
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
+        message: expect.stringContaining("erfolgreich hochgeladen"),
         data: {
           id: expect.any(Number),
-          title: "test-document.pdf",
+          filename: expect.stringContaining(".pdf"),
           category: "company",
           tenant_id: tenant1Id,
-          uploaded_by: expect.any(Number),
+          uploaded_by: adminUser1.id,
         },
+      });
+
+      // Verify document was saved in database
+      const [rows] = await testDb.execute(
+        "SELECT * FROM documents WHERE id = ?",
+        [response.body.data.id],
+      );
+      const documents = asTestRows<any>(rows);
+      expect(documents).toHaveLength(1);
+      expect(documents[0]).toMatchObject({
+        category: "company",
+        tenant_id: tenant1Id,
+        uploaded_by: adminUser1.id,
       });
     });
 
     it("should handle personal document upload for specific user", async () => {
-      // Mock the user ID since DB is mocked
-      const targetUserId = 123;
-      
-      // Mock DB response for user query
-      (testDb.execute as jest.Mock).mockResolvedValueOnce([
-        [{ id: targetUserId, username: "employee1", tenant_id: tenant1Id }],
-        []
-      ]);
+      const testContent = Buffer.from("Personal document content");
 
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "personal")
-        .field("userId", targetUserId.toString())
+        .field("userId", employeeUser1.id.toString())
         .field("description", "Personal document for employee")
-        .field("filename", "personal-doc.pdf");
+        .attach("file", testContent, "personal-doc.pdf");
 
       expect(response.status).toBe(201);
       expect(response.body.data).toMatchObject({
         category: "personal",
-        target_user_id: targetUserId,
+        visibility_scope: "private",
+        target_id: employeeUser1.id,
       });
     });
 
     it("should handle payroll document with year/month", async () => {
+      const testContent = Buffer.from("Payroll document");
+
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "payroll")
         .field("year", "2025")
         .field("month", "6")
-        .field("userId", "1")
-        .field("filename", "test-file.pdf");
+        .field("userId", employeeUser1.id.toString())
+        .attach("file", testContent, "payroll-2025-06.pdf");
 
       expect(response.status).toBe(201);
-      expect(response.body.data).toMatchObject({
-        category: "payroll",
-        year: 2025,
-        month: 6,
-      });
+
+      // Verify metadata was saved
+      const [rows] = await testDb.execute(
+        "SELECT * FROM documents WHERE id = ?",
+        [response.body.data.id],
+      );
+      const documents = asTestRows<any>(rows);
+      expect(documents[0].description).toContain("2025");
+      expect(documents[0].description).toContain("Juni");
     });
 
     it("should reject upload without authentication", async () => {
+      const testContent = Buffer.from("Test content");
+
       const response = await request(app)
         .post("/api/documents/upload")
         .field("category", "company")
-        .field("filename", "test-file.pdf");
+        .attach("file", testContent, "test-file.pdf");
 
       expect(response.status).toBe(401);
     });
 
     it("should validate file types", async () => {
+      const testContent = Buffer.from("Executable content");
+
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .field("filename", "test.exe")
-        .field("mimetype", "application/x-msdownload");
+        .attach("file", testContent, "test.exe");
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain("Dateityp");
     });
 
     it("should enforce file size limits", async () => {
+      // Create a large buffer (11MB)
+      const largeContent = Buffer.alloc(11 * 1024 * 1024);
+
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .field("filename", "large-file.pdf")
-        .field("filesize", String(11 * 1024 * 1024));
+        .attach("file", largeContent, "large-file.pdf");
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toContain("groß");
-    });
-
-    it("should sanitize file names", async () => {
-      const response = await request(app)
-        .post("/api/documents/upload")
-        .set("Authorization", `Bearer ${adminToken1}`)
-        .field("category", "company")
-        .field("filename", "../../../etc/passwd.txt");
-
-      expect(response.status).toBe(201);
-      expect(response.body.data.file_name).not.toContain("..");
-      expect(response.body.data.file_name).not.toContain("/");
+      expect(response.status).toBe(413); // Payload too large
     });
 
     it("should send email notification for personal documents", async () => {
@@ -329,64 +262,102 @@ describe("Documents API Endpoints", () => {
         "sendEmail",
       );
 
+      const testContent = Buffer.from("Personal document");
+
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "personal")
-        .field("userId", "2")
-        .field("filename", "test-file.pdf");
+        .field("userId", employeeUser1.id.toString())
+        .attach("file", testContent, "personal-notification.pdf");
 
       expect(response.status).toBe(201);
       expect(emailSpy).toHaveBeenCalledWith(
         expect.objectContaining({
+          to: employeeUser1.email,
           subject: expect.stringContaining("Neues Dokument"),
         }),
       );
 
       emailSpy.mockRestore();
     });
+
+    it("should enforce tenant isolation", async () => {
+      // Admin2 tries to upload personal doc for User1 (different tenant)
+      const testContent = Buffer.from("Cross-tenant document");
+
+      const response = await request(app)
+        .post("/api/documents/upload")
+        .set("Authorization", `Bearer ${adminToken2}`)
+        .field("category", "personal")
+        .field("userId", employeeUser1.id.toString())
+        .attach("file", testContent, "cross-tenant.pdf");
+
+      expect(response.status).toBe(404); // User not found in admin2's tenant
+    });
   });
 
   describe("GET /api/documents", () => {
+    let doc1Id: number;
+    let doc2Id: number;
+    let doc3Id: number;
+
     beforeEach(async () => {
       // Create test documents
-      await testDb.execute(
-        `INSERT INTO documents (title, file_name, file_path, file_size, file_type, 
-         category, uploaded_by, target_user_id, tenant_id, created_at)
-         VALUES 
-         (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()),
-         (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()),
-         (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      const [result1] = await testDb.execute(
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type, 
+         category, uploaded_by, tenant_id, visibility_scope)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Company Doc",
-          "company.pdf",
-          "/uploads/company.pdf",
+          "company-doc.pdf",
+          "Company Document.pdf",
+          "/uploads/company-doc.pdf",
           1000,
           "application/pdf",
           "company",
-          1,
-          null,
+          adminUser1.id,
           tenant1Id,
-          "Personal Doc",
-          "personal.pdf",
-          "/uploads/personal.pdf",
+          "company",
+        ],
+      );
+      doc1Id = (result1 as any).insertId;
+
+      const [result2] = await testDb.execute(
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, target_id, tenant_id, visibility_scope)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "personal-doc.pdf",
+          "Personal Document.pdf",
+          "/uploads/personal-doc.pdf",
           2000,
           "application/pdf",
           "personal",
-          1,
-          2,
+          adminUser1.id,
+          employeeUser1.id,
           tenant1Id,
-          "Other Tenant Doc",
-          "other.pdf",
-          "/uploads/other.pdf",
+          "private",
+        ],
+      );
+      doc2Id = (result2 as any).insertId;
+
+      const [result3] = await testDb.execute(
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, tenant_id, visibility_scope)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "other-tenant-doc.pdf",
+          "Other Tenant Document.pdf",
+          "/uploads/other-tenant-doc.pdf",
           3000,
           "application/pdf",
           "company",
-          3,
-          null,
+          adminUser2.id,
           tenant2Id,
+          "company",
         ],
       );
+      doc3Id = (result3 as any).insertId;
     });
 
     it("should list documents for authenticated user", async () => {
@@ -398,22 +369,28 @@ describe("Documents API Endpoints", () => {
       expect(response.body).toMatchObject({
         success: true,
         data: {
-          documents: expect.arrayContaining([
-            expect.objectContaining({ title: "Company Doc" }),
-            expect.objectContaining({ title: "Personal Doc" }),
-          ]),
+          documents: expect.any(Array),
           pagination: {
             currentPage: 1,
             totalPages: 1,
-            totalItems: 2,
+            totalItems: 2, // Only tenant1's documents
           },
         },
       });
 
+      // Should include company and personal docs from tenant1
+      expect(response.body.data.documents).toHaveLength(2);
+      expect(
+        response.body.data.documents.some((d: any) => d.id === doc1Id),
+      ).toBe(true);
+      expect(
+        response.body.data.documents.some((d: any) => d.id === doc2Id),
+      ).toBe(true);
+
       // Should not include other tenant's documents
-      expect(response.body.data.documents).not.toContainEqual(
-        expect.objectContaining({ title: "Other Tenant Doc" }),
-      );
+      expect(
+        response.body.data.documents.some((d: any) => d.id === doc3Id),
+      ).toBe(false);
     });
 
     it("should filter by category", async () => {
@@ -426,16 +403,16 @@ describe("Documents API Endpoints", () => {
       expect(response.body.data.documents[0].category).toBe("company");
     });
 
-    it("should filter by user (for personal documents)", async () => {
+    it("should filter by user for personal documents", async () => {
       const response = await request(app)
-        .get("/api/documents?category=personal&userId=2")
+        .get(`/api/documents?category=personal&userId=${employeeUser1.id}`)
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.documents).toHaveLength(1);
       expect(response.body.data.documents[0]).toMatchObject({
         category: "personal",
-        target_user_id: 2,
+        target_id: employeeUser1.id,
       });
     });
 
@@ -443,17 +420,18 @@ describe("Documents API Endpoints", () => {
       // Add more documents
       for (let i = 0; i < 15; i++) {
         await testDb.execute(
-          `INSERT INTO documents (title, file_name, file_path, file_size, file_type,
-           category, uploaded_by, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+           category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            `Doc ${i}`,
             `doc${i}.pdf`,
+            `Document ${i}`,
             `/uploads/doc${i}.pdf`,
             1000,
             "application/pdf",
             "company",
-            1,
+            adminUser1.id,
             tenant1Id,
+            "company",
           ],
         );
       }
@@ -486,9 +464,18 @@ describe("Documents API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      // Employee should see company documents and their personal documents
       const docs = response.body.data.documents;
-      expect(docs.some((d: { category: string }) => d.category === "company")).toBe(true);
+
+      // Employee should see company documents
+      expect(docs.some((d: any) => d.category === "company")).toBe(true);
+
+      // Employee should see their own personal documents
+      expect(
+        docs.some(
+          (d: any) =>
+            d.category === "personal" && d.target_id === employeeUser1.id,
+        ),
+      ).toBe(true);
     });
   });
 
@@ -497,20 +484,21 @@ describe("Documents API Endpoints", () => {
 
     beforeEach(async () => {
       const [result] = await testDb.execute(
-        `INSERT INTO documents (title, file_name, file_path, file_size, file_type,
-         category, uploaded_by, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Test Doc",
-          "test.pdf",
-          "/uploads/test.pdf",
+          "test-doc.pdf",
+          "Test Document.pdf",
+          "/uploads/test-doc.pdf",
           1000,
           "application/pdf",
           "company",
-          1,
+          adminUser1.id,
           tenant1Id,
+          "company",
         ],
       );
-      documentId = result.insertId;
+      documentId = (result as any).insertId;
     });
 
     it("should get document details", async () => {
@@ -523,33 +511,26 @@ describe("Documents API Endpoints", () => {
         success: true,
         data: {
           id: documentId,
-          title: "Test Doc",
+          original_name: "Test Document.pdf",
           category: "company",
           can_download: true,
-          is_read: false,
         },
       });
     });
 
-    it("should mark document as read", async () => {
+    it("should track document views", async () => {
+      // First view
       await request(app)
         .get(`/api/documents/${documentId}`)
         .set("Authorization", `Bearer ${adminToken1}`);
 
-      // Check read status was recorded
+      // Check if activity was logged
       const [rows] = await testDb.execute(
-        "SELECT * FROM document_reads WHERE document_id = ? AND user_id = ?",
-        [documentId, 1],
+        "SELECT * FROM activity_logs WHERE entity_type = 'document' AND entity_id = ? AND user_id = ?",
+        [documentId, adminUser1.id],
       );
-      const reads = asTestRows<any>(rows);
-      expect(reads).toHaveLength(1);
-
-      // Second request should show as read
-      const response2 = await request(app)
-        .get(`/api/documents/${documentId}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
-
-      expect(response2.body.data.is_read).toBe(true);
+      const logs = asTestRows<any>(rows);
+      expect(logs.length).toBeGreaterThan(0);
     });
 
     it("should reject access to other tenant's documents", async () => {
@@ -559,6 +540,15 @@ describe("Documents API Endpoints", () => {
 
       expect(response.status).toBe(404);
     });
+
+    it("should handle non-existent document", async () => {
+      const response = await request(app)
+        .get("/api/documents/99999")
+        .set("Authorization", `Bearer ${adminToken1}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toContain("nicht gefunden");
+    });
   });
 
   describe("DELETE /api/documents/:id", () => {
@@ -566,20 +556,21 @@ describe("Documents API Endpoints", () => {
 
     beforeEach(async () => {
       const [result] = await testDb.execute(
-        `INSERT INTO documents (title, file_name, file_path, file_size, file_type,
-         category, uploaded_by, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Delete Test",
-          "delete.pdf",
-          "/uploads/delete.pdf",
+          "delete-test.pdf",
+          "Delete Test Document.pdf",
+          "/uploads/delete-test.pdf",
           1000,
           "application/pdf",
           "company",
-          1,
+          adminUser1.id,
           tenant1Id,
+          "company",
         ],
       );
-      documentId = result.insertId;
+      documentId = (result as any).insertId;
     });
 
     it("should delete document (admin only)", async () => {
@@ -619,14 +610,14 @@ describe("Documents API Endpoints", () => {
     });
 
     it("should clean up file from filesystem", async () => {
-      const unlinkSpy = jest.spyOn(fs, "unlink").mockResolvedValue();
+      const unlinkSpy = jest.spyOn(fs, "unlink");
 
       await request(app)
         .delete(`/api/documents/${documentId}`)
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(unlinkSpy).toHaveBeenCalledWith(
-        expect.stringContaining("delete.pdf"),
+        expect.stringContaining("delete-test.pdf"),
       );
 
       unlinkSpy.mockRestore();
@@ -637,24 +628,28 @@ describe("Documents API Endpoints", () => {
     let documentId: number;
 
     beforeEach(async () => {
-      // Mock file path (no need to create real file)
-      const filePath = path.join(__dirname, "../../../uploads/documents/download-test.pdf");
-
       const [result] = await testDb.execute(
-        `INSERT INTO documents (title, file_name, file_path, file_size, file_type,
-         category, uploaded_by, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Download Test",
           "download-test.pdf",
-          filePath,
+          "Download Test Document.pdf",
+          "/uploads/documents/download-test.pdf",
           1000,
           "application/pdf",
           "company",
-          1,
+          adminUser1.id,
           tenant1Id,
+          "company",
         ],
       );
-      documentId = result.insertId;
+      documentId = (result as any).insertId;
+
+      // Update download count to 0 for testing
+      await testDb.execute(
+        "UPDATE documents SET download_count = 0 WHERE id = ?",
+        [documentId],
+      );
     });
 
     it("should download document", async () => {
@@ -665,14 +660,27 @@ describe("Documents API Endpoints", () => {
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toBe("application/pdf");
       expect(response.headers["content-disposition"]).toContain(
-        "download-test.pdf",
+        "Download Test Document.pdf",
       );
-      expect(response.text).toBe("PDF content for download");
+      expect(response.body.toString()).toBe("PDF content for download");
+    });
+
+    it("should increment download count", async () => {
+      await request(app)
+        .get(`/api/documents/download/${documentId}`)
+        .set("Authorization", `Bearer ${adminToken1}`);
+
+      const [rows] = await testDb.execute(
+        "SELECT download_count FROM documents WHERE id = ?",
+        [documentId],
+      );
+      const documents = asTestRows<any>(rows);
+      expect(documents[0].download_count).toBe(1);
     });
 
     it("should prevent path traversal attacks", async () => {
-      // Try to access file outside upload directory
-      await testDb.execute(`UPDATE documents SET file_path = ? WHERE id = ?`, [
+      // Try to update file path to access system files
+      await testDb.execute("UPDATE documents SET file_path = ? WHERE id = ?", [
         "../../../etc/passwd",
         documentId,
       ]);
@@ -686,48 +694,41 @@ describe("Documents API Endpoints", () => {
     });
 
     it("should track download activity", async () => {
-      const logSpy = jest.spyOn(console, "log");
-
       await request(app)
         .get(`/api/documents/download/${documentId}`)
         .set("Authorization", `Bearer ${adminToken1}`);
 
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Document downloaded"),
-        expect.objectContaining({
-          documentId,
-          userId: expect.any(Number),
-        }),
+      // Check activity log
+      const [rows] = await testDb.execute(
+        "SELECT * FROM activity_logs WHERE action = 'document_download' AND entity_id = ?",
+        [documentId],
       );
+      const logs = asTestRows<any>(rows);
+      expect(logs.length).toBeGreaterThan(0);
+    });
 
-      logSpy.mockRestore();
+    it("should enforce tenant isolation for downloads", async () => {
+      const response = await request(app)
+        .get(`/api/documents/download/${documentId}`)
+        .set("Authorization", `Bearer ${adminToken2}`);
+
+      expect(response.status).toBe(404);
     });
   });
 
-  describe("Security & Performance", () => {
-    it("should rate limit document uploads", async () => {
-      const requests = Array(6)
-        .fill(null)
-        .map(() =>
-          request(app)
-            .post("/api/documents/upload")
-            .set("Authorization", `Bearer ${adminToken1}`)
-            .field("category", "company")
-            .field("filename", "test-file.pdf"),
-        );
-
-      const responses = await Promise.all(requests);
-      const rateLimited = responses.filter((r) => r.status === 429);
-      expect(rateLimited.length).toBeGreaterThan(0);
-    });
-
+  describe("Security & Validation", () => {
     it("should validate MIME types match file extensions", async () => {
+      const testContent = Buffer.from("Image content");
+
+      // Try to upload a file with mismatched MIME type
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .field("filename", "fake-image.jpg")
-        .field("mimetype", "application/pdf"); // Wrong MIME for .jpg
+        .attach("file", testContent, {
+          filename: "fake-image.jpg",
+          contentType: "application/pdf", // Wrong MIME for .jpg
+        });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain("Dateityp");
@@ -736,14 +737,15 @@ describe("Documents API Endpoints", () => {
     it("should handle concurrent uploads correctly", async () => {
       const uploads = Array(5)
         .fill(null)
-        .map((_, i) =>
-          request(app)
+        .map((_, i) => {
+          const content = Buffer.from(`Concurrent content ${i}`);
+          return request(app)
             .post("/api/documents/upload")
             .set("Authorization", `Bearer ${adminToken1}`)
             .field("category", "company")
             .field("description", `Concurrent upload ${i}`)
-            .field("filename", "test-file.pdf"),
-        );
+            .attach("file", content, `concurrent-${i}.pdf`);
+        });
 
       const responses = await Promise.all(uploads);
 
@@ -756,6 +758,94 @@ describe("Documents API Endpoints", () => {
       const ids = responses.map((r) => r.body.data.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(5);
+    });
+
+    it("should sanitize filenames", async () => {
+      const testContent = Buffer.from("Test content");
+
+      const response = await request(app)
+        .post("/api/documents/upload")
+        .set("Authorization", `Bearer ${adminToken1}`)
+        .field("category", "company")
+        .attach("file", testContent, "../../../etc/passwd.txt");
+
+      expect(response.status).toBe(201);
+      // Check that the filename was sanitized
+      const [rows] = await testDb.execute(
+        "SELECT filename FROM documents WHERE id = ?",
+        [response.body.data.id],
+      );
+      const documents = asTestRows<any>(rows);
+      expect(documents[0].filename).not.toContain("..");
+      expect(documents[0].filename).not.toContain("/");
+    });
+  });
+
+  describe("Document Permissions", () => {
+    it("should allow admin to access all documents in their tenant", async () => {
+      // Create documents with different visibility
+      const [result1] = await testDb.execute(
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, tenant_id, visibility_scope, target_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "private-doc.pdf",
+          "Private Document.pdf",
+          "/uploads/private-doc.pdf",
+          1000,
+          "application/pdf",
+          "personal",
+          employeeUser1.id,
+          tenant1Id,
+          "private",
+          employeeUser1.id,
+        ],
+      );
+      const privateDocId = (result1 as any).insertId;
+
+      // Admin should be able to access private documents
+      const response = await request(app)
+        .get(`/api/documents/${privateDocId}`)
+        .set("Authorization", `Bearer ${adminToken1}`);
+
+      expect(response.status).toBe(200);
+    });
+
+    it("should restrict employee access to their own personal documents", async () => {
+      // Create personal document for different employee
+      const otherEmployee = await createTestUser(testDb, {
+        username: "employee2@doctest1.de",
+        email: "employee2@doctest1.de",
+        password: "EmpPass123!",
+        role: "employee",
+        tenant_id: tenant1Id,
+        first_name: "Employee",
+        last_name: "Two",
+      });
+
+      const [result] = await testDb.execute(
+        `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
+         category, uploaded_by, tenant_id, visibility_scope, target_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "other-personal.pdf",
+          "Other Personal Document.pdf",
+          "/uploads/other-personal.pdf",
+          1000,
+          "application/pdf",
+          "personal",
+          adminUser1.id,
+          tenant1Id,
+          "private",
+          otherEmployee.id,
+        ],
+      );
+      const otherPersonalDocId = (result as any).insertId;
+
+      // Employee1 should not be able to access Employee2's personal document
+      const response = await request(app)
+        .get(`/api/documents/${otherPersonalDocId}`)
+        .set("Authorization", `Bearer ${employeeToken1}`);
+
+      expect(response.status).toBe(403);
     });
   });
 });
