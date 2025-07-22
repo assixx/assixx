@@ -38,6 +38,7 @@ interface DocumentCreateData {
   year?: number;
   month?: string;
   tenant_id: number;
+  createdBy?: number; // The user who uploads the document
 }
 
 interface DocumentUpdateData {
@@ -91,6 +92,7 @@ export class Document {
     year,
     month,
     tenant_id,
+    createdBy,
   }: DocumentCreateData): Promise<number> {
     // Log based on recipient type
     let logMessage = `Creating new document in category ${category} for `;
@@ -130,7 +132,7 @@ export class Document {
         year,
         month,
         tenant_id,
-        userId, // created_by - same as userId for now
+        createdBy || userId || 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
       ]);
       logger.info(`Document created successfully with ID ${result.insertId}`);
       return result.insertId;
