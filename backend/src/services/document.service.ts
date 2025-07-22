@@ -283,7 +283,7 @@ class DocumentService {
         teamId: null,
         departmentId: null,
       };
-      
+
       // The model will handle setting created_by, original_name, file_path, file_size, mime_type
       const documentId = await Document.create(modelData);
       return await this.getDocumentById(documentId, documentData.tenant_id);
