@@ -7,7 +7,7 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
 
-import { executeQuery } from "../config/database";
+import { executeQuery } from "../database";
 import { TokenPayload } from "../types/auth.types";
 import { AuthenticationMiddleware } from "../types/middleware.types";
 import {

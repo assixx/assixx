@@ -10,7 +10,7 @@
 import express, { Router } from "express";
 import { RowDataPacket } from "mysql2/promise";
 
-import { executeQuery } from "../config/database.js";
+import { executeQuery } from "../database.js";
 import { security } from "../middleware/security";
 import Document from "../models/document";
 import User from "../models/user";

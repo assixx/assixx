@@ -4,7 +4,7 @@ import { query, body, validationResult } from "express-validator";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 
 import { authenticateToken, authorizeRole } from "../auth.js";
-import { executeQuery } from "../config/database.js";
+import { executeQuery } from "../database.js";
 import { logger } from "../utils/logger.js";
 
 interface LogEntry extends RowDataPacket {

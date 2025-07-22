@@ -6,7 +6,7 @@
 import { Request, Response } from "express";
 import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
-import pool, { executeQuery } from "../config/database.js";
+import pool, { executeQuery } from "../database.js";
 import kvpPermissionService from "../services/kvpPermission.service.js";
 
 // Extended Request interface with tenant database and user
