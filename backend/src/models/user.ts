@@ -277,7 +277,8 @@ export class User {
 
       const [rows] = await executeQuery<DbUser[]>(
         `
-        SELECT u.*, d.name as department_name, t.name as company_name, t.subdomain
+        SELECT u.*, d.name as department_name, 
+               COALESCE(t.company_name, t.name) as company_name, t.subdomain
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         LEFT JOIN tenants t ON u.tenant_id = t.id
