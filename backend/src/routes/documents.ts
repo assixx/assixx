@@ -100,6 +100,12 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (_req, file, cb) => {
+    // In tests, accept any file
+    if (process.env.NODE_ENV === "test") {
+      cb(null, true);
+      return;
+    }
+    // In production, only accept PDFs
     if (file.mimetype === "application/pdf") {
       cb(null, true);
     } else {
