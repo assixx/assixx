@@ -23,9 +23,14 @@ jest.mock("fs/promises", () => ({
   unlink: jest.fn().mockResolvedValue(undefined),
   mkdir: jest.fn().mockResolvedValue(undefined),
   access: jest.fn().mockResolvedValue(undefined),
-  readFile: jest
-    .fn()
-    .mockResolvedValue(Buffer.from("PDF content for download")),
+  readFile: jest.fn().mockImplementation((filePath) => {
+    // Log the path being read for debugging
+    console.log("Mock fs.readFile called with path:", filePath);
+
+    // For any file read, return test PDF content
+    // This simulates reading the uploaded file from disk
+    return Promise.resolve(Buffer.from("Test PDF content"));
+  }),
 }));
 
 // Mock email service
@@ -476,7 +481,12 @@ describe("Documents API Endpoints", () => {
       const docs = response.body.data.documents;
 
       // Employee should see company documents (stored as 'general' category)
-      expect(docs.some((d: any) => d.category === "general" && d.recipient_type === "company")).toBe(true);
+      expect(
+        docs.some(
+          (d: any) =>
+            d.category === "general" && d.recipient_type === "company",
+        ),
+      ).toBe(true);
 
       // Employee should see their own personal documents
       expect(

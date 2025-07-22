@@ -84,7 +84,10 @@ interface DocumentAccessRequest extends AuthenticatedRequest {
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
     const uploadDir = getUploadDirectory("documents");
-    cb(null, uploadDir);
+    // Create directory if it doesn't exist
+    fs.mkdir(uploadDir, { recursive: true })
+      .then(() => cb(null, uploadDir))
+      .catch((err) => cb(err, uploadDir));
   },
   filename(_req, file, cb) {
     // Sanitize the original filename and add timestamp
@@ -234,7 +237,8 @@ router.post(
         return;
       }
 
-      const { originalname, path: filePath } = uploadReq.file;
+      const { originalname } = uploadReq.file;
+      const filePath = uploadReq.file.path || "";
       const {
         userId,
         teamId,
@@ -288,11 +292,12 @@ router.post(
       // Validate and read file content
       let fileContent: Buffer;
 
-      // In tests, the file is provided as a buffer
+      // Check if we're using memory storage (in tests)
       if (uploadReq.file.buffer) {
+        // Memory storage provides the buffer directly
         fileContent = uploadReq.file.buffer;
-      } else {
-        // In production, read from filesystem
+      } else if (filePath) {
+        // Disk storage - read from filesystem
         const uploadDir = getUploadDirectory("documents");
         const validatedPath = validatePath(path.basename(filePath), uploadDir);
         if (!validatedPath) {
@@ -301,7 +306,20 @@ router.post(
           res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
           return;
         }
-        fileContent = await fs.readFile(validatedPath);
+
+        try {
+          fileContent = await fs.readFile(validatedPath);
+        } catch (readErr) {
+          // In tests, the file might not actually exist on disk
+          // The fs.readFile is mocked to return test content
+          throw readErr;
+        }
+      } else {
+        // No file content available
+        res
+          .status(400)
+          .json(errorResponse("Datei konnte nicht verarbeitet werden", 400));
+        return;
       }
 
       const documentId = await Document.create({
@@ -323,14 +341,17 @@ router.post(
         createdBy: adminId,
       });
 
-      // Delete temporary file (only if it exists on filesystem)
+      // Delete temporary file (only if using disk storage)
       if (!uploadReq.file.buffer && filePath) {
         try {
           await fs.unlink(filePath);
         } catch (unlinkErr) {
-          logger.warn(
-            `Could not delete temporary file: ${getErrorMessage(unlinkErr)}`,
-          );
+          // Only warn if it's not a "file not found" error
+          if ((unlinkErr as any).code !== "ENOENT") {
+            logger.warn(
+              `Could not delete temporary file: ${getErrorMessage(unlinkErr)}`,
+            );
+          }
         }
       }
 
@@ -409,9 +430,10 @@ router.post(
       );
     } catch (error) {
       logger.error(`Error uploading document: ${getErrorMessage(error)}`);
+      logger.error(`Error details:`, error);
 
-      // Clean up file if it was uploaded
-      if (uploadReq.file?.path) {
+      // Clean up file if it was uploaded to disk
+      if (uploadReq.file?.path && !uploadReq.file.buffer) {
         try {
           await safeDeleteFile(uploadReq.file.path);
         } catch (unlinkError) {
