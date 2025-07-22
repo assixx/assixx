@@ -159,16 +159,39 @@ async function setupTestDatabase() {
       UNIQUE KEY unique_confirmation (entry_id, user_id)
     );
 
-    -- Documents table
+    -- Documents table (matching production schema)
     CREATE TABLE IF NOT EXISTS documents (
       id INT PRIMARY KEY AUTO_INCREMENT,
       tenant_id INT NOT NULL,
+      created_by INT NOT NULL,
+      user_id INT DEFAULT NULL,
+      team_id INT DEFAULT NULL,
+      department_id INT DEFAULT NULL,
+      recipient_type ENUM('company', 'user', 'team', 'department') DEFAULT 'user',
+      category VARCHAR(100) DEFAULT 'general',
       filename VARCHAR(255) NOT NULL,
-      uploaded_by INT NOT NULL,
-      category VARCHAR(100),
-      upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      original_name VARCHAR(255) NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      file_size INT DEFAULT 0,
+      mime_type VARCHAR(100) DEFAULT 'application/pdf',
+      description TEXT,
+      tags JSON DEFAULT NULL,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      is_archived BOOLEAN DEFAULT FALSE,
+      deleted_at TIMESTAMP NULL,
+      upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- alias for uploaded_at
+      uploaded_by INT NOT NULL, -- alias for created_by
+      visibility_scope VARCHAR(50) DEFAULT 'private',
+      target_id INT DEFAULT NULL,
+      download_count INT DEFAULT 0,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-      FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
+      FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
+      INDEX idx_tenant_category (tenant_id, category),
+      INDEX idx_user_documents (user_id),
+      INDEX idx_upload_date (uploaded_at)
     );
 
     -- KVP Suggestions table
@@ -266,6 +289,51 @@ async function setupTestDatabase() {
 
     // Create additional tables that might be needed
     const additionalTablesSQL = `
+    -- Document read status table
+    CREATE TABLE IF NOT EXISTS document_read_status (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      document_id INT NOT NULL,
+      user_id INT NOT NULL,
+      tenant_id INT NOT NULL,
+      read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY unique_document_user_read (document_id, user_id)
+    );
+    
+    -- Document permissions table
+    CREATE TABLE IF NOT EXISTS document_permissions (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      document_id INT NOT NULL,
+      user_id INT DEFAULT NULL,
+      team_id INT DEFAULT NULL,
+      department_id INT DEFAULT NULL,
+      tenant_id INT NOT NULL,
+      permission_type ENUM('view', 'download', 'edit', 'delete') DEFAULT 'view',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+      FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+    );
+    
+    -- Activity logs table
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      tenant_id INT NOT NULL,
+      user_id INT NOT NULL,
+      action VARCHAR(100) NOT NULL,
+      entity_type VARCHAR(50),
+      entity_id INT,
+      description TEXT,
+      ip_address VARCHAR(45),
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      INDEX idx_user_actions (user_id, action),
+      INDEX idx_entity (entity_type, entity_id)
+    );
     -- Blackboard attachments table (referenced in schema)
     CREATE TABLE IF NOT EXISTS blackboard_attachments (
       id INT PRIMARY KEY AUTO_INCREMENT,

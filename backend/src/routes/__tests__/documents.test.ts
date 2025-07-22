@@ -307,26 +307,28 @@ describe("Documents API Endpoints", () => {
       // Create test documents
       const [result1] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type, 
-         category, uploaded_by, tenant_id, visibility_scope)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, recipient_type, uploaded_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "company-doc.pdf",
           "Company Document.pdf",
           "/uploads/company-doc.pdf",
           1000,
           "application/pdf",
-          "company",
+          "general",
           adminUser1.id,
           tenant1Id,
           "company",
+          "company",
+          adminUser1.id,
         ],
       );
       doc1Id = (result1 as any).insertId;
 
       const [result2] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, target_id, tenant_id, visibility_scope)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, user_id, tenant_id, visibility_scope, recipient_type, uploaded_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "personal-doc.pdf",
           "Personal Document.pdf",
@@ -338,24 +340,28 @@ describe("Documents API Endpoints", () => {
           employeeUser1.id,
           tenant1Id,
           "private",
+          "user",
+          adminUser1.id,
         ],
       );
       doc2Id = (result2 as any).insertId;
 
       const [result3] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, tenant_id, visibility_scope)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, recipient_type, uploaded_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "other-tenant-doc.pdf",
           "Other Tenant Document.pdf",
           "/uploads/other-tenant-doc.pdf",
           3000,
           "application/pdf",
-          "company",
+          "general",
           adminUser2.id,
           tenant2Id,
           "company",
+          "company",
+          adminUser2.id,
         ],
       );
       doc3Id = (result3 as any).insertId;
@@ -413,7 +419,7 @@ describe("Documents API Endpoints", () => {
       expect(response.body.data.documents).toHaveLength(1);
       expect(response.body.data.documents[0]).toMatchObject({
         category: "personal",
-        target_id: employeeUser1.id,
+        user_id: employeeUser1.id,
       });
     });
 
@@ -422,17 +428,19 @@ describe("Documents API Endpoints", () => {
       for (let i = 0; i < 15; i++) {
         await testDb.execute(
           `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-           category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           category, created_by, tenant_id, visibility_scope, recipient_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             `doc${i}.pdf`,
             `Document ${i}`,
             `/uploads/doc${i}.pdf`,
             1000,
             "application/pdf",
-            "company",
+            "general",
             adminUser1.id,
             tenant1Id,
             "company",
+            "company",
+            adminUser1.id,
           ],
         );
       }
@@ -474,7 +482,7 @@ describe("Documents API Endpoints", () => {
       expect(
         docs.some(
           (d: any) =>
-            d.category === "personal" && d.target_id === employeeUser1.id,
+            d.category === "personal" && d.user_id === employeeUser1.id,
         ),
       ).toBe(true);
     });
@@ -486,7 +494,7 @@ describe("Documents API Endpoints", () => {
     beforeEach(async () => {
       const [result] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, recipient_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "test-doc.pdf",
           "Test Document.pdf",
@@ -558,7 +566,7 @@ describe("Documents API Endpoints", () => {
     beforeEach(async () => {
       const [result] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, recipient_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "delete-test.pdf",
           "Delete Test Document.pdf",
@@ -631,7 +639,7 @@ describe("Documents API Endpoints", () => {
     beforeEach(async () => {
       const [result] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, tenant_id, visibility_scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, recipient_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "download-test.pdf",
           "Download Test Document.pdf",
@@ -787,7 +795,7 @@ describe("Documents API Endpoints", () => {
       // Create documents with different visibility
       const [result1] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, tenant_id, visibility_scope, target_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, user_id, recipient_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "private-doc.pdf",
           "Private Document.pdf",
@@ -798,6 +806,8 @@ describe("Documents API Endpoints", () => {
           employeeUser1.id,
           tenant1Id,
           "private",
+          employeeUser1.id,
+          "user",
           employeeUser1.id,
         ],
       );
@@ -825,7 +835,7 @@ describe("Documents API Endpoints", () => {
 
       const [result] = await testDb.execute(
         `INSERT INTO documents (filename, original_name, file_path, file_size, mime_type,
-         category, uploaded_by, tenant_id, visibility_scope, target_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         category, created_by, tenant_id, visibility_scope, user_id, recipient_type, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "other-personal.pdf",
           "Other Personal Document.pdf",
@@ -837,6 +847,8 @@ describe("Documents API Endpoints", () => {
           tenant1Id,
           "private",
           otherEmployee.id,
+          "user",
+          adminUser1.id,
         ],
       );
       const otherPersonalDocId = (result as any).insertId;
