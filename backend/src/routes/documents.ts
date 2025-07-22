@@ -281,7 +281,7 @@ router.post(
 
       // Validate and read file content
       let fileContent: Buffer;
-      
+
       // In tests, the file is provided as a buffer
       if (uploadReq.file.buffer) {
         fileContent = uploadReq.file.buffer;
@@ -322,7 +322,9 @@ router.post(
         try {
           await fs.unlink(filePath);
         } catch (unlinkErr) {
-          logger.warn(`Could not delete temporary file: ${getErrorMessage(unlinkErr)}`);
+          logger.warn(
+            `Could not delete temporary file: ${getErrorMessage(unlinkErr)}`,
+          );
         }
       }
 
