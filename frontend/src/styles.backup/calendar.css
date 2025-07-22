@@ -928,12 +928,6 @@ textarea.form-control {
   border-bottom: none;
 }
 
-.dropdown-option:hover {
-  background: rgba(33, 150, 243, 0.2);
-  color: white;
-  padding-left: 16px;
-}
-
 .dropdown-option i {
   margin-right: 0.5rem;
   width: 16px;

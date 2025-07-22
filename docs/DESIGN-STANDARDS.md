@@ -1,7 +1,7 @@
 # Assixx Design Standards Guide
 
-> **Version:** 2.1.0  
-> **Letztes Update:** 06.06.2025  
+> **Version:** 2.1.0
+> **Letztes Update:** 06.06.2025
 > **Erstellt von:** Simon Öztürk & Claude AI
 
 ## 🎨 Übersicht
@@ -422,11 +422,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.dropdown-option:hover {
-  background: rgba(33, 150, 243, 0.2);
-  color: white;
-  padding-left: 16px;
-}
+
 ```
 
 ### 4. Buttons
