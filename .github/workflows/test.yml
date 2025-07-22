@@ -144,6 +144,7 @@ jobs:
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-key-for-github-actions
+          VALIDATE_SESSIONS: false
           DB_HOST: localhost
           DB_USER: assixx_user
           DB_PASSWORD: AssixxP@ss2025!

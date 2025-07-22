@@ -26,6 +26,9 @@ process.env.REDIS_PORT = process.env.REDIS_PORT || "6379";
 // Disable mock database for tests
 process.env.USE_MOCK_DB = "false";
 
+// Session validation disabled for tests (same as production)
+process.env.VALIDATE_SESSIONS = "false";
+
 // Set test timeouts
 if (process.env.CI) {
   jest.setTimeout(30000); // 30 seconds for CI

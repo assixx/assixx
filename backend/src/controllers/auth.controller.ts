@@ -284,6 +284,23 @@ class AuthController {
         req.ip ?? "unknown",
         req.headers["user-agent"] ?? "unknown",
       );
+
+      // Invalidate session in database if session validation is enabled
+      const token = req.headers.authorization?.split(" ")[1];
+      if (token) {
+        try {
+          const jwt = await import("jsonwebtoken");
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+          if (decoded.sessionId) {
+            await executeQuery(
+              "UPDATE user_sessions SET expires_at = NOW() WHERE session_id = ? AND user_id = ?",
+              [decoded.sessionId, req.user.id],
+            );
+          }
+        } catch (error) {
+          logger.warn("Failed to invalidate session:", error);
+        }
+      }
     }
 
     // Clear the httpOnly cookie
