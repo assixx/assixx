@@ -1,22 +1,25 @@
 # Assixx TODO-Liste
 
-## 🔴 WICHTIG - HIER WEITERMACHEN (19.07.2025)
+## 🔴 WICHTIG - HIER WEITERMACHEN (23.07.2025)
+
+**NEU: TEST-MIGRATION-SCHEMA-SYNC.md durcharbeiten!**
 
 **Branch:** unit-tests--Github-Actions  
-**Problem:** Jest Tests hängen in GitHub Actions (laufen ewig, brechen nicht ab)  
-**Gelöst:**
+**Entscheidung:** Alle Tests auf echte DB umstellen (keine Mocks mehr)  
+**Lösung:** Schema-Sync automatisieren statt Mock-Wartung
 
-- ✅ Alle import.meta.url Fehler behoben
-- ✅ Jest läuft, aber Tests hängen wegen offener DB-Verbindungen
-- ✅ forceExit und detectOpenHandles zu jest.config.cjs hinzugefügt
+**Was zu tun ist:**
+1. `docs/TEST-MIGRATION-SCHEMA-SYNC.md` öffnen
+2. TL;DR lesen (30 Sekunden)
+3. Bei Step 1 anfangen: Schema-Sync in GitHub Actions
+4. Schritt für Schritt durcharbeiten (2-3 Tage)
 
-**Nächste Schritte:**
+**Warum:** 
+- Mock-Wartung ist Hölle
+- Schema-Drift war das echte Problem (main vs main_test)
+- 124 Commits zeigen: Mocking funktioniert nicht gut
 
-1. GitHub Actions Workflow Ergebnisse prüfen (sollte mit forceExit jetzt funktionieren)
-2. Fehlgeschlagene Tests debuggen (vermutlich Auth/Mock Probleme)
-3. DB Verbindungen in Tests richtig schließen (cleanupTestData)
-
-**Status:** 6 Tests erfolgreich, 11 fehlgeschlagen, 7 hingen fest
+**Status:** Plan erstellt, Mock-Probleme analysiert, Schema-Sync als Lösung identifiziert
 
 ---
 
