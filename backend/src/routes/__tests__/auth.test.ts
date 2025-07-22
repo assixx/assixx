@@ -85,6 +85,15 @@ describe("Authentication API Endpoints", () => {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
+      try {
+        await testDb.execute(
+          `DELETE FROM oauth_tokens WHERE user_id IN (${placeholders})`,
+          userIds,
+        );
+      } catch (e: any) {
+        if (!e.message?.includes("doesn't exist")) throw e;
+      }
+
       // Now delete the users
       await testDb.execute("DELETE FROM users WHERE email IN (?, ?)", [
         "testuser1@authtest1.de",
@@ -194,7 +203,8 @@ describe("Authentication API Endpoints", () => {
       // Cookie should be set
       const cookies = response.headers["set-cookie"];
       expect(cookies).toBeDefined();
-      expect(cookies.some((cookie) => cookie.startsWith("token="))).toBe(true);
+      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+      expect(cookieArray.some((cookie) => cookie.startsWith("token="))).toBe(true);
     });
 
     it("should verify JWT token contains correct claims", async () => {
@@ -356,6 +366,7 @@ describe("Authentication API Endpoints", () => {
       const loginResponse = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
+        fingerprint: "test-fingerprint-logout",
       });
       authToken = loginResponse.body.data.token;
     });
@@ -379,28 +390,34 @@ describe("Authentication API Endpoints", () => {
 
       // Cookie should be cleared
       const cookies = response.headers["set-cookie"];
-      expect(cookies.some((cookie) => cookie.includes("token=;"))).toBe(true);
+      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+      expect(cookieArray.some((cookie) => cookie.includes("token=;"))).toBe(true);
     });
 
     it("should invalidate session in database", async () => {
-      // Create session first
+      // Session is already created during login in beforeEach
       const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as any;
-      await testDb.execute(
-        "INSERT INTO user_sessions (user_id, session_id, fingerprint, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
-        [decoded.id, decoded.sessionId || "test-session", "test-fingerprint"],
-      );
 
-      await request(app)
-        .post("/api/auth/logout")
-        .set("Authorization", `Bearer ${authToken}`);
-
-      // Check session was invalidated - should have no unexpired sessions
-      const [rows] = await testDb.execute(
+      // Verify session exists before logout
+      const [rowsBefore] = await testDb.execute(
         "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
         [decoded.id],
       );
-      const sessions = asTestRows<any>(rows);
-      expect(sessions).toHaveLength(0);
+      const sessionsBefore = asTestRows<any>(rowsBefore);
+      expect(sessionsBefore.length).toBeGreaterThan(0);
+
+      await request(app)
+        .post("/api/auth/logout")
+        .set("Authorization", `Bearer ${authToken}`)
+        .send({}); // Send empty body
+
+      // Check session was invalidated - should have no unexpired sessions
+      const [rowsAfter] = await testDb.execute(
+        "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
+        [decoded.id],
+      );
+      const sessionsAfter = asTestRows<any>(rowsAfter);
+      expect(sessionsAfter).toHaveLength(0);
     });
 
     it("should handle logout without authentication", async () => {
@@ -420,12 +437,14 @@ describe("Authentication API Endpoints", () => {
       const login1 = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
+        fingerprint: "test-fingerprint-me-1",
       });
       authToken1 = login1.body.data.token;
 
       const login2 = await request(app).post("/api/auth/login").send({
         username: testUser2.username,
         password: "TestPass456!",
+        fingerprint: "test-fingerprint-me-2",
       });
       authToken2 = login2.body.data.token;
     });
@@ -588,6 +607,7 @@ describe("Authentication API Endpoints", () => {
       const login1 = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
+        fingerprint: "test-fingerprint-multi-tenant",
       });
       const token1 = login1.body.data.token;
 
@@ -656,6 +676,7 @@ describe("Authentication API Endpoints", () => {
       const response = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
+        fingerprint: "test-fingerprint-security-headers",
       });
 
       expect(response.headers["x-content-type-options"]).toBe("nosniff");
@@ -669,10 +690,13 @@ describe("Authentication API Endpoints", () => {
       const response = await request(app).post("/api/auth/login").send({
         username: testUser1.username,
         password: "TestPass123!",
+        fingerprint: "test-fingerprint-secure-cookie",
       });
 
       const cookies = response.headers["set-cookie"];
-      const tokenCookie = cookies.find((c) => c.startsWith("token="));
+      const tokenCookie = Array.isArray(cookies) 
+        ? cookies.find((c) => c.startsWith("token="))
+        : cookies?.startsWith("token=") ? cookies : undefined;
 
       expect(tokenCookie).toContain("HttpOnly");
       expect(tokenCookie).toContain("SameSite=Strict");
