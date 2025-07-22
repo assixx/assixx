@@ -74,6 +74,7 @@ interface DocumentsResponse {
 interface ServiceDocumentCreateData {
   tenant_id: number;
   name: string;
+  originalName?: string;
   description?: string | null;
   filename: string;
   mimetype: string;
@@ -269,15 +270,21 @@ class DocumentService {
   ): Promise<DocumentData | null> {
     try {
       const modelData: ModelDocumentCreateData = {
-        userId: documentData.uploadedBy,
-        fileName: documentData.name,
+        userId: documentData.userId || documentData.uploadedBy,
+        fileName: documentData.filename,
+        fileContent: undefined, // Not used for file uploads via multer
         category: documentData.category,
         description:
           documentData.description !== null
             ? documentData.description
             : undefined,
         tenant_id: documentData.tenant_id,
+        recipientType: documentData.userId ? "user" : "company",
+        teamId: null,
+        departmentId: null,
       };
+      
+      // The model will handle setting created_by, original_name, file_path, file_size, mime_type
       const documentId = await Document.create(modelData);
       return await this.getDocumentById(documentId, documentData.tenant_id);
     } catch (error) {

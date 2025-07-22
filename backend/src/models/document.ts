@@ -115,13 +115,13 @@ export class Document {
       "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
-        userId,
+        userId || null, // user_id can be null for company documents
         teamId,
         departmentId,
         recipientType,
         fileName,
         fileName, // original_name - same as filename for now
-        `/uploads/${fileName}`, // file_path
+        `/uploads/documents/${fileName}`, // file_path
         fileContent ? fileContent.length : 0, // file_size
         "application/octet-stream", // mime_type - default for now
         fileContent,

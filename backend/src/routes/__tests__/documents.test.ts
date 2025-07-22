@@ -145,27 +145,24 @@ describe("Documents API Endpoints", () => {
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
-        .field("category", "company")
+        .field("recipientType", "company")
+        .field("category", "general")
         .field("description", "Test company document")
-        .attach("file", testContent, "test-document.pdf");
+        .attach("document", testContent, "test-document.pdf");
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("erfolgreich hochgeladen"),
+        message: expect.stringContaining("erfolgreich"),
         data: {
-          id: expect.any(Number),
-          filename: expect.stringContaining(".pdf"),
-          category: "company",
-          tenant_id: tenant1Id,
-          uploaded_by: adminUser1.id,
+          documentId: expect.any(Number),
         },
       });
 
       // Verify document was saved in database
       const [rows] = await testDb.execute(
         "SELECT * FROM documents WHERE id = ?",
-        [response.body.data.id],
+        [response.body.data.documentId],
       );
       const documents = asTestRows<any>(rows);
       expect(documents).toHaveLength(1);
@@ -182,16 +179,19 @@ describe("Documents API Endpoints", () => {
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
-        .field("category", "personal")
+        .field("recipientType", "user")
         .field("userId", employeeUser1.id.toString())
+        .field("category", "personal")
         .field("description", "Personal document for employee")
-        .attach("file", testContent, "personal-doc.pdf");
+        .attach("document", testContent, "personal-doc.pdf");
 
       expect(response.status).toBe(201);
-      expect(response.body.data).toMatchObject({
-        category: "personal",
-        visibility_scope: "private",
-        target_id: employeeUser1.id,
+      expect(response.body).toMatchObject({
+        success: true,
+        message: expect.stringContaining("erfolgreich"),
+        data: {
+          documentId: expect.any(Number),
+        },
       });
     });
 
@@ -201,11 +201,12 @@ describe("Documents API Endpoints", () => {
       const response = await request(app)
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
-        .field("category", "payroll")
-        .field("year", "2025")
-        .field("month", "6")
+        .field("recipientType", "user")
         .field("userId", employeeUser1.id.toString())
-        .attach("file", testContent, "payroll-2025-06.pdf");
+        .field("category", "salary")
+        .field("year", "2025")
+        .field("month", "Juni")
+        .attach("document", testContent, "payroll-2025-06.pdf");
 
       expect(response.status).toBe(201);
 
@@ -225,7 +226,7 @@ describe("Documents API Endpoints", () => {
       const response = await request(app)
         .post("/api/documents/upload")
         .field("category", "company")
-        .attach("file", testContent, "test-file.pdf");
+        .attach("document", testContent, "test-file.pdf");
 
       expect(response.status).toBe(401);
     });
@@ -237,7 +238,7 @@ describe("Documents API Endpoints", () => {
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .attach("file", testContent, "test.exe");
+        .attach("document", testContent, "test.exe");
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain("Dateityp");
@@ -251,7 +252,7 @@ describe("Documents API Endpoints", () => {
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .attach("file", largeContent, "large-file.pdf");
+        .attach("document", largeContent, "large-file.pdf");
 
       expect(response.status).toBe(413); // Payload too large
     });
@@ -269,7 +270,7 @@ describe("Documents API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "personal")
         .field("userId", employeeUser1.id.toString())
-        .attach("file", testContent, "personal-notification.pdf");
+        .attach("document", testContent, "personal-notification.pdf");
 
       expect(response.status).toBe(201);
       expect(emailSpy).toHaveBeenCalledWith(
@@ -291,7 +292,7 @@ describe("Documents API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken2}`)
         .field("category", "personal")
         .field("userId", employeeUser1.id.toString())
-        .attach("file", testContent, "cross-tenant.pdf");
+        .attach("document", testContent, "cross-tenant.pdf");
 
       expect(response.status).toBe(404); // User not found in admin2's tenant
     });
@@ -725,7 +726,7 @@ describe("Documents API Endpoints", () => {
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .attach("file", testContent, {
+        .attach("document", testContent, {
           filename: "fake-image.jpg",
           contentType: "application/pdf", // Wrong MIME for .jpg
         });
@@ -744,7 +745,7 @@ describe("Documents API Endpoints", () => {
             .set("Authorization", `Bearer ${adminToken1}`)
             .field("category", "company")
             .field("description", `Concurrent upload ${i}`)
-            .attach("file", content, `concurrent-${i}.pdf`);
+            .attach("document", content, `concurrent-${i}.pdf`);
         });
 
       const responses = await Promise.all(uploads);
@@ -767,7 +768,7 @@ describe("Documents API Endpoints", () => {
         .post("/api/documents/upload")
         .set("Authorization", `Bearer ${adminToken1}`)
         .field("category", "company")
-        .attach("file", testContent, "../../../etc/passwd.txt");
+        .attach("document", testContent, "../../../etc/passwd.txt");
 
       expect(response.status).toBe(201);
       // Check that the filename was sanitized

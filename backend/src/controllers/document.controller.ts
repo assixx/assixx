@@ -180,7 +180,7 @@ class DocumentController {
           if (bodyUserId) {
             return parseInt(bodyUserId, 10);
           }
-          return req.user.id;
+          return null; // Company documents don't have a specific user
         })(),
         uploadedBy: req.user.id,
         tenant_id: req.user.tenant_id,
