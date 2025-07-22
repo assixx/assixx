@@ -4,6 +4,7 @@
  */
 
 import { Request, Response } from "express";
+import { JwtPayload } from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
 
 import { executeQuery } from "../database";
@@ -290,7 +291,14 @@ class AuthController {
       if (token) {
         try {
           const jwt = await import("jsonwebtoken");
-          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+          const jwtSecret = process.env.JWT_SECRET;
+          if (!jwtSecret) {
+            throw new Error("JWT_SECRET not configured");
+          }
+          const decoded = jwt.verify(token, jwtSecret) as JwtPayload & {
+            sessionId?: string;
+            id?: number;
+          };
           if (decoded.sessionId) {
             await executeQuery(
               "UPDATE user_sessions SET expires_at = NOW() WHERE session_id = ? AND user_id = ?",
