@@ -4,21 +4,26 @@
  */
 
 import "../../__tests__/test-env-setup"; // Must be first import
-import request from "supertest";
-import fs from "fs/promises";
-import path from "path";
-import { Pool } from "mysql2/promise";
-import app from "../../app";
-import {
-  createTestDatabase,
-  cleanupTestData,
-  createTestTenant,
-  createTestUser,
-  getAuthToken,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
 
-// Mock only the necessary file system operations
+// Prevent any database connection attempts
+process.env.DB_HOST = "mock";
+process.env.NODE_ENV = "test";
+
+// Mock database BEFORE any imports
+jest.mock("../../database", () => {
+  const mockExecuteQuery = jest.fn();
+  return {
+    executeQuery: mockExecuteQuery,
+    pool: {
+      end: jest.fn().mockResolvedValue(undefined),
+      execute: jest.fn(),
+      query: jest.fn(),
+    },
+  };
+});
+
+// ALL MOCKS MUST BE BEFORE IMPORTS
+// Mock file system operations
 jest.mock("fs/promises", () => ({
   unlink: jest.fn().mockResolvedValue(undefined),
   mkdir: jest.fn().mockResolvedValue(undefined),
@@ -39,6 +44,26 @@ jest.mock("../../utils/emailService", () => ({
     sendEmail: jest.fn().mockResolvedValue(true),
   },
 }));
+
+// Keep email mock as it's external
+// Remove Document and Feature mocks - use real implementation
+// Remove middleware mocks - let them work normally
+
+// NOW IMPORT EVERYTHING AFTER MOCKS
+import request from "supertest";
+import fs from "fs/promises";
+import path from "path";
+import { Pool } from "mysql2/promise";
+import app from "../../app";
+import {
+  createTestDatabase,
+  cleanupTestData,
+  createTestTenant,
+  createTestUser,
+  getAuthToken,
+} from "../mocks/database";
+import { asTestRows } from "../../__tests__/mocks/db-types";
+import emailService from "../../utils/emailService";
 
 describe("Documents API Endpoints", () => {
   let testDb: Pool;
@@ -114,7 +139,6 @@ describe("Documents API Endpoints", () => {
       password: "EmpPass123!",
       role: "employee",
       tenant_id: tenant1Id,
-      department_id: 1,
       first_name: "Employee",
       last_name: "One",
     });
@@ -154,6 +178,11 @@ describe("Documents API Endpoints", () => {
         .field("category", "general")
         .field("description", "Test company document")
         .attach("document", testContent, "test-document.pdf");
+
+      // Debug the response
+      if (response.status === 403) {
+        throw new Error(`403 Forbidden: ${JSON.stringify(response.body)}`);
+      }
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({

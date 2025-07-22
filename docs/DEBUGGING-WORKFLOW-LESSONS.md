@@ -126,3 +126,55 @@ import { authenticateToken } from "../auth-refactored";
 - Immer gleicher Code für Test und Produktion
 - Mock-Strategie statt echte Test-DB für Unit Tests
 - Integration Tests separat mit echter DB
+
+### Jest console.log Debugging (22.07.2025)
+
+**Problem:** console.log zeigt nichts in Jest Tests
+**Symptom:** Keine Ausgabe trotz `--silent=false` oder `--verbose`
+
+**Lösung mit Error Throwing:**
+
+```javascript
+// STATT console.log (wird oft unterdrückt):
+console.log("Response:", response.status, response.body);
+
+// BESSER - Error werfen (wird IMMER angezeigt):
+if (response.status !== 201) {
+  throw new Error(`Status: ${response.status}, Body: ${JSON.stringify(response.body)}`);
+}
+```
+
+**Alternative Debugging-Methoden:**
+
+1. **Error Throwing** (empfohlen):
+   ```javascript
+   throw new Error(`Debug Info: ${JSON.stringify(data)}`);
+   ```
+
+2. **Absichtlich falscher Expect**:
+   ```javascript
+   expect(response.body).toBe("DEBUG: " + JSON.stringify(response.body));
+   ```
+
+3. **console.error statt console.log**:
+   ```javascript
+   console.error("DEBUG:", data); // Wird manchmal angezeigt
+   ```
+
+4. **Jest Flags kombinieren**:
+   ```bash
+   npm test -- --verbose --runInBand --detectOpenHandles
+   ```
+
+5. **DEBUG Environment Variable**:
+   ```bash
+   DEBUG=* npm test
+   ```
+
+**Lessons Learned:**
+
+- Jest unterdrückt console.log standardmäßig
+- Errors werden IMMER in der Ausgabe gezeigt
+- Bei kritischem Debugging: Error werfen statt loggen
+- Verschiedene Jest-Versionen verhalten sich unterschiedlich
+siehe: https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest
