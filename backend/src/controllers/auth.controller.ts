@@ -295,7 +295,7 @@ class AuthController {
           if (!jwtSecret) {
             throw new Error("JWT_SECRET not configured");
           }
-          const decoded = jwt.verify(token, jwtSecret) as JwtPayload & {
+          const decoded = jwt.default.verify(token, jwtSecret) as JwtPayload & {
             sessionId?: string;
             id?: number;
           };
