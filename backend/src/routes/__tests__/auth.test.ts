@@ -305,22 +305,18 @@ describe("Authentication API Endpoints", () => {
     });
 
     it("should handle login attempts with missing fields", async () => {
-      const response1 = await request(app)
-        .post("/api/auth/login")
-        .send({
-          username: testUser1.username,
-          fingerprint: "test-fingerprint-missing-pass",
-        });
+      const response1 = await request(app).post("/api/auth/login").send({
+        username: testUser1.username,
+        fingerprint: "test-fingerprint-missing-pass",
+      });
 
       expect(response1.status).toBe(400);
       expect(response1.body.errors).toBeDefined();
 
-      const response2 = await request(app)
-        .post("/api/auth/login")
-        .send({
-          password: "TestPass123!",
-          fingerprint: "test-fingerprint-missing-user",
-        });
+      const response2 = await request(app).post("/api/auth/login").send({
+        password: "TestPass123!",
+        fingerprint: "test-fingerprint-missing-user",
+      });
 
       expect(response2.status).toBe(400);
     });

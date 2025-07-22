@@ -421,8 +421,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   transition: all 0.2s ease;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-
-
 ```
 
 ### 4. Buttons

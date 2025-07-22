@@ -3,16 +3,19 @@
 ## 🎯 Goldene Regeln
 
 ### 1. One-by-One Approach
+
 - **IMMER** ein Problem nach dem anderen lösen
 - Workflow: Fix → Test → Gut? → Nächstes Problem
 - Niemals mehrere Probleme gleichzeitig angehen
 
 ### 2. Test = Produktion
+
 - Code MUSS identisch funktionieren in Test und Produktion
 - `NODE_ENV === 'test'` Checks sind eine **KATASTROPHALE Anti-Pattern**
 - Umgebungen anpassen, nicht den Code!
 
 ### 3. Erst verstehen, dann handeln
+
 - **NIEMALS** blind loslegen ohne Logs/Fehlermeldungen
 - Workflow:
   1. Problem verstehen (Logs analysieren)
@@ -22,11 +25,13 @@
   5. Lokal UND in CI/CD testen
 
 ### 4. Abstimmung ist Pflicht
+
 - Jede Änderung muss lokal funktionieren
 - Vor Änderungen fragen: "Funktioniert das auch lokal?"
 - Tests sind wertlos wenn sie anderen Code testen
 
 ### 5. Mock-Setup ist kritisch
+
 - Mocks MÜSSEN vor Imports definiert werden
 - Environment Variables vor Imports setzen
 - Mock-Funktionen explizit in Return-Object definieren
@@ -35,7 +40,7 @@
 
 ```typescript
 // NIEMALS SO:
-if (process.env.NODE_ENV === 'test') {
+if (process.env.NODE_ENV === "test") {
   // Anderer Code für Tests
 } else {
   // Produktions-Code
@@ -82,6 +87,7 @@ Erst wenn ALLE grün sind → committen und pushen!
 **Symptom:** 8 von 12 Tests scheiterten, ReferenceError nach Test-Ende
 
 **Lösung:**
+
 ```javascript
 // 1. DB Connection verhindern VOR allen Imports
 process.env.DB_HOST = "mock";
@@ -103,6 +109,7 @@ import { authenticateToken } from "../auth-refactored";
 ```
 
 **Lessons Learned:**
+
 - Mock-Setup MUSS vor Imports stehen
 - Environment Variables verhindern DB-Init beim Import
 - Mock-Funktionen explizit definieren, nicht nur `jest.fn()` returnen
@@ -113,7 +120,8 @@ import { authenticateToken } from "../auth-refactored";
 **Problem:** Tests liefen lokal aber nicht in CI
 **Ursache:** Unterschiedliche DB-Schemas (main vs main_test)
 
-**Lösung:** 
+**Lösung:**
+
 - NIEMALS Code an Environment anpassen
 - Immer gleicher Code für Test und Produktion
 - Mock-Strategie statt echte Test-DB für Unit Tests
