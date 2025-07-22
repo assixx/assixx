@@ -4,7 +4,18 @@
  */
 
 // Mock MUST be set before imports
-jest.mock("../../database");
+jest.mock("../../database", () => ({
+  executeQuery: jest.fn(),
+  pool: {
+    end: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
+jest.mock("../../utils/db", () => ({
+  query: jest.fn(),
+  execute: jest.fn(),
+  executeQuery: jest.fn(),
+}));
 
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
@@ -44,6 +55,14 @@ describe("Authentication Middleware", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterAll(async () => {
+    // Close any open database connections
+    const { pool } = await import("../../database");
+    if (pool) {
+      await pool.end();
+    }
   });
 
   describe("Token Extraction", () => {
