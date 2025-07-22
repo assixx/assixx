@@ -983,15 +983,24 @@ export async function getAuthToken(
 ): Promise<string> {
   const response = await request(app)
     .post("/api/auth/login")
-    .send({ username, password });
+    .send({
+      username,
+      password,
+      fingerprint: "test-fingerprint-" + username,
+    });
 
   if (response.status !== 200) {
+    console.error("Login failed:", {
+      status: response.status,
+      body: response.body,
+      username,
+    });
     throw new Error(
-      `Failed to get auth token for ${username}: ${response.body.message}`,
+      `Failed to get auth token for ${username}: ${response.body.message ?? JSON.stringify(response.body)}`,
     );
   }
 
-  return response.body.token;
+  return response.body.data.token;
 }
 
 /**
