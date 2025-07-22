@@ -28,18 +28,14 @@ if (!JWT_SECRET && process.env.NODE_ENV === "production") {
 function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
   const authHeader = req.headers["authorization"];
-  console.log("[AUTH-REFACTORED] Auth header:", authHeader);
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.substring(7)
     : null;
 
   // Check cookie as fallback
   const cookieToken = req.cookies?.token;
-  console.log("[AUTH-REFACTORED] Cookie token:", !!cookieToken);
 
-  const result = bearerToken ?? cookieToken ?? null;
-  console.log("[AUTH-REFACTORED] Extracted token:", !!result, result?.substring(0, 20) + "...");
-  return result;
+  return bearerToken ?? cookieToken ?? null;
 }
 
 // Helper to verify JWT token
@@ -82,7 +78,6 @@ async function getUserDetails(
   userId: number,
 ): Promise<Partial<AuthUser> | null> {
   try {
-    console.log("[AUTH-REFACTORED] Getting user details for ID:", userId);
     const [users] = await executeQuery<RowDataPacket[]>(
       `SELECT 
         u.id, u.username, u.email, u.role, u.tenant_id,
@@ -94,10 +89,8 @@ async function getUserDetails(
       WHERE u.id = ? AND u.is_active = 1`,
       [userId],
     );
-    console.log("[AUTH-REFACTORED] User query result:", users.length, "rows");
 
     if (users.length === 0) {
-      console.log("[AUTH-REFACTORED] No active user found for ID:", userId);
       return null;
     }
 
@@ -129,10 +122,8 @@ export const authenticateToken: AuthenticationMiddleware = async function (
   try {
     // Extract token
     const token = extractToken(req);
-    console.log("[AUTH-REFACTORED] Token extracted:", !!token);
 
     if (!token) {
-      console.log("[AUTH-REFACTORED] No token found in request");
       res
         .status(401)
         .json(errorResponse("Authentication token required", 401, "NO_TOKEN"));
@@ -141,10 +132,8 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
     // Verify token
     const decoded = await verifyToken(token);
-    console.log("[AUTH-REFACTORED] Token decoded:", !!decoded, decoded?.id);
 
     if (!decoded) {
-      console.log("[AUTH-REFACTORED] Token verification failed");
       res
         .status(403)
         .json(errorResponse("Invalid or expired token", 403, "INVALID_TOKEN"));
@@ -165,10 +154,8 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
     // Get fresh user details from database
     const userDetails = await getUserDetails(decoded.id);
-    console.log("[AUTH-REFACTORED] User details fetched:", !!userDetails, userDetails?.id);
 
     if (!userDetails) {
-      console.log("[AUTH-REFACTORED] User not found or inactive");
       res
         .status(403)
         .json(
