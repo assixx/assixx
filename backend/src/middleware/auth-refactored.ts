@@ -79,7 +79,7 @@ async function getUserDetails(
 ): Promise<Partial<AuthUser> | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
-      process.env.NODE_ENV === 'test' 
+      process.env.NODE_ENV === "test"
         ? `SELECT 
             u.id, u.username, u.email, u.role, u.tenant_id,
             u.first_name as firstName, u.last_name as lastName,
