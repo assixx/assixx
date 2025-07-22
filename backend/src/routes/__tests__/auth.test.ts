@@ -204,9 +204,7 @@ describe("Authentication API Endpoints", () => {
       const cookies = response.headers["set-cookie"];
       expect(cookies).toBeDefined();
       const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-      expect(cookieArray.some((cookie) => cookie.startsWith("token="))).toBe(
-        true,
-      );
+      expect(cookieArray.some((cookie) => cookie.startsWith("token="))).toBe(true);
     });
 
     it("should verify JWT token contains correct claims", async () => {
@@ -307,20 +305,14 @@ describe("Authentication API Endpoints", () => {
     it("should handle login attempts with missing fields", async () => {
       const response1 = await request(app)
         .post("/api/auth/login")
-        .send({
-          username: testUser1.username,
-          fingerprint: "test-fingerprint-missing-pass",
-        });
+        .send({ username: testUser1.username, fingerprint: "test-fingerprint-missing-pass" });
 
       expect(response1.status).toBe(400);
       expect(response1.body.errors).toBeDefined();
 
       const response2 = await request(app)
         .post("/api/auth/login")
-        .send({
-          password: "TestPass123!",
-          fingerprint: "test-fingerprint-missing-user",
-        });
+        .send({ password: "TestPass123!", fingerprint: "test-fingerprint-missing-user" });
 
       expect(response2.status).toBe(400);
     });
@@ -345,13 +337,11 @@ describe("Authentication API Endpoints", () => {
     it("should track failed login attempts", async () => {
       // Make failed attempts
       for (let i = 0; i < 3; i++) {
-        await request(app)
-          .post("/api/auth/login")
-          .send({
-            username: testUser1.username,
-            password: "WrongPass",
-            fingerprint: "test-fingerprint-failed-attempt-" + i,
-          });
+        await request(app).post("/api/auth/login").send({
+          username: testUser1.username,
+          password: "WrongPass",
+          fingerprint: "test-fingerprint-failed-attempt-" + i,
+        });
       }
 
       // Check failed attempts were logged
@@ -408,9 +398,7 @@ describe("Authentication API Endpoints", () => {
       // Cookie should be cleared
       const cookies = response.headers["set-cookie"];
       const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-      expect(cookieArray.some((cookie) => cookie.includes("token=;"))).toBe(
-        true,
-      );
+      expect(cookieArray.some((cookie) => cookie.includes("token=;"))).toBe(true);
     });
 
     it.skip("should invalidate session in database", async () => {
@@ -717,11 +705,9 @@ describe("Authentication API Endpoints", () => {
       });
 
       const cookies = response.headers["set-cookie"];
-      const tokenCookie = Array.isArray(cookies)
+      const tokenCookie = Array.isArray(cookies) 
         ? cookies.find((c) => c.startsWith("token="))
-        : cookies?.startsWith("token=")
-          ? cookies
-          : undefined;
+        : cookies?.startsWith("token=") ? cookies : undefined;
 
       expect(tokenCookie).toContain("HttpOnly");
       expect(tokenCookie).toContain("SameSite=Strict");
