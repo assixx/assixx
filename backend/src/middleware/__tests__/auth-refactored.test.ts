@@ -3,20 +3,25 @@
  * Tests JWT token validation, multi-tenant isolation, and role-based access
  */
 
+// Prevent any database connection attempts
+process.env.DB_HOST = "mock";
+process.env.NODE_ENV = "test";
+process.env.JWT_SECRET = "test-secret-key";
+
 // Mock MUST be set before imports
-jest.mock("../../database", () => ({
-  executeQuery: jest.fn(),
-  pool: {
-    end: jest.fn().mockResolvedValue(undefined),
-  },
-}));
+jest.mock("../../database", () => {
+  const mockExecuteQuery = jest.fn();
+  return {
+    executeQuery: mockExecuteQuery,
+    pool: {
+      end: jest.fn().mockResolvedValue(undefined),
+      execute: jest.fn(),
+      query: jest.fn(),
+    },
+  };
+});
 
-jest.mock("../../utils/db", () => ({
-  query: jest.fn(),
-  execute: jest.fn(),
-  executeQuery: jest.fn(),
-}));
-
+// Now import after mocks are set
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "../auth-refactored";
@@ -28,9 +33,6 @@ import { asTestRows } from "../../__tests__/mocks/db-types";
 const mockExecuteQuery = executeQuery as jest.MockedFunction<
   typeof executeQuery
 >;
-
-// Set test JWT secret
-process.env.JWT_SECRET = "test-secret-key";
 
 describe("Authentication Middleware", () => {
   let mockRequest: Partial<PublicRequest>;
@@ -83,9 +85,9 @@ describe("Authentication Middleware", () => {
             role: "admin",
             tenant_id: 1,
             status: "active",
-            firstName: "Admin",
-            lastName: "User",
-            tenantName: "Test Company",
+            first_name: "Admin",
+            last_name: "User",
+            name: "Test Company",
           },
         ]),
       ]);
@@ -255,12 +257,11 @@ describe("Authentication Middleware", () => {
         email: "admin@test.com",
         role: "admin",
         tenant_id: 1,
-        status: "active",
-        firstName: "Admin",
-        lastName: "User",
-        tenantName: "Test Company",
+        is_active: 1,
+        first_name: "Admin",
+        last_name: "User",
+        name: "Test Company",
         department_id: null,
-        position: null,
       };
 
       mockExecuteQuery.mockResolvedValueOnce([asTestRows([mockUser])]);
@@ -295,7 +296,7 @@ describe("Authentication Middleware", () => {
             email: "employee@test.com",
             role: "employee",
             tenant_id: 1,
-            status: "active",
+            is_active: 1,
           },
         ]),
       ]);
