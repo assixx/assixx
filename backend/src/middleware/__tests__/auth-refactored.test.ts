@@ -3,15 +3,15 @@
  * Tests JWT token validation, multi-tenant isolation, and role-based access
  */
 
+// Mock MUST be set before imports
+jest.mock("../../database");
+
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "../auth-refactored";
 import type { PublicRequest } from "../../types/request.types";
-import { executeQuery } from "../../config/database";
+import { executeQuery } from "../../database";
 import { asTestRows } from "../../__tests__/mocks/db-types";
-
-// Mock dependencies
-jest.mock("../../config/database");
 
 // Get mocked function
 const mockExecuteQuery = executeQuery as jest.MockedFunction<
@@ -49,7 +49,7 @@ describe("Authentication Middleware", () => {
   describe("Token Extraction", () => {
     it("should extract token from Authorization header", async () => {
       const token = jwt.sign(
-        { id: 1, tenant_id: 1, role: "admin" },
+        { id: 1, tenant_id: 1, role: "admin", sessionId: "test-session" },
         process.env.JWT_SECRET!,
       );
       mockRequest.headers = { authorization: `Bearer ${token}` };
@@ -83,7 +83,7 @@ describe("Authentication Middleware", () => {
 
     it("should extract token from cookie as fallback", async () => {
       const token = jwt.sign(
-        { id: 1, tenant_id: 1, role: "admin" },
+        { id: 1, tenant_id: 1, role: "admin", sessionId: "test-session" },
         process.env.JWT_SECRET!,
       );
       mockRequest.cookies = { token };
@@ -120,9 +120,10 @@ describe("Authentication Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        message: "Authentication token required",
+        error: "Authentication token required",
+        code: "NO_TOKEN",
         statusCode: 401,
-        error: "NO_TOKEN",
+        timestamp: expect.any(String),
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -141,9 +142,10 @@ describe("Authentication Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(403);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        message: "Invalid or expired token",
+        error: "Invalid or expired token",
+        code: "INVALID_TOKEN",
         statusCode: 403,
-        error: "INVALID_TOKEN",
+        timestamp: expect.any(String),
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -169,9 +171,10 @@ describe("Authentication Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(403);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        message: "Invalid or expired token",
+        error: "Invalid or expired token",
+        code: "INVALID_TOKEN",
         statusCode: 403,
-        error: "INVALID_TOKEN",
+        timestamp: expect.any(String),
       });
     });
 
@@ -196,7 +199,7 @@ describe("Authentication Middleware", () => {
   describe("User Validation", () => {
     it("should reject token for non-existent user", async () => {
       const token = jwt.sign(
-        { id: 999, tenant_id: 1, role: "admin" },
+        { id: 999, tenant_id: 1, role: "admin", sessionId: "test-session" },
         process.env.JWT_SECRET!,
       );
       mockRequest.headers = { authorization: `Bearer ${token}` };
@@ -213,15 +216,16 @@ describe("Authentication Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(403);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        message: "User not found or inactive",
+        error: "User not found or inactive",
+        code: "USER_NOT_FOUND",
         statusCode: 403,
-        error: "USER_NOT_FOUND",
+        timestamp: expect.any(String),
       });
     });
 
     it("should attach user to request on successful authentication", async () => {
       const token = jwt.sign(
-        { id: 1, tenant_id: 1, role: "admin" },
+        { id: 1, tenant_id: 1, role: "admin", sessionId: "test-session" },
         process.env.JWT_SECRET!,
       );
       mockRequest.headers = { authorization: `Bearer ${token}` };
@@ -324,7 +328,7 @@ describe("Authentication Middleware", () => {
 
       // User from tenant 2
       const token2 = jwt.sign(
-        { id: 2, tenant_id: 2, role: "admin" },
+        { id: 2, tenant_id: 2, role: "admin", sessionId: "test-session-2" },
         process.env.JWT_SECRET!,
       );
       mockRequest.headers = { authorization: `Bearer ${token2}` };
@@ -418,9 +422,10 @@ describe("Authentication Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(403);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        message: "Session expired or invalid",
+        error: "Session expired or not found",
+        code: "SESSION_EXPIRED",
         statusCode: 403,
-        error: "SESSION_INVALID",
+        timestamp: expect.any(String),
       });
     });
   });
