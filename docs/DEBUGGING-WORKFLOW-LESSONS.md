@@ -26,6 +26,11 @@
 - Vor Änderungen fragen: "Funktioniert das auch lokal?"
 - Tests sind wertlos wenn sie anderen Code testen
 
+### 5. Mock-Setup ist kritisch
+- Mocks MÜSSEN vor Imports definiert werden
+- Environment Variables vor Imports setzen
+- Mock-Funktionen explizit in Return-Object definieren
+
 ## ❌ Anti-Patterns
 
 ```typescript
@@ -68,3 +73,48 @@ docker exec assixx-backend pnpm run type-check
 ```
 
 Erst wenn ALLE grün sind → committen und pushen!
+
+## 📚 Konkrete Lösungen aus der Praxis
+
+### Jest Mock Problem gelöst (auth-refactored Tests)
+
+**Problem:** Mocks funktionierten nicht, Tests versuchten echte DB-Verbindung
+**Symptom:** 8 von 12 Tests scheiterten, ReferenceError nach Test-Ende
+
+**Lösung:**
+```javascript
+// 1. DB Connection verhindern VOR allen Imports
+process.env.DB_HOST = "mock";
+process.env.NODE_ENV = "test";
+
+// 2. Mock mit expliziter Funktion
+jest.mock("../../database", () => {
+  const mockExecuteQuery = jest.fn();
+  return {
+    executeQuery: mockExecuteQuery,
+    pool: {
+      end: jest.fn().mockResolvedValue(undefined),
+    },
+  };
+});
+
+// 3. ERST DANN imports
+import { authenticateToken } from "../auth-refactored";
+```
+
+**Lessons Learned:**
+- Mock-Setup MUSS vor Imports stehen
+- Environment Variables verhindern DB-Init beim Import
+- Mock-Funktionen explizit definieren, nicht nur `jest.fn()` returnen
+- Response-Format muss exakt stimmen (error vs message)
+
+### GitHub Actions vs Lokal
+
+**Problem:** Tests liefen lokal aber nicht in CI
+**Ursache:** Unterschiedliche DB-Schemas (main vs main_test)
+
+**Lösung:** 
+- NIEMALS Code an Environment anpassen
+- Immer gleicher Code für Test und Produktion
+- Mock-Strategie statt echte Test-DB für Unit Tests
+- Integration Tests separat mit echter DB

@@ -91,7 +91,13 @@ class AuthController {
         );
 
         if (tenantRows[0]) {
-          tenantName = tenantRows[0].company_name ?? tenantRows[0].name ?? "";
+          // Check company_name first, fall back to name if empty
+          // Use explicit checks to handle empty strings
+          if (tenantRows[0].company_name && tenantRows[0].company_name !== "") {
+            tenantName = tenantRows[0].company_name;
+          } else if (tenantRows[0].name) {
+            tenantName = tenantRows[0].name;
+          }
         }
       } catch (error) {
         logger.warn("Failed to get tenant name:", error);
