@@ -117,7 +117,7 @@ export class Document {
       "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
-        userId || null, // user_id can be null for company documents
+        userId ?? null, // user_id can be null for company documents
         teamId,
         departmentId,
         recipientType,
@@ -132,7 +132,7 @@ export class Document {
         year,
         month,
         tenant_id,
-        createdBy || userId || 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
+        createdBy ?? userId ?? 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
       ]);
       logger.info(`Document created successfully with ID ${result.insertId}`);
       return result.insertId;

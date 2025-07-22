@@ -270,7 +270,7 @@ class DocumentService {
   ): Promise<DocumentData | null> {
     try {
       const modelData: ModelDocumentCreateData = {
-        userId: documentData.userId || documentData.uploadedBy,
+        userId: documentData.userId ?? documentData.uploadedBy,
         fileName: documentData.filename,
         fileContent: undefined, // Not used for file uploads via multer
         category: documentData.category,

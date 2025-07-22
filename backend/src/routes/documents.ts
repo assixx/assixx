@@ -307,13 +307,7 @@ router.post(
           return;
         }
 
-        try {
-          fileContent = await fs.readFile(validatedPath);
-        } catch (readErr) {
-          // In tests, the file might not actually exist on disk
-          // The fs.readFile is mocked to return test content
-          throw readErr;
-        }
+        fileContent = await fs.readFile(validatedPath);
       } else {
         // No file content available
         res
@@ -347,7 +341,7 @@ router.post(
           await fs.unlink(filePath);
         } catch (unlinkErr) {
           // Only warn if it's not a "file not found" error
-          if ((unlinkErr as any).code !== "ENOENT") {
+          if ((unlinkErr as { code?: string }).code !== "ENOENT") {
             logger.warn(
               `Could not delete temporary file: ${getErrorMessage(unlinkErr)}`,
             );
