@@ -84,7 +84,11 @@ describe("Department Management API Endpoints", () => {
     // Get auth tokens - Use the actual generated usernames
     adminToken1 = await getAuthToken(app, adminUser1.username, "AdminPass123!");
     adminToken2 = await getAuthToken(app, adminUser2.username, "AdminPass123!");
-    employeeToken1 = await getAuthToken(app, employeeUser1.username, "EmpPass123!");
+    employeeToken1 = await getAuthToken(
+      app,
+      employeeUser1.username,
+      "EmpPass123!",
+    );
   });
 
   afterAll(async () => {
@@ -112,7 +116,9 @@ describe("Department Management API Endpoints", () => {
 
       const departments = response.body;
       expect(departments.length).toBeGreaterThanOrEqual(4); // Engineering, Sales, Marketing, HR
-      expect(departments.every((d: any) => d.tenant_id === tenant1Id)).toBe(true);
+      expect(departments.every((d: any) => d.tenant_id === tenant1Id)).toBe(
+        true,
+      );
     });
 
     it("should include department statistics if requested", async () => {
