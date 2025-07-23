@@ -988,13 +988,13 @@
     </div>
 
     <!-- Employee Modal -->
-    <div id="employee-modal" class="modal" data-debug="employee-modal" style="display: none;">
+    <div id="employee-modal" class="modal" data-debug="employee-modal" style="display: none">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neuer Mitarbeiter</h3>
           <button class="modal-close" id="close-employee-modal">&times;</button>
         </div>
-        <form id="create-employee-form" style="padding: var(--spacing-lg);">
+        <form id="create-employee-form" style="padding: var(--spacing-lg)">
           <div class="form-group">
             <label class="form-label">E-Mail</label>
             <input type="email" name="email" id="email" class="form-control" required />
@@ -1029,8 +1029,18 @@
           </div>
           <div class="form-group">
             <label class="form-label">Personalnummer *</label>
-            <input type="text" name="employee_number" class="form-control" placeholder="z.B. ABC-123 oder 2025-001" maxlength="10" pattern="[A-Za-z0-9\-]{1,10}" required />
-            <small class="form-text" style="color: var(--text-secondary); font-size: 12px;">Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)</small>
+            <input
+              type="text"
+              name="employee_number"
+              class="form-control"
+              placeholder="z.B. ABC-123 oder 2025-001"
+              maxlength="10"
+              pattern="[A-Za-z0-9\-]{1,10}"
+              required
+            />
+            <small class="form-text" style="color: var(--text-secondary); font-size: 12px">
+              Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)
+            </small>
           </div>
           <!-- Mitarbeiter-ID wird automatisch generiert -->
           <!-- IBAN-Feld wurde entfernt -->
@@ -1047,7 +1057,7 @@
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="dropdown-options" id="employee-department-dropdown" style="display: none;">
+              <div class="dropdown-options" id="employee-department-dropdown" style="display: none">
                 <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
                   Keine Abteilung
                 </div>
@@ -1156,24 +1166,24 @@
         justify-content: center;
         border-radius: var(--radius-sm);
       }
-      
+
       .modal-close:hover {
         background-color: var(--background-dark);
         color: var(--error-color);
       }
-      
+
       /* Form Styles für Modals */
       .modal .form-group {
         margin-bottom: 20px;
       }
-      
+
       .modal .form-label {
         display: block;
         margin-bottom: 8px;
         color: var(--text-secondary);
         font-size: 14px;
       }
-      
+
       .modal .form-control {
         width: 100%;
         padding: var(--spacing-sm) var(--spacing-md);
@@ -1183,7 +1193,7 @@
         border-radius: var(--radius-sm);
         color: #fff;
       }
-      
+
       .modal .form-control:focus {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(0, 142, 255, 0.5);
@@ -1192,7 +1202,7 @@
           inset 0 1px 2px rgba(0, 0, 0, 0.2);
         outline: none;
       }
-      
+
       .modal .button-group {
         display: flex;
         justify-content: space-between;
@@ -2844,7 +2854,7 @@
         justify-content: space-between;
         align-items: center;
       }
-      
+
       /* Floating Action Button */
       .add-employee-btn {
         position: fixed;
@@ -2873,9 +2883,9 @@
         box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
       }
     </style>
-    
+
     <!-- Floating Action Button for Employees -->
-    <button class="add-employee-btn" id="floating-add-employee" onclick="showEmployeeModal()" style="display: none;">+</button>
+    <button class="add-employee-btn" id="floating-add-employee" onclick="showEmployeeModal()" style="display: none">+</button>
 
     <!-- Mark body as loaded after all scripts -->
     <script>
@@ -2885,34 +2895,34 @@
           document.body.classList.add('loaded');
         }, 100);
       });
-      
+
       // Show/hide floating button based on section
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         const floatingBtn = document.getElementById('floating-add-employee');
-        
+
         // Function to check if employees section is active
         function updateFloatingButton() {
           const urlParams = new URLSearchParams(window.location.search);
           const section = urlParams.get('section');
-          
+
           if (section === 'employees' && floatingBtn) {
             floatingBtn.style.display = 'flex';
           } else if (floatingBtn) {
             floatingBtn.style.display = 'none';
           }
         }
-        
+
         // Check on page load
         updateFloatingButton();
-        
+
         // Also check when URL changes (for SPA navigation)
         window.addEventListener('popstate', updateFloatingButton);
-        
+
         // Listen for section changes
-        const observer = new MutationObserver(function(mutations) {
+        const observer = new MutationObserver(function (mutations) {
           updateFloatingButton();
         });
-        
+
         // Start observing
         const targetNode = document.body;
         const config = { childList: true, subtree: true };

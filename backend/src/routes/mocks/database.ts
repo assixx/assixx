@@ -7,8 +7,9 @@ import bcrypt from "bcryptjs";
 import { Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
-import { testDataTracker } from "./test-data-tracker";
+
 import { TEST_DATA_PREFIX } from "./test-constants";
+import { testDataTracker } from "./test-data-tracker";
 
 // Test database configuration
 const TEST_DB_CONFIG: PoolOptions = {
@@ -888,7 +889,9 @@ export async function cleanupTestData(): Promise<void> {
     // Versuche Foreign Keys wieder zu aktivieren, auch bei Fehler
     try {
       await testDb?.execute("SET FOREIGN_KEY_CHECKS = 1");
-    } catch {}
+    } catch {
+      // Ignore error if connection is already closed
+    }
   }
 }
 

@@ -342,9 +342,10 @@ router.get(
           );
 
           if (Array.isArray(tenantRows) && tenantRows.length > 0) {
-            tenantName = (tenantRows[0] as any).company_name;
+            tenantName = (tenantRows[0] as { company_name: string })
+              .company_name;
             // Remove TEST_DATA_PREFIX if present for test compatibility
-            if (tenantName && tenantName.startsWith("__AUTOTEST__")) {
+            if (tenantName?.startsWith("__AUTOTEST__")) {
               tenantName = tenantName.substring("__AUTOTEST__".length);
             }
           }

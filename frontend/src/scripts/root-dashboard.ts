@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Allow letters, numbers and hyphens
     input.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
-      target.value = target.value.replace(/[^A-Za-z0-9\-]/g, '');
+      target.value = target.value.replace(/[^A-Za-z0-9-]/g, '');
     });
 
     form.addEventListener('submit', (e) => {

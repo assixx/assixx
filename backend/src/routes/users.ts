@@ -763,7 +763,7 @@ router.patch(
 
       // Validate employee number format: max 10 chars, alphanumeric + hyphens allowed
       // Allow formats like "ABC-123", "2025-001", "EMP001", etc.
-      const employeeNumberRegex = /^[a-zA-Z0-9\-]{1,10}$/;
+      const employeeNumberRegex = /^[a-zA-Z0-9-]{1,10}$/;
       if (!employeeNumberRegex.test(employee_number)) {
         res
           .status(400)
