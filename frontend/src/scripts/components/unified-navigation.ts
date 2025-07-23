@@ -280,42 +280,68 @@ class UnifiedNavigation {
       }
     };
 
+    // Debounce timer for redirects to prevent loops
+    let redirectTimeout: number | null = null;
+    let isRedirecting = false;
+
     // Listen for storage events from other tabs
     window.addEventListener('storage', (event) => {
       if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
         console.log('[UnifiedNav] Storage event: activeRole changed from', event.oldValue, 'to', event.newValue);
 
-        // Check if we need to redirect based on current page
-        const currentPath = window.location.pathname;
-        const userRole = localStorage.getItem('userRole');
-        const newActiveRole = event.newValue;
-
-        // Determine if redirect is needed
-        if (currentPath.includes('/root-dashboard') && newActiveRole !== 'root') {
-          console.log('[UnifiedNav] Redirecting from root-dashboard due to role change');
-          if (newActiveRole === 'admin') {
-            window.location.replace('/admin-dashboard');
-          } else if (newActiveRole === 'employee') {
-            window.location.replace('/employee-dashboard');
-          }
-        } else if (currentPath.includes('/admin-dashboard') && newActiveRole !== 'admin') {
-          console.log('[UnifiedNav] Redirecting from admin-dashboard due to role change');
-          if (newActiveRole === 'root' && userRole === 'root') {
-            window.location.replace('/root-dashboard');
-          } else if (newActiveRole === 'employee') {
-            window.location.replace('/employee-dashboard');
-          }
-        } else if (currentPath.includes('/employee-dashboard') && newActiveRole !== 'employee') {
-          console.log('[UnifiedNav] Redirecting from employee-dashboard due to role change');
-          if (newActiveRole === 'root' && userRole === 'root') {
-            window.location.replace('/root-dashboard');
-          } else if (newActiveRole === 'admin') {
-            window.location.replace('/admin-dashboard');
-          }
+        // Clear any pending redirects
+        if (redirectTimeout) {
+          clearTimeout(redirectTimeout);
         }
 
-        // Also refresh navigation
-        this.refresh();
+        // Debounce the redirect to prevent rapid fire changes
+        redirectTimeout = setTimeout(() => {
+          // Prevent multiple redirects
+          if (isRedirecting) {
+            console.log('[UnifiedNav] Redirect already in progress, skipping...');
+            return;
+          }
+
+          // Check if we need to redirect based on current page
+          const currentPath = window.location.pathname;
+          const userRole = localStorage.getItem('userRole');
+          const newActiveRole = event.newValue;
+
+          // Helper function to get dashboard path for role
+          const getDashboardPath = (role: string | null): string => {
+            switch (role) {
+              case 'root':
+                return '/root-dashboard';
+              case 'admin':
+                return '/admin-dashboard';
+              case 'employee':
+                return '/employee-dashboard';
+              default:
+                return '/';
+            }
+          };
+
+          const targetPath = getDashboardPath(newActiveRole);
+          
+          // Only redirect if we're not already on the correct dashboard
+          if (targetPath && !currentPath.includes(targetPath)) {
+            // Check if user has permission for the target role
+            if (newActiveRole === 'root' && userRole !== 'root') {
+              console.log('[UnifiedNav] User does not have root permission, skipping redirect');
+              return;
+            }
+
+            console.log(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
+            isRedirecting = true;
+            
+            // Use replace to avoid adding to browser history
+            window.location.replace(targetPath);
+          } else {
+            console.log('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
+            // Just refresh navigation if we're already on the right page
+            this.refresh();
+          }
+        }, 300); // 300ms delay to batch rapid changes
       }
     });
   }

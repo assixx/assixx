@@ -31,6 +31,29 @@ Nächster Schritt: Unit Tests zum Laufen bringen, dann neuen Tenant erstellen un
   - [ ] ESLint errors sofort beheben
   - [ ] HINWEIS: 56 TypeScript Errors in Test-Dateien sind bekannt und können ignoriert werden (betreffen nur Tests, nicht Produktionscode)
 
+### Unit Tests Status (Stand: 23.07.2025)
+
+**Gesamt-Überblick:**
+- 20 Test-Suites insgesamt
+- ✅ 5 bestehen (inkl. auth.test.ts)
+- ❌ 15 fehlgeschlagen
+- 327 Tests insgesamt
+  - ✅ 63 bestehen
+  - ❌ 255 fehlgeschlagen
+  - ⏭️ 9 übersprungen
+
+**Status der wichtigsten Tests:**
+- ✅ auth.test.ts - 20/20 Tests bestehen (VOLLSTÄNDIG GEFIXT)
+- ❌ users.test.ts - 46 Tests fehlgeschlagen
+- ❌ signup.test.ts - 16 Tests fehlgeschlagen
+- ❌ 13 weitere Test-Dateien mit Fehlern
+
+**Bereits behobene Probleme in auth.test.ts:**
+- Multi-Tenant Isolation für kvp_comments & blackboard_confirmations
+- Test-Cleanup mit Foreign Keys funktioniert
+- SQL Bug in User.findById() behoben
+- __AUTOTEST__ Prefix handling
+
 ### Testing-Checkliste für jede Seite/Funktion:
 
 #### UI/UX Testing
