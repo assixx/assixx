@@ -130,6 +130,33 @@ jobs:
             sleep 2
           done
 
+      - name: Export and prepare current schema
+        run: |
+          # Find latest schema file
+          cd backend
+          latest_schema=$(ls -t database/current-schema-*.sql | head -1)
+          echo "Using schema: $latest_schema"
+          
+          # Prepare schema for test database
+          cp $latest_schema /tmp/test-schema.sql
+          sed -i 's/`main`/`main_test`/g' /tmp/test-schema.sql
+          
+      - name: Setup test database with current schema
+        env:
+          DB_HOST: localhost
+          DB_USER: root
+          DB_PASSWORD: StrongP@ssw0rd!123
+          DB_NAME: main_test
+        run: |
+          # Drop and recreate database
+          mysql -h localhost -u root -p$DB_PASSWORD -e "DROP DATABASE IF EXISTS main_test; CREATE DATABASE main_test;"
+          
+          # Import current production schema
+          mysql -h localhost -u root -p$DB_PASSWORD main_test < /tmp/test-schema.sql
+          
+          # Grant permissions
+          mysql -h localhost -u root -p$DB_PASSWORD -e "GRANT ALL ON main_test.* TO 'assixx_user'@'%';"
+
       - name: Setup test database
         env:
           DB_HOST: localhost

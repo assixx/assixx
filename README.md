@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/Version-2025.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development%20v0.0.2-yellow.svg)](https://github.com/SCS-Technik/Assixx)
-[![Tests](https://github.com/SCS-Technik/Assixx/actions/workflows/test.yml/badge.svg)](https://github.com/SCS-Technik/Assixx/actions/workflows/test.yml)
+[![Code Quality](https://github.com/SCS-Technik/Assixx/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/SCS-Technik/Assixx/actions/workflows/unit-tests.yml)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./docs/LICENSE)
 
 > **Digitalisierung von Papier zu Cloud - Speziell für produzierende Unternehmen**
@@ -190,6 +190,50 @@ Details siehe:
 - [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) - Vollständige Anleitung
 - [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) - Für Docker-Einsteiger
 - [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md) - Backup-Strategie
+
+## 🧪 Test-Strategie
+
+Assixx nutzt eine **klare Trennung** zwischen GitHub Actions und lokalen Tests:
+
+### 🌐 GitHub Actions (CI/CD)
+**Was läuft automatisch bei jedem Push/PR:**
+- ✅ **Unit Tests** - 2 Tests ohne DB-Abhängigkeit (errorHandler, health)
+- ✅ **Code Quality** - TypeScript, ESLint, Prettier
+- ✅ **Docker Build** - Prüft ob Container korrekt gebaut werden
+
+**Warum so minimal?**
+- 🚀 Schnelle CI/CD Pipeline
+- 🎯 Fokus auf Code-Qualität
+- ❌ Keine Mock-Wartung mehr
+
+### 🏠 Lokale Tests (Docker)
+**Alle DB-Tests laufen NUR lokal:**
+- ✅ **17 Integration Tests** mit echter MySQL Datenbank
+- ✅ Nutzt Hauptdatenbank `main` (keine separate Testdatenbank)
+- ✅ Keine Mocks - nur echte Datenbankverbindungen
+- ✅ Test-Daten werden nach jedem Test automatisch gelöscht
+
+```bash
+# Lokale Tests ausführen
+./scripts/test-local.sh
+
+# Optionen:
+# 1. Alle DB-Tests
+# 2. Nur Unit Tests
+# 3. Einzelnen Test
+# 4. Mit Coverage
+```
+
+### 📊 Test-Zusammenfassung
+
+| Test Type | GitHub | Lokal | Anzahl |
+|-----------|--------|-------|--------|
+| Unit Tests | ✅ | ✅ | 2 |
+| DB Tests | ❌ | ✅ | 17 |
+| Code Quality | ✅ | ❌ | 3 |
+| Docker Build | ✅ | ❌ | 1 |
+
+Details siehe [FINAL-TEST-STRATEGY.md](./docs/FINAL-TEST-STRATEGY.md)
 
 ## 👥 Team & Kontakt
 

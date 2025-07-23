@@ -27,7 +27,7 @@ module.exports = {
   testMatch: ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.js"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/", "/build/"],
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
-  maxWorkers: 1,
+  maxWorkers: 4, // VORSICHT: Kann Race Conditions mit DB geben!
   testTimeout: 30000,
   forceExit: true,
   detectOpenHandles: true,

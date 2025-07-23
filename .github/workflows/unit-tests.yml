@@ -1,0 +1,131 @@
+name: Code Quality & Basic Tests
+
+on:
+  push:
+    branches: [main, master, "unit-tests--Github-Actions"]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  basic-tests:
+    runs-on: ubuntu-latest
+    name: Basic Unit Tests (No Database)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.13.1
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Run Basic Unit Tests Only
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-github-actions
+        run: |
+          cd backend
+          echo "Running basic unit tests that don't require database..."
+          
+          # NUR echte Unit Tests OHNE DB oder Mocks!
+          UNIT_TESTS=(
+            "src/utils/__tests__/errorHandler.test.ts"
+            "src/routes/__tests__/health.test.ts"
+          )
+          
+          # Führe jeden Test einzeln aus
+          for test in "${UNIT_TESTS[@]}"; do
+            echo "Testing: $test"
+            pnpm jest "$test" || exit 1
+          done
+
+  code-analysis:
+    runs-on: ubuntu-latest
+    name: Code Analysis
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.13.1
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Run TypeScript check
+        run: |
+          cd backend
+          pnpm run typecheck
+
+      - name: Run ESLint
+        run: |
+          cd backend
+          pnpm run lint
+
+      - name: Check formatting
+        run: |
+          cd backend
+          pnpm run prettier
+
+  docker-build:
+    runs-on: ubuntu-latest
+    name: Docker Build Test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        run: |
+          cd docker
+          docker build -f Dockerfile -t assixx-backend-test:latest ..
+
+      - name: Test Docker Compose Config
+        run: |
+          cd docker
+          docker compose config

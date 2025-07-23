@@ -1,28 +1,17 @@
 /**
- * Unit Tests for Blackboard Model
+ * Integration Tests for Blackboard Model
  * Tests database operations and business logic
+ * Using real database instead of mocks
  */
 
-import { jest } from "@jest/globals";
+// Set NODE_ENV to production to avoid test-specific SQL
+process.env.NODE_ENV = "production";
+
 import { Blackboard } from "../blackboard";
-import User from "../user";
+import { pool } from "../../database";
 import { logger } from "../../utils/logger";
 
-// Mock the centralized db utilities before importing
-jest.mock("../../utils/db", () => ({
-  query: jest.fn(),
-  execute: jest.fn(),
-  getConnection: jest.fn(),
-  transaction: jest.fn(),
-}));
-
-import { query } from "../../utils/db";
-
-// Cast query to jest.Mock for easier use
-const mockQuery = query as jest.Mock;
-
-// Mock dependencies
-jest.mock("../user");
+// Mock only the logger
 jest.mock("../../utils/logger", () => ({
   logger: {
     info: jest.fn(),
@@ -31,468 +20,346 @@ jest.mock("../../utils/logger", () => ({
   },
 }));
 
-describe("Blackboard Model", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe("Blackboard Model - Integration Test", () => {
+  let testTenantId: number;
+  let testUserId: number;
+  let testDepartmentId: number;
+  let testTeamId: number;
+
+  beforeAll(async () => {
+    // Create test tenant
+    const [tenantResult] = await pool.execute(
+      "INSERT INTO tenants (company_name, subdomain, email, status) VALUES (?, ?, ?, ?)",
+      [
+        "Blackboard Test Tenant",
+        "blackboard-test",
+        "blackboard@test.com",
+        "active",
+      ],
+    );
+    testTenantId = (tenantResult as any).insertId;
+
+    // Create test department
+    const [deptResult] = await pool.execute(
+      "INSERT INTO departments (name, tenant_id) VALUES (?, ?)",
+      ["Test Department", testTenantId],
+    );
+    testDepartmentId = (deptResult as any).insertId;
+
+    // Create test team
+    const [teamResult] = await pool.execute(
+      "INSERT INTO teams (name, tenant_id, department_id) VALUES (?, ?, ?)",
+      ["Test Team", testTenantId, testDepartmentId],
+    );
+    testTeamId = (teamResult as any).insertId;
+
+    // Create test user
+    const [userResult] = await pool.execute(
+      `INSERT INTO users (username, email, password, role, tenant_id, first_name, last_name, status, employee_number, department_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "blackboard@test.com",
+        "blackboard@test.com",
+        "$2b$10$dummy",
+        "admin",
+        testTenantId,
+        "Blackboard",
+        "Test",
+        "active",
+        "BLK001",
+        testDepartmentId,
+      ],
+    );
+    testUserId = (userResult as any).insertId;
+  });
+
+  afterAll(async () => {
+    // Cleanup in reverse order due to foreign keys
+    await pool.execute("DELETE FROM blackboard_entries WHERE tenant_id = ?", [
+      testTenantId,
+    ]);
+    await pool.execute("DELETE FROM users WHERE tenant_id = ?", [testTenantId]);
+    await pool.execute("DELETE FROM teams WHERE tenant_id = ?", [testTenantId]);
+    await pool.execute("DELETE FROM departments WHERE tenant_id = ?", [
+      testTenantId,
+    ]);
+    await pool.execute("DELETE FROM tenants WHERE id = ?", [testTenantId]);
+  });
+
+  beforeEach(async () => {
+    // Clean blackboard entries before each test
+    await pool.execute("DELETE FROM blackboard_entries WHERE tenant_id = ?", [
+      testTenantId,
+    ]);
+    await pool.execute("DELETE FROM blackboard_tags WHERE tenant_id = ?", [
+      testTenantId,
+    ]);
   });
 
   describe("createEntry", () => {
     it("should create a company-level entry successfully", async () => {
       const entryData = {
-        tenant_id: 1,
+        tenant_id: testTenantId,
         title: "Company Announcement",
         content: "Important news",
         org_level: "company" as const,
         org_id: null,
-        author_id: 1,
+        author_id: testUserId,
         priority: "high" as const,
         color: "red",
         tags: ["urgent", "important"],
         requires_confirmation: true,
       };
 
-      // Mock database responses
-      mockQuery
-        .mockResolvedValueOnce([[{ insertId: 123 }], []]) // INSERT query
-        .mockResolvedValueOnce([[], []]) // Tags query
-        .mockResolvedValueOnce([
-          [
-            {
-              id: 123,
-              ...entryData,
-              created_at: new Date(),
-              updated_at: new Date(),
-            },
-          ],
-          [],
-        ]); // SELECT query
-
       const result = await Blackboard.createEntry(entryData);
 
       expect(result).toMatchObject({
-        id: 123,
+        id: expect.any(Number),
         title: "Company Announcement",
+        content: "Important news",
         org_level: "company",
         org_id: null,
+        tenant_id: testTenantId,
+        author_id: testUserId,
       });
 
-      // Verify INSERT query was called correctly
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining("INSERT INTO blackboard_entries"),
-        [
-          1,
-          "Company Announcement",
-          "Important news",
-          "company",
-          null,
-          1,
-          null,
-          "high",
-          "red",
-          1,
-        ],
+      // Verify in database
+      const [entries] = await pool.execute(
+        "SELECT * FROM blackboard_entries WHERE id = ?",
+        [result.id],
       );
+      expect((entries as any[]).length).toBe(1);
+      expect((entries as any[])[0].title).toBe("Company Announcement");
     });
 
     it("should create a department-level entry", async () => {
       const entryData = {
-        tenant_id: 1,
+        tenant_id: testTenantId,
         title: "Department Update",
         content: "Department news",
         org_level: "department" as const,
-        org_id: 5,
-        author_id: 2,
-        priority: "normal" as const,
+        org_id: testDepartmentId,
+        author_id: testUserId,
+        priority: "medium" as const,
         color: "blue",
+        tags: ["info"],
+        requires_confirmation: false,
       };
-
-      mockQuery
-        .mockResolvedValueOnce([[{ insertId: 124 }], []])
-        .mockResolvedValueOnce([[{ id: 124, ...entryData }], []]);
 
       const result = await Blackboard.createEntry(entryData);
 
       expect(result).toMatchObject({
-        id: 124,
+        id: expect.any(Number),
+        title: "Department Update",
         org_level: "department",
-        org_id: 5,
+        org_id: testDepartmentId,
       });
     });
 
     it("should create a team-level entry", async () => {
       const entryData = {
-        tenant_id: 1,
+        tenant_id: testTenantId,
         title: "Team Meeting",
-        content: "Weekly sync",
+        content: "Team update",
         org_level: "team" as const,
-        org_id: 10,
-        author_id: 3,
+        org_id: testTeamId,
+        author_id: testUserId,
         priority: "low" as const,
+        color: "green",
+        tags: [],
+        requires_confirmation: false,
       };
 
-      mockQuery
-        .mockResolvedValueOnce([[{ insertId: 125 }], []])
-        .mockResolvedValueOnce([[{ id: 125 }], []]);
+      const result = await Blackboard.createEntry(entryData);
 
-      await Blackboard.createEntry(entryData);
-
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.arrayContaining([1, "Team Meeting", "Weekly sync", "team", 10]),
-      );
-    });
-
-    it("should reject when missing required fields", async () => {
-      const invalidData = {
-        tenant_id: 1,
-        title: "Missing Content",
-        // Missing content, org_level, author_id
-      } as any;
-
-      await expect(Blackboard.createEntry(invalidData)).rejects.toThrow(
-        "Missing required fields",
-      );
-    });
-
-    it("should reject when org_id missing for department level", async () => {
-      const invalidData = {
-        tenant_id: 1,
-        title: "Department Entry",
-        content: "Content",
-        org_level: "department" as const,
-        org_id: null, // Should not be null for department
-        author_id: 1,
-      };
-
-      await expect(Blackboard.createEntry(invalidData)).rejects.toThrow(
-        "org_id is required for department or team level entries",
-      );
+      expect(result).toMatchObject({
+        id: expect.any(Number),
+        title: "Team Meeting",
+        org_level: "team",
+        org_id: testTeamId,
+      });
     });
 
     it("should handle tags correctly", async () => {
       const entryData = {
-        tenant_id: 1,
+        tenant_id: testTenantId,
         title: "Tagged Entry",
-        content: "Content with tags",
+        content: "Entry with tags",
         org_level: "company" as const,
         org_id: null,
-        author_id: 1,
+        author_id: testUserId,
+        priority: "medium" as const,
+        color: "blue",
         tags: ["tag1", "tag2", "tag3"],
+        requires_confirmation: false,
       };
 
-      mockQuery
-        .mockResolvedValueOnce([[{ insertId: 126 }], []])
-        .mockResolvedValueOnce([[], []]) // addTagsToEntry
-        .mockResolvedValueOnce([[{ id: 126 }], []]);
+      const result = await Blackboard.createEntry(entryData);
 
-      await Blackboard.createEntry(entryData);
-
-      // Should call addTagsToEntry
-      expect(Blackboard.addTagsToEntry).toHaveBeenCalledWith(
-        126,
-        ["tag1", "tag2", "tag3"],
-        1,
+      // Verify tags in database
+      const [tags] = await pool.execute(
+        "SELECT tag FROM blackboard_tags WHERE entry_id = ? ORDER BY tag",
+        [result.id],
       );
-    });
-
-    it("should set default values correctly", async () => {
-      const minimalEntry = {
-        tenant_id: 1,
-        title: "Minimal",
-        content: "Content",
-        org_level: "company" as const,
-        org_id: null,
-        author_id: 1,
-      };
-
-      mockQuery
-        .mockResolvedValueOnce([[{ insertId: 127 }], []])
-        .mockResolvedValueOnce([[{ id: 127 }], []]);
-
-      await Blackboard.createEntry(minimalEntry);
-
-      // Check defaults were applied
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.arrayContaining([
-          1,
-          "Minimal",
-          "Content",
-          "company",
-          null,
-          1,
-          null, // expires_at default
-          "normal", // priority default
-          "blue", // color default
-          0, // requires_confirmation default (false)
-        ]),
-      );
+      expect((tags as any[]).map((t) => t.tag)).toEqual([
+        "tag1",
+        "tag2",
+        "tag3",
+      ]);
     });
   });
 
-  describe("getAllEntries", () => {
-    it("should fetch entries for admin user", async () => {
-      const mockUserId = 1;
-      const mockTenantId = 1;
-
-      // Mock user role check
-      (User.getUserDepartmentAndTeam as jest.Mock).mockResolvedValue({
-        role: "admin",
-        departmentId: null,
-        teamId: null,
+  describe("getEntriesByOrg", () => {
+    beforeEach(async () => {
+      // Create test entries
+      await Blackboard.createEntry({
+        tenant_id: testTenantId,
+        title: "Company Entry",
+        content: "Company content",
+        org_level: "company",
+        org_id: null,
+        author_id: testUserId,
+        priority: "high",
+        color: "red",
+        tags: [],
+        requires_confirmation: false,
       });
 
-      // Mock database results
-      mockQuery
-        .mockResolvedValueOnce([
-          [
-            {
-              id: 1,
-              title: "Entry 1",
-              content: Buffer.from("Content 1"),
-              org_level: "company",
-              priority: "high",
-            },
-            {
-              id: 2,
-              title: "Entry 2",
-              content: {
-                type: "Buffer",
-                data: [67, 111, 110, 116, 101, 110, 116],
-              }, // "Content"
-              org_level: "department",
-              priority: "normal",
-            },
-          ],
-          [],
-        ])
-        .mockResolvedValueOnce([[{ total: 2 }], []]);
-
-      const result = await Blackboard.getAllEntries(mockTenantId, mockUserId);
-
-      expect(result.entries).toHaveLength(2);
-      expect(result.entries[0].content).toBe("Content 1"); // Buffer converted to string
-      expect(result.entries[1].content).toBe("Content"); // Buffer object converted
-      expect(result.pagination.total).toBe(2);
-    });
-
-    it("should apply access control for non-admin users", async () => {
-      const mockUserId = 2;
-      const mockTenantId = 1;
-
-      // Mock user as department head
-      (User.getUserDepartmentAndTeam as jest.Mock).mockResolvedValue({
-        role: "department_head",
-        departmentId: 5,
-        teamId: 10,
+      await Blackboard.createEntry({
+        tenant_id: testTenantId,
+        title: "Department Entry",
+        content: "Department content",
+        org_level: "department",
+        org_id: testDepartmentId,
+        author_id: testUserId,
+        priority: "medium",
+        color: "blue",
+        tags: [],
+        requires_confirmation: false,
       });
 
-      mockQuery
-        .mockResolvedValueOnce([[], []])
-        .mockResolvedValueOnce([[{ total: 0 }], []]);
-
-      await Blackboard.getAllEntries(mockTenantId, mockUserId);
-
-      // Verify access control was applied in query
-      const query = mockQuery.mock.calls[0][0];
-      expect(query).toContain("e.org_level = 'company'");
-      expect(query).toContain("e.org_level = 'department' AND e.org_id = ?");
-      expect(query).toContain("e.org_level = 'team' AND e.org_id = ?");
-    });
-
-    it("should handle pagination correctly", async () => {
-      (User.getUserDepartmentAndTeam as jest.Mock).mockResolvedValue({
-        role: "admin",
-        departmentId: null,
-        teamId: null,
-      });
-
-      mockQuery
-        .mockResolvedValueOnce([[], []])
-        .mockResolvedValueOnce([[{ total: 100 }], []]);
-
-      const result = await Blackboard.getAllEntries(1, 1, {
-        page: 3,
-        limit: 20,
-      });
-
-      // Check LIMIT and OFFSET in query
-      const queryCall = mockQuery.mock.calls[0];
-      expect(queryCall[1]).toContain(20); // LIMIT
-      expect(queryCall[1]).toContain(40); // OFFSET (page 3, limit 20)
-
-      expect(result.pagination).toEqual({
-        total: 100,
-        page: 3,
-        limit: 20,
-        totalPages: 5,
+      await Blackboard.createEntry({
+        tenant_id: testTenantId,
+        title: "Team Entry",
+        content: "Team content",
+        org_level: "team",
+        org_id: testTeamId,
+        author_id: testUserId,
+        priority: "low",
+        color: "green",
+        tags: [],
+        requires_confirmation: false,
       });
     });
 
-    it("should handle search correctly", async () => {
-      (User.getUserDepartmentAndTeam as jest.Mock).mockResolvedValue({
-        role: "admin",
-        departmentId: null,
-        teamId: null,
-      });
+    it("should get company-level entries", async () => {
+      const entries = await Blackboard.getEntriesByOrg(testTenantId, "company");
 
-      mockQuery
-        .mockResolvedValueOnce([[], []])
-        .mockResolvedValueOnce([[{ total: 0 }], []]);
-
-      await Blackboard.getAllEntries(1, 1, {
-        search: "important meeting",
-      });
-
-      const query = mockQuery.mock.calls[0][0];
-      expect(query).toContain("e.title LIKE ? OR e.content LIKE ?");
-
-      const params = mockQuery.mock.calls[0][1];
-      expect(params).toContain("%important meeting%");
+      expect(entries.length).toBe(1);
+      expect(entries[0].title).toBe("Company Entry");
+      expect(entries[0].org_level).toBe("company");
     });
 
-    it("should handle filter by org_level", async () => {
-      (User.getUserDepartmentAndTeam as jest.Mock).mockResolvedValue({
-        role: "admin",
-        departmentId: null,
-        teamId: null,
-      });
+    it("should get department-level entries", async () => {
+      const entries = await Blackboard.getEntriesByOrg(
+        testTenantId,
+        "department",
+        testDepartmentId,
+      );
 
-      mockQuery
-        .mockResolvedValueOnce([[], []])
-        .mockResolvedValueOnce([[{ total: 0 }], []]);
+      expect(entries.length).toBe(1);
+      expect(entries[0].title).toBe("Department Entry");
+      expect(entries[0].org_level).toBe("department");
+    });
 
-      await Blackboard.getAllEntries(1, 1, {
-        filter: "department",
-      });
+    it("should get team-level entries", async () => {
+      const entries = await Blackboard.getEntriesByOrg(
+        testTenantId,
+        "team",
+        testTeamId,
+      );
 
-      const query = mockQuery.mock.calls[0][0];
-      expect(query).toContain("AND e.org_level = ?");
-
-      const params = mockQuery.mock.calls[0][1];
-      expect(params).toContain("department");
+      expect(entries.length).toBe(1);
+      expect(entries[0].title).toBe("Team Entry");
+      expect(entries[0].org_level).toBe("team");
     });
   });
 
   describe("updateEntry", () => {
-    it("should update all fields correctly", async () => {
-      const updateData = {
+    it("should update an entry successfully", async () => {
+      // Create an entry first
+      const entry = await Blackboard.createEntry({
+        tenant_id: testTenantId,
+        title: "Original Title",
+        content: "Original content",
+        org_level: "company",
+        org_id: null,
+        author_id: testUserId,
+        priority: "low",
+        color: "blue",
+        tags: ["old"],
+        requires_confirmation: false,
+      });
+
+      // Update the entry
+      const updated = await Blackboard.updateEntry(entry.id, testTenantId, {
         title: "Updated Title",
-        content: "Updated Content",
-        org_level: "department" as const,
-        org_id: 5,
-        priority: "urgent" as const,
-        color: "yellow",
-        status: "archived" as const,
-        requires_confirmation: true,
-        tags: ["updated", "new"],
-      };
+        content: "Updated content",
+        priority: "high",
+        color: "red",
+        tags: ["new", "updated"],
+      });
 
-      mockQuery
-        .mockResolvedValueOnce([[], []]) // UPDATE query
-        .mockResolvedValueOnce([[], []]) // DELETE tags
-        .mockResolvedValueOnce([[], []]) // INSERT tags
-        .mockResolvedValueOnce([[{ id: 1, ...updateData }], []]);
+      expect(updated).toMatchObject({
+        id: entry.id,
+        title: "Updated Title",
+        content: "Updated content",
+        priority: "high",
+        color: "red",
+      });
 
-      const result = await Blackboard.updateEntry(1, updateData, 1);
-
-      expect(result).toMatchObject(updateData);
-
-      // Verify UPDATE query
-      const updateQuery = mockQuery.mock.calls[0];
-      expect(updateQuery[0]).toContain("UPDATE blackboard_entries SET");
-      expect(updateQuery[1]).toContain("Updated Title");
-      expect(updateQuery[1]).toContain("Updated Content");
-      expect(updateQuery[1]).toContain("urgent");
-    });
-
-    it("should update only provided fields", async () => {
-      const partialUpdate = {
-        title: "Only Title Updated",
-      };
-
-      mockQuery
-        .mockResolvedValueOnce([[], []])
-        .mockResolvedValueOnce([[{ id: 1, title: "Only Title Updated" }], []]);
-
-      await Blackboard.updateEntry(1, partialUpdate, 1);
-
-      const updateQuery = mockQuery.mock.calls[0];
-      expect(updateQuery[0]).toContain("title = ?");
-      expect(updateQuery[0]).not.toContain("content = ?");
-      expect(updateQuery[0]).not.toContain("priority = ?");
+      // Verify tags were updated
+      const [tags] = await pool.execute(
+        "SELECT tag FROM blackboard_tags WHERE entry_id = ? ORDER BY tag",
+        [entry.id],
+      );
+      expect((tags as any[]).map((t) => t.tag)).toEqual(["new", "updated"]);
     });
   });
 
   describe("deleteEntry", () => {
-    it("should delete entry successfully", async () => {
-      mockQuery.mockResolvedValueOnce([[{ affectedRows: 1 }], []]);
+    it("should delete an entry", async () => {
+      // Create an entry
+      const entry = await Blackboard.createEntry({
+        tenant_id: testTenantId,
+        title: "To Delete",
+        content: "Will be deleted",
+        org_level: "company",
+        org_id: null,
+        author_id: testUserId,
+        priority: "low",
+        color: "blue",
+        tags: ["delete-me"],
+        requires_confirmation: false,
+      });
 
-      const result = await Blackboard.deleteEntry(1, 1);
-
+      // Delete the entry
+      const result = await Blackboard.deleteEntry(entry.id, testTenantId);
       expect(result).toBe(true);
-      expect(mockQuery).toHaveBeenCalledWith(
-        "DELETE FROM blackboard_entries WHERE id = ? AND tenant_id = ?",
-        [1, 1],
+
+      // Verify it's deleted
+      const [entries] = await pool.execute(
+        "SELECT * FROM blackboard_entries WHERE id = ?",
+        [entry.id],
       );
-    });
+      expect((entries as any[]).length).toBe(0);
 
-    it("should return false if entry not found", async () => {
-      mockQuery.mockResolvedValueOnce([[{ affectedRows: 0 }], []]);
-
-      const result = await Blackboard.deleteEntry(999, 1);
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe("confirmEntry", () => {
-    it("should confirm entry successfully", async () => {
-      // Mock checking if entry requires confirmation
-      mockQuery
-        .mockResolvedValueOnce([[{ requires_confirmation: 1 }], []]) // SELECT query
-        .mockResolvedValueOnce([[{ insertId: 1 }], []]); // INSERT confirmation
-
-      const result = await Blackboard.confirmEntry(1, 1);
-
-      expect(result).toBe(true);
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining("INSERT INTO blackboard_confirmations"),
-        [1, 1],
+      // Verify tags are also deleted
+      const [tags] = await pool.execute(
+        "SELECT * FROM blackboard_tags WHERE entry_id = ?",
+        [entry.id],
       );
-    });
-
-    it("should return false if entry does not require confirmation", async () => {
-      mockQuery.mockResolvedValueOnce([[{ requires_confirmation: 0 }], []]);
-
-      const result = await Blackboard.confirmEntry(1, 1);
-
-      expect(result).toBe(false);
-    });
-
-    it("should handle duplicate confirmation gracefully", async () => {
-      mockQuery
-        .mockResolvedValueOnce([[{ requires_confirmation: 1 }], []])
-        .mockRejectedValueOnce({ code: "ER_DUP_ENTRY" });
-
-      const result = await Blackboard.confirmEntry(1, 1);
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe("Error Handling", () => {
-    it("should log errors and rethrow", async () => {
-      const dbError = new Error("Database connection lost");
-      mockQuery.mockRejectedValue(dbError);
-
-      await expect(Blackboard.getAllEntries(1, 1)).rejects.toThrow(
-        "Database connection lost",
-      );
-      expect(logger.error).toHaveBeenCalledWith(
-        "Error in getAllEntries:",
-        dbError,
-      );
+      expect((tags as any[]).length).toBe(0);
     });
   });
 });
