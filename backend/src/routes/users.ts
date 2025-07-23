@@ -761,18 +761,15 @@ router.patch(
         return;
       }
 
-      // Validate employee number format: max 8 chars, alphanumeric + one hyphen allowed
-      // Allow leading zeros like "01", "0002", "0002-22x"
-      const employeeNumberRegex = /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)?$/;
-      if (
-        !employeeNumberRegex.test(employee_number) ||
-        employee_number.length > 8
-      ) {
+      // Validate employee number format: max 10 chars, alphanumeric + hyphens allowed
+      // Allow formats like "ABC-123", "2025-001", "EMP001", etc.
+      const employeeNumberRegex = /^[a-zA-Z0-9\-]{1,10}$/;
+      if (!employeeNumberRegex.test(employee_number)) {
         res
           .status(400)
           .json(
             errorResponse(
-              "Ungültiges Format. Max. 8 Zeichen, nur Buchstaben, Zahlen und ein Bindestrich erlaubt",
+              "Ungültiges Format. Max. 10 Zeichen, nur Buchstaben, Zahlen und Bindestriche erlaubt",
               400,
             ),
           );

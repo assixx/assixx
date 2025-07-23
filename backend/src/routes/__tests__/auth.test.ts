@@ -23,6 +23,7 @@ describe("Authentication API Endpoints", () => {
   let tenant2Id: number;
   let testUser1: any;
   let testUser2: any;
+  let rootUser: any;
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
@@ -154,6 +155,22 @@ describe("Authentication API Endpoints", () => {
       console.error("Failed to create testUser2:", error);
       throw error;
     }
+
+    // Create root user for root-specific tests
+    try {
+      rootUser = await createTestUser(testDb, {
+        username: "root@system.de",
+        email: "root@system.de",
+        password: "RootPass123!",
+        role: "root",
+        tenant_id: tenant1Id, // Root can belong to any tenant
+        first_name: "Root",
+        last_name: "Admin",
+      });
+    } catch (error) {
+      console.error("Failed to create rootUser:", error);
+      throw error;
+    }
   });
 
   afterAll(async () => {
@@ -170,7 +187,7 @@ describe("Authentication API Endpoints", () => {
     it("should successfully login with valid credentials", async () => {
       console.log("Attempting login with username:", testUser1.username);
       const response = await request(app).post("/api/auth/login").send({
-        username: testUser1.username,
+        username: testUser1.username, // This will now include the prefix
         password: "TestPass123!",
         fingerprint: "test-fingerprint-123",
       });

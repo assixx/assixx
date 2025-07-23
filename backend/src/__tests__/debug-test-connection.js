@@ -8,7 +8,7 @@ async function testConnection() {
   console.log("DB_HOST:", process.env.DB_HOST || "localhost");
   console.log("DB_PORT:", process.env.DB_PORT || "3306");
   console.log("DB_USER:", process.env.DB_USER || "assixx_user");
-  console.log("DB_NAME:", process.env.DB_NAME || "main_test");
+  console.log("DB_NAME:", process.env.DB_NAME || "main");
   console.log("NODE_ENV:", process.env.NODE_ENV);
 
   try {
@@ -17,7 +17,7 @@ async function testConnection() {
       port: parseInt(process.env.DB_PORT || "3306"),
       user: process.env.DB_USER || "assixx_user",
       password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
-      database: process.env.DB_NAME || "main_test",
+      database: process.env.DB_NAME || "main",
     });
 
     console.log("✅ Connection successful!");
@@ -35,7 +35,7 @@ async function testConnection() {
     for (const table of testTables) {
       const [result] = await connection.query(
         "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = ?",
-        [process.env.DB_NAME || "main_test", table],
+        [process.env.DB_NAME || "main", table],
       );
       console.log(
         `Table ${table}: ${result[0].count > 0 ? "✅ exists" : "❌ missing"}`,

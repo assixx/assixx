@@ -120,10 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.style.display = 'flex';
     input.focus();
 
-    // Only allow numbers
+    // Allow letters, numbers and hyphens
     input.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
-      target.value = target.value.replace(/[^0-9]/g, '');
+      target.value = target.value.replace(/[^A-Za-z0-9\-]/g, '');
     });
 
     form.addEventListener('submit', (e) => {
@@ -132,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const employeeNumber = input.value;
 
-        if (employeeNumber.length !== 6) {
-          alert('Die Personalnummer muss genau 6 Ziffern lang sein.');
+        if (employeeNumber.length < 1 || employeeNumber.length > 10) {
+          alert('Die Personalnummer muss zwischen 1 und 10 Zeichen lang sein.');
           return;
         }
 

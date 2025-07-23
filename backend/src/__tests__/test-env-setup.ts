@@ -19,7 +19,7 @@ process.env.SESSION_SECRET =
 process.env.DB_HOST = process.env.DB_HOST || "localhost";
 process.env.DB_USER = process.env.DB_USER || "assixx_user";
 process.env.DB_PASSWORD = process.env.DB_PASSWORD || "AssixxP@ss2025!";
-process.env.DB_NAME = process.env.DB_NAME || "main_test";
+process.env.DB_NAME = process.env.DB_NAME || "main";
 process.env.REDIS_HOST = process.env.REDIS_HOST || "localhost";
 process.env.REDIS_PORT = process.env.REDIS_PORT || "6379";
 

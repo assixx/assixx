@@ -7,6 +7,8 @@ import bcrypt from "bcryptjs";
 import { Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
+import { testDataTracker } from "./test-data-tracker";
+import { TEST_DATA_PREFIX } from "./test-constants";
 
 // Test database configuration
 const TEST_DB_CONFIG: PoolOptions = {
@@ -14,7 +16,7 @@ const TEST_DB_CONFIG: PoolOptions = {
   port: parseInt(process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307")),
   user: process.env.DB_USER ?? "assixx_user",
   password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
-  database: process.env.DB_NAME ?? "main_test",
+  database: process.env.DB_NAME ?? "main",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -77,7 +79,7 @@ async function initializeSchema(db: Pool): Promise<void> {
         profile_picture VARCHAR(255),
         hire_date DATE,
         birthday DATE,
-        employee_number VARCHAR(6) NOT NULL,
+        employee_number VARCHAR(10) NOT NULL,
         is_active BOOLEAN DEFAULT TRUE,
         is_archived BOOLEAN DEFAULT FALSE,
         status ENUM('active', 'inactive') DEFAULT 'active',
@@ -94,7 +96,7 @@ async function initializeSchema(db: Pool): Promise<void> {
     // Try to add employee_number column if it doesn't exist (for existing tables)
     try {
       await db.execute(`
-        ALTER TABLE users ADD COLUMN employee_number VARCHAR(6) NOT NULL
+        ALTER TABLE users ADD COLUMN employee_number VARCHAR(10) NOT NULL
       `);
       await db.execute(`
         ALTER TABLE users ADD UNIQUE KEY idx_employee_number (employee_number)
@@ -751,62 +753,142 @@ export async function cleanupTestData(): Promise<void> {
   if (!testDb) return;
 
   try {
-    // Delete test data in reverse order of dependencies
-    await testDb.execute("DELETE FROM survey_answers WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM survey_responses WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM survey_questions WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM surveys WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM survey_templates WHERE tenant_id > 1");
+    console.log(`Cleaning up test data with prefix: ${TEST_DATA_PREFIX}`);
 
-    await testDb.execute("DELETE FROM chat_message_edits WHERE tenant_id > 1");
+    // WICHTIG: Foreign Keys deaktivieren für vollständiges Cleanup
+    await testDb.execute("SET FOREIGN_KEY_CHECKS = 0");
+
+    // Get test tenant IDs based on PREFIX
+    const testTenantQuery = `(SELECT id FROM tenants WHERE subdomain LIKE '${TEST_DATA_PREFIX}%' OR company_name LIKE '${TEST_DATA_PREFIX}%')`;
+
+    // Delete all data associated with test tenants
     await testDb.execute(
-      "DELETE FROM chat_message_reactions WHERE tenant_id > 1",
+      `DELETE FROM survey_answers WHERE tenant_id IN ${testTenantQuery}`,
     );
     await testDb.execute(
-      "DELETE FROM chat_message_read_receipts WHERE tenant_id > 1",
-    );
-    await testDb.execute("DELETE FROM chat_messages WHERE tenant_id > 1");
-    await testDb.execute(
-      "DELETE FROM chat_channel_members WHERE tenant_id > 1",
-    );
-    await testDb.execute("DELETE FROM chat_channels WHERE tenant_id > 1");
-
-    await testDb.execute("DELETE FROM shift_swap_requests WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM shift_assignments WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM shift_plans WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM shift_templates WHERE tenant_id > 1");
-
-    await testDb.execute("DELETE FROM kvp_comments WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM kvp_votes WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM kvp_suggestions WHERE tenant_id > 1");
-
-    await testDb.execute(
-      "DELETE FROM calendar_recurring_patterns WHERE tenant_id > 1",
+      `DELETE FROM survey_responses WHERE tenant_id IN ${testTenantQuery}`,
     );
     await testDb.execute(
-      "DELETE FROM calendar_event_participants WHERE tenant_id > 1",
+      `DELETE FROM survey_questions WHERE tenant_id IN ${testTenantQuery}`,
     );
-    await testDb.execute("DELETE FROM calendar_events WHERE tenant_id > 1");
+    await testDb.execute(
+      `DELETE FROM surveys WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM survey_templates WHERE tenant_id IN ${testTenantQuery}`,
+    );
 
     await testDb.execute(
-      "DELETE FROM blackboard_confirmations WHERE tenant_id > 1",
+      `DELETE FROM chat_message_edits WHERE tenant_id IN ${testTenantQuery}`,
     );
-    await testDb.execute("DELETE FROM blackboard_entries WHERE tenant_id > 1");
+    await testDb.execute(
+      `DELETE FROM chat_message_reactions WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM chat_message_read_receipts WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM chat_messages WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM chat_channel_members WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM chat_channels WHERE tenant_id IN ${testTenantQuery}`,
+    );
 
     await testDb.execute(
-      "DELETE FROM document_permissions WHERE tenant_id > 1",
+      `DELETE FROM shift_swap_requests WHERE tenant_id IN ${testTenantQuery}`,
     );
-    await testDb.execute("DELETE FROM documents WHERE tenant_id > 1");
+    await testDb.execute(
+      `DELETE FROM shift_assignments WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM shift_plans WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM shift_templates WHERE tenant_id IN ${testTenantQuery}`,
+    );
 
-    await testDb.execute("DELETE FROM users WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM teams WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM departments WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM tenants WHERE id > 1");
+    await testDb.execute(
+      `DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM kvp_suggestions WHERE tenant_id IN ${testTenantQuery}`,
+    );
+
+    await testDb.execute(
+      `DELETE FROM calendar_recurring_patterns WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM calendar_event_participants WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM calendar_events WHERE tenant_id IN ${testTenantQuery}`,
+    );
+
+    await testDb.execute(
+      `DELETE FROM blackboard_confirmations WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM blackboard_entries WHERE tenant_id IN ${testTenantQuery}`,
+    );
+
+    await testDb.execute(
+      `DELETE FROM document_permissions WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM documents WHERE tenant_id IN ${testTenantQuery}`,
+    );
+
+    await testDb.execute(
+      `DELETE FROM activity_logs WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM admin_logs WHERE tenant_id IN ${testTenantQuery}`,
+    );
+
+    // Delete user-specific data with PREFIX
+    await testDb.execute(
+      `DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%')`,
+    );
+    await testDb.execute(
+      `DELETE FROM login_attempts WHERE username LIKE '${TEST_DATA_PREFIX}%'`,
+    );
+
+    // Delete core entities with PREFIX
+    await testDb.execute(
+      `DELETE FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%'`,
+    );
+    await testDb.execute(
+      `DELETE FROM teams WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM departments WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM tenants WHERE subdomain LIKE '${TEST_DATA_PREFIX}%' OR company_name LIKE '${TEST_DATA_PREFIX}%'`,
+    );
+
+    // Clear tracker
+    testDataTracker.clear();
+
+    // Foreign Keys wieder aktivieren
+    await testDb.execute("SET FOREIGN_KEY_CHECKS = 1");
+
+    console.log("Test data cleanup completed");
 
     await testDb.end();
     testDb = null;
   } catch (error) {
     console.error("Error cleaning up test data:", error);
+    // Versuche Foreign Keys wieder zu aktivieren, auch bei Fehler
+    try {
+      await testDb?.execute("SET FOREIGN_KEY_CHECKS = 1");
+    } catch {}
   }
 }
 
@@ -820,15 +902,20 @@ export async function createTestTenant(
 ): Promise<number> {
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 1000);
-  const uniqueSubdomain = `${subdomain}_${timestamp}_${randomSuffix}`;
+  // Add TEST_DATA_PREFIX to ensure safe cleanup
+  const uniqueSubdomain = `${TEST_DATA_PREFIX}${subdomain}_${timestamp}_${randomSuffix}`;
+  const uniqueName = `${TEST_DATA_PREFIX}${name}`;
+
   // Try to handle both 'name' and 'company_name' field variations
   try {
     // First try with company_name (production schema)
     const [result] = await db.execute(
       "INSERT INTO tenants (subdomain, company_name, status) VALUES (?, ?, ?)",
-      [uniqueSubdomain, name, "active"],
+      [uniqueSubdomain, uniqueName, "active"],
     );
-    return (result as ResultSetHeader).insertId;
+    const tenantId = (result as ResultSetHeader).insertId;
+    testDataTracker.trackTenant(tenantId); // Track created tenant
+    return tenantId;
   } catch (err: unknown) {
     // If it fails, try with 'name' field (GitHub Actions schema)
     const error = err as Error;
@@ -838,9 +925,11 @@ export async function createTestTenant(
     ) {
       const [result] = await db.execute(
         "INSERT INTO tenants (subdomain, name, status) VALUES (?, ?, ?)",
-        [uniqueSubdomain, name, "active"],
+        [uniqueSubdomain, uniqueName, "active"],
       );
-      return (result as ResultSetHeader).insertId;
+      const tenantId = (result as ResultSetHeader).insertId;
+      testDataTracker.trackTenant(tenantId); // Track created tenant
+      return tenantId;
     }
     throw err;
   }
@@ -867,23 +956,32 @@ export async function createTestUser(
 
   // For auth tests, we need predictable emails
   const isAuthTest = userData.email.includes("@authtest");
+  const isRootUser =
+    userData.role === "root" && userData.email === "root@system.de";
   const timestamp = Date.now();
   const randomSuffix = Math.floor(Math.random() * 1000);
 
-  // In Assixx sind username und email IMMER gleich!
-  const uniqueUsername =
+  // Add TEST_DATA_PREFIX to ALL test users for safe cleanup
+  let uniqueUsername: string;
+  let uniqueEmail: string;
+
+  if (
     isAuthTest &&
     (userData.username === "testuser1@authtest1.de" ||
       userData.username === "testuser2@authtest2.de")
-      ? userData.username
-      : `${userData.username}_${timestamp}_${randomSuffix}`;
-
-  const uniqueEmail =
-    isAuthTest &&
-    (userData.email === "testuser1@authtest1.de" ||
-      userData.email === "testuser2@authtest2.de")
-      ? userData.email
-      : userData.email.replace("@", `_${timestamp}_${randomSuffix}@`);
+  ) {
+    // Auth test users need predictable names but with prefix
+    uniqueUsername = `${TEST_DATA_PREFIX}${userData.username}`;
+    uniqueEmail = `${TEST_DATA_PREFIX}${userData.email}`;
+  } else if (isRootUser) {
+    // Root user gets prefix but no suffix
+    uniqueUsername = `${TEST_DATA_PREFIX}${userData.username}`;
+    uniqueEmail = `${TEST_DATA_PREFIX}${userData.email}`;
+  } else {
+    // Other users get prefix AND suffix
+    uniqueUsername = `${TEST_DATA_PREFIX}${userData.username}_${timestamp}_${randomSuffix}`;
+    uniqueEmail = `${TEST_DATA_PREFIX}${userData.email.replace("@", `_${timestamp}_${randomSuffix}@`)}`;
+  }
 
   // Generate unique employee number
   const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));
@@ -906,8 +1004,10 @@ export async function createTestUser(
         employeeNumber,
       ],
     );
+    const userId = (result as ResultSetHeader).insertId;
+    testDataTracker.trackUser(userId); // Track created user
     return {
-      id: (result as ResultSetHeader).insertId,
+      id: userId,
       username: uniqueUsername,
       email: uniqueEmail,
     };
@@ -931,8 +1031,10 @@ export async function createTestUser(
           userData.status ?? "active",
         ],
       );
+      const userId = (result as ResultSetHeader).insertId;
+      testDataTracker.trackUser(userId); // Track created user
       return {
-        id: (result as ResultSetHeader).insertId,
+        id: userId,
         username: uniqueUsername,
         email: uniqueEmail,
       };
@@ -954,7 +1056,9 @@ export async function createTestDepartment(
     "INSERT INTO departments (name, tenant_id, parent_id) VALUES (?, ?, ?)",
     [name, tenantId, parentId ?? null],
   );
-  return (result as ResultSetHeader).insertId;
+  const deptId = (result as ResultSetHeader).insertId;
+  testDataTracker.trackDepartment(deptId); // Track created department
+  return deptId;
 }
 
 /**
@@ -970,7 +1074,9 @@ export async function createTestTeam(
     "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
     [name, departmentId, tenantId],
   );
-  return (result as ResultSetHeader).insertId;
+  const teamId = (result as ResultSetHeader).insertId;
+  testDataTracker.trackTeam(teamId); // Track created team
+  return teamId;
 }
 
 /**

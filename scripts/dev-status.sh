@@ -2,13 +2,10 @@
 
 # Assixx Development Status Check
 # Führt alle wichtigen Checks in einem Script aus
-# Optional: Mit --with-tests für vollständigen Test-Durchlauf
+# Tests werden IMMER automatisch ausgeführt
 
-# Parameter Check
-RUN_TESTS=false
-if [ "$1" = "--with-tests" ]; then
-    RUN_TESTS=true
-fi
+# Tests immer ausführen - keine Option zum Überspringen
+RUN_TESTS=true
 
 echo "🚀 Assixx Development Status Check"
 echo "=================================="
@@ -156,7 +153,7 @@ else
 fi
 echo ""
 
-# 7. Automatischer Test-Durchlauf (wenn --with-tests Flag gesetzt)
+# 7. Automatischer Test-Durchlauf (IMMER)
 if [ "$RUN_TESTS" = true ]; then
     echo "7️⃣  Automatischer Test-Durchlauf:"
     echo "=================================="
@@ -257,6 +254,5 @@ if [ "$RUN_TESTS" = true ]; then
     echo ""
     echo "   💡 Tipp: Logs unter /tmp/test-*.log für Details"
     echo ""
-else
-    echo "💡 Tipp: Führe '$0 --with-tests' aus für vollständigen Test-Durchlauf"
 fi
+# Tests werden immer ausgeführt - kein else-Zweig mehr nötig

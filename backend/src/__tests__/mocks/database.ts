@@ -38,7 +38,7 @@ const TEST_DB_CONFIG = {
   port: parseInt(process.env.DB_PORT || "3306"),
   user: process.env.DB_USER || "assixx_user",
   password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
-  database: process.env.DB_NAME || "main_test",
+  database: process.env.DB_NAME || "main",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

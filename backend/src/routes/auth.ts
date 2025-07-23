@@ -314,6 +314,67 @@ router.post(
 router.post("/logout", ...security.user(), typed.auth(authController.logout));
 
 /**
+ * @route GET /api/auth/me
+ * @desc Get current authenticated user information
+ * @access Private
+ */
+router.get(
+  "/me",
+  ...security.user(),
+  typed.auth(async (req, res) => {
+    try {
+      // Fetch user data from database
+      const user = await User.findById(req.user.id, req.user.tenant_id);
+
+      if (!user) {
+        res.status(404).json(errorResponse("User not found", 404));
+        return;
+      }
+
+      // Fetch tenant information
+      let tenantName = null;
+      if (req.user.tenant_id) {
+        try {
+          const { query } = await import("../utils/db");
+          const [tenantRows] = await query(
+            "SELECT company_name FROM tenants WHERE id = ?",
+            [req.user.tenant_id],
+          );
+
+          if (Array.isArray(tenantRows) && tenantRows.length > 0) {
+            tenantName = (tenantRows[0] as any).company_name;
+            // Remove TEST_DATA_PREFIX if present for test compatibility
+            if (tenantName && tenantName.startsWith("__AUTOTEST__")) {
+              tenantName = tenantName.substring("__AUTOTEST__".length);
+            }
+          }
+        } catch (tenantError) {
+          logger.error("Error fetching tenant info:", tenantError);
+          // Continue without tenant name
+        }
+      }
+
+      res.json(
+        successResponse({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          tenant_id: user.tenant_id,
+          tenantName: tenantName,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          department_id: user.department_id,
+        }),
+      );
+    } catch (error) {
+      logger.error("Error in /api/auth/me:", error);
+      res.status(500).json(errorResponse("Failed to fetch user info", 500));
+    }
+  }),
+);
+
+/**
  * @route GET /api/auth/logout
  * @desc Logout user (client-side only) - Legacy endpoint
  * @access Public

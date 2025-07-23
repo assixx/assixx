@@ -21,7 +21,7 @@ async function setupTestDatabase() {
     port: parseInt(process.env.DB_PORT || "3306"),
     user: process.env.DB_USER || "assixx_user",
     password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
-    database: process.env.DB_NAME || "main_test",
+    database: process.env.DB_NAME || "main",
     multipleStatements: true,
   });
 

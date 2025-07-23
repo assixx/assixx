@@ -16,7 +16,7 @@ process.env["DB_PORT"] =
   process.env["DB_PORT"] || (process.env["CI"] ? "3306" : "3307");
 process.env["DB_USER"] = process.env["DB_USER"] || "assixx_user";
 process.env["DB_PASSWORD"] = process.env["DB_PASSWORD"] || "AssixxP@ss2025!";
-process.env["DB_NAME"] = process.env["DB_NAME"] || "main_test";
+process.env["DB_NAME"] = process.env["DB_NAME"] || "main";
 
 // Redis configuration
 process.env["REDIS_HOST"] = process.env["REDIS_HOST"] || "localhost";

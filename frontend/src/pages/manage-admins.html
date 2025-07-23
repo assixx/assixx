@@ -515,6 +515,11 @@
             <label class="form-label">E-Mail wiederholen *</label>
             <input type="email" id="adminEmailConfirm" class="form-control" required />
           </div>
+          <div class="form-group">
+            <label class="form-label">Personalnummer *</label>
+            <input type="text" id="adminEmployeeNumber" class="form-control" placeholder="z.B. ABC-123 oder 2025-001" maxlength="10" pattern="[A-Za-z0-9\-]{1,10}" required />
+            <small class="form-text" style="color: var(--text-secondary); font-size: 12px;">Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)</small>
+          </div>
           <div class="form-group" id="passwordGroup">
             <label class="form-label">Passwort *</label>
             <input type="password" id="adminPassword" class="form-control" />
