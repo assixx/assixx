@@ -277,7 +277,7 @@ export class User {
 
       const [rows] = await executeQuery<DbUser[]>(
         process.env.NODE_ENV === "test"
-          ? `SELECT u.*, d.name as department_name, t.name as company_name, t.subdomain
+          ? `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain
              FROM users u
              LEFT JOIN departments d ON u.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id

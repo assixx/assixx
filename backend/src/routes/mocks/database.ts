@@ -394,15 +394,17 @@ async function createKVPTables(db: Pool): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS kvp_comments (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT NOT NULL,
       suggestion_id INT NOT NULL,
       user_id INT NOT NULL,
       comment TEXT NOT NULL,
       is_internal BOOLEAN DEFAULT FALSE,
-      tenant_id INT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+      INDEX idx_kvp_comments_tenant_id (tenant_id),
+      INDEX idx_kvp_comments_tenant_suggestion (tenant_id, suggestion_id)
     )
   `);
 
@@ -751,13 +753,15 @@ async function createDocumentTables(db: Pool): Promise<void> {
  * Clean up test data after tests
  */
 export async function cleanupTestData(): Promise<void> {
-  if (!testDb) return;
+  if (!testDb) {
+    console.log("WARNING: testDb is null, cannot cleanup test data");
+    return;
+  }
 
   try {
     console.log(`Cleaning up test data with prefix: ${TEST_DATA_PREFIX}`);
 
-    // WICHTIG: Foreign Keys deaktivieren für vollständiges Cleanup
-    await testDb.execute("SET FOREIGN_KEY_CHECKS = 0");
+    // WICHTIG: Foreign Keys bleiben aktiviert - Daten in richtiger Reihenfolge löschen!
 
     // Get test tenant IDs based on PREFIX
     const testTenantQuery = `(SELECT id FROM tenants WHERE subdomain LIKE '${TEST_DATA_PREFIX}%' OR company_name LIKE '${TEST_DATA_PREFIX}%')`;
@@ -811,12 +815,9 @@ export async function cleanupTestData(): Promise<void> {
       `DELETE FROM shift_templates WHERE tenant_id IN ${testTenantQuery}`,
     );
 
-    await testDb.execute(
-      `DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    // KVP tables - jetzt haben alle tenant_id dank Migration!
+    await testDb.execute(`DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`);
     await testDb.execute(
       `DELETE FROM kvp_suggestions WHERE tenant_id IN ${testTenantQuery}`,
     );
@@ -853,17 +854,22 @@ export async function cleanupTestData(): Promise<void> {
     );
 
     // Delete user-specific data with PREFIX
+    console.log("Deleting user sessions and oauth tokens...");
     await testDb.execute(
       `DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%')`,
+    );
+    await testDb.execute(
+      `DELETE FROM oauth_tokens WHERE user_id IN (SELECT id FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%')`,
     );
     await testDb.execute(
       `DELETE FROM login_attempts WHERE username LIKE '${TEST_DATA_PREFIX}%'`,
     );
 
     // Delete core entities with PREFIX
-    await testDb.execute(
-      `DELETE FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%'`,
-    );
+    const userDeleteQuery = `DELETE FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%'`;
+    console.log("Executing user cleanup query:", userDeleteQuery);
+    const [userDeleteResult] = await testDb.execute(userDeleteQuery) as any;
+    console.log(`Deleted ${userDeleteResult.affectedRows} test users`);
     await testDb.execute(
       `DELETE FROM teams WHERE tenant_id IN ${testTenantQuery}`,
     );
@@ -877,21 +883,24 @@ export async function cleanupTestData(): Promise<void> {
     // Clear tracker
     testDataTracker.clear();
 
-    // Foreign Keys wieder aktivieren
-    await testDb.execute("SET FOREIGN_KEY_CHECKS = 1");
-
     console.log("Test data cleanup completed");
 
-    await testDb.end();
-    testDb = null;
+    // WICHTIG: Verbindung NICHT schließen - Tests können sie weiterverwenden
+    // await testDb.end();
+    // testDb = null;
   } catch (error) {
     console.error("Error cleaning up test data:", error);
-    // Versuche Foreign Keys wieder zu aktivieren, auch bei Fehler
-    try {
-      await testDb?.execute("SET FOREIGN_KEY_CHECKS = 1");
-    } catch {
-      // Ignore error if connection is already closed
-    }
+  }
+}
+
+/**
+ * Close test database connection
+ * Should be called in afterAll() when all tests are done
+ */
+export async function closeTestDatabase(): Promise<void> {
+  if (testDb) {
+    await testDb.end();
+    testDb = null;
   }
 }
 

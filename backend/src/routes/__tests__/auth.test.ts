@@ -12,6 +12,7 @@ import app from "../../app";
 import {
   createTestDatabase,
   cleanupTestData,
+  closeTestDatabase,
   createTestTenant,
   createTestUser,
 } from "../mocks/database";
@@ -27,6 +28,10 @@ describe("Authentication API Endpoints", () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
+    
+    // WICHTIG: Cleanup alte Test-Daten VOR dem Setup
+    await cleanupTestData();
+    
     // JWT_SECRET is already set in test-env-setup.ts
     process.env.SESSION_SECRET = "test-session-secret";
 
@@ -175,7 +180,7 @@ describe("Authentication API Endpoints", () => {
 
   afterAll(async () => {
     await cleanupTestData();
-    await testDb.end();
+    await closeTestDatabase();
   });
 
   beforeEach(async () => {
@@ -502,7 +507,7 @@ describe("Authentication API Endpoints", () => {
           email: testUser1.email,
           role: "admin",
           tenant_id: tenant1Id,
-          tenantName: "Auth Test Company 1",
+          tenantName: "__AUTOTEST__Auth Test Company 1",
         },
       });
     });
@@ -512,7 +517,7 @@ describe("Authentication API Endpoints", () => {
         .get("/api/auth/me")
         .set("Authorization", `Bearer ${authToken1}`);
 
-      expect(response.body.data.tenantName).toBe("Auth Test Company 1");
+      expect(response.body.data.tenantName).toBe("__AUTOTEST__Auth Test Company 1");
       expect(response.body.data.tenant_id).toBe(tenant1Id);
     });
 
