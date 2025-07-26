@@ -440,6 +440,9 @@ export default [
       "node_modules_old_backup/**",
       "**/node_modules_old_backup/**",
 
+      // TypeScript declaration files
+      "**/*.d.ts",
+
       // Build outputs
       "dist/**",
       "build/**",
