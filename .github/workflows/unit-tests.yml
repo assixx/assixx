@@ -45,6 +45,7 @@ jobs:
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-key-for-github-actions
+          NODE_OPTIONS: --experimental-vm-modules
         run: |
           cd backend
           echo "Running basic unit tests that don't require database..."
@@ -55,10 +56,10 @@ jobs:
             "src/routes/__tests__/health.test.ts"
           )
 
-          # Führe jeden Test einzeln aus
+          # Führe jeden Test einzeln aus mit ESM Support
           for test in "${UNIT_TESTS[@]}"; do
             echo "Testing: $test"
-            pnpm jest "$test" || exit 1
+            pnpm jest -c ../jest.config.js "$test" --passWithNoTests || exit 1
           done
 
   code-analysis:
