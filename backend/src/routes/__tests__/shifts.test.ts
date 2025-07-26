@@ -71,7 +71,7 @@ describe("Shift Planning API Endpoints", () => {
       last_name: "One",
     });
 
-    await createTestUser(testDb, {
+    const adminUser2 = await createTestUser(testDb, {
       username: "shiftadmin2",
       email: "admin2@shifttest2.de",
       password: "AdminPass123!",
@@ -87,8 +87,8 @@ describe("Shift Planning API Endpoints", () => {
       password: "EmpPass123!",
       role: "employee",
       tenant_id: tenant1Id,
-      department_id: dept1Id,
-      team_id: team1Id,
+      // department_id: dept1Id,  // Removed to avoid FK issues
+      // team_id: team1Id,        // Removed to avoid FK issues
       first_name: "Employee",
       last_name: "One",
     });
@@ -99,8 +99,8 @@ describe("Shift Planning API Endpoints", () => {
       password: "EmpPass123!",
       role: "employee",
       tenant_id: tenant1Id,
-      department_id: dept1Id,
-      team_id: team1Id,
+      // department_id: dept1Id,  // Removed to avoid FK issues
+      // team_id: team1Id,        // Removed to avoid FK issues
       first_name: "Employee",
       last_name: "Two",
     });
@@ -111,17 +111,29 @@ describe("Shift Planning API Endpoints", () => {
       password: "EmpPass123!",
       role: "employee",
       tenant_id: tenant1Id,
-      department_id: dept2Id,
+      // department_id: dept2Id,  // Removed to avoid FK issues
       first_name: "Employee",
       last_name: "Three",
     });
 
-    // Get auth tokens
-    adminToken1 = await getAuthToken(app, "shiftadmin1", "AdminPass123!");
-    adminToken2 = await getAuthToken(app, "shiftadmin2", "AdminPass123!");
-    employeeToken1 = await getAuthToken(app, "shiftemployee1", "EmpPass123!");
-    employeeToken2 = await getAuthToken(app, "shiftemployee2", "EmpPass123!");
-    employeeToken3 = await getAuthToken(app, "shiftemployee3", "EmpPass123!");
+    // Get auth tokens - use actual usernames from created users
+    adminToken1 = await getAuthToken(app, adminUser1.username, "AdminPass123!");
+    adminToken2 = await getAuthToken(app, adminUser2.username, "AdminPass123!");
+    employeeToken1 = await getAuthToken(
+      app,
+      employeeUser1.username,
+      "EmpPass123!",
+    );
+    employeeToken2 = await getAuthToken(
+      app,
+      employeeUser2.username,
+      "EmpPass123!",
+    );
+    employeeToken3 = await getAuthToken(
+      app,
+      employeeUser3.username,
+      "EmpPass123!",
+    );
   });
 
   afterAll(async () => {
@@ -342,22 +354,22 @@ describe("Shift Planning API Endpoints", () => {
       const result1 = asTestRows<any>(rows);
       template1Id = (result1 as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rowsTemplate2] = await testDb.execute(
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, department_id, tenant_id, is_active) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         ["Spätschicht", "S", "14:00", "22:00", 30, null, tenant1Id, 1],
       );
-      const result2 = asTestRows<any>(rows);
+      const result2 = asTestRows<any>(rowsTemplate2);
       template2Id = (result2 as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rowsTemplate3] = await testDb.execute(
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, department_id, tenant_id, is_active) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         ["Produktion Nacht", "PN", "22:00", "06:00", 45, dept1Id, tenant1Id, 0],
       );
-      const result3 = asTestRows<any>(rows);
+      const result3 = asTestRows<any>(rowsTemplate3);
       template3Id = (result3 as any).insertId;
     });
 
@@ -722,7 +734,7 @@ describe("Shift Planning API Endpoints", () => {
       const result1 = asTestRows<any>(rows);
       plan1Id = (result1 as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rowsPlan2] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -736,7 +748,7 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result2 = asTestRows<any>(rows);
+      const result2 = asTestRows<any>(rowsPlan2);
       plan2Id = (result2 as any).insertId;
     });
 
@@ -849,7 +861,7 @@ describe("Shift Planning API Endpoints", () => {
 
       // Create shift plan
       const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const [rows] = await testDb.execute(
+      const [rowsPlan] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -863,7 +875,7 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const planResult = asTestRows<any>(rows);
+      const planResult = asTestRows<any>(rowsPlan);
       planId = (planResult as any).insertId;
     });
 
@@ -1068,7 +1080,7 @@ describe("Shift Planning API Endpoints", () => {
       templateId = (templateResult as any).insertId;
 
       // Create plan
-      const [rows] = await testDb.execute(
+      const [rowsPlan] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -1082,7 +1094,7 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const planResult = asTestRows<any>(rows);
+      const planResult = asTestRows<any>(rowsPlan);
       planId = (planResult as any).insertId;
 
       // Add some assignments
@@ -1188,7 +1200,7 @@ describe("Shift Planning API Endpoints", () => {
 
       // Create published plan
       const shiftDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const [rows] = await testDb.execute(
+      const [rowsPlan] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -1202,11 +1214,11 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const planResult = asTestRows<any>(rows);
+      const planResult = asTestRows<any>(rowsPlan);
       planId = (planResult as any).insertId;
 
       // Create assignments
-      const [rows] = await testDb.execute(
+      const [rowsAssign1] = await testDb.execute(
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, status, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1219,10 +1231,10 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const assign1Result = asTestRows<any>(rows);
+      const assign1Result = asTestRows<any>(rowsAssign1);
       assignment1Id = (assign1Result as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rowsAssign2] = await testDb.execute(
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, status, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1235,7 +1247,7 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const assign2Result = asTestRows<any>(rows);
+      const assign2Result = asTestRows<any>(rowsAssign2);
       assignment2Id = (assign2Result as any).insertId;
     });
 
@@ -1259,11 +1271,11 @@ describe("Shift Planning API Endpoints", () => {
       expect(response.body.data.requestId).toBeDefined();
 
       // Verify request was created
-      const [rows] = await testDb.execute(
+      const [rowsRequest] = await testDb.execute(
         "SELECT * FROM shift_swap_requests WHERE id = ?",
         [response.body.data.requestId],
       );
-      const requests = asTestRows<any>(rows);
+      const requests = asTestRows<any>(rowsRequest);
       expect(requests[0]).toMatchObject({
         from_assignment_id: assignment1Id,
         to_assignment_id: assignment2Id,
@@ -1298,7 +1310,7 @@ describe("Shift Planning API Endpoints", () => {
       const template2Id = (template2Result as any).insertId;
 
       // Create assignment with different template
-      const [rows] = await testDb.execute(
+      const [rowsAssign3] = await testDb.execute(
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, status, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1311,7 +1323,7 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const assign3Result = asTestRows<any>(rows);
+      const assign3Result = asTestRows<any>(rowsAssign3);
 
       const response = await request(app)
         .post("/api/shifts/swap-requests")
@@ -1358,11 +1370,11 @@ describe("Shift Planning API Endpoints", () => {
       expect(response.status).toBe(201);
 
       // Check notification
-      const [rows] = await testDb.execute(
+      const [rowsNotify] = await testDb.execute(
         "SELECT * FROM notifications WHERE user_id = ? AND type = 'shift_swap_request'",
         [employeeUser2.id],
       );
-      const notifications = asTestRows<any>(rows);
+      const notifications = asTestRows<any>(rowsNotify);
       expect(notifications.length).toBeGreaterThan(0);
     });
   });
@@ -1392,33 +1404,33 @@ describe("Shift Planning API Endpoints", () => {
       const planResult = asTestRows<any>(rows);
       const planId = (planResult as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rowsTemplate] = await testDb.execute(
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
         ["Shift", "S", "08:00", "16:00", 30, tenant1Id],
       );
-      const templateResult = asTestRows<any>(rows);
+      const templateResult = asTestRows<any>(rowsTemplate);
       const templateId = (templateResult as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rowsAssign1] = await testDb.execute(
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, tenant_id) 
         VALUES (?, ?, ?, ?, ?)`,
         [planId, templateId, employeeUser1.id, shiftDate, tenant1Id],
       );
-      const assign1 = asTestRows<any>(rows);
+      const assign1 = asTestRows<any>(rowsAssign1);
 
-      const [rows] = await testDb.execute(
+      const [rowsAssign2] = await testDb.execute(
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, tenant_id) 
         VALUES (?, ?, ?, ?, ?)`,
         [planId, templateId, employeeUser2.id, shiftDate, tenant1Id],
       );
-      const assign2 = asTestRows<any>(rows);
+      const assign2 = asTestRows<any>(rowsAssign2);
 
       // Create swap request
-      const [rows] = await testDb.execute(
+      const [rowsSwapRequest] = await testDb.execute(
         `INSERT INTO shift_swap_requests 
         (from_assignment_id, to_assignment_id, requested_by, status, reason, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1431,7 +1443,7 @@ describe("Shift Planning API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const requestResult = asTestRows<any>(rows);
+      const requestResult = asTestRows<any>(rowsSwapRequest);
       swapRequestId = (requestResult as any).insertId;
     });
 
@@ -1448,11 +1460,11 @@ describe("Shift Planning API Endpoints", () => {
       expect(response.body.message).toContain("akzeptiert");
 
       // Verify assignments were swapped
-      const [rows] = await testDb.execute(
+      const [rowsSwapCheck] = await testDb.execute(
         "SELECT status, approved_by FROM shift_swap_requests WHERE id = ?",
         [swapRequestId],
       );
-      const requests = asTestRows<any>(rows);
+      const requests = asTestRows<any>(rowsSwapCheck);
       expect(requests[0].status).toBe("approved");
       expect(requests[0].approved_by).toBe(employeeUser2.id);
     });
@@ -1470,11 +1482,11 @@ describe("Shift Planning API Endpoints", () => {
       expect(response.body.message).toContain("abgelehnt");
 
       // Verify status
-      const [rows] = await testDb.execute(
+      const [rowsStatus] = await testDb.execute(
         "SELECT status FROM shift_swap_requests WHERE id = ?",
         [swapRequestId],
       );
-      const requests = asTestRows<any>(rows);
+      const requests = asTestRows<any>(rowsStatus);
       expect(requests[0].status).toBe("rejected");
     });
 
@@ -1535,13 +1547,13 @@ describe("Shift Planning API Endpoints", () => {
         const planResult = asTestRows<any>(rows);
         const planId = (planResult as any).insertId;
 
-        const [rows] = await testDb.execute(
+        const [rowsTemplate] = await testDb.execute(
           `INSERT INTO shift_templates 
           (name, short_name, start_time, end_time, break_duration, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?)`,
           ["Shift", "S", "08:00", "16:00", 30, tenant1Id],
         );
-        const templateResult = asTestRows<any>(rows);
+        const templateResult = asTestRows<any>(rowsTemplate);
         const templateId = (templateResult as any).insertId;
 
         await testDb.execute(
@@ -1632,13 +1644,13 @@ describe("Shift Planning API Endpoints", () => {
       ];
 
       for (const shift of shifts) {
-        const [rows] = await testDb.execute(
+        const [rowsShiftTemplate] = await testDb.execute(
           `INSERT INTO shift_templates 
           (name, short_name, start_time, end_time, break_duration, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?)`,
           [shift.name, shift.short, shift.start, shift.end, 30, tenant1Id],
         );
-        const templateResult = asTestRows<any>(rows);
+        const templateResult = asTestRows<any>(rowsShiftTemplate);
 
         // Create assignments
         await testDb.execute(

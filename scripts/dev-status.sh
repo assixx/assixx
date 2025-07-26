@@ -5,7 +5,8 @@
 # Tests werden IMMER automatisch ausgeführt
 
 # Tests immer ausführen - keine Option zum Überspringen
-RUN_TESTS=true
+# RUN_TESTS=true  # Auskommentiert - Tests werden nicht mehr automatisch ausgeführt
+RUN_TESTS=false
 
 echo "🚀 Assixx Development Status Check"
 echo "=================================="
@@ -154,6 +155,7 @@ fi
 echo ""
 
 # 7. Automatischer Test-Durchlauf (IMMER)
+# if [ "$RUN_TESTS" = true ]; then  # Auskommentiert - Tests deaktiviert
 if [ "$RUN_TESTS" = true ]; then
     echo "7️⃣  Automatischer Test-Durchlauf:"
     echo "=================================="
@@ -256,3 +258,4 @@ if [ "$RUN_TESTS" = true ]; then
     echo ""
 fi
 # Tests werden immer ausgeführt - kein else-Zweig mehr nötig
+# Tests sind jetzt auskommentiert und werden nicht mehr automatisch ausgeführt

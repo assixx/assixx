@@ -1,5 +1,213 @@
 # Assixx TODO-Liste
 
+## 📊 FORTSCHRITTS-TRACKING (WICHTIG!)
+
+### 26.07.2025 - Auth v2 Tests DEBUGGED! 🔧✅
+
+**2+ Stunden systematisches Debugging:**
+
+1. ✅ **Auth v2 Tests komplett gefixt:** 11/11 Tests grün
+2. ✅ **JWT Token Generation:** Email Parameter hinzugefügt
+3. ✅ **Password Validation:** Explizite Checks vor bcrypt
+4. ✅ **Test User Emails:** Korrekte __AUTOTEST__ Prefix Nutzung
+5. ✅ **Deprecation Headers:** Erweiterte Logik für alle v1 Endpoints
+6. ✅ **Systematisches Vorgehen:** "One by one" Strategie erfolgreich
+
+**API v2 Test Status: Auth v2 100% ✅**
+
+### 25.07.2025 - Departments API v2 FERTIG! 🏢✅
+
+**6 Stunden produktiv:**
+
+1. ✅ **Departments Service Layer:** Vollständige CRUD + Stats Funktionen
+2. ✅ **Departments Controller:** 7 Endpoints implementiert
+3. ✅ **Route Ordering Fix:** Stats Route vor /:id verschoben
+4. ✅ **OpenAPI Docs:** Vollständige Schemas für alle Endpoints
+5. ✅ **Integration Tests:** 27 Test Cases geschrieben (Auth-Problem pending)
+6. ✅ **Frontend Signup Fix:** JSON Parse Error behoben
+
+**API v2 Status: 5 von 11 APIs FERTIG! (45%) 🚀**
+
+### 25.07.2025 - Chat API v2 FERTIG! 💬✅
+
+**5.5 Stunden produktiv:**
+
+1. ✅ **Chat Service Layer:** Wrapper für v1 Service mit Field Mapping
+2. ✅ **Chat Controller:** 18 Endpoints (13 implementiert, 5 NOT_IMPLEMENTED)
+3. ✅ **TypeScript Build:** 11 Errors behoben, Build läuft sauber
+4. ✅ **WebSocket Analysis:** Socket.io vorhanden, Roadmap dokumentiert
+5. ✅ **OpenAPI Docs:** 14 neue Schemas für Chat Entities
+6. ✅ **Integration Tests:** 22 Test Cases geschrieben
+
+**API v2 Status: 4 von 11 APIs FERTIG! (36%) 🚀**
+
+### 25.07.2025 - Calendar API v2 FERTIG! 📅✅
+
+**2.5 Stunden EXTREM produktiv:**
+
+1. ✅ **Calendar Service Layer:** Vollständige CRUD + Business Logic
+2. ✅ **Calendar Controller:** RESTful mit v2 Standards
+3. ✅ **TypeScript Build:** Alle Fehler behoben
+4. ✅ **OpenAPI Docs:** Vollständige Schemas hinzugefügt
+5. ✅ **55 Tests geschrieben:** Logic (39) + Simple (16)
+6. ✅ **Integration Tests:** Vollständig (DB-Issue pending)
+
+**API v2 Status: 3 von 4 APIs FERTIG! 🚀**
+
+### 24.07.2025 - MEGA ERFOLG! 🎉🚀
+
+**14 Stunden EXTREM produktiv:**
+
+1. ✅ **DB Cleanup:** Von 141 auf 126 Tabellen (15 entfernt!)
+2. ✅ **API v2 Utilities:** Alle 3 Basis-Module implementiert
+3. ✅ **Auth API v2:** 6 Endpoints live und getestet!
+4. ✅ **OpenAPI/Swagger v2:** Vollständig dokumentiert!
+5. ✅ **Migration Guide:** Umfassende Anleitung erstellt!
+6. ✅ **Auth v2 Middleware:** JWT Validation für protected routes!
+7. ✅ **README Update:** API v2 Ankündigung hinzugefügt!
+8. ✅ **Integration Test:** Auth v2 Test geschrieben!
+9. ✅ **API v2 Documentation:** Developer Guide & Quick Reference!
+10. ✅ **Users API v2:** 13 Endpoints komplett implementiert!
+11. ✅ **Users v2 Service Layer:** Business Logic extrahiert!
+12. ✅ **Users v2 OpenAPI Docs:** Alle Endpoints dokumentiert!
+13. ✅ **38 TODOs abgeschlossen** an einem Tag!
+
+**Neue Dokumentation:**
+
+- Detaillierter Progress Log: `/docs/api/API-V2-PROGRESS-LOG.md`
+- API Status: `/docs/api/API-V2-STATUS.md`
+- Migration Guide: `/docs/api/MIGRATION-GUIDE-V1-TO-V2.md`
+- Developer Guide: `/docs/api/API-V2-DEVELOPER-GUIDE.md`
+- Quick Reference: `/docs/api/API-V2-QUICK-REFERENCE.md`
+- API Changelog: `/docs/api/API-V2-CHANGELOG.md`
+- OpenAPI Spec: http://localhost:3000/api-docs/v2
+- DB Cleanup Plan: `/docs/DB-CLEANUP-MIGRATION-PLAN.md`
+
+**Wichtige Erkenntnisse:**
+
+- pnpm-lock.yaml darf NICHT in Docker gemountet werden
+- lodash braucht ESM einzelne Imports
+- API v2 Response Format bewährt sich bereits
+- Swagger/OpenAPI beschleunigt Entwicklung enorm
+
+---
+
+## ✅ DB CLEANUP ERFOLGREICH ABGESCHLOSSEN! (Stand: 24.07.2025)
+
+### 🎉 ERGEBNIS: Von 141 auf 126 Tabellen reduziert!
+
+**Erfolgreich durchgeführt:**
+
+- ✅ Foreign Key Migration abgeschlossen
+- ✅ 7 ungenutzte Views gelöscht
+- ✅ messages_old_backup gelöscht
+- ✅ employee_availability_old gelöscht
+- ✅ Backup vorhanden: quick_backup_20250724_164416_before_db_cleanup_apiv2.sql.gz
+
+### 🚀 API v2 UTILITIES IMPLEMENTIERT! ✅
+
+1. **FERTIG: API v2 Basis-Utilities**
+   - ✅ Deprecation Middleware (`/backend/src/middleware/deprecation.ts`)
+   - ✅ Response Wrapper Utilities (`/backend/src/utils/apiResponse.ts`)
+   - ✅ Field Mapping Utilities (`/backend/src/utils/fieldMapping.ts`)
+   - ✅ Dependencies installiert: lodash, uuid
+
+### ✅ AUTH API v2 IMPLEMENTIERT! (24.07.2025)
+
+**Fertiggestellt:**
+
+- ✅ Login, Register, Logout, Refresh, Verify Endpoints
+- ✅ JWT Strategy mit Access & Refresh Tokens
+- ✅ Standardisierte Response mit success flag
+- ✅ Field Mapping (camelCase für API)
+- ✅ Rate Limiting integriert
+- ✅ Deprecation Headers aktiv
+
+**Test erfolgreich:**
+
+```bash
+curl -X POST http://localhost:3000/api/v2/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@tenant1.com", "password": "AdminPass123"}'
+```
+
+### ✅ USERS API v2 IMPLEMENTIERT! (24.07.2025)
+
+**Fertiggestellt:**
+
+- ✅ 13 Endpoints komplett implementiert
+- ✅ CRUD Operations, Archive, Profile, Password, Availability
+- ✅ TypeScript strict ohne 'any' types
+- ✅ Multi-Tenant Isolation durchgehend
+- ✅ Employee Number Generation Bug behoben
+- ✅ Testuser erstellt (test@assixx.com / test123)
+- ✅ Service Layer Pattern implementiert
+- ✅ Business Logic von Controller getrennt
+- ✅ ServiceError Klasse für konsistentes Error Handling
+
+### 📅 NÄCHSTER SCHRITT: Users v2 Tests
+
+**Noch zu erledigen für Users v2:**
+
+- ✅ OpenAPI Dokumentation (vollständig mit allen 13 Endpoints!)
+- [ ] Integration Tests
+- [ ] Service Tests (optional)
+
+### 📅 DANACH (12-Wochen Plan UPDATE):
+
+- **Wochen 1-3:** ✅ Auth API v2 (FERTIG!)
+- **Wochen 4-6:** ✅ Users API v2 (FERTIG!)
+- **Wochen 7-9:** ✅ Calendar API v2 (FERTIG! 25.07.2025)
+- **Wochen 10-12:** Chat API v2 (KW 40-42)
+
+**ALLES DOKUMENTIERT IN:** `/docs/api/API-IMPLEMENTATION-ROADMAP.md`
+
+---
+
+## ✅ API Design Workshop ABGESCHLOSSEN (24.07.2025)
+
+### Workshop-Ergebnis:
+
+**15 konkrete Entscheidungen getroffen** - Klare Standards für API v2!
+
+### Key Decisions:
+
+1. **API Versionierung:** URL-basiert `/api/v2/...`
+2. **Naming:** Immer Plural (`/users`, `/events`, `/conversations`)
+3. **Fields:** camelCase für JSON (nicht snake_case!)
+4. **Response Format:** Mit `success` flag und `meta`
+5. **Migration:** 6 Monate Deprecation Period
+6. **Timeline:** 12 Wochen für v2 Implementation
+
+### Dokumentation Updates:
+
+- ✅ **TYPESCRIPT-STANDARDS.md** mit API Standards erweitert
+- ✅ **Workshop Decisions** in `/docs/api/API-WORKSHOP-MATERIALS/workshop-decisions.md`
+- ✅ **Final Summary** mit Action Plan in `workshop-final-summary.md`
+- ✅ **Migration Timeline:** Auth → Users → Calendar → Chat
+
+### Sofort-Maßnahmen (Diese Woche):
+
+1. **Deprecation Middleware** implementieren
+2. **Response Wrapper Utilities** erstellen
+3. **Field Mapping** (camelCase ↔ snake_case)
+
+### 12-Wochen Implementierungsplan:
+
+- **Wochen 1-3:** ✅ Auth API v2 (Security first!)
+- **Wochen 4-6:** ✅ Users API v2
+- **Wochen 7-9:** ✅ Calendar API v2
+- **Wochen 10-12:** Chat API v2
+
+### Wichtige Referenzen:
+
+- **Workshop Entscheidungen:** `/docs/API-WORKSHOP-MATERIALS/workshop-decisions.md`
+- **Action Plan:** `/docs/API-WORKSHOP-MATERIALS/workshop-final-summary.md`
+- **API Standards:** `/docs/TYPESCRIPT-STANDARDS.md` (Abschnitt 12)
+- **Original Analyse:** `/docs/API-VS-TEST-ANALYSIS.md`
+
+---
+
 ## ✅ ERLEDIGT - TEST-MIGRATION-SCHEMA-SYNC (23.07.2025)
 
 **Status:** Schema-Sync wurde implementiert und funktioniert
@@ -34,6 +242,7 @@ Nächster Schritt: Unit Tests zum Laufen bringen, dann neuen Tenant erstellen un
 ### Unit Tests Status (Stand: 23.07.2025)
 
 **Gesamt-Überblick:**
+
 - 20 Test-Suites insgesamt
 - ✅ 5 bestehen (inkl. auth.test.ts)
 - ❌ 15 fehlgeschlagen
@@ -43,16 +252,18 @@ Nächster Schritt: Unit Tests zum Laufen bringen, dann neuen Tenant erstellen un
   - ⏭️ 9 übersprungen
 
 **Status der wichtigsten Tests:**
+
 - ✅ auth.test.ts - 20/20 Tests bestehen (VOLLSTÄNDIG GEFIXT)
 - ❌ users.test.ts - 46 Tests fehlgeschlagen
 - ❌ signup.test.ts - 16 Tests fehlgeschlagen
 - ❌ 13 weitere Test-Dateien mit Fehlern
 
 **Bereits behobene Probleme in auth.test.ts:**
+
 - Multi-Tenant Isolation für kvp_comments & blackboard_confirmations
 - Test-Cleanup mit Foreign Keys funktioniert
 - SQL Bug in User.findById() behoben
-- __AUTOTEST__ Prefix handling
+- **AUTOTEST** Prefix handling
 
 ### Testing-Checkliste für jede Seite/Funktion:
 

@@ -4,7 +4,6 @@
  */
 
 import express, { Router, Request, Response } from "express";
-
 const router: Router = express.Router();
 
 import adminRoutes from "./admin";
@@ -32,6 +31,13 @@ import teamRoutes from "./teams";
 import unsubscribeRoutes from "./unsubscribe";
 import userProfileRoutes from "./user";
 import userRoutes from "./users";
+// v2 Routes
+import authV2Routes from "./v2/auth";
+import calendarV2Routes from "./v2/calendar";
+import chatV2Routes from "./v2/chat";
+import departmentsV2Routes from "./v2/departments";
+import usersV2Routes from "./v2/users";
+
 /**
  * Central Route Registry
  * All API routes are registered here
@@ -41,6 +47,18 @@ import userRoutes from "./users";
 // Import remaining routes (now ES modules)
 // API Version prefix
 const API_PREFIX = "/api";
+
+// API v2 Routes (mounted first for priority)
+console.log("[DEBUG] Mounting v2 auth routes at /api/v2/auth");
+router.use("/api/v2/auth", authV2Routes);
+console.log("[DEBUG] Mounting v2 users routes at /api/v2/users");
+router.use("/api/v2/users", usersV2Routes);
+console.log("[DEBUG] Mounting v2 calendar routes at /api/v2/calendar");
+router.use("/api/v2/calendar", calendarV2Routes);
+console.log("[DEBUG] Mounting v2 chat routes at /api/v2/chat");
+router.use("/api/v2/chat", chatV2Routes);
+console.log("[DEBUG] Mounting v2 departments routes at /api/v2/departments");
+router.use("/api/v2/departments", departmentsV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");

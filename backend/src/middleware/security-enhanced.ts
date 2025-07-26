@@ -8,6 +8,8 @@ import helmet from "helmet";
 import hpp from "hpp";
 // import { doubleCsrf } from 'csrf-csrf'; // Package not installed
 
+import { AuthenticatedRequest } from "../types/request.types.js";
+
 // Type definitions
 interface AuditEntry {
   timestamp: string;
@@ -24,14 +26,11 @@ interface AuditEntry {
   success: boolean;
 }
 
-// Type alias for requests with required properties
-type ExtendedRequest = Request;
-
 // CSRF Protection Configuration - Simplified implementation
 // const csrfSecret = process.env.CSRF_SECRET  ?? 'assixx-csrf-secret-change-in-production';
 
 // Simple CSRF token generation
-function generateToken(_req: ExtendedRequest, _res: Response): string {
+function generateToken(_req: AuthenticatedRequest, _res: Response): string {
   // Simple token generation - in production, use a proper CSRF library
   const timestamp = Date.now().toString();
   const random = Math.random().toString(36).substring(2);
@@ -40,7 +39,7 @@ function generateToken(_req: ExtendedRequest, _res: Response): string {
 
 // CSRF protection middleware stub
 function doubleCsrfProtection(
-  _req: ExtendedRequest,
+  _req: AuthenticatedRequest,
   _res: Response,
   next: NextFunction,
 ): void {
@@ -55,7 +54,7 @@ export const generateCSRFTokenMiddleware = (
   next: NextFunction,
 ): void => {
   try {
-    const token = generateToken(req as ExtendedRequest, res);
+    const token = generateToken(req as AuthenticatedRequest, res);
     res.locals.csrfToken = token;
     next();
   } catch (error) {
@@ -90,7 +89,7 @@ export const validateCSRFToken = (
   }
 
   // Use the CSRF protection middleware
-  doubleCsrfProtection(req as ExtendedRequest, res, next);
+  doubleCsrfProtection(req as AuthenticatedRequest, res, next);
 };
 
 // CSRF Token Response Helper
@@ -211,9 +210,9 @@ const createTenantRateLimiter = (
   rateLimit({
     windowMs,
     max,
-    keyGenerator: (req: ExtendedRequest) =>
+    keyGenerator: (req) =>
       // Rate limit per tenant + IP combination
-      `${req.tenant?.id ?? "public"}_${req.ip}`,
+      `${(req as AuthenticatedRequest).tenant?.id ?? "public"}_${req.ip}`,
     message: "Too many requests from this tenant/IP, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,
@@ -266,8 +265,8 @@ const createProgressiveRateLimiter = (
   rateLimit({
     windowMs,
     max,
-    keyGenerator: (req: ExtendedRequest) =>
-      `${req.tenant?.id ?? "public"}_${req.ip}`,
+    keyGenerator: (req) =>
+      `${(req as AuthenticatedRequest).tenant?.id ?? "public"}_${req.ip}`,
     message: {
       error: "Rate limit exceeded",
       retryAfter: Math.ceil(windowMs / 1000),
@@ -276,12 +275,13 @@ const createProgressiveRateLimiter = (
     standardHeaders: true,
     legacyHeaders: false,
     // Log rate limit violations using a handler function
-    handler: (req: ExtendedRequest, res: Response) => {
+    handler: (req, res: Response) => {
+      const authReq = req as AuthenticatedRequest;
       console.warn("Rate limit exceeded:", {
-        ip: req.ip,
-        tenant: req.tenant?.id,
-        path: req.path,
-        userAgent: req.get("User-Agent"),
+        ip: authReq.ip,
+        tenant: authReq.tenant?.id,
+        path: authReq.path,
+        userAgent: authReq.get("User-Agent"),
         timestamp: new Date().toISOString(),
       });
 
@@ -297,7 +297,7 @@ const createProgressiveRateLimiter = (
 export const suspiciousActivityLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // 10 requests per hour for suspicious IPs
-  keyGenerator: (req: ExtendedRequest) => req.ip ?? "unknown",
+  keyGenerator: (req) => req.ip ?? "unknown",
   message: {
     error: "Suspicious activity detected",
     message:
@@ -305,9 +305,10 @@ export const suspiciousActivityLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: ExtendedRequest) => {
+  skip: (req) => {
     // Skip for authenticated users with valid sessions
-    return !!(req.headers.authorization ?? req.user);
+    const authReq = req as AuthenticatedRequest;
+    return !!(authReq.headers.authorization ?? authReq.user);
   },
 });
 
@@ -323,20 +324,21 @@ export const progressiveAuthLimiter = createProgressiveRateLimiter(
 
 // Tenant Context Validation
 export const validateTenantContext = (
-  req: ExtendedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user && req.tenant) {
-    const userTenant = req.user.tenant_id;
-    const requestTenant = req.tenant.id;
+  const authReq = req as AuthenticatedRequest;
+  if (authReq.user && authReq.tenant) {
+    const userTenant = authReq.user.tenant_id;
+    const requestTenant = authReq.tenant.id;
 
     if (userTenant && requestTenant && userTenant !== requestTenant) {
       console.error("Tenant access violation:", {
-        user: req.user.id,
+        user: authReq.user.id,
         userTenant,
         requestTenant,
-        ip: req.ip,
+        ip: authReq.ip,
       });
       res.status(403).json({
         error: "Access denied: Tenant context mismatch",
@@ -350,7 +352,8 @@ export const validateTenantContext = (
 // Security Audit Logger
 export const auditLogger =
   (action: string, resource: string) =>
-  (req: ExtendedRequest, res: Response, next: NextFunction): void => {
+  (req: Request, res: Response, next: NextFunction): void => {
+    const authReq = req as AuthenticatedRequest;
     const startTime = Date.now();
 
     // Capture original end function
@@ -412,16 +415,16 @@ export const auditLogger =
       const duration = Date.now() - startTime;
       const auditEntry: AuditEntry = {
         timestamp: new Date().toISOString(),
-        tenant_id: req.tenant?.id ?? "public",
-        userId: req.user?.id ? req.user.id.toString() : "anonymous",
+        tenant_id: authReq.tenant?.id ?? "public",
+        userId: authReq.user?.id ? authReq.user.id.toString() : "anonymous",
         action,
         resource,
-        method: req.method,
-        path: req.path,
+        method: authReq.method,
+        path: authReq.path,
         statusCode: res.statusCode,
         duration,
-        ip: req.ip ?? "unknown",
-        userAgent: req.get("user-agent"),
+        ip: authReq.ip ?? "unknown",
+        userAgent: authReq.get("user-agent"),
         success: res.statusCode < 400,
       };
 
@@ -483,7 +486,14 @@ export const fileUploadSecurity = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (!req.files || Object.keys(req.files).length === 0) {
+  // Type assertion to access files property from express-extensions
+  const uploadReq = req as Request & {
+    files?:
+      | Express.Multer.File[]
+      | { [fieldname: string]: Express.Multer.File[] };
+  };
+
+  if (!uploadReq.files || Object.keys(uploadReq.files).length === 0) {
     return next();
   }
 
@@ -495,7 +505,9 @@ export const fileUploadSecurity = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
 
-  const files = Array.isArray(req.files) ? req.files : Object.values(req.files);
+  const files = Array.isArray(uploadReq.files)
+    ? uploadReq.files
+    : Object.values(uploadReq.files);
 
   for (const file of files) {
     if ("mimetype" in file && !allowedMimeTypes.includes(file.mimetype)) {

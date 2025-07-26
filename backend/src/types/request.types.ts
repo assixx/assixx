@@ -31,6 +31,7 @@ export interface AuthenticatedRequest
   user: AuthUser;
   tenant?: TenantInfo | null;
   tenant_id?: number | null;
+  tenantId?: number | null; // v2 API camelCase version
   subdomain?: string;
   userId?: number; // Convenience property
 }

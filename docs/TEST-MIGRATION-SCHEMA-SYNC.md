@@ -23,11 +23,13 @@
 ### Branch: unit-tests--Github-Actions (124 commits ahead)
 
 **Was bisher versucht wurde:**
+
 1. **Mock-Ansatz** (auth-refactored) → Funktioniert, aber Mock-Wartung Hölle
 2. **DB-Ansatz** (documents.test.ts) → Scheiterte an Schema-Drift
 3. **Mix-Ansatz** → Verletzt "Test = Production" Prinzip
 
 ### Wichtige Commits & Lessons:
+
 ```bash
 # Success: auth-refactored mit Mocks
 64b247f: "Fix all auth-refactored middleware tests by properly mocking database"
@@ -43,27 +45,33 @@ f536003: "Revert fix: Support different DB schemas"
 ```
 
 ### Das wahre Problem: Schema-Drift
+
 - `main` DB hat aktuelles Schema
 - `main_test` DB hat veraltetes Schema aus Migrations
 - Tests scheitern wegen fehlender Columns/Tables
 
 ### Die Lösung: Schema-Sync
+
 - Nutze `database/current-schema-*.sql` (immer aktuell)
 - Keine separaten Test-Migrations mehr
 - Test = Production garantiert
 
 ### Relevante Dokumente:
+
 - `docs/DEBUGGING-WORKFLOW-LESSONS.md` → One-by-One, Test=Production
 - `docs/DATABASE-MIGRATION-GUIDE.md` → Schema Management
 - `backend/src/routes/__tests__/documents.test.ts` → Aktueller Stand (gemockt)
 
 ### Warum KEINE Unit/Integration Trennung:
+
 **Von 20 Tests sind nur 5 echte Unit-Test-Kandidaten:**
+
 - `errorHandler.test.ts` (Pure function)
 - `health.test.ts` (Simple check)
 - 3 weitere Utils maximal
 
 **Die anderen 15 Tests (75%!) sind Integration:**
+
 - Alle Route Tests (auth, documents, users, etc.)
 - DB-Operations
 - Multi-Tenant Checks
@@ -71,11 +79,13 @@ f536003: "Revert fix: Support different DB schemas"
 **Fazit**: Künstlich Routes in "Units" zu zerlegen ist Selbstbetrug!
 
 ### Jest console.log Problem:
+
 - console.log wird in Tests unterdrückt
 - Lösung: Error throwing für Debugging
 - Dokumentiert in DEBUGGING-WORKFLOW-LESSONS.md (Zeile 130-180)
 
 ### Aktuelle Probleme die wir lösen:
+
 1. **403 Forbidden** - User not found (DB Mismatch)
 2. **Foreign Key Constraints** - department_id fails
 3. **Schema-Drift** - Test DB hat alte Struktur
@@ -91,32 +101,32 @@ f536003: "Revert fix: Support different DB schemas"
 **Suche nach** "Setup test database" und **füge DAVOR ein**:
 
 ```yaml
-      - name: Export and prepare current schema
-        run: |
-          # Find latest schema file
-          cd backend
-          latest_schema=$(ls -t database/current-schema-*.sql | head -1)
-          echo "Using schema: $latest_schema"
-          
-          # Prepare schema for test database
-          cp $latest_schema /tmp/test-schema.sql
-          sed -i 's/`main`/`main_test`/g' /tmp/test-schema.sql
-          
-      - name: Setup test database with current schema
-        env:
-          DB_HOST: localhost
-          DB_USER: root
-          DB_PASSWORD: StrongP@ssw0rd!123
-          DB_NAME: main_test
-        run: |
-          # Drop and recreate database
-          mysql -h localhost -u root -p$DB_PASSWORD -e "DROP DATABASE IF EXISTS main_test; CREATE DATABASE main_test;"
-          
-          # Import current production schema
-          mysql -h localhost -u root -p$DB_PASSWORD main_test < /tmp/test-schema.sql
-          
-          # Grant permissions
-          mysql -h localhost -u root -p$DB_PASSWORD -e "GRANT ALL ON main_test.* TO 'assixx_user'@'%';"
+- name: Export and prepare current schema
+  run: |
+    # Find latest schema file
+    cd backend
+    latest_schema=$(ls -t database/current-schema-*.sql | head -1)
+    echo "Using schema: $latest_schema"
+
+    # Prepare schema for test database
+    cp $latest_schema /tmp/test-schema.sql
+    sed -i 's/`main`/`main_test`/g' /tmp/test-schema.sql
+
+- name: Setup test database with current schema
+  env:
+    DB_HOST: localhost
+    DB_USER: root
+    DB_PASSWORD: StrongP@ssw0rd!123
+    DB_NAME: main_test
+  run: |
+    # Drop and recreate database
+    mysql -h localhost -u root -p$DB_PASSWORD -e "DROP DATABASE IF EXISTS main_test; CREATE DATABASE main_test;"
+
+    # Import current production schema
+    mysql -h localhost -u root -p$DB_PASSWORD main_test < /tmp/test-schema.sql
+
+    # Grant permissions
+    mysql -h localhost -u root -p$DB_PASSWORD -e "GRANT ALL ON main_test.* TO 'assixx_user'@'%';"
 ```
 
 **Test**: Push zu GitHub, prüfe ob "Setup test database with current schema" grün ist
@@ -126,16 +136,19 @@ f536003: "Revert fix: Support different DB schemas"
 **Datei**: `backend/jest.config.cjs`
 
 **Zeile 30** ändern von:
+
 ```javascript
 maxWorkers: 1,
 ```
 
 zu:
+
 ```javascript
 maxWorkers: 4, // VORSICHT: Kann Race Conditions mit DB geben!
 ```
 
-**Test**: 
+**Test**:
+
 ```bash
 docker exec assixx-backend pnpm test -- --listTests | wc -l
 # Sollte 20 Tests zeigen
@@ -182,7 +195,7 @@ describe("Document Upload - Integration Test", () => {
     // Setup test data
     const [tenantResult] = await pool.execute(
       "INSERT INTO tenants (name, subdomain) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)",
-      ["Test Tenant", "test-doc"]
+      ["Test Tenant", "test-doc"],
     );
     testTenantId = (tenantResult as any).insertId;
 
@@ -192,14 +205,14 @@ describe("Document Upload - Integration Test", () => {
        ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`,
       [
         "testuser@test.com",
-        "testuser@test.com", 
+        "testuser@test.com",
         "$2b$10$dummy", // Dummy hash
         "admin",
         testTenantId,
         "Test",
         "User",
-        "active"
-      ]
+        "active",
+      ],
     );
     testUserId = (userResult as any).insertId;
 
@@ -212,7 +225,7 @@ describe("Document Upload - Integration Test", () => {
         tenant_id: testTenantId,
       },
       process.env.JWT_SECRET || "test-secret",
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
   });
 
@@ -247,10 +260,7 @@ describe("Document Upload - Integration Test", () => {
     });
 
     // Verify in database
-    const [rows] = await pool.execute(
-      "SELECT * FROM documents WHERE id = ?",
-      [response.body.data.documentId]
-    );
+    const [rows] = await pool.execute("SELECT * FROM documents WHERE id = ?", [response.body.data.documentId]);
     const docs = asTestRows<any>(rows);
     expect(docs).toHaveLength(1);
     expect(docs[0].tenant_id).toBe(testTenantId);
@@ -268,6 +278,7 @@ describe("Document Upload - Integration Test", () => {
 ```
 
 **Test**:
+
 ```bash
 docker exec assixx-backend pnpm test documents.test.ts
 ```
@@ -283,6 +294,7 @@ docker exec assixx-backend pnpm test documents.test.ts
 3. **Nutze** echte Test-Datenbank
 
 **Template**:
+
 ```typescript
 // ENTFERNEN:
 jest.mock("../../database", () => ({...}));
@@ -295,12 +307,14 @@ jest.mock("../../utils/emailService", () => ({...}));
 ### ✅ Step 5: Cleanup - Mock-Only Tests löschen
 
 **Zu löschen** (reine Mock-Tests ohne Nutzen):
+
 ```bash
 # Falls es diese gibt:
 rm backend/src/__tests__/mocks/unit-only.test.ts
 ```
 
-**Test**: 
+**Test**:
+
 ```bash
 # Alle Tests sollten laufen
 docker exec assixx-backend pnpm test
@@ -317,7 +331,7 @@ time docker exec assixx-backend pnpm test
 
 ## 🎯 Erfolgs-Kriterien
 
-- [ ] GitHub Actions nutzt current-schema-*.sql
+- [ ] GitHub Actions nutzt current-schema-\*.sql
 - [ ] Keine Schema-Drift Fehler mehr
 - [ ] documents.test.ts läuft mit echter DB
 - [ ] Alle Tests grün
@@ -327,12 +341,14 @@ time docker exec assixx-backend pnpm test
 
 **Problem**: "Table doesn't exist"
 **Lösung**: Schema export neu machen
+
 ```bash
 ./scripts/export-current-schema.sh
 ```
 
 **Problem**: "User not found or inactive"
 **Lösung**: Test-User Status prüfen
+
 ```sql
 UPDATE users SET status = 'active' WHERE id = ?;
 ```
@@ -349,31 +365,38 @@ UPDATE users SET status = 'active' WHERE id = ?;
 ## 🤔 Kritische Betrachtung (100% ehrlich)
 
 ### Was gut ist:
+
 - ✅ Keine Mock-Wartung mehr
 - ✅ Test = Production garantiert
 - ✅ Schema-Drift gelöst
 - ✅ Einfacher zu verstehen
 
 ### Was problematisch ist:
+
 - ❌ CI wird langsamer (1-2 Min statt 30s)
 - ❌ Race Conditions bei parallelen Tests möglich
 - ❌ Echte Unit Tests (Utils) verlieren wir
 - ❌ Mehr DB-Last bei Entwicklung
 
 ### Alternative die wir verworfen haben:
-**Hybrid-Ansatz**: 
+
+**Hybrid-Ansatz**:
+
 - `__tests__/unit/` für echte Unit Tests (5 Tests)
 - `__tests__/integration/` für DB Tests (15 Tests)
 
 **Warum verworfen**: Zu viel Overhead für nur 5 echte Unit Tests
 
 ### Langfristig die beste Entscheidung?
+
 **JA, WENN**:
+
 - Team klein bleibt (Mock-Wartung skaliert schlecht)
 - Features wichtiger als CI-Speed
 - Einfachheit > theoretische Perfektion
 
 **NEIN, WENN**:
+
 - CI-Speed kritisch wird
 - Viele Entwickler parallel arbeiten
 - Mehr Business Logic ohne DB entsteht

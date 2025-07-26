@@ -227,7 +227,7 @@ router.post("/", async (req, res): Promise<void> => {
     if (department_id) {
       const department = await Department.findById(
         department_id,
-        req.user.tenant_id,
+        authReq.user.tenant_id,
       );
       if (!department) {
         res
@@ -490,7 +490,7 @@ router.get("/:id", async (req, res): Promise<void> => {
  *               $ref: '#/components/schemas/Error'
  */
 // Update team
-router.put("/:id", async (req, res): Promise<void> => {
+router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { name, department_id, leader_id } = req.body;
@@ -513,7 +513,7 @@ router.put("/:id", async (req, res): Promise<void> => {
     if (department_id) {
       const department = await Department.findById(
         department_id,
-        req.user.tenant_id,
+        authReq.user.tenant_id,
       );
       if (!department) {
         res
@@ -615,7 +615,7 @@ router.put("/:id", async (req, res): Promise<void> => {
  *               $ref: '#/components/schemas/Error'
  */
 // Delete team
-router.delete("/:id", async (req, res): Promise<void> => {
+router.delete("/:id", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const teamId = parseInt(req.params.id, 10);
@@ -828,56 +828,60 @@ router.get("/:id/members", async (req, res): Promise<void> => {
  *               $ref: '#/components/schemas/Error'
  */
 // Add user to team
-router.post("/:id/members", async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedRequest;
-    const teamId = parseInt(req.params.id, 10);
-    const { userId } = req.body;
+router.post(
+  "/:id/members",
+  authenticateToken,
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const teamId = parseInt(req.params.id, 10);
+      const { userId } = req.body;
 
-    if (!userId) {
-      res.status(400).json({ message: "Benutzer-ID ist erforderlich" });
-      return;
-    }
+      if (!userId) {
+        res.status(400).json({ message: "Benutzer-ID ist erforderlich" });
+        return;
+      }
 
-    // Check if team exists
-    const team = await Team.findById(teamId);
+      // Check if team exists
+      const team = await Team.findById(teamId);
 
-    if (!team) {
-      res.status(404).json({ message: "Team nicht gefunden" });
-      return;
-    }
+      if (!team) {
+        res.status(404).json({ message: "Team nicht gefunden" });
+        return;
+      }
 
-    // Check if user exists
-    const user = await User.findById(userId, authReq.user.tenant_id);
+      // Check if user exists
+      const user = await User.findById(userId, authReq.user.tenant_id);
 
-    if (!user) {
-      res.status(404).json({ message: "Benutzer nicht gefunden" });
-      return;
-    }
+      if (!user) {
+        res.status(404).json({ message: "Benutzer nicht gefunden" });
+        return;
+      }
 
-    const success = await Team.addUserToTeam(parseInt(userId, 10), teamId);
+      const success = await Team.addUserToTeam(parseInt(userId, 10), teamId);
 
-    if (success) {
-      logger.info(
-        `User ${userId} added to team ${teamId} by user ${authReq.user.username}`,
+      if (success) {
+        logger.info(
+          `User ${userId} added to team ${teamId} by user ${authReq.user.username}`,
+        );
+        res.json({ message: "Benutzer erfolgreich zum Team hinzugefügt" });
+      } else {
+        logger.warn(`Failed to add user ${userId} to team ${teamId}`);
+        res
+          .status(500)
+          .json({ message: "Fehler beim Hinzufügen des Benutzers zum Team" });
+      }
+    } catch (error) {
+      logger.error(
+        `Error adding user to team ${req.params.id}: ${getErrorMessage(error)}`,
       );
-      res.json({ message: "Benutzer erfolgreich zum Team hinzugefügt" });
-    } else {
-      logger.warn(`Failed to add user ${userId} to team ${teamId}`);
-      res
-        .status(500)
-        .json({ message: "Fehler beim Hinzufügen des Benutzers zum Team" });
+      res.status(500).json({
+        message: "Fehler beim Hinzufügen des Benutzers zum Team",
+        error: getErrorMessage(error),
+      });
     }
-  } catch (error) {
-    logger.error(
-      `Error adding user to team ${req.params.id}: ${getErrorMessage(error)}`,
-    );
-    res.status(500).json({
-      message: "Fehler beim Hinzufügen des Benutzers zum Team",
-      error: getErrorMessage(error),
-    });
-  }
-});
+  },
+);
 
 /**
  * @swagger
@@ -946,51 +950,55 @@ router.post("/:id/members", async (req, res): Promise<void> => {
  *               $ref: '#/components/schemas/Error'
  */
 // Remove user from team
-router.delete("/:id/members/:userId", async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedRequest;
-    const teamId = parseInt(req.params.id, 10);
-    const userId = parseInt(req.params.userId, 10);
+router.delete(
+  "/:id/members/:userId",
+  authenticateToken,
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const teamId = parseInt(req.params.id, 10);
+      const userId = parseInt(req.params.userId, 10);
 
-    // Check if team exists
-    const team = await Team.findById(teamId);
+      // Check if team exists
+      const team = await Team.findById(teamId);
 
-    if (!team) {
-      res.status(404).json({ message: "Team nicht gefunden" });
-      return;
-    }
+      if (!team) {
+        res.status(404).json({ message: "Team nicht gefunden" });
+        return;
+      }
 
-    // Check if user exists
-    const user = await User.findById(userId, authReq.user.tenant_id);
+      // Check if user exists
+      const user = await User.findById(userId, authReq.user.tenant_id);
 
-    if (!user) {
-      res.status(404).json({ message: "Benutzer nicht gefunden" });
-      return;
-    }
+      if (!user) {
+        res.status(404).json({ message: "Benutzer nicht gefunden" });
+        return;
+      }
 
-    const success = await Team.removeUserFromTeam(userId, teamId);
+      const success = await Team.removeUserFromTeam(userId, teamId);
 
-    if (success) {
-      logger.info(
-        `User ${userId} removed from team ${teamId} by user ${authReq.user.username}`,
+      if (success) {
+        logger.info(
+          `User ${userId} removed from team ${teamId} by user ${authReq.user.username}`,
+        );
+        res.json({ message: "Benutzer erfolgreich aus dem Team entfernt" });
+      } else {
+        logger.info(`User ${userId} is not a member of team ${teamId}`);
+        res
+          .status(404)
+          .json({ message: "Benutzer ist kein Mitglied dieses Teams" });
+      }
+    } catch (error) {
+      logger.error(
+        `Error removing user from team ${req.params.id}: ${getErrorMessage(error)}`,
       );
-      res.json({ message: "Benutzer erfolgreich aus dem Team entfernt" });
-    } else {
-      logger.info(`User ${userId} is not a member of team ${teamId}`);
-      res
-        .status(404)
-        .json({ message: "Benutzer ist kein Mitglied dieses Teams" });
+      res.status(500).json({
+        message: "Fehler beim Entfernen des Benutzers aus dem Team",
+        error: getErrorMessage(error),
+      });
     }
-  } catch (error) {
-    logger.error(
-      `Error removing user from team ${req.params.id}: ${getErrorMessage(error)}`,
-    );
-    res.status(500).json({
-      message: "Fehler beim Entfernen des Benutzers aus dem Team",
-      error: getErrorMessage(error),
-    });
-  }
-});
+  },
+);
 
 export default router;
 

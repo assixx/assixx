@@ -48,13 +48,13 @@ jobs:
         run: |
           cd backend
           echo "Running basic unit tests that don't require database..."
-          
+
           # NUR echte Unit Tests OHNE DB oder Mocks!
           UNIT_TESTS=(
             "src/utils/__tests__/errorHandler.test.ts"
             "src/routes/__tests__/health.test.ts"
           )
-          
+
           # Führe jeden Test einzeln aus
           for test in "${UNIT_TESTS[@]}"; do
             echo "Testing: $test"

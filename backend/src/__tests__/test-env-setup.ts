@@ -30,11 +30,8 @@ process.env.USE_MOCK_DB = "false";
 process.env.VALIDATE_SESSIONS = "false";
 
 // Set test timeouts
-if (process.env.CI) {
-  jest.setTimeout(30000); // 30 seconds for CI
-} else {
-  jest.setTimeout(10000); // 10 seconds for local
-}
+// Note: jest.setTimeout is not available in ESM context
+// Timeouts are configured in jest.config.js instead
 
 // Export for use in tests
 export const TEST_CONFIG = {

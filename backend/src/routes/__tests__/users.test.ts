@@ -94,11 +94,15 @@ describe("User Management API Endpoints", () => {
       last_name: "Admin",
     });
 
-    // Get auth tokens
-    adminToken1 = await getAuthToken(app, "admin1", "AdminPass123!");
-    adminToken2 = await getAuthToken(app, "admin2", "AdminPass123!");
-    employeeToken1 = await getAuthToken(app, "employee1", "EmpPass123!");
-    rootToken = await getAuthToken(app, "root", "RootPass123!");
+    // Get auth tokens - use the actual usernames returned by createTestUser
+    adminToken1 = await getAuthToken(app, adminUser1.username, "AdminPass123!");
+    adminToken2 = await getAuthToken(app, adminUser2.username, "AdminPass123!");
+    employeeToken1 = await getAuthToken(
+      app,
+      employeeUser1.username,
+      "EmpPass123!",
+    );
+    rootToken = await getAuthToken(app, rootUser.username, "RootPass123!");
   });
 
   afterAll(async () => {

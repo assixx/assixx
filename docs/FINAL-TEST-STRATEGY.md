@@ -3,7 +3,9 @@
 ## ✅ KLARE TRENNUNG: GitHub vs Lokal
 
 ### 🌐 GitHub Actions
+
 **Was läuft dort:**
+
 - ✅ errorHandler.test.ts (Utility)
 - ✅ health.test.ts (Simple Endpoint)
 - ✅ TypeScript Check
@@ -12,13 +14,16 @@
 - ✅ Docker Build Test
 
 **Was läuft NICHT:**
+
 - ❌ KEINE Tests mit Datenbank
 - ❌ KEINE Mocks
 - ❌ KEINE MySQL Services
 - ❌ KEINE Integration Tests
 
 ### 🏠 Lokale Tests (Docker)
+
 **Was läuft dort:** ALLE Tests die eine DB brauchen
+
 - ✅ 17 Integration Tests
 - ✅ Nutzen echte MySQL Datenbank (`main`)
 - ✅ Keine Mocks, nur echte DB
@@ -27,6 +32,7 @@
 ## 📁 Implementierung
 
 ### GitHub Workflow:
+
 ```
 .github/workflows/
 ├── unit-tests.yml        # ✅ Aktiv (nur 2 Unit Tests + Code Quality)
@@ -34,6 +40,7 @@
 ```
 
 ### Lokale Scripts:
+
 ```
 scripts/
 ├── test-local.sh         # ✅ Alle DB-Tests
@@ -43,6 +50,7 @@ scripts/
 ## 🚀 Verwendung
 
 ### Entwickler-Workflow:
+
 ```bash
 # Lokal: Alle DB-Tests
 ./scripts/test-local.sh
@@ -55,21 +63,23 @@ scripts/
 
 ## 📊 Zusammenfassung
 
-| Test Type | GitHub | Lokal | Anzahl |
-|-----------|--------|-------|---------|
-| Unit Tests | ✅ | ✅ | 2 |
-| DB Tests | ❌ | ✅ | 17 |
-| Code Quality | ✅ | ❌ | 3 |
-| Docker Build | ✅ | ❌ | 1 |
+| Test Type    | GitHub | Lokal | Anzahl |
+| ------------ | ------ | ----- | ------ |
+| Unit Tests   | ✅     | ✅    | 2      |
+| DB Tests     | ❌     | ✅    | 17     |
+| Code Quality | ✅     | ❌    | 3      |
+| Docker Build | ✅     | ❌    | 1      |
 
 ## ⚠️ WICHTIG
 
 **GitHub Actions:**
+
 - NUR Basic Unit Tests
 - KEINE DB oder Mocks
 - Schnell und zuverlässig
 
 **Lokale Tests:**
+
 - ALLE DB-Tests
 - Nutzen Hauptdatenbank `main`
 - Keine Schema-Sync Probleme

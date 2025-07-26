@@ -3,19 +3,23 @@
 ## 🚨 WICHTIG: Strikte Trennung der Test-Umgebungen
 
 ### 🌐 GitHub Actions (CI/CD)
+
 **Was läuft dort:** NUR Tests OHNE Datenbank-Abhängigkeiten
 
 #### Unit Tests (KEINE DB):
+
 - ✅ `errorHandler.test.ts` - Utility Funktion
 - ✅ `health.test.ts` - Simple Endpoint Test
 
 #### Code Quality Checks:
+
 - ✅ TypeScript Compilation
 - ✅ ESLint
 - ✅ Prettier
 - ✅ Docker Build Test
 
 #### Was läuft NICHT auf GitHub:
+
 - ❌ KEINE Integration Tests
 - ❌ KEINE Tests mit `pool.execute()`
 - ❌ KEINE Tests mit `createTestDatabase()`
@@ -25,9 +29,11 @@
 ---
 
 ### 🏠 Lokale Tests (Docker Environment)
+
 **Was läuft dort:** ALLE Tests MIT Datenbank-Abhängigkeiten
 
 #### Integration Tests (MIT DB):
+
 - ✅ `auth.test.ts`
 - ✅ `auth-refactored.test.ts`
 - ✅ `users.test.ts`
@@ -47,6 +53,7 @@
 - ✅ `documents.test.ts`
 
 #### Vorteile:
+
 - ✅ Echte MySQL Datenbank
 - ✅ Kein Schema-Drift
 - ✅ Keine Mock-Wartung
@@ -57,6 +64,7 @@
 ## 📁 Datei-Struktur
 
 ### GitHub Workflows:
+
 ```
 .github/workflows/
 ├── unit-tests.yml     # ✅ NUR Unit Tests ohne DB
@@ -64,6 +72,7 @@
 ```
 
 ### Lokale Scripts:
+
 ```
 scripts/
 ├── test-local.sh      # ✅ Alle DB-Tests
@@ -76,16 +85,19 @@ scripts/
 ## 🔧 Implementierung
 
 ### 1. GitHub Actions anpassen:
+
 - Alte `test.yml` → `test.yml.disabled` umbenennen
 - Nur `unit-tests.yml` aktiv lassen
 - KEINE DB Services in GitHub Actions
 
 ### 2. Lokale Test-Umgebung:
+
 - `test-local.sh` für alle DB-Tests
 - Nutzt Docker MySQL direkt
 - Keine Schema-Sync nötig
 
 ### 3. Entwickler-Workflow:
+
 ```bash
 # Vor dem Commit - Lokal testen:
 ./scripts/test-local.sh
@@ -101,12 +113,14 @@ scripts/
 ## ⚠️ WARNUNG
 
 **NIEMALS** folgendes in GitHub Actions:
+
 - MySQL/Redis Services hinzufügen
 - Schema-Sync versuchen
 - Integration Tests aktivieren
 - Mock-Datenbanken erstellen
 
 **IMMER** folgendes beachten:
+
 - DB-Tests NUR lokal
 - GitHub nur für schnelle Checks
 - Klare Trennung beibehalten
@@ -115,9 +129,9 @@ scripts/
 
 ## 📊 Status
 
-| Test Type | GitHub Actions | Lokal | Anzahl |
-|-----------|---------------|-------|---------|
-| Unit Tests | ✅ | ✅ | 2 |
-| Integration Tests | ❌ | ✅ | 18 |
-| Code Quality | ✅ | ✅ | 3 |
-| Docker Build | ✅ | ❌ | 1 |
+| Test Type         | GitHub Actions | Lokal | Anzahl |
+| ----------------- | -------------- | ----- | ------ |
+| Unit Tests        | ✅             | ✅    | 2      |
+| Integration Tests | ❌             | ✅    | 18     |
+| Code Quality      | ✅             | ✅    | 3      |
+| Docker Build      | ✅             | ❌    | 1      |

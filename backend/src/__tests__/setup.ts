@@ -3,7 +3,7 @@
  * Configuration for test environment
  */
 
-// Jest is available globally in test environment
+import { jest } from "@jest/globals";
 
 // Set test environment
 process.env["NODE_ENV"] = "test";
@@ -25,11 +25,11 @@ process.env["REDIS_PORT"] = process.env["REDIS_PORT"] || "6379";
 // Mock console methods to reduce noise during tests
 global.console = {
   ...console,
-  log: jest.fn(),
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
+  log: () => {},
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
 };
 
 // Global test timeout

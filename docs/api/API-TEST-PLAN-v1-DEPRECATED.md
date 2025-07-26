@@ -1,4 +1,8 @@
-# API Test Plan for Assixx
+# API Test Plan for Assixx (v1 - DEPRECATED)
+
+> ⚠️ **DEPRECATED**: Dieses Dokument bezieht sich auf API v1.
+> Für API v2 siehe: `/docs/api/API-IMPLEMENTATION-ROADMAP.md`
+> Status: Wird durch API v2 ersetzt (Timeline: 12 Wochen)
 
 ## Overview
 

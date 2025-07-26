@@ -592,20 +592,21 @@
         -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.04) inset !important;
         -webkit-text-fill-color: var(--text-primary) !important;
         background-color: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(33, 150, 243, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        transition: background-color 5000s ease-in-out 0s;
       }
 
       /* Firefox */
       .form-control:autofill {
-        background: rgba(255, 255, 255, 0.06) !important;
-        border: 1px solid rgba(33, 150, 243, 0.3) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
         color: var(--text-primary) !important;
       }
 
       /* Firefox specific - :-moz-autofill pseudo-class */
       .form-control:-moz-autofill {
-        background: rgba(255, 255, 255, 0.06) !important;
-        border: 1px solid rgba(33, 150, 243, 0.3) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
       }
 
       /* Edge Legacy */
@@ -1209,9 +1210,10 @@
           plan: currentPlan,
         };
 
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+
         try {
-          const submitButton = e.target.querySelector('button[type="submit"]');
-          const originalText = submitButton.innerHTML;
           submitButton.disabled = true;
           submitButton.innerHTML = '⏳ Wird erstellt...';
 
@@ -1223,7 +1225,15 @@
             body: JSON.stringify(signupData),
           });
 
-          const result = await response.json();
+          let result;
+          const responseText = await response.text();
+
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('Failed to parse response:', responseText);
+            result = { message: 'Server response was not valid JSON: ' + responseText };
+          }
 
           if (response.ok) {
             document.getElementById('successMessage').style.display = 'block';

@@ -281,7 +281,7 @@ class UnifiedNavigation {
     };
 
     // Debounce timer for redirects to prevent loops
-    let redirectTimeout: number | null = null;
+    let redirectTimeout: ReturnType<typeof setTimeout> | null = null;
     let isRedirecting = false;
 
     // Listen for storage events from other tabs
@@ -322,7 +322,7 @@ class UnifiedNavigation {
           };
 
           const targetPath = getDashboardPath(newActiveRole);
-          
+
           // Only redirect if we're not already on the correct dashboard
           if (targetPath && !currentPath.includes(targetPath)) {
             // Check if user has permission for the target role
@@ -333,7 +333,7 @@ class UnifiedNavigation {
 
             console.log(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
             isRedirecting = true;
-            
+
             // Use replace to avoid adding to browser history
             window.location.replace(targetPath);
           } else {

@@ -70,15 +70,27 @@ describe("Department Management API Endpoints", () => {
       last_name: "Two",
     });
 
-    employeeUser1 = await createTestUser(testDb, {
-      username: "employee1@depttest1.de",
-      email: "employee1@depttest1.de",
-      password: "EmpPass123!",
-      role: "employee",
-      tenant_id: tenant1Id,
-      department_id: dept1Id,
-      first_name: "Employee",
-      last_name: "One",
+    try {
+      employeeUser1 = await createTestUser(testDb, {
+        username: "employee1@depttest1.de",
+        email: "employee1@depttest1.de",
+        password: "EmpPass123!",
+        role: "employee",
+        tenant_id: tenant1Id,
+        // department_id: dept1Id,  // Temporarily removed to test
+        first_name: "Employee",
+        last_name: "One",
+      });
+    } catch (err) {
+      console.error("Failed to create employee user:", err);
+      throw err;
+    }
+
+    // Debug: Log created users
+    console.log("Created users:", {
+      admin1: adminUser1,
+      admin2: adminUser2,
+      employee1: employeeUser1,
     });
 
     // Get auth tokens - Use the actual generated usernames

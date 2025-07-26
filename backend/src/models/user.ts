@@ -122,6 +122,7 @@ export class User {
       last_name,
       age,
       employee_id,
+      employee_number,
       department_id,
       position,
       phone,
@@ -157,7 +158,7 @@ export class User {
         const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
         const { tempId } = generateTempEmployeeId(
           subdomain,
-          role || "employee",
+          role ?? "employee",
         );
         finalEmployeeId = tempId;
       }
@@ -166,12 +167,12 @@ export class User {
     const query = `
       INSERT INTO users (
         username, email, password, role, company, notes, 
-        first_name, last_name, age, employee_id, iban,
+        first_name, last_name, age, employee_id, employee_number, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
         status, is_archived, is_active, tenant_id
       ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -186,6 +187,7 @@ export class User {
         last_name,
         age,
         finalEmployeeId,
+        employee_number ?? `EMP${Date.now()}`,
         iban,
         department_id,
         position,
@@ -214,7 +216,7 @@ export class User {
           const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
           const newEmployeeId = generateEmployeeId(
             subdomain,
-            role || "employee",
+            role ?? "employee",
             result.insertId,
           );
 
@@ -550,7 +552,7 @@ export class User {
       // Pagination hinzufügen
       if (filters.limit) {
         const limit = parseInt(filters.limit.toString()) ?? 20;
-        const page = parseInt((filters.page ?? 1).toString()) || 1;
+        const page = parseInt((filters.page ?? 1).toString()) ?? 1;
         const offset = (page - 1) * limit;
 
         query += ` LIMIT ? OFFSET ?`;

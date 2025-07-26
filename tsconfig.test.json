@@ -1,10 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "types": ["node", "jest", "@types/jest"]
   },
   "include": [
+    "backend/src/**/*",
     "backend/src/**/*.test.ts",
     "backend/src/**/*.spec.ts",
     "backend/src/__tests__/**/*"

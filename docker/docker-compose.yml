@@ -58,10 +58,12 @@ services:
       - ../frontend:/app/frontend:delegated
       - ../scripts:/app/scripts:delegated
       - ../package.json:/app/package.json:delegated
-      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
+      # pnpm-lock.yaml wird NICHT gemountet - verursacht EBUSY Fehler
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
       - ../tsconfig.json:/app/tsconfig.json:delegated
+      - ../tsconfig.test.json:/app/tsconfig.test.json:delegated
       - ../eslint.config.js:/app/eslint.config.js:delegated
+      - ../jest.config.js:/app/jest.config.js:delegated
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:

@@ -122,7 +122,6 @@ async function initializeSchema(db: Pool): Promise<void> {
         UNIQUE KEY unique_name_tenant (name, tenant_id)
       )
     `);
-
     await db.execute(`
       CREATE TABLE IF NOT EXISTS teams (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -280,38 +279,47 @@ async function createCalendarTables(db: Pool): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS calendar_events (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT NOT NULL,
+      user_id INT NOT NULL,
       title VARCHAR(255) NOT NULL,
       description TEXT,
-      start_time TIMESTAMP NOT NULL,
-      end_time TIMESTAMP NOT NULL,
       location VARCHAR(255),
-      visibility_scope ENUM('company', 'department', 'team') DEFAULT 'company',
-      target_id INT DEFAULT NULL,
-      is_all_day BOOLEAN DEFAULT FALSE,
-      is_recurring BOOLEAN DEFAULT FALSE,
+      start_date DATETIME NOT NULL,
+      end_date DATETIME NOT NULL,
+      type ENUM('meeting', 'training', 'other') DEFAULT 'other',
+      status ENUM('confirmed', 'tentative', 'cancelled') DEFAULT 'confirmed',
+      is_private BOOLEAN DEFAULT FALSE,
+      all_day BOOLEAN DEFAULT FALSE,
+      org_level ENUM('company', 'department', 'team', 'personal') DEFAULT 'personal',
+      org_id INT DEFAULT NULL,
       reminder_minutes INT DEFAULT NULL,
-      color VARCHAR(50) DEFAULT '#2196F3',
-      created_by INT NOT NULL,
-      tenant_id INT NOT NULL,
+      color VARCHAR(7) DEFAULT '#3498db',
+      recurrence_rule TEXT,
+      parent_event_id INT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-      FOREIGN KEY (created_by) REFERENCES users(id)
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (parent_event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
+      INDEX idx_org_level_id (org_level, org_id),
+      INDEX idx_user_dates (user_id, start_date, end_date),
+      INDEX idx_tenant_dates (tenant_id, start_date, end_date)
     )
   `);
 
   await db.execute(`
-    CREATE TABLE IF NOT EXISTS calendar_event_participants (
+    CREATE TABLE IF NOT EXISTS calendar_attendees (
       id INT AUTO_INCREMENT PRIMARY KEY,
       event_id INT NOT NULL,
       user_id INT NOT NULL,
-      status ENUM('pending', 'accepted', 'declined', 'tentative') DEFAULT 'pending',
-      tenant_id INT NOT NULL,
+      response_status ENUM('pending', 'accepted', 'declined', 'tentative') DEFAULT 'pending',
+      responded_at TIMESTAMP NULL DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-      UNIQUE KEY unique_event_user (event_id, user_id)
+      UNIQUE KEY unique_event_user (event_id, user_id),
+      INDEX idx_event_status (event_id, response_status)
     )
   `);
 
@@ -816,8 +824,12 @@ export async function cleanupTestData(): Promise<void> {
     );
 
     // KVP tables - jetzt haben alle tenant_id dank Migration!
-    await testDb.execute(`DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`);
-    await testDb.execute(`DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(
+      `DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`,
+    );
     await testDb.execute(
       `DELETE FROM kvp_suggestions WHERE tenant_id IN ${testTenantQuery}`,
     );
@@ -826,7 +838,7 @@ export async function cleanupTestData(): Promise<void> {
       `DELETE FROM calendar_recurring_patterns WHERE tenant_id IN ${testTenantQuery}`,
     );
     await testDb.execute(
-      `DELETE FROM calendar_event_participants WHERE tenant_id IN ${testTenantQuery}`,
+      `DELETE FROM calendar_attendees WHERE event_id IN (SELECT id FROM calendar_events WHERE tenant_id IN ${testTenantQuery})`,
     );
     await testDb.execute(
       `DELETE FROM calendar_events WHERE tenant_id IN ${testTenantQuery}`,
@@ -868,7 +880,10 @@ export async function cleanupTestData(): Promise<void> {
     // Delete core entities with PREFIX
     const userDeleteQuery = `DELETE FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%'`;
     console.log("Executing user cleanup query:", userDeleteQuery);
-    const [userDeleteResult] = await testDb.execute(userDeleteQuery) as any;
+    const [userDeleteResult] = (await testDb.execute(userDeleteQuery)) as [
+      { affectedRows: number },
+      unknown,
+    ];
     console.log(`Deleted ${userDeleteResult.affectedRows} test users`);
     await testDb.execute(
       `DELETE FROM teams WHERE tenant_id IN ${testTenantQuery}`,
@@ -1063,10 +1078,11 @@ export async function createTestDepartment(
   tenantId: number,
   name: string,
   parentId?: number,
+  managerId?: number,
 ): Promise<number> {
   const [result] = await db.execute(
-    "INSERT INTO departments (name, tenant_id, parent_id) VALUES (?, ?, ?)",
-    [name, tenantId, parentId ?? null],
+    "INSERT INTO departments (name, tenant_id, parent_id, manager_id) VALUES (?, ?, ?, ?)",
+    [name, tenantId, parentId ?? null, managerId ?? null],
   );
   const deptId = (result as ResultSetHeader).insertId;
   testDataTracker.trackDepartment(deptId); // Track created department

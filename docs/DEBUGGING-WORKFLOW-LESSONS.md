@@ -147,21 +147,25 @@ if (response.status !== 201) {
 **Alternative Debugging-Methoden:**
 
 1. **Error Throwing** (empfohlen):
+
    ```javascript
    throw new Error(`Debug Info: ${JSON.stringify(data)}`);
    ```
 
 2. **Absichtlich falscher Expect**:
+
    ```javascript
    expect(response.body).toBe("DEBUG: " + JSON.stringify(response.body));
    ```
 
 3. **console.error statt console.log**:
+
    ```javascript
    console.error("DEBUG:", data); // Wird manchmal angezeigt
    ```
 
 4. **Jest Flags kombinieren**:
+
    ```bash
    npm test -- --verbose --runInBand --detectOpenHandles
    ```
@@ -177,4 +181,4 @@ if (response.status !== 201) {
 - Errors werden IMMER in der Ausgabe gezeigt
 - Bei kritischem Debugging: Error werfen statt loggen
 - Verschiedene Jest-Versionen verhalten sich unterschiedlich
-siehe: https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest
+  siehe: https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest

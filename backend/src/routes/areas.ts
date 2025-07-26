@@ -6,11 +6,18 @@
 import express, { Router } from "express";
 
 import { authenticateToken } from "../auth";
+import { AuthenticatedRequest } from "../types/request.types";
 import { getErrorMessage } from "../utils/errorHandler";
 
 const router: Router = express.Router();
 
-// Extended Request interfaces
+// Request body interfaces
+interface CreateAreaBody {
+  name: string;
+  description?: string;
+  type?: string;
+  capacity?: number;
+}
 
 // Area type definition
 interface Area {
@@ -19,80 +26,69 @@ interface Area {
   description?: string;
   type: string;
   capacity?: number;
-  supervisor?: string;
-  created_at?: Date;
+  tenant_id: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 /**
- * Get all areas
+ * Get all areas for the authenticated tenant
  * GET /api/areas
  */
 router.get("/", authenticateToken, async (req, res): Promise<void> => {
+  // Type assertion after authentication middleware
+  const authReq = req as AuthenticatedRequest;
   try {
-    // For now, return dummy area data
-    // In production, this would query the areas table
+    if (!authReq.tenantId) {
+      res.status(401).json({
+        success: false,
+        message: "Tenant ID not found",
+      });
+      return;
+    }
+    // Mock implementation - replace with actual database query
     const areas: Area[] = [
       {
         id: 1,
-        name: "Halle A",
-        description: "Produktionsbereich A",
-        type: "production",
+        name: "Hauptgebäude",
+        description: "Verwaltungsgebäude mit Büros",
+        type: "building",
+        capacity: 100,
+        tenant_id: authReq.tenantId,
+        created_at: new Date(),
+        updated_at: new Date(),
       },
       {
         id: 2,
-        name: "Halle B",
-        description: "Produktionsbereich B",
-        type: "production",
-      },
-      {
-        id: 3,
         name: "Lager Nord",
-        description: "Eingangslager",
+        description: "Hauptlagerbereich",
         type: "warehouse",
-      },
-      {
-        id: 4,
-        name: "Lager Süd",
-        description: "Ausgangslager",
-        type: "warehouse",
-      },
-      {
-        id: 5,
-        name: "Bürobereich",
-        description: "Verwaltung und Büros",
-        type: "office",
-      },
-      {
-        id: 6,
-        name: "Qualitätsprüfung",
-        description: "QS-Bereich",
-        type: "quality",
-      },
-      {
-        id: 7,
-        name: "Wartung",
-        description: "Werkstatt und Wartung",
-        type: "maintenance",
+        capacity: 500,
+        tenant_id: authReq.tenantId,
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     ];
 
-    // Filter by type if requested
-    const areaType = req.query.type;
-    let filteredAreas = areas;
-
-    if (areaType) {
-      filteredAreas = areas.filter((area) => area.type === areaType);
-    }
+    // Filter by tenant_id
+    const tenantAreas = areas.filter(
+      (area) => area.tenant_id === authReq.tenantId,
+    );
 
     res.json({
       success: true,
-      areas: filteredAreas,
+      data: tenantAreas,
+      meta: {
+        total: tenantAreas.length,
+        timestamp: new Date().toISOString(),
+      },
     });
   } catch (error) {
-    console.error("Error fetching areas:", getErrorMessage(error));
+    console.error("[Areas] List error:", error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Bereiche",
+      message: "Fehler beim Abrufen der Bereiche",
+      error: getErrorMessage(error),
     });
   }
 });
@@ -102,28 +98,50 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * GET /api/areas/:id
  */
 router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
-  try {
-    const areaId = parseInt(req.params.id);
+  // Type assertion after authentication middleware
+  const authReq = req as AuthenticatedRequest;
 
-    // Dummy area data
+  try {
+    if (!authReq.tenantId) {
+      res.status(401).json({
+        success: false,
+        message: "Tenant ID not found",
+      });
+      return;
+    }
+    const areaId = parseInt(authReq.params.id);
+
+    // Mock implementation
     const area: Area = {
       id: areaId,
-      name: `Bereich ${areaId}`,
-      description: "Automatisch generierter Bereich",
-      type: "production",
+      name: "Beispielbereich",
+      description: "Ein Beispielbereich",
+      type: "office",
       capacity: 50,
-      supervisor: "Max Mustermann",
+      tenant_id: authReq.tenantId,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
+
+    // Check if area belongs to tenant
+    if (area.tenant_id !== authReq.tenantId) {
+      res.status(404).json({
+        success: false,
+        message: "Bereich nicht gefunden",
+      });
+      return;
+    }
 
     res.json({
       success: true,
-      area,
+      data: area,
     });
   } catch (error) {
-    console.error("Error fetching area:", getErrorMessage(error));
+    console.error("[Areas] Get by ID error:", error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden des Bereichs",
+      message: "Fehler beim Abrufen des Bereichs",
+      error: getErrorMessage(error),
     });
   }
 });
@@ -133,9 +151,15 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
  * POST /api/areas
  */
 router.post("/", authenticateToken, async (req, res): Promise<void> => {
+  // Type assertion after authentication middleware
+  const authReq = req as AuthenticatedRequest;
+
   try {
     // Check admin permission
-    if (!["admin", "root", "manager"].includes(req.user.role)) {
+    if (
+      !authReq.user ||
+      !["admin", "root", "manager"].includes(authReq.user.role)
+    ) {
       res.status(403).json({
         success: false,
         message: "Keine Berechtigung zum Erstellen von Bereichen",
@@ -143,9 +167,18 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    const { name, description, type, capacity } = req.body;
+    if (!authReq.tenantId) {
+      res.status(401).json({
+        success: false,
+        message: "Tenant ID not found",
+      });
+      return;
+    }
 
-    if (!name) {
+    // Type-safe body parsing
+    const body = authReq.body as CreateAreaBody;
+
+    if (!body.name) {
       res.status(400).json({
         success: false,
         message: "Name ist erforderlich",
@@ -153,30 +186,31 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    // For now, return dummy created area
-    const area: Area = {
-      id: Date.now(),
-      name,
-      description: description ?? undefined,
-      type: type ?? "production",
-      capacity: capacity ?? undefined,
+    // Mock implementation - replace with actual database insert
+    const newArea: Area = {
+      id: Math.floor(Math.random() * 1000),
+      name: body.name,
+      description: body.description,
+      type: body.type ?? "general",
+      capacity: body.capacity,
+      tenant_id: authReq.tenantId,
       created_at: new Date(),
+      updated_at: new Date(),
     };
 
     res.status(201).json({
       success: true,
+      data: newArea,
       message: "Bereich erfolgreich erstellt",
-      area,
     });
   } catch (error) {
-    console.error("Error creating area:", getErrorMessage(error));
+    console.error("[Areas] Create error:", error);
     res.status(500).json({
       success: false,
       message: "Fehler beim Erstellen des Bereichs",
+      error: getErrorMessage(error),
     });
   }
 });
 
 export default router;
-
-// CommonJS compatibility

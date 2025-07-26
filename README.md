@@ -112,6 +112,71 @@ Siehe [FEATURES.md](./docs/FEATURES.md) für Details und Preise.
 
 Siehe [ARCHITECTURE.md](./docs/ARCHITECTURE.md) für technische Details.
 
+## 🆕 API v2 - Jetzt verfügbar! (Juli 2025)
+
+Wir freuen uns, die Einführung unserer **nächsten Generation API v2** bekannt zu geben! Die neue API bietet verbesserte Standards, bessere Developer Experience und zukunftssichere Architektur.
+
+### ✨ Was ist neu in API v2?
+
+- **Standardisierte Responses**: Einheitliches Format mit `success` Flag
+- **Moderne Authentifizierung**: JWT mit Access & Refresh Tokens (15min/7d)
+- **CamelCase Fields**: JavaScript-freundliche Feldnamen statt snake_case
+- **Verbesserte Fehlerbehandlung**: Strukturierte Error Codes
+- **OpenAPI/Swagger Dokumentation**: Interaktive API-Dokumentation unter `/api-docs/v2`
+
+### 📋 Verfügbare v2 Endpoints
+
+✅ **Auth API v2** (Fertig)
+
+- `POST /api/v2/auth/login` - Benutzer-Login
+- `POST /api/v2/auth/register` - Neue Benutzer erstellen
+- `POST /api/v2/auth/logout` - Benutzer abmelden
+- `POST /api/v2/auth/refresh` - Access Token erneuern
+- `GET /api/v2/auth/verify` - Token validieren
+- `GET /api/v2/auth/me` - Aktueller Benutzer
+
+🚧 **Weitere APIs folgen**:
+
+- Users API v2 (August 2025)
+- Calendar API v2 (September 2025)
+- Chat API v2 (Oktober 2025)
+
+### 📖 Migration von v1 zu v2
+
+Die API v1 bleibt bis **31. Dezember 2025** verfügbar. Alle v1 Endpoints zeigen Deprecation-Header:
+
+```
+Deprecation: true
+Sunset: 2025-12-31
+Link: </api/v2>; rel="successor-version"
+```
+
+**Hilfreiche Ressourcen:**
+
+- [Migration Guide](./docs/api/MIGRATION-GUIDE-V1-TO-V2.md) - Schritt-für-Schritt Anleitung
+- [API v2 Dokumentation](http://localhost:3000/api-docs/v2) - Interaktive Swagger UI
+- [API v2 Status](./docs/api/API-V2-STATUS.md) - Aktueller Implementierungsstatus
+
+### 🔗 Quick Example
+
+```javascript
+// v2 Login
+const response = await fetch("/api/v2/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: "user@example.com",
+    password: "password",
+  }),
+});
+
+const data = await response.json();
+if (data.success) {
+  localStorage.setItem("accessToken", data.data.accessToken);
+  localStorage.setItem("refreshToken", data.data.refreshToken);
+}
+```
+
 ## 🔒 Sicherheit
 
 ### Authentifizierung & CSRF-Schutz
@@ -196,18 +261,23 @@ Details siehe:
 Assixx nutzt eine **klare Trennung** zwischen GitHub Actions und lokalen Tests:
 
 ### 🌐 GitHub Actions (CI/CD)
+
 **Was läuft automatisch bei jedem Push/PR:**
+
 - ✅ **Unit Tests** - 2 Tests ohne DB-Abhängigkeit (errorHandler, health)
 - ✅ **Code Quality** - TypeScript, ESLint, Prettier
 - ✅ **Docker Build** - Prüft ob Container korrekt gebaut werden
 
 **Warum so minimal?**
+
 - 🚀 Schnelle CI/CD Pipeline
 - 🎯 Fokus auf Code-Qualität
 - ❌ Keine Mock-Wartung mehr
 
 ### 🏠 Lokale Tests (Docker)
+
 **Alle DB-Tests laufen NUR lokal:**
+
 - ✅ **17 Integration Tests** mit echter MySQL Datenbank
 - ✅ Nutzt Hauptdatenbank `main` (keine separate Testdatenbank)
 - ✅ Keine Mocks - nur echte Datenbankverbindungen
@@ -226,12 +296,12 @@ Assixx nutzt eine **klare Trennung** zwischen GitHub Actions und lokalen Tests:
 
 ### 📊 Test-Zusammenfassung
 
-| Test Type | GitHub | Lokal | Anzahl |
-|-----------|--------|-------|--------|
-| Unit Tests | ✅ | ✅ | 2 |
-| DB Tests | ❌ | ✅ | 17 |
-| Code Quality | ✅ | ❌ | 3 |
-| Docker Build | ✅ | ❌ | 1 |
+| Test Type    | GitHub | Lokal | Anzahl |
+| ------------ | ------ | ----- | ------ |
+| Unit Tests   | ✅     | ✅    | 2      |
+| DB Tests     | ❌     | ✅    | 17     |
+| Code Quality | ✅     | ❌    | 3      |
+| Docker Build | ✅     | ❌    | 1      |
 
 Details siehe [FINAL-TEST-STRATEGY.md](./docs/FINAL-TEST-STRATEGY.md)
 

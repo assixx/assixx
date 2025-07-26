@@ -18,6 +18,8 @@
 - ✅ **TypeScript Check** (NEU - wird jetzt automatisch ausgeführt!)
 - ✅ Aktuelle Phase Info
 
+# - ✅ Unit Tests (Auskommentiert - werden nicht mehr automatisch ausgeführt)
+
 **Bei Problemen:**
 
 ```bash

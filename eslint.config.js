@@ -435,43 +435,60 @@ export default [
 
   {
     ignores: [
+      // Node modules
       "node_modules/**",
       "node_modules_old_backup/**",
       "**/node_modules_old_backup/**",
-      "uploads/**",
-      "*.log",
-      ".env",
-      ".env.*",
+
+      // Build outputs
       "dist/**",
       "build/**",
-      "coverage/**",
+      "*.min.js",
       "backend/dist/**",
       "frontend/dist/**",
+
+      // Coverage reports
+      "coverage/**",
+
+      // Log files
+      "*.log",
+      "backend/logs/**",
+
+      // Environment files
+      ".env",
+      ".env.*",
+
+      // Compiled JS from TypeScript (aber nicht frontend/dist)
+      "backend/**/*.js",
+      "frontend/**/*.js",
+      "!frontend/dist/**/*.js",
+      "!scripts/fix-esm-imports.js",
+
+      // Script files
+      "scripts/fix-*.js",
+
+      // Test config files
+      "jest.config.js",
+      "jest.config.cjs",
+
+      // Other ignored files
+      "uploads/**",
       "frontend/src/scripts/lib/**",
       "frontend/src/styles/lib/**",
       "frontend/public/**",
-      "backend/logs/**",
+
       // TypeScript Declaration Files
       "**/*.d.ts",
-      // Backend Scripts - bleiben CommonJS
-      "backend/scripts/**/*.js",
-      "backend/src/utils/scripts/**/*.js",
-      // Fix scripts - CommonJS
-      "scripts/fix-*.js",
-      // Entry Points - bleiben als .js für Stabilität
-      "backend/src/app.js",
-      "backend/src/auth.js",
-      "backend/src/database.js",
-      "backend/src/server.js",
+
+      // Database files
+      "backend/src/database/migrations/**/*.js",
+      "database/**/*.js",
+
+      // Legacy files
       "backend/src/server-old.js",
       "backend/src/register-ts.js",
-      // Database Migrations
-      "backend/src/database/migrations/**/*.js",
-      // Database build scripts
-      "database/**/*.js",
-      // Temporär - werden später migriert
-      "backend/src/websocket.js",
-      // Test files - keine Notwendigkeit zu prüfen
+
+      // Test files
       "backend/src/__tests__/**",
       "backend/**/*.test.ts",
       "backend/**/*.spec.ts",

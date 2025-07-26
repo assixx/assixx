@@ -14,7 +14,9 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 
 import { swaggerSpec } from "./config/swagger";
+import { swaggerSpecV2 } from "./config/swagger-v2";
 import authController from "./controllers/auth.controller";
+import { deprecationMiddleware } from "./middleware/deprecation";
 import {
   protectPage,
   contentSecurityPolicy,
@@ -354,6 +356,9 @@ app.use("/uploads", express.static(path.join(currentDirPath, "../../uploads")));
 // API security headers and additional validation
 app.use("/api", apiSecurityHeaders);
 
+// Apply deprecation headers for API v1
+app.use(deprecationMiddleware("v1", "2025-12-31"));
+
 // Additional security for API routes
 app.use("/api", (req: Request, res: Response, next: NextFunction): void => {
   // Validate Content-Type for POST/PUT requests
@@ -509,7 +514,9 @@ app.post(
 // Legacy routes for backward compatibility - MUST BE BEFORE main routes
 // Role Switch Routes - BEFORE CSRF Protection
 // Swagger API Documentation - BEFORE CSRF Protection
-if (process.env.NODE_ENV === "development") {
+// TEMPORARY: Enable Swagger in all modes for API documentation
+// eslint-disable-next-line no-constant-condition, no-constant-binary-expression
+if (true || process.env.NODE_ENV === "development") {
   console.log("[DEBUG] Mounting Swagger UI at /api-docs");
 
   // Serve OpenAPI JSON spec
@@ -518,7 +525,13 @@ if (process.env.NODE_ENV === "development") {
     res.send(swaggerSpec);
   });
 
-  // Serve Swagger UI
+  // Serve v2 OpenAPI JSON spec
+  app.get("/api-docs/v2/swagger.json", (_req: Request, res: Response): void => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpecV2);
+  });
+
+  // Serve Swagger UI for v1
   app.use(
     "/api-docs",
     swaggerUi.serve,
@@ -532,6 +545,27 @@ if (process.env.NODE_ENV === "development") {
         showRequestDuration: true,
         tryItOutEnabled: true,
         persistAuthorization: true,
+      },
+    }),
+  );
+
+  // Serve Swagger UI for v2
+  console.log("[DEBUG] Mounting Swagger UI v2 at /api-docs/v2");
+  app.use(
+    "/api-docs/v2",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpecV2, {
+      customCss: ".swagger-ui .topbar { display: none }",
+      customSiteTitle: "Assixx API v2 Documentation",
+      customfavIcon: "/favicon.ico",
+      swaggerOptions: {
+        docExpansion: "none",
+        filter: true,
+        showRequestDuration: true,
+        tryItOutEnabled: true,
+        persistAuthorization: true,
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1,
       },
     }),
   );
@@ -569,6 +603,28 @@ app.use(htmlRoutes);
 // Error handling middleware
 app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
+    // Check if it's a ServiceError
+    if (err.name === "ServiceError" && "statusCode" in err) {
+      const serviceError = err as Error & {
+        statusCode: number;
+        code: string;
+        details?: Array<{ field: string; message: string }>;
+      };
+      res.status(serviceError.statusCode).json({
+        success: false,
+        error: {
+          code: serviceError.code,
+          message: serviceError.message,
+          details: serviceError.details,
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Default error handling
     console.error(err.stack);
     res.status(500).json({
       message: "Internal Server Error",

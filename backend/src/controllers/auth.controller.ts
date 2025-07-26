@@ -17,7 +17,12 @@ import { logger } from "../utils/logger";
 
 // Type guard to check if request has authenticated user
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return "user" in req && req.user != null && "id" in req.user;
+  return (
+    "user" in req &&
+    req.user != null &&
+    typeof req.user === "object" &&
+    "id" in req.user
+  );
 }
 
 // Interfaces for request bodies

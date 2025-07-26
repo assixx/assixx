@@ -5,12 +5,14 @@
 Nach der Erfahrung mit Schema-Drift und Mock-Wartungsproblemen haben wir eine neue Test-Strategie:
 
 ### 1. **Lokale Tests (mit Docker)**
+
 - Alle Integration-Tests die eine Datenbank benötigen
 - Nutzt die echte lokale MySQL-Datenbank
 - Ausführung über `./scripts/test-local.sh`
 - Keine Schema-Sync-Probleme, da lokale DB immer aktuell
 
 ### 2. **GitHub Actions (ohne DB)**
+
 - Nur Unit-Tests die KEINE Datenbank benötigen
 - Utility-Tests (errorHandler, etc.)
 - Code-Qualität (TypeScript, ESLint, Prettier)
@@ -26,6 +28,7 @@ Nach der Erfahrung mit Schema-Drift und Mock-Wartungsproblemen haben wir eine ne
 ## Test-Ausführung
 
 ### Lokal (Entwickler)
+
 ```bash
 # Alle Tests mit echter DB
 ./scripts/test-local.sh
@@ -39,6 +42,7 @@ Nach der Erfahrung mit Schema-Drift und Mock-Wartungsproblemen haben wir eine ne
 ```
 
 ### GitHub Actions
+
 - Automatisch bei Push/PR
 - Nur Unit-Tests ohne DB-Abhängigkeit
 - Workflow: `.github/workflows/unit-tests.yml`
@@ -46,11 +50,13 @@ Nach der Erfahrung mit Schema-Drift und Mock-Wartungsproblemen haben wir eine ne
 ## Test-Kategorien
 
 ### Unit Tests (GitHub Actions ✅)
+
 - `errorHandler.test.ts`
 - `health.test.ts`
 - Weitere reine Utility-Tests
 
 ### Integration Tests (Nur Lokal 🏠)
+
 - `auth.test.ts`
 - `users.test.ts`
 - `teams.test.ts`

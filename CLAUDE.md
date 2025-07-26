@@ -112,16 +112,6 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 2. docker exec assixx-backend pnpm run format
 3. docker exec assixx-backend pnpm run type-check
 
-## UNIT TESTS & GITHUB ACTIONS
-
-**Matrix Test Strategy:**
-
-- Jeder Test läuft als separater GitHub Check
-- Dynamische Test-Discovery findet alle \*.test.ts Dateien
-- Parallele Ausführung mit fail-fast: false
-- Human-readable Namen: "Tests: Routes: auth" statt "test"
-- Coverage wird aggregiert aus allen Test-Runs
-- Ermöglicht gezieltes Re-run einzelner fehlgeschlagener Tests
 
 **Workflow-Struktur:**
 
@@ -180,7 +170,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 ## PFLICHT-CHECKLISTE (TodoWrite mit 10 Punkten)
 
 1. Docker-Check
-2. TODO.md (AKTUELLE PHASE)
+2. TODO.md (AKTUELLE PHASE + FORTSCHRITTS-TRACKING!)
 3. CLAUDE.md
 4. TypeScript Architecture Guide (bei Backend)
 5. Design Standards
@@ -189,6 +179,29 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 8. Database Migration Guide
 9. BEFORE-STARTING-DEV befolgen (Anleitung lesen und Befehle durchführen)!!!!
 10. Entwicklung beginnen
+
+## 📊 FORTSCHRITTS-DOKUMENTATION (NEU! WICHTIG!)
+
+**TÄGLICH AKTUALISIEREN:**
+
+- `/docs/DAILY-PROGRESS.md` - Täglicher Fortschritt mit Metriken
+- `/docs/api/API-V2-PROGRESS-LOG.md` - API v2 spezifische Details
+- `TODO.md` - Fortschritts-Tracking Section ganz oben!
+
+**Bei jedem Arbeitstag:**
+
+1. DAILY-PROGRESS.md mit Tagesübersicht updaten
+2. Bei API-Arbeit: API-V2-PROGRESS-LOG.md erweitern
+3. TODO.md Fortschritts-Section aktualisieren
+4. Erfolge und Probleme dokumentieren
+5. Metriken erfassen (Zeit, TODOs, Commits)
+
+**Warum wichtig:**
+
+- Zeigt kontinuierlichen Fortschritt
+- Hilft bei Retrospektiven
+- Dokumentiert Lösungen für wiederkehrende Probleme
+- Motiviert durch sichtbare Erfolge
 
 ## ZENTRALE DOKUMENTATION
 

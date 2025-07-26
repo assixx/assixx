@@ -1,0 +1,581 @@
+/**
+ * Calendar v2 Service Layer
+ * Handles all business logic for calendar events
+ */
+
+import CalendarModel from "../../../models/calendar.js";
+import type {
+  CalendarEvent,
+  EventCreateData,
+  EventUpdateData,
+  EventAttendee,
+} from "../../../models/calendar.js";
+import { dbToApiEvent } from "../../../utils/fieldMapping.js";
+import { ServiceError } from "../users/users.service.js";
+
+export interface CalendarFilters {
+  status?: "active" | "cancelled";
+  filter?: "all" | "company" | "department" | "team" | "personal";
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: string;
+  limit?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+export interface CalendarEventData {
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime: string;
+  allDay?: boolean;
+  orgLevel: "company" | "department" | "team" | "personal";
+  orgId?: number;
+  reminderMinutes?: number;
+  color?: string;
+  recurrenceRule?: string;
+  attendeeIds?: number[];
+}
+
+export interface CalendarEventUpdateData {
+  title?: string;
+  description?: string;
+  location?: string;
+  startTime?: string;
+  endTime?: string;
+  allDay?: boolean;
+  orgLevel?: "company" | "department" | "team" | "personal";
+  orgId?: number;
+  reminderMinutes?: number | null;
+  color?: string;
+  recurrenceRule?: string | null;
+  status?: "tentative" | "confirmed" | "cancelled";
+}
+
+export class CalendarService {
+  /**
+   * Get paginated list of calendar events
+   */
+  async listEvents(
+    tenantId: number,
+    userId: number,
+    _userDepartmentId: number | null,
+    filters: CalendarFilters,
+  ) {
+    const page = Math.max(1, parseInt(filters.page ?? "1", 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(filters.limit ?? "50", 10)),
+    );
+    // offset is calculated in the model
+
+    // Map API field names to DB field names
+    const sortByMap: Record<string, string> = {
+      startDate: "start_date",
+      endDate: "end_date",
+      title: "title",
+      createdAt: "created_at",
+    };
+
+    const sortBy = sortByMap[filters.sortBy ?? "startDate"] ?? "start_date";
+    const sortDir: "ASC" | "DESC" =
+      filters.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+    const queryOptions = {
+      status: filters.status,
+      filter: filters.filter,
+      search: filters.search,
+      start_date: filters.startDate,
+      end_date: filters.endDate,
+      page,
+      limit,
+      sortBy,
+      sortDir,
+    };
+
+    try {
+      const result = await CalendarModel.getAllEvents(
+        tenantId,
+        userId,
+        queryOptions,
+      );
+
+      // Map events to API format
+      const events = result.events.map((event: CalendarEvent) =>
+        dbToApiEvent(event),
+      );
+
+      const totalPages = Math.ceil(result.pagination.total / limit);
+
+      return {
+        data: events,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          pageSize: limit,
+          totalItems: result.pagination.total,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+    } catch {
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to retrieve calendar events",
+        500,
+      );
+    }
+  }
+
+  /**
+   * Get single event by ID
+   */
+  async getEventById(
+    eventId: number,
+    tenantId: number,
+    userId: number,
+    _userDepartmentId?: number | null,
+  ) {
+    try {
+      const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+      if (!event) {
+        throw new ServiceError("NOT_FOUND", "Event not found", 404);
+      }
+
+      // Get attendees
+      const attendees = await CalendarModel.getEventAttendees(
+        eventId,
+        tenantId,
+      );
+
+      const apiEvent = dbToApiEvent(event);
+      return {
+        ...apiEvent,
+        attendees: attendees.map((attendee: EventAttendee) => ({
+          userId: attendee.user_id,
+          responseStatus: attendee.response_status,
+          respondedAt: attendee.responded_at,
+          username: attendee.username,
+          firstName: attendee.first_name,
+          lastName: attendee.last_name,
+          email: attendee.email,
+          profilePicture: attendee.profile_picture,
+        })),
+      };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError("SERVER_ERROR", "Failed to retrieve event", 500);
+    }
+  }
+
+  /**
+   * Create new calendar event
+   */
+  async createEvent(
+    eventData: CalendarEventData,
+    tenantId: number,
+    userId: number,
+  ) {
+    // Validate required fields
+    if (!eventData.title) {
+      throw new ServiceError("BAD_REQUEST", "Title is required", 400, [
+        { field: "title", message: "Title is required" },
+      ]);
+    }
+
+    if (!eventData.startTime) {
+      throw new ServiceError("BAD_REQUEST", "Start time is required", 400, [
+        { field: "startTime", message: "Start time is required" },
+      ]);
+    }
+
+    if (!eventData.endTime) {
+      throw new ServiceError("BAD_REQUEST", "End time is required", 400, [
+        { field: "endTime", message: "End time is required" },
+      ]);
+    }
+
+    if (!eventData.orgLevel) {
+      throw new ServiceError(
+        "BAD_REQUEST",
+        "Organization level is required",
+        400,
+        [{ field: "orgLevel", message: "Organization level is required" }],
+      );
+    }
+
+    // Validate dates
+    const startDate = new Date(eventData.startTime);
+    const endDate = new Date(eventData.endTime);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new ServiceError("BAD_REQUEST", "Invalid date format", 400, [
+        { field: "startTime/endTime", message: "Must be valid ISO 8601 date" },
+      ]);
+    }
+
+    if (endDate <= startDate) {
+      throw new ServiceError(
+        "BAD_REQUEST",
+        "End time must be after start time",
+        400,
+        [{ field: "endTime", message: "Must be after start time" }],
+      );
+    }
+
+    // Validate org_level and org_id
+    if (
+      eventData.orgLevel !== "personal" &&
+      eventData.orgLevel !== "company" &&
+      !eventData.orgId
+    ) {
+      throw new ServiceError(
+        "BAD_REQUEST",
+        `org_id is required for ${eventData.orgLevel} events`,
+        400,
+        [
+          {
+            field: "orgId",
+            message: `Required for ${eventData.orgLevel} events`,
+          },
+        ],
+      );
+    }
+
+    const createData: EventCreateData = {
+      tenant_id: tenantId,
+      title: eventData.title,
+      description: eventData.description,
+      location: eventData.location,
+      start_time: eventData.startTime,
+      end_time: eventData.endTime,
+      all_day: eventData.allDay ?? false,
+      org_level: eventData.orgLevel,
+      org_id: eventData.orgId,
+      created_by: userId,
+      reminder_time: eventData.reminderMinutes,
+      color: eventData.color,
+      recurrence_rule: eventData.recurrenceRule,
+    };
+
+    try {
+      const createdEvent = await CalendarModel.createEvent(createData);
+
+      if (!createdEvent) {
+        throw new ServiceError("SERVER_ERROR", "Failed to create event", 500);
+      }
+
+      // Add attendees if provided
+      if (eventData.attendeeIds && eventData.attendeeIds.length > 0) {
+        for (const attendeeId of eventData.attendeeIds) {
+          await CalendarModel.addEventAttendee(
+            createdEvent.id,
+            attendeeId,
+            "pending",
+          );
+        }
+      }
+
+      // Retrieve and return the created event with attendees
+      const eventWithAttendees = await this.getEventById(
+        createdEvent.id,
+        tenantId,
+        userId,
+      );
+      return eventWithAttendees;
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError("SERVER_ERROR", "Failed to create event", 500);
+    }
+  }
+
+  /**
+   * Update calendar event
+   */
+  async updateEvent(
+    eventId: number,
+    updateData: CalendarEventUpdateData,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    // First check if event exists
+    const eventExists = await CalendarModel.checkEventExists(eventId, tenantId);
+    if (!eventExists) {
+      throw new ServiceError("NOT_FOUND", "Event not found", 404);
+    }
+
+    // Then check if user has permission to view
+    const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+    if (!event) {
+      throw new ServiceError(
+        "FORBIDDEN",
+        "You don't have permission to access this event",
+        403,
+      );
+    }
+
+    // Check permissions
+    if (
+      event.created_by !== userId &&
+      userRole !== "admin" &&
+      userRole !== "manager"
+    ) {
+      throw new ServiceError(
+        "FORBIDDEN",
+        "You can only update your own events",
+        403,
+      );
+    }
+
+    // Validate dates if provided
+    if (updateData.startTime && updateData.endTime) {
+      const startDate = new Date(updateData.startTime);
+      const endDate = new Date(updateData.endTime);
+
+      if (endDate <= startDate) {
+        throw new ServiceError(
+          "BAD_REQUEST",
+          "End time must be after start time",
+          400,
+          [{ field: "endTime", message: "Must be after start time" }],
+        );
+      }
+    }
+
+    // Map API fields to DB fields
+    const dbUpdateData: EventUpdateData = {
+      title: updateData.title,
+      description: updateData.description,
+      location: updateData.location,
+      start_time: updateData.startTime,
+      end_time: updateData.endTime,
+      all_day: updateData.allDay,
+      org_level: updateData.orgLevel,
+      org_id: updateData.orgId,
+      reminder_time: updateData.reminderMinutes,
+      color: updateData.color,
+      recurrence_rule: updateData.recurrenceRule,
+      // status is handled differently in the calendar model
+    };
+
+    try {
+      const success = await CalendarModel.updateEvent(
+        eventId,
+        dbUpdateData,
+        tenantId,
+      );
+      if (!success) {
+        throw new ServiceError("SERVER_ERROR", "Failed to update event", 500);
+      }
+
+      // Return updated event
+      const updatedEvent = await this.getEventById(eventId, tenantId, userId);
+      return updatedEvent;
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError("SERVER_ERROR", "Failed to update event", 500);
+    }
+  }
+
+  /**
+   * Delete calendar event
+   */
+  async deleteEvent(
+    eventId: number,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    // First check if event exists
+    const eventExists = await CalendarModel.checkEventExists(eventId, tenantId);
+    if (!eventExists) {
+      throw new ServiceError("NOT_FOUND", "Event not found", 404);
+    }
+
+    // Then check if user has permission to view
+    const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+    if (!event) {
+      throw new ServiceError(
+        "FORBIDDEN",
+        "You don't have permission to access this event",
+        403,
+      );
+    }
+
+    // Check permissions
+    if (
+      event.created_by !== userId &&
+      userRole !== "admin" &&
+      userRole !== "manager"
+    ) {
+      throw new ServiceError(
+        "FORBIDDEN",
+        "You can only delete your own events",
+        403,
+      );
+    }
+
+    try {
+      const success = await CalendarModel.deleteEvent(eventId, tenantId);
+      if (!success) {
+        throw new ServiceError("SERVER_ERROR", "Failed to delete event", 500);
+      }
+      return true;
+    } catch (error) {
+      // Re-throw ServiceErrors to preserve their status codes
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError("SERVER_ERROR", "Failed to delete event", 500);
+    }
+  }
+
+  /**
+   * Update attendee response
+   */
+  async updateAttendeeResponse(
+    eventId: number,
+    userId: number,
+    response: "accepted" | "declined" | "tentative",
+    tenantId: number,
+  ) {
+    try {
+      // Check if event exists
+      const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+      if (!event) {
+        throw new ServiceError("NOT_FOUND", "Event not found", 404);
+      }
+
+      const success = await CalendarModel.respondToEvent(
+        eventId,
+        userId,
+        response,
+      );
+      if (!success) {
+        throw new ServiceError("BAD_REQUEST", "Failed to update response", 400);
+      }
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to update attendee response",
+        500,
+      );
+    }
+  }
+
+  /**
+   * Export events
+   */
+  async exportEvents(
+    tenantId: number,
+    userId: number,
+    _userDepartmentId: number | null,
+    format: "ics" | "csv",
+  ) {
+    try {
+      const result = await CalendarModel.getAllEvents(
+        tenantId,
+        userId,
+        { limit: 1000 }, // Export up to 1000 events
+      );
+
+      if (format === "csv") {
+        return this.generateCSV(result.events);
+      } else {
+        return this.generateICS(result.events);
+      }
+    } catch {
+      throw new ServiceError("SERVER_ERROR", "Failed to export events", 500);
+    }
+  }
+
+  /**
+   * Generate CSV export
+   */
+  private generateCSV(events: CalendarEvent[]): string {
+    const headers = [
+      "Title",
+      "Description",
+      "Location",
+      "Start",
+      "End",
+      "All Day",
+      "Status",
+    ];
+    const rows = events.map((event) => [
+      event.title,
+      event.description ?? "",
+      event.location ?? "",
+      event.start_date.toISOString(),
+      event.end_date.toISOString(),
+      event.all_day ? "Yes" : "No",
+      event.status ?? "confirmed",
+    ]);
+
+    const csv = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    return csv;
+  }
+
+  /**
+   * Generate ICS export
+   */
+  private generateICS(events: CalendarEvent[]): string {
+    const icsEvents = events
+      .map((event) => {
+        const uid = `${event.id}@assixx.com`;
+        const dtstart = event.start_date
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}/, "");
+        const dtend = event.end_date
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}/, "");
+
+        return `BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${new Date()
+          .toISOString()
+          .replace(/[-:]/g, "")
+          .replace(/\.\d{3}/, "")}Z
+DTSTART:${dtstart}Z
+DTEND:${dtend}Z
+SUMMARY:${event.title}
+DESCRIPTION:${event.description ?? ""}
+LOCATION:${event.location ?? ""}
+STATUS:${(event.status ?? "CONFIRMED").toUpperCase()}
+END:VEVENT`;
+      })
+      .join("\n");
+
+    return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Assixx//Calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+${icsEvents}
+END:VCALENDAR`;
+  }
+}
+
+// Export a singleton instance
+export const calendarService = new CalendarService();
