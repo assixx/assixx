@@ -1,5 +1,4 @@
-import lodash from "lodash";
-const { camelCase, mapKeys, snakeCase } = lodash;
+import { camelCase, mapKeys, snakeCase } from "lodash";
 
 /**
  * Convert database object to API format (snake_case to camelCase)
