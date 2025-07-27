@@ -83,9 +83,7 @@ export class TeamsService {
         if (apiTeam.description === "") {
           apiTeam.description = null;
         }
-        if (apiTeam.leaderId === null || apiTeam.leaderId === undefined) {
-          apiTeam.leaderId = null;
-        }
+        apiTeam.leaderId ??= null;
 
         // Include member count if requested
         if (filters?.includeMembers) {
@@ -134,9 +132,7 @@ export class TeamsService {
       if (apiTeam.description === "") {
         apiTeam.description = null;
       }
-      if (apiTeam.leaderId === null || apiTeam.leaderId === undefined) {
-        apiTeam.leaderId = null;
-      }
+      apiTeam.leaderId ??= null;
 
       apiTeam.members = members.map((member) => ({
         id: member.id,
@@ -266,7 +262,7 @@ export class TeamsService {
 
       // Update the team
       const updateData: TeamUpdateData = {};
-      
+
       // Only include fields that are being updated
       if (data.name !== undefined) {
         updateData.name = data.name;

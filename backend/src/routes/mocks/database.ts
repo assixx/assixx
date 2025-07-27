@@ -937,10 +937,25 @@ export async function createTestTenant(
   try {
     // First try with company_name (production schema)
     const [result] = await db.execute(
-      "INSERT INTO tenants (subdomain, company_name, status) VALUES (?, ?, ?)",
-      [uniqueSubdomain, uniqueName, "active"],
+      "INSERT INTO tenants (subdomain, company_name, email, status) VALUES (?, ?, ?, ?)",
+      [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, "active"],
     );
     const tenantId = (result as ResultSetHeader).insertId;
+    console.log(
+      `Created test tenant with ID: ${tenantId}, subdomain: ${uniqueSubdomain}`,
+    );
+
+    // Verify tenant was created
+    const [verifyResult] = await db.execute(
+      "SELECT id FROM tenants WHERE id = ?",
+      [tenantId],
+    );
+    if (!Array.isArray(verifyResult) || verifyResult.length === 0) {
+      throw new Error(
+        `Tenant with ID ${tenantId} was not found after creation`,
+      );
+    }
+
     testDataTracker.trackTenant(tenantId); // Track created tenant
     return tenantId;
   } catch (err: unknown) {
@@ -951,10 +966,25 @@ export async function createTestTenant(
       error.message?.includes("Field 'name' doesn't have a default value")
     ) {
       const [result] = await db.execute(
-        "INSERT INTO tenants (subdomain, name, status) VALUES (?, ?, ?)",
-        [uniqueSubdomain, uniqueName, "active"],
+        "INSERT INTO tenants (subdomain, name, email, status) VALUES (?, ?, ?, ?)",
+        [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, "active"],
       );
       const tenantId = (result as ResultSetHeader).insertId;
+      console.log(
+        `Created test tenant (name field) with ID: ${tenantId}, subdomain: ${uniqueSubdomain}`,
+      );
+
+      // Verify tenant was created
+      const [verifyResult] = await db.execute(
+        "SELECT id FROM tenants WHERE id = ?",
+        [tenantId],
+      );
+      if (!Array.isArray(verifyResult) || verifyResult.length === 0) {
+        throw new Error(
+          `Tenant with ID ${tenantId} was not found after creation`,
+        );
+      }
+
       testDataTracker.trackTenant(tenantId); // Track created tenant
       return tenantId;
     }
@@ -1012,6 +1042,10 @@ export async function createTestUser(
 
   // Generate unique employee number
   const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));
+
+  console.log(
+    `Creating test user with tenant_id: ${userData.tenant_id}, department_id: ${userData.department_id}`,
+  );
 
   try {
     const [result] = await db.execute(

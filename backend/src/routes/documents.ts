@@ -569,7 +569,11 @@ router.get(
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
 
-      const documents = await Document.findWithFilters(filters);
+      const result = await Document.findWithFilters(
+        req.user.tenant_id,
+        filters,
+      );
+      const documents = result.documents;
       const total = documents.length;
 
       res.json(

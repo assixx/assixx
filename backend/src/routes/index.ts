@@ -36,6 +36,7 @@ import authV2Routes from "./v2/auth";
 import calendarV2Routes from "./v2/calendar";
 import chatV2Routes from "./v2/chat";
 import departmentsV2Routes from "./v2/departments";
+import documentsV2Routes from "./v2/documents";
 import teamsV2Routes from "./v2/teams";
 import usersV2Routes from "./v2/users";
 
@@ -60,6 +61,8 @@ console.log("[DEBUG] Mounting v2 chat routes at /api/v2/chat");
 router.use("/api/v2/chat", chatV2Routes);
 console.log("[DEBUG] Mounting v2 departments routes at /api/v2/departments");
 router.use("/api/v2/departments", departmentsV2Routes);
+console.log("[DEBUG] Mounting v2 documents routes at /api/v2/documents");
+router.use("/api/v2/documents", documentsV2Routes);
 console.log("[DEBUG] Mounting v2 teams routes at /api/v2/teams");
 router.use("/api/v2/teams", teamsV2Routes);
 

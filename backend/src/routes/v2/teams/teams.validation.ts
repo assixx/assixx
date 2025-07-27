@@ -85,7 +85,9 @@ export const teamsValidation = {
         if (typeof value !== "string") return false;
         return value.length <= 500;
       })
-      .withMessage("Description must be null or a string with max 500 characters"),
+      .withMessage(
+        "Description must be null or a string with max 500 characters",
+      ),
     body("departmentId")
       .optional()
       .custom(

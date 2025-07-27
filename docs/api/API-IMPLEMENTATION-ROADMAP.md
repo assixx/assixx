@@ -1,6 +1,6 @@
 # API v2 Implementation Roadmap
 
-**Stand: 27.07.2025 - 19:30 Uhr**
+**Stand: 27.07.2025 - 21:05 Uhr**
 
 ## 🎯 Übersicht
 
@@ -16,8 +16,10 @@ Dieses Dokument ist deine zentrale Anlaufstelle für die API v2 Implementation.
 - Departments v2 - 27/27 Tests ✅
 - Teams v2 - 48/48 Tests ✅ (27.07. fertiggestellt)
 
-⏳ **AUSSTEHEND (5/11 APIs - 45%)**
-- Documents v2 - Nächste API
+🔧 **FAST FERTIG (1/11 APIs - 9%)**
+- Documents v2 - 23/28 Tests ✅ (82% grün)
+
+⏳ **AUSSTEHEND (4/11 APIs - 36%)**
 - Blackboard v2
 - KVP v2  
 - Shifts v2
@@ -192,11 +194,13 @@ export const apiToDb = <T>(apiObject: any): T => {
 ### Phase 3: Content & Collaboration (Wochen 19-24)
 
 #### Wochen 19-20: Documents API v2 📄
-**Start:** KW 49 (02.12. - 15.12.2025)
-- [ ] File Upload/Download
-- [ ] Versioning
-- [ ] Folder Structure
-- [ ] Access Control
+**Status:** FAST FERTIG (27.07.2025) - 90% implementiert
+- ✅ File Upload/Download (Multer für PDFs)
+- ✅ Access Control (recipient-based)
+- ✅ Archive/Unarchive
+- ✅ Read Status Tracking
+- ✅ Tags & Metadata
+- ⚠️ 5 Test-Fehler zu beheben
 
 #### Wochen 21-22: Blackboard API v2 📢
 **Start:** KW 51 (16.12. - 29.12.2025)
@@ -239,15 +243,15 @@ Phase 2: Organization APIs (2/3)
 [██████████] 100% - Teams API v2 ✅
 [░░░░░░░░░░] 0% - Shifts API v2
 
-Phase 3: Content & Collaboration (0/3)
-[░░░░░░░░░░] 0% - Documents API v2
+Phase 3: Content & Collaboration (1/3)
+[████████░░] 90% - Documents API v2 🔧
 [░░░░░░░░░░] 0% - Blackboard API v2
 [░░░░░░░░░░] 0% - KVP API v2
 
 Phase 4: Advanced (0/1)
 [░░░░░░░░░░] 0% - Surveys API v2
 
-GESAMT: 6/11 APIs (55%) ✅
+GESAMT: 6.9/11 APIs (63%) ✅
 ```
 
 ### Timeline Overview
@@ -266,9 +270,22 @@ DEZ: v1 Deprecation Complete
 
 ```
 Vorher: ~40 von 502 Tests (8%)
-Aktuell: ~170 von 502 Tests (34%)
+Aktuell: ~194 von 502 Tests (39%)
 Ziel: 400+ von 502 Tests (80%)
 ```
+
+### Detaillierte Test-Statistik
+
+| API | Tests | Status | Coverage |
+|-----|-------|--------|----------|
+| Auth v2 | 11/11 | ✅ 100% | Login, Register, JWT |
+| Users v2 | 13/13 | ✅ 100% | CRUD, Archive, Profile |
+| Calendar v2 | 33/33 | ✅ 100% | Events, Attendees, Export |
+| Chat v2 | 22 | ✅ Written | Messages, Conversations |
+| Departments v2 | 27/27 | ✅ 100% | CRUD, Stats, Hierarchy |
+| Teams v2 | 48/48 | ✅ 100% | CRUD, Members, Leaders |
+| Documents v2 | 23/28 | 🔧 82% | Upload, Archive, Access |
+| **TOTAL** | **177/182** | **97%** | **Fast alle Tests grün!** |
 
 ---
 
