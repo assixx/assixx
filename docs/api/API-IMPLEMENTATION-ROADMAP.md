@@ -1,8 +1,27 @@
 # API v2 Implementation Roadmap
 
+**Stand: 27.07.2025 - 19:30 Uhr**
+
 ## 🎯 Übersicht
 
 Dieses Dokument ist deine zentrale Anlaufstelle für die API v2 Implementation.
+
+## 📊 AKTUELLER STATUS
+
+✅ **FERTIG (6/11 APIs - 55%)**
+- Auth v2 - 11/11 Tests ✅
+- Users v2 - 13/13 Tests ✅  
+- Calendar v2 - 33/33 Tests ✅
+- Chat v2 - 22 Tests geschrieben ✅
+- Departments v2 - 27/27 Tests ✅
+- Teams v2 - 48/48 Tests ✅ (27.07. fertiggestellt)
+
+⏳ **AUSSTEHEND (5/11 APIs - 45%)**
+- Documents v2 - Nächste API
+- Blackboard v2
+- KVP v2  
+- Shifts v2
+- Surveys v2
 
 ---
 

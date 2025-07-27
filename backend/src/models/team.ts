@@ -40,9 +40,9 @@ interface TeamCreateData {
 
 interface TeamUpdateData {
   name?: string;
-  description?: string;
-  department_id?: number;
-  team_lead_id?: number;
+  description?: string | null;
+  department_id?: number | null;
+  team_lead_id?: number | null;
 }
 
 interface MysqlError extends Error {

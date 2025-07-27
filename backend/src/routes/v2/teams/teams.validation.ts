@@ -80,9 +80,12 @@ export const teamsValidation = {
       .withMessage("Team name must be 2-100 characters"),
     body("description")
       .optional()
-      .trim()
-      .isLength({ max: 500 })
-      .withMessage("Description cannot exceed 500 characters"),
+      .custom((value: unknown) => {
+        if (value === null || value === undefined) return true;
+        if (typeof value !== "string") return false;
+        return value.length <= 500;
+      })
+      .withMessage("Description must be null or a string with max 500 characters"),
     body("departmentId")
       .optional()
       .custom(

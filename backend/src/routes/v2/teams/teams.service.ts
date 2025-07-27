@@ -79,6 +79,14 @@ export class TeamsService {
           delete apiTeam.teamLeadId;
         }
 
+        // Convert empty strings to null for optional fields
+        if (apiTeam.description === "") {
+          apiTeam.description = null;
+        }
+        if (apiTeam.leaderId === null || apiTeam.leaderId === undefined) {
+          apiTeam.leaderId = null;
+        }
+
         // Include member count if requested
         if (filters?.includeMembers) {
           // This would need to be implemented in the model
@@ -120,6 +128,14 @@ export class TeamsService {
       if ("teamLeadId" in apiTeam) {
         apiTeam.leaderId = apiTeam.teamLeadId;
         delete apiTeam.teamLeadId;
+      }
+
+      // Convert empty strings to null for optional fields
+      if (apiTeam.description === "") {
+        apiTeam.description = null;
+      }
+      if (apiTeam.leaderId === null || apiTeam.leaderId === undefined) {
+        apiTeam.leaderId = null;
       }
 
       apiTeam.members = members.map((member) => ({
@@ -249,12 +265,21 @@ export class TeamsService {
       }
 
       // Update the team
-      const updateData: TeamUpdateData = {
-        name: data.name,
-        description: data.description,
-        department_id: data.departmentId,
-        team_lead_id: data.leaderId,
-      };
+      const updateData: TeamUpdateData = {};
+      
+      // Only include fields that are being updated
+      if (data.name !== undefined) {
+        updateData.name = data.name;
+      }
+      if (data.description !== undefined) {
+        updateData.description = data.description;
+      }
+      if (data.departmentId !== undefined) {
+        updateData.department_id = data.departmentId;
+      }
+      if (data.leaderId !== undefined) {
+        updateData.team_lead_id = data.leaderId;
+      }
 
       const success = await Team.update(id, updateData);
       if (!success) {

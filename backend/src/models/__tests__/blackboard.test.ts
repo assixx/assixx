@@ -9,7 +9,7 @@ process.env.NODE_ENV = "production";
 
 import { Blackboard } from "../blackboard";
 import { pool } from "../../database";
-import { logger } from "../../utils/logger";
+import type { ResultSetHeader } from "mysql2";
 
 // Mock only the logger
 jest.mock("../../utils/logger", () => ({
@@ -28,7 +28,7 @@ describe("Blackboard Model - Integration Test", () => {
 
   beforeAll(async () => {
     // Create test tenant
-    const [tenantResult] = await pool.execute(
+    const [tenantResult] = await pool.execute<ResultSetHeader>(
       "INSERT INTO tenants (company_name, subdomain, email, status) VALUES (?, ?, ?, ?)",
       [
         "Blackboard Test Tenant",
@@ -37,24 +37,24 @@ describe("Blackboard Model - Integration Test", () => {
         "active",
       ],
     );
-    testTenantId = (tenantResult as any).insertId;
+    testTenantId = tenantResult.insertId;
 
     // Create test department
-    const [deptResult] = await pool.execute(
+    const [deptResult] = await pool.execute<ResultSetHeader>(
       "INSERT INTO departments (name, tenant_id) VALUES (?, ?)",
       ["Test Department", testTenantId],
     );
-    testDepartmentId = (deptResult as any).insertId;
+    testDepartmentId = deptResult.insertId;
 
     // Create test team
-    const [teamResult] = await pool.execute(
+    const [teamResult] = await pool.execute<ResultSetHeader>(
       "INSERT INTO teams (name, tenant_id, department_id) VALUES (?, ?, ?)",
       ["Test Team", testTenantId, testDepartmentId],
     );
-    testTeamId = (teamResult as any).insertId;
+    testTeamId = teamResult.insertId;
 
     // Create test user
-    const [userResult] = await pool.execute(
+    const [userResult] = await pool.execute<ResultSetHeader>(
       `INSERT INTO users (username, email, password, role, tenant_id, first_name, last_name, status, employee_number, department_id) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -70,7 +70,7 @@ describe("Blackboard Model - Integration Test", () => {
         testDepartmentId,
       ],
     );
-    testUserId = (userResult as any).insertId;
+    testUserId = userResult.insertId;
   });
 
   afterAll(async () => {
