@@ -19,7 +19,7 @@ const TEST_DB_CONFIG: PoolOptions = {
   password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
   database: process.env.DB_NAME ?? "main",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 2, // Reduziert von 10 auf 2 für schnellere Tests
   queueLimit: 0,
   multipleStatements: true,
 };

@@ -346,12 +346,20 @@ export class User {
     }
   }
 
-  static async findByEmail(email: string): Promise<DbUser | undefined> {
+  static async findByEmail(
+    email: string,
+    tenantId?: number,
+  ): Promise<DbUser | undefined> {
     try {
-      const [rows] = await executeQuery<DbUser[]>(
-        "SELECT * FROM users WHERE email = ? AND is_archived = 0",
-        [email],
-      );
+      let query = "SELECT * FROM users WHERE email = ? AND is_archived = 0";
+      const params: (string | number)[] = [email];
+
+      if (tenantId !== undefined) {
+        query += " AND tenant_id = ?";
+        params.push(tenantId);
+      }
+
+      const [rows] = await executeQuery<DbUser[]>(query, params);
 
       if (rows[0]) {
         // Normalize boolean fields from MySQL 0/1 to JavaScript true/false

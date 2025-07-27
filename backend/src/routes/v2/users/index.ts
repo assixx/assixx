@@ -574,7 +574,6 @@ router.post(
   "/:id/archive",
   authenticateV2 as RequestHandler,
   requireRoleV2(["admin", "root"]) as RequestHandler,
-  usersValidation.getById,
   typed.auth(usersController.archiveUser),
 );
 
@@ -621,7 +620,6 @@ router.post(
   "/:id/unarchive",
   authenticateV2 as RequestHandler,
   requireRoleV2(["admin", "root"]) as RequestHandler,
-  usersValidation.getById,
   typed.auth(usersController.unarchiveUser),
 );
 

@@ -36,5 +36,7 @@ export default {
     "^@/(.*)$": "<rootDir>/backend/src/$1",
   },
   setupFilesAfterEnv: ["<rootDir>/backend/src/__tests__/setup.ts"],
+  globalSetup: "<rootDir>/jest.globalSetup.js",
+  globalTeardown: "<rootDir>/jest.globalTeardown.js",
   testTimeout: 10000,
 };

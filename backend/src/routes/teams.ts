@@ -858,7 +858,11 @@ router.post(
         return;
       }
 
-      const success = await Team.addUserToTeam(parseInt(userId, 10), teamId);
+      const success = await Team.addUserToTeam(
+        parseInt(userId, 10),
+        teamId,
+        authReq.user.tenant_id,
+      );
 
       if (success) {
         logger.info(

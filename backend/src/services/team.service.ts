@@ -17,7 +17,7 @@ import Team, {
 
 // Import types from Team model
 // Service-specific interfaces
-interface TeamData extends DbTeam {
+interface TeamData extends Omit<DbTeam, 'team_lead_id'> {
   team_lead_id?: number | null;
   team_lead_name?: string | null;
   member_count?: number;
@@ -32,11 +32,11 @@ interface TeamFilters {
   offset?: number;
 }
 
-interface TeamCreateData extends ModelTeamCreateData {
+interface TeamCreateData extends Omit<ModelTeamCreateData, 'team_lead_id'> {
   team_lead_id?: number | null;
 }
 
-interface TeamUpdateData extends ModelTeamUpdateData {
+interface TeamUpdateData extends Omit<ModelTeamUpdateData, 'team_lead_id'> {
   team_lead_id?: number | null;
 }
 
@@ -53,7 +53,7 @@ class TeamService {
       const teams = await Team.findAll();
       return teams.map((team) => ({
         ...team,
-        team_lead_id: team.leader_id,
+        team_lead_id: team.team_lead_id,
         team_lead_name: null as string | null,
         member_count: 0,
       }));
@@ -73,7 +73,7 @@ class TeamService {
 
       return {
         ...team,
-        team_lead_id: team.leader_id,
+        team_lead_id: team.team_lead_id,
         team_lead_name: null,
         member_count: 0,
       };
@@ -90,7 +90,8 @@ class TeamService {
     try {
       const modelData: ModelTeamCreateData = {
         ...data,
-        leader_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
+        team_lead_id:
+          data.team_lead_id !== null ? data.team_lead_id : undefined,
       };
       const id = await Team.create(modelData);
       const created = await Team.findById(id);
@@ -99,7 +100,7 @@ class TeamService {
       }
       return {
         ...created,
-        team_lead_id: created.leader_id,
+        team_lead_id: created.team_lead_id,
         team_lead_name: null,
         member_count: 0,
       };
@@ -120,7 +121,8 @@ class TeamService {
     try {
       const modelData: ModelTeamUpdateData = {
         ...data,
-        leader_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
+        team_lead_id:
+          data.team_lead_id !== null ? data.team_lead_id : undefined,
       };
       const success = await Team.update(id, modelData);
       if (success) {

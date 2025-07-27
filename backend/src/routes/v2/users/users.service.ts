@@ -142,8 +142,8 @@ export class UsersService {
    * Create new user
    */
   async createUser(userData: CreateUserBody, tenantId: number) {
-    // Check if email already exists
-    const existingUser = await User.findByEmail(userData.email);
+    // Check if email already exists within the same tenant
+    const existingUser = await User.findByEmail(userData.email, tenantId);
     if (existingUser) {
       throw new ServiceError("CONFLICT", "Email already exists", 409);
     }

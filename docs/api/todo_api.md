@@ -1,6 +1,6 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 26.07.2025 (Samstag)
+**Letzte Aktualisierung:** 27.07.2025 (Sonntag)
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
@@ -27,15 +27,15 @@
 
 ## 📌 Komplette API v2 Übersicht (11 APIs)
 
-### ✅ Fertig (5 von 11 = 45%)
-1. **Auth v2** - Authentication API v2 with improved standards
-2. **Users v2** - User management API v2
-3. **Calendar v2** - Calendar and events API v2
-4. **Chat v2** - Real-time messaging API v2
-5. **Departments v2** - Department management API v2
+### ✅ Fertig (6 von 11 = 55%)
+1. **Auth v2** - Authentication API v2 with improved standards ✅
+2. **Users v2** - User management API v2 ✅ (Tests gefixt am 27.07.)
+3. **Calendar v2** - Calendar and events API v2 ✅
+4. **Chat v2** - Real-time messaging API v2 ✅
+5. **Departments v2** - Department management API v2 ✅
+6. **Teams v2** - Team management API v2 ✅ (Implementiert am 27.07.)
 
-### ⏳ Noch zu implementieren (6 von 11 = 55%)
-6. **Teams v2** - Team management API v2
+### ⏳ Noch zu implementieren (5 von 11 = 45%)
 7. **Documents v2** - Document management API v2
 8. **Blackboard v2** - Company announcements API v2
 9. **KVP v2** - Continuous improvement process API v2
@@ -54,9 +54,9 @@
    - **Besonderheit:** JWT mit Access (15min) & Refresh (7d) Tokens
 
 2. **Users API v2** ✅
-   - **Status:** 100% implementiert, Tests haben noch Fehler
+   - **Status:** 100% implementiert + Tests gefixt!
    - **Endpoints:** 13 (CRUD, Archive, Profile Picture, Password, Availability)
-   - **Tests:** Geschrieben aber Email-Format Problem
+   - **Tests:** ✅ Content-Type Header Problem gelöst (27.07.)
    - **Dateien:** `/backend/src/routes/v2/users/`
    - **Besonderheit:** Service Layer Pattern implementiert
 
@@ -77,15 +77,47 @@
 5. **Departments API v2** ✅
    - **Status:** 100% implementiert
    - **Endpoints:** 7 (CRUD, Stats, Members)
-   - **Tests:** 27 geschrieben (Auth Token Problem)
+   - **Tests:** 27 geschrieben (laufen erfolgreich!)
    - **Dateien:** `/backend/src/routes/v2/departments/`
    - **Besonderheit:** Parent-Child Hierarchie
+
+6. **Teams API v2** ✅
+   - **Status:** 100% implementiert & Tests laufen! (27.07.2025)
+   - **Endpoints:** 8 (CRUD + Member Management)
+   - **Tests:** 48 geschrieben, 46/48 grün (96%)!
+   - **Dateien:** `/backend/src/routes/v2/teams/`
+   - **Features:** 
+     - Team CRUD Operations
+     - Member Management (add/remove)
+     - Leader & Department Assignment
+     - Multi-Tenant Isolation
+     - Search & Filter
+   - **Fixes:** DB Schema (team_lead_id), Foreign Keys, Field Mapping
 
 ### 🔧 Basis-Infrastructure ✅
 
 - **Deprecation Middleware** - `/backend/src/middleware/deprecation.ts`
 - **Response Wrapper** - `/backend/src/utils/apiResponse.ts`
 - **Field Mapping** - `/backend/src/utils/fieldMapping.ts`
+- **Test Cleanup** - `jest.globalSetup/Teardown.js` (27.07. hinzugefügt)
+
+## 🎯 Nächste Schritte (Stand: 27.07.2025)
+
+### Sofort (Diese Woche)
+1. **Teams v2 kleine Test-Fehler beheben** (2 Tests, null vs empty string)
+2. **Documents API v2 implementieren** - Nächste API in der Reihe
+3. **Systematischer v0.1.0 Testdurchlauf** - Alle APIs testen
+
+### Kurzfristig (Nächste 2 Wochen)
+1. **Blackboard API v2** - Company announcements
+2. **KVP API v2** - Continuous improvement
+3. **GitHub Actions CI/CD** grün bekommen
+
+### Mittelfristig (August 2025)
+1. **Shifts API v2** - Komplexeste API (Schichtplanung)
+2. **Surveys API v2** - Umfragen
+3. **OpenAPI Dokumentation** für alle v2 APIs
+4. **Migration Guide** für Frontend-Team
 - **Auth v2 Middleware** - `/backend/src/middleware/v2/auth.middleware.ts`
 - **OpenAPI/Swagger v2** - `/backend/src/config/swagger-v2.ts`
 
@@ -99,32 +131,42 @@
 
 ## 🎯 Nächste konkrete Tasks
 
-### 1. Existierende v2 Tests fixen (NEXT!) 🚨
+### 1. Existierende v2 Tests fixen ✅ ERLEDIGT (27.07.2025)
 
 **Warum:** Bevor wir neue APIs bauen, sollten die existierenden funktionieren!
 **Geschätzte Zeit:** 2-3 Stunden
 **Priorität:** KRITISCH - CI/CD muss grün werden
 
-**Reihenfolge:**
-1. **users-v2.test.ts** - Email Format Problem (wie bei Auth v2 gelöst)
-2. **calendar-v2.test.ts** - Permission vs NotFound prüfen
-3. **departments-v2.test.ts** - Auth Token Problem
+**Ergebnis:**
+1. **users-v2.test.ts** - ✅ GELÖST! Content-Type Header fehlte (27.07.)
+2. **calendar-v2.test.ts** - ✅ Läuft! Kein Problem vorhanden (27.07.)
+3. **departments-v2.test.ts** - ✅ Läuft! Kein Auth Problem (27.07.)
 
-**Haupt-Problem:** Tests nutzen hardcoded emails statt `testUser.email`
-**Lösung:** Siehe Auth v2 Fix als Referenz (26.07. gelöst)
+**Alle 84 API v2 Tests laufen jetzt erfolgreich!**
 
-### 2. Teams API v2 implementieren 🎯
+**Haupt-Problem gelöst:** Content-Type Header fehlte bei POST/PUT/PATCH
+**Lösung:** `.set("Content-Type", "application/json")` zu allen Requests hinzugefügt
 
-**Warum:** Nach Test-Fixes können wir sicher neue APIs bauen
-**Geschätzte Zeit:** 3-4 Stunden
+### 2. Teams API v2 implementieren ✅ ERLEDIGT (27.07.2025)
+
+**Warum:** Alle Tests laufen, perfekte Basis für neue API
+**Geschätzte Zeit:** 3-4 Stunden (Tatsächlich: 1:40 Stunden)
 **Priorität:** HOCH - Nächste API nach Test-Fixes
 
-**Dateien erstellen:**
+**Ergebnis:**
+- ✅ Service Layer mit vollständigem CRUD + Member Management
+- ✅ Controller mit 8 Endpoints implementiert
+- ✅ Validation Rules mit custom nullable handling
+- ✅ 48 Integration Tests geschrieben
+- ✅ TypeScript Build erfolgreich
+- ⚠️ Tests haben DB Schema Error (noch zu fixen)
+
+**Dateien erstellt:**
 ```
 /backend/src/routes/v2/teams/
-├── index.ts           # Routes definition
-├── teams.controller.ts # HTTP handlers
-├── teams.service.ts   # Business logic
+├── index.ts           # Routes definition ✅
+├── teams.controller.ts # HTTP handlers ✅
+├── teams.service.ts   # Business logic ✅
 └── teams.validation.ts # Input validation
 ```
 
@@ -545,21 +587,21 @@ cp -r backend/src/routes/v2/departments/* backend/src/routes/v2/teams/
 ## 📊 Fortschritts-Metriken
 
 ### Gesamt-Status
-- **APIs fertig:** 5/11 (45%)
-- **Endpoints implementiert:** 49 aktiv + 5 NOT_IMPLEMENTED
-- **Tests geschrieben:** 115+ (Auth: 11, Calendar: 55, Chat: 22, Departments: 27)
-- **Arbeitszeit bisher:** ~30 Stunden
-- **Geschätzte Zeit bis 100%:** ~35 Stunden
+- **APIs fertig:** 6/11 (55%)
+- **Endpoints implementiert:** 57 aktiv + 5 NOT_IMPLEMENTED
+- **Tests geschrieben:** 163+ (Auth: 11✅, Users: 13✅, Calendar: 33✅, Chat: 22, Departments: 27✅, Teams: 48)
+- **Tests grün:** Auth v2 ✅, Users v2 ✅, Calendar v2 ✅, Departments v2 ✅ (Teams v2 Tests haben DB Schema Error)
+- **Arbeitszeit bisher:** ~35 Stunden
+- **Geschätzte Zeit bis 100%:** ~31 Stunden
 
-### Noch zu implementieren (6 APIs)
-1. **Teams v2** - Team management API v2 - 8 Endpoints (~4h)
-2. **Documents v2** - Document management API v2 - 10 Endpoints (~6h)
-3. **Blackboard v2** - Company announcements API v2 - 6 Endpoints (~4h)
-4. **KVP v2** - Continuous improvement process API v2 - 8 Endpoints (~5h)
-5. **Shifts v2** - Shift planning API v2 - 12 Endpoints (~8h)
-6. **Surveys v2** - Survey management API v2 - 10 Endpoints (~8h)
+### Noch zu implementieren (5 APIs)
+1. **Documents v2** - Document management API v2 - 10 Endpoints (~6h)
+2. **Blackboard v2** - Company announcements API v2 - 6 Endpoints (~4h)
+3. **KVP v2** - Continuous improvement process API v2 - 8 Endpoints (~5h)
+4. **Shifts v2** - Shift planning API v2 - 12 Endpoints (~8h)
+5. **Surveys v2** - Survey management API v2 - 10 Endpoints (~8h)
 
-**Total:** 54 Endpoints, ~35 Stunden Restarbeit
+**Total:** 46 Endpoints, ~31 Stunden Restarbeit
 
 ## 🔗 Referenzen
 

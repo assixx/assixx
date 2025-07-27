@@ -46,14 +46,15 @@ export const usersValidation = {
   ],
 
   // Get user by ID
-  getById: [param("id").isInt().withMessage("User ID must be a valid integer")],
+  getById: [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("User ID must be a valid positive integer"),
+  ],
 
   // Create user validation
   create: [
-    body("email")
-      .isEmail()
-      .normalizeEmail()
-      .withMessage("Valid email required"),
+    body("email").isEmail().withMessage("Valid email required"),
     body("firstName")
       .isString()
       .trim()
@@ -92,11 +93,7 @@ export const usersValidation = {
   // Update user validation
   update: [
     param("id").isInt().withMessage("User ID must be a valid integer"),
-    body("email")
-      .optional()
-      .isEmail()
-      .normalizeEmail()
-      .withMessage("Valid email required"),
+    body("email").optional().isEmail().withMessage("Valid email required"),
     body("firstName")
       .optional()
       .isString()
@@ -199,4 +196,7 @@ export const usersValidation = {
       .isLength({ max: 500 })
       .withMessage("Notes must not exceed 500 characters"),
   ],
+
+  // Archive/Unarchive validation - less strict for ID param
+  archiveValidation: [param("id").exists().withMessage("User ID is required")],
 };

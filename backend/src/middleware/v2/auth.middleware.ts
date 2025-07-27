@@ -177,6 +177,8 @@ export async function authenticateV2(
       last_name: userDetails.lastName,
       department_id: userDetails.departmentId,
     };
+    // Add tenantId to request root for controllers
+    (req as AuthenticatedRequest).tenantId = userDetails.tenantId;
 
     // Also attach for convenience
     (req as AuthenticatedRequest).userId = userDetails.id;

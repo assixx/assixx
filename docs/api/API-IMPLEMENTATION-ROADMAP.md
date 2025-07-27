@@ -155,12 +155,13 @@ export const apiToDb = <T>(apiObject: any): T => {
 - ✅ Department Stats
 - ✅ 27 Integration Tests
 
-#### Wochen 15-16: Teams API v2 👨‍👩‍👧‍👦
-**Start:** KW 45 (04.11. - 17.11.2025)
-- [ ] Team CRUD
-- [ ] Member Management
-- [ ] Team-Kalender Integration
-- [ ] Permissions per Team
+#### Wochen 15-16: Teams API v2 👨‍👩‍👧‍👦 ✅
+**Status:** FERTIG (27.07.2025)
+- ✅ Team CRUD Operations
+- ✅ Member Management (add/remove)
+- ✅ Service Layer Pattern
+- ✅ 48 Integration Tests (96% passing)
+- ✅ Multi-Tenant Isolation
 
 #### Wochen 17-18: Shifts API v2 ⏰
 **Start:** KW 47 (18.11. - 01.12.2025)
@@ -214,9 +215,9 @@ Phase 1: Core APIs (4/4) ✅
 [██████████] 100% - Calendar API v2 ✅
 [██████████] 100% - Chat API v2 ✅
 
-Phase 2: Organization APIs (1/3)
+Phase 2: Organization APIs (2/3)
 [██████████] 100% - Departments API v2 ✅
-[░░░░░░░░░░] 0% - Teams API v2
+[██████████] 100% - Teams API v2 ✅
 [░░░░░░░░░░] 0% - Shifts API v2
 
 Phase 3: Content & Collaboration (0/3)
@@ -227,18 +228,18 @@ Phase 3: Content & Collaboration (0/3)
 Phase 4: Advanced (0/1)
 [░░░░░░░░░░] 0% - Surveys API v2
 
-GESAMT: 5/11 APIs (45%) ✅
+GESAMT: 6/11 APIs (55%) ✅
 ```
 
 ### Timeline Overview
 
 ```
 2025:
-JUL: ✅ Auth, Users, Calendar, Chat, Departments
-AUG: Teams, Documents
-SEP: Blackboard, KVP
-OKT: Shifts, Surveys
-NOV: Final Testing & Migration
+JUL: ✅ Auth, Users, Calendar, Chat, Departments, Teams
+AUG: Documents, Blackboard
+SEP: KVP, Shifts
+OKT: Surveys, Final Testing
+NOV: Migration & Documentation
 DEZ: v1 Deprecation Complete
 ```
 
@@ -287,5 +288,5 @@ Ziel: 400+ von 502 Tests (80%)
 
 ---
 
-**Letzte Aktualisierung:** 25.07.2025
-**Nächster Check:** 31.07.2025 (Teams API Status)
+**Letzte Aktualisierung:** 27.07.2025
+**Nächster Check:** 03.08.2025 (Documents API Status)

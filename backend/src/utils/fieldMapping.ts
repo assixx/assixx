@@ -1,6 +1,5 @@
-import camelCase from "lodash/camelCase.js";
-import mapKeys from "lodash/mapKeys.js";
-import snakeCase from "lodash/snakeCase.js";
+import lodash from "lodash";
+const { camelCase, mapKeys, snakeCase } = lodash;
 
 /**
  * Convert database object to API format (snake_case to camelCase)

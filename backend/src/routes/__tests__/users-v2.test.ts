@@ -236,20 +236,21 @@ describe("Users v2 API Endpoints", () => {
   describe("POST /api/v2/users", () => {
     it("should create a new user with camelCase input", async () => {
       const newUser = {
-        email: `newuser.v2.${Date.now()}@test.com`, // Make email unique
+        email: `__AUTOTEST__newuser.v2.${Date.now()}@test.com`, // Make email unique
         firstName: "New",
         lastName: "UserV2",
         password: "NewPass123!",
         role: "employee",
         departmentId: dept1Id,
         position: "Developer",
-        phone: "+1234567890",
+        phone: `+123456${Date.now().toString().slice(-7)}`,
       };
 
       const response = await request(app)
         .post("/api/v2/users")
         .send(newUser)
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -271,10 +272,11 @@ describe("Users v2 API Endpoints", () => {
       const response = await request(app)
         .post("/api/v2/users")
         .send({
-          email: "invalid@test.com",
+          email: "__AUTOTEST__invalid@test.com",
           // Missing required fields
         })
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe("VALIDATION_ERROR");
@@ -285,12 +287,13 @@ describe("Users v2 API Endpoints", () => {
       const response = await request(app)
         .post("/api/v2/users")
         .send({
-          email: "admin.v2@test.com", // Already exists
+          email: adminUser.email, // Already exists - use actual email from createTestUser
           firstName: "Duplicate",
           lastName: "User",
           password: "Pass123!",
         })
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(409);
       expect(response.body.error.code).toBe("CONFLICT");
@@ -304,7 +307,7 @@ describe("Users v2 API Endpoints", () => {
     beforeEach(async () => {
       testUser = await createTestUser(testDb, {
         username: "update.test@test.com",
-        email: "update.test@test.com",
+        email: "__AUTOTEST__update.test@test.com",
         password: "UpdatePass123!",
         role: "employee",
         tenant_id: tenant1Id,
@@ -325,7 +328,8 @@ describe("Users v2 API Endpoints", () => {
       const response = await request(app)
         .put(`/api/v2/users/${testUserId}`)
         .send(updates)
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject(updates);
@@ -337,7 +341,8 @@ describe("Users v2 API Endpoints", () => {
         .send({
           password: "NewPassword123!",
         })
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
       // Password should be ignored - verify by trying to login with old password
@@ -355,7 +360,7 @@ describe("Users v2 API Endpoints", () => {
     beforeEach(async () => {
       const user = await createTestUser(testDb, {
         username: "archive.test@test.com",
-        email: "archive.test@test.com",
+        email: "__AUTOTEST__archive.test@test.com",
         password: "ArchivePass123!",
         role: "employee",
         tenant_id: tenant1Id,
@@ -368,7 +373,9 @@ describe("Users v2 API Endpoints", () => {
     it("should archive a user", async () => {
       const response = await request(app)
         .post(`/api/v2/users/${archiveUserId}/archive`)
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json")
+        .send({});
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -385,12 +392,16 @@ describe("Users v2 API Endpoints", () => {
       // First archive
       await request(app)
         .post(`/api/v2/users/${archiveUserId}/archive`)
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json")
+        .send({});
 
       // Then unarchive
       const response = await request(app)
         .post(`/api/v2/users/${archiveUserId}/unarchive`)
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json")
+        .send({});
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -413,7 +424,8 @@ describe("Users v2 API Endpoints", () => {
           newPassword: "NewEmployeePass123!",
           confirmPassword: "NewEmployeePass123!",
         })
-        .set("Authorization", `Bearer ${employeeTokenV2}`);
+        .set("Authorization", `Bearer ${employeeTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -440,7 +452,8 @@ describe("Users v2 API Endpoints", () => {
           newPassword: "NewPassword123!",
           confirmPassword: "NewPassword123!",
         })
-        .set("Authorization", `Bearer ${employeeTokenV2}`);
+        .set("Authorization", `Bearer ${employeeTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(401);
       expect(response.body.error.code).toBe("UNAUTHORIZED");
@@ -454,7 +467,8 @@ describe("Users v2 API Endpoints", () => {
           newPassword: "NewPassword123!",
           confirmPassword: "DifferentPassword123!",
         })
-        .set("Authorization", `Bearer ${employeeTokenV2}`);
+        .set("Authorization", `Bearer ${employeeTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe("VALIDATION_ERROR");
@@ -526,7 +540,7 @@ describe("Users v2 API Endpoints", () => {
     beforeEach(async () => {
       const user = await createTestUser(testDb, {
         username: "availability.test@test.com",
-        email: "availability.test@test.com",
+        email: "__AUTOTEST__availability.test@test.com",
         password: "AvailPass123!",
         role: "employee",
         tenant_id: tenant1Id,
@@ -547,7 +561,8 @@ describe("Users v2 API Endpoints", () => {
       const response = await request(app)
         .put(`/api/v2/users/${availabilityUserId}/availability`)
         .send(availabilityData)
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({
@@ -565,7 +580,8 @@ describe("Users v2 API Endpoints", () => {
         .send({
           availabilityStatus: "invalid-status",
         })
-        .set("Authorization", `Bearer ${adminTokenV2}`);
+        .set("Authorization", `Bearer ${adminTokenV2}`)
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe("VALIDATION_ERROR");
