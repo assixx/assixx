@@ -31,10 +31,18 @@ describe("Documents API v2", () => {
     await cleanupTestData();
 
     // Create test tenant
-    tenantId = await createTestTenant(testDb, "doctest", "Document Test Company");
+    tenantId = await createTestTenant(
+      testDb,
+      "doctest",
+      "Document Test Company",
+    );
 
     // Create department
-    departmentId = await createTestDepartment(testDb, tenantId, "Test Department");
+    departmentId = await createTestDepartment(
+      testDb,
+      tenantId,
+      "Test Department",
+    );
 
     // Create team
     teamId = await createTestTeam(testDb, tenantId, departmentId, "Test Team");
@@ -267,12 +275,12 @@ describe("Documents API v2", () => {
 
       expect(response.status).toBe(200);
       const docs = response.body.data.documents;
-      
+
       // User should see: personal docs, team docs (member), company docs
       const docIds = docs.map((d: any) => d.id);
-      expect(docIds).toContain(userDocId);      // Personal doc
-      expect(docIds).toContain(teamDocId);      // Team doc (user is member)
-      expect(docIds).toContain(companyDocId);   // Company doc
+      expect(docIds).toContain(userDocId); // Personal doc
+      expect(docIds).toContain(teamDocId); // Team doc (user is member)
+      expect(docIds).toContain(companyDocId); // Company doc
     });
 
     it("should support pagination", async () => {
@@ -404,7 +412,10 @@ describe("Documents API v2", () => {
         });
 
       if (response.status !== 200) {
-        console.error("Update metadata error response:", JSON.stringify(response.body, null, 2));
+        console.error(
+          "Update metadata error response:",
+          JSON.stringify(response.body, null, 2),
+        );
       }
 
       expect(response.status).toBe(200);
@@ -497,12 +508,15 @@ describe("Documents API v2", () => {
           filename: "archive-test.pdf",
           contentType: "application/pdf",
         });
-      
+
       console.log("Archive test document creation response:", response.status);
       if (response.status !== 201) {
-        console.error("Failed to create document for archive test:", response.body);
+        console.error(
+          "Failed to create document for archive test:",
+          response.body,
+        );
       }
-      
+
       documentId = response.body.data?.id;
       console.log("Document ID for archive test:", documentId);
     });
@@ -510,13 +524,16 @@ describe("Documents API v2", () => {
     it("should archive document", async () => {
       console.log("DEBUG: Archiving document ID:", documentId);
       console.log("DEBUG: Admin token exists:", !!adminToken);
-      
+
       const response = await request(app)
         .post(`/api/v2/documents/${documentId}/archive`)
         .set("Authorization", `Bearer ${adminToken}`);
 
       if (response.status !== 200) {
-        console.error("Archive error response:", JSON.stringify(response.body, null, 2));
+        console.error(
+          "Archive error response:",
+          JSON.stringify(response.body, null, 2),
+        );
         console.error("Archive error status:", response.status);
         console.error("Archive error headers:", response.headers);
       }
@@ -528,7 +545,7 @@ describe("Documents API v2", () => {
       const listResponse = await request(app)
         .get("/api/v2/documents?isArchived=true")
         .set("Authorization", `Bearer ${adminToken}`);
-      
+
       const archivedDoc = listResponse.body.data.documents.find(
         (d: any) => d.id === documentId,
       );
@@ -541,7 +558,10 @@ describe("Documents API v2", () => {
         .set("Authorization", `Bearer ${adminToken}`);
 
       if (response.status !== 200) {
-        console.error("Unarchive error response:", JSON.stringify(response.body, null, 2));
+        console.error(
+          "Unarchive error response:",
+          JSON.stringify(response.body, null, 2),
+        );
       }
 
       expect(response.status).toBe(200);
@@ -571,13 +591,18 @@ describe("Documents API v2", () => {
         .set("Authorization", `Bearer ${adminToken}`);
 
       if (response.status !== 200) {
-        console.error("Download error response:", JSON.stringify(response.body, null, 2));
+        console.error(
+          "Download error response:",
+          JSON.stringify(response.body, null, 2),
+        );
       }
 
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toBe("application/pdf");
       expect(response.headers["content-disposition"]).toContain("attachment");
-      expect(response.headers["content-disposition"]).toContain("download-test.pdf");
+      expect(response.headers["content-disposition"]).toContain(
+        "download-test.pdf",
+      );
     });
 
     it("should preview document inline", async () => {
@@ -586,7 +611,10 @@ describe("Documents API v2", () => {
         .set("Authorization", `Bearer ${adminToken}`);
 
       if (response.status !== 200) {
-        console.error("Preview error response:", JSON.stringify(response.body, null, 2));
+        console.error(
+          "Preview error response:",
+          JSON.stringify(response.body, null, 2),
+        );
       }
 
       expect(response.status).toBe(200);

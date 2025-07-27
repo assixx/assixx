@@ -175,7 +175,7 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
       isPublic?: boolean;
       expiresAt?: string;
     }
-    
+
     const body = req.body as UpdateDocumentBody;
 
     const updateData = {
