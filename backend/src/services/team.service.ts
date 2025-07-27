@@ -17,7 +17,7 @@ import Team, {
 
 // Import types from Team model
 // Service-specific interfaces
-interface TeamData extends Omit<DbTeam, 'team_lead_id'> {
+interface TeamData extends Omit<DbTeam, "team_lead_id"> {
   team_lead_id?: number | null;
   team_lead_name?: string | null;
   member_count?: number;
@@ -32,11 +32,11 @@ interface TeamFilters {
   offset?: number;
 }
 
-interface TeamCreateData extends Omit<ModelTeamCreateData, 'team_lead_id'> {
+interface TeamCreateData extends Omit<ModelTeamCreateData, "team_lead_id"> {
   team_lead_id?: number | null;
 }
 
-interface TeamUpdateData extends Omit<ModelTeamUpdateData, 'team_lead_id'> {
+interface TeamUpdateData extends Omit<ModelTeamUpdateData, "team_lead_id"> {
   team_lead_id?: number | null;
 }
 

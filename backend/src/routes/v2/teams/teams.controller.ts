@@ -58,7 +58,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -87,7 +93,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -123,7 +135,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -164,7 +182,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -193,7 +217,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -228,7 +258,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -264,7 +300,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
@@ -302,7 +344,13 @@ export class TeamsController {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
-          .json(errorResponse(error.code, error.message, error.details as { field: string; message: string; }[] | undefined));
+          .json(
+            errorResponse(
+              error.code,
+              error.message,
+              error.details as { field: string; message: string }[] | undefined,
+            ),
+          );
       } else {
         res
           .status(500)
