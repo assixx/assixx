@@ -40,6 +40,7 @@ interface DocumentCreateData {
   tenant_id: number;
   createdBy?: number; // The user who uploads the document
   tags?: string[]; // Tags for the document
+  mimeType?: string; // MIME type of the document
 }
 
 interface DocumentUpdateData {
@@ -98,6 +99,7 @@ export class Document {
     tenant_id,
     createdBy,
     tags,
+    mimeType = "application/octet-stream",
   }: DocumentCreateData): Promise<number> {
     // Log based on recipient type
     let logMessage = `Creating new document in category ${category} for `;
@@ -130,7 +132,7 @@ export class Document {
         fileName, // original_name - same as filename for now
         `/uploads/documents/${fileName}`, // file_path
         fileContent ? fileContent.length : 0, // file_size
-        "application/octet-stream", // mime_type - default for now
+        mimeType, // mime_type - use provided or default
         fileContent,
         category,
         description,
@@ -778,6 +780,11 @@ export class Document {
       params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
     }
 
+    if (filters.recipientType) {
+      query += " AND d.recipient_type = ?";
+      params.push(filters.recipientType);
+    }
+
     // Add date range filters
     if (filters.uploadDateFrom) {
       query += " AND d.uploaded_at >= ?";
@@ -860,6 +867,11 @@ export class Document {
       if (filters.searchTerm) {
         countQuery += " AND (d.filename LIKE ? OR d.description LIKE ?)";
         countParams.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
+      }
+
+      if (filters.recipientType) {
+        countQuery += " AND d.recipient_type = ?";
+        countParams.push(filters.recipientType);
       }
 
       if (filters.uploadDateFrom) {

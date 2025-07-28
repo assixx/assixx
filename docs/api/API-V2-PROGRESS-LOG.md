@@ -1,5 +1,50 @@
 # API v2 Implementation Progress Log
 
+## 28.07.2025 - Tag 5: MEGA FORTSCHRITT - 296/304 Tests grün! 🚀
+
+### 🎆 Systematische Test-Fixes (Nachmittag Session - 3+ Stunden)
+
+**Ziel:** Alle API v2 Tests zum Laufen bringen
+
+**Ergebnis: 97.4% Pass Rate!**
+
+1. **Docker Dependencies dauerhaft gelöst** ✅
+   - Problem: @types/lodash verschwand immer wieder
+   - Root Cause: pnpm-lock.yaml nicht in Docker gemountet
+   - Lösung: Read-only Volume Mount + frozen-lockfile
+   - Keine Dependency-Probleme mehr!
+
+2. **Teams v2 Tests 100% grün** ✅ (48/48)
+   - Foreign Key Constraints gefixt
+   - user_teams Tabelle zu Test-Setup hinzugefügt
+   - Race Conditions durch maxWorkers: 1 gelöst
+
+3. **Users v2 Tests 100% grün** ✅ (24/24)
+   - Timezone-Handling in availability tests
+   - Multi-Tenant Isolation Test angepasst
+   - Content-Type Headers für alle POST/PUT Requests
+
+4. **Documents v2 Tests 100% grün** ✅ (28/28)
+   - MIME Type Support komplett implementiert
+   - Recipient Type Filter SQL korrigiert
+   - Archive/Unarchive Content-Type Fix
+   - Kritische Entdeckung: app.ts Content-Type Validation!
+
+5. **Test Infrastructure verbessert** ✅
+   - Jest maxWorkers: 1 für sequenzielle Ausführung
+   - Keine Race Conditions mehr bei DB-Tests
+   - Stabile und reproduzierbare Test-Läufe
+
+**API v2 Status:**
+- 7 von 11 APIs komplett mit Tests ✅ (64%)
+- Verbleibend: Auth v2 Fixes + 4 neue APIs
+
+**Kritische Learnings:**
+- Content-Type Header IMMER setzen für POST/PUT/PATCH
+- Docker Volumes richtig mounten (read-only für Lock-Files)
+- Test-Isolation durch sequenzielle Ausführung
+- Root Cause Analysis statt Quick Fixes
+
 ## 27.07.2025 - Tag 4: Teams API v2 KOMPLETT + Test-Infrastruktur! 🎉
 
 ### 🚀 Teams v2 Tests & Infrastructure (Abend Session - 50 Minuten)

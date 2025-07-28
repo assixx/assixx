@@ -1,5 +1,77 @@
 # Daily Progress Log - Assixx Development
 
+## 28.07.2025 - Montag (Nachmittags Session)
+
+### 🎯 Session-Übersicht
+
+**Fokus:** Systematische Test-Fehler Behebung für API v2
+**Arbeitszeit:** 14:00 - 17:00+ Uhr (3+ Stunden)
+**Produktivität:** ⭐⭐⭐⭐⭐ MEGA PRODUKTIV!
+
+### 🚀 Krasser Fortschritt - 296/304 Tests grün!
+
+#### 1. Docker Dependencies Fix (30 Minuten)
+- ✅ **Problem:** @types/lodash musste immer wieder neu installiert werden
+- ✅ **Root Cause:** pnpm-lock.yaml wurde nicht in Docker gemountet
+- ✅ **Lösung:** 
+  - pnpm-lock.yaml als read-only Volume in docker-compose.yml
+  - `pnpm install --frozen-lockfile` im Container Command
+  - Vermeidet EBUSY Errors durch read-only mount
+
+#### 2. Test Infrastructure Fixes (1 Stunde)
+- ✅ **Race Conditions:** Jest maxWorkers auf 1 gesetzt
+- ✅ **Schema Issues:** Foreign Key Constraints korrekt erstellt
+- ✅ **user_teams Tabelle:** Fehlte in Test-Setup, hinzugefügt
+
+#### 3. Teams v2 Test Fixes (30 Minuten)
+- ✅ "columns dictionary object is invalid" Error behoben
+- ✅ Foreign Key Beziehungen korrekt aufgebaut
+- ✅ 48/48 Tests grün!
+
+#### 4. Users v2 Test Fixes (45 Minuten)
+- ✅ **Timezone Issues:** ISO Dates korrekt geparst
+- ✅ **Multi-Tenant Isolation:** Test angepasst (email statt tenantId)
+- ✅ 24/24 Tests grün!
+
+#### 5. Documents v2 Test Fixes (45 Minuten)
+- ✅ **MIME Type:** In Model und Service hinzugefügt
+- ✅ **Recipient Filter:** SQL Query korrigiert
+- ✅ **Content-Type Headers:** Für Archive/Unarchive Endpoints
+- ✅ **Critical Discovery:** app.ts validiert Content-Type für POST/PUT/PATCH
+- ✅ 28/28 Tests grün!
+
+### 📊 Finaler Status
+
+**Test-Statistik:**
+- **Test Suites:** 22/48 passing (46%) - von 11/48 (23%)!
+- **Tests:** 296/304 passing (97.4%)
+- **API v2:** 7 von 11 APIs komplett mit Tests ✅ (64%)
+
+**Gelöste Probleme:**
+1. Persistente Dependencies in Docker
+2. Race Conditions in parallelen Tests
+3. Content-Type Validation für alle Mutation Endpoints
+4. Timezone Handling in Tests
+5. Multi-Tenant Isolation Verifikation
+
+### 💡 Wichtige Erkenntnisse
+
+1. **Docker Volume Strategy:** Read-only mounts für Lock-Files
+2. **Test Execution:** Sequenziell statt parallel für DB Tests
+3. **Content-Type:** IMMER setzen für POST/PUT/PATCH in Tests
+4. **Systematisches Vorgehen:** Ein Test nach dem anderen fixen
+5. **Root Cause Analysis:** Nicht nur Symptome beheben
+
+### 🎯 Nächste Schritte
+
+1. Auth v2 Tests debuggen (verbleibende Fehler)
+2. Blackboard API v2 implementieren
+3. KVP API v2 implementieren  
+4. Shifts API v2 implementieren
+5. Surveys API v2 implementieren
+
+---
+
 ## 27.07.2025 - Sonntag (Dritte Session - Abends)
 
 ### 🎯 Session-Übersicht

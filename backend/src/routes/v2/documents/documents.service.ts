@@ -277,6 +277,7 @@ export class DocumentsService {
         month: data.month?.toString(),
         createdBy: createdBy,
         tags: data.tags,
+        mimeType: data.mimeType, // Pass the mime type to store it correctly
       };
 
       const documentId = await Document.create(documentData);

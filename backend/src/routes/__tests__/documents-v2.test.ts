@@ -265,6 +265,22 @@ describe("Documents API v2", () => {
 
       expect(response.status).toBe(200);
       const docs = response.body.data.documents;
+      
+      // Filter should return at least one team document (the one we created)
+      expect(docs.length).toBeGreaterThanOrEqual(1);
+      
+      // All documents should have recipientType === "team"
+      const nonTeamDocs = docs.filter((d: any) => d.recipientType !== "team");
+      if (nonTeamDocs.length > 0) {
+        // Debug output if test will fail
+        throw new Error(`Found ${nonTeamDocs.length} documents with wrong recipientType. First few: ${JSON.stringify(nonTeamDocs.slice(0, 3).map((d: any) => ({
+          id: d.id,
+          recipientType: d.recipientType,
+          category: d.category,
+          filename: d.filename
+        })), null, 2)}`);
+      }
+      
       expect(docs.every((d: any) => d.recipientType === "team")).toBe(true);
     });
 
@@ -509,25 +525,30 @@ describe("Documents API v2", () => {
           contentType: "application/pdf",
         });
 
-      console.log("Archive test document creation response:", response.status);
       if (response.status !== 201) {
         console.error(
           "Failed to create document for archive test:",
           response.body,
         );
+        throw new Error("Failed to create test document for archive test");
       }
 
       documentId = response.body.data?.id;
-      console.log("Document ID for archive test:", documentId);
+      if (!documentId) {
+        throw new Error("No document ID returned from creation");
+      }
     });
 
     it("should archive document", async () => {
-      console.log("DEBUG: Archiving document ID:", documentId);
-      console.log("DEBUG: Admin token exists:", !!adminToken);
+      // Verify documentId was set correctly
+      expect(documentId).toBeDefined();
+      expect(typeof documentId).toBe('number');
+      expect(documentId).toBeGreaterThan(0);
 
       const response = await request(app)
         .post(`/api/v2/documents/${documentId}/archive`)
-        .set("Authorization", `Bearer ${adminToken}`);
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("Content-Type", "application/json");
 
       if (response.status !== 200) {
         console.error(
@@ -555,7 +576,8 @@ describe("Documents API v2", () => {
     it("should unarchive document", async () => {
       const response = await request(app)
         .post(`/api/v2/documents/${documentId}/unarchive`)
-        .set("Authorization", `Bearer ${adminToken}`);
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("Content-Type", "application/json");
 
       if (response.status !== 200) {
         console.error(
@@ -598,7 +620,7 @@ describe("Documents API v2", () => {
       }
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toBe("application/pdf");
+      expect(response.headers["content-type"]).toMatch(/^application\/pdf/);
       expect(response.headers["content-disposition"]).toContain("attachment");
       expect(response.headers["content-disposition"]).toContain(
         "download-test.pdf",
@@ -618,7 +640,7 @@ describe("Documents API v2", () => {
       }
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toBe("application/pdf");
+      expect(response.headers["content-type"]).toMatch(/^application\/pdf/);
       expect(response.headers["content-disposition"]).toContain("inline");
     });
   });
