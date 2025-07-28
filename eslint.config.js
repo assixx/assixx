@@ -433,6 +433,22 @@ export default [
     },
   },
 
+  // Jest setup/teardown files
+  {
+    files: ["jest.globalSetup.js", "jest.globalTeardown.js"],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: "module",
+      globals: {
+        console: "readonly",
+        process: "readonly",
+      },
+    },
+    rules: {
+      "prettier/prettier": "error",
+    },
+  },
+
   {
     ignores: [
       // Node modules

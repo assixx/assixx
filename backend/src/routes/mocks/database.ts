@@ -25,6 +25,7 @@ const TEST_DB_CONFIG: PoolOptions = {
 };
 
 let testDb: Pool | null = null;
+let schemaInitialized = false;
 
 /**
  * Create and initialize test database connection
@@ -36,8 +37,11 @@ export async function createTestDatabase(): Promise<Pool> {
 
   testDb = createPool(TEST_DB_CONFIG);
 
-  // Initialize database schema if needed
-  await initializeSchema(testDb);
+  // Initialize database schema only once
+  if (!schemaInitialized) {
+    await initializeSchema(testDb);
+    schemaInitialized = true;
+  }
 
   return testDb;
 }
@@ -125,18 +129,39 @@ async function initializeSchema(db: Pool): Promise<void> {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS teams (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        department_id INT DEFAULT NULL,
         tenant_id INT NOT NULL,
-        lead_id INT DEFAULT NULL,
-        max_members INT DEFAULT 50,
-        status ENUM('active', 'inactive') DEFAULT 'active',
-        deleted_at TIMESTAMP NULL DEFAULT NULL,
+        department_id INT DEFAULT NULL,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        team_lead_id INT DEFAULT NULL,
+        is_active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        created_by INT DEFAULT NULL,
         FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-        FOREIGN KEY (department_id) REFERENCES departments(id)
+        FOREIGN KEY (department_id) REFERENCES departments(id),
+        FOREIGN KEY (team_lead_id) REFERENCES users(id),
+        FOREIGN KEY (created_by) REFERENCES users(id),
+        KEY idx_is_active (is_active)
+      )
+    `);
+
+    // Create user_teams table
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS user_teams (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id INT NOT NULL,
+        user_id INT NOT NULL,
+        team_id INT NOT NULL,
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        role ENUM('member', 'lead') DEFAULT 'member',
+        UNIQUE KEY unique_user_team (user_id, team_id),
+        KEY idx_tenant_id (tenant_id),
+        KEY idx_user_id (user_id),
+        KEY idx_team_id (team_id),
+        FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (team_id) REFERENCES teams(id)
       )
     `);
 

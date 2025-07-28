@@ -214,11 +214,11 @@ export class Document {
   static async incrementDownloadCount(id: number): Promise<boolean> {
     logger.info(`Incrementing download count for document ${id}`);
     // Note: download_count column doesn't exist in current schema
-    // Just update the updated_at timestamp for now
-    const query = "UPDATE documents SET updated_at = NOW() WHERE id = ?";
+    // For now, just verify the document exists
+    const query = "SELECT id FROM documents WHERE id = ?";
     try {
-      const [result] = await executeQuery<ResultSetHeader>(query, [id]);
-      if (result.affectedRows === 0) {
+      const [rows] = await executeQuery<RowDataPacket[]>(query, [id]);
+      if (rows.length === 0) {
         logger.warn(`No document found with ID ${id} for download tracking`);
         return false;
       }

@@ -3,6 +3,7 @@ export default {
   preset: "ts-jest/presets/default-esm",
   testEnvironment: "node",
   extensionsToTreatAsEsm: [".ts"],
+  maxWorkers: 1, // Run tests sequentially to avoid database conflicts
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",

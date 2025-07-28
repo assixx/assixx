@@ -1,6 +1,10 @@
 /**
  * Documents v2 Controller
  * Handles HTTP requests and responses for document management
+ * @swagger
+ * tags:
+ *   name: Documents v2
+ *   description: Document management API v2
  */
 
 import { Response } from "express";
@@ -32,7 +36,88 @@ const upload = multer({
 export const uploadMiddleware = upload.single("document");
 
 /**
- * List documents with filters
+ * @swagger
+ * /api/v2/documents:
+ *   get:
+ *     summary: List documents with filters
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [general, personal, work, training, hr, salary]
+ *         description: Filter by document category
+ *       - in: query
+ *         name: recipientType
+ *         schema:
+ *           type: string
+ *           enum: [user, team, department, company]
+ *         description: Filter by recipient type
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: integer
+ *         description: Filter by user ID (admin only)
+ *       - in: query
+ *         name: teamId
+ *         schema:
+ *           type: integer
+ *         description: Filter by team ID
+ *       - in: query
+ *         name: departmentId
+ *         schema:
+ *           type: integer
+ *         description: Filter by department ID
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *         description: Filter by year (for salary documents)
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: Filter by month (for salary documents)
+ *       - in: query
+ *         name: isArchived
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Filter archived documents
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in filename and description
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DocumentsListResponse'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 export async function listDocuments(req: AuthenticatedRequest, res: Response) {
   try {
@@ -78,7 +163,35 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * Get document by ID
+ * @swagger
+ * /api/v2/documents/{id}:
+ *   get:
+ *     summary: Get document by ID
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DocumentResponse'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No access to document
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function getDocumentById(
   req: AuthenticatedRequest,
@@ -109,7 +222,72 @@ export async function getDocumentById(
 }
 
 /**
- * Upload/Create a new document
+ * @swagger
+ * /api/v2/documents:
+ *   post:
+ *     summary: Upload a new document
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - document
+ *               - category
+ *               - recipientType
+ *             properties:
+ *               document:
+ *                 type: string
+ *                 format: binary
+ *                 description: PDF file to upload
+ *               category:
+ *                 type: string
+ *                 enum: [general, personal, work, training, hr, salary]
+ *               recipientType:
+ *                 type: string
+ *                 enum: [user, team, department, company]
+ *               userId:
+ *                 type: integer
+ *                 description: Required when recipientType is 'user'
+ *               teamId:
+ *                 type: integer
+ *                 description: Required when recipientType is 'team'
+ *               departmentId:
+ *                 type: integer
+ *                 description: Required when recipientType is 'department'
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *               tags:
+ *                 type: string
+ *                 description: JSON array of tags
+ *               year:
+ *                 type: integer
+ *                 description: Required for salary documents
+ *               month:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 12
+ *                 description: Required for salary documents
+ *     responses:
+ *       201:
+ *         description: Document created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DocumentResponse'
+ *       400:
+ *         description: Bad request - Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ *       500:
+ *         description: Server error
  */
 export async function createDocument(req: AuthenticatedRequest, res: Response) {
   try {
@@ -162,7 +340,61 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * Update a document
+ * @swagger
+ * /api/v2/documents/{id}:
+ *   put:
+ *     summary: Update document metadata
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               filename:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *                 enum: [general, personal, work, training, hr, salary]
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               isPublic:
+ *                 type: boolean
+ *               expiresAt:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Document updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DocumentResponse'
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function updateDocument(req: AuthenticatedRequest, res: Response) {
   try {
@@ -210,7 +442,43 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * Delete a document
+ * @swagger
+ * /api/v2/documents/{id}:
+ *   delete:
+ *     summary: Delete a document
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
   try {
@@ -238,7 +506,43 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * Archive a document
+ * @swagger
+ * /api/v2/documents/{id}/archive:
+ *   post:
+ *     summary: Archive a document
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document archived successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function archiveDocument(
   req: AuthenticatedRequest,
@@ -271,7 +575,43 @@ export async function archiveDocument(
 }
 
 /**
- * Unarchive a document
+ * @swagger
+ * /api/v2/documents/{id}/unarchive:
+ *   post:
+ *     summary: Unarchive a document
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document unarchived successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function unarchiveDocument(
   req: AuthenticatedRequest,
@@ -303,7 +643,36 @@ export async function unarchiveDocument(
 }
 
 /**
- * Download a document
+ * @swagger
+ * /api/v2/documents/{id}/download:
+ *   get:
+ *     summary: Download a document file
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document file
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No access to document
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function downloadDocument(
   req: AuthenticatedRequest,
@@ -343,7 +712,36 @@ export async function downloadDocument(
 }
 
 /**
- * Preview a document (inline viewing)
+ * @swagger
+ * /api/v2/documents/{id}/preview:
+ *   get:
+ *     summary: Preview a document inline
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID
+ *     responses:
+ *       200:
+ *         description: Document file for preview
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No access to document
+ *       404:
+ *         description: Document not found
+ *       500:
+ *         description: Server error
  */
 export async function previewDocument(
   req: AuthenticatedRequest,
@@ -383,7 +781,44 @@ export async function previewDocument(
 }
 
 /**
- * Get document statistics
+ * @swagger
+ * /api/v2/documents/stats:
+ *   get:
+ *     summary: Get document statistics
+ *     tags: [Documents v2]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Document statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     unreadCount:
+ *                       type: integer
+ *                       description: Number of unread documents
+ *                     totalCount:
+ *                       type: integer
+ *                       description: Total number of documents
+ *                     storageUsed:
+ *                       type: integer
+ *                       description: Storage used in bytes (admin only)
+ *                     documentsByCategory:
+ *                       type: object
+ *                       additionalProperties:
+ *                         type: integer
+ *                       description: Document count by category
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 export async function getDocumentStats(
   req: AuthenticatedRequest,
