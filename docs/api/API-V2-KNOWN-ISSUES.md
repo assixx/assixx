@@ -190,5 +190,88 @@ This makes it impossible for the service layer to distinguish between these two 
 
 **Result:** All 11 Auth v2 tests now pass successfully!
 
+## Blackboard v2 Test Issues (28.07.2025)
+
+### Issue: "should list all entries for authenticated user" returns 0 entries
+**Symptom:** Test finds entries in DB but API returns empty array
+```
+Entries in DB before test: 1 [{ id: 753, title: 'Test Entry', org_level: 'company', org_id: null }]
+Response data length: 0
+```
+
+**Debug Process:**
+1. **Jest console.log not showing:** Standard console.log statements don't appear in Jest output
+   - **Solution:** Import console functions directly: `import { log } from "console";`
+   - Use `log()` instead of `console.log()` in tests
+   
+2. **Test timeout issues:** Tests timing out after 2 minutes when using standard debugging
+   - **Solution:** Use `--runInBand --forceExit` flags
+   - Example: `npx jest --testNamePattern="test name" --runInBand --forceExit`
+
+3. **Access Control Issue:** Company-level entries not visible to employees
+   - Entry has: `org_level='company', org_id=null`
+   - Employee has: `department_id=null, team_id=null`
+   - Original query: `e.org_level = 'company' OR ...`
+   - Count query finds 1 entry but main query returns 0
+
+**Current Investigation:**
+- The pagination shows `totalItems: 1` but `data: []` 
+- This means count query works but main query fails
+- Possible causes:
+  - Different access control logic between count and main query
+  - Query parameter ordering issue
+  - JOIN clause affecting results
+
+**Debugging Commands:**
+```bash
+# Run specific test with debug output
+docker exec assixx-backend sh -c 'NODE_ENV=test npx jest --testNamePattern="should list all entries" backend/src/routes/__tests__/blackboard-v2.test.ts --runInBand --forceExit'
+
+# Check logger output
+docker logs assixx-backend --tail 50 | grep -E "Blackboard|warn|debug"
+```
+
+**Root Cause Found:** The `requiresConfirmation` filter in the controller was always evaluating to `false` when the query parameter wasn't set, causing an unwanted filter `requires_confirmation = 0` to be applied.
+
+**Solution:** Fixed in `blackboard.controller.ts` line 74-76:
+```typescript
+requiresConfirmation: req.query.requiresConfirmation !== undefined 
+  ? req.query.requiresConfirmation === "true"
+  : undefined,
+```
+
+**Status:** ✅ FIXED (2025-07-28)
+
+### Issue: Trigger conflict when deleting blackboard attachments
+**Symptom:** Tests fail with error:
+```
+Can't update table 'blackboard_entries' in stored function/trigger because it is already used by statement which invoked this stored function/trigger.
+```
+
+**Cause:** Database triggers `update_attachment_count_on_insert` and `update_attachment_count_on_delete` try to update blackboard_entries when attachments are deleted. If the DELETE uses a subquery that references blackboard_entries, it causes a conflict.
+
+**Solution:** In test cleanup, first fetch all entry IDs, then delete related data using those IDs directly instead of subqueries:
+```typescript
+// Get entry IDs first
+const [entries] = await testDb.execute<any[]>(
+  "SELECT id FROM blackboard_entries WHERE tenant_id = ?",
+  [tenantId],
+);
+const entryIds = entries.map(e => e.id);
+
+// Delete using IDs directly, not subqueries
+if (entryIds.length > 0) {
+  await testDb.execute(
+    `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+    entryIds,
+  );
+}
+```
+
+**Affected Files:**
+- `/backend/src/routes/__tests__/blackboard-v2.test.ts` - beforeEach/afterEach cleanup
+
+**Status:** ✅ FIXED (2025-07-28)
+
 ---
-Last Updated: 2025-07-26
+Last Updated: 2025-07-28

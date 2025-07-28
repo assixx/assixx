@@ -1403,6 +1403,514 @@ const options: swaggerJsdoc.Options = {
             },
           ],
         },
+
+        // Blackboard v2 Schemas
+        BlackboardEntryV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            title: {
+              type: "string",
+              example: "Important Company Announcement",
+            },
+            content: {
+              type: "string",
+              example: "Please note the new office hours starting next week...",
+            },
+            orgLevel: {
+              type: "string",
+              enum: ["company", "department", "team"],
+              example: "company",
+            },
+            orgId: {
+              type: "integer",
+              nullable: true,
+              example: null,
+            },
+            authorId: {
+              type: "integer",
+              example: 1,
+            },
+            authorName: {
+              type: "string",
+              example: "admin",
+            },
+            authorFullName: {
+              type: "string",
+              example: "John Doe",
+            },
+            expiresAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-12-31T23:59:59.000Z",
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high", "urgent"],
+              example: "high",
+            },
+            color: {
+              type: "string",
+              example: "blue",
+            },
+            requiresConfirmation: {
+              type: "boolean",
+              example: true,
+            },
+            isConfirmed: {
+              type: "boolean",
+              example: false,
+            },
+            status: {
+              type: "string",
+              enum: ["active", "archived"],
+              example: "active",
+            },
+            attachmentCount: {
+              type: "integer",
+              example: 2,
+            },
+            attachments: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/BlackboardAttachmentV2",
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "tenantId",
+            "title",
+            "content",
+            "orgLevel",
+            "authorId",
+            "priority",
+            "color",
+            "requiresConfirmation",
+            "status",
+            "createdAt",
+            "updatedAt",
+          ],
+        },
+
+        BlackboardAttachmentV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            entryId: {
+              type: "integer",
+              example: 1,
+            },
+            filename: {
+              type: "string",
+              example: "1234567890-attachment.pdf",
+            },
+            originalName: {
+              type: "string",
+              example: "Company_Policy_2025.pdf",
+            },
+            fileSize: {
+              type: "integer",
+              example: 2048576,
+              description: "File size in bytes",
+            },
+            mimeType: {
+              type: "string",
+              example: "application/pdf",
+            },
+            filePath: {
+              type: "string",
+              example: "/uploads/blackboard/1/1234567890-attachment.pdf",
+            },
+            uploadedBy: {
+              type: "integer",
+              example: 1,
+            },
+            uploaderName: {
+              type: "string",
+              example: "admin",
+            },
+            uploadedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "entryId",
+            "filename",
+            "originalName",
+            "fileSize",
+            "mimeType",
+            "filePath",
+            "uploadedBy",
+            "uploadedAt",
+          ],
+        },
+
+        BlackboardTagV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            name: {
+              type: "string",
+              example: "Important",
+            },
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            color: {
+              type: "string",
+              example: "red",
+            },
+          },
+          required: ["id", "name", "tenantId", "color"],
+        },
+
+        ConfirmationUserV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            username: {
+              type: "string",
+              example: "john.doe",
+            },
+            email: {
+              type: "string",
+              example: "john.doe@company.com",
+            },
+            firstName: {
+              type: "string",
+              example: "John",
+            },
+            lastName: {
+              type: "string",
+              example: "Doe",
+            },
+            confirmed: {
+              type: "boolean",
+              example: true,
+            },
+            confirmedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T10:30:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "username",
+            "email",
+            "firstName",
+            "lastName",
+            "confirmed",
+          ],
+        },
+
+        CreateBlackboardEntryRequestV2: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              minLength: 1,
+              maxLength: 200,
+              example: "New Office Hours",
+            },
+            content: {
+              type: "string",
+              minLength: 1,
+              maxLength: 5000,
+              example: "Starting from next Monday, our office hours will be...",
+            },
+            orgLevel: {
+              type: "string",
+              enum: ["company", "department", "team"],
+              example: "company",
+            },
+            orgId: {
+              type: "integer",
+              nullable: true,
+              minimum: 1,
+              example: null,
+              description: "Required for department or team level entries",
+            },
+            expiresAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-12-31T23:59:59.000Z",
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high", "urgent"],
+              default: "medium",
+              example: "high",
+            },
+            color: {
+              type: "string",
+              maxLength: 50,
+              default: "blue",
+              example: "red",
+            },
+            requiresConfirmation: {
+              type: "boolean",
+              default: false,
+              example: true,
+            },
+            tags: {
+              type: "array",
+              items: {
+                type: "string",
+                maxLength: 50,
+              },
+              example: ["important", "policy"],
+            },
+          },
+          required: ["title", "content", "orgLevel"],
+        },
+
+        UpdateBlackboardEntryRequestV2: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              minLength: 1,
+              maxLength: 200,
+              example: "Updated Office Hours",
+            },
+            content: {
+              type: "string",
+              minLength: 1,
+              maxLength: 5000,
+              example: "Updated content...",
+            },
+            orgLevel: {
+              type: "string",
+              enum: ["company", "department", "team"],
+              example: "department",
+            },
+            orgId: {
+              type: "integer",
+              nullable: true,
+              minimum: 1,
+              example: 5,
+            },
+            expiresAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high", "urgent"],
+              example: "medium",
+            },
+            color: {
+              type: "string",
+              maxLength: 50,
+              example: "green",
+            },
+            status: {
+              type: "string",
+              enum: ["active", "archived"],
+              example: "active",
+            },
+            requiresConfirmation: {
+              type: "boolean",
+              example: false,
+            },
+            tags: {
+              type: "array",
+              items: {
+                type: "string",
+                maxLength: 50,
+              },
+              example: ["updated"],
+            },
+          },
+        },
+
+        BlackboardEntryResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/BlackboardEntryV2",
+                },
+              },
+            },
+          ],
+        },
+
+        BlackboardEntriesResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/BlackboardEntryV2",
+                  },
+                },
+                meta: {
+                  type: "object",
+                  properties: {
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        total: {
+                          type: "integer",
+                          example: 100,
+                        },
+                        page: {
+                          type: "integer",
+                          example: 1,
+                        },
+                        limit: {
+                          type: "integer",
+                          example: 10,
+                        },
+                        totalPages: {
+                          type: "integer",
+                          example: 10,
+                        },
+                      },
+                      required: ["total", "page", "limit", "totalPages"],
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        DashboardEntriesResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/BlackboardEntryV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        ConfirmationStatusResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/ConfirmationUserV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        TagsResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/BlackboardTagV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        AttachmentUploadResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "integer",
+                      example: 1,
+                    },
+                    message: {
+                      type: "string",
+                      example: "Attachment added successfully",
+                    },
+                  },
+                  required: ["id", "message"],
+                },
+              },
+            },
+          ],
+        },
+
+        AttachmentsResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/BlackboardAttachmentV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
       },
 
       // Common Parameters

@@ -33,6 +33,7 @@ import userProfileRoutes from "./user";
 import userRoutes from "./users";
 // v2 Routes
 import authV2Routes from "./v2/auth";
+import blackboardV2Routes from "./v2/blackboard";
 import calendarV2Routes from "./v2/calendar";
 import chatV2Routes from "./v2/chat";
 import departmentsV2Routes from "./v2/departments";
@@ -65,6 +66,8 @@ console.log("[DEBUG] Mounting v2 documents routes at /api/v2/documents");
 router.use("/api/v2/documents", documentsV2Routes);
 console.log("[DEBUG] Mounting v2 teams routes at /api/v2/teams");
 router.use("/api/v2/teams", teamsV2Routes);
+console.log("[DEBUG] Mounting v2 blackboard routes at /api/v2/blackboard");
+router.use("/api/v2/blackboard", blackboardV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");

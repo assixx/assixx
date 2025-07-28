@@ -265,22 +265,28 @@ describe("Documents API v2", () => {
 
       expect(response.status).toBe(200);
       const docs = response.body.data.documents;
-      
+
       // Filter should return at least one team document (the one we created)
       expect(docs.length).toBeGreaterThanOrEqual(1);
-      
+
       // All documents should have recipientType === "team"
       const nonTeamDocs = docs.filter((d: any) => d.recipientType !== "team");
       if (nonTeamDocs.length > 0) {
         // Debug output if test will fail
-        throw new Error(`Found ${nonTeamDocs.length} documents with wrong recipientType. First few: ${JSON.stringify(nonTeamDocs.slice(0, 3).map((d: any) => ({
-          id: d.id,
-          recipientType: d.recipientType,
-          category: d.category,
-          filename: d.filename
-        })), null, 2)}`);
+        throw new Error(
+          `Found ${nonTeamDocs.length} documents with wrong recipientType. First few: ${JSON.stringify(
+            nonTeamDocs.slice(0, 3).map((d: any) => ({
+              id: d.id,
+              recipientType: d.recipientType,
+              category: d.category,
+              filename: d.filename,
+            })),
+            null,
+            2,
+          )}`,
+        );
       }
-      
+
       expect(docs.every((d: any) => d.recipientType === "team")).toBe(true);
     });
 
@@ -542,7 +548,7 @@ describe("Documents API v2", () => {
     it("should archive document", async () => {
       // Verify documentId was set correctly
       expect(documentId).toBeDefined();
-      expect(typeof documentId).toBe('number');
+      expect(typeof documentId).toBe("number");
       expect(documentId).toBeGreaterThan(0);
 
       const response = await request(app)

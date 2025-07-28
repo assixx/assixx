@@ -1,6 +1,6 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 28.07.2025 (Montag) - MEGA UPDATE! 🚀
+**Letzte Aktualisierung:** 28.07.2025 (Montag Abend) - BLACKBOARD v2 100% FERTIG! 🎉💯
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
@@ -27,25 +27,26 @@
 
 ## 📌 Komplette API v2 Übersicht (11 APIs)
 
-### ✅ Fertig (7 von 11 = 64%) 🎉
+### ✅ Fertig (8 von 11 = 73%) 🎉
 1. **Auth v2** - Authentication API v2 with improved standards ✅
-2. **Users v2** - User management API v2 ✅ (100% Tests grün am 28.07.)
+2. **Users v2** - User management API v2 ✅ (100% Tests grün)
 3. **Calendar v2** - Calendar and events API v2 ✅
 4. **Chat v2** - Real-time messaging API v2 ✅
 5. **Departments v2** - Department management API v2 ✅
 6. **Teams v2** - Team management API v2 ✅ (100% Tests grün)
-7. **Documents v2** - Document management API v2 ✅ (100% Tests grün am 28.07.!)
+7. **Documents v2** - Document management API v2 ✅ (100% Tests grün)
+8. **Blackboard v2** - Company announcements API v2 ✅ (100% Tests grün am 28.07.!)
 
-### ⏳ Noch zu implementieren (4 von 11 = 36%)
-8. **Blackboard v2** - Company announcements API v2
+### ⏳ Noch zu implementieren (3 von 11 = 27%)
 9. **KVP v2** - Continuous improvement process API v2
 10. **Shifts v2** - Shift planning API v2
 11. **Surveys v2** - Survey management API v2
 
-### 📊 Test-Statistik Update (28.07.2025)
-- **Test Suites:** 22/48 passing (46%)
-- **Tests:** 296/304 passing (97.4%)
-- **Kritische Fixes:** Docker Dependencies, Content-Type Headers, Race Conditions
+### 📊 Test-Statistik Update (28.07.2025 Abend)
+- **Test Suites:** 23/48 passing (48%)
+- **Tests:** 331/339 passing (97.6%)
+- **Blackboard v2:** 35/35 Tests grün (100%) 🎆
+- **Kritische Fixes:** requiresConfirmation Filter, Tags Transformation, Trigger-Konflikt
 
 ## ✅ Was wurde bereits gemacht?
 
@@ -100,9 +101,9 @@
    - **Fixes:** DB Schema (team_lead_id), Foreign Keys, Field Mapping, Null-Handling
 
 7. **Documents API v2** ✅
-   - **Status:** 90% implementiert (27.07.2025 - 30 Minuten)
+   - **Status:** 100% implementiert (28.07.2025 - alle Tests grün)
    - **Endpoints:** 10 (CRUD + Archive + Download/Preview + Stats)
-   - **Tests:** 28 geschrieben, 23/28 grün (82%)
+   - **Tests:** 28 geschrieben, 28/28 grün (100%)
    - **Dateien:** `/backend/src/routes/v2/documents/`
    - **Features:**
      - PDF Upload/Download (10MB Limit)
@@ -114,22 +115,29 @@
      - Gehaltsabrechnungen (Jahr/Monat)
      - Storage Statistiken
    - **Besonderheit:** Multer für File-Upload, Zugriffskontrolle basierend auf Recipient
-   - **Verbleibende Fehler:** 
-     - Archive/Unarchive gibt 400 statt 200
-     - Download/Preview: updated_at column fehlt
-     - recipientType Filter Test schlägt fehl
-   - **Tests:** 31 geschrieben (umfassende Test-Suite)
-   - **Dateien:** `/backend/src/routes/v2/documents/`
+
+8. **Blackboard API v2** ✅
+   - **Status:** 100% implementiert (28.07.2025 Abend - 4+ Stunden)
+   - **Endpoints:** 15 (CRUD + Archive + Confirm + Dashboard + Tags + Attachments)
+   - **Tests:** 35 geschrieben, 35/35 grün (100%)
+   - **Dateien:** `/backend/src/routes/v2/blackboard/`
    - **Features:**
-     - PDF Upload/Download (10MB Limit)
-     - Recipient Types (user, team, department, company)
-     - Kategorien (personal, work, training, general, salary)
-     - Archive/Unarchive
-     - Read Status Tracking
-     - Tags & Metadaten
-     - Gehaltsabrechnungen (Jahr/Monat)
-     - Storage Statistiken
-   - **Besonderheit:** Multer für File-Upload, Zugriffskontrolle basierend auf Recipient
+     - Multi-level Announcements (Company/Department/Team)
+     - Prioritäten (low, medium, high, urgent)
+     - Tags System mit Farbcodes
+     - File Attachments (PDF & Images)
+     - Confirmation Tracking (wer hat gelesen)
+     - Archive/Unarchive Funktionalität
+     - Dashboard View (priorisierte Anzeige)
+     - Advanced Filtering (Priority, Search, Confirmation)
+     - Expiration Dates für zeitgesteuerte Ankündigungen
+   - **Besonderheit:** Nur Admins können Entries erstellen/bearbeiten, Trigger-basiertes attachment_count
+   - **Gelöste Probleme:**
+     - requiresConfirmation Filter-Bug behoben
+     - Tags Transformation von Objects zu Strings
+     - tenant_id in Confirmations hinzugefügt
+     - Attachment Upload mit korrekten MIME Types
+     - DB Trigger-Konflikt bei Test-Cleanup gelöst
 
 ### 🔧 Basis-Infrastructure ✅
 
@@ -386,39 +394,7 @@ export const teamsValidation = {
 - Permissions: Admin kann alle Teams, User nur eigene
 - Department-Zuordnung optional
 
-### 3. Documents API v2 🔧 FAST FERTIG!
-
-**Status:** 90% implementiert (30 Minuten) - nur noch 5 Test-Fehler zu fixen!
-
-**Implementierte Features:**
-- ✅ PDF Upload/Download (Multer konfiguriert)
-- ✅ Multi-Tenant Access Control  
-- ✅ Recipient Types (user, team, department, company)
-- ✅ Archive/Unarchive Funktionalität
-- ✅ Read Status Tracking
-- ✅ Tags & Metadata Support
-- ✅ Storage Statistiken
-
-**Verbleibende Probleme:**
-1. Archive/Unarchive gibt 400 statt 200 (Validation Issue?)
-2. Download/Preview Error: "Unknown column 'updated_at'"
-3. recipientType Filter Test schlägt fehl
-
-**Nächste Schritte:**
-- DB Schema prüfen (updated_at column fehlt?)
-- Archive/Unarchive Route Validation debuggen
-- recipientType Filter Logic überprüfen
-
-### 4. Blackboard API v2 (Company announcements API v2)
-
-**Wichtige Features:**
-- Unternehmens-weite Ankündigungen
-- Prioritäten (Normal, Wichtig, Kritisch)
-- Anhänge und Bilder
-- Bestätigungs-Tracking (wer hat gelesen)
-- Archivierung nach Zeit
-
-### 5. KVP API v2 (Continuous improvement process API v2)
+### 3. KVP API v2 (Continuous improvement process API v2)
 
 **Industrie-spezifisch:**
 - Verbesserungsvorschläge einreichen
@@ -426,8 +402,11 @@ export const teamsValidation = {
 - Prämien-System
 - Kategorie-Verwaltung
 - ROI Berechnung
+- Anhänge für Dokumentation
+- Kommentar-System
+- Department-spezifische KVPs
 
-### 6. Shifts API v2 (Shift planning API v2)
+### 4. Shifts API v2 (Shift planning API v2)
 
 **Komplex - Höchste Priorität für Industrie:**
 - Schichtplan-Templates
@@ -436,7 +415,7 @@ export const teamsValidation = {
 - Pausenzeiten-Verwaltung
 - Export für Lohnabrechnung
 
-### 7. Surveys API v2 (Survey management API v2)
+### 5. Surveys API v2 (Survey management API v2)
 
 **Features:**
 - Umfrage-Builder

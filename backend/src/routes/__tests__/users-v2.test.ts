@@ -571,21 +571,25 @@ describe("Users v2 API Endpoints", () => {
       });
       // Check dates separately as they are returned as ISO strings
       // Extract date part from ISO string (YYYY-MM-DD from YYYY-MM-DDTHH:mm:ss.sssZ)
-      console.log("Availability response:", response.body.data.availabilityStart, response.body.data.availabilityEnd);
-      
+      console.log(
+        "Availability response:",
+        response.body.data.availabilityStart,
+        response.body.data.availabilityEnd,
+      );
+
       // Handle timezone differences - the date might be off by one day due to timezone conversion
       const startDate = new Date(response.body.data.availabilityStart);
       const endDate = new Date(response.body.data.availabilityEnd);
-      
+
       // Check if the dates are within reasonable range (accounting for timezone differences)
       const expectedStart = new Date("2024-08-01");
       const expectedEnd = new Date("2024-08-15");
-      
+
       // Allow for up to 1 day difference due to timezone conversion
       const startDiff = Math.abs(startDate.getTime() - expectedStart.getTime());
       const endDiff = Math.abs(endDate.getTime() - expectedEnd.getTime());
       const oneDayMs = 24 * 60 * 60 * 1000;
-      
+
       expect(startDiff).toBeLessThanOrEqual(oneDayMs);
       expect(endDiff).toBeLessThanOrEqual(oneDayMs);
     });
@@ -645,28 +649,29 @@ describe("Users v2 API Endpoints", () => {
 
       expect(response.status).toBe(200);
       const users = response.body.data;
-      
+
       // Verify we have users
       expect(users.length).toBeGreaterThan(0); // Should have at least the admin user
-      
+
       // Since tenantId is not exposed in the response (good for security),
       // we verify isolation by checking that:
       // 1. We only see the users we created for tenant2
       // 2. We don't see any users from tenant1
-      
+
       // Check that we only have the expected tenant2 user(s)
       expect(users.length).toBe(1); // Only the tenant2Admin should be visible
-      
+
       // Verify it's the correct user by email
-      const tenant2AdminEmail = users.find((u: any) => 
-        u.email.includes("admin.tenant2")
+      const tenant2AdminEmail = users.find((u: any) =>
+        u.email.includes("admin.tenant2"),
       );
       expect(tenant2AdminEmail).toBeDefined();
-      
+
       // Verify we don't see any tenant1 users
-      const tenant1Users = users.filter((u: any) => 
-        u.email.includes("admin.v2@test.com") || 
-        u.email.includes("employee.v2@test.com")
+      const tenant1Users = users.filter(
+        (u: any) =>
+          u.email.includes("admin.v2@test.com") ||
+          u.email.includes("employee.v2@test.com"),
       );
       expect(tenant1Users.length).toBe(0);
     });
