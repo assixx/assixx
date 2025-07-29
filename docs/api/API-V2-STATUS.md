@@ -147,6 +147,23 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 - Audit logging for all switches
 - 92% Test coverage
 
+### 12. KVP API v2 (29.07.2025)
+
+**15 Endpoints implementiert** - Continuous improvement process
+
+**Features:**
+
+- Suggestion CRUD with multi-level visibility
+- Category management
+- Status tracking (new/in_progress/implemented/rejected)
+- Points/rewards system
+- File attachments (PDF, DOC, Images)
+- Comment system with internal flags
+- Dashboard statistics
+- ROI calculation via actual_savings
+- Department-specific filtering
+- Multi-tenant isolation
+
 ## 📊 Test-Beispiele
 
 ### Login

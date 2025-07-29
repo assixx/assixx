@@ -65,6 +65,7 @@ services:
       - ../tsconfig.test.json:/app/tsconfig.test.json:delegated
       - ../eslint.config.js:/app/eslint.config.js:delegated
       - ../jest.config.js:/app/jest.config.js:delegated
+      - ../jest.setup.ts:/app/jest.setup.ts:delegated
       - ../jest.globalSetup.js:/app/jest.globalSetup.js:delegated
       - ../jest.globalTeardown.js:/app/jest.globalTeardown.js:delegated
       - ../.env:/app/.env:ro

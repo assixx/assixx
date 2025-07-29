@@ -27,7 +27,6 @@ const dbConfig: mysql.ConnectionOptions = {
 // Database interfaces
 interface DbCategory extends RowDataPacket {
   id: number;
-  tenant_id: number;
   name: string;
   description?: string;
   color?: string;
@@ -46,7 +45,13 @@ interface DbSuggestion extends RowDataPacket {
   priority: "low" | "normal" | "high" | "urgent";
   expected_benefit?: string;
   estimated_cost?: number;
-  status: "new" | "in_progress" | "implemented" | "rejected";
+  status:
+    | "new"
+    | "in_review"
+    | "approved"
+    | "implemented"
+    | "rejected"
+    | "archived";
   assigned_to?: number;
   actual_savings?: number;
   created_at: Date;
@@ -149,13 +154,12 @@ export class KVPModel {
     }
   }
 
-  // Get all categories for a tenant
-  static async getCategories(tenant_id: number): Promise<DbCategory[]> {
+  // Get all categories (global - no tenant filtering)
+  static async getCategories(): Promise<DbCategory[]> {
     const connection = await this.getConnection();
     try {
       const [rows] = await connection.execute<DbCategory[]>(
-        "SELECT * FROM kvp_categories WHERE tenant_id = ? ORDER BY name ASC",
-        [tenant_id],
+        "SELECT * FROM kvp_categories ORDER BY name ASC",
       );
       return rows;
     } finally {
@@ -411,6 +415,7 @@ export class KVPModel {
   // Add comment to suggestion
   static async addComment(
     suggestionId: number,
+    tenantId: number,
     userId: number,
     comment: string,
     isInternal = false,
@@ -420,10 +425,10 @@ export class KVPModel {
       const [result] = await connection.execute<ResultSetHeader>(
         `
         INSERT INTO kvp_comments 
-        (suggestion_id, user_id, comment, is_internal)
-        VALUES (?, ?, ?, ?)
+        (tenant_id, suggestion_id, user_id, comment, is_internal)
+        VALUES (?, ?, ?, ?, ?)
       `,
-        [suggestionId, userId, comment, isInternal],
+        [tenantId, suggestionId, userId, comment, isInternal],
       );
 
       return result.insertId;
@@ -472,7 +477,7 @@ export class KVPModel {
       const [rows] = await connection.execute<DbPointsSummary[]>(
         `
         SELECT 
-          SUM(points) as total_points,
+          COALESCE(SUM(points), 0) as total_points,
           COUNT(*) as total_awards,
           COUNT(DISTINCT suggestion_id) as suggestions_awarded
         FROM kvp_points 
@@ -481,11 +486,21 @@ export class KVPModel {
         [tenant_id, userId],
       );
 
-      return (rows[0] ?? {
-        total_points: 0,
-        total_awards: 0,
-        suggestions_awarded: 0,
-      }) as DbPointsSummary;
+      if (!rows[0]) {
+        return {
+          total_points: 0,
+          total_awards: 0,
+          suggestions_awarded: 0,
+        } as DbPointsSummary;
+      }
+
+      const result = rows[0];
+      return {
+        ...result,
+        total_points: Number(result.total_points ?? 0),
+        total_awards: Number(result.total_awards ?? 0),
+        suggestions_awarded: Number(result.suggestions_awarded ?? 0),
+      } as DbPointsSummary;
     } finally {
       await connection.end();
     }
@@ -526,17 +541,63 @@ export class KVPModel {
         SELECT 
           COUNT(*) as total_suggestions,
           COUNT(CASE WHEN status = 'new' THEN 1 END) as new_suggestions,
-          COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+          COUNT(CASE WHEN status = 'in_review' THEN 1 END) as in_progress_count,
           COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
           COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected,
-          AVG(CASE WHEN actual_savings IS NOT NULL THEN actual_savings END) as avg_savings
+          CAST(AVG(CASE WHEN actual_savings IS NOT NULL THEN actual_savings END) AS DECIMAL(10,2)) as avg_savings
         FROM kvp_suggestions 
         WHERE tenant_id = ?
       `,
         [tenant_id],
       );
 
-      return stats[0];
+      // Convert numeric strings to numbers
+      const result = stats[0];
+      return {
+        ...result,
+        total_suggestions: Number(result.total_suggestions),
+        new_suggestions: Number(result.new_suggestions),
+        in_progress: Number(result.in_progress_count),
+        implemented: Number(result.implemented),
+        rejected: Number(result.rejected),
+        avg_savings: result.avg_savings ? Number(result.avg_savings) : null,
+      };
+    } finally {
+      await connection.end();
+    }
+  }
+
+  // Update suggestion fields
+  static async updateSuggestion(
+    id: number,
+    tenant_id: number,
+    updates: Partial<{
+      title: string;
+      description: string;
+      category_id: number;
+      priority: string;
+      expected_benefit: string;
+      estimated_cost: number;
+      actual_savings: number;
+    }>,
+  ): Promise<boolean> {
+    const connection = await this.getConnection();
+    try {
+      // Build dynamic UPDATE query
+      const fields = Object.keys(updates);
+      if (fields.length === 0) {
+        return false;
+      }
+
+      const setClause = fields.map((field) => `${field} = ?`).join(", ");
+      const values = [...Object.values(updates), id, tenant_id];
+
+      const [result] = await connection.execute<ResultSetHeader>(
+        `UPDATE kvp_suggestions SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?`,
+        values,
+      );
+
+      return result.affectedRows > 0;
     } finally {
       await connection.end();
     }

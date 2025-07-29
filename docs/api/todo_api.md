@@ -1,6 +1,6 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 29.07.2025 (Dienstag Nachmittag) - ROLE-SWITCH v2 PERFEKT! 🔄✅💯
+**Letzte Aktualisierung:** 29.07.2025 (Dienstag Abend) - KVP v2 PERFEKT! 🎯✅💯
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
@@ -30,7 +30,7 @@
 
 ## 📌 Komplette API v2 Übersicht (11 APIs)
 
-### ✅ Fertig (9 von 11 = 82%) 🎉
+### ✅ Fertig (10 von 11 = 91%) 🎉
 
 1. **Auth v2** - Authentication API v2 with improved standards ✅
 2. **Users v2** - User management API v2 ✅ (100% Tests grün)
@@ -38,21 +38,21 @@
 4. **Chat v2** - Real-time messaging API v2 ✅
 5. **Departments v2** - Department management API v2 ✅
 6. **Teams v2** - Team management API v2 ✅ (100% Tests grün)
-7. **Documents v2** - Document management API v2 ✅ (100% Tests grün)
+7. **Documents v2** - Document management API v2 ✅ (100% Tests grün am 28.07.!)
 8. **Blackboard v2** - Company announcements API v2 ✅ (100% Tests grün am 28.07.!)
 9. **Role-Switch v2** - Admin/Root role switching API v2 ✅ (100% Tests grün am 29.07.!)
+10. **KVP v2** - Continuous improvement process API v2 ✅ (100% Tests grün am 29.07.!)
 
-### ⏳ Noch zu implementieren (2 von 11 = 18%)
+### ⏳ Noch zu implementieren (1 von 11 = 9%)
 
-10. **KVP v2** - Continuous improvement process API v2
-11. **Shifts v2** - Shift planning API v2
+11. **Reports/Analytics v2** - Reporting and analytics API v2
 
-### 📊 Test-Statistik Update (29.07.2025 Nachmittag)
+### 📊 Test-Statistik Update (29.07.2025 Abend)
 
-- **Test Suites:** 25/48 passing (52%)
-- **Tests:** 308/308 passing (100%)! 💯
-- **Role-Switch v2:** 12/12 Tests grün (100%)!
-- **Kritischer Security Fix:** SecurityV2 middleware für v2 Routes erstellt
+- **Test Suites:** 7/7 v2 Test Suites passing (100%)
+- **Tests:** 115 Tests passing
+- **KVP v2:** 22/22 Tests grün (100%)!
+- **Docker Fix:** jest.setup.ts dauerhaft als Volume gemountet
 
 ## ✅ Was wurde bereits gemacht?
 

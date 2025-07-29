@@ -1911,6 +1911,171 @@ const options: swaggerJsdoc.Options = {
             },
           ],
         },
+
+        // KVP Schemas
+        KvpSuggestionV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            title: {
+              type: "string",
+              example: "Optimize production line workflow",
+            },
+            description: {
+              type: "string",
+              example:
+                "By reorganizing the workflow, we can reduce production time by 20%",
+            },
+            categoryId: {
+              type: "integer",
+              example: 1,
+            },
+            categoryName: {
+              type: "string",
+              example: "Productivity",
+            },
+            categoryColor: {
+              type: "string",
+              example: "#3498db",
+            },
+            categoryIcon: {
+              type: "string",
+              example: "💡",
+            },
+            orgLevel: {
+              type: "string",
+              enum: ["company", "department", "team"],
+              example: "department",
+            },
+            orgId: {
+              type: "integer",
+              example: 5,
+            },
+            submittedBy: {
+              type: "integer",
+              example: 42,
+            },
+            submittedByName: {
+              type: "string",
+              example: "John Doe",
+            },
+            submittedByEmail: {
+              type: "string",
+              example: "john.doe@example.com",
+            },
+            assignedTo: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            assignedToName: {
+              type: "string",
+              nullable: true,
+              example: "Admin User",
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "normal", "high", "urgent"],
+              example: "high",
+            },
+            expectedBenefit: {
+              type: "string",
+              nullable: true,
+              example: "20% reduction in production time",
+            },
+            estimatedCost: {
+              type: "number",
+              nullable: true,
+              example: 5000,
+            },
+            actualSavings: {
+              type: "number",
+              nullable: true,
+              example: 15000,
+            },
+            status: {
+              type: "string",
+              enum: ["new", "in_progress", "implemented", "rejected"],
+              example: "in_progress",
+            },
+            attachmentCount: {
+              type: "integer",
+              example: 3,
+            },
+            commentCount: {
+              type: "integer",
+              example: 5,
+            },
+            avgRating: {
+              type: "number",
+              nullable: true,
+              example: 4.5,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T15:30:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "title",
+            "description",
+            "categoryId",
+            "orgLevel",
+            "orgId",
+            "submittedBy",
+            "status",
+            "priority",
+          ],
+        },
+        KvpCommentV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            comment: {
+              type: "string",
+              example: "Great idea! This could really improve our efficiency.",
+            },
+            isInternal: {
+              type: "boolean",
+              example: false,
+            },
+            userId: {
+              type: "integer",
+              example: 42,
+            },
+            firstName: {
+              type: "string",
+              example: "John",
+            },
+            lastName: {
+              type: "string",
+              example: "Doe",
+            },
+            role: {
+              type: "string",
+              example: "employee",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T14:30:00.000Z",
+            },
+          },
+          required: ["id", "comment", "isInternal", "userId", "createdAt"],
+        },
       },
 
       // Common Parameters
@@ -2215,14 +2380,15 @@ const options: swaggerJsdoc.Options = {
         "x-displayName": "Blackboard v2",
       },
       {
-        name: "KVP v2",
-        description: "Continuous improvement process API v2",
-        "x-displayName": "KVP v2",
-      },
-      {
         name: "Shifts v2",
         description: "Shift planning API v2",
         "x-displayName": "Shifts v2",
+      },
+      {
+        name: "KVP v2",
+        description:
+          "Continuous improvement process (Kontinuierlicher Verbesserungsprozess) API v2",
+        "x-displayName": "KVP v2",
       },
       {
         name: "Surveys v2",
