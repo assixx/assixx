@@ -455,6 +455,36 @@ async function createKVPTables(db: Pool): Promise<void> {
       UNIQUE KEY unique_user_suggestion (user_id, suggestion_id)
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS kvp_status_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      suggestion_id INT NOT NULL,
+      old_status VARCHAR(50) NOT NULL,
+      new_status VARCHAR(50) NOT NULL,
+      changed_by INT NOT NULL,
+      change_reason TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
+      FOREIGN KEY (changed_by) REFERENCES users(id)
+    )
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS kvp_points (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id INT NOT NULL,
+      user_id INT NOT NULL,
+      suggestion_id INT NOT NULL,
+      points INT NOT NULL,
+      reason VARCHAR(500) NOT NULL,
+      awarded_by INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
+      FOREIGN KEY (awarded_by) REFERENCES users(id),
+      INDEX idx_kvp_points_user (tenant_id, user_id)
+    )
+  `);
 }
 
 /**
