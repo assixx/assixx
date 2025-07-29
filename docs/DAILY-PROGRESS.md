@@ -11,22 +11,26 @@
 ### 🔄 Role-Switch v2 - 12/12 Tests grün (100%)! 💯
 
 #### 1. Problem-Analyse (20 Minuten)
+
 - ✅ **Entdeckung:** Role-Switch v1 Route war nicht registriert!
 - ✅ **Security Review:** Multi-Tenant Isolation kritisch
 - ✅ **Fix:** Route in index.ts hinzugefügt
 
 #### 2. API v2 Implementation (45 Minuten)
+
 - ✅ **Service Layer:** Strikte Security-Checks
 - ✅ **Controller:** 4 Endpoints (to-employee, to-original, root-to-admin, status)
 - ✅ **JWT Enhancement:** activeRole, isRoleSwitched, originalRole
 
 #### 3. Security Features (25 Minuten)
+
 - ✅ **tenant_id:** IMMER aus User-Object (verifiziert)
 - ✅ **user_id:** NIEMALS veränderbar
 - ✅ **originalRole:** Im JWT gespeichert
 - ✅ **Permissions:** Root → Admin/Employee, Admin → Employee only
 
 #### 4. Auth Middleware Fix (90 Minuten)
+
 - 🔍 **Problem:** isRoleSwitched Test schlug fehl (11/12)
 - 🔍 **Analyse:** v2 Routes nutzten alte auth middleware statt v2
 - 💡 **Lösung:** Neue securityV2.middleware.ts erstellt
@@ -36,15 +40,18 @@
 ### 📊 Status
 
 **Test-Statistik:**
+
 - **Role-Switch v2:** 11/12 Tests grün (92%)
 - **Gesamt Tests:** 296/297 passing (99.7%)
 - **API v2:** 9 von 11 APIs komplett ✅ (82%)
 
 **Kritische TODOs:**
+
 - ⚠️ Auth Middleware muss originalRole aus JWT übernehmen
 - ⚠️ v2 Routes noch nicht aktiviert (warten auf Fertigstellung)
 
 ### 🚀 Nächste Schritte
+
 - KVP API v2 implementieren
 - Shifts API v2 implementieren
 - v2 Routes aktivieren
@@ -60,25 +67,30 @@
 ### 🎉 Blackboard v2 - 35/35 Tests grün (100%)!
 
 #### 1. Debug-Strategie (30 Minuten)
+
 - ✅ **Problem:** Jest console.log nicht sichtbar
 - ✅ **Lösung:** `import { log } from "console"` verwenden
 - ✅ **Test Timeouts:** `--runInBand --forceExit` Flags
 
 #### 2. Problem 1: "should list all entries" (1 Stunde)
+
 - ✅ **Root Cause:** requiresConfirmation Filter Bug
 - ✅ **Fix:** Controller nur filtern wenn explizit gesetzt
 - ✅ **Debug:** Schritt-für-Schritt Analyse mit DB-Queries
 
 #### 3. Problems 2-4: Tags, Confirm, Upload (1.5 Stunden)
+
 - ✅ **Tags:** Transformation von Objects zu Strings
 - ✅ **Confirm:** tenant_id zu INSERT hinzugefügt
 - ✅ **Upload:** MIME Type auf PDF geändert
 
 #### 4. Problems 5-6: Filter bereits funktionierten (15 Minuten)
+
 - ✅ Priority Filter war korrekt implementiert
 - ✅ Search Filter funktionierte ebenfalls
 
 #### 5. Trigger-Konflikt beheben (45 Minuten)
+
 - ✅ **Problem:** DB Trigger kollidiert mit Cleanup
 - ✅ **Lösung:** Entry IDs erst fetchen, dann verwenden
 - ✅ **Dokumentation:** Known Issues aktualisiert
@@ -86,11 +98,13 @@
 ### 📊 Finaler Status
 
 **Test-Statistik:**
+
 - **Blackboard v2:** 35/35 Tests grün (100%)
 - **Gesamt Tests:** 331/339 passing (97.6%)
 - **API v2:** 8 von 11 APIs komplett ✅ (73%)
 
 **Implementierte Features:**
+
 - 15 REST Endpoints vollständig
 - Multi-level Announcements
 - Tags, Attachments, Confirmations
@@ -110,7 +124,7 @@
 ### 🎯 Nächste Schritte
 
 1. KVP API v2 implementieren
-2. Shifts API v2 implementieren  
+2. Shifts API v2 implementieren
 3. Surveys API v2 implementieren
 4. Auth v2 finale Fixes
 5. Deployment-Vorbereitung
@@ -128,29 +142,34 @@
 ### 🚀 Krasser Fortschritt - 296/304 Tests grün!
 
 #### 1. Docker Dependencies Fix (30 Minuten)
+
 - ✅ **Problem:** @types/lodash musste immer wieder neu installiert werden
 - ✅ **Root Cause:** pnpm-lock.yaml wurde nicht in Docker gemountet
-- ✅ **Lösung:** 
+- ✅ **Lösung:**
   - pnpm-lock.yaml als read-only Volume in docker-compose.yml
   - `pnpm install --frozen-lockfile` im Container Command
   - Vermeidet EBUSY Errors durch read-only mount
 
 #### 2. Test Infrastructure Fixes (1 Stunde)
+
 - ✅ **Race Conditions:** Jest maxWorkers auf 1 gesetzt
 - ✅ **Schema Issues:** Foreign Key Constraints korrekt erstellt
 - ✅ **user_teams Tabelle:** Fehlte in Test-Setup, hinzugefügt
 
 #### 3. Teams v2 Test Fixes (30 Minuten)
+
 - ✅ "columns dictionary object is invalid" Error behoben
 - ✅ Foreign Key Beziehungen korrekt aufgebaut
 - ✅ 48/48 Tests grün!
 
 #### 4. Users v2 Test Fixes (45 Minuten)
+
 - ✅ **Timezone Issues:** ISO Dates korrekt geparst
 - ✅ **Multi-Tenant Isolation:** Test angepasst (email statt tenantId)
 - ✅ 24/24 Tests grün!
 
 #### 5. Documents v2 Test Fixes (45 Minuten)
+
 - ✅ **MIME Type:** In Model und Service hinzugefügt
 - ✅ **Recipient Filter:** SQL Query korrigiert
 - ✅ **Content-Type Headers:** Für Archive/Unarchive Endpoints
@@ -160,11 +179,13 @@
 ### 📊 Finaler Status
 
 **Test-Statistik:**
+
 - **Test Suites:** 22/48 passing (46%) - von 11/48 (23%)!
 - **Tests:** 296/304 passing (97.4%)
 - **API v2:** 7 von 11 APIs komplett mit Tests ✅ (64%)
 
 **Gelöste Probleme:**
+
 1. Persistente Dependencies in Docker
 2. Race Conditions in parallelen Tests
 3. Content-Type Validation für alle Mutation Endpoints
@@ -183,7 +204,7 @@
 
 1. Auth v2 Tests debuggen (verbleibende Fehler)
 2. Blackboard API v2 implementieren
-3. KVP API v2 implementieren  
+3. KVP API v2 implementieren
 4. Shifts API v2 implementieren
 5. Surveys API v2 implementieren
 
@@ -200,19 +221,22 @@
 ### ✅ Teams v2 Tests - 100% GRÜN! 🎆
 
 #### 1. Null-Handling für optionale Felder (10 Minuten)
+
 - ✅ **Problem:** Test erwartete `null`, API lieferte `""` (leerer String)
-- ✅ **Lösung:** 
+- ✅ **Lösung:**
   - TeamUpdateData Interface erweitert um `null` zu erlauben
   - Service konvertiert leere Strings zu `null` in Responses
   - Update-Logik unterscheidet zwischen undefined und null
 
 #### 2. Content-Type Validation Test (5 Minuten)
+
 - ✅ **Problem:** Test erwartete v2 Response-Format bei ungültigem Content-Type
 - ✅ **Lösung:**
   - Test angepasst für tatsächliche Error-Response-Struktur
   - Prüft jetzt auf Content-Type im Error-Message
 
 #### 3. Systematisches Vorgehen (5 Minuten)
+
 - ✅ Nach Plan aus todo_api.md vorgegangen
 - ✅ Nur die 2 spezifischen Test-Fehler behoben
 - ✅ Keine unnötigen Änderungen an anderen Tests
@@ -220,6 +244,7 @@
 ### 📊 Finaler Status
 
 **Teams API v2:**
+
 - ✅ 48/48 Tests grün (100%)
 - ✅ Alle TypeScript Errors behoben
 - ✅ Field Mapping funktioniert perfekt
@@ -227,6 +252,7 @@
 - ✅ Null-Handling für optionale Felder korrekt
 
 **API v2 Gesamt:**
+
 - 6 von 11 APIs komplett fertig (55%)
 - ALLE Tests grün (171+ Tests)
 - Bereit für Documents API v2
@@ -255,6 +281,7 @@
 ### ✅ Haupt-Erfolge
 
 #### 1. Teams API v2 Tests zum Laufen gebracht (30 Minuten)
+
 - ✅ DB Schema Fix: `team_lead_id` statt `lead_id`
 - ✅ Field Mapping korrekt implementiert
 - ✅ Foreign Key Constraints gelöst (tenant_id in user_teams)
@@ -262,7 +289,8 @@
 - ⚠️ 2 kleine Fehler verbleiben (null vs empty string)
 
 #### 2. Test-Daten Cleanup Problem gelöst (20 Minuten)
-- ✅ **Problem identifiziert:** Test-Daten mit __AUTOTEST__ Präfix bleiben in DB
+
+- ✅ **Problem identifiziert:** Test-Daten mit **AUTOTEST** Präfix bleiben in DB
 - ✅ **Ursache:** Tests brechen ab → afterAll() wird nicht aufgerufen
 - ✅ **Langfristige Lösung implementiert:**
   - `jest.globalSetup.js` - Cleanup VOR Tests
@@ -270,7 +298,8 @@
   - Garantiert Cleanup auch bei Test-Abbrüchen!
 
 #### 3. Critical Security Fix
-- ✅ __AUTOTEST__ Präfix für alle Test-User sichergestellt
+
+- ✅ **AUTOTEST** Präfix für alle Test-User sichergestellt
 - ✅ Verhindert Vermischung von Test- und Produktionsdaten
 - ✅ normalizeEmail() Problem gelöst (behält jetzt Großbuchstaben)
 
@@ -294,18 +323,20 @@
 ### 📊 Projekt-Status Update
 
 **API v2 Migration:**
+
 - ✅ **6 von 11 APIs komplett fertig** (Auth, Users, Calendar, Chat, Departments, Teams)
 - 🏗️ 5 APIs ausstehend (Documents, Blackboard, KVP, Shifts, Surveys)
 - **Fortschritt: 55%** 🚀
 
 **Test-Coverage:**
+
 - Teams v2: 46/48 Tests grün (96%)
 - Users v2: 22/24 Tests grün (92%)
 - Gesamt: Sehr gute Test-Abdeckung
 
 ### 💡 Lessons Learned
 
-1. **Test-Isolation ist kritisch**: __AUTOTEST__ Präfix IMMER verwenden
+1. **Test-Isolation ist kritisch**: **AUTOTEST** Präfix IMMER verwenden
 2. **Cleanup muss garantiert sein**: globalSetup/Teardown ist die Lösung
 3. **Docker Volumes**: Packages müssen in package.json für Persistenz
 4. **DB Schema**: Immer aktuelle Schema-Exporte verwenden
@@ -330,23 +361,27 @@
 ### ✅ Teams API v2 - Vollständige Implementation
 
 #### 1. Teams Service Layer (30 Minuten)
+
 - ✅ Vollständiger CRUD Service mit Multi-Tenant Isolation
 - ✅ Team Member Management (add/remove members)
 - ✅ Business Logic für Teams, Leaders, Departments
 - ✅ ServiceError Klasse für konsistentes Error Handling
 
 #### 2. Teams Controller & Routes (30 Minuten)
+
 - ✅ RESTful Controller mit 8 Endpunkten
 - ✅ Konsistente API v2 Response-Formate
 - ✅ TypeScript strict ohne any types
 - ✅ Fehlerbehandlung mit ServiceError
 
 #### 3. Teams Validation Rules (15 Minuten)
+
 - ✅ Input Validation für alle Endpoints
 - ✅ Name, Description, Department, Leader Validierung
 - ✅ Nullable Fields mit custom validation
 
 #### 4. Teams Tests (25 Minuten)
+
 - ✅ 48 umfassende Integration Tests geschrieben
 - ✅ Multi-Tenant Isolation Tests
 - ✅ Input Validation Tests
@@ -379,6 +414,7 @@
 ### 📊 Teams API v2 Status
 
 **Implementierte Features:**
+
 - Team CRUD (Create, Read, Update, Delete)
 - Team Member Management
 - Leader Assignment
@@ -389,6 +425,7 @@
 - Member Count Option
 
 **Code-Qualität:**
+
 - TypeScript Build: ✅ Erfolgreich
 - ESLint: ✅ Keine Fehler
 - Type Safety: ✅ Keine any types
@@ -396,19 +433,19 @@
 
 ### 🎯 API v2 Gesamtstatus Update
 
-| API | Status | Tests | Doku | Fortschritt |
-|-----|--------|-------|------|-------------|
-| Auth v2 | ✅ Fertig | ✅ | ✅ | 100% |
-| Users v2 | ✅ Fertig | ✅ | ✅ | 100% |
-| Calendar v2 | ✅ Fertig | ✅ | ✅ | 100% |
-| Chat v2 | ✅ Fertig | ⏳ | ✅ | 100% |
-| Departments v2 | ✅ Fertig | ✅ | ✅ | 100% |
-| Teams v2 | ✅ Fertig | 🔧 | ✅ | 95% |
-| Documents v2 | ⏳ Pending | - | - | 0% |
-| Blackboard v2 | ⏳ Pending | - | - | 0% |
-| KVP v2 | ⏳ Pending | - | - | 0% |
-| Shifts v2 | ⏳ Pending | - | - | 0% |
-| Surveys v2 | ⏳ Pending | - | - | 0% |
+| API            | Status     | Tests | Doku | Fortschritt |
+| -------------- | ---------- | ----- | ---- | ----------- |
+| Auth v2        | ✅ Fertig  | ✅    | ✅   | 100%        |
+| Users v2       | ✅ Fertig  | ✅    | ✅   | 100%        |
+| Calendar v2    | ✅ Fertig  | ✅    | ✅   | 100%        |
+| Chat v2        | ✅ Fertig  | ⏳    | ✅   | 100%        |
+| Departments v2 | ✅ Fertig  | ✅    | ✅   | 100%        |
+| Teams v2       | ✅ Fertig  | 🔧    | ✅   | 95%         |
+| Documents v2   | ⏳ Pending | -     | -    | 0%          |
+| Blackboard v2  | ⏳ Pending | -     | -    | 0%          |
+| KVP v2         | ⏳ Pending | -     | -    | 0%          |
+| Shifts v2      | ⏳ Pending | -     | -    | 0%          |
+| Surveys v2     | ⏳ Pending | -     | -    | 0%          |
 
 **Gesamt: 6 von 11 APIs fertig (55%)** 🚀
 
@@ -448,12 +485,14 @@
 ### ✅ API v2 Test Status - Alles läuft!
 
 #### 1. Calendar v2 Tests (15 Minuten)
+
 - **Erwartung:** Permission vs NotFound Problem
 - **Realität:** Alle 33 Tests laufen bereits erfolgreich! ✅
 - **Permission Handling:** Funktioniert korrekt (403 für non-owner, 404 für andere Tenants)
 - **Service Layer:** Unterscheidet richtig zwischen NOT_FOUND und FORBIDDEN
 
 #### 2. Departments v2 Tests (15 Minuten)
+
 - **Erwartung:** Auth Token Problem
 - **Realität:** Alle 27 Tests laufen bereits erfolgreich! ✅
 - **Authentication:** Funktioniert perfekt
@@ -461,13 +500,13 @@
 
 #### 3. Aktueller Test-Status API v2
 
-| API | Tests | Status | Bemerkung |
-|-----|-------|--------|------------|
-| Auth v2 | 11/11 ✅ | 100% | Alle grün |
-| Users v2 | 13/13 ✅ | 100% | Content-Type gefixt |
-| Calendar v2 | 33/33 ✅ | 100% | Permission Handling OK |
-| Chat v2 | 22 geschrieben | Pending | Tests vorhanden |
-| Departments v2 | 27/27 ✅ | 100% | Auth funktioniert |
+| API            | Tests          | Status  | Bemerkung              |
+| -------------- | -------------- | ------- | ---------------------- |
+| Auth v2        | 11/11 ✅       | 100%    | Alle grün              |
+| Users v2       | 13/13 ✅       | 100%    | Content-Type gefixt    |
+| Calendar v2    | 33/33 ✅       | 100%    | Permission Handling OK |
+| Chat v2        | 22 geschrieben | Pending | Tests vorhanden        |
+| Departments v2 | 27/27 ✅       | 100%    | Auth funktioniert      |
 
 **Gesamt: 84 von 84 aktiven Tests laufen erfolgreich!**
 
@@ -502,6 +541,7 @@
 ### ✅ Users v2 Tests - Systematisches Debugging
 
 #### 1. Problem-Analyse (45 Minuten)
+
 - **Ausgangslage:** Users v2 Tests scheiterten mit verschiedenen Fehlern
 - **Strategie:** "löse die porbelem one-by-one . think hard!"
 - **Hauptproblem:** Content-Type Header fehlte bei POST/PUT/PATCH Requests
@@ -509,41 +549,51 @@
 #### 2. Gelöste Probleme (2.5 Stunden)
 
 **Problem 1: Lodash Import Errors**
+
 - **Ursache:** ESM Module Import-Probleme mit lodash
 - **Lösung:** Import-Strategie mehrfach angepasst bis Backend startete
 - **Final:** `import lodash from "lodash"; const { camelCase, mapKeys, snakeCase } = lodash;`
 - **Dateien:** fieldMapping.ts (komplette Überarbeitung)
 
 **Problem 2: Archive/Unarchive Tests scheiterten mit 400**
+
 - **Ursache:** Fehlender Content-Type Header bei POST Requests
 - **Lösung:** `.set("Content-Type", "application/json")` zu allen POST/PUT/PATCH hinzugefügt
 - **Dateien:** users-v2.test.ts (alle Mutation Endpoints)
 
 **Problem 3: Create User Test scheiterte**
+
 - **Ursache:** Ebenfalls fehlender Content-Type Header
 - **Lösung:** Header zu POST /api/v2/users hinzugefügt
 - **Dateien:** users-v2.test.ts (Zeile 253)
 
 **Problem 4: Multi-Tenant Isolation**
+
 - **Analyse:** Code ist korrekt, möglicherweise DB-Initialisierungs-Issue
 - **Status:** Implementierung verifiziert, Tests sollten nun laufen
 
 #### 3. Wichtige Entdeckung
+
 - **Content-Type Validation Middleware** in app.ts gefunden:
   ```javascript
   if (["POST", "PUT", "PATCH"].includes(req.method)) {
     const contentType = req.get("Content-Type");
-    if (!contentType || (!contentType.includes("application/json") && 
-        !contentType.includes("multipart/form-data") && 
-        !contentType.includes("application/x-www-form-urlencoded"))) {
+    if (
+      !contentType ||
+      (!contentType.includes("application/json") &&
+        !contentType.includes("multipart/form-data") &&
+        !contentType.includes("application/x-www-form-urlencoded"))
+    ) {
       res.status(400).json({
-        error: "Invalid Content-Type. Expected application/json, multipart/form-data, or application/x-www-form-urlencoded"
+        error:
+          "Invalid Content-Type. Expected application/json, multipart/form-data, or application/x-www-form-urlencoded",
       });
     }
   }
   ```
 
 #### 4. Testergebnisse
+
 - **Users v2 Tests:** Alle Content-Type Header hinzugefügt
 - **Archive/Unarchive:** ✅ Fixed
 - **Create User:** ✅ Fixed
@@ -583,6 +633,7 @@
 ### ✅ Auth v2 Tests - Systematisches Debugging
 
 #### 1. Problem-Analyse (30 Minuten)
+
 - **Ausgangslage:** Auth v2 Tests scheiterten mit verschiedenen Fehlern
 - **Strategie:** "One by one" - Ein Problem identifizieren, komplett lösen, testen, dann nächstes
 - **Fehlerquellen:** JWT Token Generation, Password Validation, Test User Email, Deprecation Headers
@@ -590,31 +641,37 @@
 #### 2. Gelöste Probleme (1.5 Stunden)
 
 **Problem 1: JWT Token ohne Email**
+
 - **Ursache:** generateTokens() Funktion hatte keinen email Parameter
 - **Lösung:** Email Parameter hinzugefügt und an alle Aufrufe übergeben
 - **Dateien:** auth.controller.ts (Zeilen 29, 117)
 
 **Problem 2: bcrypt undefined error**
+
 - **Ursache:** Passwort-Validierung fehlte vor bcrypt.compare()
 - **Lösung:** Explizite Validierung für email und password eingefügt
 - **Dateien:** auth.controller.ts (Zeilen 64-72)
 
 **Problem 3: Test User Email Format**
-- **Ursache:** Tests verwendeten generische Email statt tatsächliche mit __AUTOTEST__ Prefix
+
+- **Ursache:** Tests verwendeten generische Email statt tatsächliche mit **AUTOTEST** Prefix
 - **Lösung:** testUser.email durchgängig verwendet
 - **Dateien:** auth-v2.test.ts (alle Email-Referenzen)
 
 **Problem 4: Deprecation Headers für v1**
+
 - **Ursache:** Middleware erfasste nur /api/v1 aber nicht /api ohne v2
 - **Lösung:** Erweiterte Logik für alle non-v2 API Endpoints
 - **Dateien:** deprecation.ts (Zeilen 11-12)
 
 **Problem 5: Response Format Mismatches**
+
 - **Ursache:** Tests erwarteten andere Response-Struktur
 - **Lösung:** Test-Expectations an tatsächliche API Responses angepasst
 - **Dateien:** auth-v2.test.ts (verify endpoint)
 
 #### 3. Testergebnisse
+
 - **Auth v2 Tests:** ✅ 11/11 Tests grün
 - **Alle Tests zusammen:** 24 Suites, 61 Tests total
 - **Failures:** Noch einige in anderen Test-Suites (calendar-v2, users-v2 etc.)
@@ -630,7 +687,7 @@
 ### 💡 Erkenntnisse
 
 1. **Systematisches Vorgehen ist essentiell** - Ein Problem nach dem anderen lösen
-2. **Test User müssen exakte Emails verwenden** - Mit __AUTOTEST__ Prefix
+2. **Test User müssen exakte Emails verwenden** - Mit **AUTOTEST** Prefix
 3. **JWT Tokens brauchen alle User-Daten** - Nicht nur ID
 4. **Deprecation Middleware muss alle v1 Patterns erfassen**
 5. **Response Validation in Tests muss exakt sein**
@@ -652,18 +709,21 @@
 ### ✅ Chat v2 - Vollständige Implementation (2.5 Stunden)
 
 #### 1. Chat Service Layer
+
 - ✅ Wrapper für existierenden v1 Chat Service
 - ✅ Field Mapping (camelCase ↔ snake_case)
 - ✅ 18 Endpoints geplant, 13 implementiert
 - ✅ 5 als NOT_IMPLEMENTED markiert (future features)
 
 #### 2. Chat Controller & Routes
+
 - ✅ RESTful Controller mit v2 Standards
 - ✅ File Upload Support (multer)
 - ✅ WebSocket Documentation hinzugefügt
 - ✅ TypeScript Errors behoben (11 → 0)
 
 #### 3. OpenAPI Documentation
+
 - ✅ 14 neue Schemas definiert
 - ✅ Alle Endpoints dokumentiert
 - ✅ WebSocket Endpoints als future roadmap
@@ -671,18 +731,21 @@
 ### ✅ Departments v2 - Vollständige Implementation (3.5 Stunden)
 
 #### 1. Departments Service Layer
+
 - ✅ Vollständiger CRUD Service
 - ✅ Department Stats Funktionalität
 - ✅ Member Management
 - ✅ Multi-Tenant Isolation
 
 #### 2. Departments Controller & Routes
+
 - ✅ 7 Endpoints implementiert
 - ✅ Route Ordering Bug gefixt (stats vor /:id)
 - ✅ Validation Rules definiert
 - ✅ TypeScript Build erfolgreich
 
 #### 3. Testing & Debugging
+
 - ✅ 27 Integration Tests geschrieben
 - ⚠️ Test Authentication Problem identifiziert
 - ✅ Frontend Signup.html Bug gefixt
@@ -690,19 +753,19 @@
 
 ### 📊 API v2 Gesamtstatus
 
-| API | Status | Tests | Doku | Fortschritt |
-|-----|--------|-------|------|-------------|
-| Auth v2 | ✅ Fertig | ✅ | ✅ | 100% |
-| Users v2 | ✅ Fertig | ✅ | ✅ | 100% |
-| Calendar v2 | ✅ Fertig | 90% | ✅ | 100% |
-| Chat v2 | ✅ Fertig | ⏳ | ✅ | 100% |
-| Departments v2 | ✅ Fertig | 🔧 | ✅ | 95% |
-| Teams v2 | ⏳ Pending | - | - | 0% |
-| Documents v2 | ⏳ Pending | - | - | 0% |
-| Blackboard v2 | ⏳ Pending | - | - | 0% |
-| KVP v2 | ⏳ Pending | - | - | 0% |
-| Shifts v2 | ⏳ Pending | - | - | 0% |
-| Surveys v2 | ⏳ Pending | - | - | 0% |
+| API            | Status     | Tests | Doku | Fortschritt |
+| -------------- | ---------- | ----- | ---- | ----------- |
+| Auth v2        | ✅ Fertig  | ✅    | ✅   | 100%        |
+| Users v2       | ✅ Fertig  | ✅    | ✅   | 100%        |
+| Calendar v2    | ✅ Fertig  | 90%   | ✅   | 100%        |
+| Chat v2        | ✅ Fertig  | ⏳    | ✅   | 100%        |
+| Departments v2 | ✅ Fertig  | 🔧    | ✅   | 95%         |
+| Teams v2       | ⏳ Pending | -     | -    | 0%          |
+| Documents v2   | ⏳ Pending | -     | -    | 0%          |
+| Blackboard v2  | ⏳ Pending | -     | -    | 0%          |
+| KVP v2         | ⏳ Pending | -     | -    | 0%          |
+| Shifts v2      | ⏳ Pending | -     | -    | 0%          |
+| Surveys v2     | ⏳ Pending | -     | -    | 0%          |
 
 **Gesamt: 5 von 11 APIs fertig (45%)** 🚀
 
@@ -733,29 +796,34 @@
 ### ✅ Calendar v2 - Komplette Implementation
 
 #### 1. Calendar Service Layer (30 Minuten)
+
 - ✅ Vollständiger CalendarService mit allen CRUD-Operationen
 - ✅ Business Logic für Events, Attendees, Recurrence
 - ✅ Export-Funktionalität (ICS & CSV)
 - ✅ Multi-Tenant Isolation sichergestellt
 
 #### 2. Calendar Controller & Routes (30 Minuten)
+
 - ✅ RESTful Controller mit allen Endpunkten
 - ✅ Konsistente API v2 Response-Formate
 - ✅ Vollständige Validation Rules
 - ✅ Routes in v2 API integriert
 
 #### 3. TypeScript & Build (20 Minuten)
+
 - ✅ TypeScript Fehler behoben (Route Handler Types)
 - ✅ typed.auth() Wrapper für alle Endpoints
 - ✅ Build erfolgreich ohne Fehler
 
 #### 4. OpenAPI Documentation (15 Minuten)
+
 - ✅ CalendarEvent Schema definiert
 - ✅ CalendarAttendee Schema
 - ✅ Response Schemas (List & Single)
 - ✅ Swagger v2 Config erweitert
 
 #### 5. Comprehensive Tests (55 Minuten)
+
 - ✅ **Logic Tests:** 39/39 Tests (Business Logic ohne DB)
 - ✅ **Simple Tests:** 16/16 Tests (ServiceError & Validation)
 - ✅ **Integration Tests:** Vollständige Test-Suite erstellt
@@ -764,28 +832,30 @@
 ### 📊 Calendar v2 Status: FERTIG ✅
 
 **Implementierte Features:**
+
 - Event CRUD (Create, Read, Update, Delete)
 - Attendee Management & RSVP
 - Event Filtering & Search
-- Pagination & Sorting  
+- Pagination & Sorting
 - ICS/CSV Export
 - Recurrence Rules
 - Multi-Tenant Isolation
 - Permission System
 
 **Test Coverage:**
+
 - Business Logic: 100% ✅
 - Service Errors: 100% ✅
 - Integration: Tests geschrieben, DB-Issue pending
 
 ### 🚀 Gesamtfortschritt API v2
 
-| API | Status | Tests | Doku |
-|-----|--------|-------|------|
-| Auth v2 | ✅ Fertig | ✅ | ✅ |
-| Users v2 | ✅ Fertig | ✅ | ✅ |
-| Calendar v2 | ✅ Fertig | 90% | ✅ |
-| Chat v2 | ⏳ Pending | - | - |
+| API         | Status     | Tests | Doku |
+| ----------- | ---------- | ----- | ---- |
+| Auth v2     | ✅ Fertig  | ✅    | ✅   |
+| Users v2    | ✅ Fertig  | ✅    | ✅   |
+| Calendar v2 | ✅ Fertig  | 90%   | ✅   |
+| Chat v2     | ⏳ Pending | -     | -    |
 
 ---
 
@@ -851,7 +921,7 @@
 
 - **Problem:** Build failed mit 8+ TypeScript Errors in security-enhanced.ts
 - **Ursache:** Inkompatibles `ExtendedRequest` Interface vs `AuthenticatedRequest`
-- **Lösung:** 
+- **Lösung:**
   - ExtendedRequest komplett entfernt
   - Überall AuthenticatedRequest verwendet
   - Type Assertions für Express Middleware
@@ -1196,18 +1266,21 @@
 ### ✅ Documents API v2 - Fast fertig!
 
 #### 1. Documents Service Layer (10 Minuten)
+
 - ✅ Vollständige CRUD + File Management
 - ✅ Multi-Tenant Document Access Control
 - ✅ Recipient Types: user, team, department, company
 - ✅ Document Categories, Tags, Read Status
 
-#### 2. Documents Controller & Validation (10 Minuten)  
+#### 2. Documents Controller & Validation (10 Minuten)
+
 - ✅ 10 Endpoints implementiert
 - ✅ Multer für PDF-Upload konfiguriert
 - ✅ Archive/Unarchive Funktionalität
 - ✅ Download/Preview mit Content-Disposition
 
 #### 3. Test-Debugging (10 Minuten)
+
 - ✅ Foreign Key Constraints gelöst (email in tenants)
 - ✅ user_id NOT NULL Problem behoben
 - ✅ Tags werden jetzt korrekt gespeichert
@@ -1217,6 +1290,7 @@
 ### 📊 Test-Status Documents v2
 
 **Von 9 Fehlern auf 5 reduziert:**
+
 - ✅ 23/28 Tests grün (82%)
 - ⚠️ Archive/Unarchive gibt 400 statt 200
 - ⚠️ Download/Preview: updated_at column fehlt
@@ -1224,15 +1298,15 @@
 
 ### 🎯 API v2 Gesamtstatus Update
 
-| API | Status | Tests | Fortschritt |
-|-----|--------|-------|-------------|
-| Auth v2 | ✅ Fertig | 11/11 | 100% |
-| Users v2 | ✅ Fertig | 13/13 | 100% |
-| Calendar v2 | ✅ Fertig | 33/33 | 100% |
-| Chat v2 | ✅ Fertig | 22 written | 100% |
-| Departments v2 | ✅ Fertig | 27/27 | 100% |
-| Teams v2 | ✅ Fertig | 48/48 | 100% |
-| Documents v2 | 🔧 Fast fertig | 23/28 | 90% |
+| API            | Status         | Tests      | Fortschritt |
+| -------------- | -------------- | ---------- | ----------- |
+| Auth v2        | ✅ Fertig      | 11/11      | 100%        |
+| Users v2       | ✅ Fertig      | 13/13      | 100%        |
+| Calendar v2    | ✅ Fertig      | 33/33      | 100%        |
+| Chat v2        | ✅ Fertig      | 22 written | 100%        |
+| Departments v2 | ✅ Fertig      | 27/27      | 100%        |
+| Teams v2       | ✅ Fertig      | 48/48      | 100%        |
+| Documents v2   | 🔧 Fast fertig | 23/28      | 90%         |
 
 **Gesamt: 7 von 11 APIs implementiert (64%)** 🚀
 
@@ -1252,16 +1326,16 @@
 **Gestartet:** 24.07.2025 mit Auth v2
 **Status:** 7 von 11 APIs fertig (64%)
 
-| API | Status | Tests | Arbeitszeit |
-|-----|--------|-------|-------------|
-| Auth v2 | ✅ 100% | 11/11 | 2h |
-| Users v2 | ✅ 100% | 13/13 | 3h |
-| Calendar v2 | ✅ 100% | 33/33 | 2.5h |
-| Chat v2 | ✅ 100% | 22 written | 2.5h |
-| Departments v2 | ✅ 100% | 27/27 | 3.5h |
-| Teams v2 | ✅ 100% | 48/48 | 2h |
-| Documents v2 | 🔧 90% | 23/28 | 0.5h |
-| **GESAMT** | **64%** | **194+ Tests** | **~16h** |
+| API            | Status  | Tests          | Arbeitszeit |
+| -------------- | ------- | -------------- | ----------- |
+| Auth v2        | ✅ 100% | 11/11          | 2h          |
+| Users v2       | ✅ 100% | 13/13          | 3h          |
+| Calendar v2    | ✅ 100% | 33/33          | 2.5h        |
+| Chat v2        | ✅ 100% | 22 written     | 2.5h        |
+| Departments v2 | ✅ 100% | 27/27          | 3.5h        |
+| Teams v2       | ✅ 100% | 48/48          | 2h          |
+| Documents v2   | 🔧 90%  | 23/28          | 0.5h        |
+| **GESAMT**     | **64%** | **194+ Tests** | **~16h**    |
 
 ### Wichtigste Erfolge
 
@@ -1275,7 +1349,7 @@
 
 - Content-Type Header Validation
 - JWT Token Generation mit Email
-- Test User Isolation (__AUTOTEST__ Präfix)
+- Test User Isolation (**AUTOTEST** Präfix)
 - DB Schema Mismatches
 - Null vs undefined Handling
 

@@ -21,6 +21,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **6 Endpoints implementiert** - [Details in Quick Reference](./API-V2-QUICK-REFERENCE.md#common-endpoints)
 
 **Features:**
+
 - JWT mit Access (15min) & Refresh (7d) Tokens
 - Bearer Token Authentication
 - Rate Limiting pro Endpoint-Typ
@@ -41,6 +42,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **13 Endpoints implementiert** - Complete user management
 
 **Features:**
+
 - Complete CRUD operations
 - Archive/Unarchive functionality
 - Profile picture management
@@ -56,6 +58,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **10 Endpoints implementiert** - Full calendar functionality
 
 **Features:**
+
 - Event CRUD with recurrence support
 - Attendee management with RSVP status
 - ICS & CSV export functionality
@@ -68,6 +71,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **13 Endpoints implementiert** (5 als NOT_IMPLEMENTED für Phase 2)
 
 **Features:**
+
 - Real-time messaging with Socket.io support
 - File attachments with multer
 - Unread message tracking
@@ -80,6 +84,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **7 Endpoints implementiert** - Department management
 
 **Features:**
+
 - Department hierarchy with parent-child relationships
 - Department statistics (member count, etc.)
 - Manager assignment
@@ -92,6 +97,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **8 Endpoints implementiert** - Team collaboration
 
 **Features:**
+
 - Team CRUD with lead assignment
 - Member management (add/remove)
 - Team statistics
@@ -104,6 +110,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **10 Endpoints implementiert** - Document management
 
 **Features:**
+
 - File upload with multer (PDF, DOC, DOCX, XLS, XLSX)
 - Download & Preview support
 - Archive/Unarchive functionality
@@ -117,6 +124,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **15 Endpoints implementiert** - Company announcements
 
 **Features:**
+
 - Multi-level announcements (Company/Department/Team)
 - Priority system (high/medium/low)
 - Attachment support
@@ -131,6 +139,7 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 **4 Endpoints implementiert** - Security-critical feature
 
 **Features:**
+
 - Root can switch to Admin/Employee view
 - Admin can switch to Employee view
 - Preserves tenant_id, user_id, originalRole
@@ -153,13 +162,15 @@ curl -X POST http://localhost:3000/api/v2/auth/login \
 ## 🧪 Test Status (Stand: 26.07.2025)
 
 ### Auth API v2 Tests
+
 - ✅ **11/11 Tests grün** - Alle Auth v2 Tests laufen erfolgreich
 - ✅ JWT Token Generation mit Email Parameter gefixt
 - ✅ Password Validation vor bcrypt.compare()
-- ✅ Test User Email Format mit __AUTOTEST__ Prefix
+- ✅ Test User Email Format mit **AUTOTEST** Prefix
 - ✅ Deprecation Headers für alle v1 Endpoints
 
 ### Weitere Test Suites
+
 - 🔧 Calendar v2 Tests - Noch Fehler vorhanden
 - 🔧 Users v2 Tests - Noch Fehler vorhanden
 - 🔧 Departments v2 Tests - Authentication Problem
@@ -196,6 +207,7 @@ curl -X POST http://localhost:3000/api/v2/auth/login \
 ## 🔧 Technische Details
 
 Für detaillierte technische Spezifikationen siehe:
+
 - **[API v2 Quick Reference](./API-V2-QUICK-REFERENCE.md)** - Response Formate, Error Codes, Field Mapping
 - **[API v2 Developer Guide](./API-V2-DEVELOPER-GUIDE.md)** - Implementation Patterns
 - **[Migration Guide](./MIGRATION-GUIDE-V1-TO-V2.md)** - v1 zu v2 Änderungen

@@ -9,19 +9,22 @@ Dieses Dokument ist deine zentrale Anlaufstelle für die API v2 Implementation.
 ## 📊 AKTUELLER STATUS
 
 ✅ **FERTIG (6/11 APIs - 55%)**
+
 - Auth v2 - 11/11 Tests ✅
-- Users v2 - 13/13 Tests ✅  
+- Users v2 - 13/13 Tests ✅
 - Calendar v2 - 33/33 Tests ✅
 - Chat v2 - 22 Tests geschrieben ✅
 - Departments v2 - 27/27 Tests ✅
 - Teams v2 - 48/48 Tests ✅ (27.07. fertiggestellt)
 
 🔧 **FAST FERTIG (1/11 APIs - 9%)**
+
 - Documents v2 - 23/28 Tests ✅ (82% grün)
 
 ⏳ **AUSSTEHEND (4/11 APIs - 36%)**
+
 - Blackboard v2
-- KVP v2  
+- KVP v2
 - Shifts v2
 - Surveys v2
 
@@ -139,28 +142,36 @@ export const apiToDb = <T>(apiObject: any): T => {
 ### Phase 1: Core APIs (Wochen 1-12) ✅
 
 #### Wochen 1-3: Auth API v2 🔐 ✅
+
 **Status:** FERTIG (24.07.2025)
+
 - ✅ JWT mit Access & Refresh Tokens
 - ✅ 6 Endpoints implementiert
 - ✅ Rate Limiting & Security
 - ✅ Integration Tests
 
 #### Wochen 4-6: Users API v2 👥 ✅
+
 **Status:** FERTIG (24.07.2025)
+
 - ✅ 13 Endpoints komplett
 - ✅ Service Layer Pattern
 - ✅ Profile Pictures & Availability
 - ✅ Multi-Tenant Isolation
 
 #### Wochen 7-9: Calendar API v2 📅 ✅
+
 **Status:** FERTIG (25.07.2025)
+
 - ✅ Event CRUD mit Attendees
 - ✅ ICS/CSV Export
 - ✅ Recurrence Rules
 - ✅ 55 Tests geschrieben
 
 #### Wochen 10-12: Chat API v2 💬 ✅
+
 **Status:** FERTIG (25.07.2025)
+
 - ✅ 18 Endpoints (13 implementiert, 5 Phase 2)
 - ✅ File Attachments mit Multer
 - ✅ Read Receipts & Unread Count
@@ -169,7 +180,9 @@ export const apiToDb = <T>(apiObject: any): T => {
 ### Phase 2: Organization APIs (Wochen 13-18)
 
 #### Wochen 13-14: Departments API v2 🏢 ✅
+
 **Status:** FERTIG (25.07.2025)
+
 - ✅ CRUD Operations
 - ✅ Hierarchie-Management
 - ✅ User Assignments
@@ -177,7 +190,9 @@ export const apiToDb = <T>(apiObject: any): T => {
 - ✅ 27 Integration Tests
 
 #### Wochen 15-16: Teams API v2 👨‍👩‍👧‍👦 ✅
+
 **Status:** FERTIG (27.07.2025)
+
 - ✅ Team CRUD Operations
 - ✅ Member Management (add/remove)
 - ✅ Service Layer Pattern
@@ -185,7 +200,9 @@ export const apiToDb = <T>(apiObject: any): T => {
 - ✅ Multi-Tenant Isolation
 
 #### Wochen 17-18: Shifts API v2 ⏰
+
 **Start:** KW 47 (18.11. - 01.12.2025)
+
 - [ ] Shift Templates
 - [ ] Recurring Shifts
 - [ ] Swap Requests
@@ -194,7 +211,9 @@ export const apiToDb = <T>(apiObject: any): T => {
 ### Phase 3: Content & Collaboration (Wochen 19-24)
 
 #### Wochen 19-20: Documents API v2 📄
+
 **Status:** FAST FERTIG (27.07.2025) - 90% implementiert
+
 - ✅ File Upload/Download (Multer für PDFs)
 - ✅ Access Control (recipient-based)
 - ✅ Archive/Unarchive
@@ -203,14 +222,18 @@ export const apiToDb = <T>(apiObject: any): T => {
 - ⚠️ 5 Test-Fehler zu beheben
 
 #### Wochen 21-22: Blackboard API v2 📢
+
 **Start:** KW 51 (16.12. - 29.12.2025)
+
 - [ ] Announcements CRUD
 - [ ] Confirmations
 - [ ] Categories
 - [ ] Attachments
 
 #### Wochen 23-24: KVP API v2 💡
+
 **Start:** KW 1 (30.12.2025 - 12.01.2026)
+
 - [ ] Suggestions CRUD
 - [ ] Workflow States
 - [ ] Comments & Voting
@@ -219,7 +242,9 @@ export const apiToDb = <T>(apiObject: any): T => {
 ### Phase 4: Advanced Features (Wochen 25-26)
 
 #### Wochen 25-26: Surveys API v2 📊
+
 **Start:** KW 3 (13.01. - 26.01.2026)
+
 - [ ] Survey Builder
 - [ ] Response Collection
 - [ ] Analytics
@@ -276,16 +301,16 @@ Ziel: 400+ von 502 Tests (80%)
 
 ### Detaillierte Test-Statistik
 
-| API | Tests | Status | Coverage |
-|-----|-------|--------|----------|
-| Auth v2 | 11/11 | ✅ 100% | Login, Register, JWT |
-| Users v2 | 13/13 | ✅ 100% | CRUD, Archive, Profile |
-| Calendar v2 | 33/33 | ✅ 100% | Events, Attendees, Export |
-| Chat v2 | 22 | ✅ Written | Messages, Conversations |
-| Departments v2 | 27/27 | ✅ 100% | CRUD, Stats, Hierarchy |
-| Teams v2 | 48/48 | ✅ 100% | CRUD, Members, Leaders |
-| Documents v2 | 23/28 | 🔧 82% | Upload, Archive, Access |
-| **TOTAL** | **177/182** | **97%** | **Fast alle Tests grün!** |
+| API            | Tests       | Status     | Coverage                  |
+| -------------- | ----------- | ---------- | ------------------------- |
+| Auth v2        | 11/11       | ✅ 100%    | Login, Register, JWT      |
+| Users v2       | 13/13       | ✅ 100%    | CRUD, Archive, Profile    |
+| Calendar v2    | 33/33       | ✅ 100%    | Events, Attendees, Export |
+| Chat v2        | 22          | ✅ Written | Messages, Conversations   |
+| Departments v2 | 27/27       | ✅ 100%    | CRUD, Stats, Hierarchy    |
+| Teams v2       | 48/48       | ✅ 100%    | CRUD, Members, Leaders    |
+| Documents v2   | 23/28       | 🔧 82%     | Upload, Archive, Access   |
+| **TOTAL**      | **177/182** | **97%**    | **Fast alle Tests grün!** |
 
 ---
 

@@ -4,8 +4,8 @@
  * Ensures pool is closed after all tests in a file
  */
 
-import { afterAll } from '@jest/globals';
-import { closePool } from './backend/src/config/database.js';
+import { afterAll } from "@jest/globals";
+import { closePool } from "./backend/src/config/database.js";
 
 // Close pool after all tests in each file
 afterAll(async () => {
@@ -13,6 +13,6 @@ afterAll(async () => {
     await closePool();
   } catch (error) {
     // Ignore errors during cleanup
-    console.error('Error closing pool in test:', error);
+    console.error("Error closing pool in test:", error);
   }
 });

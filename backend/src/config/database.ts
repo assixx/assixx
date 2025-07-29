@@ -329,10 +329,10 @@ export { pool };
 
 // Function to close the pool (for tests)
 export async function closePool(): Promise<void> {
-  if (pool && 'end' in pool && typeof pool.end === 'function') {
+  if (pool && "end" in pool && typeof pool.end === "function") {
     try {
       // Give connections time to finish
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       await pool.end();
       console.log("[DEBUG] Database pool closed");
     } catch (error) {

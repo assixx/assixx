@@ -46,6 +46,7 @@
 ## 📊 API v2 Status (Stand: 26.07.2025)
 
 ✅ **Fertig:** 5 von 11 APIs (45%)
+
 - Auth v2 ✅ (Tests 100% grün)
 - Users v2 ✅
 - Calendar v2 ✅
@@ -53,6 +54,7 @@
 - Departments v2 ✅
 
 ⏳ **In Arbeit:**
+
 - Teams v2
 - Documents v2
 - Blackboard v2

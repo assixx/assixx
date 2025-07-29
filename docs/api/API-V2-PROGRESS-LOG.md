@@ -14,6 +14,7 @@
    - Security-Implikation: Feature war versteckt/ungetestet
 
 2. **Service Layer mit Multi-Tenant Security** ✅
+
    ```typescript
    // CRITICAL: Verify user belongs to the same tenant
    private static async verifyUserTenant(
@@ -29,15 +30,19 @@
    ```
 
 3. **JWT Token mit Role-Switch Information** ✅
+
    ```typescript
-   return jwt.sign({
-     id: user.id,
-     tenant_id: user.tenant_id!, // CRITICAL: Always from verified user
-     role: user.role,           // CRITICAL: Original role NEVER changes
-     activeRole,                // Only this changes
-     isRoleSwitched,
-     type: "access" as const,
-   }, JWT_SECRET);
+   return jwt.sign(
+     {
+       id: user.id,
+       tenant_id: user.tenant_id!, // CRITICAL: Always from verified user
+       role: user.role, // CRITICAL: Original role NEVER changes
+       activeRole, // Only this changes
+       isRoleSwitched,
+       type: "access" as const,
+     },
+     JWT_SECRET,
+   );
    ```
 
 4. **Controller mit 4 Endpoints** ✅
@@ -61,12 +66,14 @@
    - Resultat: 12/12 Tests grün!
 
 **JWT Token Debugging Session:**
+
 - console.log in Jest war unterdrückt
 - Debug-Logs in Datei geschrieben
 - JWT enthält korrekte Felder: isRoleSwitched, activeRole
 - Auth Middleware setzt diese nun korrekt auf req.user
 
 **API v2 Gesamt-Status:**
+
 - 9 von 11 APIs komplett implementiert ✅ (82%)
 - 308/308 Tests grün (100% Pass Rate) 🎆
 - Verbleibend: KVP, Shifts
@@ -83,8 +90,9 @@
 1. **Problem 1: "should list all entries" returned 0 entries** ✅
    - Root Cause: requiresConfirmation Filter wurde immer auf false gesetzt
    - Fix: Controller nur filtern wenn explizit gesetzt:
+
    ```typescript
-   requiresConfirmation: req.query.requiresConfirmation !== undefined 
+   requiresConfirmation: req.query.requiresConfirmation !== undefined
      ? req.query.requiresConfirmation === "true"
      : undefined,
    ```
@@ -92,11 +100,10 @@
 2. **Problem 2: Tags als Objects statt Strings** ✅
    - Ursache: Fehlende Transformation in Service Layer
    - Fix: transformEntry() erweitert:
+
    ```typescript
    if (entry.tags && Array.isArray(entry.tags)) {
-     transformed.tags = entry.tags.map((tag: any) => 
-       typeof tag === 'string' ? tag : tag.name
-     );
+     transformed.tags = entry.tags.map((tag: any) => (typeof tag === "string" ? tag : tag.name));
    }
    ```
 
@@ -117,19 +124,17 @@
    - Problem: DB Trigger update_attachment_count kollidiert mit Subquery
    - Fix: Entry IDs erst fetchen, dann direkt verwenden:
    ```typescript
-   const [entries] = await testDb.execute<any[]>(
-     "SELECT id FROM blackboard_entries WHERE tenant_id = ?",
-     [tenantId],
-   );
+   const [entries] = await testDb.execute<any[]>("SELECT id FROM blackboard_entries WHERE tenant_id = ?", [tenantId]);
    if (entryIds.length > 0) {
      await testDb.execute(
-       `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+       `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
        entryIds,
      );
    }
    ```
 
 **Blackboard v2 Features:**
+
 - 15 Endpoints vollständig implementiert
 - Multi-level Announcements (Company/Department/Team)
 - Tags, Attachments, Confirmations
@@ -140,6 +145,7 @@
 - 100% TypeScript strict mode
 
 **API v2 Gesamt-Status:**
+
 - 8 von 11 APIs komplett implementiert ✅ (73%)
 - 331/339 Tests grün (97.6% Pass Rate)
 - Verbleibend: KVP, Shifts, Surveys
@@ -180,10 +186,12 @@
    - Stabile und reproduzierbare Test-Läufe
 
 **API v2 Status:**
+
 - 7 von 11 APIs komplett mit Tests ✅ (64%)
 - Verbleibend: Auth v2 Fixes + 4 neue APIs
 
 **Kritische Learnings:**
+
 - Content-Type Header IMMER setzen für POST/PUT/PATCH
 - Docker Volumes richtig mounten (read-only für Lock-Files)
 - Test-Isolation durch sequenzielle Ausführung
@@ -205,13 +213,13 @@
    - Nur 2 kleine Fehler übrig (null vs empty string)
 
 2. **Test-Infrastruktur Verbesserung** ✅
-   - Problem: Test-Daten mit __AUTOTEST__ bleiben in DB
+   - Problem: Test-Daten mit **AUTOTEST** bleiben in DB
    - Ursache: Tests brechen ab → afterAll() wird nicht aufgerufen
    - Lösung: `jest.globalSetup.js` & `jest.globalTeardown.js`
    - Cleanup läuft jetzt IMMER, auch bei Test-Abbrüchen!
 
 3. **Critical Security Fix** ✅
-   - __AUTOTEST__ Präfix für alle Test-User garantiert
+   - **AUTOTEST** Präfix für alle Test-User garantiert
    - normalizeEmail() entfernt (behielt Großbuchstaben nicht)
    - Verhindert Vermischung von Test- und Produktionsdaten
 
@@ -257,6 +265,7 @@
    - ⚠️ Database Schema Error verhindert Ausführung
 
 **TypeScript Challenges & Fixes:**
+
 - `requireRoleV2` middleware casting mit `as RequestHandler`
 - Request body types mit Interface Definitionen
 - `handleValidation` → `handleValidationErrors` Import
@@ -291,14 +300,14 @@
 
 **Test-Gesamtübersicht:**
 
-| API | Tests | Status | Erfolgsquote |
-|-----|-------|--------|-------------|
-| Auth v2 | 11 | ✅ Alle grün | 100% |
-| Users v2 | 13 | ✅ Alle grün | 100% |
-| Calendar v2 | 33 | ✅ Alle grün | 100% |
-| Chat v2 | 22 | 📦 Geschrieben | - |
-| Departments v2 | 27 | ✅ Alle grün | 100% |
-| **Gesamt** | **84** | **✅ Alle laufen** | **100%** |
+| API            | Tests  | Status             | Erfolgsquote |
+| -------------- | ------ | ------------------ | ------------ |
+| Auth v2        | 11     | ✅ Alle grün       | 100%         |
+| Users v2       | 13     | ✅ Alle grün       | 100%         |
+| Calendar v2    | 33     | ✅ Alle grün       | 100%         |
+| Chat v2        | 22     | 📦 Geschrieben     | -            |
+| Departments v2 | 27     | ✅ Alle grün       | 100%         |
+| **Gesamt**     | **84** | **✅ Alle laufen** | **100%**     |
 
 **Status: Alle implementierten API v2 Tests laufen erfolgreich!** 🎉
 
@@ -323,7 +332,7 @@
    - Dateien: auth.controller.ts (Zeilen 64-72)
 
 3. **Test User Email Format**
-   - Problem: Tests verwendeten falsche Email ohne __AUTOTEST__ Prefix
+   - Problem: Tests verwendeten falsche Email ohne **AUTOTEST** Prefix
    - Lösung: `testUser.email` durchgängig verwendet
    - Dateien: auth-v2.test.ts (alle Email-Referenzen)
 
@@ -338,6 +347,7 @@
    - Dateien: auth-v2.test.ts, auth.controller.ts (verify method)
 
 **Ergebnis:**
+
 - ✅ Auth v2 Tests: 11/11 Tests grün
 - 🎯 Systematisches Debugging war erfolgreich
 - 📚 Dokumentation wird aktualisiert
@@ -411,6 +421,7 @@
    - Test Authentication Problem identifiziert
 
 **Gelöste Probleme:**
+
 - TypeScript Build Errors (11 → 0)
 - Route Ordering (stats vor /:id)
 - Frontend JSON Parse Error
@@ -919,6 +930,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
    - OpenAPI Documentation inline
 
 **Herausforderungen:**
+
 - v1 Service gibt direkte Arrays zurück, nicht wrapped Objects
 - TypeScript Type Mismatches zwischen v1 und v2
 - Unterschiedliche Field Naming Conventions
@@ -928,6 +940,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Problem:** Multiple TypeScript errors mit v1 Service Integration
 
 **Lösungen:**
+
 1. Service angepasst an tatsächliche v1 Return Types
 2. `const` zu `let` für mutable Arrays
 3. Unused parameters mit `_` prefix
@@ -938,11 +951,13 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 ### 🌐 WebSocket Support Analysis (13:30 - 14:00)
 
 **Erkenntnisse:**
+
 - Socket.io v4.7.2 installiert aber nicht verwendet
 - Keine WebSocket Implementation in v1
 - Dokumentation für zukünftige Implementation erstellt
 
 **Erstellt:** `WEBSOCKET-NOTES.md` mit:
+
 - Event Definitions für Real-time Features
 - Security Considerations
 - REST + WebSocket Hybrid Approach
@@ -951,12 +966,14 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 ### 📝 OpenAPI Documentation (14:00 - 14:30)
 
 **Hinzugefügt zu swagger-v2.ts:**
+
 - 14 neue Schemas für Chat Entities
 - Request/Response Types
 - Pagination Support
 - File Upload Documentation
 
 **Schemas:**
+
 - ChatUser, Conversation, Message
 - ConversationParticipant, MessageAttachment
 - CreateConversationRequest, SendMessageRequest
@@ -968,6 +985,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Erstellt:** `chat.test.ts` mit 22 Test Cases
 
 **Test Coverage:**
+
 - User Discovery & Search
 - Conversation CRUD Operations
 - Message Send/Receive
@@ -978,6 +996,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - Not Implemented Endpoints (501)
 
 **Besonderheiten:**
+
 - Tests nutzen echte DB mit Test Helpers
 - Multiple User Roles getestet
 - Edge Cases abgedeckt
@@ -1000,6 +1019,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Chat API v2:** COMPLETE! 🎉
 
 **Implemented Features:**
+
 - User Discovery
 - Conversation Management
 - Message Send/Receive
@@ -1009,6 +1029,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - Multi-tenant Isolation
 
 **Phase 2 Features (NOT_IMPLEMENTED):**
+
 - Message Edit/Delete
 - Conversation Updates
 - Participant Management
@@ -1030,8 +1051,9 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 ### 📝 Implementierung
 
 **Neue Dateien:**
+
 1. `/backend/src/routes/v2/blackboard/blackboard.service.ts` - Service Layer mit Business Logic
-2. `/backend/src/routes/v2/blackboard/blackboard.controller.ts` - HTTP Request Handler  
+2. `/backend/src/routes/v2/blackboard/blackboard.controller.ts` - HTTP Request Handler
 3. `/backend/src/routes/v2/blackboard/blackboard.validation.ts` - Comprehensive Input Validation
 4. `/backend/src/routes/v2/blackboard/index.ts` - Routes mit Swagger Documentation
 5. `/backend/src/utils/ServiceError.ts` - Strukturierte Service Layer Errors
@@ -1039,9 +1061,10 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 7. `/backend/src/routes/__tests__/blackboard-v2.test.ts` - Comprehensive Test Suite
 
 **Features implementiert:**
+
 - ✅ Multi-level Organization Support (Company/Department/Team)
 - ✅ Entry Management (CRUD)
-- ✅ Archive/Unarchive Functionality  
+- ✅ Archive/Unarchive Functionality
 - ✅ Priority Levels (low/medium/high/urgent)
 - ✅ Expiration Dates
 - ✅ Tagging System
@@ -1054,8 +1077,9 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - ✅ Swagger/OpenAPI Documentation
 
 **API Endpoints (15 Total):**
+
 - `GET /api/v2/blackboard/entries` - List with filters/pagination
-- `GET /api/v2/blackboard/entries/:id` - Get single entry  
+- `GET /api/v2/blackboard/entries/:id` - Get single entry
 - `POST /api/v2/blackboard/entries` - Create new entry (Admin only)
 - `PUT /api/v2/blackboard/entries/:id` - Update entry (Admin only)
 - `DELETE /api/v2/blackboard/entries/:id` - Delete entry (Admin only)
@@ -1073,10 +1097,12 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 ### 🧪 Test Results
 
 **Test Coverage:** 35 Tests
+
 - ✅ 25 Tests Passing (71%)
 - ❌ 10 Tests Failing (29%)
 
 **Failing Tests (bekannte Issues):**
+
 1. Confirmation endpoint returns 500 (Model needs tenant_id check)
 2. Tags not returned with entries (Performance optimization - separate endpoint exists)
 3. Multi-tenant isolation tests (Tenant 2 creation needed)
@@ -1097,9 +1123,10 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Blackboard API v2:** 88% COMPLETE
 
 **Fully Working:**
+
 - Basic CRUD Operations
 - Archive/Unarchive
-- Dashboard View  
+- Dashboard View
 - Tag Management
 - Search & Filter
 - Swagger Documentation
@@ -1107,13 +1134,15 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - Multi-tenant Test Setup
 
 **Fixed Today (28.07.2025):**
+
 - ✅ Confirmation System with tenant check
-- ✅ File Upload multer configuration 
+- ✅ File Upload multer configuration
 - ✅ Advanced Filters (priority/requiresConfirmation)
 - ✅ Tags loading in getEntryById
 - ✅ Multi-tenant test tenant creation
 
 **Still Needs Fixes (Minor):**
+
 - Tags returned as objects instead of strings in tests
 - First test "should list all entries" finds 0 entries
 - Upload endpoint returns 500 (controller issue)

@@ -3,7 +3,7 @@ export default {
   preset: "ts-jest/presets/default-esm",
   testEnvironment: "node",
   testEnvironmentOptions: {
-    NODE_ENV: "test"
+    NODE_ENV: "test",
   },
   extensionsToTreatAsEsm: [".ts"],
   maxWorkers: 1, // Run tests sequentially to avoid database conflicts
@@ -56,7 +56,10 @@ export default {
   },
   moduleFileExtensions: ["js", "json", "ts", "tsx"],
   extensionsToTreatAsEsm: [".ts"],
-  setupFilesAfterEnv: ["<rootDir>/backend/src/__tests__/setup.ts", "<rootDir>/jest.setup.ts"],
+  setupFilesAfterEnv: [
+    "<rootDir>/backend/src/__tests__/setup.ts",
+    "<rootDir>/jest.setup.ts",
+  ],
   globalSetup: "<rootDir>/jest.globalSetup.js",
   globalTeardown: "<rootDir>/jest.globalTeardown.js",
   testTimeout: 10000,

@@ -40,17 +40,17 @@
 
 ### ✅ Vollständig funktionierende Tests
 
-| Test-Datei                       | Tests | Status  | Kommentar                            |
-| -------------------------------- | ----- | ------- | ------------------------------------ |
-| `errorHandler.test.ts`           | 2/2   | ✅ 100% | Unit Test ohne DB                    |
-| `health.test.ts`                 | 2/2   | ✅ 100% | Unit Test ohne DB                    |
-| `auth.test.ts`                   | 20/20 | ✅ 100% | Vollständig gefixt mit Multi-Tenant  |
-| `users.service.simple.test.ts`   | 3/3   | ✅ 100% | ServiceError Tests ohne DB (NEU)     |
-| `users.service.logic.test.ts`    | 14/14 | ✅ 100% | Business Logic Tests ohne DB (NEU)   |
-| **API v2 Tests:**                |       |         |                                      |
-| `auth-v2.test.ts`                | ~20   | ✅ 100% | Auth API v2 Integration Tests        |
-| `users-v2.test.ts`               | ~24   | ✅ 100% | Users API v2 Integration Tests       |
-| `calendar-v2.test.ts`            | 55/55 | ✅ 100% | Calendar v2 Logic & Simple Tests     |
+| Test-Datei                     | Tests | Status  | Kommentar                           |
+| ------------------------------ | ----- | ------- | ----------------------------------- |
+| `errorHandler.test.ts`         | 2/2   | ✅ 100% | Unit Test ohne DB                   |
+| `health.test.ts`               | 2/2   | ✅ 100% | Unit Test ohne DB                   |
+| `auth.test.ts`                 | 20/20 | ✅ 100% | Vollständig gefixt mit Multi-Tenant |
+| `users.service.simple.test.ts` | 3/3   | ✅ 100% | ServiceError Tests ohne DB (NEU)    |
+| `users.service.logic.test.ts`  | 14/14 | ✅ 100% | Business Logic Tests ohne DB (NEU)  |
+| **API v2 Tests:**              |       |         |                                     |
+| `auth-v2.test.ts`              | ~20   | ✅ 100% | Auth API v2 Integration Tests       |
+| `users-v2.test.ts`             | ~24   | ✅ 100% | Users API v2 Integration Tests      |
+| `calendar-v2.test.ts`          | 55/55 | ✅ 100% | Calendar v2 Logic & Simple Tests    |
 
 ### ⚠️ Teilweise funktionierende Tests
 
@@ -66,7 +66,7 @@
 | `departments.test.ts`                | 48    | ⚠️ 13% | Foreign Keys gefixt, 6/48 Tests bestehen                       | **HOCH**          |
 | `teams.test.ts`                      | 59    | ⚠️ 8%  | Schema gefixt, 5/59 Tests bestehen                             | **HOCH**          |
 | **API v2 Tests:**                    |       |        |                                                                |                   |
-| `chat-v2.test.ts`                    | 22    | ⚠️     | Tests geschrieben, DB Connection Issues                         | **MITTEL**        |
+| `chat-v2.test.ts`                    | 22    | ⚠️     | Tests geschrieben, DB Connection Issues                        | **MITTEL**        |
 | `departments-v2.test.ts`             | 27    | ❌ 0%  | Auth Login schlägt fehl - createTestUser Problem               | **HOCH**          |
 | `auth-refactored.test.ts`            | ?     | ❌ 0%  | Unbekannt                                                      | **MITTEL**        |
 | `shifts.test.ts`                     | 66    | ⚠️ 9%  | Auth gefixt, 6/66 Tests bestehen                               | **HOCH**          |
@@ -149,6 +149,7 @@ Fehlgeschlagen: █████████████████░░░ 92%
 **Ursache:** MySQL Pool wird in database.ts beim Import erstellt und nicht geschlossen  
 **Effekt:** Alle Tests die irgendwie die DB importieren haben dieses Problem  
 **Lösungen:**
+
 - Tests ohne DB-Import schreiben (wie users.service.logic.test.ts)
 - Proper cleanup in afterAll() hooks
 - Mock die database.ts komplett

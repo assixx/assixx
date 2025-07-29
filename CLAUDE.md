@@ -112,7 +112,6 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 2. docker exec assixx-backend pnpm run format
 3. docker exec assixx-backend pnpm run type-check
 
-
 **Workflow-Struktur:**
 
 1. Discover Tests (findet alle Test-Dateien)
