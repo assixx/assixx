@@ -244,11 +244,11 @@ if (USE_MOCK_DB) {
     password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
     database: process.env.DB_NAME ?? defaultDatabase,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: process.env.NODE_ENV === "test" ? 1 : 10,
     queueLimit: 0,
     multipleStatements: false, // Sicherheitsverbesserung
     charset: "utf8mb4",
-    connectTimeout: 60000, // 60 seconds
+    connectTimeout: process.env.NODE_ENV === "test" ? 5000 : 60000, // 5s for tests
     stringifyObjects: false,
     supportBigNumbers: true,
     bigNumberStrings: false,
@@ -271,19 +271,22 @@ if (USE_MOCK_DB) {
     pool = mysql.createPool(config);
     console.log("[DEBUG] Database pool created successfully");
 
-    // Test the connection immediately
-    pool
-      .getConnection()
-      .then((conn) => {
-        console.log("[DEBUG] Database connection test successful");
-        conn.release();
-      })
-      .catch((err) => {
-        console.error(
-          "[DEBUG] Database connection test failed:",
-          err instanceof Error ? err.message : "Unknown error",
-        );
-      });
+    // Skip connection test in test environment
+    if (process.env.NODE_ENV !== "test") {
+      // Test the connection immediately
+      pool
+        .getConnection()
+        .then((conn) => {
+          console.log("[DEBUG] Database connection test successful");
+          conn.release();
+        })
+        .catch((err) => {
+          console.error(
+            "[DEBUG] Database connection test failed:",
+            err instanceof Error ? err.message : "Unknown error",
+          );
+        });
+    }
   } catch (error) {
     console.error("Fehler beim Verbinden mit der Datenbank:", error);
     // Create a dummy pool that throws errors
@@ -327,8 +330,14 @@ export { pool };
 // Function to close the pool (for tests)
 export async function closePool(): Promise<void> {
   if (pool && 'end' in pool && typeof pool.end === 'function') {
-    await pool.end();
-    console.log("[DEBUG] Database pool closed");
+    try {
+      // Give connections time to finish
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await pool.end();
+      console.log("[DEBUG] Database pool closed");
+    } catch (error) {
+      console.error("[DEBUG] Error closing pool:", error);
+    }
   }
 }
 
