@@ -20,7 +20,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:report": "eslint . --format json > eslint-report.json",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js --forceExit",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.js --coverage",
     "type-check": "tsc --noEmit",

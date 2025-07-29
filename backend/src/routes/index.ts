@@ -23,6 +23,7 @@ import kvpRoutes from "./kvp";
 import logsRoutes from "./logs.js";
 import machineRoutes from "./machines";
 import planRoutes from "./plans";
+import roleSwitchRoutes from "./role-switch";
 import rootRoutes from "./root";
 import shiftRoutes from "./shifts";
 import signupRoutes from "./signup";
@@ -38,6 +39,7 @@ import calendarV2Routes from "./v2/calendar";
 import chatV2Routes from "./v2/chat";
 import departmentsV2Routes from "./v2/departments";
 import documentsV2Routes from "./v2/documents";
+import roleSwitchV2Routes from "./v2/role-switch";
 import teamsV2Routes from "./v2/teams";
 import usersV2Routes from "./v2/users";
 
@@ -68,6 +70,8 @@ console.log("[DEBUG] Mounting v2 teams routes at /api/v2/teams");
 router.use("/api/v2/teams", teamsV2Routes);
 console.log("[DEBUG] Mounting v2 blackboard routes at /api/v2/blackboard");
 router.use("/api/v2/blackboard", blackboardV2Routes);
+console.log("[DEBUG] Mounting v2 role-switch routes at /api/v2/role-switch");
+router.use("/api/v2/role-switch", roleSwitchV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");
@@ -98,6 +102,7 @@ router.use(`${API_PREFIX}/availability`, availabilityRoutes);
 router.use(`${API_PREFIX}/admin-permissions`, adminPermissionsRoutes);
 router.use(`${API_PREFIX}/department-groups`, departmentGroupsRoutes);
 router.use(`${API_PREFIX}/logs`, logsRoutes);
+router.use(`${API_PREFIX}/role-switch`, roleSwitchRoutes);
 
 // Health check endpoint
 router.get(`${API_PREFIX}/health`, (_req: Request, res: Response): void => {

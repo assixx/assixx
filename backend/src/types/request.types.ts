@@ -23,6 +23,7 @@ export interface AuthUser {
   department_id?: number | null;
   position?: string | null;
   activeRole?: string; // For role switching functionality
+  isRoleSwitched?: boolean; // Flag to indicate if role is switched
 }
 
 // Base authenticated request

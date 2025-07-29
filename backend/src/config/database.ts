@@ -324,6 +324,14 @@ if (USE_MOCK_DB) {
 export default pool;
 export { pool };
 
+// Function to close the pool (for tests)
+export async function closePool(): Promise<void> {
+  if (pool && 'end' in pool && typeof pool.end === 'function') {
+    await pool.end();
+    console.log("[DEBUG] Database pool closed");
+  }
+}
+
 // Re-export utility functions from db.ts
 export { query as executeQuery, execute } from "../utils/db";
 

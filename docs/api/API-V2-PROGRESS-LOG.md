@@ -1,5 +1,77 @@
 # API v2 Implementation Progress Log
 
+## 29.07.2025 - Tag 6: ROLE-SWITCH API v2 - Security First! 🔄🔒
+
+### 🔄 Role-Switch v2 Implementation (Vormittag Session - 3 Stunden)
+
+**Ziel:** Kritisches Security-Feature für Admin/Root Role Switching
+
+**Ergebnis: 12/12 Tests grün (100%)!** 💯
+
+1. **Kritische Entdeckung: v1 Route war nicht registriert!** ✅
+   - Problem: Role-Switch existierte, war aber nicht erreichbar
+   - Fix: Route in `/backend/src/routes/index.ts` hinzugefügt
+   - Security-Implikation: Feature war versteckt/ungetestet
+
+2. **Service Layer mit Multi-Tenant Security** ✅
+   ```typescript
+   // CRITICAL: Verify user belongs to the same tenant
+   private static async verifyUserTenant(
+     userId: number,
+     tenantId: number,
+   ): Promise<DbUser> {
+     const user = await User.findById(userId, tenantId);
+     if (!user || user.tenant_id !== tenantId) {
+       throw new ServiceError("Unauthorized access", 403, "TENANT_MISMATCH");
+     }
+     return user;
+   }
+   ```
+
+3. **JWT Token mit Role-Switch Information** ✅
+   ```typescript
+   return jwt.sign({
+     id: user.id,
+     tenant_id: user.tenant_id!, // CRITICAL: Always from verified user
+     role: user.role,           // CRITICAL: Original role NEVER changes
+     activeRole,                // Only this changes
+     isRoleSwitched,
+     type: "access" as const,
+   }, JWT_SECRET);
+   ```
+
+4. **Controller mit 4 Endpoints** ✅
+   - `POST /api/v2/role-switch/to-employee` - Switch zu Employee View
+   - `POST /api/v2/role-switch/to-original` - Zurück zur Original-Rolle
+   - `POST /api/v2/role-switch/root-to-admin` - Root → Admin (nur für Root)
+   - `GET /api/v2/role-switch/status` - Aktueller Status
+
+5. **Security Matrix implementiert** ✅
+   - **Root:** Kann zu Admin und Employee switchen
+   - **Admin:** Kann nur zu Employee switchen
+   - **Employee:** Kann gar nicht switchen
+   - **tenant_id:** Wird IMMER beibehalten
+   - **user_id:** Wird NIEMALS verändert
+
+6. **Auth Middleware Enhancement** ✅
+   - Problem: Middleware holt Role aus DB statt JWT
+   - Größeres Problem entdeckt: v2 Routes nutzten alte auth middleware!
+   - Lösung: Neue securityV2.middleware.ts erstellt
+   - Alle v2 Routes nutzen jetzt korrekt authenticateV2
+   - Resultat: 12/12 Tests grün!
+
+**JWT Token Debugging Session:**
+- console.log in Jest war unterdrückt
+- Debug-Logs in Datei geschrieben
+- JWT enthält korrekte Felder: isRoleSwitched, activeRole
+- Auth Middleware setzt diese nun korrekt auf req.user
+
+**API v2 Gesamt-Status:**
+- 9 von 11 APIs komplett implementiert ✅ (82%)
+- 308/308 Tests grün (100% Pass Rate) 🎆
+- Verbleibend: KVP, Shifts
+- WICHTIG: v2 Routes noch nicht aktiviert!
+
 ## 28.07.2025 - Tag 5: BLACKBOARD API v2 PERFEKT - 35/35 Tests grün! 🎉💯
 
 ### 🎆 Blackboard v2 100% Complete (Abend Session - 4+ Stunden)

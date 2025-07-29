@@ -56,24 +56,24 @@ describe("Blackboard API v2", () => {
       "SELECT id FROM blackboard_entries WHERE tenant_id = ?",
       [tenantId],
     );
-    const entryIds = entries.map(e => e.id);
-    
+    const entryIds = entries.map((e) => e.id);
+
     if (entryIds.length > 0) {
       // Delete related data using the IDs directly
       await testDb.execute(
-        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+        `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
         entryIds,
       );
     }
-    
+
     // Now delete the entries themselves
     await testDb.execute("DELETE FROM blackboard_entries WHERE tenant_id = ?", [
       tenantId,
@@ -137,7 +137,7 @@ describe("Blackboard API v2", () => {
     testEntryId = result.insertId;
 
     // Wait a bit to ensure the entry is committed
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   afterEach(async () => {
@@ -147,24 +147,24 @@ describe("Blackboard API v2", () => {
       "SELECT id FROM blackboard_entries WHERE tenant_id = ?",
       [tenantId],
     );
-    const entryIds = entries.map(e => e.id);
-    
+    const entryIds = entries.map((e) => e.id);
+
     if (entryIds.length > 0) {
       // Delete related data using the IDs directly
       await testDb.execute(
-        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
+        `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
         entryIds,
       );
     }
-    
+
     // Now delete the entries themselves
     await testDb.execute("DELETE FROM blackboard_entries WHERE tenant_id = ?", [
       tenantId,
@@ -184,7 +184,12 @@ describe("Blackboard API v2", () => {
       log(
         "Entries in DB before test:",
         checkEntries.length,
-        checkEntries.map((e) => ({ id: e.id, title: e.title, org_level: e.org_level, org_id: e.org_id })),
+        checkEntries.map((e) => ({
+          id: e.id,
+          title: e.title,
+          org_level: e.org_level,
+          org_id: e.org_id,
+        })),
       );
 
       // Debug: Check employee user's department and team
@@ -199,7 +204,10 @@ describe("Blackboard API v2", () => {
         "SELECT * FROM user_teams WHERE user_id = ?",
         [employeeUserId],
       );
-      log("Employee team info:", teamInfo.length > 0 ? teamInfo[0] : "No team assignment");
+      log(
+        "Employee team info:",
+        teamInfo.length > 0 ? teamInfo[0] : "No team assignment",
+      );
 
       const response = await request(app)
         .get("/api/v2/blackboard/entries")
@@ -644,11 +652,7 @@ describe("Blackboard API v2", () => {
       const response = await request(app)
         .post(`/api/v2/blackboard/entries/${testEntryId}/attachments`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .attach(
-          "attachment",
-          Buffer.from("test pdf content"),
-          "test-file.pdf",
-        );
+        .attach("attachment", Buffer.from("test pdf content"), "test-file.pdf");
 
       if (response.status !== 201) {
         log("Upload error response:", response.body);
@@ -663,11 +667,7 @@ describe("Blackboard API v2", () => {
       await request(app)
         .post(`/api/v2/blackboard/entries/${testEntryId}/attachments`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .attach(
-          "attachment",
-          Buffer.from("test pdf content"),
-          "test-file.pdf",
-        );
+        .attach("attachment", Buffer.from("test pdf content"), "test-file.pdf");
 
       const response = await request(app)
         .get(`/api/v2/blackboard/entries/${testEntryId}/attachments`)
@@ -684,11 +684,7 @@ describe("Blackboard API v2", () => {
       await request(app)
         .post(`/api/v2/blackboard/entries/${testEntryId}/attachments`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .attach(
-          "attachment",
-          Buffer.from("test pdf content"),
-          "test-file.pdf",
-        );
+        .attach("attachment", Buffer.from("test pdf content"), "test-file.pdf");
 
       // Get attachments to find the ID
       const attachmentsResponse = await request(app)
@@ -709,11 +705,7 @@ describe("Blackboard API v2", () => {
     it("should require authentication for attachment operations", async () => {
       const response = await request(app)
         .post(`/api/v2/blackboard/entries/${testEntryId}/attachments`)
-        .attach(
-          "attachment",
-          Buffer.from("test pdf content"),
-          "test-file.pdf",
-        );
+        .attach("attachment", Buffer.from("test pdf content"), "test-file.pdf");
 
       expect(response.status).toBe(401);
     });

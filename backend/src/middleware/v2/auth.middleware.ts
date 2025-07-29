@@ -25,6 +25,9 @@ interface JWTPayload {
   role: string;
   tenantId: number;
   type: "access" | "refresh";
+  // Role switch fields
+  activeRole?: string;
+  isRoleSwitched?: boolean;
   iat?: number;
   exp?: number;
 }
@@ -170,12 +173,15 @@ export async function authenticateV2(
       userId: userDetails.id,
       username: userDetails.username,
       email: userDetails.email,
-      role: userDetails.role,
+      role: decoded.role, // CRITICAL: Always use the original role from JWT
       tenant_id: userDetails.tenantId,
       tenantName: userDetails.tenantName,
       first_name: userDetails.firstName,
       last_name: userDetails.lastName,
       department_id: userDetails.departmentId,
+      // Role switch information from JWT
+      activeRole: decoded.activeRole ?? decoded.role,
+      isRoleSwitched: Boolean(decoded.isRoleSwitched), // Convert to boolean explicitly
     };
     // Add tenantId to request root for controllers
     (req as AuthenticatedRequest).tenantId = userDetails.tenantId;
@@ -236,14 +242,17 @@ export function requireRoleV2(allowedRoles: string | string[]) {
       return;
     }
 
-    // Root has access to everything
+    // When role-switched, use activeRole for permission checks
+    const currentRole = req.user.activeRole ?? req.user.role;
+
+    // Root has access to everything (check original role)
     if (req.user.role === "root") {
       next();
       return;
     }
 
-    // Check if user's role is allowed
-    if (roles.includes(req.user.role)) {
+    // Check if user's current role is allowed
+    if (roles.includes(currentRole)) {
       next();
       return;
     }

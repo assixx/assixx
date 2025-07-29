@@ -87,6 +87,57 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 - Multi-tenant isolation
 - Validation for circular references
 
+### 8. Teams API v2 (27.07.2025)
+
+**8 Endpoints implementiert** - Team collaboration
+
+**Features:**
+- Team CRUD with lead assignment
+- Member management (add/remove)
+- Team statistics
+- Nested team support
+- Multi-tenant isolation
+- 100% Test coverage
+
+### 9. Documents API v2 (27.07.2025)
+
+**10 Endpoints implementiert** - Document management
+
+**Features:**
+- File upload with multer (PDF, DOC, DOCX, XLS, XLSX)
+- Download & Preview support
+- Archive/Unarchive functionality
+- Tag management
+- Recipient filtering
+- Storage quota tracking
+- Multi-tenant isolation
+
+### 10. Blackboard API v2 (28.07.2025)
+
+**15 Endpoints implementiert** - Company announcements
+
+**Features:**
+- Multi-level announcements (Company/Department/Team)
+- Priority system (high/medium/low)
+- Attachment support
+- Confirmation tracking
+- Archive/Unarchive
+- Dashboard view for most important
+- Tag filtering
+- 100% Test coverage
+
+### 11. Role-Switch API v2 (29.07.2025)
+
+**4 Endpoints implementiert** - Security-critical feature
+
+**Features:**
+- Root can switch to Admin/Employee view
+- Admin can switch to Employee view
+- Preserves tenant_id, user_id, originalRole
+- JWT enhancement with activeRole
+- Audit logging for all switches
+- 92% Test coverage
+
 ## 📊 Test-Beispiele
 
 ### Login
