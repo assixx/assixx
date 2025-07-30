@@ -96,7 +96,7 @@ interface SurveyCreateData {
     options?: string[];
   }>;
   assignments?: Array<{
-    type: "company" | "department" | "team" | "individual";
+    type: "all_users" | "department" | "team" | "user";
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;

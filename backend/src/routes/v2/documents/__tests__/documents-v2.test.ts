@@ -4,7 +4,7 @@
  */
 
 import request from "supertest";
-import app from "../../app.js";
+import app from "../../../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
@@ -13,7 +13,7 @@ import {
   createTestUser,
   createTestTeam,
   createTestDepartment,
-} from "../mocks/database.js";
+} from "../../../mocks/database.js";
 import { Pool } from "mysql2/promise";
 
 describe("Documents API v2", () => {

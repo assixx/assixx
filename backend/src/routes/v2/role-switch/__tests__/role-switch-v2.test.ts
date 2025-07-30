@@ -10,8 +10,8 @@
  */
 
 import request from "supertest";
-import app from "../../app.js";
-import { execute } from "../../utils/db.js";
+import app from "../../../../app.js";
+import { execute } from "../../../../utils/db.js";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 
 describe("Role Switch API v2 - CRITICAL SECURITY TESTS", () => {

@@ -13,7 +13,7 @@ import {
 } from "@jest/globals";
 import request from "supertest";
 import { Pool } from "mysql2/promise";
-import app from "../../app.js";
+import app from "../../../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
@@ -21,7 +21,7 @@ import {
   createTestUser,
   // createTestDepartment,  // Not used to avoid foreign key issues
   // createTestTeam,       // Not used to avoid foreign key issues
-} from "../mocks/database.js";
+} from "../../../mocks/database.js";
 
 describe("Calendar v2 API Endpoints", () => {
   let testDb: Pool;

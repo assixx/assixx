@@ -3,6 +3,7 @@
  * HTTP request handling for real-time messaging API
  */
 
+import { error as logError } from "console";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -139,6 +140,7 @@ export class ChatController {
 
       res.status(201).json(successResponse(result));
     } catch (error) {
+      logError("[Chat Controller] createConversation error:", error);
       next(error);
     }
   }
@@ -290,8 +292,10 @@ export class ChatController {
     next: NextFunction,
   ): Promise<void> {
     try {
+      logError("[Chat Controller] markAsRead called");
       const { user } = req;
       if (!user) {
+        logError("[Chat Controller] No user found!");
         res
           .status(401)
           .json(errorResponse("UNAUTHORIZED", "Authentication required"));
@@ -299,6 +303,12 @@ export class ChatController {
       }
       const userId = user.id;
       const conversationId = parseInt(req.params.id);
+      logError(
+        "[Chat Controller] markAsRead - conversationId:",
+        conversationId,
+        "userId:",
+        userId,
+      );
 
       const result = await chatService.markConversationAsRead(
         conversationId,
@@ -307,6 +317,7 @@ export class ChatController {
 
       res.json(successResponse(result));
     } catch (error) {
+      logError("[Chat Controller] markAsRead error:", error);
       next(error);
     }
   }
@@ -416,12 +427,12 @@ export class ChatController {
       const userId = user.id;
       const conversationId = parseInt(req.params.id);
 
-      // Use getConversations to get single conversation
-      const result = await chatService.getConversations(tenantId, userId, {
-        limit: 1,
-      });
-
-      const conversation = result.data.find((c) => c.id === conversationId);
+      // Get single conversation
+      const conversation = await chatService.getConversation(
+        tenantId,
+        conversationId,
+        userId,
+      );
 
       if (!conversation) {
         res

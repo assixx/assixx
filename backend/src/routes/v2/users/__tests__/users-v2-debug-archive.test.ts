@@ -8,13 +8,13 @@ import {
 } from "@jest/globals";
 import request from "supertest";
 import { Pool } from "mysql2/promise";
-import app from "../../app.js";
+import app from "../../../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
   createTestTenant,
   createTestUser,
-} from "../mocks/database.js";
+} from "../../../mocks/database.js";
 
 describe("DEBUG: Users v2 Archive API", () => {
   let testDb: Pool;

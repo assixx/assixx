@@ -13,7 +13,7 @@ import {
   afterEach,
 } from "@jest/globals";
 import request from "supertest";
-import app from "../../app.js";
+import app from "../../../../app.js";
 import { log } from "console";
 import { Pool } from "mysql2/promise";
 import {
@@ -21,7 +21,7 @@ import {
   cleanupTestData,
   createTestTenant,
   createTestUser,
-} from "../mocks/database.js";
+} from "../../../mocks/database.js";
 import type { ResultSetHeader } from "mysql2";
 
 describe("Blackboard API v2", () => {

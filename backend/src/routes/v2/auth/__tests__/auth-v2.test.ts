@@ -3,18 +3,18 @@
  * Tests standardized responses, JWT tokens, and field mapping
  */
 
-import "../../__tests__/test-env-setup"; // Must be first import
+import "../../../../__tests__/test-env-setup"; // Must be first import
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { Pool } from "mysql2/promise";
-import app from "../../app";
+import app from "../../../../app";
 import {
   createTestDatabase,
   cleanupTestData,
   closeTestDatabase,
   createTestTenant,
   createTestUser,
-} from "../mocks/database";
+} from "../../../mocks/database";
 
 describe("Authentication API v2 Endpoints", () => {
   let testDb: Pool;

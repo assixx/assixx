@@ -349,7 +349,7 @@ router.post(
             }
           }
           // Admins can always create surveys for "all_users"
-          else if (assignment.type !== "company") {
+          else if (!["company", "all_users"].includes(assignment.type)) {
             res.status(403).json({
               error:
                 "Sie können nur Umfragen für Ihre Abteilungen oder die ganze Firma erstellen",
@@ -359,8 +359,28 @@ router.post(
         }
       }
 
+      // Map v1 assignment types to v2 types
+      const mappedBody = {
+        ...req.body,
+        assignments: req.body.assignments?.map(
+          (a: {
+            type: string;
+            department_id?: number;
+            team_id?: number;
+            user_id?: number;
+          }) => ({
+            ...a,
+            type: (a.type === "company"
+              ? "all_users"
+              : a.type === "individual"
+                ? "user"
+                : a.type) as "all_users" | "department" | "team" | "user",
+          }),
+        ),
+      };
+
       const surveyId = await Survey.create(
-        req.body,
+        mappedBody,
         req.user.tenant_id,
         req.user.id,
       );

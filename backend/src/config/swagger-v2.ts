@@ -2702,6 +2702,632 @@ const options: swaggerJsdoc.Options = {
             },
           ],
         },
+
+        // Surveys API v2 Schemas
+        SurveyV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            title: {
+              type: "string",
+              example: "Employee Satisfaction Survey",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example:
+                "Annual survey to gauge employee satisfaction and engagement",
+            },
+            status: {
+              type: "string",
+              enum: ["draft", "active", "closed"],
+              example: "active",
+            },
+            isAnonymous: {
+              type: "boolean",
+              example: true,
+            },
+            isMandatory: {
+              type: "boolean",
+              example: false,
+            },
+            startDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T00:00:00Z",
+            },
+            endDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-31T23:59:59Z",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T12:00:00Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T12:00:00Z",
+            },
+            createdBy: {
+              type: "integer",
+              example: 10,
+            },
+            responseCount: {
+              type: "integer",
+              example: 42,
+            },
+            completedCount: {
+              type: "integer",
+              example: 35,
+            },
+            questions: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/SurveyQuestionV2",
+              },
+            },
+            assignments: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/SurveyAssignmentV2",
+              },
+            },
+          },
+        },
+        SurveyListItemV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            title: {
+              type: "string",
+              example: "Employee Satisfaction Survey",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Annual survey to gauge employee satisfaction",
+            },
+            status: {
+              type: "string",
+              enum: ["draft", "active", "closed"],
+              example: "active",
+            },
+            isAnonymous: {
+              type: "boolean",
+              example: true,
+            },
+            isMandatory: {
+              type: "boolean",
+              example: false,
+            },
+            startDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T00:00:00Z",
+            },
+            endDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-31T23:59:59Z",
+            },
+            responseCount: {
+              type: "integer",
+              example: 42,
+            },
+            completedCount: {
+              type: "integer",
+              example: 35,
+            },
+            creatorFirstName: {
+              type: "string",
+              example: "Max",
+            },
+            creatorLastName: {
+              type: "string",
+              example: "Mustermann",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T12:00:00Z",
+            },
+          },
+        },
+        SurveyQuestionV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            questionText: {
+              type: "string",
+              example: "How satisfied are you with your current role?",
+            },
+            questionType: {
+              type: "string",
+              enum: [
+                "text",
+                "single_choice",
+                "multiple_choice",
+                "rating",
+                "number",
+              ],
+              example: "rating",
+            },
+            isRequired: {
+              type: "boolean",
+              example: true,
+            },
+            orderPosition: {
+              type: "integer",
+              example: 1,
+            },
+            options: {
+              type: "array",
+              nullable: true,
+              items: {
+                type: "string",
+              },
+              example: [
+                "Very Dissatisfied",
+                "Dissatisfied",
+                "Neutral",
+                "Satisfied",
+                "Very Satisfied",
+              ],
+            },
+          },
+        },
+        SurveyAssignmentV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            type: {
+              type: "string",
+              enum: ["company", "department", "team", "individual"],
+              example: "department",
+            },
+            departmentId: {
+              type: "integer",
+              nullable: true,
+              example: 5,
+            },
+            teamId: {
+              type: "integer",
+              nullable: true,
+              example: null,
+            },
+            userId: {
+              type: "integer",
+              nullable: true,
+              example: null,
+            },
+          },
+        },
+        SurveyTemplateV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            name: {
+              type: "string",
+              example: "Employee Satisfaction Template",
+            },
+            description: {
+              type: "string",
+              example: "Standard template for measuring employee satisfaction",
+            },
+            category: {
+              type: "string",
+              example: "HR",
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+            questionCount: {
+              type: "integer",
+              example: 10,
+            },
+          },
+        },
+        SurveyStatisticsV2: {
+          type: "object",
+          properties: {
+            surveyId: {
+              type: "integer",
+              example: 1,
+            },
+            totalResponses: {
+              type: "integer",
+              example: 42,
+            },
+            completedResponses: {
+              type: "integer",
+              example: 35,
+            },
+            completionRate: {
+              type: "number",
+              format: "float",
+              example: 83.33,
+            },
+            firstResponse: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-02T09:00:00Z",
+            },
+            lastResponse: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-15T17:30:00Z",
+            },
+            questions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                  },
+                  questionText: {
+                    type: "string",
+                    example: "How satisfied are you with your current role?",
+                  },
+                  questionType: {
+                    type: "string",
+                    enum: [
+                      "text",
+                      "single_choice",
+                      "multiple_choice",
+                      "rating",
+                      "number",
+                    ],
+                    example: "rating",
+                  },
+                  responses: {
+                    type: "integer",
+                    example: 40,
+                  },
+                  options: {
+                    type: "array",
+                    nullable: true,
+                    items: {
+                      type: "object",
+                      properties: {
+                        optionId: {
+                          type: "integer",
+                          example: 1,
+                        },
+                        optionText: {
+                          type: "string",
+                          example: "Very Satisfied",
+                        },
+                        count: {
+                          type: "integer",
+                          example: 15,
+                        },
+                      },
+                    },
+                  },
+                  statistics: {
+                    type: "object",
+                    nullable: true,
+                    properties: {
+                      average: {
+                        type: "number",
+                        format: "float",
+                        example: 4.2,
+                      },
+                      min: {
+                        type: "number",
+                        example: 1,
+                      },
+                      max: {
+                        type: "number",
+                        example: 5,
+                      },
+                      totalResponses: {
+                        type: "integer",
+                        example: 40,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        SurveyCreateRequestV2: {
+          type: "object",
+          required: ["title"],
+          properties: {
+            title: {
+              type: "string",
+              minLength: 1,
+              maxLength: 255,
+              example: "Employee Satisfaction Survey 2025",
+            },
+            description: {
+              type: "string",
+              maxLength: 1000,
+              example:
+                "Annual survey to gauge employee satisfaction and engagement",
+            },
+            status: {
+              type: "string",
+              enum: ["draft", "active", "closed"],
+              default: "draft",
+              example: "draft",
+            },
+            isAnonymous: {
+              type: "boolean",
+              default: false,
+              example: true,
+            },
+            isMandatory: {
+              type: "boolean",
+              default: false,
+              example: false,
+            },
+            startDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T00:00:00Z",
+            },
+            endDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-31T23:59:59Z",
+            },
+            questions: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["questionText", "questionType"],
+                properties: {
+                  questionText: {
+                    type: "string",
+                    minLength: 1,
+                    maxLength: 500,
+                    example: "How satisfied are you with your current role?",
+                  },
+                  questionType: {
+                    type: "string",
+                    enum: [
+                      "text",
+                      "single_choice",
+                      "multiple_choice",
+                      "rating",
+                      "number",
+                    ],
+                    example: "rating",
+                  },
+                  isRequired: {
+                    type: "boolean",
+                    default: true,
+                    example: true,
+                  },
+                  orderPosition: {
+                    type: "integer",
+                    minimum: 1,
+                    example: 1,
+                  },
+                  options: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                    example: [
+                      "Very Dissatisfied",
+                      "Dissatisfied",
+                      "Neutral",
+                      "Satisfied",
+                      "Very Satisfied",
+                    ],
+                  },
+                },
+              },
+            },
+            assignments: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["type"],
+                properties: {
+                  type: {
+                    type: "string",
+                    enum: ["company", "department", "team", "individual"],
+                    example: "department",
+                  },
+                  departmentId: {
+                    type: "integer",
+                    nullable: true,
+                    example: 5,
+                  },
+                  teamId: {
+                    type: "integer",
+                    nullable: true,
+                    example: null,
+                  },
+                  userId: {
+                    type: "integer",
+                    nullable: true,
+                    example: null,
+                  },
+                },
+              },
+            },
+          },
+        },
+        SurveyUpdateRequestV2: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              minLength: 1,
+              maxLength: 255,
+              example: "Updated Employee Satisfaction Survey",
+            },
+            description: {
+              type: "string",
+              maxLength: 1000,
+              example: "Updated description for the survey",
+            },
+            status: {
+              type: "string",
+              enum: ["draft", "active", "closed"],
+              example: "active",
+            },
+            isAnonymous: {
+              type: "boolean",
+              example: true,
+            },
+            isMandatory: {
+              type: "boolean",
+              example: false,
+            },
+            startDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T00:00:00Z",
+            },
+            endDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-31T23:59:59Z",
+            },
+            questions: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["questionText", "questionType"],
+                properties: {
+                  questionText: {
+                    type: "string",
+                    minLength: 1,
+                    maxLength: 500,
+                    example: "Updated question text",
+                  },
+                  questionType: {
+                    type: "string",
+                    enum: [
+                      "text",
+                      "single_choice",
+                      "multiple_choice",
+                      "rating",
+                      "number",
+                    ],
+                    example: "rating",
+                  },
+                  isRequired: {
+                    type: "boolean",
+                    example: true,
+                  },
+                  orderPosition: {
+                    type: "integer",
+                    minimum: 1,
+                    example: 1,
+                  },
+                  options: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                    example: ["Option 1", "Option 2", "Option 3"],
+                  },
+                },
+              },
+            },
+          },
+        },
+        // Survey Response Schemas
+        SurveyResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/SurveyV2",
+                },
+              },
+            },
+          ],
+        },
+        SurveyListResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/SurveyListItemV2",
+                  },
+                },
+                pagination: {
+                  $ref: "#/components/schemas/PaginationMeta",
+                },
+              },
+            },
+          ],
+        },
+        SurveyTemplateResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/SurveyTemplateV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+        SurveyStatisticsResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/SurveyStatisticsV2",
+                },
+              },
+            },
+          ],
+        },
       },
 
       // Common Parameters

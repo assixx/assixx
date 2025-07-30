@@ -15,14 +15,14 @@ import request from "supertest";
 import { Pool } from "mysql2/promise";
 import path from "path";
 import fs from "fs/promises";
-import app from "../../app.js";
+import app from "../../../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
   createTestTenant,
   createTestUser,
   createTestDepartment,
-} from "../mocks/database.js";
+} from "../../../mocks/database.js";
 
 describe("Users v2 API Endpoints", () => {
   let testDb: Pool;

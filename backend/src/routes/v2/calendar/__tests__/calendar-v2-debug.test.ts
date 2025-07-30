@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "@jest/globals";
 import request from "supertest";
 import { Pool } from "mysql2/promise";
-import app from "../../app.js";
+import app from "../../../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
   createTestTenant,
   createTestUser,
-} from "../mocks/database.js";
+} from "../../../mocks/database.js";
 
 describe("DEBUG Calendar v2 Test User Creation", () => {
   let testDb: Pool;
