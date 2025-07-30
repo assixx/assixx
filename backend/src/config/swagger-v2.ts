@@ -2076,6 +2076,632 @@ const options: swaggerJsdoc.Options = {
           },
           required: ["id", "comment", "isInternal", "userId", "createdAt"],
         },
+
+        // Shifts API v2 Schemas
+        ShiftV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            planId: {
+              type: "integer",
+              nullable: true,
+              example: 10,
+            },
+            userId: {
+              type: "integer",
+              example: 42,
+            },
+            templateId: {
+              type: "integer",
+              nullable: true,
+              example: 5,
+            },
+            date: {
+              type: "string",
+              format: "date",
+              example: "2025-01-20",
+            },
+            startTime: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-20T08:00:00.000Z",
+            },
+            endTime: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-20T16:00:00.000Z",
+            },
+            title: {
+              type: "string",
+              nullable: true,
+              example: "Morning Shift",
+            },
+            requiredEmployees: {
+              type: "integer",
+              example: 3,
+            },
+            actualStart: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-20T08:05:00.000Z",
+            },
+            actualEnd: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-20T16:10:00.000Z",
+            },
+            breakMinutes: {
+              type: "integer",
+              example: 30,
+            },
+            status: {
+              type: "string",
+              enum: [
+                "planned",
+                "confirmed",
+                "in_progress",
+                "completed",
+                "cancelled",
+              ],
+              example: "confirmed",
+            },
+            type: {
+              type: "string",
+              enum: [
+                "regular",
+                "overtime",
+                "standby",
+                "vacation",
+                "sick",
+                "holiday",
+              ],
+              example: "regular",
+            },
+            notes: {
+              type: "string",
+              nullable: true,
+              example: "Please arrive 10 minutes early for handover",
+            },
+            departmentId: {
+              type: "integer",
+              example: 1,
+            },
+            teamId: {
+              type: "integer",
+              nullable: true,
+              example: 3,
+            },
+            createdBy: {
+              type: "integer",
+              example: 1,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T15:30:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "userId",
+            "date",
+            "startTime",
+            "endTime",
+            "departmentId",
+          ],
+        },
+        ShiftTemplateV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            name: {
+              type: "string",
+              example: "Early Shift",
+            },
+            startTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              example: "06:00",
+            },
+            endTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              example: "14:00",
+            },
+            breakMinutes: {
+              type: "integer",
+              example: 30,
+            },
+            color: {
+              type: "string",
+              pattern: "^#[0-9A-Fa-f]{6}$",
+              example: "#3498db",
+            },
+            isNightShift: {
+              type: "boolean",
+              example: false,
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T15:30:00.000Z",
+            },
+          },
+          required: ["id", "name", "startTime", "endTime"],
+        },
+        ShiftSwapRequestV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            shiftId: {
+              type: "integer",
+              example: 10,
+            },
+            requestedBy: {
+              type: "integer",
+              example: 42,
+            },
+            requestedWith: {
+              type: "integer",
+              nullable: true,
+              example: 43,
+            },
+            reason: {
+              type: "string",
+              nullable: true,
+              example: "Medical appointment",
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "approved", "rejected", "cancelled"],
+              example: "pending",
+            },
+            approvedBy: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T15:30:00.000Z",
+            },
+          },
+          required: ["id", "shiftId", "requestedBy", "status"],
+        },
+        CreateShiftRequestV2: {
+          type: "object",
+          properties: {
+            userId: {
+              type: "integer",
+              example: 42,
+            },
+            date: {
+              type: "string",
+              format: "date",
+              example: "2025-01-20",
+            },
+            startTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              example: "08:00",
+            },
+            endTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              example: "16:00",
+            },
+            departmentId: {
+              type: "integer",
+              example: 1,
+            },
+            planId: {
+              type: "integer",
+              nullable: true,
+            },
+            templateId: {
+              type: "integer",
+              nullable: true,
+            },
+            title: {
+              type: "string",
+              nullable: true,
+            },
+            requiredEmployees: {
+              type: "integer",
+              nullable: true,
+            },
+            breakMinutes: {
+              type: "integer",
+              nullable: true,
+            },
+            status: {
+              type: "string",
+              enum: [
+                "planned",
+                "confirmed",
+                "in_progress",
+                "completed",
+                "cancelled",
+              ],
+              nullable: true,
+            },
+            type: {
+              type: "string",
+              enum: [
+                "regular",
+                "overtime",
+                "standby",
+                "vacation",
+                "sick",
+                "holiday",
+              ],
+              nullable: true,
+            },
+            notes: {
+              type: "string",
+              nullable: true,
+            },
+            teamId: {
+              type: "integer",
+              nullable: true,
+            },
+          },
+          required: ["userId", "date", "startTime", "endTime", "departmentId"],
+        },
+        UpdateShiftRequestV2: {
+          type: "object",
+          properties: {
+            userId: {
+              type: "integer",
+              nullable: true,
+            },
+            date: {
+              type: "string",
+              format: "date",
+              nullable: true,
+            },
+            startTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              nullable: true,
+            },
+            endTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              nullable: true,
+            },
+            actualStart: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)$",
+              nullable: true,
+            },
+            actualEnd: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d):([0-5]\\d)$",
+              nullable: true,
+            },
+            departmentId: {
+              type: "integer",
+              nullable: true,
+            },
+            planId: {
+              type: "integer",
+              nullable: true,
+            },
+            templateId: {
+              type: "integer",
+              nullable: true,
+            },
+            title: {
+              type: "string",
+              nullable: true,
+            },
+            requiredEmployees: {
+              type: "integer",
+              nullable: true,
+            },
+            breakMinutes: {
+              type: "integer",
+              nullable: true,
+            },
+            status: {
+              type: "string",
+              enum: [
+                "planned",
+                "confirmed",
+                "in_progress",
+                "completed",
+                "cancelled",
+              ],
+              nullable: true,
+            },
+            type: {
+              type: "string",
+              enum: [
+                "regular",
+                "overtime",
+                "standby",
+                "vacation",
+                "sick",
+                "holiday",
+              ],
+              nullable: true,
+            },
+            notes: {
+              type: "string",
+              nullable: true,
+            },
+            teamId: {
+              type: "integer",
+              nullable: true,
+            },
+          },
+        },
+        CreateTemplateRequestV2: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              example: "Early Shift",
+            },
+            startTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              example: "06:00",
+            },
+            endTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              example: "14:00",
+            },
+            breakMinutes: {
+              type: "integer",
+              nullable: true,
+              example: 30,
+            },
+            color: {
+              type: "string",
+              pattern: "^#[0-9A-Fa-f]{6}$",
+              nullable: true,
+              example: "#3498db",
+            },
+            isNightShift: {
+              type: "boolean",
+              nullable: true,
+              example: false,
+            },
+            isActive: {
+              type: "boolean",
+              nullable: true,
+              example: true,
+            },
+          },
+          required: ["name", "startTime", "endTime"],
+        },
+        UpdateTemplateRequestV2: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              nullable: true,
+            },
+            startTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              nullable: true,
+            },
+            endTime: {
+              type: "string",
+              pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              nullable: true,
+            },
+            breakMinutes: {
+              type: "integer",
+              nullable: true,
+            },
+            color: {
+              type: "string",
+              pattern: "^#[0-9A-Fa-f]{6}$",
+              nullable: true,
+            },
+            isNightShift: {
+              type: "boolean",
+              nullable: true,
+            },
+            isActive: {
+              type: "boolean",
+              nullable: true,
+            },
+          },
+        },
+        CreateSwapRequestV2: {
+          type: "object",
+          properties: {
+            shiftId: {
+              type: "integer",
+              example: 10,
+            },
+            requestedWithUserId: {
+              type: "integer",
+              nullable: true,
+              example: 43,
+            },
+            reason: {
+              type: "string",
+              nullable: true,
+              example: "Medical appointment",
+            },
+          },
+          required: ["shiftId"],
+        },
+        ShiftResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/ShiftV2",
+                },
+              },
+            },
+          ],
+        },
+        ShiftListResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/ShiftV2",
+                  },
+                },
+                pagination: {
+                  $ref: "#/components/schemas/PaginationMeta",
+                },
+              },
+            },
+          ],
+        },
+        TemplateResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/ShiftTemplateV2",
+                },
+              },
+            },
+          ],
+        },
+        TemplateListResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/ShiftTemplateV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+        SwapRequestResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/ShiftSwapRequestV2",
+                },
+              },
+            },
+          ],
+        },
+        SwapRequestListResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/ShiftSwapRequestV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+        OvertimeReportResponseV2: {
+          allOf: [
+            { $ref: "#/components/schemas/BaseResponseV2" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    userId: {
+                      type: "integer",
+                      example: 42,
+                    },
+                    startDate: {
+                      type: "string",
+                      format: "date",
+                      example: "2025-01-01",
+                    },
+                    endDate: {
+                      type: "string",
+                      format: "date",
+                      example: "2025-01-31",
+                    },
+                    totalHours: {
+                      type: "number",
+                      example: 45.5,
+                    },
+                    overtimeHours: {
+                      type: "number",
+                      example: 5.5,
+                    },
+                    regularHours: {
+                      type: "number",
+                      example: 40,
+                    },
+                    shifts: {
+                      type: "array",
+                      items: {
+                        $ref: "#/components/schemas/ShiftV2",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
       },
 
       // Common Parameters

@@ -80,7 +80,7 @@ interface ShiftTemplate {
   start_time: string;
   end_time: string;
   duration_hours: number;
-  break_duration_minutes: number;
+  break_minutes: number;
   color: string;
   is_active: boolean | number;
   created_by: number;
@@ -226,7 +226,7 @@ class ShiftService {
     description?: string | null;
     start_time: string;
     end_time: string;
-    break_duration_minutes?: number;
+    break_minutes?: number;
     color?: string;
     created_by: number;
   }): Promise<ShiftTemplate> {

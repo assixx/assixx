@@ -23,8 +23,9 @@ interface JWTPayload {
   id: number;
   email: string;
   role: string;
-  tenantId: number;
-  type: "access" | "refresh";
+  tenantId?: number;
+  tenant_id?: number; // Support both formats
+  type?: "access" | "refresh"; // v1 tokens don't have this
   // Role switch fields
   activeRole?: string;
   isRoleSwitched?: boolean;
@@ -68,9 +69,14 @@ async function verifyAccessToken(token: string): Promise<JWTPayload | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
 
-    // Ensure it's an access token
-    if (decoded.type !== "access") {
+    // v1 tokens don't have type field, allow them
+    if (decoded.type && decoded.type !== "access") {
       return null;
+    }
+
+    // Normalize tenant_id to tenantId
+    if (!decoded.tenantId && decoded.tenant_id) {
+      decoded.tenantId = decoded.tenant_id;
     }
 
     return decoded;
@@ -157,8 +163,20 @@ export async function authenticateV2(
       return;
     }
 
+    // Get tenant ID from decoded token (support both formats)
+    const tenantId = decoded.tenantId ?? decoded.tenant_id;
+
+    if (!tenantId) {
+      res
+        .status(401)
+        .json(
+          errorResponse("INVALID_TOKEN", "Token missing tenant information"),
+        );
+      return;
+    }
+
     // Get fresh user details from database
-    const userDetails = await getUserDetails(decoded.id, decoded.tenantId);
+    const userDetails = await getUserDetails(decoded.id, tenantId);
 
     if (!userDetails) {
       res

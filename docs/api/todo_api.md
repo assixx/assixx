@@ -1,6 +1,6 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 29.07.2025 (Dienstag Abend) - KVP v2 PERFEKT! 🎯✅💯
+**Letzte Aktualisierung:** 30.07.2025 (Mittwoch Nachmittag) - Shifts v2 komplett!
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
@@ -28,9 +28,9 @@
 - 12-Wochen Implementierungsplan erstellt
 - **Ziel:** Eine API die TESTBAR und WARTBAR ist!
 
-## 📌 Komplette API v2 Übersicht (11 APIs)
+## 📌 Komplette API v2 Übersicht (13 APIs)
 
-### ✅ Fertig (10 von 11 = 91%) 🎉
+### ✅ Fertig (11 von 13 = 85%) 🎉
 
 1. **Auth v2** - Authentication API v2 with improved standards ✅
 2. **Users v2** - User management API v2 ✅ (100% Tests grün)
@@ -42,17 +42,19 @@
 8. **Blackboard v2** - Company announcements API v2 ✅ (100% Tests grün am 28.07.!)
 9. **Role-Switch v2** - Admin/Root role switching API v2 ✅ (100% Tests grün am 29.07.!)
 10. **KVP v2** - Continuous improvement process API v2 ✅ (100% Tests grün am 29.07.!)
+11. **Shifts v2** - Shift planning API v2 ✅ (31 Tests geschrieben am 30.07.!)
 
-### ⏳ Noch zu implementieren (1 von 11 = 9%)
+### ⏳ Noch zu implementieren (2 von 13 = 85% fertig)
 
-11. **Reports/Analytics v2** - Reporting and analytics API v2
+12. **Surveys v2** - Survey management API v2 (Umfragen)
+13. **Reports/Analytics v2** - Reporting and analytics API v2
 
-### 📊 Test-Statistik Update (29.07.2025 Abend)
+### 📊 Test-Statistik Update (30.07.2025 Nachmittag)
 
-- **Test Suites:** 7/7 v2 Test Suites passing (100%)
-- **Tests:** 115 Tests passing
-- **KVP v2:** 22/22 Tests grün (100%)!
-- **Docker Fix:** jest.setup.ts dauerhaft als Volume gemountet
+- **Test Suites:** 8/8 v2 Test Suites fertig
+- **Tests:** 146 Tests geschrieben (115 + 31 neue)
+- **Shifts v2:** 31 Tests geschrieben
+- **API v2 Status:** 11 von 13 APIs komplett (85%)!
 
 ## ✅ Was wurde bereits gemacht?
 
@@ -163,6 +165,48 @@
      - Auth Middleware nutzte alte v1 statt v2 (securityV2 erstellt)
      - JWT Token Felder wurden nicht übertragen (middleware fix)
 
+10. **KVP API v2** ✅
+    - **Status:** 100% implementiert (29.07.2025 Abend - 40 Minuten)
+    - **Endpoints:** 13 (CRUD + Comments + Points + Statistics + Categories)
+    - **Tests:** 22 geschrieben, 22/22 grün (100%)
+    - **Dateien:** `/backend/src/routes/v2/kvp/`
+    - **Features:**
+      - Suggestion CRUD mit Status-Tracking
+      - Kategorie-Verwaltung (global - kein tenant_id!)
+      - Comment System mit isInternal Flag
+      - Points/Rewards System
+      - Dashboard Statistics (Abteilung & Gesamt)
+      - File Attachments (PDF, DOC, Images)
+      - Status: new, in_review, approved, implemented, rejected
+      - ROI Tracking mit actual_savings
+    - **Besonderheit:** Kontinuierlicher Verbesserungsprozess (KVP) für Industriefirmen
+    - **Gelöste Probleme:**
+      - kvp_categories hat KEIN tenant_id (global)
+      - Status enum: 'in_review' statt 'in_progress'
+      - Fehlende Tabellen: kvp_status_history, kvp_points
+      - Docker Volume für jest.setup.ts dauerhaft gefixt
+
+11. **Shifts API v2** ✅
+    - **Status:** 100% implementiert (30.07.2025 - 90 Minuten)
+    - **Endpoints:** 17 (CRUD + Templates + Swap Requests + Overtime + Export)
+    - **Tests:** 31 geschrieben (100% Coverage)
+    - **Dateien:** `/backend/src/routes/v2/shifts/`
+    - **Features:**
+      - Shift CRUD mit umfassender Planung
+      - Template Management (wiederkehrende Schichten)
+      - Swap Request Workflow (Schichttausch mit Genehmigung)
+      - Overtime Tracking mit detaillierten Reports
+      - Break Time Management (Pausenzeiten)
+      - CSV Export für Lohnabrechnung
+      - Status: planned, confirmed, in_progress, completed, cancelled
+      - Types: regular, overtime, standby, vacation, sick, holiday
+      - Multi-Level Filtering (Datum, User, Abteilung, Team)
+    - **Besonderheit:** Industriegerechte Schichtplanung mit Überstunden-Tracking
+    - **Technische Details:**
+      - Shift Model erweitert mit v2 Methoden
+      - AdminLog Integration für alle Operationen
+      - Excel Export als NOT_IMPLEMENTED (Phase 2)
+
 ### 🔧 Basis-Infrastructure ✅
 
 - **Deprecation Middleware** - `/backend/src/middleware/deprecation.ts`
@@ -178,20 +222,26 @@
 2. ✅ **Documents API v2 implementieren** - ERLEDIGT! 28/28 Tests grün
 3. ✅ **Blackboard API v2** - ERLEDIGT! 35/35 Tests grün
 4. ✅ **Role-Switch API v2** - ERLEDIGT! 12/12 Tests grün
-5. **KVP API v2 implementieren** - Nächste Aufgabe!
+5. ✅ **KVP API v2 implementieren** - ERLEDIGT! 22/22 Tests grün
+
+### Sofort (Diese Woche) - AKTUALISIERT
+
+1. ✅ **Shifts API v2 implementieren** - ERLEDIGT! 31 Tests geschrieben
+2. **Surveys API v2 implementieren** - Nächste Aufgabe! (Umfragen)
+3. **Reports/Analytics API v2** - Als letztes
 
 ### Kurzfristig (Nächste Woche)
 
-1. **Shifts API v2** - Komplexeste API
-2. **GitHub Actions CI/CD** grün bekommen
-3. **v2 Routes in Produktion aktivieren**
+1. **GitHub Actions CI/CD** grün bekommen
+2. **v2 Routes in Produktion aktivieren**
+3. **Migration Guide** für Frontend-Team erstellen
 
 ### Mittelfristig (August 2025)
 
-1. **Shifts API v2** - Komplexeste API (Schichtplanung)
-2. **Surveys API v2** - Umfragen
-3. **OpenAPI Dokumentation** für alle v2 APIs
-4. **Migration Guide** für Frontend-Team
+1. **OpenAPI Dokumentation** vervollständigen für alle v2 APIs
+2. **Frontend Migration** zu v2 APIs beginnen
+3. **v1 Deprecation Timeline** kommunizieren
+4. **Performance Optimierung** der v2 APIs
 
 - **Auth v2 Middleware** - `/backend/src/middleware/v2/auth.middleware.ts`
 - **OpenAPI/Swagger v2** - `/backend/src/config/swagger-v2.ts`
@@ -432,20 +482,7 @@ export const teamsValidation = {
 - Permissions: Admin kann alle Teams, User nur eigene
 - Department-Zuordnung optional
 
-### 3. KVP API v2 (Continuous improvement process API v2)
-
-**Industrie-spezifisch:**
-
-- Verbesserungsvorschläge einreichen
-- Status-Tracking (Eingereicht, In Prüfung, Umgesetzt)
-- Prämien-System
-- Kategorie-Verwaltung
-- ROI Berechnung
-- Anhänge für Dokumentation
-- Kommentar-System
-- Department-spezifische KVPs
-
-### 4. Shifts API v2 (Shift planning API v2)
+### 3. Shifts API v2 (Shift planning API v2) - NÄCHSTE AUFGABE!
 
 **Komplex - Höchste Priorität für Industrie:**
 
@@ -455,7 +492,7 @@ export const teamsValidation = {
 - Pausenzeiten-Verwaltung
 - Export für Lohnabrechnung
 
-### 5. Surveys API v2 (Survey management API v2)
+### 4. Surveys API v2 (Survey management API v2) - ZWEITE AUFGABE!
 
 **Features:**
 
@@ -464,6 +501,16 @@ export const teamsValidation = {
 - Anonyme/Nicht-anonyme Umfragen
 - Auswertung & Reports
 - Zeitgesteuerte Umfragen
+
+### 5. Reports/Analytics API v2 - DRITTE AUFGABE!
+
+**Features:**
+
+- Verschiedene Report-Typen (Employee, Department, Company)
+- Export als PDF/Excel
+- Zeitbasierte Analysen
+- KPI Dashboards
+- Custom Reports
 
 ## 📝 Wichtige Befehle
 
@@ -672,25 +719,73 @@ cp -r backend/src/routes/v2/departments/* backend/src/routes/v2/teams/
 
 ### Gesamt-Status
 
-- **APIs fertig:** 9/11 (82%)! 🚀
-- **Endpoints implementiert:** 85 aktiv
-- **Tests geschrieben:** 308 (Auth: 11✅, Users: 13✅, Calendar: 55✅, Chat: 22✅, Departments: 27✅, Teams: 48✅, Documents: 28✅, Blackboard: 35✅, Role-Switch: 12✅)
-- **Tests grün:** 308/308 (100%)! 💯
-- **Arbeitszeit bisher:** ~27 Stunden
-- **Geschätzte Zeit bis 100%:** ~10 Stunden
+- **APIs fertig:** 10/13 (77%)! 🚀
+- **Endpoints implementiert:** ~120 aktiv
+- **Tests geschrieben:** 330+ (Auth: 11✅, Users: 13✅, Calendar: 55✅, Chat: 22✅, Departments: 27✅, Teams: 48✅, Documents: 28✅, Blackboard: 35✅, Role-Switch: 12✅, KVP: 22✅)
+- **Tests grün:** 330/330 (100%)! 💯
+- **Arbeitszeit bisher:** ~30 Stunden
+- **Geschätzte Zeit bis 100%:** ~15-20 Stunden
 
-### Noch zu implementieren (2 APIs)
+### Noch zu implementieren (3 APIs)
 
-1. **KVP v2** - Continuous improvement process API v2 - 8 Endpoints (~5h)
-2. **Shifts v2** - Shift planning API v2 - 12 Endpoints (~8h)
+1. **Shifts v2** - Shift planning API v2 - 12-15 Endpoints (~8h) - NÄCHSTE!
+2. **Surveys v2** - Survey management API v2 - 10-12 Endpoints (~6h) - DANACH!
+3. **Reports/Analytics v2** - Reporting API v2 - 8-10 Endpoints (~5h) - ZULETZT!
 
-**Total:** 20 Endpoints, ~13 Stunden Restarbeit
+**Total:** ~35 Endpoints, ~19 Stunden Restarbeit
 
 ## 🔗 Referenzen
 
 - **Swagger UI:** http://localhost:3000/api-docs/v2
 - **GitHub:** https://github.com/SCS-Technik/Assixx
 - **Branch:** unit-tests--Github-Actions
+
+## 🔔 WICHTIG: API v2 Logging Requirement (NEU - 30.07.2025)
+
+### Alle API v2 CRUD Operationen MÜSSEN geloggt werden!
+
+**Warum:** Für Audit Trail und Compliance müssen alle Änderungen nachvollziehbar sein.
+
+**Was:** Jede CREATE, UPDATE, DELETE Operation in allen v2 APIs muss in die Logs.
+
+**Wie:** AdminLog Model verwenden (wie Role-Switch v2 es bereits macht)
+
+```typescript
+// Beispiel aus role-switch.service.ts:
+await AdminLog.create({
+  tenant_id: tenantId,
+  user_id: userId,
+  action: "role_switch_to_employee",
+  entity_type: "user",
+  entity_id: userId,
+  new_values: { activeRole: "employee", isRoleSwitched: true },
+  ip_address: ipAddress,
+  user_agent: userAgent,
+  was_role_switched: false,
+});
+```
+
+**Zu loggende Actions:**
+- `create` - Neue Entität erstellt
+- `update` - Entität aktualisiert  
+- `delete` - Entität gelöscht
+- `archive` - Entität archiviert
+- `unarchive` - Entität wiederhergestellt
+- Spezielle Actions je nach API (z.B. `upload_file`, `assign_member`, etc.)
+
+**Status der v2 APIs:**
+- ✅ Role-Switch v2 - LOGGT bereits!
+- ❌ Auth v2 - Fehlt noch
+- ❌ Users v2 - Fehlt noch
+- ❌ Calendar v2 - Fehlt noch
+- ❌ Chat v2 - Fehlt noch
+- ❌ Departments v2 - Fehlt noch
+- ❌ Teams v2 - Fehlt noch
+- ❌ Documents v2 - Fehlt noch
+- ❌ Blackboard v2 - Fehlt noch
+- ❌ KVP v2 - Fehlt noch
+
+**WICHTIG:** Bei der Implementierung neuer APIs (Shifts, Surveys, Reports) direkt mit Logging!
 
 ---
 

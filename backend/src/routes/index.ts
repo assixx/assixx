@@ -41,6 +41,7 @@ import departmentsV2Routes from "./v2/departments";
 import documentsV2Routes from "./v2/documents";
 import kvpV2Routes from "./v2/kvp";
 import roleSwitchV2Routes from "./v2/role-switch";
+import shiftsV2Routes from "./v2/shifts";
 import teamsV2Routes from "./v2/teams";
 import usersV2Routes from "./v2/users";
 
@@ -75,6 +76,8 @@ console.log("[DEBUG] Mounting v2 role-switch routes at /api/v2/role-switch");
 router.use("/api/v2/role-switch", roleSwitchV2Routes);
 console.log("[DEBUG] Mounting v2 kvp routes at /api/v2/kvp");
 router.use("/api/v2/kvp", kvpV2Routes);
+console.log("[DEBUG] Mounting v2 shifts routes at /api/v2/shifts");
+router.use("/api/v2/shifts", shiftsV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");

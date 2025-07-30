@@ -164,6 +164,24 @@ Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente un
 - Department-specific filtering
 - Multi-tenant isolation
 
+### 13. Shifts API v2 (30.07.2025)
+
+**17 Endpoints implementiert** - Shift planning and management
+
+**Features:**
+
+- Shift CRUD with comprehensive planning
+- Shift template management
+- Swap request workflow (create, approve, reject)
+- Overtime tracking with detailed reports
+- Break time management
+- CSV export for payroll systems
+- Multi-level filtering (date, user, department, team)
+- Status tracking (planned, confirmed, in_progress, completed, cancelled)
+- Type classification (regular, overtime, standby, vacation, sick, holiday)
+- AdminLog integration for all operations
+- Multi-tenant isolation
+
 ## 📊 Test-Beispiele
 
 ### Login
@@ -203,23 +221,24 @@ curl -X POST http://localhost:3000/api/v2/auth/login \
 
 ## 📅 Geplant
 
-1. **Teams API v2** (KW 30-31)
-2. **Documents API v2** (KW 32-33)
-3. **Blackboard API v2** (KW 34-35)
-4. **KVP API v2** (KW 36-37)
-5. **Shifts API v2** (KW 38-39)
-6. **Surveys API v2** (KW 40-41)
+1. **Surveys API v2** - Umfrage-System mit Auswertungen
+2. **Reports/Analytics API v2** - Reporting und Dashboards
 
-## ✅ Kürzlich abgeschlossen (Stand: 26.07.2025)
+## ✅ Kürzlich abgeschlossen (Stand: 30.07.2025)
 
-- **Auth API v2** - Vollständig implementiert mit 6 Endpoints + ✅ Tests laufen alle (26.07.)
+- **Auth API v2** - Vollständig implementiert mit 6 Endpoints + ✅ Tests laufen alle
 - **Users API v2** - 13 Endpoints implementiert + Tests
 - **Calendar API v2** - 10 Endpoints implementiert + 55 Tests
 - **Chat API v2** - 13 aktive Endpoints (von 18 geplant)
 - **Departments API v2** - 7 Endpoints implementiert
-- **Auth v2 Test Debugging** - Alle 11 Tests erfolgreich gefixt (26.07.)
+- **Teams API v2** - 8 Endpoints implementiert + Tests
+- **Documents API v2** - 10 Endpoints implementiert + Tests
+- **Blackboard API v2** - 15 Endpoints implementiert + Tests
+- **Role-Switch API v2** - 4 Endpoints implementiert + Tests
+- **KVP API v2** - 15 Endpoints implementiert + Tests
+- **Shifts API v2** - 17 Endpoints implementiert + Tests (30.07.)
 
-**Fortschritt: 5 von 11 APIs fertig (45%)** 🚀
+**Fortschritt: 11 von 13 APIs fertig (85%)** 🚀
 
 ## 🔧 Technische Details
 

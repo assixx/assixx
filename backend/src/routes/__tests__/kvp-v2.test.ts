@@ -39,17 +39,14 @@ describe("KVP API v2", () => {
     testDb = await createTestDatabase();
 
     // Create test tenant
-    tenantId = await createTestTenant(
-      testDb,
-      "kvp-test",
-      "Test KVP Tenant",
-    );
+    tenantId = await createTestTenant(testDb, "kvp-test", "Test KVP Tenant");
 
     // Create test department
-    departmentId = await createTestDepartment(testDb, {
-      name: "Test Department",
-      tenant_id: tenantId,
-    });
+    departmentId = await createTestDepartment(
+      testDb,
+      tenantId,
+      "Test Department",
+    );
   });
 
   afterAll(async () => {
@@ -59,13 +56,30 @@ describe("KVP API v2", () => {
 
   beforeEach(async () => {
     // Clean up existing test data
-    await testDb.execute("DELETE FROM kvp_attachments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)", [tenantId]);
-    await testDb.execute("DELETE FROM kvp_comments WHERE tenant_id = ?", [tenantId]);
-    await testDb.execute("DELETE FROM kvp_points WHERE tenant_id = ?", [tenantId]);
-    await testDb.execute("DELETE FROM kvp_ratings WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)", [tenantId]);
-    await testDb.execute("DELETE FROM kvp_status_history WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)", [tenantId]);
-    await testDb.execute("DELETE FROM kvp_suggestions WHERE tenant_id = ?", [tenantId]);
-    await testDb.execute("DELETE FROM kvp_categories WHERE tenant_id = ?", [tenantId]);
+    await testDb.execute(
+      "DELETE FROM kvp_attachments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)",
+      [tenantId],
+    );
+    await testDb.execute("DELETE FROM kvp_comments WHERE tenant_id = ?", [
+      tenantId,
+    ]);
+    await testDb.execute("DELETE FROM kvp_points WHERE tenant_id = ?", [
+      tenantId,
+    ]);
+    await testDb.execute(
+      "DELETE FROM kvp_ratings WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)",
+      [tenantId],
+    );
+    await testDb.execute(
+      "DELETE FROM kvp_status_history WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)",
+      [tenantId],
+    );
+    await testDb.execute("DELETE FROM kvp_suggestions WHERE tenant_id = ?", [
+      tenantId,
+    ]);
+    await testDb.execute("DELETE FROM kvp_categories WHERE tenant_id = ?", [
+      tenantId,
+    ]);
 
     // Create test category
     const [categoryResult] = await testDb.execute<ResultSetHeader>(
@@ -112,12 +126,26 @@ describe("KVP API v2", () => {
   afterEach(async () => {
     // Clean up test data in correct order
     if (testSuggestionId) {
-      await testDb.execute("DELETE FROM kvp_attachments WHERE suggestion_id = ?", [testSuggestionId]);
-      await testDb.execute("DELETE FROM kvp_comments WHERE suggestion_id = ?", [testSuggestionId]);
-      await testDb.execute("DELETE FROM kvp_ratings WHERE suggestion_id = ?", [testSuggestionId]);
-      await testDb.execute("DELETE FROM kvp_status_history WHERE suggestion_id = ?", [testSuggestionId]);
-      await testDb.execute("DELETE FROM kvp_points WHERE suggestion_id = ?", [testSuggestionId]);
-      await testDb.execute("DELETE FROM kvp_suggestions WHERE id = ?", [testSuggestionId]);
+      await testDb.execute(
+        "DELETE FROM kvp_attachments WHERE suggestion_id = ?",
+        [testSuggestionId],
+      );
+      await testDb.execute("DELETE FROM kvp_comments WHERE suggestion_id = ?", [
+        testSuggestionId,
+      ]);
+      await testDb.execute("DELETE FROM kvp_ratings WHERE suggestion_id = ?", [
+        testSuggestionId,
+      ]);
+      await testDb.execute(
+        "DELETE FROM kvp_status_history WHERE suggestion_id = ?",
+        [testSuggestionId],
+      );
+      await testDb.execute("DELETE FROM kvp_points WHERE suggestion_id = ?", [
+        testSuggestionId,
+      ]);
+      await testDb.execute("DELETE FROM kvp_suggestions WHERE id = ?", [
+        testSuggestionId,
+      ]);
     }
   });
 
@@ -150,7 +178,8 @@ describe("KVP API v2", () => {
       it("should create a new suggestion", async () => {
         const suggestionData = {
           title: "Improve production workflow",
-          description: "By implementing lean manufacturing principles, we can reduce waste and improve efficiency",
+          description:
+            "By implementing lean manufacturing principles, we can reduce waste and improve efficiency",
           categoryId,
           orgLevel: "department",
           orgId: departmentId,
@@ -281,7 +310,9 @@ describe("KVP API v2", () => {
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        expect(response.body.data.every((s: any) => s.status === "new")).toBe(true);
+        expect(response.body.data.every((s: any) => s.status === "new")).toBe(
+          true,
+        );
       });
 
       it("should respect employee visibility rules", async () => {
@@ -292,9 +323,6 @@ describe("KVP API v2", () => {
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         // Employee should see their own suggestions and implemented ones
-        const statuses = response.body.data.map((s: any) => s.status);
-        const submitters = response.body.data.map((s: any) => s.submittedBy);
-        
         response.body.data.forEach((suggestion: any) => {
           const isOwnSuggestion = suggestion.submittedBy === employeeUserId;
           const isImplemented = suggestion.status === "implemented";
@@ -583,12 +611,24 @@ describe("KVP API v2", () => {
         (?, 'Implemented 2', 'Desc', ?, 'company', 0, ?, 'normal', 'implemented', 5000, NOW(), NOW()),
         (?, 'Rejected', 'Desc', ?, 'company', 0, ?, 'low', 'rejected', NULL, NOW(), NOW())`,
         [
-          tenantId, categoryId, adminUserId,
-          tenantId, categoryId, adminUserId,
-          tenantId, categoryId, adminUserId,
-          tenantId, categoryId, adminUserId,
-          tenantId, categoryId, adminUserId,
-          tenantId, categoryId, adminUserId,
+          tenantId,
+          categoryId,
+          adminUserId,
+          tenantId,
+          categoryId,
+          adminUserId,
+          tenantId,
+          categoryId,
+          adminUserId,
+          tenantId,
+          categoryId,
+          adminUserId,
+          tenantId,
+          categoryId,
+          adminUserId,
+          tenantId,
+          categoryId,
+          adminUserId,
         ],
       );
     });
@@ -679,7 +719,14 @@ describe("KVP API v2", () => {
       await testDb.execute(
         `INSERT INTO kvp_points (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [tenantId, employeeUserId, testSuggestionId, 100, "submission", adminUserId],
+        [
+          tenantId,
+          employeeUserId,
+          testSuggestionId,
+          100,
+          "submission",
+          adminUserId,
+        ],
       );
 
       const response = await request(app)

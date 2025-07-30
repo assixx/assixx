@@ -68,6 +68,9 @@ services:
       - ../jest.setup.ts:/app/jest.setup.ts:delegated
       - ../jest.globalSetup.js:/app/jest.globalSetup.js:delegated
       - ../jest.globalTeardown.js:/app/jest.globalTeardown.js:delegated
+      - ../.prettierignore:/app/.prettierignore:delegated
+      - ../.prettierrc.json:/app/.prettierrc.json:delegated
+      - ../nodemon.json:/app/nodemon.json:delegated
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
