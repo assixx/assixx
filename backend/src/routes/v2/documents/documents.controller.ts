@@ -121,7 +121,10 @@ export const uploadMiddleware = upload.single("document");
  */
 export async function listDocuments(req: AuthenticatedRequest, res: Response) {
   try {
-    logger.info("Documents v2: listDocuments called", { userId: req.user?.id, tenantId: req.user?.tenant_id });
+    logger.info("Documents v2: listDocuments called", {
+      userId: req.user?.id,
+      tenantId: req.user?.tenant_id,
+    });
     const filters = {
       category: req.query.category as string,
       recipientType: req.query.recipientType as string,

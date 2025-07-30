@@ -8,7 +8,7 @@ import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
-import { switchRoleForRoot, switchRole } from '../role-switch';
+import { switchRoleForRoot } from '../role-switch';
 
 // Declare global type for window
 declare global {
@@ -1742,23 +1742,22 @@ class UnifiedNavigation {
               const selectedRole = (option as HTMLElement).dataset.value;
               if (selectedRole) {
                 console.log('[UnifiedNav] Admin switching to role:', selectedRole);
-                
+
                 // Close dropdown
                 dropdownDisplay.classList.remove('active');
                 dropdownOptions.classList.remove('active');
-                
+
                 // Switch role for admin (different API endpoints than root)
                 if (selectedRole === 'admin' || selectedRole === 'employee') {
                   // Admin uses different API endpoints
                   const token = localStorage.getItem('token');
                   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-                  const currentRole = localStorage.getItem('activeRole') ?? 'admin';
-                  
+                  // const currentRole = localStorage.getItem('activeRole') ?? 'admin';
+
                   // Determine endpoint based on target role
-                  const endpoint = selectedRole === 'employee' 
-                    ? '/api/role-switch/to-employee' 
-                    : '/api/role-switch/to-admin';
-                  
+                  const endpoint =
+                    selectedRole === 'employee' ? '/api/role-switch/to-employee' : '/api/role-switch/to-admin';
+
                   try {
                     const response = await fetch(endpoint, {
                       method: 'POST',
@@ -1793,10 +1792,11 @@ class UnifiedNavigation {
                     });
 
                     // Show success message with toast
-                    const message = selectedRole === 'employee' 
-                      ? 'Wechsel zur Mitarbeiter-Ansicht...' 
-                      : 'Wechsel zur Admin-Ansicht...';
-                    
+                    const message =
+                      selectedRole === 'employee'
+                        ? 'Wechsel zur Mitarbeiter-Ansicht...'
+                        : 'Wechsel zur Admin-Ansicht...';
+
                     // Create and show toast notification
                     this.showToast(message, 'success');
 
@@ -2616,9 +2616,10 @@ class UnifiedNavigation {
 
     // Add icon
     const icon = document.createElement('span');
-    icon.innerHTML = type === 'success' 
-      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
-      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+    icon.innerHTML =
+      type === 'success'
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
     toast.prepend(icon);
 
     // Add animation styles if not already added
