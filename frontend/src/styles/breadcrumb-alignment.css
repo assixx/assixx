@@ -61,6 +61,11 @@ body[data-page="blackboard"] #breadcrumb-container + * {
   margin-top: -22px !important;
 }
 
+/* Document Upload - benötigt dieselben Anpassungen wie Admin Dashboard */
+.document-upload #breadcrumb-container + * {
+  margin-top: -22px !important;
+}
+
 /* Root features page - minimal spacing */
 #breadcrumb-container + .plan-header {
   margin-top: -14px !important;

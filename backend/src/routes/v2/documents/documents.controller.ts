@@ -10,11 +10,11 @@
 import { Response } from "express";
 import multer from "multer";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { logger } from "../../../utils/logger.js";
+import { AuthenticatedRequest } from "../../../types/request.types";
+import { successResponse, errorResponse } from "../../../utils/apiResponse";
+import { logger } from "../../../utils/logger";
 
-import { documentsService, ServiceError } from "./documents.service.js";
+import { documentsService, ServiceError } from "./documents.service";
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -121,6 +121,7 @@ export const uploadMiddleware = upload.single("document");
  */
 export async function listDocuments(req: AuthenticatedRequest, res: Response) {
   try {
+    logger.info("Documents v2: listDocuments called", { userId: req.user?.id, tenantId: req.user?.tenant_id });
     const filters = {
       category: req.query.category as string,
       recipientType: req.query.recipientType as string,

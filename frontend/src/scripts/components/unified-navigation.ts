@@ -8,7 +8,7 @@ import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
-import { switchRoleForRoot } from '../role-switch';
+import { switchRoleForRoot, switchRole } from '../role-switch';
 
 // Declare global type for window
 declare global {
@@ -1136,11 +1136,20 @@ class UnifiedNavigation {
             `
                 : userRole === 'admin'
                   ? `
-              <!-- Role Switch Button for Admin -->
-              <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="role-switch-text">Als Mitarbeiter</span>
-              </button>
+              <!-- Role Switch Dropdown for Admin -->
+              <div class="custom-dropdown role-switch-dropdown">
+                <div class="dropdown-display" id="roleSwitchDisplay">
+                  <span>${activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht'}</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="roleSwitchDropdown">
+                  <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
+                  <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
+                </div>
+                <input type="hidden" id="role-switch-value" value="${activeRole ?? 'admin'}" />
+              </div>
             `
                   : ''
             }
@@ -1665,7 +1674,8 @@ class UnifiedNavigation {
                 hiddenInput.value = selectedRole;
               }
 
-              // Call the role switch function
+              // Call the role switch function from role-switch module
+              // This will handle the toast notification
               console.log('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
               await switchRoleForRoot(selectedRole);
             })();
@@ -1683,14 +1693,132 @@ class UnifiedNavigation {
       }
     }
 
-    // Handle admin users with button (existing functionality)
+    // Handle admin users with dropdown (same as root)
     if (userRole === 'admin') {
-      const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
+      const dropdownDisplay = document.getElementById('roleSwitchDisplay');
+      const dropdownOptions = document.getElementById('roleSwitchDropdown');
 
-      if (switchBtn) {
-        console.log('[UnifiedNav] Initializing role switch button for admin user');
+      // Check if already initialized
+      if (dropdownDisplay?.hasAttribute('data-initialized')) {
+        console.log('[UnifiedNav] Role switch dropdown already initialized, skipping');
+        return;
+      }
 
-        // Role-switch module is already imported statically at the top
+      console.log('[UnifiedNav] Looking for dropdown elements for admin user');
+      console.log('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
+      console.log('[UnifiedNav] dropdownOptions:', dropdownOptions);
+
+      if (dropdownDisplay && dropdownOptions) {
+        console.log('[UnifiedNav] Initializing role switch dropdown for admin user');
+
+        // Mark as initialized
+        dropdownDisplay.setAttribute('data-initialized', 'true');
+
+        // Toggle dropdown on click
+        dropdownDisplay.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log('[UnifiedNav] Dropdown clicked');
+
+          const isActive = dropdownDisplay.classList.contains('active');
+
+          if (isActive) {
+            dropdownDisplay.classList.remove('active');
+            dropdownOptions.classList.remove('active');
+            console.log('[UnifiedNav] Dropdown closed');
+          } else {
+            dropdownDisplay.classList.add('active');
+            dropdownOptions.classList.add('active');
+            console.log('[UnifiedNav] Dropdown opened');
+          }
+        });
+
+        // Handle option selection
+        const options = dropdownOptions.querySelectorAll('.dropdown-option');
+        options.forEach((option) => {
+          option.addEventListener('click', (e) => {
+            void (async () => {
+              e.stopPropagation();
+              const selectedRole = (option as HTMLElement).dataset.value;
+              if (selectedRole) {
+                console.log('[UnifiedNav] Admin switching to role:', selectedRole);
+                
+                // Close dropdown
+                dropdownDisplay.classList.remove('active');
+                dropdownOptions.classList.remove('active');
+                
+                // Switch role for admin (different API endpoints than root)
+                if (selectedRole === 'admin' || selectedRole === 'employee') {
+                  // Admin uses different API endpoints
+                  const token = localStorage.getItem('token');
+                  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+                  const currentRole = localStorage.getItem('activeRole') ?? 'admin';
+                  
+                  // Determine endpoint based on target role
+                  const endpoint = selectedRole === 'employee' 
+                    ? '/api/role-switch/to-employee' 
+                    : '/api/role-switch/to-admin';
+                  
+                  try {
+                    const response = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken,
+                      },
+                      credentials: 'include',
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Rollenwechsel fehlgeschlagen');
+                    }
+
+                    const data = await response.json();
+
+                    // Update token and storage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('activeRole', data.user.activeRole);
+
+                    // Also update sessionStorage for compatibility
+                    if (data.user.activeRole === 'employee') {
+                      sessionStorage.setItem('roleSwitch', 'employee');
+                    } else {
+                      sessionStorage.removeItem('roleSwitch');
+                    }
+
+                    // Clear role switch banner dismissal states
+                    ['admin', 'employee'].forEach((role) => {
+                      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+                    });
+
+                    // Show success message with toast
+                    const message = selectedRole === 'employee' 
+                      ? 'Wechsel zur Mitarbeiter-Ansicht...' 
+                      : 'Wechsel zur Admin-Ansicht...';
+                    
+                    // Create and show toast notification
+                    this.showToast(message, 'success');
+
+                    // Redirect to appropriate dashboard
+                    setTimeout(() => {
+                      if (data.user.activeRole === 'admin') {
+                        window.location.href = '/admin-dashboard';
+                      } else {
+                        window.location.href = '/employee-dashboard';
+                      }
+                    }, 1000);
+                  } catch (error) {
+                    console.error('Role switch error:', error);
+                    // Re-enable dropdown on error
+                    dropdownDisplay.style.pointerEvents = '';
+                    dropdownDisplay.style.opacity = '';
+                  }
+                }
+              }
+            })();
+          });
+        });
       }
     }
   }
@@ -2153,7 +2281,7 @@ class UnifiedNavigation {
       if (role !== 'employee' && role !== 'admin') return;
 
       // Fetch all documents with unread status
-      const response = await fetch('/api/documents/v2', {
+      const response = await fetch('/api/v2/documents', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -2162,8 +2290,8 @@ class UnifiedNavigation {
 
       if (response.ok) {
         const result = await response.json();
-        // Backend returns {data: Document[], pagination: {...}}
-        const documents = result.data ?? result.documents ?? [];
+        // Backend returns {data: {documents: Document[], pagination: {...}}}
+        const documents = result.data?.documents ?? result.documents ?? [];
 
         // Count unread documents by category
         const unreadCounts = {
@@ -2458,6 +2586,65 @@ class UnifiedNavigation {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  }
+
+  // Toast notification helper
+  private showToast(message: string, type: 'success' | 'error' = 'success'): void {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 16px 24px;
+      background: ${type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)'};
+      border: 1px solid ${type === 'success' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'};
+      color: ${type === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)'};
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      animation: slideInRight 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `;
+
+    // Add icon
+    const icon = document.createElement('span');
+    icon.innerHTML = type === 'success' 
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+    toast.prepend(icon);
+
+    // Add animation styles if not already added
+    if (!document.getElementById('toast-animations')) {
+      const style = document.createElement('style');
+      style.id = 'toast-animations';
+      style.textContent = `
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+
+    // Remove after delay
+    setTimeout(() => {
+      toast.style.animation = 'slideOutRight 0.3s ease-in';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
 }
 

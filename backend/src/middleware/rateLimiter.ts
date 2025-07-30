@@ -31,7 +31,7 @@ const rateLimiterConfigs = {
   // Authentication endpoints (login, signup)
   [RateLimiterType.AUTH]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: isTestEnv ? 100000 : 500, // Very high limit for tests
+    max: isTestEnv ? 100000 : 5000, // Erhöht von 500 auf 5000 für Entwicklung
     message: "Too many authentication attempts, please try again later.",
     standardHeaders: true,
     legacyHeaders: false,

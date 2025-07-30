@@ -3,15 +3,15 @@
  * Handles all business logic for document management
  */
 
-import Department from "../../../models/department.js";
+import Department from "../../../models/department";
 import Document, {
   DocumentUpdateData,
   DbDocument,
-} from "../../../models/document.js";
-import Team from "../../../models/team.js";
-import User from "../../../models/user.js";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { logger } from "../../../utils/logger.js";
+} from "../../../models/document";
+import Team from "../../../models/team";
+import User from "../../../models/user";
+import { dbToApi } from "../../../utils/fieldMapping";
+import { logger } from "../../../utils/logger";
 
 export class ServiceError extends Error {
   constructor(

@@ -5,11 +5,11 @@
 
 import { Router } from "express";
 
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
+import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
+import { typed } from "../../../utils/routeHandlers";
 
-import * as documentsController from "./documents.controller.js";
-import { documentsValidation } from "./documents.validation.js";
+import * as documentsController from "./documents.controller";
+import { documentsValidation } from "./documents.validation";
 
 const router = Router();
 
