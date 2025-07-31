@@ -6,7 +6,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 import { executeQuery } from "../../../database.js";
-import AdminLog from "../../../models/adminLog.js";
+import { RootLog } from "../../../models/rootLog.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -145,7 +145,7 @@ export async function createNotification(
   );
 
   // Log the action
-  await AdminLog.create({
+  await RootLog.create({
     tenant_id: tenantId,
     user_id: createdBy,
     action: "notification_created",
@@ -263,7 +263,7 @@ export async function deleteNotification(
   ]);
 
   // Log the action
-  await AdminLog.create({
+  await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action: "notification_deleted",
@@ -380,7 +380,7 @@ export async function updatePreferences(
   }
 
   // Log the action
-  await AdminLog.create({
+  await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action: "notification_preferences_updated",

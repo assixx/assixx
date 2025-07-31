@@ -5,7 +5,7 @@
 
 import jwt from "jsonwebtoken";
 
-import AdminLog from "../../../models/adminLog.js";
+import { RootLog } from "../../../models/rootLog.js";
 import User, { DbUser } from "../../../models/user.js";
 
 // Use same JWT_SECRET as auth middleware
@@ -106,7 +106,7 @@ export class RoleSwitchService {
     toRole: string,
     action: string,
   ): Promise<void> {
-    await AdminLog.create({
+    await RootLog.create({
       tenant_id: tenantId,
       user_id: userId,
       action,

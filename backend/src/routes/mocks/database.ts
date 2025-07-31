@@ -946,6 +946,21 @@ export async function cleanupTestData(): Promise<void> {
     await testDb.execute(
       `DELETE FROM departments WHERE tenant_id IN ${testTenantQuery}`,
     );
+
+    // Delete machine-related data (must be before tenants due to foreign key)
+    await testDb.execute(
+      `DELETE FROM machine_metrics WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM machine_documents WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM machine_maintenance_history WHERE tenant_id IN ${testTenantQuery}`,
+    );
+    await testDb.execute(
+      `DELETE FROM machines WHERE tenant_id IN ${testTenantQuery}`,
+    );
+
     await testDb.execute(
       `DELETE FROM tenants WHERE subdomain LIKE '${TEST_DATA_PREFIX}%' OR company_name LIKE '${TEST_DATA_PREFIX}%'`,
     );

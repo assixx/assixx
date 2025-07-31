@@ -7,7 +7,7 @@ import express, { Router } from "express";
 import jwt from "jsonwebtoken";
 
 import { authenticateToken } from "../middleware/auth.js";
-import AdminLog from "../models/adminLog.js";
+import { RootLog } from "../models/rootLog.js";
 import User from "../models/user.js";
 import { getErrorMessage } from "../utils/errorHandler.js";
 import { typed } from "../utils/routeHandlers";
@@ -75,7 +75,7 @@ router.post(
       );
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_to_employee",
@@ -152,7 +152,7 @@ router.post(
       );
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_to_admin",
@@ -227,7 +227,7 @@ router.post(
       );
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_to_root",
@@ -300,7 +300,7 @@ router.post(
       );
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_root_to_admin",

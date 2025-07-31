@@ -785,7 +785,7 @@ describe("Shifts API v2", () => {
 
   // ============= ADMIN LOG TESTS =============
 
-  describe("AdminLog Integration", () => {
+  describe("RootLog Integration", () => {
     it("should log shift creation", async () => {
       const shiftData = {
         userId: employeeUserId,
@@ -801,7 +801,7 @@ describe("Shifts API v2", () => {
         .send(shiftData);
 
       const [logs] = await testDb.execute<any[]>(
-        "SELECT * FROM admin_logs WHERE tenant_id = ? AND entity_type = ? ORDER BY created_at DESC LIMIT 1",
+        "SELECT * FROM root_logs WHERE tenant_id = ? AND entity_type = ? ORDER BY created_at DESC LIMIT 1",
         [tenantId, "shift"],
       );
 
@@ -829,7 +829,7 @@ describe("Shifts API v2", () => {
         .send({ name: "Updated Template" });
 
       const [logs] = await testDb.execute<any[]>(
-        "SELECT * FROM admin_logs WHERE tenant_id = ? AND entity_type = ? AND entity_id = ? ORDER BY created_at DESC LIMIT 1",
+        "SELECT * FROM root_logs WHERE tenant_id = ? AND entity_type = ? AND entity_id = ? ORDER BY created_at DESC LIMIT 1",
         [tenantId, "shift_template", templateId],
       );
 
@@ -872,7 +872,7 @@ describe("Shifts API v2", () => {
         .send({ shiftId, reason: "Test swap" });
 
       const [logs] = await testDb.execute<any[]>(
-        "SELECT * FROM admin_logs WHERE tenant_id = ? AND action = ? ORDER BY created_at DESC LIMIT 1",
+        "SELECT * FROM root_logs WHERE tenant_id = ? AND action = ? ORDER BY created_at DESC LIMIT 1",
         [tenantId, "create_swap_request"],
       );
 

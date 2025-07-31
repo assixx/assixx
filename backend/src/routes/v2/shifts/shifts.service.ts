@@ -5,7 +5,7 @@
 
 import { RowDataPacket } from "mysql2";
 
-import AdminLog from "../../../models/adminLog";
+import { RootLog } from "../../../models/rootLog";
 import Shift from "../../../models/shift";
 import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
 import { logger } from "../../../utils/logger";
@@ -247,7 +247,7 @@ export class ShiftsService {
       const shiftId = await Shift.create(dbData as Partial<DbShiftData>);
 
       // Log the creation
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "create",
@@ -281,7 +281,7 @@ export class ShiftsService {
       await Shift.update(id, dbData as Partial<DbShiftData>, tenantId);
 
       // Log the update
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "update",
@@ -314,7 +314,7 @@ export class ShiftsService {
       await Shift.delete(id, tenantId);
 
       // Log the deletion
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "delete",
@@ -392,7 +392,7 @@ export class ShiftsService {
       );
 
       // Log the creation
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "create",
@@ -440,7 +440,7 @@ export class ShiftsService {
       );
 
       // Log the update
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "update",
@@ -476,7 +476,7 @@ export class ShiftsService {
       await Shift.deleteTemplate(id, tenantId);
 
       // Log the deletion
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "delete",
@@ -545,7 +545,7 @@ export class ShiftsService {
       const requestId = await Shift.createSwapRequest(dbData);
 
       // Log the creation
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "create_swap_request",
@@ -594,7 +594,7 @@ export class ShiftsService {
       await Shift.updateSwapRequestStatus(id, status, userId, tenantId);
 
       // Log the update
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: `${status}_swap_request`,

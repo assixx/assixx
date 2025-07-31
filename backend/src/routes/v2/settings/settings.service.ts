@@ -6,7 +6,7 @@
 import { RowDataPacket } from "mysql2";
 
 import { executeQuery } from "../../../database.js";
-import AdminLog from "../../../models/adminLog.js";
+import { RootLog } from "../../../models/rootLog.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -156,10 +156,10 @@ export async function getSystemSetting(key: string, userRole: string) {
  */
 export async function upsertSystemSetting(
   data: SettingData,
-  _userId: number,
+  userId: number,
   userRole: string,
-  _ipAddress?: string,
-  _userAgent?: string,
+  ipAddress?: string,
+  userAgent?: string,
 ) {
   // Only root can modify system settings
   if (userRole !== "root") {
@@ -213,8 +213,17 @@ export async function upsertSystemSetting(
     );
   }
 
-  // Log the action - skip AdminLog for system settings as they don't belong to a tenant
-  // TODO: Consider a separate system_logs table for root-level operations
+  // Log the action for system settings
+  await RootLog.create({
+    tenant_id: 0, // System-level operation
+    user_id: userId,
+    action: existing ? "system_setting_updated" : "system_setting_created",
+    entity_type: "system_setting",
+    entity_id: 0,
+    new_values: data as unknown as Record<string, unknown>,
+    ip_address: ipAddress,
+    user_agent: userAgent,
+  });
 
   return { success: true };
 }
@@ -224,10 +233,10 @@ export async function upsertSystemSetting(
  */
 export async function deleteSystemSetting(
   key: string,
-  _userId: number,
+  userId: number,
   userRole: string,
-  _ipAddress?: string,
-  _userAgent?: string,
+  ipAddress?: string,
+  userAgent?: string,
 ) {
   if (userRole !== "root") {
     throw new ServiceError(
@@ -250,8 +259,17 @@ export async function deleteSystemSetting(
     key,
   ]);
 
-  // Log the action - skip AdminLog for system settings as they don't belong to a tenant
-  // TODO: Consider a separate system_logs table for root-level operations
+  // Log the action for system settings
+  await RootLog.create({
+    tenant_id: 0, // System-level operation
+    user_id: userId,
+    action: "system_setting_deleted",
+    entity_type: "system_setting",
+    entity_id: 0,
+    old_values: setting,
+    ip_address: ipAddress,
+    user_agent: userAgent,
+  });
 
   return { success: true };
 }
@@ -371,7 +389,7 @@ export async function upsertTenantSetting(
   }
 
   // Log the action
-  await AdminLog.create({
+  await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action: existing ? "tenant_setting_updated" : "tenant_setting_created",
@@ -419,7 +437,7 @@ export async function deleteTenantSetting(
   );
 
   // Log the action
-  await AdminLog.create({
+  await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action: "tenant_setting_deleted",

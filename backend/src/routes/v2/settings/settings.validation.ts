@@ -61,7 +61,10 @@ export const getSystemSettingsValidation = [
   handleValidationErrors,
 ];
 
-export const getSystemSettingValidation = [settingKeyValidation, handleValidationErrors];
+export const getSystemSettingValidation = [
+  settingKeyValidation,
+  handleValidationErrors,
+];
 
 export const createSystemSettingValidation = [
   body("setting_key")
@@ -106,7 +109,10 @@ export const updateSystemSettingValidation = [
   handleValidationErrors,
 ];
 
-export const deleteSystemSettingValidation = [settingKeyValidation, handleValidationErrors];
+export const deleteSystemSettingValidation = [
+  settingKeyValidation,
+  handleValidationErrors,
+];
 
 // Tenant settings validations
 export const getTenantSettingsValidation = [
@@ -131,7 +137,10 @@ export const getTenantSettingsValidation = [
   handleValidationErrors,
 ];
 
-export const getTenantSettingValidation = [settingKeyValidation, handleValidationErrors];
+export const getTenantSettingValidation = [
+  settingKeyValidation,
+  handleValidationErrors,
+];
 
 export const createTenantSettingValidation = [
   body("setting_key")
@@ -156,7 +165,10 @@ export const updateTenantSettingValidation = [
   handleValidationErrors,
 ];
 
-export const deleteTenantSettingValidation = [settingKeyValidation, handleValidationErrors];
+export const deleteTenantSettingValidation = [
+  settingKeyValidation,
+  handleValidationErrors,
+];
 
 // User settings validations
 export const getUserSettingsValidation = [
@@ -181,7 +193,10 @@ export const getUserSettingsValidation = [
   handleValidationErrors,
 ];
 
-export const getUserSettingValidation = [settingKeyValidation, handleValidationErrors];
+export const getUserSettingValidation = [
+  settingKeyValidation,
+  handleValidationErrors,
+];
 
 export const createUserSettingValidation = [
   body("setting_key")
@@ -206,7 +221,10 @@ export const updateUserSettingValidation = [
   handleValidationErrors,
 ];
 
-export const deleteUserSettingValidation = [settingKeyValidation, handleValidationErrors];
+export const deleteUserSettingValidation = [
+  settingKeyValidation,
+  handleValidationErrors,
+];
 
 // Admin user settings validations
 export const getAdminUserSettingsValidation = [

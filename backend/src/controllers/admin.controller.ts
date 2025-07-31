@@ -6,7 +6,7 @@
 import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
 
-import type { AdminLogCreateData } from "../models/adminLog";
+import type { RootLogCreateData as AdminLogCreateData } from "../models/rootLog";
 import adminService from "../services/admin.service";
 
 // Extended Request interface with tenant database

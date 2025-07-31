@@ -81,12 +81,10 @@ describe("Settings API v2 - Fixed", () => {
       });
     employeeToken = employeeLoginRes.body.data.accessToken;
 
-    const rootLoginRes = await request(app)
-      .post("/api/v2/auth/login")
-      .send({
-        email: rootUser.email,
-        password: "TestPass123!",
-      });
+    const rootLoginRes = await request(app).post("/api/v2/auth/login").send({
+      email: rootUser.email,
+      password: "TestPass123!",
+    });
     rootToken = rootLoginRes.body.data.accessToken;
   });
 
@@ -97,11 +95,10 @@ describe("Settings API v2 - Fixed", () => {
 
   beforeEach(async () => {
     // Clear only settings data before each test (not users!)
-    await testDb.execute("DELETE FROM user_settings WHERE user_id IN (?, ?, ?)", [
-      adminUser.id,
-      employeeUser.id,
-      rootUser.id,
-    ]);
+    await testDb.execute(
+      "DELETE FROM user_settings WHERE user_id IN (?, ?, ?)",
+      [adminUser.id, employeeUser.id, rootUser.id],
+    );
     await testDb.execute("DELETE FROM tenant_settings WHERE tenant_id = ?", [
       tenantId,
     ]);

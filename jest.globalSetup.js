@@ -48,6 +48,21 @@ export default async function globalSetup() {
       await db.execute(
         `DELETE FROM users WHERE username LIKE '__AUTOTEST__%' OR email LIKE '__AUTOTEST__%'`,
       );
+
+      // Delete machine-related data (must be before tenants due to foreign key)
+      await db.execute(
+        `DELETE FROM machine_metrics WHERE tenant_id IN ${testTenantQuery}`,
+      );
+      await db.execute(
+        `DELETE FROM machine_documents WHERE tenant_id IN ${testTenantQuery}`,
+      );
+      await db.execute(
+        `DELETE FROM machine_maintenance_history WHERE tenant_id IN ${testTenantQuery}`,
+      );
+      await db.execute(
+        `DELETE FROM machines WHERE tenant_id IN ${testTenantQuery}`,
+      );
+
       await db.execute(
         `DELETE FROM tenants WHERE subdomain LIKE '__AUTOTEST__%' OR company_name LIKE '__AUTOTEST__%'`,
       );

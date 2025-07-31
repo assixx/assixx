@@ -5,10 +5,11 @@
 
 import { Pool } from "mysql2/promise";
 
-import AdminLog, {
-  DbAdminLog,
-  AdminLogCreateData as ModelAdminLogCreateData,
-} from "../models/adminLog";
+import {
+  RootLog,
+  DbRootLog,
+  RootLogCreateData as ModelRootLogCreateData,
+} from "../models/rootLog";
 /**
  * Admin Log Service
  * Handles admin log business logic
@@ -16,7 +17,7 @@ import AdminLog, {
 
 // Import types from AdminLog model
 // Service-specific interfaces
-interface AdminLogData extends Omit<DbAdminLog, "tenant_id"> {
+interface AdminLogData extends Omit<DbRootLog, "tenant_id"> {
   tenant_id: number;
   user_name?: string;
   user_role?: string;
@@ -33,8 +34,7 @@ interface AdminLogFilters {
   offset?: number;
 }
 
-interface AdminLogCreateData
-  extends Omit<ModelAdminLogCreateData, "tenant_id"> {
+interface AdminLogCreateData extends Omit<ModelRootLogCreateData, "tenant_id"> {
   tenant_id: number;
   was_role_switched?: boolean;
 }
@@ -57,7 +57,7 @@ class AdminLogService {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
       if (filters.user_id) {
-        const logs = await AdminLog.getByUserId(filters.user_id);
+        const logs = await RootLog.getByUserId(filters.user_id);
         return logs.map((log) => ({
           ...log,
           created_at: log.timestamp,
@@ -86,7 +86,7 @@ class AdminLogService {
     data: AdminLogCreateData,
   ): Promise<AdminLogData> {
     try {
-      const modelData: ModelAdminLogCreateData = {
+      const modelData: ModelRootLogCreateData = {
         user_id: data.user_id,
         tenant_id: data.tenant_id,
         action: data.action,
@@ -98,7 +98,7 @@ class AdminLogService {
         user_agent: data.user_agent,
         was_role_switched: data.was_role_switched,
       };
-      const id = await AdminLog.create(modelData);
+      const id = await RootLog.create(modelData);
       // Return the data without trying to match RowDataPacket structure
       return {
         id,

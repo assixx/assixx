@@ -3,7 +3,7 @@
  * Business logic for survey management
  */
 
-import AdminLog from "../../../models/adminLog.js";
+import { RootLog } from "../../../models/rootLog.js";
 import Survey from "../../../models/survey.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
@@ -234,7 +234,7 @@ export class SurveysService {
       const surveyId = await Survey.create(surveyData, tenantId, userId);
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "create_survey",
@@ -312,7 +312,7 @@ export class SurveysService {
       await Survey.update(surveyId, updateData, tenantId);
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "update_survey",
@@ -383,7 +383,7 @@ export class SurveysService {
       }
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "delete_survey",
@@ -438,7 +438,7 @@ export class SurveysService {
       );
 
       // Log the action
-      await AdminLog.create({
+      await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: "create_survey_from_template",
