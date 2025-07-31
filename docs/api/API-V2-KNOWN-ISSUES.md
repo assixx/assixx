@@ -304,7 +304,92 @@ if (entryIds.length > 0) {
 
 - `/backend/src/routes/__tests__/blackboard-v2.test.ts` - beforeEach/afterEach cleanup
 
+# Chat v2 Test Debugging - Fehleranalyse und Lösung
+
+## Problem
+Die Chat v2 Tests schlugen mit 500-Fehlern fehl, ohne dass die eigentlichen Fehlerursachen sichtbar waren. Von 24 Tests passierten nur 11, 13 schlugen fehl.
+
+## Hauptproblem: Fehlende Debug-Ausgaben in Jest Tests
+
+### Ursache
+- `console.log()` und `console.error()` Ausgaben wurden in Jest Tests nicht angezeigt
+- Jest modifiziert das globale `console` Objekt und unterdrückt dadurch die Ausgaben
+
+### Lösung: Import von Console-Funktionen
+```typescript
+// Statt console.log/console.error verwenden:
+import { log, error as logError } from "console";
+```
+
+**Angewendet in:**
+- `backend/src/routes/v2/chat/chat.service.ts`
+- `backend/src/routes/v2/chat/chat.controller.ts`
+- `backend/src/routes/v2/chat/__tests__/chat-v2.test.ts`
+
+## Erkenntnisse nach Console-Fix
+
+### Erfolgreiche Conversation-Erstellung
+```
+[Chat Service] createConversation called with: {
+  tenantId: 3,
+  creatorId: 15277,
+  data: { participantIds: [15277], name: 'New Test 1:1 Chat', isGroup: false }
+}
+[Chat Service] Creating new conversation with isGroup: false
+[Chat Service] Created conversation with ID: 129
+```
+
+**✅ Die Conversation wird erfolgreich erstellt (ID: 129)**
+
+### Identifizierter Folge-Fehler
+Nach erfolgreicher Erstellung schlägt `getConversations()` fehl:
+```
+Create conversation error: {
+  error: {
+    code: 'CONVERSATIONS_ERROR',
+    message: 'Failed to fetch conversations'
+  }
+}
+```
+
+## Nächste Debugging-Schritte
+
+### Implementiert
+1. **Console-Import Fix** - Ermöglicht Debug-Ausgaben in Jest
+2. **Erweiterte Logging** in `createConversation()`
+3. **Error-Logging** in `getConversations()` hinzugefügt:
+   ```typescript
+   } catch (error) {
+     logError("[Chat Service] getConversations error:", error);
+     throw new ServiceError(
+       "CONVERSATIONS_ERROR",
+       "Failed to fetch conversations",
+       500
+     );
+   }
+   ```
+
+### Erfolgreich abgeschlossene Todos
+- ☒ Console.log Fix mit `import { log } from 'console'` implementiert
+- ☒ 500 Error bei createConversation lokalisiert (ist eigentlich in getConversations)
+
+### Verbleibende Aufgaben
+- ☐ getConversations Fehler analysieren und beheben
+- ☐ Alle Chat v2 Tests erfolgreich zum Laufen bringen
+
+## Fazit
+Der Console-Import Fix war erfolgreich und enthüllte, dass:
+1. `createConversation()` funktioniert korrekt
+2. Der 500-Fehler kommt von `getConversations()`
+3. Das Problem liegt im Abrufen der erstellten Conversation, nicht in der Erstellung selbst
+
+**Nächster Schritt:** Detaillierte Analyse der `getConversations()` Methode mit den neuen Debug-Möglichkeiten.
+
+
+
+
 **Status:** ✅ FIXED (2025-07-28)
+
 
 ---
 

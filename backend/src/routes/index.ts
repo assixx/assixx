@@ -40,6 +40,7 @@ import chatV2Routes from "./v2/chat";
 import departmentsV2Routes from "./v2/departments";
 import documentsV2Routes from "./v2/documents";
 import kvpV2Routes from "./v2/kvp";
+import reportsV2Routes from "./v2/reports";
 import roleSwitchV2Routes from "./v2/role-switch";
 import shiftsV2Routes from "./v2/shifts";
 import surveysV2Routes from "./v2/surveys";
@@ -81,6 +82,8 @@ console.log("[DEBUG] Mounting v2 shifts routes at /api/v2/shifts");
 router.use("/api/v2/shifts", shiftsV2Routes);
 console.log("[DEBUG] Mounting v2 surveys routes at /api/v2/surveys");
 router.use("/api/v2/surveys", surveysV2Routes);
+console.log("[DEBUG] Mounting v2 reports routes at /api/v2/reports");
+router.use("/api/v2/reports", reportsV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");
