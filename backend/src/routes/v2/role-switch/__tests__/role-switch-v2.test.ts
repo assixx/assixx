@@ -311,7 +311,7 @@ describe("Role Switch API v2 - CRITICAL SECURITY TESTS", () => {
 
       // Check logs
       const [logs] = await execute<RowDataPacket[]>(
-        `SELECT * FROM admin_logs WHERE user_id = ? AND action = 'role_switch_to_employee' ORDER BY created_at DESC LIMIT 1`,
+        `SELECT * FROM root_logs WHERE user_id = ? AND action = 'role_switch_to_employee' ORDER BY created_at DESC LIMIT 1`,
         [adminUser.id],
       );
 

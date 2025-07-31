@@ -157,6 +157,7 @@ export async function getSystemSetting(key: string, userRole: string) {
 export async function upsertSystemSetting(
   data: SettingData,
   userId: number,
+  tenantId: number,
   userRole: string,
   ipAddress?: string,
   userAgent?: string,
@@ -215,7 +216,7 @@ export async function upsertSystemSetting(
 
   // Log the action for system settings
   await RootLog.create({
-    tenant_id: 0, // System-level operation
+    tenant_id: tenantId, // Use the root user's tenant_id
     user_id: userId,
     action: existing ? "system_setting_updated" : "system_setting_created",
     entity_type: "system_setting",
@@ -234,6 +235,7 @@ export async function upsertSystemSetting(
 export async function deleteSystemSetting(
   key: string,
   userId: number,
+  tenantId: number,
   userRole: string,
   ipAddress?: string,
   userAgent?: string,
@@ -261,7 +263,7 @@ export async function deleteSystemSetting(
 
   // Log the action for system settings
   await RootLog.create({
-    tenant_id: 0, // System-level operation
+    tenant_id: tenantId, // Use the root user's tenant_id
     user_id: userId,
     action: "system_setting_deleted",
     entity_type: "system_setting",
@@ -653,6 +655,7 @@ export async function bulkUpdateSettings(
   settings: SettingData[],
   contextId: number, // tenantId or userId
   userId: number,
+  userTenantId: number, // tenant_id of the current user
   userRole: string,
   ipAddress?: string,
   userAgent?: string,
@@ -666,6 +669,7 @@ export async function bulkUpdateSettings(
           await upsertSystemSetting(
             setting,
             userId,
+            userTenantId,
             userRole,
             ipAddress,
             userAgent,

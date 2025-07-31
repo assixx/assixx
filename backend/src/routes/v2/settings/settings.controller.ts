@@ -115,6 +115,7 @@ export const upsertSystemSetting = async (
     await settingsService.upsertSystemSetting(
       data,
       req.user.id,
+      req.user.tenant_id,
       req.user.role,
       req.ip,
       req.get("user-agent"),
@@ -149,6 +150,7 @@ export const deleteSystemSetting = async (
     await settingsService.deleteSystemSetting(
       req.params.key,
       req.user.id,
+      req.user.tenant_id,
       req.user.role,
       req.ip,
       req.get("user-agent"),
@@ -549,6 +551,7 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
       settingsData,
       contextId,
       req.user.id,
+      req.user.tenant_id,
       req.user.role,
       req.ip,
       req.get("user-agent"),
