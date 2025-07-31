@@ -46,11 +46,7 @@ describe("Reports API v2", () => {
     );
 
     // Create test department
-    departmentId = await createTestDepartment(
-      testDb,
-      tenantId,
-      "Engineering",
-    );
+    departmentId = await createTestDepartment(testDb, tenantId, "Engineering");
 
     // Create test team
     const [teamResult] = await testDb.execute<ResultSetHeader>(
@@ -112,7 +108,9 @@ describe("Reports API v2", () => {
     await testDb.execute("DELETE FROM shifts WHERE tenant_id = ?", [tenantId]);
     await testDb.execute("DELETE FROM surveys WHERE tenant_id = ?", [tenantId]);
     // Clean up test categories
-    await testDb.execute("DELETE FROM kvp_categories WHERE name LIKE '%AUTOTEST%'");
+    await testDb.execute(
+      "DELETE FROM kvp_categories WHERE name LIKE '%AUTOTEST%'",
+    );
   });
 
   async function createTestData() {
@@ -164,20 +162,21 @@ describe("Reports API v2", () => {
     // Create some shifts (using correct schema)
     const today = new Date();
     const todayStr = today.toISOString().split("T")[0];
-    
+
     // Create shifts for each user
     const shiftData = [
-      { user: adminUserId, startHour: 6, endHour: 14, type: 'regular' }, // Morning
-      { user: employeeUserId, startHour: 14, endHour: 22, type: 'regular' }, // Afternoon
-      { user: adminUserId, startHour: 22, endHour: 30, type: 'overtime' }, // Night with overtime
+      { user: adminUserId, startHour: 6, endHour: 14, type: "regular" }, // Morning
+      { user: employeeUserId, startHour: 14, endHour: 22, type: "regular" }, // Afternoon
+      { user: adminUserId, startHour: 22, endHour: 30, type: "overtime" }, // Night with overtime
     ];
 
     for (const shift of shiftData) {
-      const startTime = `${todayStr} ${String(shift.startHour % 24).padStart(2, '0')}:00:00`;
-      const endTime = shift.endHour > 24 
-        ? `${todayStr} ${String(shift.endHour - 24).padStart(2, '0')}:00:00`
-        : `${todayStr} ${String(shift.endHour).padStart(2, '0')}:00:00`;
-      
+      const startTime = `${todayStr} ${String(shift.startHour % 24).padStart(2, "0")}:00:00`;
+      const endTime =
+        shift.endHour > 24
+          ? `${todayStr} ${String(shift.endHour - 24).padStart(2, "0")}:00:00`
+          : `${todayStr} ${String(shift.endHour).padStart(2, "0")}:00:00`;
+
       await testDb.execute(
         `INSERT INTO shifts 
          (tenant_id, user_id, date, start_time, end_time, department_id, team_id, 
@@ -192,7 +191,7 @@ describe("Reports API v2", () => {
           departmentId,
           teamId,
           5, // required_employees
-          'completed', // status
+          "completed", // status
           shift.type, // type
           adminUserId, // created_by
         ],
@@ -513,7 +512,11 @@ describe("Reports API v2", () => {
     it("should export shifts report as Excel", async () => {
       const res = await request(app)
         .get("/api/v2/reports/export/shifts")
-        .query({ format: "excel", dateFrom: "2025-01-01", dateTo: "2025-01-31" })
+        .query({
+          format: "excel",
+          dateFrom: "2025-01-01",
+          dateTo: "2025-01-31",
+        })
         .set("Authorization", `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
@@ -585,12 +588,10 @@ describe("Reports API v2", () => {
         tenant_id: otherTenantId,
       });
 
-      const otherLoginRes = await request(app)
-        .post("/api/v2/auth/login")
-        .send({
-          email: otherAdmin.email,
-          password: "TestPass123!",
-        });
+      const otherLoginRes = await request(app).post("/api/v2/auth/login").send({
+        email: otherAdmin.email,
+        password: "TestPass123!",
+      });
       const otherToken = otherLoginRes.body.data.accessToken;
 
       // Get overview report for other tenant

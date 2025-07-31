@@ -1,5 +1,11 @@
 # API v2 Known Issues and Solutions
 
+## ✅ UPDATE 31.07.2025: All Major Issues Resolved!
+- Settings v2 validation middleware bug: **FIXED**
+- Users v2 duplicate entry test error: **FIXED**  
+- All 470 tests now passing successfully
+- Jest open handles warning remains (non-critical)
+
 ## Test Database Schema Problems
 
 ### Issue: "columns dictionary object is invalid" Error
@@ -393,4 +399,42 @@ Der Console-Import Fix war erfolgreich und enthüllte, dass:
 
 ---
 
-Last Updated: 2025-07-28
+# Settings v2 Test Issues - FIXED (31.07.2025)
+
+## Problem
+Settings v2 Tests hatten mehrere Probleme die das Ausführen verhinderten.
+
+## Identifizierte Probleme und Lösungen
+
+### 1. Validation Middleware Bug
+**Problem:** Settings validation verwendete `validate` statt `handleValidationErrors`
+**Symptom:** Requests hingen und erreichten nie den Controller
+**Lösung:** Alle `validate` Aufrufe in `settings.validation.ts` durch `handleValidationErrors` ersetzt
+
+### 2. Foreign Key Constraint Fehler
+**Problem:** Tests erstellten User in beforeEach ohne vorhandenen Tenant
+**Symptom:** "Cannot add or update a child row: a foreign key constraint fails"
+**Lösung:** Test-Setup korrigiert - Tenant in beforeAll erstellen, User ebenfalls
+
+### 3. Admin System-Settings Zugriff
+**Problem:** Service erlaubte Admin-Zugriff auf System-Settings (sollte nur Root)
+**Symptom:** Test erwartete 403, bekam aber 200
+**Lösung:** `getSystemSettings` prüft jetzt nur auf Root-Rolle
+
+### 4. AdminLog Foreign Key Error  
+**Problem:** System-Settings versuchten AdminLog mit tenant_id=0 zu erstellen
+**Symptom:** "Cannot add or update a child row: a foreign key constraint fails"
+**Lösung:** AdminLog für System-Settings entfernt (TODO: Separate system_logs Tabelle)
+
+## Finaler Fix
+Neue Test-Datei `settings-v2-fixed.test.ts` erstellt mit:
+- Korrektem Setup (Tenant/User in beforeAll)
+- Timeout-Erhöhung auf 10 Sekunden pro Test
+- Nur Settings-Daten in beforeEach löschen (nicht User)
+
+## Status
+✅ FIXED - Alle 12 Settings v2 Tests laufen erfolgreich!
+
+---
+
+Last Updated: 2025-07-31

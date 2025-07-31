@@ -539,8 +539,8 @@ describe("Users v2 API Endpoints", () => {
 
     beforeEach(async () => {
       const user = await createTestUser(testDb, {
-        username: "availability.test@test.com",
-        email: "__AUTOTEST__availability.test@test.com",
+        username: "availability_test",
+        email: "availability.test@test.com",
         password: "AvailPass123!",
         role: "employee",
         tenant_id: tenant1Id,

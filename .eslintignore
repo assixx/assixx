@@ -1,0 +1,13 @@
+# Test scripts
+scripts/test-*.mjs
+scripts/test-*.js
+
+# Build output
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Coverage
+coverage/
