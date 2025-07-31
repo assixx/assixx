@@ -20,10 +20,10 @@
 
 ### PHASE 2: Kritische Business APIs (OHNE Tests/Swagger)
 - [ ] Machines API v2 - Maschinen-Verwaltung (2-3h) **INDUSTRIE-KRITISCH!**
-- [ ] Availability API v2 - Verfügbarkeit (2h) **WICHTIG für Shifts!**
-- [ ] Logs API v2 - System/Admin Logs (2h) **Compliance!**
+- [x] ~~Availability API v2~~ - Bereits in Shifts API v2 integriert ✅
+- [x] Logs API v2 - System/Admin Logs (2h) **Compliance!** ✅ (31.07.2025)
 - [ ] Features API v2 - Feature Flags (1-2h) **SaaS!**
-- [ ] Plans API v2 - Subscription Pläne (2h) **Billing!**
+- [x] Plans API v2 - Subscription Pläne (2h) **Billing!** ✅ (31.07.2025)
 
 ### PHASE 3: Admin/System APIs (OHNE Tests/Swagger)
 - [ ] Admin API v2 - Admin Operationen (2h)

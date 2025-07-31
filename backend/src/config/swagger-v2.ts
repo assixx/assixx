@@ -3647,6 +3647,11 @@ const options: swaggerJsdoc.Options = {
         description: "Survey management API v2",
         "x-displayName": "Surveys v2",
       },
+      {
+        name: "Plans",
+        description: "Subscription plans and billing API v2",
+        "x-displayName": "Plans v2",
+      },
     ],
   },
   apis: [

@@ -1,20 +1,20 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 31.07.2025 (Donnerstag) - PHASE 1 KOMPLETT + PHASE 2 GESTARTET!
+**Letzte Aktualisierung:** 31.07.2025 (Donnerstag) - Plans API v2 FERTIG!
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
-## 🎉 PHASE 1 ABGESCHLOSSEN! (31.07.2025 - 20:50 Uhr)
+## 🎉 PHASE 1 ABGESCHLOSSEN! + Plans API v2 (31.07.2025 - 23:30 Uhr)
 - **Alle 13 geplanten APIs sind fertig!**
-- **Phase 2 gestartet mit Logs API v2**
+- **Phase 2 gestartet mit Logs API v2 und Plans API v2**
 - **AdminLog → RootLog Migration erfolgreich durchgeführt**
-- **14/27 APIs fertig (52% der Gesamtmigration)**
+- **15/27 APIs fertig (56% der Gesamtmigration)**
 
 ## 📊 KORRIGIERTE Statistik (31.07.2025)
 
-- **APIs Total:** 27 (13 Phase 1 + 14 Phase 2)
-- **APIs Fertig:** 14/27 (52%) ✅
-- **APIs Offen:** 13 (alle ohne Tests/Swagger)
+- **APIs Total:** 27 (13 Phase 1 + 14 Phase 2) 
+- **APIs Fertig:** 15/27 (56%) ✅
+- **APIs Offen:** 12 (alle ohne Tests/Swagger)
 - **Test Suites:** 13 fertig
 - **Tests geschrieben:** 442+ (alle grün)
 - **Geschätzte Zeit:** ~26-35 Stunden für restliche 13 APIs
@@ -107,6 +107,16 @@
 - **Migration durchgeführt:**
   - Neues RootLog Model erstellt
   - 27 AdminLog Referenzen ersetzt
+
+### 4. **Plans API v2** ✅ (21:00 - 23:30)
+- **Endpoints:** 8 (CRUD + Upgrade + Addons + Costs)
+- **Tests:** 15/15 grün (nach intensivem Debugging)
+- **Features:** Subscription Management, Addon System, Cost Calculation
+- **Debug-Highlights:**
+  - Jest Module Resolution Issues
+  - Middleware Chain Hanging
+  - DB Type Conversions
+  - Addon Pricing Synchronisation
   - DB Migration ausgeführt
   - Alte adminLog.ts gelöscht
 - **Logs API v2:**

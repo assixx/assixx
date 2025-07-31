@@ -43,6 +43,7 @@ import kvpV2Routes from "./v2/kvp";
 import logsV2Routes from "./v2/logs";
 import machinesV2Routes from "./v2/machines";
 import notificationsV2Routes from "./v2/notifications";
+import plansV2Routes from "./v2/plans";
 import reportsV2Routes from "./v2/reports";
 import roleSwitchV2Routes from "./v2/role-switch";
 import settingsV2Routes from "./v2/settings";
@@ -94,6 +95,8 @@ console.log(
   "[DEBUG] Mounting v2 notifications routes at /api/v2/notifications",
 );
 router.use("/api/v2/notifications", notificationsV2Routes);
+console.log("[DEBUG] Mounting v2 plans routes at /api/v2/plans");
+router.use("/api/v2/plans", plansV2Routes);
 console.log("[DEBUG] Mounting v2 reports routes at /api/v2/reports");
 router.use("/api/v2/reports", reportsV2Routes);
 console.log("[DEBUG] Mounting v2 settings routes at /api/v2/settings");
