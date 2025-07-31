@@ -15,6 +15,23 @@ export interface TestUser {
   is_active: boolean;
 }
 
+// Mock types for testing
+export interface MockRequest {
+  headers: Record<string, string>;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  body: Record<string, unknown>;
+  user: TestUser | null;
+  [key: string]: unknown;
+}
+
+export interface MockResponse {
+  status: jest.Mock;
+  json: jest.Mock;
+  send: jest.Mock;
+  set: jest.Mock;
+}
+
 /**
  * Create a test user in the database
  */
@@ -120,7 +137,9 @@ export async function waitFor(
 /**
  * Mock request object for testing middleware
  */
-export function createMockRequest(overrides: any = {}): any {
+export function createMockRequest(
+  overrides: Partial<MockRequest> = {},
+): MockRequest {
   return {
     headers: {},
     params: {},
@@ -134,8 +153,8 @@ export function createMockRequest(overrides: any = {}): any {
 /**
  * Mock response object for testing middleware
  */
-export function createMockResponse(): any {
-  const res: any = {};
+export function createMockResponse(): MockResponse {
+  const res = {} as MockResponse;
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
   res.send = jest.fn().mockReturnValue(res);
