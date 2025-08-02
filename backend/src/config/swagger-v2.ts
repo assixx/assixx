@@ -2703,6 +2703,183 @@ const options: swaggerJsdoc.Options = {
           ],
         },
 
+        // Features API v2 Schemas
+        FeatureV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            code: {
+              type: "string",
+              example: "premium_reports",
+            },
+            name: {
+              type: "string",
+              example: "Premium Reports",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Access to advanced reporting and analytics features",
+            },
+            category: {
+              type: "string",
+              example: "analytics",
+            },
+            price: {
+              type: "number",
+              nullable: true,
+              example: 49.99,
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T15:30:00.000Z",
+            },
+          },
+          required: ["id", "code", "name", "category", "isActive"],
+        },
+        TenantFeatureV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            tenantId: {
+              type: "integer",
+              example: 10,
+            },
+            featureId: {
+              type: "integer",
+              example: 1,
+            },
+            featureCode: {
+              type: "string",
+              example: "premium_reports",
+            },
+            featureName: {
+              type: "string",
+              example: "Premium Reports",
+            },
+            status: {
+              type: "string",
+              enum: ["active", "trial", "disabled"],
+              example: "active",
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+            validFrom: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T00:00:00.000Z",
+            },
+            validUntil: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-12-31T23:59:59.000Z",
+            },
+            customPrice: {
+              type: "number",
+              nullable: true,
+              example: 39.99,
+            },
+            trialDays: {
+              type: "integer",
+              nullable: true,
+              example: 30,
+            },
+            usageLimit: {
+              type: "integer",
+              nullable: true,
+              example: 1000,
+            },
+            currentUsage: {
+              type: "integer",
+              example: 250,
+            },
+            activatedBy: {
+              type: "integer",
+              nullable: true,
+              example: 1,
+            },
+            activatedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-01T10:00:00.000Z",
+            },
+            customConfig: {
+              type: "object",
+              nullable: true,
+              additionalProperties: true,
+            },
+          },
+          required: ["id", "tenantId", "featureId", "status", "isActive"],
+        },
+        FeatureActivationRequestV2: {
+          type: "object",
+          properties: {
+            tenantId: {
+              type: "integer",
+              example: 10,
+              description: "ID of the tenant to activate feature for",
+            },
+            featureCode: {
+              type: "string",
+              example: "premium_reports",
+              description: "Unique code of the feature to activate",
+            },
+            options: {
+              type: "object",
+              properties: {
+                expiresAt: {
+                  type: "string",
+                  format: "date-time",
+                  nullable: true,
+                  example: "2025-12-31T23:59:59.000Z",
+                },
+                customPrice: {
+                  type: "number",
+                  nullable: true,
+                  example: 39.99,
+                },
+                trialDays: {
+                  type: "integer",
+                  nullable: true,
+                  example: 30,
+                },
+                usageLimit: {
+                  type: "integer",
+                  nullable: true,
+                  example: 1000,
+                },
+                customConfig: {
+                  type: "object",
+                  nullable: true,
+                  additionalProperties: true,
+                },
+              },
+            },
+          },
+          required: ["tenantId", "featureCode"],
+        },
+
         // Surveys API v2 Schemas
         SurveyV2: {
           type: "object",
@@ -3651,6 +3828,11 @@ const options: swaggerJsdoc.Options = {
         name: "Plans",
         description: "Subscription plans and billing API v2",
         "x-displayName": "Plans v2",
+      },
+      {
+        name: "Features v2",
+        description: "Feature flags and tenant features API v2",
+        "x-displayName": "Features v2",
       },
     ],
   },

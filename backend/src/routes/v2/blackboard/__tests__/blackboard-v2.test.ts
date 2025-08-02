@@ -50,6 +50,21 @@ describe("Blackboard API v2", () => {
   });
 
   beforeEach(async () => {
+    // Ensure tenant still exists (might have been deleted by global cleanup)
+    const [existingTenant] = await testDb.execute<any[]>(
+      "SELECT id FROM tenants WHERE id = ?",
+      [tenantId],
+    );
+
+    if (existingTenant.length === 0) {
+      // Recreate tenant if it was deleted
+      tenantId = await createTestTenant(
+        testDb,
+        "blackboard-test",
+        "Test Blackboard Tenant",
+      );
+    }
+
     // Clean up any existing test data - clear in correct order due to foreign keys
     // First get all entry IDs to avoid trigger conflicts
     const [entries] = await testDb.execute<any[]>(

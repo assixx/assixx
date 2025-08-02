@@ -1,4 +1,3 @@
-/* eslint-disable indent */
 /**
  * Unified Navigation Component für alle Dashboards
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design

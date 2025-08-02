@@ -35,6 +35,22 @@ interface RootLogCreateData {
 }
 
 export class RootLog {
+  // Convenience method for simple logging
+  static async log(
+    action: string,
+    userId: number,
+    tenantId: number,
+    details?: string | Record<string, unknown>,
+  ): Promise<number> {
+    const logData: RootLogCreateData = {
+      user_id: userId,
+      tenant_id: tenantId,
+      action,
+      new_values: typeof details === "string" ? { details } : details,
+    };
+    return this.create(logData);
+  }
+
   static async create(logData: RootLogCreateData): Promise<number> {
     const {
       user_id,

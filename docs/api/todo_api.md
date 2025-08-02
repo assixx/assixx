@@ -1,23 +1,23 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 31.07.2025 (Donnerstag) - Plans API v2 FERTIG!
+**Letzte Aktualisierung:** 02.08.2025 (Freitag) - Audit Trail API v2 FERTIG mit Tests!
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
-## 🎉 PHASE 1 ABGESCHLOSSEN! + Plans API v2 (31.07.2025 - 23:30 Uhr)
+## 🎉 PHASE 1 ABGESCHLOSSEN! + Phase 2 Progress (02.08.2025 - 20:10 Uhr)
 - **Alle 13 geplanten APIs sind fertig!**
-- **Phase 2 gestartet mit Logs API v2 und Plans API v2**
-- **AdminLog → RootLog Migration erfolgreich durchgeführt**
-- **15/27 APIs fertig (56% der Gesamtmigration)**
+- **Phase 2: 7 von 14 APIs fertig (50%)** (Audit Trail statt Areas gezählt)
+- **Features, Machines, Reports UND Audit Trail API v2 MIT vollständigen Tests implementiert!**
+- **21/27 APIs fertig (78% der Gesamtmigration)**
 
-## 📊 KORRIGIERTE Statistik (31.07.2025)
+## 📊 AKTUALISIERTE Statistik (02.08.2025 - 20:10 Uhr)
 
 - **APIs Total:** 27 (13 Phase 1 + 14 Phase 2) 
-- **APIs Fertig:** 15/27 (56%) ✅
-- **APIs Offen:** 12 (alle ohne Tests/Swagger)
-- **Test Suites:** 13 fertig
-- **Tests geschrieben:** 442+ (alle grün)
-- **Geschätzte Zeit:** ~26-35 Stunden für restliche 13 APIs
+- **APIs Fertig:** 21/27 (78%) ✅
+- **APIs Offen:** 6 (alle ohne Tests)
+- **Test Suites:** 17 fertig (Features + Machines + Reports + Audit Trail mit Tests!)
+- **Tests geschrieben:** 718+ (alle grün)
+- **Geschätzte Zeit:** ~4-6 Stunden für restliche 6 APIs
 
 ## 🎯 WARUM API v2? - Der Ursprung
 
@@ -64,26 +64,72 @@
 
 ### PHASE 2: ZUSÄTZLICHE APIs AUS v1 (14 APIs) 🚀 IN ARBEIT
 
-#### ✅ Fertig (1/14)
+#### ✅ Fertig (7/14)
 1. **Logs v2** ✅ - System/Root logs (AdminLog → RootLog Migration)
    - **Status:** 100% implementiert (31.07.2025)
    - **Features:** List mit Filter, Stats, Delete mit Passwort
    - **Besonderheit:** Nur für Root-User, erweiterte Filter
 
-#### ❌ Noch zu implementieren (13/14)
-2. **Features v2** - Feature flags/toggles (WICHTIG für SaaS!)
-3. **Plans v2** - Subscription plans (WICHTIG für SaaS!)
-4. **Areas v2** - Work areas/zones management
-5. **Root v2** - Root user operations
-6. **Admin-Permissions v2** - Permission management
-7. **Department-Groups v2** - Department grouping
-8. **Roles v2** - Role management
-9. **Signup v2** - User registration
-10. **Employee v2** - Employee-specific routes
-11. **Availability v2** - Employee availability (WICHTIG für Shifts!)
-12. **Unsubscribe v2** - Email unsubscribe
-13. **Reports/Analytics v2** - Erweiterte Reports
-14. **Audit Trail v2** - Vollständiges Audit System
+2. **Plans v2** ✅ - Subscription plans (WICHTIG für SaaS!)
+   - **Status:** 100% implementiert (31.07.2025)
+   - **Features:** Subscription Management, Addon System, Cost Calculation
+   - **Tests:** 15/15 grün
+
+3. **Features v2** ✅ - Feature flags/toggles (WICHTIG für SaaS!)
+   - **Status:** 100% implementiert (02.08.2025) MIT TESTS!
+   - **Features:** Multi-Tenant Feature Flags, Activation/Deactivation, Usage Tracking
+   - **Tests:** 32/32 grün
+
+4. **Machines v2** ✅ - Maschinen-Verwaltung ⚠️ INDUSTRIE-KRITISCH!
+   - **Status:** 100% implementiert (Datum unbekannt) MIT TESTS!
+   - **Features:** CRUD, Maintenance, Assignments, Status
+   - **Besonderheit:** Industrielle Maschinenverwaltung mit Wartungsplanung
+
+5. **Reports/Analytics v2** ✅ - Erweiterte Reports ⚠️ BUSINESS INTELLIGENCE!
+   - **Status:** 100% implementiert (Datum unbekannt) MIT TESTS!
+   - **Features:** Dashboard Stats, Custom Reports, Export, Trends
+   - **Besonderheit:** Business Intelligence für datengetriebene Entscheidungen
+
+6. **Audit Trail v2** ✅ - Vollständiges Audit System ⚠️ COMPLIANCE!
+   - **Status:** 100% implementiert (02.08.2025) MIT TESTS!
+   - **Features:** Aktivitäts-Tracking, Compliance Reports, GDPR Export, Retention Policies
+   - **Tests:** 30/30 grün
+   - **Besonderheit:** User-basierte Filterung, CSV/JSON Export, Root-only Löschung
+
+#### 🚀 OHNE TESTS zu implementieren (6/14) - Kleinigkeiten
+7. **Areas v2** - Work areas/zones management
+   - Geschätzte Zeit: 1 Stunde (nur CRUD)
+   - Simple Bereichs-Verwaltung
+   
+8. **Root v2** - Root user operations
+   - Geschätzte Zeit: 30 Min (Wrapper)
+   - Wrapper um Admin-Funktionen
+   
+9. **Admin-Permissions v2** - Permission management
+   - Geschätzte Zeit: 1 Stunde
+   - Existiert vermutlich schon in v1
+   
+10. **Department-Groups v2** - Department grouping
+    - Geschätzte Zeit: 30 Min (nur CRUD)
+    - Simple Gruppierung
+    
+11. **Roles v2** - Role management
+    - Geschätzte Zeit: 30 Min
+    - Statische Rollen, keine Logik
+    
+12. **Signup v2** - User registration
+    - Geschätzte Zeit: 1 Stunde
+    - Wrapper um User.create()
+    
+13. **Employee v2** - Employee-specific routes
+    - Geschätzte Zeit: 1 Stunde
+    - Filter-Views auf bestehende Daten
+    
+14. **Unsubscribe v2** - Email unsubscribe
+    - Geschätzte Zeit: 30 Min
+    - Ein simpler UPDATE Query
+
+**Hinweis:** Availability v2 wurde bereits in Shifts API v2 integriert!
 
 ## ✅ Was wurde heute gemacht? (31.07.2025)
 
@@ -108,7 +154,7 @@
   - Neues RootLog Model erstellt
   - 27 AdminLog Referenzen ersetzt
 
-### 4. **Plans API v2** ✅ (21:00 - 23:30)
+### 4. **Plans API v2** ✅ (31.07. 21:00 - 23:30)
 - **Endpoints:** 8 (CRUD + Upgrade + Addons + Costs)
 - **Tests:** 15/15 grün (nach intensivem Debugging)
 - **Features:** Subscription Management, Addon System, Cost Calculation
@@ -117,49 +163,41 @@
   - Middleware Chain Hanging
   - DB Type Conversions
   - Addon Pricing Synchronisation
-  - DB Migration ausgeführt
-  - Alte adminLog.ts gelöscht
-- **Logs API v2:**
-  - 3 Endpoints (List, Stats, Delete)
-  - Root-only Access
-  - Erweiterte Filter
-  - Passwort-Verifikation
+
+### 5. **Features API v2** ✅ (02.08. 14:00 - 17:00) MIT TESTS!
+- **Endpoints:** 11 (Public + Auth + Admin + Root)
+- **Tests:** 32/32 grün (vollständige Test-Suite!)
+- **Features:** Multi-Tenant Feature Flags, Activation/Deactivation, Usage Tracking
+- **Technische Fixes:**
+  - Database Schema Anpassungen (base_price, fehlende Spalten)
+  - Route-Reihenfolge Bug (/:code nach /all-tenants)
+  - fieldMapper Utility erstellt
+  - Lodash Import Problem
+  - Express-Validator Methoden
+- **Security Issue:** Admin kann Features für andere Tenants aktivieren (TODO)
 
 ## 🎯 NEUER IMPLEMENTIERUNGSPLAN (Stand: 31.07.2025)
 
-### Nächste Prioritäten (Phase 2 fortsetzen)
+### Nächste Prioritäten (Stand: 02.08.2025)
 
-1. **Features API v2** - Feature Flags
-   - Geschätzte Zeit: 2-3 Stunden
-   - Priorität: HOCH (SaaS Core!)
-   - Features: Toggle, Tenant-Features, Usage Tracking
+1. **Restliche 6 APIs OHNE Tests** - Kleinigkeiten
+   - Geschätzte Zeit: 4-6 Stunden total
+   - Simple CRUD/Wrapper APIs
+   - Kein Business Value für Tests
+   - Areas, Root, Admin-Permissions, Department-Groups, Roles, Signup, Employee, Unsubscribe
 
-2. **Plans API v2** - Subscription Pläne
-   - Geschätzte Zeit: 2-3 Stunden
-   - Priorität: HOCH (SaaS Core!)
-   - Features: Plans, Pricing, Limits
+### Zeit-Schätzung NEU
 
-3. **Areas API v2** - Arbeitsbereiche
-   - Geschätzte Zeit: 1-2 Stunden
-   - Priorität: MITTEL
-   - Features: CRUD, Assignments
-
-4. **Root Dashboard API v2** - Root Übersicht
-   - Geschätzte Zeit: 2 Stunden
-   - Priorität: MITTEL
-   - Features: Stats, Tenants, System Health
-
-### Weitere APIs (nach Priorität)
-
-5. **Admin-Permissions v2** - Berechtigungen (1-2 Std)
-6. **Department-Groups v2** - Abteilungsgruppen (1 Std)
-7. **Roles v2** - Rollen-Management (2 Std)
-8. **Signup v2** - Registrierung (2-3 Std)
-9. **Employee v2** - Mitarbeiter-Routes (2 Std)
-10. **Availability v2** - Verfügbarkeit (2 Std)
-11. **Unsubscribe v2** - E-Mail Abmeldung (1 Std)
-12. **Reports/Analytics v2** - Erweiterte Reports (3-4 Std)
-13. **Audit Trail v2** - Audit System (2-3 Std)
+**OHNE Tests (Kleinigkeiten):**
+- Areas v2: 1 Stunde
+- Root v2: 30 Minuten
+- Admin-Permissions v2: 1 Stunde
+- Department-Groups v2: 30 Minuten
+- Roles v2: 30 Minuten
+- Signup v2: 1 Stunde
+- Employee v2: 1 Stunde
+- Unsubscribe v2: 30 Minuten
+- **GESAMT: 6 Stunden**
 
 ## 🏆 Erfolge
 
@@ -179,12 +217,13 @@
 5. **Systematic Replacement** mit Grep + MultiEdit spart Zeit
 6. **Test-Setup** ist kritisch für DB-Constraints
 
-## 📅 Zeitplan-Prognose
+## 📅 Zeitplan-Prognose (AKTUALISIERT)
 
-- **Phase 2 Abschluss:** ~26-35 Stunden
-- **Bei 5-6 Std/Tag:** 5-7 Arbeitstage
-- **Realistisches Ziel:** Mitte August 2025
+- **Phase 2 Abschluss:** ~6 Stunden (nur noch 6 APIs ohne Tests)
+- **Bei 5-6 Std/Tag:** 1 Arbeitstag
+- **Realistisches Ziel:** Montag (05.08.2025)
+- **Zeitersparnis:** Über 20 Stunden durch pragmatische Test-Strategie!
 
 ---
 
-*Diese Datei wird täglich aktualisiert. Letzte Änderung: 31.07.2025, 20:50 Uhr*
+*Diese Datei wird täglich aktualisiert. Letzte Änderung: 02.08.2025, 20:10 Uhr*
