@@ -261,7 +261,7 @@ export class RootService {
         id: log.id,
         userId: log.user_id,
         action: log.action,
-        entityType: log.entity_type || '',
+        entityType: log.entity_type || "",
         entityId: log.entity_id,
         description: log.description,
         ipAddress: log.ip_address,
@@ -464,10 +464,10 @@ export class RootService {
       // Generate and update employee_id
       const employeeId = generateEmployeeId(subdomain, "root", result.insertId);
 
-      await execute(
-        "UPDATE users SET employee_id = ? WHERE id = ?",
-        [employeeId, result.insertId],
-      );
+      await execute("UPDATE users SET employee_id = ? WHERE id = ?", [
+        employeeId,
+        result.insertId,
+      ]);
 
       return result.insertId;
     } catch (error) {

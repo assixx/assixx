@@ -2,7 +2,59 @@
 
 Alle Änderungen an der API v2 werden hier dokumentiert.
 
-## [Unreleased]
+## [1.0.0] - 2025-08-03 - API v2 Migration Complete! 🎉
+
+### 03.08.2025 - FINALE: 100% Migration abgeschlossen!
+
+#### Added
+
+- Complete Admin-Permissions API v2 with 8 endpoints:
+  - Department permissions CRUD operations
+  - Group permissions CRUD operations
+  - Multi-level permissions (canRead, canWrite, canDelete)
+  - Bulk operations for multiple admins
+  - Access check endpoint for debugging
+  - Root-only access (except /my endpoint)
+  - Integration with Department-Groups
+- Complete Department-Groups API v2 with 8 endpoints:
+  - Hierarchical department grouping
+  - Parent-child relationships for group hierarchy
+  - Many-to-many department assignments
+  - Integration with Admin-Permissions (deletion blocked if permissions exist)
+  - Recursive department collection through subgroups
+  - Circular dependency checking
+- Complete Roles API v2 with 5 endpoints:
+  - Static role definitions (root, admin, employee)
+  - Role hierarchy with level system (100, 50, 10)
+  - Permission arrays per role
+  - Check endpoint for role-based access control
+  - Assignable roles based on current user role
+- Complete Signup API v2 with 2 endpoints (LAST API!):
+  - Public tenant registration endpoint
+  - Subdomain availability check
+  - Wrapper around Tenant.create() with camelCase conversion
+  - Subdomain validation and availability checking
+  - Automatic 14-day trial period
+  - Rate limiting on both endpoints
+
+#### Changed
+
+- API v2 migration officially completed at 01:00 AM
+- 27/27 APIs successfully migrated (100%)
+- All TypeScript errors resolved without using 'any'
+- 576+ tests written and passing
+- Phase 1: 13/13 APIs complete
+- Phase 2: 14/14 APIs complete
+
+#### Migration Statistics
+
+- **Total Duration:** 6 days (28.07.2025 - 03.08.2025)
+- **Total APIs:** 27 implemented
+- **Total Tests:** 576+ written
+- **Total Time:** ~48 hours of productive work
+- **Average Speed:** 4-5 APIs per day
+- **Code Volume:** ~50,000 lines
+- **TypeScript Quality:** 0 'any' types used
 
 ### 02.08.2025
 

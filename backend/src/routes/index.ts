@@ -33,6 +33,7 @@ import unsubscribeRoutes from "./unsubscribe";
 import userProfileRoutes from "./user";
 import userRoutes from "./users";
 // v2 Routes
+import adminPermissionsV2Routes from "./v2/admin-permissions";
 import areasV2Routes from "./v2/areas";
 import auditTrailV2Routes from "./v2/audit-trail";
 import authV2Routes from "./v2/auth";
@@ -55,6 +56,9 @@ import shiftsV2Routes from "./v2/shifts";
 import surveysV2Routes from "./v2/surveys";
 import teamsV2Routes from "./v2/teams";
 import usersV2Routes from "./v2/users";
+import departmentGroupsV2Routes from "./v2/department-groups";
+import rolesV2Routes from "./v2/roles";
+import signupV2Routes from "./v2/signup";
 
 /**
  * Central Route Registry
@@ -67,6 +71,9 @@ import usersV2Routes from "./v2/users";
 const API_PREFIX = "/api";
 
 // API v2 Routes (mounted first for priority)
+// Public v2 routes (no auth required)
+console.log("[DEBUG] Mounting v2 signup routes at /api/v2/signup");
+router.use("/api/v2/signup", signupV2Routes);
 console.log("[DEBUG] Mounting v2 auth routes at /api/v2/auth");
 router.use("/api/v2/auth", authV2Routes);
 console.log("[DEBUG] Mounting v2 users routes at /api/v2/users");
@@ -113,6 +120,12 @@ console.log("[DEBUG] Mounting v2 areas routes at /api/v2/areas");
 router.use("/api/v2/areas", areasV2Routes);
 console.log("[DEBUG] Mounting v2 root routes at /api/v2/root");
 router.use("/api/v2/root", rootV2Routes);
+console.log("[DEBUG] Mounting v2 admin-permissions routes at /api/v2/admin-permissions");
+router.use("/api/v2/admin-permissions", adminPermissionsV2Routes);
+console.log("[DEBUG] Mounting v2 department-groups routes at /api/v2/department-groups");
+router.use("/api/v2/department-groups", departmentGroupsV2Routes);
+console.log("[DEBUG] Mounting v2 roles routes at /api/v2/roles");
+router.use("/api/v2/roles", rolesV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");

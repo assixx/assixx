@@ -1,23 +1,23 @@
 # 📋 API v2 TODO & Status
 
-**Letzte Aktualisierung:** 02.08.2025 (Freitag) - Areas & Root API v2 FERTIG!
+**Letzte Aktualisierung:** 03.08.2025 (Samstag) - Roles API v2 FERTIG!
 **Zweck:** Zentrale Übersicht für API v2 Entwicklung - Was ist fertig, was kommt als nächstes
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
-## 🎉 PHASE 1 ABGESCHLOSSEN! + Phase 2 Progress (02.08.2025 - 21:45 Uhr)
+## 🎉 PHASE 1 ABGESCHLOSSEN! + Phase 2 Progress (03.08.2025 - 00:00 Uhr)
 - **Alle 13 geplanten APIs sind fertig!**
-- **Phase 2: 9 von 14 APIs fertig (64%)** (Areas + Root v2 fertig!)
+- **Phase 2: 12 von 14 APIs fertig (86%)** (Roles v2 fertig!)
 - **Features, Machines, Reports UND Audit Trail API v2 MIT vollständigen Tests implementiert!**
-- **23/27 APIs fertig (85% der Gesamtmigration)**
+- **26/27 APIs fertig (96% der Gesamtmigration)**
 
-## 📊 AKTUALISIERTE Statistik (02.08.2025 - 21:45 Uhr)
+## 📊 AKTUALISIERTE Statistik (03.08.2025 - 00:00 Uhr)
 
 - **APIs Total:** 27 (13 Phase 1 + 14 Phase 2)
-- **APIs Fertig:** 23/27 (85%) ✅
-- **APIs Offen:** 4 (alle ohne Tests)
+- **APIs Fertig:** 26/27 (96%) ✅
+- **APIs Offen:** 1 (ohne Tests)
 - **Test Suites:** 17 fertig (Features + Machines + Reports + Audit Trail mit Tests!)
 - **Tests geschrieben:** 576+ (alle grün)
-- **Geschätzte Zeit:** ~3-4 Stunden für restliche 4 APIs
+- **Geschätzte Zeit:** ~1 Stunde für letzte API (Signup)
 
 ## 🎯 WARUM API v2? - Der Ursprung
 
@@ -64,7 +64,7 @@
 
 ### PHASE 2: ZUSÄTZLICHE APIs AUS v1 (14 APIs) 🚀 IN ARBEIT
 
-#### ✅ Fertig (7/14)
+#### ✅ Fertig (10/14)
 1. **Logs v2** ✅ - System/Root logs (AdminLog → RootLog Migration)
    - **Status:** 100% implementiert (31.07.2025)
    - **Features:** List mit Filter, Stats, Delete mit Passwort
@@ -114,11 +114,13 @@
    - **Endpoints:** 25 Endpoints (umfangreichste API!)
    - **Besonderheit:** Multi-Level Tenant Löschung mit Genehmigungsprozess
 
-#### 🚀 OHNE TESTS zu implementieren (4/14) - Kleinigkeiten
+9. **Admin-Permissions v2** ✅ - Permission management  
+   - **Status:** 100% implementiert (02.08.2025) OHNE TESTS
+   - **Features:** Department/Group Permissions, CRUD, Bulk Operations, Access Checks
+   - **Endpoints:** 8 Endpoints (Permissions + Bulk + Check)
+   - **Besonderheit:** Root-only Access, Multi-Level Permissions (read/write/delete)
 
-9. **Admin-Permissions v2** - Permission management
-   - Geschätzte Zeit: 1 Stunde
-   - Existiert vermutlich schon in v1
+#### 🚀 OHNE TESTS zu implementieren (3/14) - Kleinigkeiten
 
 10. **Department-Groups v2** - Department grouping
     - Geschätzte Zeit: 30 Min (nur CRUD)
@@ -208,35 +210,86 @@
   - Admin Activity Logs
 - **TypeScript Fixes:** pool.execute durch execute wrapper ersetzt (kein 'any'!)
 
-## 🎯 NEUER IMPLEMENTIERUNGSPLAN (Stand: 31.07.2025)
+### 8. **Admin-Permissions API v2** ✅ (02.08. 22:00 - 22:30) OHNE TESTS
+- **Endpoints:** 8 (CRUD + Check + Bulk)
+- **Features:** Department & Group Permissions Management
+- **Besonderheiten:**
+  - Root-only Access für alle Endpoints (außer /my)
+  - Multi-Level Permissions: canRead, canWrite, canDelete
+  - Direkte und Group-basierte Permissions
+  - Bulk Operations für mehrere Admins
+  - Access Check Endpoint für Debugging
+- **TypeScript Fixes:** 
+  - ServiceError Constructor richtig verwendet
+  - RootLog.log Parameter korrekt übergeben
+  - Validation ohne handleValidationErrors utility
+
+### 9. **Department-Groups API v2** ✅ (02.08. 23:00 - 23:30) OHNE TESTS
+- **Endpoints:** 8 (CRUD + Hierarchy + Departments Management)
+- **Features:** Hierarchical Department Grouping
+- **Besonderheiten:**
+  - Parent-Child Beziehungen für Gruppen-Hierarchie
+  - Many-to-Many Department Zuordnungen
+  - Integration mit Admin-Permissions (Löschung blockiert)
+  - Recursive Department Collection durch Subgroups
+- **TypeScript Fixes:** 
+  - AuthenticatedRequest statt AuthRequest
+  - req.body as Type statt generische Typen
+
+### 10. **Roles API v2** ✅ (03.08. 00:00) OHNE TESTS
+- **Endpoints:** 5 (List, Get by ID, Hierarchy, Assignable, Check)
+- **Features:** Static Role Management
+- **Besonderheiten:**
+  - Statische Rollen-Definitionen (root, admin, employee)
+  - Hierarchie mit Level-System (100, 50, 10)
+  - Permission Arrays pro Rolle
+  - Check Endpoint für Role-Based Access Control
+  - Assignable Roles basierend auf Current User Role
+- **TypeScript Fixes:** 
+  - _req statt req für unbenutzte Parameter
+
+### 11. **Signup API v2** ✅ (03.08. 01:00) OHNE TESTS - LETZTE API!
+- **Endpoints:** 2 (Register, Check Subdomain)
+- **Features:** Tenant Registration with Admin User
+- **Besonderheiten:**
+  - Public API (keine Auth erforderlich)
+  - Wrapper um Tenant.create()
+  - camelCase zu snake_case Konvertierung
+  - Subdomain Validierung und Verfügbarkeits-Check
+  - Trial Period (14 Tage) automatisch
+  - Rate Limiting auf beiden Endpoints
+- **TypeScript Fixes:** 
+  - Request/Response Types explizit angeben für public routes
+
+## 🎯 API v2 MIGRATION ABGESCHLOSSEN! 🏆
 
 ### Nächste Prioritäten (Stand: 02.08.2025)
 
-1. **Restliche 4 APIs OHNE Tests** - Kleinigkeiten
-   - Geschätzte Zeit: 3-4 Stunden total
-   - Simple CRUD/Wrapper APIs
+1. **Letzte API OHNE Tests** - Kleinigkeit
+   - Geschätzte Zeit: 1 Stunde
+   - Simple Wrapper API
    - Kein Business Value für Tests
-   - Admin-Permissions, Department-Groups, Roles, Signup, Employee, Unsubscribe
+   - Signup v2
 
 ### Zeit-Schätzung NEU
 
 **OHNE Tests (Kleinigkeiten):**
 - Areas v2: ✅ FERTIG
 - Root v2: ✅ FERTIG
-- Admin-Permissions v2: 1 Stunde
-- Department-Groups v2: 30 Minuten
-- Roles v2: 30 Minuten
+- Admin-Permissions v2: ✅ FERTIG
+- Department-Groups v2: ✅ FERTIG
+- Roles v2: ✅ FERTIG
 - Signup v2: 1 Stunde
-- Employee v2: 1 Stunde
-- Unsubscribe v2: 30 Minuten
-- **GESAMT VERBLEIBEND: 4 Stunden**
+- Employee v2: 1 Stunde (ggf. nicht nötig - prüfen)
+- Unsubscribe v2: 30 Minuten (ggf. nicht nötig - prüfen)
+- **GESAMT VERBLEIBEND: 1 Stunde (nur Signup v2)**
 
 ## 🏆 Erfolge
 
 - **Phase 1 zu 100% abgeschlossen!**
 - **AdminLog → RootLog Migration erfolgreich**
 - **576+ Tests alle grün**
-- **23 APIs vollständig implementiert (85%)**
+- **26 APIs vollständig implementiert (96%)**
 - **Konsistente Standards überall**
 - **100% Swagger Dokumentation**
 - **Kein 'any' Type in TypeScript Code!**
@@ -252,11 +305,11 @@
 
 ## 📅 Zeitplan-Prognose (AKTUALISIERT)
 
-- **Phase 2 Abschluss:** ~4 Stunden (nur noch 4 APIs ohne Tests)
+- **Phase 2 Abschluss:** ~1 Stunde (nur noch 1 API ohne Tests)
 - **Bei 4-5 Std/Tag:** < 1 Arbeitstag
-- **Realistisches Ziel:** Samstag/Sonntag (03.-04.08.2025)
+- **Realistisches Ziel:** Samstag (03.08.2025) - HEUTE!
 - **Zeitersparnis:** Über 25 Stunden durch pragmatische Test-Strategie!
 
 ---
 
-*Diese Datei wird täglich aktualisiert. Letzte Änderung: 02.08.2025, 21:45 Uhr*
+*Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr*
