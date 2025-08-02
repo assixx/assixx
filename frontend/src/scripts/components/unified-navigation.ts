@@ -3100,6 +3100,10 @@ const unifiedNavigationCSS = `
         display: none;
     }
 
+    .sidebar.collapsed .sidebar-menu {
+        margin-top: 132px;
+    }
+
     /* Main content adjustment for collapsed sidebar */
     .main-content.sidebar-collapsed {
         margin-left: 70px;
@@ -3309,7 +3313,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed #sidebar-user-avatar,
     .sidebar.collapsed .user-avatar,
     .sidebar.collapsed .user-info-card .user-avatar {
-        margin-left: -13px !important;
+        margin-left: -14px !important;
     }
 
     .user-info-card:hover .user-avatar {
