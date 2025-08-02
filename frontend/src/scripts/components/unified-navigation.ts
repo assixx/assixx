@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 /**
  * Unified Navigation Component für alle Dashboards
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design
@@ -3071,7 +3072,7 @@ const unifiedNavigationCSS = `
         flex-direction: column;
         align-items: center;
         min-height: auto;
-        margin-top: 20px;
+        margin-top: 80px;
         margin-bottom: 20px;
     }
 
@@ -3141,7 +3142,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 131.9px;
+        margin-top: 71.9px;
     }
 
 
@@ -3616,7 +3617,7 @@ const unifiedNavigationCSS = `
     .layout-container {
         display: flex;
         min-height: 100vh;
-        padding-top: 87px; /* Space for fixed header */
+        padding-top: 68px; /* Space for fixed header */
     }
 
     .main-content {
