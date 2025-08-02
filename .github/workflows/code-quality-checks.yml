@@ -1,15 +1,15 @@
-name: Code Quality & Basic Tests
+name: Code Quality Checks
 
 on:
   push:
-    branches: [main, master, "unit-tests--Github-Actions"]
+    branches: [main, master]
   pull_request:
     branches: [main, master]
 
 jobs:
-  basic-tests:
+  unit-tests-minimal:
     runs-on: ubuntu-latest
-    name: Basic Unit Tests (No Database)
+    name: Unit Tests (2 tests, no DB)
 
     steps:
       - uses: actions/checkout@v4
@@ -62,9 +62,9 @@ jobs:
             pnpm jest -c ../jest.config.js "$test" --passWithNoTests || exit 1
           done
 
-  code-analysis:
+  linting-and-formatting:
     runs-on: ubuntu-latest
-    name: Code Analysis
+    name: Linting & Formatting (ESLint, Prettier, TypeScript)
 
     steps:
       - uses: actions/checkout@v4
@@ -111,9 +111,9 @@ jobs:
           cd backend
           pnpm run prettier
 
-  docker-build:
+  docker-build-verification:
     runs-on: ubuntu-latest
-    name: Docker Build Test
+    name: Docker Build Verification (no push)
 
     steps:
       - uses: actions/checkout@v4
