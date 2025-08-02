@@ -5,7 +5,6 @@
 
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
 import jwt from "jsonwebtoken";
 import nodemailer, {
@@ -18,10 +17,6 @@ import type { Attachment } from "nodemailer/lib/mailer";
 import Feature from "../models/feature";
 
 import { logger } from "./logger";
-
-// ES modules equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
@@ -271,8 +266,8 @@ async function loadTemplate(
 ): Promise<string> {
   try {
     const templatePath = path.join(
-      __dirname,
-      "../templates/email",
+      process.cwd(),
+      "templates/email",
       `${templateName}.html`,
     );
     let templateContent = await fs.promises.readFile(templatePath, "utf8");

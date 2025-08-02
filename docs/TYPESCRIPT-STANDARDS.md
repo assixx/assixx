@@ -2,6 +2,7 @@
 
 > **Zweck:** Vermeidung häufiger TypeScript-Fehler und Sicherstellung konsistenter Code-Qualität  
 > **Erstellt:** 08.06.2025  
+> **Aktualisiert:** 24.07.2025 (API Workshop Decisions)  
 > **Status:** ✅ Aktiv
 
 ## 🎯 Übersicht
@@ -191,12 +192,16 @@ export {};
 - **Interfaces:** PascalCase mit Prefix `I` nur bei Konflikten
 - **Type Aliases:** PascalCase
 - **Enums:** PascalCase für Name, UPPER_CASE für Werte
+- **API Fields:** camelCase (nicht snake_case!)
 
 ```typescript
 // Interface
 interface User {
   id: number;
   username: string;
+  firstName: string; // ✅ camelCase für API
+  createdAt: string; // ✅ ISO 8601 string
+  isActive: boolean; // ✅ boolean prefix
 }
 
 // Type Alias
@@ -210,7 +215,109 @@ enum Status {
 }
 ```
 
-### 4.3 Vermeidung von Duplikaten
+### 4.3 API Response Standards (Workshop Decision 24.07.2025)
+
+**Success Response:**
+
+```typescript
+interface ApiSuccessResponse<T> {
+  success: true;
+  data: T;
+  meta?: {
+    timestamp: string;
+    version: string;
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+}
+```
+
+**Error Response:**
+
+```typescript
+interface ApiErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: Array<{
+      field: string;
+      message: string;
+    }>;
+  };
+  meta?: {
+    timestamp: string;
+    requestId: string;
+  };
+}
+```
+
+### 4.4 Field Naming Standards (Workshop Decision 24.07.2025)
+
+```typescript
+// ✅ RICHTIG - camelCase für TypeScript/API
+interface CalendarEvent {
+  // Timestamps (ISO 8601)
+  createdAt: string; // "2024-07-24T10:30:00Z"
+  updatedAt: string;
+  deletedAt?: string;
+
+  // Dates
+  startDate: string; // "2024-07-24"
+  endDate: string;
+
+  // Times
+  startTime: string; // "09:00:00"
+  endTime: string;
+
+  // Booleans
+  isActive: boolean;
+  hasReminder: boolean;
+
+  // IDs
+  userId: number;
+  tenantId: number;
+  departmentId?: number;
+}
+
+// ❌ FALSCH - snake_case nicht für API verwenden!
+interface WrongExample {
+  user_id: number; // ❌ snake_case
+  start_date: string; // ❌ snake_case
+  is_active: boolean; // ❌ snake_case
+}
+```
+
+**Automatische Konvertierung:**
+
+```typescript
+// Utility für DB ↔ API Konvertierung
+import { camelCase, snakeCase } from "lodash";
+
+// DB (snake_case) → API (camelCase)
+function dbToApi<T>(dbObject: any): T {
+  return Object.keys(dbObject).reduce((acc, key) => {
+    acc[camelCase(key)] = dbObject[key];
+    return acc;
+  }, {} as T);
+}
+
+// API (camelCase) → DB (snake_case)
+function apiToDb<T>(apiObject: any): T {
+  return Object.keys(apiObject).reduce((acc, key) => {
+    acc[snakeCase(key)] = apiObject[key];
+    return acc;
+  }, {} as T);
+}
+```
+
+### 4.5 Vermeidung von Duplikaten
 
 ❌ **Falsch:**
 
@@ -453,9 +560,171 @@ Beim Erstellen neuer TypeScript-Dateien:
 - [ ] ESLint zeigt keine Fehler
 - [ ] Type-Check läuft erfolgreich durch
 
+## 🚨 11.1 ESLint Best Practices (Neu: 24.07.2025)
+
+### Nullish Coalescing statt Logical OR
+
+❌ **Falsch:**
+
+```typescript
+const value = process.env.VALUE || "default"; // Problem bei "", 0, false
+```
+
+✅ **Richtig:**
+
+```typescript
+const value = process.env.VALUE ?? "default"; // Nur bei null/undefined
+```
+
+### Non-null Assertions vermeiden
+
+❌ **Falsch:**
+
+```typescript
+const tenantId = req.tenantId!; // Unsicher!
+```
+
+✅ **Richtig:**
+
+```typescript
+if (!req.tenantId) {
+  res.status(401).json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
+  return;
+}
+const tenantId = req.tenantId; // Jetzt sicher
+```
+
+### CommonJS Script Globals
+
+Für .cjs Dateien:
+
+```javascript
+/* eslint-env node */
+/* global process, __dirname, console */
+```
+
+### any Types richtig ersetzen
+
+❌ **Falsch:**
+
+```typescript
+function processData(data: any) {}
+```
+
+✅ **Richtig:**
+
+```typescript
+function processData(data: unknown) {}
+// oder
+function processData(data: Record<string, unknown>) {}
+// oder spezifischer Type
+```
+
+### Promise Callbacks
+
+❌ **Falsch:**
+
+```typescript
+uploadMiddleware(req, res, async (err) => {}); // async in void callback
+```
+
+✅ **Richtig:**
+
+```typescript
+uploadMiddleware(req, res, (err) => {
+  // async logic in Promise.resolve() wenn nötig
+});
+```
+
 ---
 
-**Letzte Aktualisierung:** 08.06.2025  
+## 🌐 12. API Standards (Workshop Decisions 24.07.2025)
+
+### 12.1 REST URL Patterns
+
+```typescript
+// ✅ RICHTIG - Plural, konsistent
+GET    /api/v2/users
+POST   /api/v2/users
+GET    /api/v2/users/:id
+PUT    /api/v2/users/:id
+DELETE /api/v2/users/:id
+
+// Nested Resources (nur wenn sinnvoll)
+GET    /api/v2/conversations/:id/messages
+POST   /api/v2/conversations/:id/messages
+
+// Filtering via Query Parameters
+GET    /api/v2/teams?departmentId=123
+
+// ❌ FALSCH
+GET    /api/v2/getUsers           // Kein Verb in URL
+GET    /api/v2/user               // Singular
+GET    /api/v2/User               // Großschreibung
+```
+
+### 12.2 API Versioning
+
+```typescript
+// URL-basierte Versionierung (Workshop Decision)
+const API_BASE_URL = "/api/v2";
+
+// Helper für versioned endpoints
+function apiUrl(endpoint: string): string {
+  return `${API_BASE_URL}${endpoint}`;
+}
+
+// Usage
+fetch(apiUrl("/users")); // → /api/v2/users
+fetch(apiUrl("/calendar/events")); // → /api/v2/calendar/events
+```
+
+### 12.3 Type-Safe API Calls
+
+```typescript
+// API Client mit TypeScript
+class ApiClient {
+  private baseUrl = "/api/v2";
+
+  async get<T>(endpoint: string): Promise<ApiSuccessResponse<T>> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw data as ApiErrorResponse;
+    }
+
+    return data as ApiSuccessResponse<T>;
+  }
+
+  async post<T, D>(endpoint: string, body: D): Promise<ApiSuccessResponse<T>> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw data as ApiErrorResponse;
+    }
+
+    return data as ApiSuccessResponse<T>;
+  }
+}
+
+// Usage mit Types
+const api = new ApiClient();
+
+// Type-safe!
+const usersResponse = await api.get<User[]>("/users");
+const users: User[] = usersResponse.data;
+```
+
+---
+
+**Letzte Aktualisierung:** 24.07.2025 (API Workshop Integration)  
 **Maintainer:** Assixx Development Team
 
 Diese Standards sind verbindlich für alle TypeScript-Entwicklungen im Assixx-Projekt und werden regelmäßig überprüft und aktualisiert.

@@ -5,14 +5,12 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 import { Pool, PoolOptions, Connection } from "mysql2/promise";
 import * as mysql from "mysql2/promise";
 
-// ES modules equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get project root directory
+const projectRoot = process.cwd();
 
 // Cache für Datenbankverbindungen
 const connectionCache: Record<string, Pool> = {};
@@ -99,7 +97,13 @@ export async function initializeTenantDatabase(
     await connection.query(`USE assixx_${tenantId}`);
 
     // Tabellen erstellen (Schema aus schema.sql verwenden)
-    const schemaPath = path.join(__dirname, "schema.sql");
+    const schemaPath = path.join(
+      projectRoot,
+      "backend",
+      "src",
+      "database",
+      "schema.sql",
+    );
     const schema = fs.readFileSync(schemaPath, "utf8");
     const statements = schema.split(";").filter((stmt: string) => stmt.trim());
 

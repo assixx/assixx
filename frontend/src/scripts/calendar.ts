@@ -657,6 +657,12 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     } else if (data && Array.isArray(data.events)) {
       // Paginated response with events array
       events = data.events;
+    } else if (data?.data && Array.isArray(data.data)) {
+      // Standard API response format with data wrapper
+      events = data.data;
+    } else if (data?.data && Array.isArray(data.data.events)) {
+      // Paginated response wrapped in data
+      events = data.data.events;
     } else {
       console.error('Calendar API returned unexpected response format:', data);
       showError('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
@@ -742,7 +748,19 @@ async function loadUpcomingEvents(): Promise<void> {
       throw new Error('Failed to load upcoming events');
     }
 
-    const events: CalendarEvent[] = await response.json();
+    const data = await response.json();
+    let events: CalendarEvent[] = [];
+
+    // Handle API response format
+    if (Array.isArray(data)) {
+      events = data;
+    } else if (data?.data && Array.isArray(data.data)) {
+      events = data.data;
+    } else {
+      console.error('Unexpected response format from /api/calendar/dashboard:', data);
+      events = [];
+    }
+
     displayUpcomingEvents(events);
   } catch (error) {
     console.error('Error loading upcoming events:', error);
@@ -870,7 +888,8 @@ async function viewEvent(eventId: number): Promise<void> {
       throw new Error('Failed to load event details');
     }
 
-    const event: CalendarEvent = await response.json();
+    const data = await response.json();
+    const event: CalendarEvent = data.data ?? data;
 
     // Format dates
     const startDate = new Date(event.start_time);
@@ -1435,7 +1454,8 @@ async function loadEventForEdit(eventId: number): Promise<void> {
     });
 
     if (response.ok) {
-      const event: CalendarEvent = await response.json();
+      const data = await response.json();
+      const event: CalendarEvent = data.data ?? data;
 
       // Fill form with event data
       const form = document.getElementById('eventForm') as HTMLFormElement;

@@ -106,7 +106,7 @@ app.use(
     customCss: ".swagger-ui .topbar { display: none }",
     customSiteTitle: "Assixx API Docs",
     customfavIcon: "/favicon.ico",
-  })
+  }),
 );
 ```
 

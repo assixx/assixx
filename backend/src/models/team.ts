@@ -11,10 +11,11 @@ interface DbTeam extends RowDataPacket {
   name: string;
   description?: string;
   department_id?: number;
-  leader_id?: number;
+  team_lead_id?: number;
   tenant_id: number;
   created_at?: Date;
   updated_at?: Date;
+  is_active?: boolean;
   // Extended fields from joins
   department_name?: string;
 }
@@ -33,15 +34,15 @@ interface TeamCreateData {
   name: string;
   description?: string;
   department_id?: number;
-  leader_id?: number;
+  team_lead_id?: number;
   tenant_id: number;
 }
 
 interface TeamUpdateData {
   name?: string;
-  description?: string;
-  department_id?: number;
-  leader_id?: number;
+  description?: string | null;
+  department_id?: number | null;
+  team_lead_id?: number | null;
 }
 
 interface MysqlError extends Error {
@@ -52,7 +53,8 @@ interface MysqlError extends Error {
 
 export class Team {
   static async create(teamData: TeamCreateData): Promise<number> {
-    const { name, description, department_id, leader_id, tenant_id } = teamData;
+    const { name, description, department_id, team_lead_id, tenant_id } =
+      teamData;
     logger.info(`Creating new team: ${name}`);
 
     const query = `
@@ -65,7 +67,7 @@ export class Team {
         name,
         description,
         department_id,
-        leader_id,
+        team_lead_id,
         tenant_id,
       ]);
       logger.info(`Team created successfully with ID ${result.insertId}`);
@@ -81,7 +83,9 @@ export class Team {
       `Fetching all teams${tenant_id ? ` for tenant ${tenant_id}` : ""}`,
     );
     const query = `
-      SELECT t.*, d.name AS department_name 
+      SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id, 
+             t.tenant_id, t.created_at, t.updated_at, t.is_active,
+             d.name AS department_name 
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       ${tenant_id ? "WHERE t.tenant_id = ?" : ""}
@@ -104,7 +108,9 @@ export class Team {
   static async findById(id: number): Promise<DbTeam | null> {
     logger.info(`Fetching team with ID ${id}`);
     const query = `
-      SELECT t.*, d.name AS department_name 
+      SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id, 
+             t.tenant_id, t.created_at, t.updated_at, t.is_active,
+             d.name AS department_name 
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       WHERE t.id = ?
@@ -126,22 +132,43 @@ export class Team {
 
   static async update(id: number, teamData: TeamUpdateData): Promise<boolean> {
     logger.info(`Updating team ${id}`);
-    const { name, description, department_id, leader_id } = teamData;
+    const { name, description, department_id, team_lead_id } = teamData;
+
+    // Build dynamic update query
+    const updateFields: string[] = [];
+    const values: unknown[] = [];
+
+    if (name !== undefined) {
+      updateFields.push("name = ?");
+      values.push(name);
+    }
+    if (description !== undefined) {
+      updateFields.push("description = ?");
+      values.push(description);
+    }
+    if (department_id !== undefined) {
+      updateFields.push("department_id = ?");
+      values.push(department_id);
+    }
+    if (team_lead_id !== undefined) {
+      updateFields.push("team_lead_id = ?");
+      values.push(team_lead_id);
+    }
+
+    if (updateFields.length === 0) {
+      logger.warn(`No fields to update for team ${id}`);
+      return true;
+    }
 
     const query = `
       UPDATE teams 
-      SET name = ?, description = ?, department_id = ?, team_lead_id = ? 
+      SET ${updateFields.join(", ")} 
       WHERE id = ?
     `;
+    values.push(id);
 
     try {
-      const [result] = await executeQuery<ResultSetHeader>(query, [
-        name,
-        description,
-        department_id,
-        leader_id,
-        id,
-      ]);
+      const [result] = await executeQuery<ResultSetHeader>(query, values);
       if (result.affectedRows === 0) {
         logger.warn(`No team found with ID ${id} for update`);
         return false;
@@ -172,20 +199,27 @@ export class Team {
     }
   }
 
-  static async addUserToTeam(userId: number, teamId: number): Promise<boolean> {
-    logger.info(`Adding user ${userId} to team ${teamId}`);
-    const query = "INSERT INTO user_teams (user_id, team_id) VALUES (?, ?)";
+  static async addUserToTeam(
+    userId: number,
+    teamId: number,
+    tenantId: number,
+  ): Promise<boolean> {
+    logger.info(
+      `Adding user ${userId} to team ${teamId} for tenant ${tenantId}`,
+    );
+    const query =
+      "INSERT INTO user_teams (user_id, team_id, tenant_id) VALUES (?, ?, ?)";
 
     try {
-      await executeQuery(query, [userId, teamId]);
+      await executeQuery(query, [userId, teamId, tenantId]);
       logger.info(`User ${userId} added to team ${teamId} successfully`);
       return true;
     } catch (error) {
       const mysqlError = error as MysqlError;
-      // Wenn es ein Duplikat ist, ignorieren wir es
+      // Wenn es ein Duplikat ist, werfen wir einen Fehler
       if (mysqlError.code === "ER_DUP_ENTRY") {
         logger.warn(`User ${userId} is already a member of team ${teamId}`);
-        return true;
+        throw new Error("User is already a member of this team");
       }
       logger.error(
         `Error adding user ${userId} to team ${teamId}: ${mysqlError.message}`,

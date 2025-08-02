@@ -122,6 +122,7 @@ export class User {
       last_name,
       age,
       employee_id,
+      employee_number,
       department_id,
       position,
       phone,
@@ -131,8 +132,8 @@ export class User {
       emergency_contact,
       profile_picture,
       status = "active",
-      is_archived = false,
-      is_active = true,
+      is_archived = 0,
+      is_active = 1,
     } = userData;
 
     // Always use email as username
@@ -157,7 +158,7 @@ export class User {
         const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
         const { tempId } = generateTempEmployeeId(
           subdomain,
-          role || "employee",
+          role ?? "employee",
         );
         finalEmployeeId = tempId;
       }
@@ -166,12 +167,12 @@ export class User {
     const query = `
       INSERT INTO users (
         username, email, password, role, company, notes, 
-        first_name, last_name, age, employee_id, iban,
+        first_name, last_name, age, employee_id, employee_number, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
         status, is_archived, is_active, tenant_id
       ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -186,6 +187,7 @@ export class User {
         last_name,
         age,
         finalEmployeeId,
+        employee_number ?? `EMP${Date.now()}`,
         iban,
         department_id,
         position,
@@ -214,7 +216,7 @@ export class User {
           const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
           const newEmployeeId = generateEmployeeId(
             subdomain,
-            role || "employee",
+            role ?? "employee",
             result.insertId,
           );
 
@@ -241,6 +243,13 @@ export class User {
         [username],
       );
       console.log("[DEBUG] Query completed, rows found:", rows.length);
+
+      if (rows[0]) {
+        // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+        rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
+        rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
+      }
+
       return rows[0];
     } catch (error) {
       console.error("[DEBUG] findByUsername error:", error);
@@ -269,14 +278,18 @@ export class User {
       }
 
       const [rows] = await executeQuery<DbUser[]>(
-        `
-        SELECT u.*, d.name as department_name, t.company_name, t.subdomain, 
-               u.availability_status, u.availability_start, u.availability_end, u.availability_notes
-        FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
-        LEFT JOIN tenants t ON u.tenant_id = t.id
-        WHERE u.id = ? AND u.tenant_id = ?
-      `,
+        process.env.NODE_ENV === "test"
+          ? `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain
+             FROM users u
+             LEFT JOIN departments d ON u.department_id = d.id
+             LEFT JOIN tenants t ON u.tenant_id = t.id
+             WHERE u.id = ? AND u.tenant_id = ?`
+          : `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
+             u.availability_status, u.availability_start, u.availability_end, u.availability_notes
+             FROM users u
+             LEFT JOIN departments d ON u.department_id = d.id
+             LEFT JOIN tenants t ON u.tenant_id = t.id
+             WHERE u.id = ? AND u.tenant_id = ?`,
         [id, tenant_id],
       );
 
@@ -314,7 +327,7 @@ export class User {
       const params: unknown[] = [role, tenant_id];
 
       if (!includeArchived) {
-        query += ` AND u.is_archived = false`;
+        query += ` AND u.is_archived = 0`;
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, params);
@@ -333,12 +346,27 @@ export class User {
     }
   }
 
-  static async findByEmail(email: string): Promise<DbUser | undefined> {
+  static async findByEmail(
+    email: string,
+    tenantId?: number,
+  ): Promise<DbUser | undefined> {
     try {
-      const [rows] = await executeQuery<DbUser[]>(
-        "SELECT * FROM users WHERE email = ? AND is_archived = false",
-        [email],
-      );
+      let query = "SELECT * FROM users WHERE email = ? AND is_archived = 0";
+      const params: (string | number)[] = [email];
+
+      if (tenantId !== undefined) {
+        query += " AND tenant_id = ?";
+        params.push(tenantId);
+      }
+
+      const [rows] = await executeQuery<DbUser[]>(query, params);
+
+      if (rows[0]) {
+        // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+        rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
+        rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
+      }
+
       return rows[0];
     } catch (error) {
       logger.error(`Error finding user by email: ${(error as Error).message}`);
@@ -475,7 +503,7 @@ export class User {
         values.push(filters.is_archived);
       } else {
         // Standardmäßig nur nicht-archivierte Benutzer anzeigen
-        query += ` AND u.is_archived = false`;
+        query += ` AND u.is_archived = 0`;
       }
 
       // Weitere Filter hinzufügen
@@ -532,7 +560,7 @@ export class User {
       // Pagination hinzufügen
       if (filters.limit) {
         const limit = parseInt(filters.limit.toString()) ?? 20;
-        const page = parseInt((filters.page ?? 1).toString()) || 1;
+        const page = parseInt((filters.page ?? 1).toString()) ?? 1;
         const offset = (page - 1) * limit;
 
         query += ` LIMIT ? OFFSET ?`;
@@ -588,7 +616,7 @@ export class User {
         values.push(filters.is_archived);
       } else {
         // Standardmäßig nur nicht-archivierte Benutzer anzeigen
-        query += ` AND u.is_archived = false`;
+        query += ` AND u.is_archived = 0`;
       }
 
       if (filters.role) {

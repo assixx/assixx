@@ -10,7 +10,7 @@ import {
   PoolConnection,
 } from "mysql2/promise";
 
-import pool from "../database";
+import pool from "../config/database.js";
 
 /**
  * Type-safe database query function

@@ -256,12 +256,6 @@
         border-bottom: none;
       }
 
-      .dropdown-option:hover {
-        background: rgba(33, 150, 243, 0.2);
-        color: white;
-        padding-left: 16px;
-      }
-
       .dropdown-option.selected {
         background: rgba(33, 150, 243, 0.15);
         font-weight: 500;
@@ -637,7 +631,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
-  <body>
+  <body class="document-upload">
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
@@ -649,7 +643,7 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div id="upload-success" class="alert alert-success" class="u-hidden">
+          <div id="upload-success" class="alert alert-success" style="display: none">
             <span class="icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                 <path
@@ -663,7 +657,7 @@
             </div>
           </div>
 
-          <div id="upload-error" class="alert alert-danger" class="u-hidden">
+          <div id="upload-error" class="alert alert-danger" style="display: none">
             <span class="icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
@@ -720,7 +714,7 @@
                         <input type="hidden" name="userId" id="userValue" />
                       </div>
 
-                      <div class="custom-dropdown" id="teamDropdownContainer" class="u-hidden">
+                      <div class="custom-dropdown" id="teamDropdownContainer" style="display: none">
                         <div class="dropdown-display placeholder" id="teamDisplay" onclick="toggleDropdown('team')">
                           <span>Bitte Team auswählen</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -733,7 +727,7 @@
                         <input type="hidden" name="teamId" id="teamValue" />
                       </div>
 
-                      <div class="custom-dropdown" id="departmentDropdownContainer" class="u-hidden">
+                      <div class="custom-dropdown" id="departmentDropdownContainer" style="display: none">
                         <div class="dropdown-display placeholder" id="departmentDisplay" onclick="toggleDropdown('department')">
                           <span>Bitte Abteilung auswählen</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -947,12 +941,13 @@
       async function loadTeams() {
         const token = localStorage.getItem('token');
         try {
-          const response = await fetch('/api/teams', {
+          const response = await fetch('/api/v2/teams', {
             headers: { Authorization: `Bearer ${token}` },
           });
 
           if (response.ok) {
-            const teams = await response.json();
+            const result = await response.json();
+            const teams = result.data || [];
             const teamDropdown = document.getElementById('teamDropdown');
 
             teamDropdown.innerHTML = teams
@@ -974,12 +969,13 @@
       async function loadDepartments() {
         const token = localStorage.getItem('token');
         try {
-          const response = await fetch('/api/departments', {
+          const response = await fetch('/api/v2/departments', {
             headers: { Authorization: `Bearer ${token}` },
           });
 
           if (response.ok) {
-            const departments = await response.json();
+            const result = await response.json();
+            const departments = result.data || [];
             const departmentDropdown = document.getElementById('departmentDropdown');
 
             departmentDropdown.innerHTML = departments
@@ -1182,27 +1178,39 @@
         if (!userDropdown) return;
 
         try {
-          const response = await fetch('/admin/employees', {
+          const response = await fetch('/api/v2/users?role=employee', {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
 
           if (response.ok) {
-            const employees = await response.json();
+            const data = await response.json();
+            // Handle v2 API response format: {success: true, data: [...], pagination: {...}}
+            const employees = data.data || [];
             console.log(`Loaded ${employees.length} employees`);
 
             // Dropdown leeren
             userDropdown.innerHTML = '';
 
             // Mitarbeiter zum Dropdown hinzufügen
-            employees.forEach((employee) => {
-              const option = document.createElement('div');
-              option.className = 'dropdown-option';
-              option.textContent = `${employee.first_name} ${employee.last_name}`;
-              option.onclick = () => selectOption('user', employee.id, `${employee.first_name} ${employee.last_name}`);
-              userDropdown.appendChild(option);
-            });
+            if (employees.length > 0) {
+              employees.forEach((employee) => {
+                const option = document.createElement('div');
+                option.className = 'dropdown-option';
+                option.textContent = `${employee.first_name} ${employee.last_name}`;
+                option.onclick = () => selectOption('user', employee.id, `${employee.first_name} ${employee.last_name}`);
+                userDropdown.appendChild(option);
+              });
+            } else {
+              // Show placeholder when no employees
+              const placeholder = document.createElement('div');
+              placeholder.className = 'dropdown-option disabled';
+              placeholder.textContent = 'Keine Mitarbeiter vorhanden';
+              placeholder.style.opacity = '0.5';
+              placeholder.style.cursor = 'default';
+              userDropdown.appendChild(placeholder);
+            }
           } else {
             console.error('Failed to load employees');
             showError('Mitarbeiterliste konnte nicht geladen werden.');

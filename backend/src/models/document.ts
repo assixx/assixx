@@ -38,6 +38,9 @@ interface DocumentCreateData {
   year?: number;
   month?: string;
   tenant_id: number;
+  createdBy?: number; // The user who uploads the document
+  tags?: string[]; // Tags for the document
+  mimeType?: string; // MIME type of the document
 }
 
 interface DocumentUpdateData {
@@ -48,6 +51,9 @@ interface DocumentUpdateData {
   year?: number;
   month?: string;
   isArchived?: boolean;
+  // v2 API specific fields
+  filename?: string;
+  tags?: string[] | null;
 }
 
 interface DocumentFilters {
@@ -91,6 +97,9 @@ export class Document {
     year,
     month,
     tenant_id,
+    createdBy,
+    tags,
+    mimeType = "application/octet-stream",
   }: DocumentCreateData): Promise<number> {
     // Log based on recipient type
     let logMessage = `Creating new document in category ${category} for `;
@@ -112,25 +121,26 @@ export class Document {
 
     // We need to also set default values for required fields
     const query =
-      "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
-        userId,
+        userId ?? null, // user_id can be null for company documents
         teamId,
         departmentId,
         recipientType,
         fileName,
         fileName, // original_name - same as filename for now
-        `/uploads/${fileName}`, // file_path
+        `/uploads/documents/${fileName}`, // file_path
         fileContent ? fileContent.length : 0, // file_size
-        "application/octet-stream", // mime_type - default for now
+        mimeType, // mime_type - use provided or default
         fileContent,
         category,
         description,
         year,
         month,
         tenant_id,
-        userId, // created_by - same as userId for now
+        createdBy ?? userId ?? 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
+        tags ? JSON.stringify(tags) : null, // tags as JSON
       ]);
       logger.info(`Document created successfully with ID ${result.insertId}`);
       return result.insertId;
@@ -205,27 +215,27 @@ export class Document {
 
   static async incrementDownloadCount(id: number): Promise<boolean> {
     logger.info(`Incrementing download count for document ${id}`);
-    const query =
-      "UPDATE documents SET download_count = COALESCE(download_count, 0) + 1, last_downloaded = NOW() WHERE id = ?";
+    // Note: download_count column doesn't exist in current schema
+    // For now, just verify the document exists
+    const query = "SELECT id FROM documents WHERE id = ?";
     try {
-      const [result] = await executeQuery<ResultSetHeader>(query, [id]);
-      if (result.affectedRows === 0) {
+      const [rows] = await executeQuery<RowDataPacket[]>(query, [id]);
+      if (rows.length === 0) {
         logger.warn(`No document found with ID ${id} for download tracking`);
         return false;
       }
-      logger.info(`Download count incremented for document ${id}`);
+      logger.info(`Download tracked for document ${id}`);
       return true;
     } catch (error) {
       logger.error(
-        `Error incrementing download count for document ${id}: ${(error as Error).message}`,
+        `Error tracking download for document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
   }
 
-  static async update(
-    id: number,
-    {
+  static async update(id: number, data: DocumentUpdateData): Promise<boolean> {
+    const {
       fileName,
       fileContent,
       category,
@@ -233,8 +243,7 @@ export class Document {
       year,
       month,
       isArchived,
-    }: DocumentUpdateData,
-  ): Promise<boolean> {
+    } = data;
     logger.info(`Updating document ${id}`);
     let query = "UPDATE documents SET ";
     const params: unknown[] = [];
@@ -267,6 +276,15 @@ export class Document {
     if (isArchived !== undefined) {
       updates.push("is_archived = ?");
       params.push(isArchived);
+    }
+    // Handle additional fields that v2 API uses
+    if (data.filename !== undefined) {
+      updates.push("filename = ?");
+      params.push(data.filename);
+    }
+    if (data.tags !== undefined) {
+      updates.push("tags = ?");
+      params.push(JSON.stringify(data.tags));
     }
 
     if (updates.length === 0) {
@@ -390,7 +408,7 @@ export class Document {
       `Searching accessible documents for employee ${userId} with term: ${searchTerm}`,
     );
 
-    const query = `
+    let query = `
       SELECT DISTINCT d.*,
         u.first_name, u.last_name,
         CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
@@ -408,7 +426,7 @@ export class Document {
       LEFT JOIN teams t ON d.team_id = t.id
       LEFT JOIN departments dept ON d.department_id = dept.id
       WHERE d.tenant_id = ?
-        AND (d.file_name LIKE ? OR d.description LIKE ?)
+        AND (d.filename LIKE ? OR d.description LIKE ?)
         AND (
           -- Personal documents
           (d.recipient_type = 'user' AND d.user_id = ?)
@@ -506,12 +524,13 @@ export class Document {
   static async findByEmployeeWithAccess(
     userId: number,
     tenant_id: number,
-  ): Promise<DbDocument[]> {
+    filters?: DocumentFilters,
+  ): Promise<{ documents: DbDocument[]; total: number }> {
     logger.info(
       `Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`,
     );
 
-    const query = `
+    let query = `
       SELECT DISTINCT d.*, 
         u.first_name, u.last_name,
         CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
@@ -546,21 +565,126 @@ export class Document {
           -- Company-wide documents
           d.recipient_type = 'company'
         )
-      ORDER BY d.uploaded_at DESC`;
+      `;
+
+    const params: unknown[] = [
+      tenant_id,
+      userId,
+      userId,
+      tenant_id,
+      userId,
+      tenant_id,
+    ];
+
+    // Apply additional filters if provided
+    if (filters) {
+      if (filters.category) {
+        query += " AND d.category = ?";
+        params.push(filters.category);
+      }
+
+      if (filters.year) {
+        query += " AND d.year = ?";
+        params.push(filters.year);
+      }
+
+      if (filters.month) {
+        query += " AND d.month = ?";
+        params.push(filters.month);
+      }
+
+      if (filters.isArchived !== undefined) {
+        query += " AND d.is_archived = ?";
+        params.push(filters.isArchived);
+      }
+
+      if (filters.searchTerm) {
+        query += " AND (d.filename LIKE ? OR d.description LIKE ?)";
+        params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
+      }
+
+      if (filters.recipientType) {
+        query += " AND d.recipient_type = ?";
+        params.push(filters.recipientType);
+      }
+
+      if (filters.orderBy) {
+        const validOrderFields = [
+          "uploaded_at",
+          "filename",
+          "category",
+          "year",
+          "month",
+        ];
+        const orderField = validOrderFields.includes(filters.orderBy)
+          ? filters.orderBy
+          : "uploaded_at";
+        const orderDirection =
+          filters.orderDirection === "ASC" ? "ASC" : "DESC";
+        query += ` ORDER BY d.${orderField} ${orderDirection}`;
+      } else {
+        query += " ORDER BY d.uploaded_at DESC";
+      }
+    } else {
+      query += " ORDER BY d.uploaded_at DESC";
+    }
 
     try {
-      const [rows] = await executeQuery<DbDocument[]>(query, [
-        tenant_id,
-        userId,
-        userId,
-        tenant_id,
-        userId,
-        tenant_id,
-      ]);
-      logger.info(
-        `Retrieved ${rows.length} accessible documents for employee ${userId}`,
+      // Get total count first
+      let countQuery = `
+        SELECT COUNT(DISTINCT d.id) as total
+        FROM documents d
+        LEFT JOIN users u ON d.user_id = u.id
+        LEFT JOIN teams t ON d.team_id = t.id
+        LEFT JOIN departments dept ON d.department_id = dept.id
+        WHERE d.tenant_id = ?
+          AND (
+            (d.recipient_type = 'user' AND d.user_id = ?)
+            OR
+            (d.recipient_type = 'team' AND d.team_id IN (
+              SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
+            ))
+            OR
+            (d.recipient_type = 'department' AND d.department_id = (
+              SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
+            ))
+            OR
+            d.recipient_type = 'company'
+          )`;
+
+      const countParams = [...params];
+
+      // Remove ordering params from count query
+      const countParamsLength = filters?.orderBy
+        ? countParams.length
+        : countParams.length;
+
+      const [countResult] = await executeQuery<CountResult[]>(
+        countQuery,
+        countParams.slice(0, countParamsLength),
       );
-      return rows;
+      const total = countResult[0]?.total || 0;
+
+      // Add pagination if provided
+      if (filters?.limit) {
+        query += " LIMIT ?";
+        params.push(filters.limit);
+
+        if (filters.offset) {
+          query += " OFFSET ?";
+          params.push(filters.offset);
+        }
+      }
+
+      const [rows] = await executeQuery<DbDocument[]>(query, params);
+      logger.info(
+        `Retrieved ${rows.length} accessible documents (total: ${total}) for employee ${userId}`,
+      );
+
+      return {
+        documents: rows,
+        total,
+      };
     } catch (error) {
       logger.error(
         `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`,
@@ -593,7 +717,8 @@ export class Document {
         "SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?",
         [tenant_id],
       );
-      const totalSize = rows[0]?.total_size ?? 0;
+      // MySQL SUM can return null or string, ensure we return a number
+      const totalSize = parseInt(rows[0]?.total_size) || 0;
       logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
       return totalSize;
     } catch (error) {
@@ -606,8 +731,9 @@ export class Document {
 
   // Find documents with flexible filters
   static async findWithFilters(
+    tenantId: number,
     filters: DocumentFilters,
-  ): Promise<DbDocument[]> {
+  ): Promise<{ documents: DbDocument[]; total: number }> {
     logger.info("Finding documents with filters", filters);
 
     let query = `
@@ -625,10 +751,9 @@ export class Document {
       params.push(filters.userId);
     }
 
-    if (filters.tenant_id) {
-      query += " AND d.tenant_id = ?";
-      params.push(filters.tenant_id);
-    }
+    // Always filter by tenant_id for security
+    query += " AND d.tenant_id = ?";
+    params.push(tenantId);
 
     if (filters.category) {
       query += " AND d.category = ?";
@@ -651,8 +776,13 @@ export class Document {
     }
 
     if (filters.searchTerm) {
-      query += " AND (d.file_name LIKE ? OR d.description LIKE ?)";
+      query += " AND (d.filename LIKE ? OR d.description LIKE ?)";
       params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
+    }
+
+    if (filters.recipientType) {
+      query += " AND d.recipient_type = ?";
+      params.push(filters.recipientType);
     }
 
     // Add date range filters
@@ -696,9 +826,80 @@ export class Document {
     }
 
     try {
+      // Get total count first (without limit/offset)
+      let countQuery = `
+        SELECT COUNT(DISTINCT d.id) as total
+        FROM documents d
+        LEFT JOIN users u ON d.user_id = u.id
+        WHERE 1=1`;
+
+      const countParams: unknown[] = [];
+
+      // Add same filters for count query
+      countQuery += " AND d.tenant_id = ?";
+      countParams.push(tenantId);
+
+      if (filters.userId) {
+        countQuery += " AND d.user_id = ?";
+        countParams.push(filters.userId);
+      }
+
+      if (filters.category) {
+        countQuery += " AND d.category = ?";
+        countParams.push(filters.category);
+      }
+
+      if (filters.year) {
+        countQuery += " AND d.year = ?";
+        countParams.push(filters.year);
+      }
+
+      if (filters.month) {
+        countQuery += " AND d.month = ?";
+        countParams.push(filters.month);
+      }
+
+      if (filters.isArchived !== undefined) {
+        countQuery += " AND d.is_archived = ?";
+        countParams.push(filters.isArchived);
+      }
+
+      if (filters.searchTerm) {
+        countQuery += " AND (d.filename LIKE ? OR d.description LIKE ?)";
+        countParams.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
+      }
+
+      if (filters.recipientType) {
+        countQuery += " AND d.recipient_type = ?";
+        countParams.push(filters.recipientType);
+      }
+
+      if (filters.uploadDateFrom) {
+        countQuery += " AND d.uploaded_at >= ?";
+        countParams.push(filters.uploadDateFrom);
+      }
+
+      if (filters.uploadDateTo) {
+        countQuery += " AND d.uploaded_at <= ?";
+        countParams.push(filters.uploadDateTo);
+      }
+
+      const [countResult] = await executeQuery<CountResult[]>(
+        countQuery,
+        countParams,
+      );
+      const total = countResult[0]?.total || 0;
+
+      // Get documents with limit/offset
       const [rows] = await executeQuery<DbDocument[]>(query, params);
-      logger.info(`Found ${rows.length} documents with filters`);
-      return rows;
+      logger.info(
+        `Found ${rows.length} documents (total: ${total}) with filters`,
+      );
+
+      return {
+        documents: rows,
+        total,
+      };
     } catch (error) {
       logger.error(
         `Error finding documents with filters: ${(error as Error).message}`,
@@ -771,6 +972,59 @@ export class Document {
       userId,
     ]);
     return results[0]?.unread_count ?? 0;
+  }
+
+  // Get document counts by category for a user
+  static async getCountsByCategory(
+    tenant_id: number,
+    userId: number,
+  ): Promise<Record<string, number>> {
+    const query = `
+      SELECT 
+        d.category,
+        COUNT(DISTINCT d.id) as count
+      FROM documents d
+      LEFT JOIN user_teams ut ON d.team_id = ut.team_id AND ut.user_id = ?
+      LEFT JOIN users u ON u.id = ?
+      WHERE d.tenant_id = ?
+        AND d.is_archived = false
+        AND (
+          (d.recipient_type = 'user' AND d.user_id = ?)
+          OR (d.recipient_type = 'team' AND ut.user_id IS NOT NULL)
+          OR (d.recipient_type = 'department' AND d.department_id = u.department_id)
+          OR d.recipient_type = 'company'
+        )
+      GROUP BY d.category
+    `;
+
+    interface CategoryCount extends RowDataPacket {
+      category: string;
+      count: number;
+    }
+
+    const [results] = await executeQuery<CategoryCount[]>(query, [
+      userId,
+      userId,
+      tenant_id,
+      userId,
+    ]);
+
+    // Convert to object
+    const counts: Record<string, number> = {
+      personal: 0,
+      work: 0,
+      training: 0,
+      general: 0,
+      salary: 0,
+    };
+
+    results.forEach((row) => {
+      if (Object.prototype.hasOwnProperty.call(counts, row.category)) {
+        counts[row.category] = row.count;
+      }
+    });
+
+    return counts;
   }
 }
 

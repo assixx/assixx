@@ -4,7 +4,8 @@ import { query, body, validationResult } from "express-validator";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 
 import { authenticateToken, authorizeRole } from "../auth.js";
-import { executeQuery } from "../config/database.js";
+import { executeQuery } from "../database.js";
+import { AuthenticatedRequest } from "../types/request.types.js";
 import { logger } from "../utils/logger.js";
 
 interface LogEntry extends RowDataPacket {
@@ -66,20 +67,27 @@ router.get(
     .isString()
     .withMessage("Timerange muss ein String sein"),
   async (req, res) => {
-    const errors = validationResult(req);
+    // Type assertion after authentication middleware
+    const authReq = req as AuthenticatedRequest;
+
+    const errors = validationResult(authReq);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
 
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-    const userId = req.query.user_id
-      ? parseInt(req.query.user_id as string)
+    const limit = authReq.query.limit
+      ? parseInt(authReq.query.limit as string)
+      : 20;
+    const offset = authReq.query.offset
+      ? parseInt(authReq.query.offset as string)
+      : 0;
+    const userId = authReq.query.user_id
+      ? parseInt(authReq.query.user_id as string)
       : null;
-    const action = (req.query.action as string) ?? null;
-    const entityType = (req.query.entity_type as string) ?? null;
-    const timerange = (req.query.timerange as string) ?? null;
+    const action = (authReq.query.action as string) ?? null;
+    const entityType = (authReq.query.entity_type as string) ?? null;
+    const timerange = (authReq.query.timerange as string) ?? null;
 
     try {
       // Build WHERE conditions
@@ -88,7 +96,7 @@ router.get(
 
       // WICHTIG: Immer nach tenant_id filtern!
       conditions.push("al.tenant_id = ?");
-      params.push(req.user.tenant_id);
+      params.push(authReq.user.tenant_id);
 
       if (userId) {
         conditions.push("al.user_id = ?");
@@ -215,9 +223,9 @@ router.get(
       logger.error("Error details:", {
         message: error instanceof Error ? error.message : "Unknown error",
         stack: error instanceof Error ? error.stack : undefined,
-        userId: req.user.id,
-        tenantId: req.user.tenant_id,
-        query: req.query,
+        userId: authReq.user.id,
+        tenantId: authReq.user.tenant_id,
+        query: authReq.query,
       });
       res.status(500).json({
         success: false,
@@ -253,19 +261,22 @@ router.delete(
     .isString()
     .withMessage("Passwort muss ein String sein"),
   async (req, res) => {
-    const errors = validationResult(req);
+    // Type assertion after authentication middleware
+    const authReq = req as AuthenticatedRequest;
+
+    const errors = validationResult(authReq);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
 
-    const userId = req.query.user_id
-      ? parseInt(req.query.user_id as string)
+    const userId = authReq.query.user_id
+      ? parseInt(authReq.query.user_id as string)
       : null;
-    const action = (req.query.action as string) ?? null;
-    const entityType = (req.query.entity_type as string) ?? null;
-    const timerange = (req.query.timerange as string) ?? null;
-    const password = req.body.password;
+    const action = (authReq.query.action as string) ?? null;
+    const entityType = (authReq.query.entity_type as string) ?? null;
+    const timerange = (authReq.query.timerange as string) ?? null;
+    const password = (authReq.body as { password?: string }).password;
 
     // Check if no specific filters are provided (meaning "all actions" deletion)
     const noSpecificFilters = !userId && !action && !entityType && !timerange;
@@ -284,7 +295,7 @@ router.delete(
       try {
         const [rootUser] = await executeQuery<RootUser[]>(
           'SELECT password FROM users WHERE id = ? AND role = "root"',
-          [req.user.id],
+          [authReq.user.id],
         );
 
         if (!rootUser.length) {
@@ -323,7 +334,7 @@ router.delete(
 
       // WICHTIG: Immer nach tenant_id filtern!
       conditions.push("tenant_id = ?");
-      params.push(req.user.tenant_id);
+      params.push(authReq.user.tenant_id);
 
       if (userId) {
         conditions.push("user_id = ?");
@@ -436,18 +447,18 @@ router.delete(
 
       // Log this deletion action with better details
       await createLog(
-        req.user.id,
-        req.user.tenant_id,
+        authReq.user.id,
+        authReq.user.tenant_id,
         "delete",
         "logs",
         undefined,
         detailsText,
-        req.ip,
-        req.get("user-agent"),
+        authReq.ip,
+        authReq.get("user-agent"),
       );
 
       logger.info(
-        `User ${req.user.id} deleted ${deletedCount} logs with filters:`,
+        `User ${authReq.user.id} deleted ${deletedCount} logs with filters:`,
         { userId, action, entityType, timerange },
       );
 

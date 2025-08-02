@@ -738,6 +738,76 @@ router.put(
   }),
 );
 
+/**
+ * @route PATCH /api/users/me
+ * @desc Update current user's employee number (for root users on first login)
+ * @access Private
+ */
+router.patch(
+  "/me",
+  ...security.user(),
+  typed.body<{ employee_number: string }>(async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const tenantId = req.user.tenant_id;
+
+      // Extract and validate employee number
+      const { employee_number } = req.body;
+
+      if (!employee_number) {
+        res
+          .status(400)
+          .json(errorResponse("Personalnummer ist erforderlich", 400));
+        return;
+      }
+
+      // Validate employee number format: max 10 chars, alphanumeric + hyphens allowed
+      // Allow formats like "ABC-123", "2025-001", "EMP001", etc.
+      const employeeNumberRegex = /^[a-zA-Z0-9-]{1,10}$/;
+      if (!employeeNumberRegex.test(employee_number)) {
+        res
+          .status(400)
+          .json(
+            errorResponse(
+              "Ungültiges Format. Max. 10 Zeichen, nur Buchstaben, Zahlen und Bindestriche erlaubt",
+              400,
+            ),
+          );
+        return;
+      }
+
+      // Update user's employee number
+      const success = await User.update(userId, { employee_number }, tenantId);
+
+      if (success) {
+        logger.info(`User ${userId} updated their employee number`);
+        res.json(
+          successResponse(
+            { employee_number },
+            "Personalnummer erfolgreich aktualisiert",
+          ),
+        );
+      } else {
+        res
+          .status(500)
+          .json(
+            errorResponse("Fehler beim Aktualisieren der Personalnummer", 500),
+          );
+      }
+    } catch (error) {
+      logger.error(`Error updating employee number: ${getErrorMessage(error)}`);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            "Serverfehler beim Aktualisieren der Personalnummer",
+            500,
+          ),
+        );
+    }
+  }),
+);
+
 export default router;
 
 // CommonJS compatibility

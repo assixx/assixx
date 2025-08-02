@@ -1,29 +1,13 @@
-# Ignore build outputs
+# Test scripts
+scripts/test-*.mjs
+scripts/test-*.js
+
+# Build output
 dist/
 build/
-*.min.js
 
-# Ignore script files  
-scripts/fix-*.js
-
-# Ignore node modules
+# Dependencies
 node_modules/
 
-# Ignore log files
-*.log
-
-# Ignore coverage reports
+# Coverage
 coverage/
-
-# Ignore compiled JS from TypeScript
-backend/**/*.js
-frontend/**/*.js
-!frontend/dist/**/*.js
-
-# Ignore test config files
-jest.config.js
-jest.config.cjs
-
-# Ignore environment files
-.env
-.env.*

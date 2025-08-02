@@ -42,6 +42,9 @@ export default [
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
       "prettier/prettier": "error",
+      // Disable ESLint rules that conflict with Prettier
+      "comma-dangle": "off",
+      "@typescript-eslint/comma-dangle": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

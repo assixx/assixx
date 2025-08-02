@@ -4,17 +4,15 @@
  */
 
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 import * as dotenv from "dotenv";
 import * as mysql from "mysql2";
 import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
-// ES modules equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Handle both ESM and CommonJS environments
+const currentDir = process.cwd();
 
-dotenv.config({ path: path.join(__dirname, "../../../.env") });
+dotenv.config({ path: path.join(currentDir, ".env") });
 
 // Create database connection pool
 const db = mysql.createPool({

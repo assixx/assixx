@@ -6,7 +6,7 @@
 import express, { Router } from "express";
 import { RowDataPacket } from "mysql2/promise";
 
-import { executeQuery } from "../config/database.js";
+import { executeQuery } from "../database.js";
 import { security } from "../middleware/security";
 import { createValidation, body, param } from "../middleware/validation";
 import adminPermissionService from "../services/adminPermission.service.js";

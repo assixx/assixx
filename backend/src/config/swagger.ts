@@ -3,18 +3,16 @@
  */
 
 import { readFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 
 import swaggerJsdoc from "swagger-jsdoc";
 
-// Get current directory for ESM modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Get project root directory
+const projectRoot = process.cwd();
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(__dirname, "../../../package.json"), "utf-8"),
+  readFileSync(join(projectRoot, "package.json"), "utf-8"),
 );
 
 const options: swaggerJsdoc.Options = {
@@ -1127,13 +1125,13 @@ const options: swaggerJsdoc.Options = {
     ],
   },
   apis: [
-    join(__dirname, "../routes/*.ts"),
-    join(__dirname, "../routes/*.js"),
-    join(__dirname, "../routes/**/*.ts"),
-    join(__dirname, "../routes/**/*.js"),
-    join(__dirname, "../models/*.ts"),
-    join(__dirname, "../models/*.js"),
-    join(__dirname, "../types/*.ts"),
+    join(projectRoot, "backend/src/routes/*.ts"),
+    join(projectRoot, "backend/src/routes/*.js"),
+    join(projectRoot, "backend/src/routes/**/*.ts"),
+    join(projectRoot, "backend/src/routes/**/*.js"),
+    join(projectRoot, "backend/src/models/*.ts"),
+    join(projectRoot, "backend/src/models/*.js"),
+    join(projectRoot, "backend/src/types/*.ts"),
   ],
 };
 

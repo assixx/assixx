@@ -89,7 +89,7 @@ router.get(
     }
 
     // Normale Logik...
-  })
+  }),
 );
 ```
 
@@ -116,7 +116,7 @@ export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFu
         isRoleSwitched: false,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: "8h" }
+      { expiresIn: "8h" },
     );
 
     res.cookie("token", originalToken);

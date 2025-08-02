@@ -601,7 +601,7 @@ router.post(
       }
 
       // Handle priority_level vs priority field name
-      const priority = req.body.priority ?? req.body.priority_level ?? "normal";
+      const priority = req.body.priority ?? req.body.priority_level ?? "medium";
 
       const entryData: EntryCreateData = {
         tenant_id: tenantId,
@@ -611,7 +611,7 @@ router.post(
         org_id: org_id ?? null,
         author_id: req.user.id,
         expires_at: req.body.expires_at ? new Date(req.body.expires_at) : null,
-        priority: priority as "low" | "normal" | "high" | "urgent",
+        priority: priority as "low" | "medium" | "high" | "urgent",
         color: req.body.color ?? "blue",
         tags: req.body.tags ?? [],
         requires_confirmation: req.body.requires_confirmation ?? false,
@@ -696,7 +696,7 @@ router.put(
         org_id: req.body.org_id,
         priority: req.body.priority as
           | "low"
-          | "normal"
+          | "medium"
           | "high"
           | "urgent"
           | undefined,

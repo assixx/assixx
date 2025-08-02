@@ -122,6 +122,13 @@ router.get(
     await authController.getUserProfile(req, res);
   }),
 );
+router.get(
+  "/me",
+  ...security.user(),
+  typed.auth(async (req, res) => {
+    await authController.getUserProfile(req, res);
+  }),
+);
 
 // Session validation endpoints
 router.get(
@@ -136,6 +143,48 @@ router.post(
   ...security.user(validateFingerprintValidation),
   typed.body<ValidateFingerprintBody>(async (req, res) => {
     await authController.validateFingerprint(req, res);
+  }),
+);
+
+// Token refresh endpoint
+router.post(
+  "/refresh",
+  createValidation([
+    body("refreshToken")
+      .notEmpty()
+      .withMessage("Refresh token ist erforderlich"),
+  ]),
+  typed.body<{ refreshToken: string }>(async (req, res) => {
+    await authController.refreshToken(req, res);
+  }),
+);
+
+// Password reset routes
+router.post(
+  "/forgot-password",
+  strictAuthLimiter,
+  createValidation([
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Gültige E-Mail-Adresse erforderlich"),
+  ]),
+  typed.body<{ email: string }>(async (req, res) => {
+    await authController.forgotPassword(req, res);
+  }),
+);
+
+router.post(
+  "/reset-password",
+  strictAuthLimiter,
+  createValidation([
+    body("token").notEmpty().withMessage("Token ist erforderlich"),
+    body("newPassword")
+      .isLength({ min: 8 })
+      .withMessage("Passwort muss mindestens 8 Zeichen lang sein"),
+  ]),
+  typed.body<{ token: string; newPassword: string }>(async (req, res) => {
+    await authController.resetPassword(req, res);
   }),
 );
 

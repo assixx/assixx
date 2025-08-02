@@ -249,10 +249,10 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="container">
-          <!-- Breadcrumb Navigation -->
-          <div id="breadcrumb-container"></div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
+        <div class="container">
           <!-- Current Usage -->
           <div class="current-usage">
             <div class="usage-header">
@@ -379,10 +379,12 @@
       </main>
     </div>
 
-    <!-- JavaScript -->
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module">
-      import { getAuthToken } from '/scripts/auth.ts';
+      // Import auth token from global window object (set by auth.ts)
+      const getAuthToken = () => localStorage.getItem('token');
 
       // Load current storage info
       async function loadStorageInfo() {
@@ -476,14 +478,12 @@
       // Initialize on load
       document.addEventListener('DOMContentLoaded', () => {
         loadStorageInfo();
-      });
-    </script>
 
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
+        // Initialize breadcrumb
+        import('/scripts/components/breadcrumb.js').then((module) => {
+          module.initBreadcrumb();
+        });
+      });
     </script>
   </body>
 </html>

@@ -276,7 +276,7 @@ export class Plan {
       const query = `
         SELECT 
           COALESCE(tp.custom_price, p.base_price) as plan_cost,
-          COALESCE(SUM(ta.total_price), 0) as addon_cost
+          COALESCE(SUM(ta.quantity * ta.unit_price), 0) as addon_cost
         FROM tenants t
         LEFT JOIN tenant_plans tp ON t.id = tp.tenant_id AND tp.status IN ('active', 'trial')
         LEFT JOIN plans p ON tp.plan_id = p.id

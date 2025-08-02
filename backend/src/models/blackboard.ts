@@ -22,7 +22,7 @@ interface DbBlackboardEntry extends RowDataPacket {
   org_id: number;
   author_id: number;
   expires_at?: Date | null;
-  priority: "low" | "normal" | "high" | "urgent";
+  priority: "low" | "medium" | "high" | "urgent";
   color: string;
   requires_confirmation: boolean | number;
   status: "active" | "archived";
@@ -76,6 +76,8 @@ export interface EntryQueryOptions {
   limit?: number;
   sortBy?: string;
   sortDir?: "ASC" | "DESC";
+  priority?: string;
+  requiresConfirmation?: boolean;
 }
 
 export interface EntryCreateData {
@@ -86,7 +88,7 @@ export interface EntryCreateData {
   org_id: number | null;
   author_id: number;
   expires_at?: Date | null;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: "low" | "medium" | "high" | "urgent";
   color?: string;
   tags?: string[];
   requires_confirmation?: boolean;
@@ -98,7 +100,7 @@ export interface EntryUpdateData {
   org_level?: "company" | "department" | "team";
   org_id?: number;
   expires_at?: Date | null;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: "low" | "medium" | "high" | "urgent";
   color?: string;
   status?: "active" | "archived";
   requires_confirmation?: boolean;
@@ -128,6 +130,8 @@ export class Blackboard {
         limit = 10,
         sortBy = "created_at",
         sortDir = "DESC",
+        priority,
+        requiresConfirmation,
       } = options;
 
       // Determine user's department and team for access control
@@ -144,7 +148,7 @@ export class Blackboard {
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
                (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
         FROM blackboard_entries e
-        LEFT JOIN users u ON e.author_id = u.id
+        LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
         LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
         WHERE e.tenant_id = ? AND e.status = ?
       `;
@@ -174,6 +178,18 @@ export class Blackboard {
         queryParams.push(searchTerm, searchTerm);
       }
 
+      // Apply priority filter
+      if (priority) {
+        query += " AND e.priority = ?";
+        queryParams.push(priority);
+      }
+
+      // Apply requires confirmation filter
+      if (requiresConfirmation !== undefined) {
+        query += " AND e.requires_confirmation = ?";
+        queryParams.push(requiresConfirmation ? 1 : 0);
+      }
+
       // Apply sorting
       query += ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}`;
 
@@ -187,6 +203,19 @@ export class Blackboard {
         query,
         queryParams,
       );
+
+      // Debug log when no entries found
+      if (entries.length === 0 && status === "active") {
+        logger.warn(
+          `[Blackboard.getAllEntries] No entries found for user ${userId} (role: ${role})`,
+        );
+        logger.debug(
+          `Query params: tenant_id=${tenant_id}, status=${status}, filter=${filter}`,
+        );
+        logger.debug(
+          `User access: departmentId=${departmentId}, teamId=${teamId}`,
+        );
+      }
 
       // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
       for (const entry of entries) {
@@ -284,7 +313,7 @@ export class Blackboard {
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
                (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
         FROM blackboard_entries e
-        LEFT JOIN users u ON e.author_id = u.id
+        LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
         LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
         WHERE e.id = ? AND e.tenant_id = ?
       `;
@@ -329,6 +358,9 @@ export class Blackboard {
       // Load attachments for the entry
       entry.attachments = await this.getEntryAttachments(id);
 
+      // Load tags for the entry
+      entry.tags = await this.getEntryTags(id);
+
       return entry;
     } catch (error) {
       logger.error("Error in getEntryById:", error);
@@ -351,7 +383,7 @@ export class Blackboard {
         org_id,
         author_id,
         expires_at = null,
-        priority = "normal",
+        priority = "medium",
         color = "blue",
         tags = [],
         requires_confirmation = false,
@@ -536,14 +568,27 @@ export class Blackboard {
    */
   static async confirmEntry(entryId: number, userId: number): Promise<boolean> {
     try {
-      // Check if entry exists and requires confirmation
+      // Get user's tenant_id
+      interface UserRow extends RowDataPacket {
+        tenant_id: number;
+      }
+      const [users] = await executeQuery<UserRow[]>(
+        "SELECT tenant_id FROM users WHERE id = ?",
+        [userId],
+      );
+      if (users.length === 0) {
+        return false; // User doesn't exist
+      }
+      const userTenantId = users[0].tenant_id;
+
+      // Check if entry exists, requires confirmation, and belongs to same tenant
       const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        "SELECT * FROM blackboard_entries WHERE id = ? AND requires_confirmation = 1",
-        [entryId],
+        "SELECT * FROM blackboard_entries WHERE id = ? AND tenant_id = ? AND requires_confirmation = 1",
+        [entryId, userTenantId],
       );
 
       if (entries.length === 0) {
-        return false; // Entry doesn't exist or doesn't require confirmation
+        return false; // Entry doesn't exist, doesn't require confirmation, or wrong tenant
       }
 
       // Check if already confirmed
@@ -558,8 +603,8 @@ export class Blackboard {
 
       // Add confirmation
       await executeQuery(
-        "INSERT INTO blackboard_confirmations (entry_id, user_id) VALUES (?, ?)",
-        [entryId, userId],
+        "INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES (?, ?, ?)",
+        [userTenantId, entryId, userId],
       );
 
       return true;
@@ -645,7 +690,7 @@ export class Blackboard {
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
                (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
         FROM blackboard_entries e
-        LEFT JOIN users u ON e.author_id = u.id
+        LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
         LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
         WHERE e.tenant_id = ? AND e.status = 'active'
       `;
@@ -828,13 +873,7 @@ export class Blackboard {
         ],
       );
 
-      // Update attachment count manually
-      await executeQuery(
-        `UPDATE blackboard_entries 
-         SET attachment_count = (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = ?) 
-         WHERE id = ?`,
-        [entryId, entryId],
-      );
+      // Note: attachment_count is calculated dynamically in SELECT queries, not stored
 
       return result.insertId;
     } catch (error) {
@@ -907,15 +946,7 @@ export class Blackboard {
         [attachmentId],
       );
 
-      // Update attachment count manually
-      if (result.affectedRows > 0 && attachment.entry_id) {
-        await executeQuery(
-          `UPDATE blackboard_entries 
-           SET attachment_count = (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = ?) 
-           WHERE id = ?`,
-          [attachment.entry_id, attachment.entry_id],
-        );
-      }
+      // Note: attachment_count is calculated dynamically in SELECT queries, not stored
 
       return result.affectedRows > 0;
     } catch (error) {

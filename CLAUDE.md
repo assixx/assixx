@@ -112,6 +112,24 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 2. docker exec assixx-backend pnpm run format
 3. docker exec assixx-backend pnpm run type-check
 
+**Workflow-Struktur:**
+
+1. Discover Tests (findet alle Test-Dateien)
+2. Matrix Tests (jeder Test als eigener Job)
+3. Coverage Aggregation
+4. Code Analysis (TypeScript, ESLint)
+5. Docker Build Tests
+6. Code Quality Checks
+
+**WICHTIG - Test-Datenbank Schema:**
+
+- Tests nutzen ECHTE MySQL-Datenbank (keine Mocks)
+- Schema aus `database/current-schema-*.sql` (neueste Datei)
+- Bei DB-Änderungen: `./scripts/export-current-schema.sh` ausführen
+- Schema-Vergleich: `./scripts/compare-db-schema.sh`
+- Migrations in `/database/migrations/` können VERALTET sein!
+- Test-DB hat immer das aktuelle Produktions-Schema
+
 ## WENN-DANN ANWEISUNGEN
 
 **WENN User fragt nach Feature-Status**
@@ -151,7 +169,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 ## PFLICHT-CHECKLISTE (TodoWrite mit 10 Punkten)
 
 1. Docker-Check
-2. TODO.md (AKTUELLE PHASE)
+2. TODO.md (AKTUELLE PHASE + FORTSCHRITTS-TRACKING!)
 3. CLAUDE.md
 4. TypeScript Architecture Guide (bei Backend)
 5. Design Standards
@@ -160,6 +178,29 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 8. Database Migration Guide
 9. BEFORE-STARTING-DEV befolgen (Anleitung lesen und Befehle durchführen)!!!!
 10. Entwicklung beginnen
+
+## 📊 FORTSCHRITTS-DOKUMENTATION (NEU! WICHTIG!)
+
+**TÄGLICH AKTUALISIEREN:**
+
+- `/docs/DAILY-PROGRESS.md` - Täglicher Fortschritt mit Metriken
+- `/docs/api/API-V2-PROGRESS-LOG.md` - API v2 spezifische Details
+- `TODO.md` - Fortschritts-Tracking Section ganz oben!
+
+**Bei jedem Arbeitstag:**
+
+1. DAILY-PROGRESS.md mit Tagesübersicht updaten
+2. Bei API-Arbeit: API-V2-PROGRESS-LOG.md erweitern
+3. TODO.md Fortschritts-Section aktualisieren
+4. Erfolge und Probleme dokumentieren
+5. Metriken erfassen (Zeit, TODOs, Commits)
+
+**Warum wichtig:**
+
+- Zeigt kontinuierlichen Fortschritt
+- Hilft bei Retrospektiven
+- Dokumentiert Lösungen für wiederkehrende Probleme
+- Motiviert durch sichtbare Erfolge
 
 ## ZENTRALE DOKUMENTATION
 

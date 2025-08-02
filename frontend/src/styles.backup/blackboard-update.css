@@ -137,12 +137,6 @@ select.form-control {
   border-bottom: none;
 }
 
-.dropdown-option:hover {
-  background: rgba(33, 150, 243, 0.2);
-  color: white;
-  padding-left: 16px;
-}
-
 /* Form Labels */
 .form-label,
 .big-label {

@@ -20,7 +20,7 @@ interface BlackboardCreateRequest extends TenantRequest {
     title: string;
     content: string;
     category?: string | null;
-    priority?: "low" | "normal" | "high";
+    priority?: "low" | "medium" | "high" | "urgent";
     is_pinned?: boolean;
     color?: string | null;
     tags?: string | string[] | null;
@@ -36,7 +36,7 @@ interface BlackboardUpdateRequest extends TenantRequest {
     title?: string;
     content?: string;
     category?: string | null;
-    priority?: "low" | "normal" | "high";
+    priority?: "low" | "medium" | "high" | "urgent";
     is_pinned?: boolean;
     color?: string | null;
     tags?: string | null;
@@ -56,7 +56,7 @@ interface BlackboardGetRequest extends TenantRequest {
 interface BlackboardQueryRequest extends TenantRequest {
   query: {
     category?: string;
-    priority?: "low" | "normal" | "high";
+    priority?: "low" | "medium" | "high" | "urgent";
     is_pinned?: string;
     search?: string;
     page?: string;

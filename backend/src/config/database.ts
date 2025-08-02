@@ -223,25 +223,32 @@ if (USE_MOCK_DB) {
 } else {
   // Echte Datenbankverbindung
   console.log("[DEBUG] Database config:", {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT ?? 3306,
+    host: process.env.DB_HOST ?? "localhost",
+    user: process.env.DB_USER ?? "assixx_user",
+    database:
+      process.env.DB_NAME ??
+      (process.env.NODE_ENV === "test" ? "main" : "main"),
+    port: process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307"),
+    NODE_ENV: process.env.NODE_ENV,
+    CI: process.env.CI,
   });
 
   // Initialize pool immediately with config
+  // Use port 3306 for CI, 3307 for local development
+  const defaultPort = process.env.CI ? "3306" : "3307";
+  const defaultDatabase = process.env.NODE_ENV === "test" ? "main" : "main";
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(process.env.DB_PORT ?? "3306"),
-    user: process.env.DB_USER ?? "root",
-    password: process.env.DB_PASSWORD ?? "",
-    database: process.env.DB_NAME ?? "main",
+    port: parseInt(process.env.DB_PORT ?? defaultPort),
+    user: process.env.DB_USER ?? "assixx_user",
+    password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
+    database: process.env.DB_NAME ?? defaultDatabase,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: process.env.NODE_ENV === "test" ? 1 : 10,
     queueLimit: 0,
     multipleStatements: false, // Sicherheitsverbesserung
     charset: "utf8mb4",
-    connectTimeout: 60000, // 60 seconds
+    connectTimeout: process.env.NODE_ENV === "test" ? 5000 : 60000, // 5s for tests
     stringifyObjects: false,
     supportBigNumbers: true,
     bigNumberStrings: false,
@@ -264,19 +271,22 @@ if (USE_MOCK_DB) {
     pool = mysql.createPool(config);
     console.log("[DEBUG] Database pool created successfully");
 
-    // Test the connection immediately
-    pool
-      .getConnection()
-      .then((conn) => {
-        console.log("[DEBUG] Database connection test successful");
-        conn.release();
-      })
-      .catch((err) => {
-        console.error(
-          "[DEBUG] Database connection test failed:",
-          err instanceof Error ? err.message : "Unknown error",
-        );
-      });
+    // Skip connection test in test environment
+    if (process.env.NODE_ENV !== "test") {
+      // Test the connection immediately
+      pool
+        .getConnection()
+        .then((conn) => {
+          console.log("[DEBUG] Database connection test successful");
+          conn.release();
+        })
+        .catch((err) => {
+          console.error(
+            "[DEBUG] Database connection test failed:",
+            err instanceof Error ? err.message : "Unknown error",
+          );
+        });
+    }
   } catch (error) {
     console.error("Fehler beim Verbinden mit der Datenbank:", error);
     // Create a dummy pool that throws errors
@@ -316,6 +326,20 @@ if (USE_MOCK_DB) {
 // Export the pool
 export default pool;
 export { pool };
+
+// Function to close the pool (for tests)
+export async function closePool(): Promise<void> {
+  if (pool && "end" in pool && typeof pool.end === "function") {
+    try {
+      // Give connections time to finish
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await pool.end();
+      console.log("[DEBUG] Database pool closed");
+    } catch (error) {
+      console.error("[DEBUG] Error closing pool:", error);
+    }
+  }
+}
 
 // Re-export utility functions from db.ts
 export { query as executeQuery, execute } from "../utils/db";

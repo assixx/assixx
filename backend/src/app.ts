@@ -5,7 +5,6 @@
 
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -15,7 +14,9 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 
 import { swaggerSpec } from "./config/swagger";
+import { swaggerSpecV2 } from "./config/swagger-v2";
 import authController from "./controllers/auth.controller";
+import { deprecationMiddleware } from "./middleware/deprecation";
 import {
   protectPage,
   contentSecurityPolicy,
@@ -37,20 +38,15 @@ import routes from "./routes";
 import htmlRoutes from "./routes/html.routes";
 import legacyRoutes from "./routes/legacy.routes";
 import roleSwitchRoutes from "./routes/role-switch";
+import { getCurrentDirPath } from "./utils/getCurrentDir.js";
 /**
  * Express Application Setup
  * Separated from server.js for better testing
  */
 
-// ES modules equivalent of __dirname - only define if not already defined
-const __filename =
-  typeof global.__filename !== "undefined"
-    ? global.__filename
-    : fileURLToPath(import.meta.url);
-const __dirname =
-  typeof global.__dirname !== "undefined"
-    ? global.__dirname
-    : path.dirname(__filename);
+// Get current directory path using helper function
+// This avoids import.meta issues with Jest
+const currentDirPath = getCurrentDirPath();
 // Security middleware
 // Page protection middleware
 // Routes
@@ -103,8 +99,8 @@ app.use(
 );
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
-const distPath = path.join(__dirname, "../../frontend/dist");
-const srcPath = path.join(__dirname, "../../frontend/src");
+const distPath = path.join(currentDirPath, "../../frontend/dist");
+const srcPath = path.join(currentDirPath, "../../frontend/src");
 
 // Serve built files first (HTML, JS, CSS)
 app.use(
@@ -121,6 +117,42 @@ app.use(
       } else if (filePath.endsWith(".html")) {
         res.setHeader("Content-Type", "text/html");
       }
+    },
+  }),
+);
+
+// Serve styles directory
+app.use(
+  "/styles",
+  express.static(path.join(srcPath, "styles"), {
+    setHeaders: (res: Response, filePath: string): void => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (filePath.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      }
+    },
+  }),
+);
+
+// Serve scripts directory for regular JS files
+app.use(
+  "/scripts",
+  express.static(path.join(srcPath, "scripts"), {
+    setHeaders: (res: Response, filePath: string): void => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+    },
+  }),
+);
+
+// Serve assets directory
+app.use(
+  "/assets",
+  express.static(path.join(srcPath, "assets"), {
+    setHeaders: (res: Response): void => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
     },
   }),
 );
@@ -319,10 +351,13 @@ app.use(
 );
 
 // Uploads directory (always served)
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
+app.use("/uploads", express.static(path.join(currentDirPath, "../../uploads")));
 
 // API security headers and additional validation
 app.use("/api", apiSecurityHeaders);
+
+// Apply deprecation headers for API v1
+app.use(deprecationMiddleware("v1", "2025-12-31"));
 
 // Additional security for API routes
 app.use("/api", (req: Request, res: Response, next: NextFunction): void => {
@@ -444,7 +479,16 @@ app.post("/api/test", (req: Request, res: Response): void => {
 // Legacy login endpoints (for backward compatibility) - MUST BE BEFORE OTHER ROUTES
 app.get("/login", (_req: Request, res: Response): void => {
   console.log("[DEBUG] GET /login - serving login page");
-  res.sendFile(path.join(__dirname, "../../frontend/src/pages", "login.html"));
+  // Fix path for Docker environment
+  const projectRoot = process.cwd(); // In Docker this is /app
+  const loginPath = path.join(
+    projectRoot,
+    "frontend",
+    "src",
+    "pages",
+    "login.html",
+  );
+  res.sendFile(loginPath);
 });
 
 app.post(
@@ -470,7 +514,9 @@ app.post(
 // Legacy routes for backward compatibility - MUST BE BEFORE main routes
 // Role Switch Routes - BEFORE CSRF Protection
 // Swagger API Documentation - BEFORE CSRF Protection
-if (process.env.NODE_ENV === "development") {
+// TEMPORARY: Enable Swagger in all modes for API documentation
+// eslint-disable-next-line no-constant-condition, no-constant-binary-expression
+if (true || process.env.NODE_ENV === "development") {
   console.log("[DEBUG] Mounting Swagger UI at /api-docs");
 
   // Serve OpenAPI JSON spec
@@ -479,7 +525,13 @@ if (process.env.NODE_ENV === "development") {
     res.send(swaggerSpec);
   });
 
-  // Serve Swagger UI
+  // Serve v2 OpenAPI JSON spec
+  app.get("/api-docs/v2/swagger.json", (_req: Request, res: Response): void => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpecV2);
+  });
+
+  // Serve Swagger UI for v1
   app.use(
     "/api-docs",
     swaggerUi.serve,
@@ -493,6 +545,27 @@ if (process.env.NODE_ENV === "development") {
         showRequestDuration: true,
         tryItOutEnabled: true,
         persistAuthorization: true,
+      },
+    }),
+  );
+
+  // Serve Swagger UI for v2
+  console.log("[DEBUG] Mounting Swagger UI v2 at /api-docs/v2");
+  app.use(
+    "/api-docs/v2",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpecV2, {
+      customCss: ".swagger-ui .topbar { display: none }",
+      customSiteTitle: "Assixx API v2 Documentation",
+      customfavIcon: "/favicon.ico",
+      swaggerOptions: {
+        docExpansion: "none",
+        filter: true,
+        showRequestDuration: true,
+        tryItOutEnabled: true,
+        persistAuthorization: true,
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1,
       },
     }),
   );
@@ -530,6 +603,28 @@ app.use(htmlRoutes);
 // Error handling middleware
 app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
+    // Check if it's a ServiceError
+    if (err.name === "ServiceError" && "statusCode" in err) {
+      const serviceError = err as Error & {
+        statusCode: number;
+        code: string;
+        details?: Array<{ field: string; message: string }>;
+      };
+      res.status(serviceError.statusCode).json({
+        success: false,
+        error: {
+          code: serviceError.code,
+          message: serviceError.message,
+          details: serviceError.details,
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Default error handling
     console.error(err.stack);
     res.status(500).json({
       message: "Internal Server Error",

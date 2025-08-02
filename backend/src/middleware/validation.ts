@@ -13,7 +13,7 @@ import {
 } from "express-validator";
 
 import { ValidationMiddleware } from "../types/middleware.types";
-import { ValidationErrorResponse } from "../types/response.types";
+import { errorResponse } from "../utils/apiResponse";
 
 // Helper to handle validation results
 export function handleValidationErrors(
@@ -24,18 +24,17 @@ export function handleValidationErrors(
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    const response: ValidationErrorResponse = {
-      success: false,
-      error: "Validation failed",
-      code: "VALIDATION_ERROR",
-      statusCode: 400,
-      timestamp: new Date().toISOString(),
-      errors: errors.array().map((err) => ({
-        field: err.type === "field" ? err.path : "unknown",
-        message: err.msg,
-        value: err.type === "field" ? err.value : undefined,
-      })),
-    };
+    // Convert to API v2 format
+    const details = errors.array().map((err) => ({
+      field: err.type === "field" ? err.path : "unknown",
+      message: err.msg,
+    }));
+
+    const response = errorResponse(
+      "VALIDATION_ERROR",
+      "Validation failed",
+      details,
+    );
 
     res.status(400).json(response);
     return;

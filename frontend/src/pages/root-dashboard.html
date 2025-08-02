@@ -466,13 +466,14 @@
       }
 
       .modal-content {
-        background: var(--background-light);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
         width: 90%;
         max-width: 500px;
         /* animation: modalFadeIn 0.3s ease; */
+        box-shadow: var(--glass-card-shadow);
+        background: var(--glass-card-bg);
+        border: var(--glass-card-border);
+        border-radius: var(--glass-card-radius);
+        backdrop-filter: var(--glass-backdrop);
       }
 
       @keyframes modalFadeIn {
@@ -534,7 +535,10 @@
           <h2 class="modal-title">Personalnummer eingeben</h2>
         </div>
         <div class="modal-body">
-          <p style="margin-bottom: 20px">Bitte geben Sie Ihre Personalnummer ein. Diese muss 6 Ziffern lang sein (000001-999999).</p>
+          <p style="margin-bottom: 20px">
+            Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu 10 Zeichen lang sein und Buchstaben, Zahlen sowie Bindestriche
+            enthalten.
+          </p>
           <form id="employeeNumberForm">
             <div class="form-group">
               <label class="form-label">
@@ -545,16 +549,24 @@
                 type="text"
                 id="employeeNumberInput"
                 class="form-control"
-                placeholder="z.B. 000042"
-                maxlength="6"
-                pattern="[0-9]{6}"
+                placeholder="z.B. ABC-123 oder 2025-001"
+                maxlength="10"
+                pattern="[A-Za-z0-9\-]{1,10}"
                 required
-                style="text-align: center; font-size: 24px; letter-spacing: 2px"
+                style="text-align: center; font-size: 14px; letter-spacing: 2px"
               />
-              <small class="form-text" class="u-color-text-secondary">Nur Zahlen erlaubt, genau 6 Stellen</small>
+              <small class="form-text" class="u-color-text-secondary">
+                Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen
+              </small>
             </div>
             <div class="form-actions" style="margin-top: 24px">
-              <button type="submit" class="btn btn-primary btn-block">Personalnummer speichern</button>
+              <button
+                type="submit"
+                class="btn btn-primary btn-block"
+                style="text-align: center; display: flex; align-items: center; justify-content: center"
+              >
+                Personalnummer speichern
+              </button>
             </div>
           </form>
         </div>

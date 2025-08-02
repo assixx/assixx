@@ -10,7 +10,7 @@
 import express, { Router } from "express";
 import { RowDataPacket } from "mysql2/promise";
 
-import { executeQuery } from "../config/database.js";
+import { executeQuery } from "../database.js";
 import { security } from "../middleware/security";
 import Document from "../models/document";
 import User from "../models/user";
@@ -154,15 +154,15 @@ router.get(
       );
 
       // Use the new method that includes team, department, and company documents
-      const documents = await Document.findByEmployeeWithAccess(
+      const result = await Document.findByEmployeeWithAccess(
         employeeId,
         tenantId,
       );
 
       logger.info(
-        `Retrieved ${documents.length} accessible documents for Employee ${employeeId}`,
+        `Retrieved ${result.documents.length} accessible documents for Employee ${employeeId}`,
       );
-      res.json(successResponse(documents));
+      res.json(successResponse(result.documents));
     } catch (error) {
       const employeeId2 = req.user?.id ?? "unknown";
       logger.error(
@@ -188,21 +188,24 @@ router.post(
       );
 
       // Get all accessible documents
-      const documents = await Document.findByEmployeeWithAccess(
+      const result = await Document.findByEmployeeWithAccess(
         employeeId,
         tenantId,
       );
 
       // Mark each document as read
-      for (const doc of documents) {
+      for (const doc of result.documents) {
         await Document.markAsRead(doc.id, employeeId, tenantId);
       }
 
       logger.info(
-        `Marked ${documents.length} documents as read for Employee ${employeeId}`,
+        `Marked ${result.documents.length} documents as read for Employee ${employeeId}`,
       );
       res.json(
-        successResponse({ success: true, markedCount: documents.length }),
+        successResponse({
+          success: true,
+          markedCount: result.documents.length,
+        }),
       );
     } catch (error) {
       logger.error(

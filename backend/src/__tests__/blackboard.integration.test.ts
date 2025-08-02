@@ -5,47 +5,73 @@
 
 import request from "supertest";
 import app from "../app";
-import { pool } from "../database";
+import {
+  createTestDatabase,
+  cleanupTestData,
+  createTestTenant,
+  createTestUser,
+  getAuthToken,
+} from "../routes/mocks/database";
+import { Pool } from "mysql2/promise";
 // Jest is available globally
-
-// Test data
-const adminUser = {
-  id: 1,
-  username: "admin",
-  email: "admin@test.com",
-  password: "hashed_password",
-  role: "admin",
-  tenant_id: 1,
-};
-
-const employeeUser = {
-  id: 2,
-  username: "employee",
-  email: "employee@test.com",
-  password: "hashed_password",
-  role: "employee",
-  tenant_id: 1,
-  department_id: 1,
-  team_id: 1,
-};
 
 let adminToken: string;
 let employeeToken: string;
+let testDb: Pool;
+let tenantId: number;
+let _adminUserId: number;
+let _employeeUserId: number;
 
 describe("Blackboard Integration Tests", () => {
   beforeAll(async () => {
     // Setup test database
-    await setupTestDatabase();
+    testDb = await createTestDatabase();
+
+    // Create test tenant
+    tenantId = await createTestTenant(
+      testDb,
+      "blackboardtest",
+      "Test Blackboard Company",
+    );
+
+    // Create test users
+    const adminResult = await createTestUser(testDb, {
+      username: "admin",
+      email: "admin@test.com",
+      password: "TestPass123!",
+      role: "admin",
+      tenant_id: tenantId,
+      first_name: "Admin",
+      last_name: "User",
+    });
+    _adminUserId = adminResult.id;
+
+    const employeeResult = await createTestUser(testDb, {
+      username: "employee",
+      email: "employee@test.com",
+      password: "TestPass123!",
+      role: "employee",
+      tenant_id: tenantId,
+      department_id: 1,
+      team_id: 1,
+      first_name: "Employee",
+      last_name: "User",
+    });
+    _employeeUserId = employeeResult.id;
 
     // Get auth tokens
-    adminToken = await getAuthToken(adminUser);
-    employeeToken = await getAuthToken(employeeUser);
+    adminToken = await getAuthToken(app, adminResult.username, "TestPass123!");
+    employeeToken = await getAuthToken(
+      app,
+      employeeResult.username,
+      "TestPass123!",
+    );
   });
 
   afterAll(async () => {
     // Cleanup
-    await cleanupTestDatabase();
-    await pool.end();
+    await cleanupTestData();
+    // Note: pool.end() is handled by the test environment
   });
 
   describe("Complete Blackboard Entry Lifecycle", () => {
@@ -60,10 +86,9 @@ describe("Blackboard Integration Tests", () => {
           content: "This is an important announcement for all employees",
           org_level: "company",
           org_id: null,
-          priority_level: "high",
+          priority: "high",
           color: "red",
           tags: ["important", "announcement"],
-          requires_confirmation: true,
         })
         .expect(201);
 
@@ -156,7 +181,7 @@ describe("Blackboard Integration Tests", () => {
           content: "Monthly department sync",
           org_level: "department",
           org_id: 1,
-          priority: "normal",
+          priority: "medium",
         })
         .expect(201);
 
@@ -240,10 +265,10 @@ describe("Blackboard Integration Tests", () => {
       // Create multiple entries for testing
       const entries = [
         { title: "First Entry", content: "Content 1", priority: "low" },
-        { title: "Second Entry", content: "Content 2", priority: "normal" },
+        { title: "Second Entry", content: "Content 2", priority: "medium" },
         { title: "Third Entry", content: "Content 3", priority: "high" },
         { title: "Fourth Entry", content: "Content 4", priority: "urgent" },
-        { title: "Fifth Entry", content: "Content 5", priority: "normal" },
+        { title: "Fifth Entry", content: "Content 5", priority: "medium" },
       ];
 
       for (const entry of entries) {
@@ -348,104 +373,3 @@ describe("Blackboard Integration Tests", () => {
     });
   });
 });
-
-// Helper functions
-async function setupTestDatabase() {
-  // Create test tables
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS tenants (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      name VARCHAR(255) NOT NULL
-    )
-  `);
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      tenant_id INT,
-      username VARCHAR(255),
-      email VARCHAR(255),
-      password VARCHAR(255),
-      role VARCHAR(50),
-      department_id INT,
-      team_id INT
-    )
-  `);
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS blackboard_entries (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      tenant_id INT NOT NULL,
-      author_id INT NOT NULL,
-      title VARCHAR(255) NOT NULL,
-      content TEXT NOT NULL,
-      org_level ENUM('company', 'department', 'team') DEFAULT 'company',
-      org_id INT NULL,
-      priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
-      color VARCHAR(20) DEFAULT 'blue',
-      status ENUM('active', 'archived') DEFAULT 'active',
-      expires_at DATETIME NULL,
-      requires_confirmation BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_tenant_id (tenant_id),
-      INDEX idx_org_level (org_level),
-      INDEX idx_status (status)
-    )
-  `);
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS blackboard_confirmations (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      entry_id INT NOT NULL,
-      user_id INT NOT NULL,
-      confirmed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE KEY unique_confirmation (entry_id, user_id)
-    )
-  `);
-
-  // Insert test data
-  await pool.execute(
-    `INSERT INTO tenants (id, name) VALUES (1, 'Test Tenant')`,
-  );
-  await pool.execute(
-    `INSERT INTO users (id, tenant_id, username, email, password, role, department_id, team_id) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      adminUser.id,
-      adminUser.tenant_id,
-      adminUser.username,
-      adminUser.email,
-      adminUser.password,
-      adminUser.role,
-      null,
-      null,
-    ],
-  );
-  await pool.execute(
-    `INSERT INTO users (id, tenant_id, username, email, password, role, department_id, team_id) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      employeeUser.id,
-      employeeUser.tenant_id,
-      employeeUser.username,
-      employeeUser.email,
-      employeeUser.password,
-      employeeUser.role,
-      employeeUser.department_id,
-      employeeUser.team_id,
-    ],
-  );
-}
-
-async function cleanupTestDatabase() {
-  await pool.execute("DROP TABLE IF EXISTS blackboard_confirmations");
-  await pool.execute("DROP TABLE IF EXISTS blackboard_entries");
-  await pool.execute("DROP TABLE IF EXISTS users");
-  await pool.execute("DROP TABLE IF EXISTS tenants");
-}
-
-async function getAuthToken(user: any): Promise<string> {
-  // Mock implementation - in real tests, this would call the auth endpoint
-  return `mock-jwt-token-for-${user.username}`;
-}

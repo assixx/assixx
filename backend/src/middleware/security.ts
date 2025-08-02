@@ -10,6 +10,7 @@ import { RateLimiterType } from "../types/security.types";
 
 import { authenticateToken, requireRole } from "./auth-refactored";
 import { rateLimiter } from "./rateLimiter";
+import { validateTenantIsolation } from "./tenantIsolation";
 
 // Security middleware stacks for different endpoint types
 export const security = {
@@ -45,6 +46,7 @@ export const security = {
     const stack: RequestHandler[] = [
       rateLimiter.authenticated,
       authenticateToken as RequestHandler,
+      validateTenantIsolation as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -60,6 +62,7 @@ export const security = {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
       authenticateToken as RequestHandler,
+      validateTenantIsolation as RequestHandler,
       requireRole("admin") as RequestHandler,
     ];
     if (validation) {

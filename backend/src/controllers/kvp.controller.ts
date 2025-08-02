@@ -6,7 +6,7 @@
 import { Request, Response } from "express";
 import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
-import pool, { executeQuery } from "../config/database.js";
+import pool, { executeQuery } from "../database.js";
 import kvpPermissionService from "../services/kvpPermission.service.js";
 
 // Extended Request interface with tenant database and user
@@ -1080,7 +1080,10 @@ class KvpController {
       console.log("=== KVP Upload Attachment Start ===");
       console.log("User:", req.user);
       console.log("Suggestion ID:", req.params.id);
-      console.log("Files received:", Array.isArray(req.files) ? req.files.length : 0);
+      console.log(
+        "Files received:",
+        Array.isArray(req.files) ? req.files.length : 0,
+      );
 
       if (!req.user) {
         res.status(401).json({ error: "Unauthorized" });
@@ -1088,13 +1091,13 @@ class KvpController {
       }
 
       const suggestionId = parseInt(req.params.id);
-      
+
       // Ensure req.files is an array to prevent type confusion
       if (!Array.isArray(req.files)) {
         res.status(400).json({ error: "Invalid file upload format" });
         return;
       }
-      
+
       const files = req.files as Express.Multer.File[];
 
       console.log("Parsed suggestion ID:", suggestionId);

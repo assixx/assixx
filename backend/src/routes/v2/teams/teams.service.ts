@@ -1,0 +1,448 @@
+/**
+ * Teams v2 Service Layer
+ * Handles all business logic for team management
+ */
+
+import Department from "../../../models/department.js";
+import Team from "../../../models/team.js";
+import type { TeamCreateData, TeamUpdateData } from "../../../models/team.js";
+import User from "../../../models/user.js";
+import { dbToApi } from "../../../utils/fieldMapping.js";
+import { logger } from "../../../utils/logger.js";
+
+export class ServiceError extends Error {
+  constructor(
+    public code: string,
+    public message: string,
+    public statusCode: number = 500,
+    public details?: unknown,
+  ) {
+    super(message);
+    this.name = "ServiceError";
+  }
+}
+
+export interface TeamFilters {
+  departmentId?: number;
+  search?: string;
+  includeMembers?: boolean;
+}
+
+export interface TeamCreateInput {
+  name: string;
+  description?: string;
+  departmentId?: number;
+  leaderId?: number;
+}
+
+export interface TeamUpdateInput {
+  name?: string;
+  description?: string;
+  departmentId?: number;
+  leaderId?: number;
+}
+
+export class TeamsService {
+  /**
+   * List all teams for a tenant
+   */
+  async listTeams(tenantId: number, filters?: TeamFilters) {
+    try {
+      // Get all teams for the tenant
+      const teams = await Team.findAll(tenantId);
+
+      // Apply filters
+      let filteredTeams = teams;
+
+      if (filters?.departmentId) {
+        filteredTeams = filteredTeams.filter(
+          (team) => team.department_id === filters.departmentId,
+        );
+      }
+
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredTeams = filteredTeams.filter(
+          (team) =>
+            team.name.toLowerCase().includes(searchLower) ||
+            team.description?.toLowerCase().includes(searchLower),
+        );
+      }
+
+      // Convert to API format
+      const apiTeams = filteredTeams.map((team) => {
+        const apiTeam = dbToApi(team) as Record<string, unknown>;
+
+        // Map team_lead_id to leaderId
+        if ("teamLeadId" in apiTeam) {
+          apiTeam.leaderId = apiTeam.teamLeadId;
+          delete apiTeam.teamLeadId;
+        }
+
+        // Convert empty strings to null for optional fields
+        if (apiTeam.description === "") {
+          apiTeam.description = null;
+        }
+        apiTeam.leaderId ??= null;
+
+        // Include member count if requested
+        if (filters?.includeMembers) {
+          // This would need to be implemented in the model
+          apiTeam.memberCount = 0; // Placeholder
+        }
+
+        return apiTeam;
+      });
+
+      return apiTeams;
+    } catch (error) {
+      logger.error(`Error listing teams: ${(error as Error).message}`);
+      throw new ServiceError("SERVER_ERROR", "Failed to list teams", 500);
+    }
+  }
+
+  /**
+   * Get team by ID
+   */
+  async getTeamById(id: number, tenantId: number) {
+    try {
+      const team = await Team.findById(id);
+
+      if (!team) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Check tenant isolation
+      if (team.tenant_id !== tenantId) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Get team members
+      const members = await Team.getTeamMembers(id);
+
+      const apiTeam = dbToApi(team) as Record<string, unknown>;
+
+      // Map team_lead_id to leaderId
+      if ("teamLeadId" in apiTeam) {
+        apiTeam.leaderId = apiTeam.teamLeadId;
+        delete apiTeam.teamLeadId;
+      }
+
+      // Convert empty strings to null for optional fields
+      if (apiTeam.description === "") {
+        apiTeam.description = null;
+      }
+      apiTeam.leaderId ??= null;
+
+      apiTeam.members = members.map((member) => ({
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        position: member.position,
+        employeeId: member.employee_id,
+      }));
+
+      return apiTeam;
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(`Error getting team ${id}: ${(error as Error).message}`);
+      throw new ServiceError("SERVER_ERROR", "Failed to get team", 500);
+    }
+  }
+
+  /**
+   * Create a new team
+   */
+  async createTeam(data: TeamCreateInput, tenantId: number) {
+    try {
+      // Validate department if provided
+      if (data.departmentId) {
+        const dept = await Department.findById(data.departmentId, tenantId);
+        if (!dept) {
+          throw new ServiceError("BAD_REQUEST", "Invalid department ID", 400);
+        }
+      }
+
+      // Validate leader if provided
+      if (data.leaderId) {
+        const leader = await User.findById(data.leaderId, tenantId);
+        if (!leader) {
+          throw new ServiceError("BAD_REQUEST", "Invalid leader ID", 400);
+        }
+      }
+
+      // Check for duplicate name
+      const existingTeams = await Team.findAll(tenantId);
+      const duplicate = existingTeams.find(
+        (t) => t.name.toLowerCase() === data.name.toLowerCase(),
+      );
+
+      if (duplicate) {
+        throw new ServiceError(
+          "CONFLICT",
+          "Team with this name already exists",
+          409,
+        );
+      }
+
+      // Create the team
+      const teamData: TeamCreateData = {
+        name: data.name,
+        description: data.description,
+        department_id: data.departmentId,
+        team_lead_id: data.leaderId,
+        tenant_id: tenantId,
+      };
+
+      const teamId = await Team.create(teamData);
+
+      // Return the created team
+      return this.getTeamById(teamId, tenantId);
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(`Error creating team: ${(error as Error).message}`);
+      throw new ServiceError("SERVER_ERROR", "Failed to create team", 500);
+    }
+  }
+
+  /**
+   * Update a team
+   */
+  async updateTeam(id: number, data: TeamUpdateInput, tenantId: number) {
+    try {
+      // Check if team exists and belongs to tenant
+      const existingTeam = await Team.findById(id);
+      if (!existingTeam || existingTeam.tenant_id !== tenantId) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Validate department if provided
+      if (data.departmentId !== undefined) {
+        if (data.departmentId) {
+          const dept = await Department.findById(data.departmentId, tenantId);
+          if (!dept) {
+            throw new ServiceError("BAD_REQUEST", "Invalid department ID", 400);
+          }
+        }
+      }
+
+      // Validate leader if provided
+      if (data.leaderId !== undefined) {
+        if (data.leaderId) {
+          const leader = await User.findById(data.leaderId, tenantId);
+          if (!leader) {
+            throw new ServiceError("BAD_REQUEST", "Invalid leader ID", 400);
+          }
+        }
+      }
+
+      // Check for duplicate name
+      if (data.name && data.name !== existingTeam.name) {
+        const teams = await Team.findAll(tenantId);
+        const duplicate = teams.find(
+          (t) =>
+            t.id !== id &&
+            t.name.toLowerCase() === (data.name?.toLowerCase() ?? ""),
+        );
+
+        if (duplicate) {
+          throw new ServiceError(
+            "CONFLICT",
+            "Team with this name already exists",
+            409,
+          );
+        }
+      }
+
+      // Update the team
+      const updateData: TeamUpdateData = {};
+
+      // Only include fields that are being updated
+      if (data.name !== undefined) {
+        updateData.name = data.name;
+      }
+      if (data.description !== undefined) {
+        updateData.description = data.description;
+      }
+      if (data.departmentId !== undefined) {
+        updateData.department_id = data.departmentId;
+      }
+      if (data.leaderId !== undefined) {
+        updateData.team_lead_id = data.leaderId;
+      }
+
+      const success = await Team.update(id, updateData);
+      if (!success) {
+        throw new ServiceError("SERVER_ERROR", "Failed to update team", 500);
+      }
+
+      // Return updated team
+      return this.getTeamById(id, tenantId);
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(`Error updating team ${id}: ${(error as Error).message}`);
+      throw new ServiceError("SERVER_ERROR", "Failed to update team", 500);
+    }
+  }
+
+  /**
+   * Delete a team
+   */
+  async deleteTeam(id: number, tenantId: number) {
+    try {
+      // Check if team exists and belongs to tenant
+      const team = await Team.findById(id);
+      if (!team || team.tenant_id !== tenantId) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Check if team has members
+      const members = await Team.getTeamMembers(id);
+      if (members.length > 0) {
+        throw new ServiceError(
+          "BAD_REQUEST",
+          "Cannot delete team with members",
+          400,
+          { memberCount: members.length },
+        );
+      }
+
+      const success = await Team.delete(id);
+      if (!success) {
+        throw new ServiceError("SERVER_ERROR", "Failed to delete team", 500);
+      }
+
+      return { message: "Team deleted successfully" };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(`Error deleting team ${id}: ${(error as Error).message}`);
+      throw new ServiceError("SERVER_ERROR", "Failed to delete team", 500);
+    }
+  }
+
+  /**
+   * Get team members
+   */
+  async getTeamMembers(teamId: number, tenantId: number) {
+    try {
+      // Check if team exists and belongs to tenant
+      const team = await Team.findById(teamId);
+      if (!team || team.tenant_id !== tenantId) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      const members = await Team.getTeamMembers(teamId);
+
+      return members.map((member) => ({
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        position: member.position,
+        employeeId: member.employee_id,
+      }));
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(`Error getting team members: ${(error as Error).message}`);
+      throw new ServiceError("SERVER_ERROR", "Failed to get team members", 500);
+    }
+  }
+
+  /**
+   * Add member to team
+   */
+  async addTeamMember(teamId: number, userId: number, tenantId: number) {
+    try {
+      // Check if team exists and belongs to tenant
+      const team = await Team.findById(teamId);
+      if (!team || team.tenant_id !== tenantId) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Check if user exists and belongs to tenant
+      const user = await User.findById(userId, tenantId);
+      if (!user) {
+        throw new ServiceError("BAD_REQUEST", "Invalid user ID", 400);
+      }
+
+      const success = await Team.addUserToTeam(userId, teamId, tenantId);
+      if (!success) {
+        throw new ServiceError(
+          "SERVER_ERROR",
+          "Failed to add team member",
+          500,
+        );
+      }
+
+      return { message: "Team member added successfully" };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+
+      const errorMessage = (error as Error).message;
+      logger.error(`Error adding team member: ${errorMessage}`);
+
+      // Handle duplicate member error
+      if (errorMessage.includes("already a member")) {
+        throw new ServiceError(
+          "CONFLICT",
+          "User is already a member of this team",
+          409,
+        );
+      }
+
+      throw new ServiceError("SERVER_ERROR", "Failed to add team member", 500);
+    }
+  }
+
+  /**
+   * Remove member from team
+   */
+  async removeTeamMember(teamId: number, userId: number, tenantId: number) {
+    try {
+      // Check if team exists and belongs to tenant
+      const team = await Team.findById(teamId);
+      if (!team || team.tenant_id !== tenantId) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      const success = await Team.removeUserFromTeam(userId, teamId);
+      if (!success) {
+        throw new ServiceError(
+          "BAD_REQUEST",
+          "User is not a member of this team",
+          400,
+        );
+      }
+
+      return { message: "Team member removed successfully" };
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(`Error removing team member: ${(error as Error).message}`);
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to remove team member",
+        500,
+      );
+    }
+  }
+}
+
+// Export singleton instance
+export const teamsService = new TeamsService();

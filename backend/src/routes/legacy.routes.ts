@@ -144,10 +144,8 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
-      const documents = await Document.findWithFilters({
-        tenant_id: req.user.tenant_id,
-      });
-      res.json(successResponse(documents));
+      const result = await Document.findWithFilters(req.user.tenant_id, {});
+      res.json(successResponse(result.documents));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }

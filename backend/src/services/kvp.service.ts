@@ -42,7 +42,13 @@ interface KvpEntry {
   org_id: number;
   submitted_by: number;
   priority: "low" | "normal" | "high" | "urgent";
-  status: "new" | "in_progress" | "implemented" | "rejected";
+  status:
+    | "new"
+    | "in_review"
+    | "approved"
+    | "implemented"
+    | "rejected"
+    | "archived";
   created_at: Date;
   updated_at: Date;
 }
@@ -77,7 +83,13 @@ interface KvpUpdateData {
   description?: string;
   category_id?: number;
   priority?: "low" | "normal" | "high" | "urgent";
-  status?: "new" | "in_progress" | "implemented" | "rejected";
+  status?:
+    | "new"
+    | "in_review"
+    | "approved"
+    | "implemented"
+    | "rejected"
+    | "archived";
   assigned_to?: number;
   actual_savings?: number;
 }
@@ -104,7 +116,13 @@ interface Suggestion {
   priority: "low" | "normal" | "high" | "urgent";
   expected_benefit?: string;
   estimated_cost?: number;
-  status: "new" | "in_progress" | "implemented" | "rejected";
+  status:
+    | "new"
+    | "in_review"
+    | "approved"
+    | "implemented"
+    | "rejected"
+    | "archived";
   assigned_to?: number;
   actual_savings?: number;
   created_at: Date;
@@ -217,7 +235,10 @@ class KvpService {
    */
   async getCategories(tenantId: number): Promise<Category[]> {
     try {
-      return await KVPModel.getCategories(tenantId);
+      // Categories are global, no tenant filtering needed
+      const categories = await KVPModel.getCategories();
+      // Add tenant_id to match the Category interface expectation
+      return categories.map((cat) => ({ ...cat, tenant_id: tenantId }));
     } catch (error) {
       console.error("Error in KvpService.getCategories:", error);
       throw error;
@@ -290,7 +311,7 @@ class KvpService {
         suggestionsByCategory: {}, // TODO: Implement category breakdown
         suggestionsByStatus: {
           new: stats.new_suggestions,
-          in_progress: stats.in_progress,
+          in_review: stats.in_progress, // Map old field name to new status
           implemented: stats.implemented,
           rejected: stats.rejected,
         },

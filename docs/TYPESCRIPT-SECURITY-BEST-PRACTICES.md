@@ -271,7 +271,7 @@ router.get(
   authenticateToken,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     // Implementation
-  }
+  },
 );
 
 export default router;

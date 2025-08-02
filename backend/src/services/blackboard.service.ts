@@ -21,7 +21,7 @@ type BlackboardEntry = DbBlackboardEntry;
 
 interface BlackboardFilters extends EntryQueryOptions {
   category?: string;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: "low" | "medium" | "high" | "urgent";
   is_pinned?: boolean;
 }
 
@@ -38,7 +38,7 @@ interface BlackboardUpdateData {
   org_level?: "company" | "department" | "team";
   org_id?: number;
   expires_at?: Date | string | null;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: "low" | "medium" | "high" | "urgent";
   color?: string;
   status?: "active" | "archived";
   requires_confirmation?: boolean;

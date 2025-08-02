@@ -165,41 +165,64 @@ function showToast(message: string, type: 'success' | 'error' = 'success'): void
   // Fallback toast implementation
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.textContent = message;
   toast.style.cssText = `
     position: fixed;
-    top: 20px;
+    top: 80px;
     right: 20px;
-    padding: 12px 24px;
-    background: ${type === 'success' ? '#4caf50' : '#f44336'};
-    color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    padding: 16px 24px;
+    background: ${type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)'};
+    border: 1px solid ${type === 'success' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'};
+    color: ${type === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)'};
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     z-index: 10000;
-    /* animation: slideIn 0.3s ease; */
+    font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    animation: slideInRight 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   `;
+
+  // Add icon
+  const icon = document.createElement('span');
+  icon.innerHTML =
+    type === 'success'
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+
+  // Add message text
+  const messageSpan = document.createElement('span');
+  messageSpan.textContent = message;
+
+  toast.appendChild(icon);
+  toast.appendChild(messageSpan);
 
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    // toast.style.animation = 'slideOut 0.3s ease';
+    toast.style.animation = 'slideOutRight 0.3s ease-in';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
 
-// Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-  @keyframes slideOut {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(100%); opacity: 0; }
-  }
-`;
-document.head.appendChild(style);
+// Add animation styles if not already present
+if (!document.getElementById('toast-animations')) {
+  const style = document.createElement('style');
+  style.id = 'toast-animations';
+  style.textContent = `
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

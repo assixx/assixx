@@ -450,11 +450,6 @@
   font-size: 14px;
 }
 
-.dropdown-option:hover {
-  background: rgba(33, 150, 243, 0.2);
-  padding-left: 20px;
-}
-
 .dropdown-option i {
   width: 16px;
   text-align: center;

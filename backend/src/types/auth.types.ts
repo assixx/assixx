@@ -7,6 +7,7 @@ export interface AuthResult {
   success: boolean;
   user: User | null;
   token?: string;
+  refreshToken?: string;
   message?: string;
   error?: string;
 }

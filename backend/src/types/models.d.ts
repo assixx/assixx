@@ -62,7 +62,6 @@ export interface Tenant {
 
 export interface DatabaseTenant {
   id: number;
-  name: string;
   company_name: string;
   subdomain: string;
   email: string;

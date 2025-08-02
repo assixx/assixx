@@ -7,7 +7,7 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
 
-import { executeQuery } from "../config/database";
+import { executeQuery } from "../database";
 import { TokenPayload } from "../types/auth.types";
 import { AuthenticationMiddleware } from "../types/middleware.types";
 import {
@@ -82,11 +82,11 @@ async function getUserDetails(
       `SELECT 
         u.id, u.username, u.email, u.role, u.tenant_id,
         u.first_name as firstName, u.last_name as lastName,
-        u.department_id, u.position,
+        u.department_id,
         t.company_name as tenantName
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
-      WHERE u.id = ? AND u.status = 'active'`,
+      WHERE u.id = ? AND u.is_active = 1`,
       [userId],
     );
 
@@ -106,7 +106,6 @@ async function getUserDetails(
       first_name: user.firstName,
       last_name: user.lastName,
       department_id: user.department_id,
-      position: user.position,
     };
   } catch (error) {
     console.error("[AUTH] User lookup error:", error);
@@ -177,7 +176,6 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       first_name: userDetails.first_name,
       last_name: userDetails.last_name,
       department_id: userDetails.department_id,
-      position: userDetails.position,
     };
 
     // Attach user to request

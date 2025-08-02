@@ -770,9 +770,6 @@
                   <h2 class="card-title">Mitarbeiterübersicht</h2>
                   <p class="text-secondary" class="u-mt-text">Alle Mitarbeiter verwalten und bearbeiten</p>
                 </div>
-                <button class="btn btn-primary" id="employees-section-new-button" onclick="showNewEmployeeModal()">
-                  Neuer Mitarbeiter
-                </button>
               </div>
               <div class="flex-between mb-3">
                 <div class="filter-buttons">
@@ -991,13 +988,13 @@
     </div>
 
     <!-- Employee Modal -->
-    <div id="employee-modal" class="modal" class="u-hidden" data-debug="employee-modal">
+    <div id="employee-modal" class="modal" data-debug="employee-modal" style="display: none">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neuer Mitarbeiter</h3>
           <button class="modal-close" id="close-employee-modal">&times;</button>
         </div>
-        <form id="create-employee-form">
+        <form id="create-employee-form" style="padding: var(--spacing-lg)">
           <div class="form-group">
             <label class="form-label">E-Mail</label>
             <input type="email" name="email" id="email" class="form-control" required />
@@ -1030,6 +1027,21 @@
             <label class="form-label">Alter</label>
             <input type="number" name="age" class="form-control" min="18" max="100" required />
           </div>
+          <div class="form-group">
+            <label class="form-label">Personalnummer *</label>
+            <input
+              type="text"
+              name="employee_number"
+              class="form-control"
+              placeholder="z.B. ABC-123 oder 2025-001"
+              maxlength="10"
+              pattern="[A-Za-z0-9\-]{1,10}"
+              required
+            />
+            <small class="form-text" style="color: var(--text-secondary); font-size: 12px">
+              Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)
+            </small>
+          </div>
           <!-- Mitarbeiter-ID wird automatisch generiert -->
           <!-- IBAN-Feld wurde entfernt -->
           <div class="form-group">
@@ -1045,7 +1057,7 @@
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="dropdown-options" id="employee-department-dropdown" class="u-hidden">
+              <div class="dropdown-options" id="employee-department-dropdown" style="display: none">
                 <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
                   Keine Abteilung
                 </div>
@@ -1055,8 +1067,8 @@
             </div>
           </div>
           <div class="button-group">
-            <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
             <button type="button" class="btn btn-secondary" id="cancel-employee-button">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
           </div>
         </form>
       </div>
@@ -1114,13 +1126,16 @@
       }
 
       .modal-content {
-        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-        /* Verwendet die CSS-Variablen aus dem zentralen Theme */
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
         width: 90%;
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .modal-header {
@@ -1143,10 +1158,56 @@
         font-size: 24px;
         color: var(--text-secondary);
         cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
       }
 
       .modal-close:hover {
-        color: var(--text-primary);
+        background-color: var(--background-dark);
+        color: var(--error-color);
+      }
+
+      /* Form Styles für Modals */
+      .modal .form-group {
+        margin-bottom: 20px;
+      }
+
+      .modal .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      .modal .form-control {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-sm);
+        color: #fff;
+      }
+
+      .modal .form-control:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      .modal .button-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        margin-top: 20px;
       }
 
       .table-row-inactive {
@@ -1244,12 +1305,6 @@
 
       .dropdown-option:last-child {
         border-bottom: none;
-      }
-
-      .dropdown-option:hover {
-        background: rgba(33, 150, 243, 0.2);
-        color: white;
-        padding-left: 16px;
       }
     </style>
 
@@ -2799,7 +2854,38 @@
         justify-content: space-between;
         align-items: center;
       }
+
+      /* Floating Action Button */
+      .add-employee-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: rgba(33, 150, 243, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+        transition: all 0.3s ease;
+        z-index: 100;
+      }
+
+      .add-employee-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
+      }
     </style>
+
+    <!-- Floating Action Button for Employees -->
+    <button class="add-employee-btn" id="floating-add-employee" onclick="showEmployeeModal()" style="display: none">+</button>
 
     <!-- Mark body as loaded after all scripts -->
     <script>
@@ -2808,6 +2894,39 @@
         setTimeout(() => {
           document.body.classList.add('loaded');
         }, 100);
+      });
+
+      // Show/hide floating button based on section
+      document.addEventListener('DOMContentLoaded', function () {
+        const floatingBtn = document.getElementById('floating-add-employee');
+
+        // Function to check if employees section is active
+        function updateFloatingButton() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const section = urlParams.get('section');
+
+          if (section === 'employees' && floatingBtn) {
+            floatingBtn.style.display = 'flex';
+          } else if (floatingBtn) {
+            floatingBtn.style.display = 'none';
+          }
+        }
+
+        // Check on page load
+        updateFloatingButton();
+
+        // Also check when URL changes (for SPA navigation)
+        window.addEventListener('popstate', updateFloatingButton);
+
+        // Listen for section changes
+        const observer = new MutationObserver(function (mutations) {
+          updateFloatingButton();
+        });
+
+        // Start observing
+        const targetNode = document.body;
+        const config = { childList: true, subtree: true };
+        observer.observe(targetNode, config);
       });
     </script>
   </body>

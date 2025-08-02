@@ -5,7 +5,6 @@
 
 import { promises as fs } from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 import Document, {
   DocumentCreateData as ModelDocumentCreateData,
@@ -19,9 +18,8 @@ import { logger } from "../utils/logger";
  * Handles document business logic
  */
 
-// ES modules equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Use process.cwd() for compatibility with both ESM and CommonJS
+const projectRoot = process.cwd();
 
 // Import types from Document model
 // Service-specific interfaces
@@ -76,6 +74,7 @@ interface DocumentsResponse {
 interface ServiceDocumentCreateData {
   tenant_id: number;
   name: string;
+  originalName?: string;
   description?: string | null;
   filename: string;
   mimetype: string;
@@ -109,7 +108,7 @@ class DocumentService {
   private uploadDir: string;
 
   constructor() {
-    this.uploadDir = path.join(__dirname, "../../../uploads/documents");
+    this.uploadDir = path.join(projectRoot, "uploads/documents");
   }
 
   /**
@@ -271,15 +270,21 @@ class DocumentService {
   ): Promise<DocumentData | null> {
     try {
       const modelData: ModelDocumentCreateData = {
-        userId: documentData.uploadedBy,
-        fileName: documentData.name,
+        userId: documentData.userId ?? documentData.uploadedBy,
+        fileName: documentData.filename,
+        fileContent: undefined, // Not used for file uploads via multer
         category: documentData.category,
         description:
           documentData.description !== null
             ? documentData.description
             : undefined,
         tenant_id: documentData.tenant_id,
+        recipientType: documentData.userId ? "user" : "company",
+        teamId: null,
+        departmentId: null,
       };
+
+      // The model will handle setting created_by, original_name, file_path, file_size, mime_type
       const documentId = await Document.create(modelData);
       return await this.getDocumentById(documentId, documentData.tenant_id);
     } catch (error) {

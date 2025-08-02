@@ -220,13 +220,8 @@ export class Calendar {
         event.reminder_time = event.reminder_minutes;
         event.created_by = event.user_id;
 
-        // Map org fields based on type
-        if (event.type === "meeting" || event.type === "training") {
-          event.org_level = "company";
-        } else {
-          event.org_level = "personal";
-        }
-        event.org_id = 0;
+        // org_level and org_id are now stored directly in the database
+        // No need to map them based on type
 
         // Convert Buffer description to String if needed
         if (event.description && Buffer.isBuffer(event.description)) {
@@ -313,6 +308,25 @@ export class Calendar {
   }
 
   /**
+   * Check if a calendar event exists (without permission check)
+   */
+  static async checkEventExists(
+    id: number,
+    tenant_id: number,
+  ): Promise<boolean> {
+    try {
+      const [rows] = await executeQuery<RowDataPacket[]>(
+        "SELECT 1 FROM calendar_events WHERE id = ? AND tenant_id = ?",
+        [id, tenant_id],
+      );
+      return rows.length > 0;
+    } catch (error) {
+      logger.error("Error in checkEventExists:", error);
+      return false;
+    }
+  }
+
+  /**
    * Get a specific calendar event by ID
    */
   static async getEventById(
@@ -353,13 +367,8 @@ export class Calendar {
       event.reminder_time = event.reminder_minutes;
       event.created_by = event.user_id;
 
-      // Map org fields based on type
-      if (event.type === "meeting" || event.type === "training") {
-        event.org_level = "company";
-      } else {
-        event.org_level = "personal";
-      }
-      event.org_id = 0;
+      // org_level and org_id are now stored directly in the database
+      // No need to map them based on type
 
       // Convert Buffer description to String if needed
       if (event.description && Buffer.isBuffer(event.description)) {
@@ -420,6 +429,7 @@ export class Calendar {
         end_time,
         all_day,
         org_level,
+        org_id,
         created_by,
         reminder_time,
         color,
@@ -437,20 +447,12 @@ export class Calendar {
         throw new Error("Start time must be before end time");
       }
 
-      // Map org_level to type for database
-      let eventType = "other";
-      if (org_level === "company") {
-        eventType = "meeting";
-      } else if (org_level === "team" || org_level === "department") {
-        eventType = "training";
-      }
-
       // Insert new event
       const query = `
         INSERT INTO calendar_events 
         (tenant_id, user_id, title, description, location, start_date, end_date, all_day, 
-         type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         org_level, org_id, type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -462,7 +464,9 @@ export class Calendar {
         formatDateForMysql(start_time),
         formatDateForMysql(end_time),
         all_day ? 1 : 0,
-        eventType,
+        org_level,
+        org_id ?? null,
+        "other", // type
         "confirmed", // status
         0, // is_private
         reminder_time ?? null,
@@ -552,15 +556,13 @@ export class Calendar {
       }
 
       if (org_level !== undefined) {
-        // Map org_level to type for database
-        let eventType = "other";
-        if (org_level === "company") {
-          eventType = "meeting";
-        } else if (org_level === "team" || org_level === "department") {
-          eventType = "training";
-        }
-        query += ", type = ?";
-        queryParams.push(eventType);
+        query += ", org_level = ?";
+        queryParams.push(org_level);
+      }
+
+      if (eventData.org_id !== undefined) {
+        query += ", org_id = ?";
+        queryParams.push(eventData.org_id);
       }
 
       if (status !== undefined) {
@@ -590,11 +592,20 @@ export class Calendar {
       // Execute update
       await executeQuery(query, queryParams);
 
-      // Get the updated event
+      // Get the updated event - we need to get the current user_id first
+      const [eventRows] = await executeQuery<RowDataPacket[]>(
+        "SELECT user_id FROM calendar_events WHERE id = ? AND tenant_id = ?",
+        [id, tenant_id],
+      );
+
+      if (!eventRows || eventRows.length === 0) {
+        return null;
+      }
+
       const updatedEvent = await this.getEventById(
         id,
         tenant_id,
-        eventData.created_by ?? 0,
+        eventRows[0].user_id,
       );
       return updatedEvent;
     } catch (error) {
@@ -808,13 +819,8 @@ export class Calendar {
         event.reminder_time = event.reminder_minutes;
         event.created_by = event.user_id;
 
-        // Map org fields based on type
-        if (event.type === "meeting" || event.type === "training") {
-          event.org_level = "company";
-        } else {
-          event.org_level = "personal";
-        }
-        event.org_id = 0;
+        // org_level and org_id are now stored directly in the database
+        // No need to map them based on type
 
         // Convert Buffer description to String if needed
         if (event.description && Buffer.isBuffer(event.description)) {
@@ -1002,6 +1008,7 @@ export class Calendar {
 export const {
   getAllEvents,
   getEventById,
+  checkEventExists,
   createEvent,
   updateEvent,
   deleteEvent,
@@ -1016,6 +1023,9 @@ export const {
 // Type exports
 export type {
   DbCalendarEvent,
+  DbCalendarEvent as CalendarEvent,
+  DbEventAttendee,
+  DbEventAttendee as EventAttendee,
   EventQueryOptions,
   EventCreateData,
   EventUpdateData,

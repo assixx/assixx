@@ -13,7 +13,7 @@ const router: Router = express.Router();
 import { executeQuery, execute } from "../database";
 import { security } from "../middleware/security";
 import { createValidation } from "../middleware/validation";
-import AdminLog from "../models/adminLog";
+import { RootLog } from "../models/rootLog";
 import Tenant from "../models/tenant";
 import User from "../models/user";
 import { tenantDeletionService } from "../services/tenantDeletion.service";
@@ -263,7 +263,7 @@ router.get(
         admins.map(async (admin) => {
           if (admin.tenant_id) {
             const tenant = await Tenant.findById(admin.tenant_id);
-            admin.tenant_name = tenant ? tenant.name : null;
+            admin.tenant_name = tenant ? tenant.company_name : null;
           }
           return admin;
         }),
@@ -441,7 +441,7 @@ router.get(
       const { password: _password, ...adminData } = admin;
 
       // Letzten Login-Zeitpunkt hinzufügen, falls vorhanden
-      const lastLogin = await AdminLog.getLastLogin(parseInt(adminId, 10));
+      const lastLogin = await RootLog.getLastLogin(parseInt(adminId, 10));
       if (lastLogin) {
         adminData.last_login = lastLogin.created_at;
       }
@@ -561,7 +561,7 @@ router.get(
       }
 
       // Logs abrufen
-      const logs = await AdminLog.getByUserId(parseInt(adminId, 10), days);
+      const logs = await RootLog.getByUserId(parseInt(adminId, 10), days);
 
       logger.info(`Retrieved ${logs.length} logs for admin ${adminId}`);
       res.json(successResponse(logs));
