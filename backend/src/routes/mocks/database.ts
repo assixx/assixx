@@ -4,6 +4,7 @@
  */
 
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
@@ -998,7 +999,7 @@ export async function createTestTenant(
   name: string,
 ): Promise<number> {
   const timestamp = Date.now();
-  const randomSuffix = Math.floor(Math.random() * 1000);
+  const randomSuffix = crypto.randomBytes(2).readUInt16BE(0) % 1000;
   // Add TEST_DATA_PREFIX to ensure safe cleanup
   const uniqueSubdomain = `${TEST_DATA_PREFIX}${subdomain}_${timestamp}_${randomSuffix}`;
   const uniqueName = `${TEST_DATA_PREFIX}${name}`;
@@ -1086,7 +1087,7 @@ export async function createTestUser(
   const isRootUser =
     userData.role === "root" && userData.email === "root@system.de";
   const timestamp = Date.now();
-  const randomSuffix = Math.floor(Math.random() * 1000);
+  const randomSuffix = crypto.randomBytes(2).readUInt16BE(0) % 1000;
 
   // Add TEST_DATA_PREFIX to ALL test users for safe cleanup
   let uniqueUsername: string;
@@ -1110,8 +1111,10 @@ export async function createTestUser(
     uniqueEmail = `${TEST_DATA_PREFIX}${userData.email.replace("@", `_${timestamp}_${randomSuffix}@`)}`;
   }
 
-  // Generate unique employee number
-  const employeeNumber = String(100000 + Math.floor(Math.random() * 899999));
+  // Generate unique employee number using cryptographically secure random
+  const randomBytes = crypto.randomBytes(4);
+  const randomNumber = randomBytes.readUInt32BE(0) % 900000; // 0-899999
+  const employeeNumber = String(100000 + randomNumber);
 
   console.log(
     `Creating test user with tenant_id: ${userData.tenant_id}, department_id: ${userData.department_id}`,
