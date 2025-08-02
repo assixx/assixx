@@ -338,7 +338,8 @@ router.post(
       // Delete temporary file (only if using disk storage)
       if (!uploadReq.file.buffer && filePath) {
         try {
-          await fs.unlink(filePath);
+          // Use safeDeleteFile to prevent path injection attacks
+          await safeDeleteFile(filePath);
         } catch (unlinkErr) {
           // Only warn if it's not a "file not found" error
           if ((unlinkErr as { code?: string }).code !== "ENOENT") {
