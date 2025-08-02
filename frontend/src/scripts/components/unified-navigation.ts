@@ -3079,13 +3079,53 @@ const unifiedNavigationCSS = `
         display: none;
     }
 
-    .sidebar.collapsed .sidebar-link {
-        padding: var(--spacing-sm);
-        justify-content: center;;
-    }
 
+    /* Im collapsed state NUR Label verstecken - sonst KEINE Änderungen! */
     .sidebar.collapsed .sidebar-link .label {
         display: none;
+    }
+
+    /* Collapsed state: Hover/Active NUR auf Icon */
+    .sidebar.collapsed .sidebar-link {
+        background: transparent;
+    }
+
+    .sidebar.collapsed .sidebar-link .icon {
+        position: relative;
+    }
+
+    /* Active state - immer sichtbar mit primary color */
+    .sidebar.collapsed .sidebar-item.active .sidebar-link .icon {
+        color: var(--primary-color);
+    }
+    
+    .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
+        content: '';
+        position: absolute;
+        inset: -7px;
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    /* Hover - Icon wird primary color */
+    .sidebar.collapsed .sidebar-link:hover .icon {
+        color: var(--primary-color);
+    }
+    
+    /* Hover nur bei NICHT active */
+    .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
+        content: '';
+        position: absolute;
+        inset: -7px;
+        background: rgba(33, 150, 243, 0.1);
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    /* Active + Hover = stärkerer active effect */
+    .sidebar.collapsed .sidebar-item.active .sidebar-link:hover .icon::before {
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.25), rgba(33, 150, 243, 0.15));
     }
 
     .sidebar.collapsed .submenu-arrow {
@@ -3101,8 +3141,9 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 132px;
+        margin-top: 131.9px;
     }
+
 
     /* Main content adjustment for collapsed sidebar */
     .main-content.sidebar-collapsed {
@@ -3130,8 +3171,6 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-link,
     .sidebar.collapsed .sidebar-title {
         position: relative;
-        padding-right: 0px;
-        margin-bottom: 4px;
     }
 
     .sidebar.collapsed .sidebar-link:hover::after,
@@ -3182,26 +3221,7 @@ const unifiedNavigationCSS = `
         /*transition: all 0.3s ease;*/
     }
 
-    /* Icon centering in collapsed state */
-    .sidebar.collapsed .sidebar-link .icon {
-        margin: 0;
-    }
 
-    /* Active link styling for collapsed sidebar */
-    .sidebar.collapsed .sidebar-item.active .sidebar-link {
-
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        margin-left: 0px;
-    }
-
-    .sidebar.collapsed .sidebar-item.active .sidebar-link::before {
-        display: none;
-    }
 
     .user-info-card {
         /*display: flex;*/
@@ -3453,7 +3473,7 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-sm);
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
@@ -3461,26 +3481,32 @@ const unifiedNavigationCSS = `
         overflow: hidden;
         border: 1px solid transparent;
         font-size: 0.9rem;
-        margin-left: -1px;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
+        height: 36px;
+        box-sizing: border-box;
     }
 
-    .sidebar-link:hover {
+    /* Hover/Active nur wenn NICHT collapsed */
+    .sidebar:not(.collapsed) .sidebar-link:hover {
         background: rgba(33, 150, 243, 0.1);
         color: var(--primary-color);
-        /*box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);*/
     }
 
-    .sidebar-item.active .sidebar-link {
+    .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
         background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         color: var(--primary-color);
-        /*border-color: rgba(33, 150, 243, 0.3);
-        box-shadow: 0 4px 20px rgba(33, 150, 243, 0.2);*/
     }
 
     .sidebar-link .icon {
         min-width: 20px;
+        width: 20px;
+        height: 20px;
         text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-left: 0;
         /* transition: all 0.3s ease; */
     }
 
@@ -3526,6 +3552,11 @@ const unifiedNavigationCSS = `
     }
 
     /* Submenu Styles */
+    .sidebar-item {
+        margin: 0;
+        padding: 0;
+    }
+
     .sidebar-item.has-submenu .sidebar-link {
         position: relative;
     }
@@ -3543,7 +3574,7 @@ const unifiedNavigationCSS = `
     .submenu {
         margin-left: 32px;
         margin-top: 4px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         list-style: none;
         padding: 0;
         overflow: hidden;

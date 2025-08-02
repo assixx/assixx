@@ -198,9 +198,12 @@ body {
 }
 
 /* Container full width when sidebar is collapsed */
+/* MOVED TO unified-navigation.ts */
+/*
 .main-content.sidebar-collapsed .container {
   max-width: none;
 }
+*/
 
 /* Cards */
 .card {
@@ -736,6 +739,9 @@ body {
   min-height: calc(100vh - 56px);
 }
 
+/* SIDEBAR STYLES MOVED TO unified-navigation.ts */
+/* All sidebar-related CSS has been moved to unified-navigation.ts to avoid conflicts */
+/*
 .sidebar {
   width: 250px;
   background-color: rgba(30, 30, 30, 0.7);
@@ -768,7 +774,7 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
-/*.sidebar-link {
+.sidebar-link {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -777,10 +783,8 @@ body {
   text-decoration: none;
   border-radius: var(--radius-sm);
   position: relative;
-}*/
+}
 
-/* NOTE: sidebar-link base is commented out above, but these related styles
-   are still used in some pages (3 occurrences found) */
 .sidebar-link:hover {
   color: var(--text-primary);
   background-color: rgba(255, 255, 255, 0.05);
@@ -797,7 +801,6 @@ body {
   transform: translateY(-50%);
   width: 3px;
   height: 70%;
-
   border-radius: 0 2px 2px 0;
 }
 
@@ -808,6 +811,7 @@ body {
   align-items: center;
   justify-content: center;
 }
+*/
 
 .main-content {
   flex: 1;
