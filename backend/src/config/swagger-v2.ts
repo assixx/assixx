@@ -1113,6 +1113,867 @@ const options: swaggerJsdoc.Options = {
           ],
         },
 
+        // Notifications v2 Schemas
+        NotificationV2: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            userId: {
+              type: "integer",
+              example: 5,
+            },
+            type: {
+              type: "string",
+              enum: ["email", "push", "in_app"],
+              example: "in_app",
+            },
+            category: {
+              type: "string",
+              example: "system",
+            },
+            title: {
+              type: "string",
+              example: "New message received",
+            },
+            message: {
+              type: "string",
+              example: "You have a new message from John Doe",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: { conversationId: 123 },
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              example: "medium",
+            },
+            readAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null,
+            },
+            actionUrl: {
+              type: "string",
+              nullable: true,
+              example: "/chat/conversations/123",
+            },
+            iconUrl: {
+              type: "string",
+              nullable: true,
+              example: "/assets/icons/message.png",
+            },
+            expiresAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-12-31T23:59:59.000Z",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T10:00:00.000Z",
+            },
+          },
+          required: [
+            "id",
+            "tenantId",
+            "userId",
+            "type",
+            "title",
+            "message",
+            "priority",
+          ],
+        },
+
+        NotificationListResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    notifications: {
+                      type: "array",
+                      items: {
+                        $ref: "#/components/schemas/NotificationV2",
+                      },
+                    },
+                    pagination: {
+                      $ref: "#/components/schemas/PaginationMeta",
+                    },
+                    unreadCount: {
+                      type: "integer",
+                      example: 5,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        NotificationResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/NotificationV2",
+                },
+              },
+            },
+          ],
+        },
+
+        CreateNotificationRequest: {
+          type: "object",
+          required: ["recipientId", "type", "title", "message"],
+          properties: {
+            recipientId: {
+              type: "integer",
+              example: 5,
+              description: "User ID to send notification to",
+            },
+            type: {
+              type: "string",
+              enum: ["email", "push", "in_app"],
+              example: "in_app",
+            },
+            category: {
+              type: "string",
+              example: "system",
+            },
+            title: {
+              type: "string",
+              minLength: 1,
+              maxLength: 200,
+              example: "Important Update",
+            },
+            message: {
+              type: "string",
+              minLength: 1,
+              maxLength: 1000,
+              example: "Please review the latest changes",
+            },
+            data: {
+              type: "object",
+              nullable: true,
+              example: { documentId: 456 },
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high"],
+              default: "medium",
+              example: "high",
+            },
+            actionUrl: {
+              type: "string",
+              nullable: true,
+              example: "/documents/456",
+            },
+            iconUrl: {
+              type: "string",
+              nullable: true,
+              example: "/assets/icons/document.png",
+            },
+            expiresAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-12-31T23:59:59.000Z",
+            },
+          },
+        },
+
+        NotificationPreferences: {
+          type: "object",
+          properties: {
+            email: {
+              type: "object",
+              properties: {
+                enabled: {
+                  type: "boolean",
+                  example: true,
+                },
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "boolean",
+                  },
+                  example: {
+                    system: true,
+                    marketing: false,
+                    updates: true,
+                  },
+                },
+              },
+            },
+            push: {
+              type: "object",
+              properties: {
+                enabled: {
+                  type: "boolean",
+                  example: true,
+                },
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "boolean",
+                  },
+                  example: {
+                    system: true,
+                    marketing: false,
+                    updates: true,
+                  },
+                },
+              },
+            },
+            inApp: {
+              type: "object",
+              properties: {
+                enabled: {
+                  type: "boolean",
+                  example: true,
+                },
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "boolean",
+                  },
+                  example: {
+                    system: true,
+                    marketing: true,
+                    updates: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        NotificationPreferencesResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    preferences: {
+                      $ref: "#/components/schemas/NotificationPreferences",
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        UpdatePreferencesRequest: {
+          type: "object",
+          properties: {
+            email: {
+              type: "object",
+              properties: {
+                enabled: {
+                  type: "boolean",
+                },
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "boolean",
+                  },
+                },
+              },
+            },
+            push: {
+              type: "object",
+              properties: {
+                enabled: {
+                  type: "boolean",
+                },
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "boolean",
+                  },
+                },
+              },
+            },
+            inApp: {
+              type: "object",
+              properties: {
+                enabled: {
+                  type: "boolean",
+                },
+                categories: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "boolean",
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        NotificationStatsResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    total: {
+                      type: "integer",
+                      example: 1500,
+                    },
+                    byType: {
+                      type: "object",
+                      properties: {
+                        email: {
+                          type: "integer",
+                          example: 500,
+                        },
+                        push: {
+                          type: "integer",
+                          example: 300,
+                        },
+                        inApp: {
+                          type: "integer",
+                          example: 700,
+                        },
+                      },
+                    },
+                    byPriority: {
+                      type: "object",
+                      properties: {
+                        low: {
+                          type: "integer",
+                          example: 800,
+                        },
+                        medium: {
+                          type: "integer",
+                          example: 600,
+                        },
+                        high: {
+                          type: "integer",
+                          example: 100,
+                        },
+                      },
+                    },
+                    last30Days: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          date: {
+                            type: "string",
+                            format: "date",
+                            example: "2025-01-01",
+                          },
+                          count: {
+                            type: "integer",
+                            example: 50,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        PersonalStatsResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    total: {
+                      type: "integer",
+                      example: 150,
+                    },
+                    unread: {
+                      type: "integer",
+                      example: 12,
+                    },
+                    byType: {
+                      type: "object",
+                      properties: {
+                        email: {
+                          type: "integer",
+                          example: 50,
+                        },
+                        push: {
+                          type: "integer",
+                          example: 30,
+                        },
+                        inApp: {
+                          type: "integer",
+                          example: 70,
+                        },
+                      },
+                    },
+                    lastRead: {
+                      type: "string",
+                      format: "date-time",
+                      nullable: true,
+                      example: "2025-01-01T15:30:00.000Z",
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        SubscribeRequest: {
+          type: "object",
+          required: ["endpoint", "keys"],
+          properties: {
+            endpoint: {
+              type: "string",
+              example: "https://fcm.googleapis.com/fcm/send/...",
+            },
+            keys: {
+              type: "object",
+              properties: {
+                p256dh: {
+                  type: "string",
+                  example:
+                    "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM=",
+                },
+                auth: {
+                  type: "string",
+                  example: "tBHItJI5svbpez7KI4CCXg==",
+                },
+              },
+              required: ["p256dh", "auth"],
+            },
+          },
+        },
+
+        TemplatesResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    templates: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: {
+                            type: "integer",
+                            example: 1,
+                          },
+                          name: {
+                            type: "string",
+                            example: "Welcome Email",
+                          },
+                          category: {
+                            type: "string",
+                            example: "onboarding",
+                          },
+                          type: {
+                            type: "string",
+                            enum: ["email", "push", "in_app"],
+                            example: "email",
+                          },
+                          variables: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                            },
+                            example: ["userName", "companyName"],
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        CreateFromTemplateRequest: {
+          type: "object",
+          required: ["templateId", "recipientId", "variables"],
+          properties: {
+            templateId: {
+              type: "integer",
+              example: 1,
+            },
+            recipientId: {
+              type: "integer",
+              example: 5,
+            },
+            variables: {
+              type: "object",
+              additionalProperties: {
+                type: "string",
+              },
+              example: {
+                userName: "John Doe",
+                companyName: "Acme Corp",
+              },
+            },
+          },
+        },
+
+        // Features v2 Response Schemas
+        FeatureResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  $ref: "#/components/schemas/FeatureV2",
+                },
+              },
+            },
+          ],
+        },
+
+        FeaturesByCategoryResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "array",
+                    items: {
+                      $ref: "#/components/schemas/FeatureV2",
+                    },
+                  },
+                  example: {
+                    basic: [
+                      {
+                        id: 1,
+                        code: "USER_MANAGEMENT",
+                        name: "User Management",
+                        category: "basic",
+                      },
+                    ],
+                    premium: [
+                      {
+                        id: 5,
+                        code: "ADVANCED_REPORTS",
+                        name: "Advanced Reports",
+                        category: "premium",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        TenantFeaturesResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/TenantFeatureV2",
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        MyFeaturesResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      feature: {
+                        $ref: "#/components/schemas/FeatureV2",
+                      },
+                      isActive: {
+                        type: "boolean",
+                        example: true,
+                      },
+                      activatedAt: {
+                        type: "string",
+                        format: "date-time",
+                        nullable: true,
+                        example: "2025-01-01T10:00:00.000Z",
+                      },
+                      expiresAt: {
+                        type: "string",
+                        format: "date-time",
+                        nullable: true,
+                        example: null,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        TenantFeaturesSummaryResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    totalFeatures: {
+                      type: "integer",
+                      example: 15,
+                    },
+                    activeFeatures: {
+                      type: "integer",
+                      example: 8,
+                    },
+                    byCategory: {
+                      type: "object",
+                      additionalProperties: {
+                        type: "integer",
+                      },
+                      example: {
+                        basic: 3,
+                        core: 3,
+                        premium: 2,
+                        enterprise: 0,
+                      },
+                    },
+                    monthlyBillingTotal: {
+                      type: "number",
+                      format: "float",
+                      example: 299.99,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        FeatureActivationRequest: {
+          type: "object",
+          required: ["tenantId", "featureCode"],
+          properties: {
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            featureCode: {
+              type: "string",
+              example: "ADVANCED_REPORTS",
+            },
+            expiresAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-12-31T23:59:59.000Z",
+            },
+            customPrice: {
+              type: "number",
+              format: "float",
+              nullable: true,
+              example: 99.99,
+            },
+          },
+        },
+
+        FeatureDeactivationRequest: {
+          type: "object",
+          required: ["tenantId", "featureCode"],
+          properties: {
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            featureCode: {
+              type: "string",
+              example: "ADVANCED_REPORTS",
+            },
+          },
+        },
+
+        UsageStatsResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    featureCode: {
+                      type: "string",
+                      example: "CHAT_MESSAGING",
+                    },
+                    totalUsage: {
+                      type: "integer",
+                      example: 1250,
+                    },
+                    uniqueUsers: {
+                      type: "integer",
+                      example: 45,
+                    },
+                    dailyUsage: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          date: {
+                            type: "string",
+                            format: "date",
+                            example: "2025-01-15",
+                          },
+                          count: {
+                            type: "integer",
+                            example: 125,
+                          },
+                          uniqueUsers: {
+                            type: "integer",
+                            example: 15,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        FeatureAccessResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "object",
+                  properties: {
+                    hasAccess: {
+                      type: "boolean",
+                      example: true,
+                    },
+                    featureCode: {
+                      type: "string",
+                      example: "CHAT_MESSAGING",
+                    },
+                    message: {
+                      type: "string",
+                      example: "Access to feature CHAT_MESSAGING granted",
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
+        AllTenantsWithFeaturesResponse: {
+          allOf: [
+            { $ref: "#/components/schemas/ApiSuccessResponse" },
+            {
+              type: "object",
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      tenantId: {
+                        type: "integer",
+                        example: 1,
+                      },
+                      tenantName: {
+                        type: "string",
+                        example: "Acme Corp",
+                      },
+                      activeFeatures: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            featureCode: {
+                              type: "string",
+                              example: "CHAT_MESSAGING",
+                            },
+                            featureName: {
+                              type: "string",
+                              example: "Chat & Messaging",
+                            },
+                            activatedAt: {
+                              type: "string",
+                              format: "date-time",
+                              example: "2025-01-01T10:00:00.000Z",
+                            },
+                            expiresAt: {
+                              type: "string",
+                              format: "date-time",
+                              nullable: true,
+                              example: null,
+                            },
+                          },
+                        },
+                      },
+                      featureCount: {
+                        type: "integer",
+                        example: 5,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+
         // Common Error Codes
         ErrorCodes: {
           type: "string",
@@ -3505,6 +4366,717 @@ const options: swaggerJsdoc.Options = {
             },
           ],
         },
+
+        // Root API v2 Schemas
+        AdminUser: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            username: {
+              type: "string",
+              example: "admin.smith",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "admin@company.com",
+            },
+            firstName: {
+              type: "string",
+              example: "John",
+            },
+            lastName: {
+              type: "string",
+              example: "Smith",
+            },
+            company: {
+              type: "string",
+              nullable: true,
+              example: "Acme Corp",
+            },
+            notes: {
+              type: "string",
+              nullable: true,
+              example: "Main admin for production",
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            tenantName: {
+              type: "string",
+              nullable: true,
+              example: "Acme Corp",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T10:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T10:00:00.000Z",
+            },
+            lastLogin: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-20T14:30:00.000Z",
+            },
+          },
+        },
+
+        CreateAdminRequest: {
+          type: "object",
+          required: ["username", "email", "password"],
+          properties: {
+            username: {
+              type: "string",
+              example: "admin.smith",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "admin@company.com",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 6,
+              example: "SecurePassword123!",
+            },
+            firstName: {
+              type: "string",
+              example: "John",
+            },
+            lastName: {
+              type: "string",
+              example: "Smith",
+            },
+            company: {
+              type: "string",
+              example: "Acme Corp",
+            },
+            notes: {
+              type: "string",
+              example: "Main admin for production",
+            },
+          },
+        },
+
+        UpdateAdminRequest: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              example: "admin.smith",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "admin@company.com",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 6,
+              example: "NewPassword123!",
+            },
+            firstName: {
+              type: "string",
+              example: "John",
+            },
+            lastName: {
+              type: "string",
+              example: "Smith",
+            },
+            company: {
+              type: "string",
+              example: "Acme Corp",
+            },
+            notes: {
+              type: "string",
+              example: "Updated notes",
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+          },
+        },
+
+        RootUser: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            username: {
+              type: "string",
+              example: "root.admin",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "root@company.com",
+            },
+            firstName: {
+              type: "string",
+              example: "Super",
+            },
+            lastName: {
+              type: "string",
+              example: "Admin",
+            },
+            position: {
+              type: "string",
+              nullable: true,
+              example: "System Administrator",
+            },
+            notes: {
+              type: "string",
+              nullable: true,
+              example: "Primary root user",
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+            employeeId: {
+              type: "string",
+              nullable: true,
+              example: "ROOT-001",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T00:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T10:00:00.000Z",
+            },
+          },
+        },
+
+        CreateRootUserRequest: {
+          type: "object",
+          required: ["username", "email", "password", "firstName", "lastName"],
+          properties: {
+            username: {
+              type: "string",
+              example: "root.admin",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "root@company.com",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 6,
+              example: "SuperSecure123!",
+            },
+            firstName: {
+              type: "string",
+              example: "Super",
+            },
+            lastName: {
+              type: "string",
+              example: "Admin",
+            },
+            position: {
+              type: "string",
+              example: "System Administrator",
+            },
+            notes: {
+              type: "string",
+              example: "Primary root user",
+            },
+            isActive: {
+              type: "boolean",
+              default: true,
+              example: true,
+            },
+          },
+        },
+
+        UpdateRootUserRequest: {
+          type: "object",
+          properties: {
+            firstName: {
+              type: "string",
+              example: "Super",
+            },
+            lastName: {
+              type: "string",
+              example: "Admin",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              example: "root@company.com",
+            },
+            position: {
+              type: "string",
+              example: "System Administrator",
+            },
+            notes: {
+              type: "string",
+              example: "Updated notes",
+            },
+            isActive: {
+              type: "boolean",
+              example: true,
+            },
+          },
+        },
+
+        Tenant: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            companyName: {
+              type: "string",
+              example: "Acme Corporation",
+            },
+            subdomain: {
+              type: "string",
+              example: "acme",
+            },
+            currentPlan: {
+              type: "string",
+              nullable: true,
+              example: "professional",
+            },
+            status: {
+              type: "string",
+              enum: ["active", "inactive", "suspended", "deleted"],
+              example: "active",
+            },
+            maxUsers: {
+              type: "integer",
+              nullable: true,
+              example: 100,
+            },
+            maxAdmins: {
+              type: "integer",
+              nullable: true,
+              example: 5,
+            },
+            industry: {
+              type: "string",
+              nullable: true,
+              example: "Manufacturing",
+            },
+            country: {
+              type: "string",
+              nullable: true,
+              example: "DE",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-01T00:00:00.000Z",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-15T10:00:00.000Z",
+            },
+            adminCount: {
+              type: "integer",
+              example: 3,
+            },
+            employeeCount: {
+              type: "integer",
+              example: 85,
+            },
+            storageUsed: {
+              type: "integer",
+              example: 2147483648,
+              description: "Storage used in bytes",
+            },
+          },
+        },
+
+        TenantDeletionRequest: {
+          type: "object",
+          properties: {
+            reason: {
+              type: "string",
+              example: "Company closure",
+            },
+          },
+        },
+
+        TenantDeletionStatus: {
+          type: "object",
+          properties: {
+            queueId: {
+              type: "integer",
+              example: 1,
+            },
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            status: {
+              type: "string",
+              enum: [
+                "pending",
+                "approved",
+                "executing",
+                "completed",
+                "failed",
+                "cancelled",
+                "stopped",
+              ],
+              example: "pending",
+            },
+            requestedBy: {
+              type: "integer",
+              example: 1,
+            },
+            requestedByName: {
+              type: "string",
+              nullable: true,
+              example: "root.admin",
+            },
+            requestedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-20T10:00:00.000Z",
+            },
+            approvedBy: {
+              type: "integer",
+              nullable: true,
+              example: 2,
+            },
+            approvedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-01-20T11:00:00.000Z",
+            },
+            scheduledFor: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-02-20T10:00:00.000Z",
+            },
+            reason: {
+              type: "string",
+              nullable: true,
+              example: "Company closure",
+            },
+            errorMessage: {
+              type: "string",
+              nullable: true,
+              example: null,
+            },
+            canCancel: {
+              type: "boolean",
+              example: true,
+            },
+            canApprove: {
+              type: "boolean",
+              example: true,
+            },
+          },
+        },
+
+        DeletionApproval: {
+          type: "object",
+          properties: {
+            queueId: {
+              type: "integer",
+              example: 1,
+            },
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            companyName: {
+              type: "string",
+              example: "Acme Corporation",
+            },
+            subdomain: {
+              type: "string",
+              example: "acme",
+            },
+            requesterId: {
+              type: "integer",
+              example: 1,
+            },
+            requesterName: {
+              type: "string",
+              example: "root.admin",
+            },
+            requesterEmail: {
+              type: "string",
+              format: "email",
+              example: "root@company.com",
+            },
+            requestedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-20T10:00:00.000Z",
+            },
+            reason: {
+              type: "string",
+              nullable: true,
+              example: "Company closure",
+            },
+            status: {
+              type: "string",
+              example: "pending",
+            },
+          },
+        },
+
+        DashboardStats: {
+          type: "object",
+          properties: {
+            adminCount: {
+              type: "integer",
+              example: 5,
+            },
+            employeeCount: {
+              type: "integer",
+              example: 95,
+            },
+            totalUsers: {
+              type: "integer",
+              example: 101,
+              description: "Total users including root",
+            },
+            tenantCount: {
+              type: "integer",
+              nullable: true,
+              example: 25,
+            },
+            activeFeatures: {
+              type: "array",
+              nullable: true,
+              items: {
+                type: "string",
+              },
+              example: ["CHAT_MESSAGING", "ADVANCED_REPORTS", "SHIFT_PLANNING"],
+            },
+            systemHealth: {
+              type: "object",
+              nullable: true,
+              properties: {
+                database: {
+                  type: "string",
+                  enum: ["healthy", "degraded", "down"],
+                  example: "healthy",
+                },
+                storage: {
+                  type: "string",
+                  enum: ["healthy", "degraded", "down"],
+                  example: "healthy",
+                },
+                services: {
+                  type: "string",
+                  enum: ["healthy", "degraded", "down"],
+                  example: "healthy",
+                },
+              },
+            },
+          },
+        },
+
+        StorageInfo: {
+          type: "object",
+          properties: {
+            used: {
+              type: "integer",
+              example: 2147483648,
+              description: "Used storage in bytes",
+            },
+            total: {
+              type: "integer",
+              example: 26843545600,
+              description: "Total storage in bytes",
+            },
+            percentage: {
+              type: "integer",
+              example: 8,
+              description: "Usage percentage",
+            },
+            plan: {
+              type: "string",
+              example: "professional",
+            },
+            breakdown: {
+              type: "object",
+              nullable: true,
+              properties: {
+                documents: {
+                  type: "integer",
+                  example: 1073741824,
+                  description: "Documents storage in bytes",
+                },
+                attachments: {
+                  type: "integer",
+                  example: 536870912,
+                  description: "Attachments storage in bytes",
+                },
+                logs: {
+                  type: "integer",
+                  example: 268435456,
+                  description: "Logs storage in bytes",
+                },
+                backups: {
+                  type: "integer",
+                  example: 268435456,
+                  description: "Backups storage in bytes",
+                },
+              },
+            },
+          },
+        },
+
+        AdminLog: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+            },
+            userId: {
+              type: "integer",
+              example: 1,
+            },
+            action: {
+              type: "string",
+              example: "user_created",
+            },
+            entityType: {
+              type: "string",
+              example: "user",
+            },
+            entityId: {
+              type: "integer",
+              nullable: true,
+              example: 123,
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Created new user: john.doe",
+            },
+            ipAddress: {
+              type: "string",
+              nullable: true,
+              example: "192.168.1.100",
+            },
+            userAgent: {
+              type: "string",
+              nullable: true,
+              example: "Mozilla/5.0...",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2025-01-20T14:30:00.000Z",
+            },
+          },
+        },
+
+        DeletionDryRunReport: {
+          type: "object",
+          properties: {
+            tenantId: {
+              type: "integer",
+              example: 1,
+            },
+            companyName: {
+              type: "string",
+              example: "Acme Corporation",
+            },
+            estimatedDuration: {
+              type: "string",
+              example: "10-15 minutes",
+            },
+            affectedRecords: {
+              type: "object",
+              properties: {
+                users: {
+                  type: "integer",
+                  example: 101,
+                },
+                documents: {
+                  type: "integer",
+                  example: 2456,
+                },
+                departments: {
+                  type: "integer",
+                  example: 15,
+                },
+                teams: {
+                  type: "integer",
+                  example: 28,
+                },
+                shifts: {
+                  type: "integer",
+                  example: 856,
+                },
+                kvpSuggestions: {
+                  type: "integer",
+                  example: 234,
+                },
+                surveys: {
+                  type: "integer",
+                  example: 45,
+                },
+                logs: {
+                  type: "integer",
+                  example: 125678,
+                },
+                total: {
+                  type: "integer",
+                  example: 129243,
+                },
+              },
+            },
+            storageToFree: {
+              type: "integer",
+              example: 2147483648,
+              description: "Storage to be freed in bytes",
+            },
+            warnings: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              example: [
+                "Large number of log entries will be deleted",
+                "Active shifts will be cancelled",
+              ],
+            },
+            canProceed: {
+              type: "boolean",
+              example: true,
+            },
+          },
+        },
       },
 
       // Common Parameters
@@ -3833,6 +5405,16 @@ const options: swaggerJsdoc.Options = {
         name: "Features v2",
         description: "Feature flags and tenant features API v2",
         "x-displayName": "Features v2",
+      },
+      {
+        name: "Notifications",
+        description: "Push and email notifications API v2",
+        "x-displayName": "Notifications v2",
+      },
+      {
+        name: "Root",
+        description: "Root user administration and tenant management API v2",
+        "x-displayName": "Root v2",
       },
     ],
   },

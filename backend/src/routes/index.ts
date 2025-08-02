@@ -33,6 +33,7 @@ import unsubscribeRoutes from "./unsubscribe";
 import userProfileRoutes from "./user";
 import userRoutes from "./users";
 // v2 Routes
+import areasV2Routes from "./v2/areas";
 import auditTrailV2Routes from "./v2/audit-trail";
 import authV2Routes from "./v2/auth";
 import blackboardV2Routes from "./v2/blackboard";
@@ -48,6 +49,7 @@ import notificationsV2Routes from "./v2/notifications";
 import plansV2Routes from "./v2/plans";
 import reportsV2Routes from "./v2/reports";
 import roleSwitchV2Routes from "./v2/role-switch";
+import rootV2Routes from "./v2/root";
 import settingsV2Routes from "./v2/settings";
 import shiftsV2Routes from "./v2/shifts";
 import surveysV2Routes from "./v2/surveys";
@@ -107,6 +109,10 @@ console.log("[DEBUG] Mounting v2 features routes at /api/v2/features");
 router.use("/api/v2/features", featuresV2Routes);
 console.log("[DEBUG] Mounting v2 audit-trail routes at /api/v2/audit-trail");
 router.use("/api/v2/audit-trail", auditTrailV2Routes);
+console.log("[DEBUG] Mounting v2 areas routes at /api/v2/areas");
+router.use("/api/v2/areas", areasV2Routes);
+console.log("[DEBUG] Mounting v2 root routes at /api/v2/root");
+router.use("/api/v2/root", rootV2Routes);
 
 // Public routes (no prefix needed)
 console.log("[DEBUG] Mounting auth routes at /api/auth");

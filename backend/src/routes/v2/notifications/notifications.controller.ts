@@ -13,7 +13,50 @@ import * as notificationsService from "./notifications.service.js";
 import { NotificationData, NotificationPreferences } from "./types.js";
 
 /**
- * List notifications for the authenticated user
+ * @swagger
+ * /api/v2/notifications:
+ *   get:
+ *     summary: List notifications for the authenticated user
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [email, push, in_app]
+ *         description: Filter by notification type
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high]
+ *         description: Filter by priority
+ *       - in: query
+ *         name: unread
+ *         schema:
+ *           type: boolean
+ *         description: Filter unread notifications only
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: List of notifications
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationListResponse'
  */
 export const listNotifications = async (
   req: AuthenticatedRequest,
@@ -53,7 +96,28 @@ export const listNotifications = async (
 };
 
 /**
- * Create a new notification (admin only)
+ * @swagger
+ * /api/v2/notifications:
+ *   post:
+ *     summary: Create a new notification (admin only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateNotificationRequest'
+ *     responses:
+ *       201:
+ *         description: Notification created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationResponse'
+ *       403:
+ *         description: Forbidden - Admin only
  */
 export const createNotification = async (
   req: AuthenticatedRequest,
@@ -96,7 +160,25 @@ export const createNotification = async (
 };
 
 /**
- * Mark notification as read
+ * @swagger
+ * /api/v2/notifications/{id}/read:
+ *   put:
+ *     summary: Mark notification as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Notification ID
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ *       404:
+ *         description: Notification not found
  */
 export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -126,7 +208,29 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * Mark all notifications as read
+ * @swagger
+ * /api/v2/notifications/mark-all-read:
+ *   put:
+ *     summary: Mark all notifications as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     updated:
+ *                       type: integer
+ *                       description: Number of notifications marked as read
  */
 export const markAllAsRead = async (
   req: AuthenticatedRequest,
@@ -157,7 +261,25 @@ export const markAllAsRead = async (
 };
 
 /**
- * Delete notification
+ * @swagger
+ * /api/v2/notifications/{id}:
+ *   delete:
+ *     summary: Delete notification
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Notification ID
+ *     responses:
+ *       200:
+ *         description: Notification deleted successfully
+ *       404:
+ *         description: Notification not found
  */
 export const deleteNotification = async (
   req: AuthenticatedRequest,
@@ -193,7 +315,20 @@ export const deleteNotification = async (
 };
 
 /**
- * Get notification preferences
+ * @swagger
+ * /api/v2/notifications/preferences:
+ *   get:
+ *     summary: Get notification preferences for authenticated user
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User notification preferences
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationPreferencesResponse'
  */
 export const getPreferences = async (
   req: AuthenticatedRequest,
@@ -224,7 +359,22 @@ export const getPreferences = async (
 };
 
 /**
- * Update notification preferences
+ * @swagger
+ * /api/v2/notifications/preferences:
+ *   put:
+ *     summary: Update notification preferences
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdatePreferencesRequest'
+ *     responses:
+ *       200:
+ *         description: Preferences updated successfully
  */
 export const updatePreferences = async (
   req: AuthenticatedRequest,
@@ -258,7 +408,22 @@ export const updatePreferences = async (
 };
 
 /**
- * Get notification statistics (admin only)
+ * @swagger
+ * /api/v2/notifications/stats:
+ *   get:
+ *     summary: Get notification statistics (admin only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Notification statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationStatsResponse'
+ *       403:
+ *         description: Forbidden - Admin only
  */
 export const getStatistics = async (
   req: AuthenticatedRequest,
@@ -295,7 +460,20 @@ export const getStatistics = async (
 };
 
 /**
- * Get personal notification statistics
+ * @swagger
+ * /api/v2/notifications/stats/me:
+ *   get:
+ *     summary: Get personal notification statistics
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Personal notification statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PersonalStatsResponse'
  */
 export const getPersonalStats = async (
   req: AuthenticatedRequest,
@@ -326,7 +504,34 @@ export const getPersonalStats = async (
 };
 
 /**
- * Subscribe to push notifications (placeholder)
+ * @swagger
+ * /api/v2/notifications/subscribe:
+ *   post:
+ *     summary: Subscribe to push notifications
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/SubscribeRequest'
+ *     responses:
+ *       200:
+ *         description: Successfully subscribed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     subscriptionId:
+ *                       type: string
  */
 export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -358,7 +563,23 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * Unsubscribe from push notifications (placeholder)
+ * @swagger
+ * /api/v2/notifications/subscribe/{id}:
+ *   delete:
+ *     summary: Unsubscribe from push notifications
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Subscription ID
+ *     responses:
+ *       200:
+ *         description: Successfully unsubscribed
  */
 export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -384,7 +605,22 @@ export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * Get notification templates (admin only)
+ * @swagger
+ * /api/v2/notifications/templates:
+ *   get:
+ *     summary: Get notification templates (admin only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of notification templates
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TemplatesResponse'
+ *       403:
+ *         description: Forbidden - Admin only
  */
 export const getTemplates = async (
   req: AuthenticatedRequest,
@@ -421,7 +657,30 @@ export const getTemplates = async (
 };
 
 /**
- * Create notification from template (admin only)
+ * @swagger
+ * /api/v2/notifications/from-template:
+ *   post:
+ *     summary: Create notification from template (admin only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateFromTemplateRequest'
+ *     responses:
+ *       201:
+ *         description: Notification created from template
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotificationResponse'
+ *       403:
+ *         description: Forbidden - Admin only
+ *       404:
+ *         description: Template not found
  */
 export const createFromTemplate = async (
   req: AuthenticatedRequest,

@@ -4,6 +4,107 @@ Alle Änderungen an der API v2 werden hier dokumentiert.
 
 ## [Unreleased]
 
+### 02.08.2025
+
+#### Added
+
+- Complete Areas API v2 with 8 endpoints:
+  - Area CRUD operations with multi-tenant isolation
+  - Parent-child hierarchy for nested areas
+  - Area types: building, warehouse, office, production, outdoor, other
+  - Employee count statistics per area
+  - Soft delete functionality with is_active flag
+  - Area hierarchy endpoint for tree structure
+  - Area statistics endpoint
+- Complete Root API v2 with 25 endpoints (most comprehensive API!):
+  - Admin user management (CRUD for all tenant admins)
+  - Root user management (CRUD with security checks)
+  - Tenant overview with statistics
+  - Dashboard stats (user counts, features, system health)
+  - Storage information with plan-based limits
+  - Tenant deletion process with 2-root-user approval
+  - Admin activity logs tracking
+  - Deletion approvals management
+  - Emergency stop for deletions
+  - Dry run for tenant deletion
+- Features API v2 with 11 endpoints and full test suite:
+  - Multi-tenant feature flags system
+  - Feature activation/deactivation
+  - Usage tracking for billing
+  - Feature categories (basic, core, premium, enterprise)
+  - Tenant-specific configuration
+  - Public feature listing
+  - Test feature access endpoint
+  - 32 tests with 100% coverage
+- Audit Trail API v2 with 6 endpoints and full test suite:
+  - Compliance-focused activity tracking
+  - GDPR compliance reports generation
+  - Data retention policies with root-only deletion
+  - CSV/JSON export functionality
+  - Statistics aggregation by actions/resources
+  - User-based filtering (non-root see only own)
+  - 30 tests with 100% coverage
+
+#### Changed
+
+- pool.execute replaced with execute wrapper from utils/db.js to fix TypeScript union type errors
+- No 'any' types used in any new implementations
+- Phase 3 APIs being implemented without tests for faster delivery
+
+#### Fixed
+
+- TypeScript union type errors with pool.execute
+- Unused imports and parameters cleaned up
+- Tenant type properties casting without using 'any'
+- MySQL LIMIT/OFFSET parameter binding issue (use query() instead of execute())
+- User filtering bug in Audit Trail (non-root users were seeing all entries)
+- CSV export method binding error
+- Express-validator methods compatibility
+
+#### Security
+
+- TODO: Admin can activate features for other tenants (cross-tenant vulnerability)
+- Root API implements strict multi-level access control
+- Tenant deletion requires approval from 2 root users
+
+### 31.07.2025
+
+#### Added
+
+- Complete Notifications API v2 with 13 endpoints and 27 tests
+- Complete Settings API v2 with 18 endpoints and 12 tests
+- AdminLog → RootLog migration completed
+- Complete Logs API v2 with 3 endpoints (root-only access)
+- Complete Plans API v2 with 8 endpoints and 15 tests
+
+### 30.07.2025 
+
+#### Added
+
+- Complete Chat API v2 rewrite (9 service methods, 11 endpoints, 24 tests)
+- Complete Surveys API v2 with 8 endpoints
+- Complete Shifts API v2 with 17 endpoints and 31 tests
+
+### 29.07.2025
+
+#### Added
+
+- Complete KVP API v2 with 13 endpoints and 22 tests
+- Complete Role-Switch API v2 with 4 endpoints and 12 tests
+
+### 28.07.2025
+
+#### Added
+
+- Complete Blackboard API v2 with 15 endpoints and 35 tests
+- Complete Teams API v2 with 8 endpoints and 48 tests
+
+### 27.07.2025
+
+#### Added
+
+- Complete Documents API v2 with 10 endpoints and 28 tests
+
 ### 25.07.2025
 
 #### Added

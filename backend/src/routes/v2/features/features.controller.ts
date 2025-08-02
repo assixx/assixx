@@ -65,6 +65,30 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/categories:
+   *   get:
+   *     summary: Get features grouped by category
+   *     description: Retrieve all features organized by their categories. Public endpoint.
+   *     tags: [Features v2]
+   *     parameters:
+   *       - in: query
+   *         name: includeInactive
+   *         schema:
+   *           type: boolean
+   *           default: false
+   *         description: Include inactive features in the response
+   *     responses:
+   *       200:
+   *         description: Features by category retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/FeaturesByCategoryResponse'
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/categories
   static async getFeaturesByCategory(
     req: AuthenticatedRequest,
@@ -87,6 +111,35 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/{code}:
+   *   get:
+   *     summary: Get feature by code
+   *     description: Retrieve a specific feature by its unique code
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: code
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Unique feature code
+   *         example: "CHAT_MESSAGING"
+   *     responses:
+   *       200:
+   *         description: Feature retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/FeatureResponse'
+   *       404:
+   *         description: Feature not found
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/:code
   static async getFeatureByCode(
     req: AuthenticatedRequest,
@@ -108,6 +161,35 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/tenant/{tenantId}:
+   *   get:
+   *     summary: Get features for a specific tenant
+   *     description: Retrieve all features activated for a specific tenant. Admin only.
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantId
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Tenant ID
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Tenant features retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/TenantFeaturesResponse'
+   *       403:
+   *         description: Access denied
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/tenant/:tenantId
   static async getTenantFeatures(
     req: AuthenticatedRequest,
@@ -138,6 +220,25 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/my-features:
+   *   get:
+   *     summary: Get features for authenticated user's tenant
+   *     description: Retrieve all features available for the current user's tenant
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: My features retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/MyFeaturesResponse'
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/my-features
   static async getMyFeatures(
     req: AuthenticatedRequest,
@@ -155,6 +256,35 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/tenant/{tenantId}/summary:
+   *   get:
+   *     summary: Get tenant features summary
+   *     description: Get a summary of activated features for a tenant including counts by category
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantId
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Tenant ID
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Tenant features summary retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/TenantFeaturesSummaryResponse'
+   *       403:
+   *         description: Access denied
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/tenant/:tenantId/summary
   static async getTenantFeaturesSummary(
     req: AuthenticatedRequest,
@@ -188,6 +318,33 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/activate:
+   *   post:
+   *     summary: Activate a feature for a tenant
+   *     description: Activate a specific feature for a tenant. Admin/Root only.
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/FeatureActivationRequest'
+   *     responses:
+   *       200:
+   *         description: Feature activated successfully
+   *       400:
+   *         description: Invalid request or feature already active
+   *       403:
+   *         description: Access denied
+   *       404:
+   *         description: Feature not found
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // POST /api/v2/features/activate
   static async activateFeature(
     req: AuthenticatedRequest,
@@ -213,6 +370,31 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/deactivate:
+   *   post:
+   *     summary: Deactivate a feature for a tenant
+   *     description: Deactivate a specific feature for a tenant. Admin/Root only.
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/FeatureDeactivationRequest'
+   *     responses:
+   *       200:
+   *         description: Feature deactivated successfully
+   *       403:
+   *         description: Access denied
+   *       404:
+   *         description: Feature not found or not active
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // POST /api/v2/features/deactivate
   static async deactivateFeature(
     req: AuthenticatedRequest,
@@ -242,6 +424,53 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/usage/{featureCode}:
+   *   get:
+   *     summary: Get feature usage statistics
+   *     description: Get usage statistics for a specific feature within a date range
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: featureCode
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Feature code
+   *         example: "CHAT_MESSAGING"
+   *       - in: query
+   *         name: startDate
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Start date for usage stats
+   *         example: "2025-01-01"
+   *       - in: query
+   *         name: endDate
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: End date for usage stats
+   *         example: "2025-01-31"
+   *     responses:
+   *       200:
+   *         description: Usage statistics retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/UsageStatsResponse'
+   *       400:
+   *         description: Missing required parameters
+   *       404:
+   *         description: Feature not found
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/usage/:featureCode
   static async getUsageStats(
     req: AuthenticatedRequest,
@@ -276,6 +505,35 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/test/{featureCode}:
+   *   get:
+   *     summary: Test feature access
+   *     description: Test if the current user's tenant has access to a specific feature
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: featureCode
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Feature code to test
+   *         example: "CHAT_MESSAGING"
+   *     responses:
+   *       200:
+   *         description: Access granted
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/FeatureAccessResponse'
+   *       403:
+   *         description: Feature access denied
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/test/:featureCode
   static async testFeatureAccess(
     req: AuthenticatedRequest,
@@ -313,6 +571,27 @@ export class FeaturesController {
     }
   }
 
+  /**
+   * @swagger
+   * /api/v2/features/all-tenants:
+   *   get:
+   *     summary: Get all tenants with their features
+   *     description: Get a complete list of all tenants and their activated features. Root only.
+   *     tags: [Features v2]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: All tenants with features retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/AllTenantsWithFeaturesResponse'
+   *       403:
+   *         description: Access denied - Root only
+   *       500:
+   *         $ref: '#/components/responses/InternalServerError'
+   */
   // GET /api/v2/features/all-tenants
   static async getAllTenantsWithFeatures(
     req: AuthenticatedRequest,
