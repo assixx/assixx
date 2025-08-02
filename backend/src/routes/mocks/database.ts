@@ -29,6 +29,26 @@ let testDb: Pool | null = null;
 let schemaInitialized = false;
 
 /**
+ * Generate a cryptographically secure random number in range [0, max) without bias
+ * @param max - The exclusive upper bound (must be > 0)
+ * @returns A random number between 0 (inclusive) and max (exclusive)
+ */
+function getSecureRandomNumber(max: number): number {
+  if (max <= 0) throw new Error("max must be greater than 0");
+  
+  // Calculate the largest multiple of max that fits in the random source
+  const maxValidValue = Math.floor(4294967296 / max) * max;
+  
+  let randomNumber: number;
+  do {
+    const randomBytes = crypto.randomBytes(4);
+    randomNumber = randomBytes.readUInt32BE(0);
+  } while (randomNumber >= maxValidValue);
+  
+  return randomNumber % max;
+}
+
+/**
  * Create and initialize test database connection
  */
 export async function createTestDatabase(): Promise<Pool> {
@@ -999,7 +1019,7 @@ export async function createTestTenant(
   name: string,
 ): Promise<number> {
   const timestamp = Date.now();
-  const randomSuffix = crypto.randomBytes(2).readUInt16BE(0) % 1000;
+  const randomSuffix = getSecureRandomNumber(1000);
   // Add TEST_DATA_PREFIX to ensure safe cleanup
   const uniqueSubdomain = `${TEST_DATA_PREFIX}${subdomain}_${timestamp}_${randomSuffix}`;
   const uniqueName = `${TEST_DATA_PREFIX}${name}`;
@@ -1087,7 +1107,7 @@ export async function createTestUser(
   const isRootUser =
     userData.role === "root" && userData.email === "root@system.de";
   const timestamp = Date.now();
-  const randomSuffix = crypto.randomBytes(2).readUInt16BE(0) % 1000;
+  const randomSuffix = getSecureRandomNumber(1000);
 
   // Add TEST_DATA_PREFIX to ALL test users for safe cleanup
   let uniqueUsername: string;
@@ -1111,10 +1131,8 @@ export async function createTestUser(
     uniqueEmail = `${TEST_DATA_PREFIX}${userData.email.replace("@", `_${timestamp}_${randomSuffix}@`)}`;
   }
 
-  // Generate unique employee number using cryptographically secure random
-  const randomBytes = crypto.randomBytes(4);
-  const randomNumber = randomBytes.readUInt32BE(0) % 900000; // 0-899999
-  const employeeNumber = String(100000 + randomNumber);
+  // Generate unique employee number using cryptographically secure random without bias
+  const employeeNumber = String(100000 + getSecureRandomNumber(900000));
 
   console.log(
     `Creating test user with tenant_id: ${userData.tenant_id}, department_id: ${userData.department_id}`,
