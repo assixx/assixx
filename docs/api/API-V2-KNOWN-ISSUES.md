@@ -1,8 +1,9 @@
 # API v2 Known Issues and Solutions
 
 ## ✅ UPDATE 31.07.2025: All Major Issues Resolved!
+
 - Settings v2 validation middleware bug: **FIXED**
-- Users v2 duplicate entry test error: **FIXED**  
+- Users v2 duplicate entry test error: **FIXED**
 - All 470 tests now passing successfully
 - Jest open handles warning remains (non-critical)
 
@@ -313,21 +314,25 @@ if (entryIds.length > 0) {
 # Chat v2 Test Debugging - Fehleranalyse und Lösung
 
 ## Problem
+
 Die Chat v2 Tests schlugen mit 500-Fehlern fehl, ohne dass die eigentlichen Fehlerursachen sichtbar waren. Von 24 Tests passierten nur 11, 13 schlugen fehl.
 
 ## Hauptproblem: Fehlende Debug-Ausgaben in Jest Tests
 
 ### Ursache
+
 - `console.log()` und `console.error()` Ausgaben wurden in Jest Tests nicht angezeigt
 - Jest modifiziert das globale `console` Objekt und unterdrückt dadurch die Ausgaben
 
 ### Lösung: Import von Console-Funktionen
+
 ```typescript
 // Statt console.log/console.error verwenden:
 import { log, error as logError } from "console";
 ```
 
 **Angewendet in:**
+
 - `backend/src/routes/v2/chat/chat.service.ts`
 - `backend/src/routes/v2/chat/chat.controller.ts`
 - `backend/src/routes/v2/chat/__tests__/chat-v2.test.ts`
@@ -335,6 +340,7 @@ import { log, error as logError } from "console";
 ## Erkenntnisse nach Console-Fix
 
 ### Erfolgreiche Conversation-Erstellung
+
 ```
 [Chat Service] createConversation called with: {
   tenantId: 3,
@@ -348,7 +354,9 @@ import { log, error as logError } from "console";
 **✅ Die Conversation wird erfolgreich erstellt (ID: 129)**
 
 ### Identifizierter Folge-Fehler
+
 Nach erfolgreicher Erstellung schlägt `getConversations()` fehl:
+
 ```
 Create conversation error: {
   error: {
@@ -361,6 +369,7 @@ Create conversation error: {
 ## Nächste Debugging-Schritte
 
 ### Implementiert
+
 1. **Console-Import Fix** - Ermöglicht Debug-Ausgaben in Jest
 2. **Erweiterte Logging** in `createConversation()`
 3. **Error-Logging** in `getConversations()` hinzugefügt:
@@ -376,63 +385,71 @@ Create conversation error: {
    ```
 
 ### Erfolgreich abgeschlossene Todos
+
 - ☒ Console.log Fix mit `import { log } from 'console'` implementiert
 - ☒ 500 Error bei createConversation lokalisiert (ist eigentlich in getConversations)
 
 ### Verbleibende Aufgaben
+
 - ☐ getConversations Fehler analysieren und beheben
 - ☐ Alle Chat v2 Tests erfolgreich zum Laufen bringen
 
 ## Fazit
+
 Der Console-Import Fix war erfolgreich und enthüllte, dass:
+
 1. `createConversation()` funktioniert korrekt
 2. Der 500-Fehler kommt von `getConversations()`
 3. Das Problem liegt im Abrufen der erstellten Conversation, nicht in der Erstellung selbst
 
 **Nächster Schritt:** Detaillierte Analyse der `getConversations()` Methode mit den neuen Debug-Möglichkeiten.
 
-
-
-
 **Status:** ✅ FIXED (2025-07-28)
-
 
 ---
 
 # Settings v2 Test Issues - FIXED (31.07.2025)
 
 ## Problem
+
 Settings v2 Tests hatten mehrere Probleme die das Ausführen verhinderten.
 
 ## Identifizierte Probleme und Lösungen
 
 ### 1. Validation Middleware Bug
+
 **Problem:** Settings validation verwendete `validate` statt `handleValidationErrors`
 **Symptom:** Requests hingen und erreichten nie den Controller
 **Lösung:** Alle `validate` Aufrufe in `settings.validation.ts` durch `handleValidationErrors` ersetzt
 
 ### 2. Foreign Key Constraint Fehler
+
 **Problem:** Tests erstellten User in beforeEach ohne vorhandenen Tenant
 **Symptom:** "Cannot add or update a child row: a foreign key constraint fails"
 **Lösung:** Test-Setup korrigiert - Tenant in beforeAll erstellen, User ebenfalls
 
 ### 3. Admin System-Settings Zugriff
+
 **Problem:** Service erlaubte Admin-Zugriff auf System-Settings (sollte nur Root)
 **Symptom:** Test erwartete 403, bekam aber 200
 **Lösung:** `getSystemSettings` prüft jetzt nur auf Root-Rolle
 
-### 4. AdminLog Foreign Key Error  
+### 4. AdminLog Foreign Key Error
+
 **Problem:** System-Settings versuchten AdminLog mit tenant_id=0 zu erstellen
 **Symptom:** "Cannot add or update a child row: a foreign key constraint fails"
 **Lösung:** AdminLog für System-Settings entfernt (TODO: Separate system_logs Tabelle)
 
 ## Finaler Fix
+
 Neue Test-Datei `settings-v2-fixed.test.ts` erstellt mit:
+
 - Korrektem Setup (Tenant/User in beforeAll)
 - Timeout-Erhöhung auf 10 Sekunden pro Test
 - Nur Settings-Daten in beforeEach löschen (nicht User)
 
 ## Status
+
 ✅ FIXED - Alle 12 Settings v2 Tests laufen erfolgreich!
 
 ---

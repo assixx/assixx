@@ -7,9 +7,9 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { signupService } from "./service.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 import { SignupRequest } from "./types.js";
 
 export class SignupController {
@@ -47,11 +47,13 @@ export class SignupController {
       });
     } catch (error) {
       if (error instanceof ServiceError) {
-        const statusCode = 
-          error.code === "SUBDOMAIN_TAKEN" ? 409 :
-          error.code === "INVALID_SUBDOMAIN" ? 400 : 
-          500;
-          
+        const statusCode =
+          error.code === "SUBDOMAIN_TAKEN"
+            ? 409
+            : error.code === "INVALID_SUBDOMAIN"
+              ? 400
+              : 500;
+
         res.status(statusCode).json({
           success: false,
           error: {

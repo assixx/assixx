@@ -6,9 +6,9 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { RootLog } from "../../../models/rootLog.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 import { execute, getConnection } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import {
   DepartmentGroup,
@@ -64,7 +64,10 @@ export class DepartmentGroupsService {
           tenantId,
         );
         if (hasCircular) {
-          throw new ServiceError("CIRCULAR_DEPENDENCY", "Circular dependency detected");
+          throw new ServiceError(
+            "CIRCULAR_DEPENDENCY",
+            "Circular dependency detected",
+          );
         }
       }
 
@@ -72,7 +75,13 @@ export class DepartmentGroupsService {
       const [result] = await connection.execute<ResultSetHeader>(
         `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by) 
          VALUES (?, ?, ?, ?, ?)`,
-        [tenantId, data.name, data.description ?? null, data.parentGroupId ?? null, createdBy],
+        [
+          tenantId,
+          data.name,
+          data.description ?? null,
+          data.parentGroupId ?? null,
+          createdBy,
+        ],
       );
 
       const groupId = result.insertId;
@@ -86,7 +95,9 @@ export class DepartmentGroupsService {
           createdBy,
         ]);
 
-        const placeholders = data.departmentIds.map(() => "(?, ?, ?, ?)").join(", ");
+        const placeholders = data.departmentIds
+          .map(() => "(?, ?, ?, ?)")
+          .join(", ");
 
         await connection.execute(
           `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
@@ -102,19 +113,19 @@ export class DepartmentGroupsService {
         "department_group_created",
         createdBy,
         tenantId,
-        `Created department group: ${data.name} (ID: ${groupId})`
+        `Created department group: ${data.name} (ID: ${groupId})`,
       );
 
       return groupId;
     } catch (error) {
       await connection.rollback();
-      
-      if ((error as any).code === "ER_DUP_ENTRY") {
+
+      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
         throw new ServiceError("GROUP_EXISTS", "Group name already exists");
       }
-      
+
       if (error instanceof ServiceError) throw error;
-      
+
       logger.error("Error creating department group:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to create group");
     } finally {
@@ -125,7 +136,9 @@ export class DepartmentGroupsService {
   /**
    * Get all groups with hierarchy
    */
-  async getGroupHierarchy(tenantId: number): Promise<DepartmentGroupWithHierarchy[]> {
+  async getGroupHierarchy(
+    tenantId: number,
+  ): Promise<DepartmentGroupWithHierarchy[]> {
     try {
       // Get all groups with member count
       const [groups] = await execute<GroupRow[]>(
@@ -184,7 +197,7 @@ export class DepartmentGroupsService {
       groups.forEach((row) => {
         const group = groupMap.get(row.id);
         if (!group) return;
-        
+
         if (!row.parent_group_id) {
           rootGroups.push(group);
         } else {
@@ -205,7 +218,10 @@ export class DepartmentGroupsService {
   /**
    * Get a single group by ID
    */
-  async getGroupById(groupId: number, tenantId: number): Promise<DepartmentGroup> {
+  async getGroupById(
+    groupId: number,
+    tenantId: number,
+  ): Promise<DepartmentGroup> {
     try {
       const [rows] = await execute<GroupRow[]>(
         `SELECT g.*, 
@@ -263,10 +279,10 @@ export class DepartmentGroupsService {
         "department_group_updated",
         updatedBy,
         tenantId,
-        `Updated department group: ${data.name} (ID: ${groupId})`
+        `Updated department group: ${data.name} (ID: ${groupId})`,
       );
     } catch (error) {
-      if ((error as any).code === "ER_DUP_ENTRY") {
+      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
         throw new ServiceError("GROUP_EXISTS", "Group name already exists");
       }
       if (error instanceof ServiceError) throw error;
@@ -278,7 +294,11 @@ export class DepartmentGroupsService {
   /**
    * Delete a group
    */
-  async deleteGroup(groupId: number, tenantId: number, deletedBy: number): Promise<void> {
+  async deleteGroup(
+    groupId: number,
+    tenantId: number,
+    deletedBy: number,
+  ): Promise<void> {
     const connection = await getConnection();
 
     try {
@@ -294,7 +314,7 @@ export class DepartmentGroupsService {
       if (permissions[0].count > 0) {
         throw new ServiceError(
           "HAS_PERMISSIONS",
-          "Cannot delete group with active admin permissions"
+          "Cannot delete group with active admin permissions",
         );
       }
 
@@ -306,7 +326,10 @@ export class DepartmentGroupsService {
       );
 
       if (subgroups[0].count > 0) {
-        throw new ServiceError("HAS_SUBGROUPS", "Cannot delete group with subgroups");
+        throw new ServiceError(
+          "HAS_SUBGROUPS",
+          "Cannot delete group with subgroups",
+        );
       }
 
       // Get group name for logging
@@ -342,7 +365,7 @@ export class DepartmentGroupsService {
         "department_group_deleted",
         deletedBy,
         tenantId,
-        `Deleted department group: ${groupName} (ID: ${groupId})`
+        `Deleted department group: ${groupName} (ID: ${groupId})`,
       );
     } catch (error) {
       await connection.rollback();
@@ -399,7 +422,7 @@ export class DepartmentGroupsService {
         "departments_added_to_group",
         addedBy,
         tenantId,
-        `Added ${departmentIds.length} departments to group ${groupId}`
+        `Added ${departmentIds.length} departments to group ${groupId}`,
       );
     } catch (error) {
       if (error instanceof ServiceError) throw error;
@@ -433,7 +456,7 @@ export class DepartmentGroupsService {
         "department_removed_from_group",
         removedBy,
         tenantId,
-        `Removed department ${departmentId} from group ${groupId}`
+        `Removed department ${departmentId} from group ${groupId}`,
       );
     } catch (error) {
       if (error instanceof ServiceError) throw error;
@@ -472,7 +495,10 @@ export class DepartmentGroupsService {
 
       // Get departments from subgroups if requested
       if (includeSubgroups) {
-        const subgroupDepts = await this.getSubgroupDepartments(groupId, tenantId);
+        const subgroupDepts = await this.getSubgroupDepartments(
+          groupId,
+          tenantId,
+        );
         subgroupDepts.forEach((dept) => {
           departments.set(dept.id, dept);
         });

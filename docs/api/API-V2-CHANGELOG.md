@@ -129,7 +129,7 @@ Alle Änderungen an der API v2 werden hier dokumentiert.
 - Complete Logs API v2 with 3 endpoints (root-only access)
 - Complete Plans API v2 with 8 endpoints and 15 tests
 
-### 30.07.2025 
+### 30.07.2025
 
 #### Added
 

@@ -6,10 +6,10 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 import { RootLog } from "../../../models/rootLog.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 import { execute } from "../../../utils/db.js";
 import { getErrorMessage } from "../../../utils/errorHandler.js";
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import {
   AdminDepartment,
@@ -266,11 +266,13 @@ export class AdminPermissionsService {
         "update_admin_permissions",
         modifiedBy,
         tenantId,
-        `Updated department permissions for admin ${adminId}: ${departmentIds.length} departments - ${JSON.stringify({
-          adminId,
-          departmentCount: departmentIds.length,
-          permissions,
-        })}`
+        `Updated department permissions for admin ${adminId}: ${departmentIds.length} departments - ${JSON.stringify(
+          {
+            adminId,
+            departmentCount: departmentIds.length,
+            permissions,
+          },
+        )}`,
       );
     } catch (error) {
       logger.error("Error setting department permissions:", error);
@@ -322,11 +324,13 @@ export class AdminPermissionsService {
         "update_admin_group_permissions",
         modifiedBy,
         tenantId,
-        `Updated group permissions for admin ${adminId}: ${groupIds.length} groups - ${JSON.stringify({
-          adminId,
-          groupCount: groupIds.length,
-          permissions,
-        })}`
+        `Updated group permissions for admin ${adminId}: ${groupIds.length} groups - ${JSON.stringify(
+          {
+            adminId,
+            groupCount: groupIds.length,
+            permissions,
+          },
+        )}`,
       );
     } catch (error) {
       logger.error("Error setting group permissions:", error);
@@ -359,7 +363,7 @@ export class AdminPermissionsService {
         "revoke_admin_permission",
         modifiedBy,
         tenantId,
-        `Revoked department permission for admin ${adminId} on department ${departmentId}`
+        `Revoked department permission for admin ${adminId} on department ${departmentId}`,
       );
     } catch (error) {
       if (error instanceof ServiceError) throw error;
@@ -393,12 +397,15 @@ export class AdminPermissionsService {
         "revoke_admin_group_permission",
         modifiedBy,
         tenantId,
-        `Revoked group permission for admin ${adminId} on group ${groupId}`
+        `Revoked group permission for admin ${adminId} on group ${groupId}`,
       );
     } catch (error) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error removing group permission:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to remove group permission");
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to remove group permission",
+      );
     }
   }
 

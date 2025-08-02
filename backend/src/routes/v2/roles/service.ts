@@ -5,9 +5,9 @@
 
 import { RowDataPacket } from "mysql2/promise";
 
-import { ServiceError } from "../../../utils/ServiceError.js";
 import { execute } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { Role, RoleName, RoleCheckRequest } from "./types.js";
 
@@ -19,7 +19,8 @@ export class RolesService {
     root: {
       id: "root",
       name: "Root Administrator",
-      description: "Super administrator with full system access. Can manage all tenants and system settings.",
+      description:
+        "Super administrator with full system access. Can manage all tenants and system settings.",
       level: 100,
       permissions: [
         "system.manage",
@@ -27,7 +28,7 @@ export class RolesService {
         "users.manage.all",
         "settings.manage.all",
         "logs.view.all",
-        "api.access.all"
+        "api.access.all",
       ],
     },
     admin: {
@@ -38,16 +39,17 @@ export class RolesService {
       permissions: [
         "users.manage",
         "departments.manage",
-        "teams.manage", 
+        "teams.manage",
         "settings.manage",
         "reports.view",
-        "employees.manage"
+        "employees.manage",
       ],
     },
     employee: {
       id: "employee",
       name: "Employee",
-      description: "Regular employee with limited access to their own data and assigned features.",
+      description:
+        "Regular employee with limited access to their own data and assigned features.",
       level: 10,
       permissions: [
         "profile.view.own",
@@ -55,7 +57,7 @@ export class RolesService {
         "shifts.view.own",
         "documents.view.assigned",
         "kvp.create",
-        "surveys.respond"
+        "surveys.respond",
       ],
     },
   };

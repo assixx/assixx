@@ -5,8 +5,8 @@
 
 import { Request, Response } from "express";
 
-import { execute } from "../../../utils/db.js";
 import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
+import { execute } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
 
 import { rootService } from "./root.service.js";

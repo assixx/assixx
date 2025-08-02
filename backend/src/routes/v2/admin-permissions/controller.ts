@@ -5,11 +5,14 @@
 
 import { Response } from "express";
 import { validationResult } from "express-validator";
+import { RowDataPacket } from "mysql2/promise";
 
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { adminPermissionsService } from "./service.js";
+import { execute } from "../../../utils/db.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
+
+import { adminPermissionsService } from "./service.js";
 import {
   SetPermissionsRequest,
   BulkPermissionsRequest,
@@ -35,7 +38,13 @@ export const adminPermissionsController = {
         }));
         res
           .status(400)
-          .json(errorResponse("VALIDATION_ERROR", "Invalid input", validationErrors));
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "Invalid input",
+              validationErrors,
+            ),
+          );
         return;
       }
 
@@ -70,7 +79,9 @@ export const adminPermissionsController = {
     } catch (error) {
       console.error("[Admin Permissions v2] Get permissions error:", error);
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
@@ -116,7 +127,9 @@ export const adminPermissionsController = {
     } catch (error) {
       console.error("[Admin Permissions v2] Get my permissions error:", error);
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
@@ -143,7 +156,13 @@ export const adminPermissionsController = {
         }));
         res
           .status(400)
-          .json(errorResponse("VALIDATION_ERROR", "Invalid input", validationErrors));
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "Invalid input",
+              validationErrors,
+            ),
+          );
         return;
       }
 
@@ -201,7 +220,9 @@ export const adminPermissionsController = {
     } catch (error) {
       console.error("[Admin Permissions v2] Set permissions error:", error);
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
@@ -228,7 +249,13 @@ export const adminPermissionsController = {
         }));
         res
           .status(400)
-          .json(errorResponse("VALIDATION_ERROR", "Invalid input", validationErrors));
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "Invalid input",
+              validationErrors,
+            ),
+          );
         return;
       }
 
@@ -267,7 +294,9 @@ export const adminPermissionsController = {
     } catch (error) {
       console.error("[Admin Permissions v2] Remove permission error:", error);
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
@@ -294,7 +323,13 @@ export const adminPermissionsController = {
         }));
         res
           .status(400)
-          .json(errorResponse("VALIDATION_ERROR", "Invalid input", validationErrors));
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "Invalid input",
+              validationErrors,
+            ),
+          );
         return;
       }
 
@@ -331,13 +366,20 @@ export const adminPermissionsController = {
 
       res.json(successResponse(null, "Group permission removed successfully"));
     } catch (error) {
-      console.error("[Admin Permissions v2] Remove group permission error:", error);
+      console.error(
+        "[Admin Permissions v2] Remove group permission error:",
+        error,
+      );
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to remove group permission"));
+          .json(
+            errorResponse("SERVER_ERROR", "Failed to remove group permission"),
+          );
       }
     }
   },
@@ -360,7 +402,13 @@ export const adminPermissionsController = {
         }));
         res
           .status(400)
-          .json(errorResponse("VALIDATION_ERROR", "Invalid input", validationErrors));
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "Invalid input",
+              validationErrors,
+            ),
+          );
         return;
       }
 
@@ -392,11 +440,15 @@ export const adminPermissionsController = {
     } catch (error) {
       console.error("[Admin Permissions v2] Bulk update error:", error);
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to perform bulk operation"));
+          .json(
+            errorResponse("SERVER_ERROR", "Failed to perform bulk operation"),
+          );
       }
     }
   },
@@ -405,10 +457,7 @@ export const adminPermissionsController = {
    * Check if admin has access to a department
    * Root only (for debugging/verification)
    */
-  async checkAccess(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async checkAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Check validation errors
       const errors = validationResult(req);
@@ -419,7 +468,13 @@ export const adminPermissionsController = {
         }));
         res
           .status(400)
-          .json(errorResponse("VALIDATION_ERROR", "Invalid input", validationErrors));
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "Invalid input",
+              validationErrors,
+            ),
+          );
         return;
       }
 
@@ -433,7 +488,8 @@ export const adminPermissionsController = {
 
       const adminId = parseInt(req.params.adminId);
       const departmentId = parseInt(req.params.departmentId);
-      const permissionLevel = (req.params.permissionLevel as PermissionLevel) || "read";
+      const permissionLevel =
+        (req.params.permissionLevel as PermissionLevel) || "read";
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(
@@ -459,7 +515,9 @@ export const adminPermissionsController = {
     } catch (error) {
       console.error("[Admin Permissions v2] Check access error:", error);
       if (error instanceof ServiceError) {
-        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
       } else {
         res
           .status(500)
@@ -468,7 +526,3 @@ export const adminPermissionsController = {
     }
   },
 };
-
-// Import execute and RowDataPacket
-import { execute } from "../../../utils/db.js";
-import { RowDataPacket } from "mysql2/promise";

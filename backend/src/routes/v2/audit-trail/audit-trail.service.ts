@@ -76,13 +76,13 @@ export class AuditTrailService {
           user.role,
           entry.action,
           entry.resourceType,
-          entry.resourceId || null,
-          entry.resourceName || null,
+          entry.resourceId ?? null,
+          entry.resourceName ?? null,
           entry.changes ? JSON.stringify(entry.changes) : null,
-          ipAddress || null,
-          userAgent || null,
+          ipAddress ?? null,
+          userAgent ?? null,
           entry.status,
-          entry.errorMessage || null,
+          entry.errorMessage ?? null,
         ],
       );
 
@@ -116,7 +116,7 @@ export class AuditTrailService {
 
     const offset = (page - 1) * limit;
     const conditions: string[] = ["tenant_id = ?"];
-    const params: any[] = [tenantId];
+    const params: (string | number | boolean)[] = [tenantId];
 
     // Build WHERE conditions
     if (userId) {
@@ -219,7 +219,7 @@ export class AuditTrailService {
     const { tenantId, dateFrom, dateTo } = filter;
 
     const conditions: string[] = ["tenant_id = ?"];
-    const params: any[] = [tenantId];
+    const params: (string | number | Date)[] = [tenantId];
 
     if (dateFrom) {
       conditions.push("created_at >= ?");
@@ -288,7 +288,7 @@ export class AuditTrailService {
 
     const byUser = userRows.map((row) => ({
       userId: row.user_id,
-      userName: row.user_name || "Unknown",
+      userName: row.user_name ?? "Unknown",
       count: row.count,
     }));
 
@@ -311,8 +311,8 @@ export class AuditTrailService {
       byUser,
       byStatus,
       timeRange: {
-        from: dateFrom || "unlimited",
-        to: dateTo || "unlimited",
+        from: dateFrom ?? "unlimited",
+        to: dateTo ?? "unlimited",
       },
     };
   }
@@ -332,7 +332,7 @@ export class AuditTrailService {
       "created_at >= ?",
       "created_at <= ?",
     ];
-    const params: any[] = [tenantId, dateFrom, dateTo];
+    const params: (string | number)[] = [tenantId, dateFrom, dateTo];
 
     // Add report-specific filters
     switch (reportType) {

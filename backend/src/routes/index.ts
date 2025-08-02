@@ -40,6 +40,7 @@ import authV2Routes from "./v2/auth";
 import blackboardV2Routes from "./v2/blackboard";
 import calendarV2Routes from "./v2/calendar";
 import chatV2Routes from "./v2/chat";
+import departmentGroupsV2Routes from "./v2/department-groups";
 import departmentsV2Routes from "./v2/departments";
 import documentsV2Routes from "./v2/documents";
 import featuresV2Routes from "./v2/features";
@@ -50,15 +51,14 @@ import notificationsV2Routes from "./v2/notifications";
 import plansV2Routes from "./v2/plans";
 import reportsV2Routes from "./v2/reports";
 import roleSwitchV2Routes from "./v2/role-switch";
+import rolesV2Routes from "./v2/roles";
 import rootV2Routes from "./v2/root";
 import settingsV2Routes from "./v2/settings";
 import shiftsV2Routes from "./v2/shifts";
+import signupV2Routes from "./v2/signup";
 import surveysV2Routes from "./v2/surveys";
 import teamsV2Routes from "./v2/teams";
 import usersV2Routes from "./v2/users";
-import departmentGroupsV2Routes from "./v2/department-groups";
-import rolesV2Routes from "./v2/roles";
-import signupV2Routes from "./v2/signup";
 
 /**
  * Central Route Registry
@@ -120,9 +120,13 @@ console.log("[DEBUG] Mounting v2 areas routes at /api/v2/areas");
 router.use("/api/v2/areas", areasV2Routes);
 console.log("[DEBUG] Mounting v2 root routes at /api/v2/root");
 router.use("/api/v2/root", rootV2Routes);
-console.log("[DEBUG] Mounting v2 admin-permissions routes at /api/v2/admin-permissions");
+console.log(
+  "[DEBUG] Mounting v2 admin-permissions routes at /api/v2/admin-permissions",
+);
 router.use("/api/v2/admin-permissions", adminPermissionsV2Routes);
-console.log("[DEBUG] Mounting v2 department-groups routes at /api/v2/department-groups");
+console.log(
+  "[DEBUG] Mounting v2 department-groups routes at /api/v2/department-groups",
+);
 router.use("/api/v2/department-groups", departmentGroupsV2Routes);
 console.log("[DEBUG] Mounting v2 roles routes at /api/v2/roles");
 router.use("/api/v2/roles", rolesV2Routes);

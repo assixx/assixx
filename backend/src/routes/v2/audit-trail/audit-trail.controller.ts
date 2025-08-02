@@ -9,9 +9,10 @@ import { Response } from "express";
 
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { auditTrailService } from "./audit-trail.service.js";
-import { AuditFilter } from "./types.js";
+import { AuditFilter, AuditEntry } from "./types.js";
 
 export const auditTrailController = {
   /**
@@ -43,7 +44,12 @@ export const auditTrailController = {
         search: req.query.search as string,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
-        sortBy: req.query.sortBy as any,
+        sortBy: req.query.sortBy as
+          | "created_at"
+          | "action"
+          | "user_id"
+          | "resource_type"
+          | undefined,
         sortOrder: req.query.sortOrder as "asc" | "desc",
       };
 
@@ -72,23 +78,31 @@ export const auditTrailController = {
           {
             entries: result.entries,
             pagination: {
-              currentPage: filter.page || 1,
-              pageSize: filter.limit || 50,
+              currentPage: filter.page ?? 1,
+              pageSize: filter.limit ?? 50,
               totalItems: result.total,
-              totalPages: Math.ceil(result.total / (filter.limit || 50)),
+              totalPages: Math.ceil(result.total / (filter.limit ?? 50)),
             },
           },
           "Audit entries retrieved successfully",
         ),
       );
-    } catch (error: any) {
-      logError("[Audit Trail v2] Get entries error:", error);
-      logError("[Audit Trail v2] Error stack:", error?.stack);
-      res
-        .status(500)
-        .json(
-          errorResponse("SERVER_ERROR", "Failed to retrieve audit entries"),
-        );
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        logError("[Audit Trail v2] Get entries error:", error);
+        if (error instanceof Error) {
+          logError("[Audit Trail v2] Error stack:", error.stack);
+        }
+        res
+          .status(500)
+          .json(
+            errorResponse("SERVER_ERROR", "Failed to retrieve audit entries"),
+          );
+      }
     }
   },
 
@@ -124,17 +138,19 @@ export const auditTrailController = {
       }
 
       res.json(successResponse(entry, "Audit entry retrieved successfully"));
-    } catch (error: any) {
-      if (error.code === "NOT_FOUND") {
+    } catch (error) {
+      if (error instanceof ServiceError) {
         res
-          .status(404)
-          .json(errorResponse("NOT_FOUND", "Audit entry not found"));
-        return;
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        logError("[Audit Trail v2] Get entry error:", error);
+        res
+          .status(500)
+          .json(
+            errorResponse("SERVER_ERROR", "Failed to retrieve audit entry"),
+          );
       }
-      logError("[Audit Trail v2] Get entry error:", error);
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to retrieve audit entry"));
     }
   },
 
@@ -169,13 +185,22 @@ export const auditTrailController = {
       res.json(
         successResponse(stats, "Audit statistics retrieved successfully"),
       );
-    } catch (error: any) {
-      logError("[Audit Trail v2] Get stats error:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("SERVER_ERROR", "Failed to retrieve audit statistics"),
-        );
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        logError("[Audit Trail v2] Get stats error:", error);
+        res
+          .status(500)
+          .json(
+            errorResponse(
+              "SERVER_ERROR",
+              "Failed to retrieve audit statistics",
+            ),
+          );
+      }
     }
   },
 
@@ -219,13 +244,22 @@ export const auditTrailController = {
       res.json(
         successResponse(report, "Compliance report generated successfully"),
       );
-    } catch (error: any) {
-      logError("[Audit Trail v2] Generate report error:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("SERVER_ERROR", "Failed to generate compliance report"),
-        );
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        logError("[Audit Trail v2] Generate report error:", error);
+        res
+          .status(500)
+          .json(
+            errorResponse(
+              "SERVER_ERROR",
+              "Failed to generate compliance report",
+            ),
+          );
+      }
     }
   },
 
@@ -293,11 +327,19 @@ export const auditTrailController = {
           ),
         );
       }
-    } catch (error: any) {
-      logError("[Audit Trail v2] Export error:", error);
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to export audit entries"));
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        logError("[Audit Trail v2] Export error:", error);
+        res
+          .status(500)
+          .json(
+            errorResponse("SERVER_ERROR", "Failed to export audit entries"),
+          );
+      }
     }
   },
 
@@ -378,20 +420,26 @@ export const auditTrailController = {
           `Deleted ${deletedCount} audit entries`,
         ),
       );
-    } catch (error: any) {
-      logError("[Audit Trail v2] Delete old entries error:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("SERVER_ERROR", "Failed to delete old audit entries"),
-        );
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        logError("[Audit Trail v2] Delete old entries error:", error);
+        res
+          .status(500)
+          .json(
+            errorResponse("SERVER_ERROR", "Failed to delete old audit entries"),
+          );
+      }
     }
   },
 
   /**
    * Generate CSV from audit entries
    */
-  generateCSV(entries: any[]): string {
+  generateCSV(entries: AuditEntry[]): string {
     const headers = [
       "ID",
       "Date/Time",
@@ -407,13 +455,13 @@ export const auditTrailController = {
     const rows = entries.map((entry) => [
       entry.id,
       entry.createdAt,
-      entry.userName || entry.userId,
-      entry.userRole,
+      entry.userName ?? entry.userId,
+      entry.userRole ?? "",
       entry.action,
       entry.resourceType,
-      entry.resourceName || entry.resourceId || "",
+      entry.resourceName ?? entry.resourceId ?? "",
       entry.status,
-      entry.ipAddress || "",
+      entry.ipAddress ?? "",
     ]);
 
     const csvContent = [

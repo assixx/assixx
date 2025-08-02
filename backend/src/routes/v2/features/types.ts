@@ -135,6 +135,19 @@ export interface ServiceError extends Error {
   statusCode?: number;
 }
 
+export interface TenantWithFeatures {
+  id: number;
+  subdomain: string;
+  companyName: string;
+  status: string;
+  featuresummary: {
+    activeFeatures: number;
+    trialFeatures: number;
+    disabledFeatures: number;
+    totalCost: number;
+  };
+}
+
 // Request validation types
 export interface ActivationOptions {
   expiresAt?: string | Date | null;

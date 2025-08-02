@@ -5,6 +5,7 @@
 **Wichtig:** Diese Datei ist die SINGLE SOURCE OF TRUTH für API v2 Progress!
 
 ## 🎉 PHASE 1 ABGESCHLOSSEN! + Phase 2 Progress (03.08.2025 - 00:00 Uhr)
+
 - **Alle 13 geplanten APIs sind fertig!**
 - **Phase 2: 12 von 14 APIs fertig (86%)** (Roles v2 fertig!)
 - **Features, Machines, Reports UND Audit Trail API v2 MIT vollständigen Tests implementiert!**
@@ -65,6 +66,7 @@
 ### PHASE 2: ZUSÄTZLICHE APIs AUS v1 (14 APIs) 🚀 IN ARBEIT
 
 #### ✅ Fertig (10/14)
+
 1. **Logs v2** ✅ - System/Root logs (AdminLog → RootLog Migration)
    - **Status:** 100% implementiert (31.07.2025)
    - **Features:** List mit Filter, Stats, Delete mit Passwort
@@ -96,29 +98,29 @@
    - **Tests:** 30/30 grün
    - **Besonderheit:** User-basierte Filterung, CSV/JSON Export, Root-only Löschung
 
-6. **Audit Trail v2** ✅ - Vollständiges Audit System ⚠️ COMPLIANCE!
+7. **Audit Trail v2** ✅ - Vollständiges Audit System ⚠️ COMPLIANCE!
    - **Status:** 100% implementiert (02.08.2025) MIT TESTS!
    - **Features:** Aktivitäts-Tracking, Compliance Reports, GDPR Export, Retention Policies
    - **Tests:** 30/30 grün
    - **Besonderheit:** User-basierte Filterung, CSV/JSON Export, Root-only Löschung
 
-7. **Areas v2** ✅ - Work areas/zones management
+8. **Areas v2** ✅ - Work areas/zones management
    - **Status:** 100% implementiert (02.08.2025) OHNE TESTS
    - **Features:** CRUD, Hierarchy, Types (building/warehouse/etc), Statistics
    - **Endpoints:** 8 Endpoints (CRUD + Hierarchy + Stats)
    - **Besonderheit:** Parent-Child Beziehungen für Bereichs-Hierarchie
 
-8. **Root v2** ✅ - Root user operations
+9. **Root v2** ✅ - Root user operations
    - **Status:** 100% implementiert (02.08.2025) OHNE TESTS
    - **Features:** Admin/Root User CRUD, Tenant Management, Dashboard, Storage Info, Deletion Process
    - **Endpoints:** 25 Endpoints (umfangreichste API!)
    - **Besonderheit:** Multi-Level Tenant Löschung mit Genehmigungsprozess
 
-9. **Admin-Permissions v2** ✅ - Permission management  
-   - **Status:** 100% implementiert (02.08.2025) OHNE TESTS
-   - **Features:** Department/Group Permissions, CRUD, Bulk Operations, Access Checks
-   - **Endpoints:** 8 Endpoints (Permissions + Bulk + Check)
-   - **Besonderheit:** Root-only Access, Multi-Level Permissions (read/write/delete)
+10. **Admin-Permissions v2** ✅ - Permission management
+    - **Status:** 100% implementiert (02.08.2025) OHNE TESTS
+    - **Features:** Department/Group Permissions, CRUD, Bulk Operations, Access Checks
+    - **Endpoints:** 8 Endpoints (Permissions + Bulk + Check)
+    - **Besonderheit:** Root-only Access, Multi-Level Permissions (read/write/delete)
 
 #### 🚀 OHNE TESTS zu implementieren (3/14) - Kleinigkeiten
 
@@ -147,12 +149,14 @@
 ## ✅ Was wurde heute gemacht? (31.07.2025)
 
 ### 1. **Notifications API v2** ✅ (15:00 - 16:00)
+
 - **Endpoints:** 13 (CRUD + Bulk + Preferences + Templates)
 - **Tests:** 27/27 grün
 - **Features:** Multi-Channel, Templates, Priority Levels
 - **Dateien:** `/backend/src/routes/v2/notifications/`
 
 ### 2. **Settings API v2** ✅ (16:00 - 17:30)
+
 - **Endpoints:** 18 (System/Tenant/User + Categories + Bulk)
 - **Tests:** 12/12 grün (nach Debug-Session)
 - **Features:** 3-Ebenen-System, Type-safe storage
@@ -163,11 +167,13 @@
   - AdminLog System-Settings
 
 ### 3. **AdminLog → RootLog Migration + Logs API v2** ✅ (18:00 - 20:50)
+
 - **Migration durchgeführt:**
   - Neues RootLog Model erstellt
   - 27 AdminLog Referenzen ersetzt
 
 ### 4. **Plans API v2** ✅ (31.07. 21:00 - 23:30)
+
 - **Endpoints:** 8 (CRUD + Upgrade + Addons + Costs)
 - **Tests:** 15/15 grün (nach intensivem Debugging)
 - **Features:** Subscription Management, Addon System, Cost Calculation
@@ -178,6 +184,7 @@
   - Addon Pricing Synchronisation
 
 ### 5. **Features API v2** ✅ (02.08. 14:00 - 17:00) MIT TESTS!
+
 - **Endpoints:** 11 (Public + Auth + Admin + Root)
 - **Tests:** 32/32 grün (vollständige Test-Suite!)
 - **Features:** Multi-Tenant Feature Flags, Activation/Deactivation, Usage Tracking
@@ -190,6 +197,7 @@
 - **Security Issue:** Admin kann Features für andere Tenants aktivieren (TODO)
 
 ### 6. **Areas API v2** ✅ (02.08. 20:00 - 20:45) OHNE TESTS
+
 - **Endpoints:** 8 (CRUD + Hierarchy + Stats)
 - **Features:** Work Areas/Zones Management, Parent-Child Hierarchy
 - **Typen:** building, warehouse, office, production, outdoor, other
@@ -200,6 +208,7 @@
   - Multi-Tenant Isolation durchgängig
 
 ### 7. **Root API v2** ✅ (02.08. 20:45 - 21:45) OHNE TESTS
+
 - **Endpoints:** 25 (umfangreichste API!)
 - **Features:** Admin/Root User Management, Tenant Übersicht, Deletion Process
 - **Besonderheiten:**
@@ -211,6 +220,7 @@
 - **TypeScript Fixes:** pool.execute durch execute wrapper ersetzt (kein 'any'!)
 
 ### 8. **Admin-Permissions API v2** ✅ (02.08. 22:00 - 22:30) OHNE TESTS
+
 - **Endpoints:** 8 (CRUD + Check + Bulk)
 - **Features:** Department & Group Permissions Management
 - **Besonderheiten:**
@@ -219,12 +229,13 @@
   - Direkte und Group-basierte Permissions
   - Bulk Operations für mehrere Admins
   - Access Check Endpoint für Debugging
-- **TypeScript Fixes:** 
+- **TypeScript Fixes:**
   - ServiceError Constructor richtig verwendet
   - RootLog.log Parameter korrekt übergeben
   - Validation ohne handleValidationErrors utility
 
 ### 9. **Department-Groups API v2** ✅ (02.08. 23:00 - 23:30) OHNE TESTS
+
 - **Endpoints:** 8 (CRUD + Hierarchy + Departments Management)
 - **Features:** Hierarchical Department Grouping
 - **Besonderheiten:**
@@ -232,11 +243,12 @@
   - Many-to-Many Department Zuordnungen
   - Integration mit Admin-Permissions (Löschung blockiert)
   - Recursive Department Collection durch Subgroups
-- **TypeScript Fixes:** 
+- **TypeScript Fixes:**
   - AuthenticatedRequest statt AuthRequest
   - req.body as Type statt generische Typen
 
 ### 10. **Roles API v2** ✅ (03.08. 00:00) OHNE TESTS
+
 - **Endpoints:** 5 (List, Get by ID, Hierarchy, Assignable, Check)
 - **Features:** Static Role Management
 - **Besonderheiten:**
@@ -245,10 +257,11 @@
   - Permission Arrays pro Rolle
   - Check Endpoint für Role-Based Access Control
   - Assignable Roles basierend auf Current User Role
-- **TypeScript Fixes:** 
-  - _req statt req für unbenutzte Parameter
+- **TypeScript Fixes:**
+  - \_req statt req für unbenutzte Parameter
 
 ### 11. **Signup API v2** ✅ (03.08. 01:00) OHNE TESTS - LETZTE API!
+
 - **Endpoints:** 2 (Register, Check Subdomain)
 - **Features:** Tenant Registration with Admin User
 - **Besonderheiten:**
@@ -258,7 +271,7 @@
   - Subdomain Validierung und Verfügbarkeits-Check
   - Trial Period (14 Tage) automatisch
   - Rate Limiting auf beiden Endpoints
-- **TypeScript Fixes:** 
+- **TypeScript Fixes:**
   - Request/Response Types explizit angeben für public routes
 
 ## 🎯 API v2 MIGRATION ABGESCHLOSSEN! 🏆
@@ -274,6 +287,7 @@
 ### Zeit-Schätzung NEU
 
 **OHNE Tests (Kleinigkeiten):**
+
 - Areas v2: ✅ FERTIG
 - Root v2: ✅ FERTIG
 - Admin-Permissions v2: ✅ FERTIG
@@ -312,4 +326,4 @@
 
 ---
 
-*Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr*
+_Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr_

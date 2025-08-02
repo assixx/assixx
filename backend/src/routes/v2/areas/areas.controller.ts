@@ -11,6 +11,7 @@ import {
   errorResponse,
 } from "../../../types/response.types.js";
 import { getErrorMessage } from "../../../utils/errorHandler.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { AreasService } from "./areas.service.js";
 import { CreateAreaRequest, UpdateAreaRequest, AreaFilters } from "./types.js";
@@ -119,9 +120,14 @@ export class AreasController {
         .status(201)
         .json(successResponse(newArea, "Area created successfully"));
     } catch (error) {
-      const message = getErrorMessage(error);
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json(errorResponse(message, statusCode));
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.message, error.statusCode));
+      } else {
+        const message = getErrorMessage(error);
+        res.status(500).json(errorResponse(message, 500));
+      }
     }
   }
 
@@ -156,9 +162,14 @@ export class AreasController {
 
       res.json(successResponse(updatedArea, "Area updated successfully"));
     } catch (error) {
-      const message = getErrorMessage(error);
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json(errorResponse(message, statusCode));
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.message, error.statusCode));
+      } else {
+        const message = getErrorMessage(error);
+        res.status(500).json(errorResponse(message, 500));
+      }
     }
   }
 
@@ -188,9 +199,14 @@ export class AreasController {
 
       res.json(successResponse(null, "Area deleted successfully"));
     } catch (error) {
-      const message = getErrorMessage(error);
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json(errorResponse(message, statusCode));
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.message, error.statusCode));
+      } else {
+        const message = getErrorMessage(error);
+        res.status(500).json(errorResponse(message, 500));
+      }
     }
   }
 

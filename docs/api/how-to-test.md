@@ -7,12 +7,13 @@ This guide documents the CORRECT way to write tests for the Assixx API v2. These
 ## Key Testing Principles
 
 ### 1. **Use Real Database Integration Tests**
+
 ❌ **DON'T** mock services or use jest.mock()  
 ✅ **DO** use real database with test utilities
 
 ```typescript
 // WRONG - Don't mock services
-jest.mock('./plans.service');
+jest.mock("./plans.service");
 const mockPlansService = PlansService as jest.Mocked<typeof PlansService>;
 
 // CORRECT - Use real app with real database
@@ -21,7 +22,9 @@ import { createTestDatabase, createTestUser } from "../../../mocks/database.js";
 ```
 
 ### 2. **Test File Location**
+
 All v2 API tests MUST be placed in `__tests__` folders:
+
 ```
 backend/src/routes/v2/
 ├── plans/
@@ -32,6 +35,7 @@ backend/src/routes/v2/
 ```
 
 ### 3. **Console Logging in Jest Tests**
+
 Standard console.log doesn't work in Jest. Use direct imports:
 
 ```typescript
@@ -46,6 +50,7 @@ logError("Error message");
 ```
 
 ### 4. **Always Run Tests with --runInBand**
+
 Prevent race conditions by running tests sequentially:
 
 ```bash
@@ -57,29 +62,30 @@ npm test -- backend/src/routes/v2/plans/__tests__/plans-v2.test.ts --runInBand
 ```
 
 ### 5. **Use Generated Test User Credentials**
+
 The `createTestUser` function adds prefixes and suffixes for safe cleanup:
 
 ```typescript
 // WRONG - Using hardcoded email
 const user = await createTestUser(testDb, {
   email: "test@example.com",
-  password: "Test123!"
+  password: "Test123!",
 });
 // Login will fail!
 await request(app).post("/api/v2/auth/login").send({
-  email: "test@example.com",  // ❌ WRONG!
-  password: "Test123!"
+  email: "test@example.com", // ❌ WRONG!
+  password: "Test123!",
 });
 
 // CORRECT - Use returned values
 const user = await createTestUser(testDb, {
   email: "test@example.com",
-  password: "Test123!"
+  password: "Test123!",
 });
 // Use the actual generated email
 await request(app).post("/api/v2/auth/login").send({
-  email: user.email,  // ✅ CORRECT! (e.g., __AUTOTEST__test_1234567890_123@example.com)
-  password: "Test123!"
+  email: user.email, // ✅ CORRECT! (e.g., __AUTOTEST__test_1234567890_123@example.com)
+  password: "Test123!",
 });
 ```
 
@@ -91,14 +97,7 @@ await request(app).post("/api/v2/auth/login").send({
  * [Description of what's being tested]
  */
 
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-} from "@jest/globals";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "@jest/globals";
 import request from "supertest";
 import app from "../../../../app.js";
 import { Pool } from "mysql2/promise";
@@ -144,26 +143,22 @@ describe("[Feature] API v2", () => {
       email: "user@feature.test",
       password: "User123!",
       first_name: "Regular",
-      last_name: "User", 
+      last_name: "User",
       role: "employee",
       tenant_id: tenantId,
     });
 
     // Login to get tokens - USE RETURNED EMAILS!
-    const adminLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ 
-        email: adminUser.email,  // ✅ Use returned email
-        password: "Admin123!" 
-      });
+    const adminLogin = await request(app).post("/api/v2/auth/login").send({
+      email: adminUser.email, // ✅ Use returned email
+      password: "Admin123!",
+    });
     adminToken = adminLogin.body.data.accessToken;
 
-    const userLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ 
-        email: regularUser.email,  // ✅ Use returned email
-        password: "User123!" 
-      });
+    const userLogin = await request(app).post("/api/v2/auth/login").send({
+      email: regularUser.email, // ✅ Use returned email
+      password: "User123!",
+    });
     userToken = userLogin.body.data.accessToken;
 
     // Create any test data needed
@@ -198,9 +193,7 @@ describe("[Feature] API v2", () => {
     });
 
     it("should require authentication", async () => {
-      await request(app)
-        .get("/api/v2/[feature]")
-        .expect(401);
+      await request(app).get("/api/v2/[feature]").expect(401);
     });
   });
 });
@@ -209,22 +202,26 @@ describe("[Feature] API v2", () => {
 ## Common Database Schema Issues
 
 ### tenant_plans Table
+
 ```sql
 -- WRONG column names
 start_date, is_active
 
--- CORRECT column names  
+-- CORRECT column names
 started_at, status
 ```
 
 ### Foreign Key Constraints
+
 Always create data in the correct order:
+
 1. Tenants first
 2. Departments (needs tenant_id)
 3. Teams (needs tenant_id and department_id)
 4. Users (needs tenant_id)
 
 ### Test Data Cleanup
+
 ```typescript
 // Check for leftover test data
 docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
@@ -236,6 +233,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ## Debugging Tips
 
 ### 1. Enable Console Output
+
 ```typescript
 import { log, error as logError } from "console";
 
@@ -245,6 +243,7 @@ logError("Error occurred:", error);
 ```
 
 ### 2. Run Single Test
+
 ```bash
 # Run specific test file
 docker exec assixx-backend npm test -- backend/src/routes/v2/plans/__tests__/plans-v2.test.ts --runInBand
@@ -254,6 +253,7 @@ docker exec assixx-backend npm test -- --testNamePattern="should return all acti
 ```
 
 ### 3. Check Database State During Tests
+
 ```bash
 # Check what's in the database
 docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT * FROM plans;"'
@@ -265,15 +265,19 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ## Known Issues and Solutions
 
 ### TypeScript Test Errors
+
 From CLAUDE.md: "TypeScript Test-Fehler (56 errors) - ignorieren, betrifft nur Tests"
+
 - These are often due to test-specific type issues
 - Focus on runtime test success, not TypeScript errors in tests
 
 ### Test Timeout Issues
+
 - Increase timeout for complex tests: `jest.setTimeout(10000);`
 - Use `--runInBand --forceExit` flags
 
 ### Validation Middleware Issues
+
 - Check if using `handleValidationErrors` instead of `validate`
 - See Settings v2 fix in API-V2-KNOWN-ISSUES.md
 
@@ -307,14 +311,18 @@ docker exec assixx-backend npm test -- backend/src/routes/v2/plans/__tests__ --r
 ## General Debugging and Error Resolution Patterns
 
 ### 1. **Systematic Error Analysis**
+
 When tests fail, follow this systematic approach:
+
 - Read the ENTIRE error message carefully
 - Identify the error location (file path and line number)
 - Check if it's a compile-time or runtime error
 - Look for patterns in multiple errors
 
 ### 2. **Import and Module Resolution Issues**
+
 Common patterns and solutions:
+
 ```typescript
 // Error: Cannot find module './service' from 'test.ts'
 // Solution: Check if mocking syntax matches actual import path
@@ -327,27 +335,33 @@ Common patterns and solutions:
 ```
 
 ### 3. **Middleware Chain Debugging**
+
 When requests hang or timeout:
+
 - Add logging at the START of each route handler
 - Check middleware order (auth → validation → handler)
 - Verify middleware is calling next() properly
 - Look for infinite loops in validation
 
 ### 4. **Type Mismatch Debugging**
+
 ```typescript
 // Common pattern: Database returns different types than expected
 // Solution: Always parse/convert database values
-parseFloat(dbValue)  // for decimals
-Boolean(dbValue)     // for tinyint to boolean
+parseFloat(dbValue); // for decimals
+Boolean(dbValue); // for tinyint to boolean
 ```
 
 ### 5. **Response Format Consistency**
+
 When tests fail on response structure:
+
 - Check if using correct response helper (successResponse vs custom)
 - Verify metadata/meta naming conventions
 - Ensure consistent field naming (camelCase vs snake_case)
 
 ### 6. **Database State Issues**
+
 ```bash
 # Always check actual DB values when tests fail
 docker exec assixx-mysql sh -c 'mysql -u user -ppass db -e "SELECT * FROM table"'
@@ -357,12 +371,14 @@ docker exec assixx-mysql sh -c 'mysql -u user -ppass db -e "SELECT * FROM table"
 ```
 
 ### 7. **Async/Promise Debugging**
+
 - Tests hanging often indicate unresolved promises
 - Use --detectOpenHandles to find open connections
 - Add explicit timeouts to identify stuck operations
 - Check for missing await keywords
 
 ### 8. **Environment-Specific Issues**
+
 ```typescript
 // Common issue: Test environment differs from dev
 // Solution: Always check process.env values
@@ -370,12 +386,14 @@ docker exec assixx-mysql sh -c 'mysql -u user -ppass db -e "SELECT * FROM table"
 ```
 
 ### 9. **Incremental Problem Solving**
+
 - Fix one error at a time
 - Re-run tests after each fix
 - Don't assume fixing one error fixes all
 - Keep track of changes (TodoWrite)
 
 ### 10. **Common Anti-Patterns to Avoid**
+
 ```typescript
 // ❌ DON'T ignore "minor" errors - they cascade
 // ❌ DON'T assume hardcoded values match DB
@@ -384,20 +402,23 @@ docker exec assixx-mysql sh -c 'mysql -u user -ppass db -e "SELECT * FROM table"
 ```
 
 ### 11. **Effective Logging Strategy**
+
 ```typescript
 // Add strategic logging points:
-console.log('[Controller] Method entry:', { params, body });
-console.log('[Service] Before DB call:', query);
-console.log('[Service] After DB call:', result);
-console.log('[Controller] Sending response:', responseData);
+console.log("[Controller] Method entry:", { params, body });
+console.log("[Service] Before DB call:", query);
+console.log("[Service] After DB call:", result);
+console.log("[Controller] Sending response:", responseData);
 ```
 
 ### 12. **Version and Dependency Conflicts**
+
 - Check if all imports use consistent file extensions (.js)
 - Verify package versions match between environments
 - Look for circular dependencies
 
 ### 13. **Test Isolation Problems**
+
 ```typescript
 // Use beforeEach to reset state
 // Check if tests are truly independent
@@ -406,13 +427,16 @@ console.log('[Controller] Sending response:', responseData);
 ```
 
 ### 14. **The "Works in Dev but Fails in Test" Pattern**
+
 Common causes:
+
 - Different database state
 - Missing environment variables
 - Hardcoded values vs dynamic data
 - Timing/race conditions
 
 ### 15. **Strategic Use of Test Utilities**
+
 ```bash
 # Run progressively narrower test scopes
 npm test                           # Everything

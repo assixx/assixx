@@ -184,7 +184,9 @@ export class AreasService {
 
     // Second pass: build hierarchy
     rows.forEach((row: AreaRow) => {
-      const area = areasMap.get(row.id)!;
+      const area = areasMap.get(row.id);
+      if (!area) return; // Skip if area not found
+
       if (row.parent_id) {
         const parent = areasMap.get(row.parent_id);
         if (parent) {
@@ -228,11 +230,11 @@ export class AreasService {
     const [result] = await execute<ResultSetHeader>(query, [
       tenantId,
       data.name,
-      data.description || null,
-      data.type || "other",
-      data.capacity || null,
-      data.parentId || null,
-      data.address || null,
+      data.description ?? null,
+      data.type ?? "other",
+      data.capacity ?? null,
+      data.parentId ?? null,
+      data.address ?? null,
       userId,
       1,
     ]);
@@ -399,9 +401,9 @@ export class AreasService {
     });
 
     return {
-      totalAreas: stats[0].total_areas || 0,
-      activeAreas: stats[0].active_areas || 0,
-      totalCapacity: stats[0].total_capacity || 0,
+      totalAreas: stats[0].total_areas ?? 0,
+      activeAreas: stats[0].active_areas ?? 0,
+      totalCapacity: stats[0].total_capacity ?? 0,
       byType,
     };
   }

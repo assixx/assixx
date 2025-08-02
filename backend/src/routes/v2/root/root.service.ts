@@ -10,9 +10,9 @@ import { RootLog } from "../../../models/rootLog.js";
 import TenantModel from "../../../models/tenant.js";
 import UserModel from "../../../models/user.js";
 import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
+import { execute } from "../../../utils/db.js";
 import { generateEmployeeId } from "../../../utils/employeeIdGenerator.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-import { execute } from "../../../utils/db.js";
 
 import {
   AdminUser,
@@ -66,15 +66,15 @@ export class RootService {
             id: admin.id,
             username: admin.username,
             email: admin.email,
-            firstName: admin.first_name || "",
-            lastName: admin.last_name || "",
+            firstName: admin.first_name ?? "",
+            lastName: admin.last_name ?? "",
             company: admin.company,
             notes: admin.notes,
-            isActive: admin.is_active || false,
-            tenantId: admin.tenant_id || 0,
+            isActive: admin.is_active ?? false,
+            tenantId: admin.tenant_id ?? 0,
             tenantName,
-            createdAt: admin.created_at || new Date(),
-            updatedAt: admin.updated_at || new Date(),
+            createdAt: admin.created_at ?? new Date(),
+            updatedAt: admin.updated_at ?? new Date(),
             lastLogin: admin.last_login,
           };
         }),
@@ -115,15 +115,15 @@ export class RootService {
         id: admin.id,
         username: admin.username,
         email: admin.email,
-        firstName: admin.first_name || "",
-        lastName: admin.last_name || "",
+        firstName: admin.first_name ?? "",
+        lastName: admin.last_name ?? "",
         company: admin.company,
         notes: admin.notes,
-        isActive: admin.is_active || false,
-        tenantId: admin.tenant_id || 0,
+        isActive: admin.is_active ?? false,
+        tenantId: admin.tenant_id ?? 0,
         tenantName,
-        createdAt: admin.created_at || new Date(),
-        updatedAt: admin.updated_at || new Date(),
+        createdAt: admin.created_at ?? new Date(),
+        updatedAt: admin.updated_at ?? new Date(),
         lastLogin: lastLogin?.created_at,
       };
     } catch (error) {
@@ -143,8 +143,8 @@ export class RootService {
         username: data.username,
         email: data.email,
         password: data.password,
-        first_name: data.firstName || "",
-        last_name: data.lastName || "",
+        first_name: data.firstName ?? "",
+        last_name: data.lastName ?? "",
         role: "admin" as const,
         tenant_id: tenantId,
         is_active: true,
@@ -255,13 +255,13 @@ export class RootService {
         throw new ServiceError("NOT_FOUND", "Admin not found", 404);
       }
 
-      const logs = await RootLog.getByUserId(adminId, days || 0);
+      const logs = await RootLog.getByUserId(adminId, days ?? 0);
 
       return logs.map((log) => ({
         id: log.id,
         userId: log.user_id,
         action: log.action,
-        entityType: log.entity_type || "",
+        entityType: log.entity_type ?? "",
         entityId: log.entity_id,
         description: log.description,
         ipAddress: log.ip_address,
@@ -307,7 +307,7 @@ export class RootService {
             id: tenant.id,
             companyName: tenant.company_name,
             subdomain: tenant.subdomain,
-            currentPlan: tenant.current_plan || undefined,
+            currentPlan: tenant.current_plan ?? undefined,
             status: tenant.status as Tenant["status"],
             maxUsers: (tenant as TenantRow).max_users,
             maxAdmins: (tenant as TenantRow).max_admins,
@@ -437,7 +437,7 @@ export class RootService {
         [tenantId],
       );
 
-      const subdomain = tenantData[0]?.subdomain || "DEFAULT";
+      const subdomain = tenantData[0]?.subdomain ?? "DEFAULT";
 
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -449,7 +449,7 @@ export class RootService {
           role, position, notes, is_active, tenant_id, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, NOW(), NOW())`,
         [
-          data.username || data.email,
+          data.username ?? data.email,
           data.email,
           hashedPassword,
           data.firstName,
@@ -657,7 +657,7 @@ export class RootService {
       };
 
       const totalStorage =
-        storageLimits[tenant.current_plan || "basic"] || storageLimits.basic;
+        storageLimits[tenant.current_plan ?? "basic"] ?? storageLimits.basic;
 
       // Get storage breakdown
       const [documents] = await execute<RowDataPacket[]>(
@@ -675,9 +675,9 @@ export class RootService {
         [tenantId],
       );
 
-      const documentsSize = Number(documents[0].total) || 0;
-      const attachmentsSize = Number(attachments[0].total) || 0;
-      const logsSize = Number(logs[0].total) || 0;
+      const documentsSize = Number(documents[0].total);
+      const attachmentsSize = Number(attachments[0].total);
+      const logsSize = Number(logs[0].total);
       const backupsSize = 0; // Placeholder
 
       const usedStorage =
@@ -688,7 +688,7 @@ export class RootService {
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100),
-        plan: tenant.current_plan || "basic",
+        plan: tenant.current_plan ?? "basic",
         breakdown: {
           documents: documentsSize,
           attachments: attachmentsSize,
@@ -728,7 +728,7 @@ export class RootService {
       const queueId = await tenantDeletionService.requestTenantDeletion(
         tenantId,
         requestedBy,
-        reason || "No reason provided",
+        reason ?? "No reason provided",
         ipAddress,
       );
 
@@ -886,7 +886,7 @@ export class RootService {
 
       // Get tenant name
       const tenant = await TenantModel.findById(tenantId);
-      const companyName = tenant?.company_name || "Unknown";
+      const companyName = tenant?.company_name ?? "Unknown";
 
       // Transform to our API format
       return {
@@ -894,15 +894,15 @@ export class RootService {
         companyName,
         estimatedDuration: `${report.estimatedDuration} minutes`,
         affectedRecords: {
-          users: report.affectedRecords.users || 0,
-          documents: report.affectedRecords.documents || 0,
-          departments: report.affectedRecords.departments || 0,
-          teams: report.affectedRecords.teams || 0,
-          shifts: report.affectedRecords.shifts || 0,
-          kvpSuggestions: report.affectedRecords.kvp_suggestions || 0,
-          surveys: report.affectedRecords.surveys || 0,
-          logs: report.affectedRecords.logs || 0,
-          total: report.totalRecords || 0,
+          users: report.affectedRecords.users ?? 0,
+          documents: report.affectedRecords.documents ?? 0,
+          departments: report.affectedRecords.departments ?? 0,
+          teams: report.affectedRecords.teams ?? 0,
+          shifts: report.affectedRecords.shifts ?? 0,
+          kvpSuggestions: report.affectedRecords.kvp_suggestions ?? 0,
+          surveys: report.affectedRecords.surveys ?? 0,
+          logs: report.affectedRecords.logs ?? 0,
+          total: report.totalRecords ?? 0,
         },
         storageToFree: 0, // Not provided by service
         warnings: report.warnings,

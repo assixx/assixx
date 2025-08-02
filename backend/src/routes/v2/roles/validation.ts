@@ -12,9 +12,7 @@ export const getRoleValidation = [
 ];
 
 export const checkRoleValidation = [
-  body("userId")
-    .isInt({ min: 1 })
-    .withMessage("Invalid user ID"),
+  body("userId").isInt({ min: 1 }).withMessage("Invalid user ID"),
   body("requiredRole")
     .isIn(["admin", "employee", "root"])
     .withMessage("Invalid role. Must be admin, employee, or root"),

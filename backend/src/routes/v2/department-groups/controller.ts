@@ -8,9 +8,9 @@ import { validationResult } from "express-validator";
 
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { departmentGroupsService } from "./service.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 import {
   CreateGroupRequest,
   UpdateGroupRequest,
@@ -23,7 +23,9 @@ export class DepartmentGroupsController {
    */
   async getGroups(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const groups = await departmentGroupsService.getGroupHierarchy(req.user.tenant_id);
+      const groups = await departmentGroupsService.getGroupHierarchy(
+        req.user.tenant_id,
+      );
 
       res.json({
         success: true,
@@ -285,7 +287,10 @@ export class DepartmentGroupsController {
   /**
    * Add departments to a group
    */
-  async addDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async addDepartments(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     // Check if user is root
     if (req.user.role !== "root") {
       res.status(403).json({
@@ -354,7 +359,10 @@ export class DepartmentGroupsController {
   /**
    * Remove a department from a group
    */
-  async removeDepartment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async removeDepartment(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     // Check if user is root
     if (req.user.role !== "root") {
       res.status(403).json({
@@ -387,7 +395,7 @@ export class DepartmentGroupsController {
     try {
       const groupId = parseInt(req.params.id);
       const departmentId = parseInt(req.params.departmentId);
-      
+
       await departmentGroupsService.removeDepartmentFromGroup(
         groupId,
         departmentId,
@@ -424,7 +432,10 @@ export class DepartmentGroupsController {
   /**
    * Get departments in a group
    */
-  async getGroupDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getGroupDepartments(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

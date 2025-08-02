@@ -5,7 +5,10 @@
 
 import { Router, Request, Response } from "express";
 
-import { authLimiter, apiLimiter } from "../../../middleware/security-enhanced.js";
+import {
+  authLimiter,
+  apiLimiter,
+} from "../../../middleware/security-enhanced.js";
 import { validate } from "../../../middleware/validation.js";
 
 import { signupController } from "./controller.js";

@@ -4,8 +4,8 @@
  */
 
 import Tenant from "../../../models/tenant.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { SignupRequest, SubdomainValidation } from "./types.js";
 
@@ -71,7 +71,7 @@ export class SignupService {
       };
     } catch (error) {
       if (error instanceof ServiceError) throw error;
-      
+
       logger.error("Error registering tenant:", error);
       throw new ServiceError(
         "REGISTRATION_FAILED",
@@ -90,7 +90,8 @@ export class SignupService {
   }> {
     try {
       // Validate subdomain format
-      const validation: SubdomainValidation = Tenant.validateSubdomain(subdomain);
+      const validation: SubdomainValidation =
+        Tenant.validateSubdomain(subdomain);
       if (!validation.valid) {
         return {
           available: false,
@@ -101,7 +102,7 @@ export class SignupService {
 
       // Check availability
       const available = await Tenant.isSubdomainAvailable(subdomain);
-      
+
       return {
         available,
         subdomain,

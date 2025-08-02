@@ -16,18 +16,19 @@ export const signupValidation = [
     .notEmpty()
     .trim()
     .matches(/^[a-z0-9-]+$/)
-    .withMessage("Subdomain can only contain lowercase letters, numbers, and hyphens")
+    .withMessage(
+      "Subdomain can only contain lowercase letters, numbers, and hyphens",
+    )
     .isLength({ min: 3, max: 63 })
     .withMessage("Subdomain must be between 3 and 63 characters"),
-  body("email")
-    .isEmail()
-    .normalizeEmail()
-    .withMessage("Invalid email address"),
+  body("email").isEmail().normalizeEmail().withMessage("Invalid email address"),
   body("phone")
     .notEmpty()
     .trim()
     .matches(/^\+[0-9]{7,29}$/)
-    .withMessage("Phone must start with + and contain 7-29 digits (e.g. +491234567890)"),
+    .withMessage(
+      "Phone must start with + and contain 7-29 digits (e.g. +491234567890)",
+    ),
   body("address")
     .optional()
     .trim()
@@ -41,7 +42,9 @@ export const signupValidation = [
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long")
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage("Password must contain at least one uppercase letter, one lowercase letter, and one number"),
+    .withMessage(
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+    ),
   body("adminFirstName")
     .notEmpty()
     .trim()

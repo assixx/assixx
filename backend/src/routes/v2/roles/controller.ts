@@ -8,9 +8,9 @@ import { validationResult } from "express-validator";
 
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { rolesService } from "./service.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 import { RoleCheckRequest, RoleName } from "./types.js";
 
 export class RolesController {
@@ -91,7 +91,10 @@ export class RolesController {
   /**
    * Get role hierarchy
    */
-  async getRoleHierarchy(_req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getRoleHierarchy(
+    _req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     try {
       const hierarchy = await rolesService.getRoleHierarchy();
 
@@ -114,10 +117,14 @@ export class RolesController {
   /**
    * Get roles that can be assigned by the current user
    */
-  async getAssignableRoles(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getAssignableRoles(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
     try {
       const currentUserRole = req.user.role as RoleName;
-      const assignableRoles = await rolesService.getAssignableRoles(currentUserRole);
+      const assignableRoles =
+        await rolesService.getAssignableRoles(currentUserRole);
 
       res.json({
         success: true,

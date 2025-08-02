@@ -9,6 +9,7 @@
 **Ergebnis: 32/32 Tests grün (100%)!** 💯
 
 #### Implementierte Features:
+
 - ✅ **11 Endpoints** vollständig implementiert
 - ✅ **Multi-Tenant Feature Flags** mit Isolation
 - ✅ **Feature Activation/Deactivation** mit Zeitlimits
@@ -17,9 +18,10 @@
 - ✅ **Tenant-spezifische Konfiguration**
 
 #### Vollständige Test-Suite:
+
 1. **Public Endpoints** (3 Tests)
    - GET /features
-   - GET /features/categories  
+   - GET /features/categories
    - GET /features/:code
 
 2. **Authenticated Endpoints** (5 Tests)
@@ -49,11 +51,12 @@
    - Lösung: Interfaces & Service angepasst
 
 2. **Route Order Bug** ✅
+
    ```typescript
    // FALSCH: /:code fängt /all-tenants ab
    router.get("/:code", ...);
    router.get("/all-tenants", ...);
-   
+
    // RICHTIG: Spezifisch vor generisch
    router.get("/all-tenants", ...);
    router.get("/:code", ...);
@@ -64,6 +67,7 @@
    - Lösung: Tests angepasst an tatsächliches Format
 
 4. **Lodash Import Issue** ✅
+
    ```typescript
    // FALSCH: import { camelCase } from "lodash";
    // RICHTIG:
@@ -76,15 +80,19 @@
    - Lösung: Alternative Methoden verwendet
 
 #### Security Issue entdeckt:
+
 ⚠️ **Admin Cross-Tenant Feature Activation**
+
 - Admin aus Tenant A kann Features für Tenant B aktivieren
 - Controller prüft nur Role, nicht Tenant-Zugehörigkeit
 - TODO: Tenant-Check in activateFeature() hinzufügen
 
 #### Neue Utils erstellt:
+
 - `fieldMapper.ts` - Konvertiert snake_case ↔ camelCase
 
 ### 📊 Status Update:
+
 - **Phase 2:** 3/4 APIs fertig (75%)
 - **Gesamt:** 16/27 APIs implementiert (59%)
 - **Tests:** 598 Tests insgesamt (alle grün)
@@ -98,6 +106,7 @@
 **Ergebnis: 15/15 Tests grün nach intensivem Debugging!** 💯
 
 #### Implementierte Features:
+
 - ✅ **8 Endpoints** vollständig implementiert
 - ✅ **Subscription Plans** mit Features
 - ✅ **Addon System** (Employees, Admins, Storage)
@@ -105,6 +114,7 @@
 - ✅ **Plan Upgrades/Downgrades**
 
 #### Debug-Marathon:
+
 1. **Jest Module Resolution** ✅
    - Problem: `Cannot find module './plans.service'`
    - Lösung: Import-Pfad korrekt, aber validate vs handleValidationErrors
@@ -145,6 +155,7 @@
 #### Test-Fehler Analyse & Fixes:
 
 1. **DB Schema Mismatches** ✅
+
    ```sql
    -- Code erwartete: break_duration_minutes
    -- DB hat: break_minutes
@@ -152,18 +163,20 @@
    ```
 
 2. **shift_swap_requests JOIN Problem** ✅
+
    ```sql
    -- Falsch: ssr.shift_id (existiert nicht)
    -- Richtig: JOIN shift_assignments sa ON ssr.assignment_id = sa.id
    ```
 
 3. **Fehlende shift_assignments** ✅
+
    ```typescript
    // Tests erstellten keine shift_assignments
    // Lösung: Assignment vor Swap Request erstellen
    await testDb.execute(
      "INSERT INTO shift_assignments (tenant_id, shift_id, user_id, assigned_by) VALUES (?, ?, ?, ?)",
-     [tenantId, shiftId, employeeUserId, adminUserId]
+     [tenantId, shiftId, employeeUserId, adminUserId],
    );
    ```
 
@@ -172,6 +185,7 @@
    - shift_swap_requests hat nur: status, approved_by, rejected_by
 
 #### Finale Test-Statistik:
+
 - **Shifts v2:** 27/27 Tests ✅
 - **Gesamt API v2:** 142 Tests passing
 - **TypeScript Build:** Erfolgreich
@@ -192,6 +206,7 @@
    - CSV Export für Lohnabrechnung
 
 2. **Shift Model Erweiterung** ✅
+
    ```typescript
    // V2 API Methoden hinzugefügt
    export default {
@@ -235,6 +250,7 @@
 ### 📊 API v2 Status Update: 11/13 APIs (85%)
 
 **Verbleibende APIs:**
+
 - Surveys v2
 - Reports/Analytics v2
 
@@ -255,6 +271,7 @@
    - Attachments Management
 
 2. **Database Schema Fixes** ✅
+
    ```sql
    -- Wichtige Erkenntnisse:
    -- kvp_categories hat KEIN tenant_id (global)
@@ -263,6 +280,7 @@
    ```
 
 3. **Service Layer Pattern** ✅
+
    ```typescript
    export class KVPServiceV2 {
      async getCategories(tenantId: number) {
@@ -287,6 +305,7 @@
 ### 📊 API v2 Status Update: 10/11 APIs (91%)
 
 ✅ **Fertige APIs:**
+
 1. Auth v2 - 11/11 Tests
 2. Users v2 - 54/54 Tests
 3. Teams v2 - 17/17 Tests
@@ -298,8 +317,7 @@
 9. Role-Switch v2 - 12/12 Tests
 10. **KVP v2 - 22/22 Tests** (NEU!)
 
-❌ **Ausstehend:**
-11. Reports/Analytics v2
+❌ **Ausstehend:** 11. Reports/Analytics v2
 
 ### 🔧 Wichtige Lessons Learned
 
@@ -1481,6 +1499,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 ### 💻 Implementierung
 
 #### Service Layer (surveys.service.ts)
+
 - Role-based Access Control:
   - Root: Kann alle Surveys sehen
   - Admin: Kann Department Surveys sehen
@@ -1490,6 +1509,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - Template Management
 
 #### Controller (surveys.controller.ts)
+
 - 8 Endpoints implementiert:
   - GET /api/v2/surveys (list)
   - GET /api/v2/surveys/:id
@@ -1501,12 +1521,14 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
   - GET /api/v2/surveys/:id/statistics
 
 #### Validation (surveys.validation.ts)
+
 - Custom Validators für:
   - Questions Array (questionType validation)
   - Assignments (type-specific field validation)
   - Date Range Validation (startDate < endDate)
 
 #### Swagger Documentation
+
 - Vollständige Schemas für:
   - SurveyV2, SurveyListItemV2
   - SurveyQuestionV2, SurveyAssignmentV2
@@ -1568,6 +1590,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Surveys API v2:** 90% COMPLETE (Tests fehlen)
 
 **Fully Working:**
+
 - CRUD Operations
 - Template System
 - Statistics
@@ -1577,6 +1600,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - AdminLog Integration
 
 **Still TODO:**
+
 - Tests schreiben (~30 Tests erwartet)
 - Response Management Endpoints
 - Export Funktionalität
@@ -1592,6 +1616,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Ergebnis: Komplette Neuimplementierung - 24/24 Tests grün (100%)!** 💯
 
 #### Ausgangslage:
+
 - 13 von 24 Tests schlugen fehl
 - Problem: v1 Chat Service nutzte eigene DB-Connection Pool
 - Entscheidung: Komplette v2 Implementation ohne v1 Dependencies
@@ -1599,18 +1624,19 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 #### Service Layer Neuimplementierung:
 
 1. **Alle 9 Service-Methoden neu geschrieben:** ✅
+
    ```typescript
    // Komplett v2-konform ohne v1 Dependencies
    export class ChatService {
-     async getChatUsers(tenantId, userId, search?)
-     async getConversations(tenantId, userId, filters)
-     async createConversation(tenantId, creatorId, data)
-     async sendMessage(tenantId, conversationId, senderId, data)
-     async getMessages(tenantId, conversationId, userId, filters)
-     async markConversationAsRead(conversationId, userId)
-     async deleteConversation(conversationId, userId, userRole)
-     async getUnreadCount(tenantId, userId)
-     async getConversation(tenantId, conversationId, userId)
+     async getChatUsers(tenantId, userId, search?);
+     async getConversations(tenantId, userId, filters);
+     async createConversation(tenantId, creatorId, data);
+     async sendMessage(tenantId, conversationId, senderId, data);
+     async getMessages(tenantId, conversationId, userId, filters);
+     async markConversationAsRead(conversationId, userId);
+     async deleteConversation(conversationId, userId, userRole);
+     async getUnreadCount(tenantId, userId);
+     async getConversation(tenantId, conversationId, userId);
    }
    ```
 
@@ -1651,22 +1677,26 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Ergebnis: 4 APIs an einem Tag! Phase 1 zu 100% fertig!**
 
 #### 1. Notifications API v2 ✅ (15:00 - 16:00)
+
 - 13 Endpoints (CRUD + Bulk + Preferences + Templates)
 - 27/27 Tests grün
 - Multi-Channel Support (push, email, in-app)
 
 #### 2. Settings API v2 ✅ (16:00 - 17:30)
+
 - 18 Endpoints (System/Tenant/User + Categories + Bulk)
 - 12/12 Tests grün (nach Debug-Session)
 - 3-Ebenen-System mit Type-safe storage
 
 #### 3. AdminLog → RootLog Migration ✅ (18:00 - 20:50)
+
 - Komplett neues Model erstellt
 - 27 Dateien systematisch migriert
 - Logs API v2 implementiert
 - Saubere Trennung von Admin/Root Logs
 
 #### 4. Plans API v2 ✅ (21:00 - 23:30)
+
 - 8 Endpoints (CRUD + Upgrade + Addons + Costs)
 - 15/15 Tests grün
 - Vollständiges Subscription Management
@@ -1698,17 +1728,20 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Ergebnis: 3 APIs komplett implementiert (ohne Tests)!**
 
 #### Areas API v2 ✅
+
 - 8 Endpoints für Bereichs-/Zonenverwaltung
 - Parent-Child Hierarchy
 - Area Types: building, warehouse, office, production, outdoor, other
 
 #### Root API v2 ✅
+
 - 25 Endpoints (umfangreichste API!)
 - Admin/Root User Management
 - Tenant Overview mit Statistiken
 - Tenant Deletion Process mit 2-Root-User Genehmigung
 
 #### Admin-Permissions API v2 ✅
+
 - 8 Endpoints für Permission Management
 - Department & Group Permissions
 - Multi-Level Permissions (read/write/delete)
@@ -1722,18 +1755,21 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Ergebnis: 100% Migration abgeschlossen!**
 
 #### 1. Department-Groups API v2 ✅ (23:00 - 23:30)
+
 - 8 Endpoints für hierarchische Gruppenverwaltung
 - Parent-Child Beziehungen
 - Many-to-Many Department Zuordnungen
 - Integration mit Admin-Permissions
 
 #### 2. Roles API v2 ✅ (00:00 - 00:30)
+
 - 5 Endpoints für Rollen-Management
 - Statische Rollen (root, admin, employee)
 - Hierarchie mit Level-System (100, 50, 10)
 - Permission Arrays pro Rolle
 
 #### 3. Signup API v2 ✅ (00:30 - 01:00) - LETZTE API!
+
 - 2 Endpoints (Register, Check Subdomain)
 - Public API ohne Authentifizierung
 - Wrapper um Tenant.create()
@@ -1746,6 +1782,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 **Zeitraum:** 28.07.2025 - 03.08.2025 (6 Tage)
 
 **Ergebnis:**
+
 - ✅ **27/27 APIs implementiert (100%)**
 - ✅ **576+ Tests geschrieben**
 - ✅ **0 TypeScript 'any' verwendet**
@@ -1753,10 +1790,12 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - ✅ **~50.000 Zeilen Code**
 
 **APIs nach Phase:**
+
 - Phase 1: 13/13 APIs (100%) ✅
 - Phase 2: 14/14 APIs (100%) ✅
 
 **Durchschnittliche Geschwindigkeit:**
+
 - 4-5 APIs pro Tag
 - 1 API pro Stunde für einfache APIs
 - 25+ Stunden gespart durch pragmatische Test-Strategie

@@ -16,6 +16,7 @@ import {
   FeatureUsageStats,
   FeatureCategory,
   TenantFeaturesSummary,
+  TenantWithFeatures,
   DbFeature,
   DbTenantFeature,
   DbFeatureUsageStats,
@@ -242,7 +243,7 @@ export class FeaturesService {
           WHERE tenant_id = ? AND feature_id = ?
         `,
           [
-            options.expiresAt || null,
+            options.expiresAt ?? null,
             options.activatedBy,
             options.customConfig ? JSON.stringify(options.customConfig) : null,
             request.tenantId,
@@ -262,7 +263,7 @@ export class FeaturesService {
             request.tenantId,
             feature.id,
             true,
-            options.expiresAt || null,
+            options.expiresAt ?? null,
             options.activatedBy,
             options.customConfig ? JSON.stringify(options.customConfig) : null,
           ],
@@ -466,7 +467,7 @@ export class FeaturesService {
         INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, action, metadata)
         VALUES (?, ?, ?, ?, ?)
       `,
-        [tenantId, feature.id, userId || 0, "usage", JSON.stringify(metadata)],
+        [tenantId, feature.id, userId ?? 0, "usage", JSON.stringify(metadata)],
       );
 
       // Note: current_usage tracking would go here if the column existed
@@ -477,7 +478,7 @@ export class FeaturesService {
   }
 
   // Get all tenants with features (Root only)
-  static async getAllTenantsWithFeatures(): Promise<any[]> {
+  static async getAllTenantsWithFeatures(): Promise<TenantWithFeatures[]> {
     try {
       const [tenants] = await query<RowDataPacket[]>(`
         SELECT id, subdomain, company_name, status 

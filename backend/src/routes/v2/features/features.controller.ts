@@ -3,6 +3,7 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../types/response.types";
 import { getErrorMessage } from "../../../utils/errorHandler";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { FeaturesService } from "./features.service";
 import { FeatureActivationRequest, FeatureDeactivationRequest } from "./types";
@@ -364,9 +365,14 @@ export class FeaturesController {
 
       res.json(successResponse(null, "Feature activated successfully"));
     } catch (error) {
-      const message = getErrorMessage(error);
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json(errorResponse(message, statusCode));
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.message, error.statusCode));
+      } else {
+        const message = getErrorMessage(error);
+        res.status(500).json(errorResponse(message, 500));
+      }
     }
   }
 
@@ -418,9 +424,14 @@ export class FeaturesController {
 
       res.json(successResponse(null, "Feature deactivated successfully"));
     } catch (error) {
-      const message = getErrorMessage(error);
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json(errorResponse(message, statusCode));
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.message, error.statusCode));
+      } else {
+        const message = getErrorMessage(error);
+        res.status(500).json(errorResponse(message, 500));
+      }
     }
   }
 
@@ -499,9 +510,14 @@ export class FeaturesController {
         successResponse(stats, "Usage statistics retrieved successfully"),
       );
     } catch (error) {
-      const message = getErrorMessage(error);
-      const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json(errorResponse(message, statusCode));
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.message, error.statusCode));
+      } else {
+        const message = getErrorMessage(error);
+        res.status(500).json(errorResponse(message, 500));
+      }
     }
   }
 
