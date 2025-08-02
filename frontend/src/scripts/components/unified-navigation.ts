@@ -208,15 +208,15 @@ class UnifiedNavigation {
       | 'employee'
       | 'root';
 
-    console.log(`[UnifiedNav] Checking access: Role '${activeRole}' accessing '${currentPath}'`);
+    console.info(`[UnifiedNav] Checking access: Role '${activeRole}' accessing '${currentPath}'`);
 
     if (!this.canAccessPage(currentPath, activeRole)) {
       console.warn(`[UnifiedNav] Access denied: Role '${activeRole}' cannot access '${currentPath}'`);
       const dashboard = this.getDashboardForRole(activeRole);
-      console.log(`[UnifiedNav] Redirecting to dashboard: ${dashboard}`);
+      console.info(`[UnifiedNav] Redirecting to dashboard: ${dashboard}`);
       window.location.href = dashboard;
     } else {
-      console.log(`[UnifiedNav] Access granted: Role '${activeRole}' can access '${currentPath}'`);
+      console.info(`[UnifiedNav] Access granted: Role '${activeRole}' can access '${currentPath}'`);
     }
   }
 
@@ -265,7 +265,7 @@ class UnifiedNavigation {
     const roleChannel = new BroadcastChannel('role_switch_channel');
     roleChannel.onmessage = (event) => {
       if (event.data.type === 'ROLE_SWITCHED') {
-        console.log('[UnifiedNav] Received role switch notification from another tab');
+        console.info('[UnifiedNav] Received role switch notification from another tab');
 
         // Update local storage with new role data
         if (event.data.newRole) {
@@ -287,7 +287,7 @@ class UnifiedNavigation {
     // Listen for storage events from other tabs
     window.addEventListener('storage', (event) => {
       if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
-        console.log('[UnifiedNav] Storage event: activeRole changed from', event.oldValue, 'to', event.newValue);
+        console.info('[UnifiedNav] Storage event: activeRole changed from', event.oldValue, 'to', event.newValue);
 
         // Clear any pending redirects
         if (redirectTimeout) {
@@ -298,7 +298,7 @@ class UnifiedNavigation {
         redirectTimeout = setTimeout(() => {
           // Prevent multiple redirects
           if (isRedirecting) {
-            console.log('[UnifiedNav] Redirect already in progress, skipping...');
+            console.info('[UnifiedNav] Redirect already in progress, skipping...');
             return;
           }
 
@@ -327,17 +327,17 @@ class UnifiedNavigation {
           if (targetPath && !currentPath.includes(targetPath)) {
             // Check if user has permission for the target role
             if (newActiveRole === 'root' && userRole !== 'root') {
-              console.log('[UnifiedNav] User does not have root permission, skipping redirect');
+              console.info('[UnifiedNav] User does not have root permission, skipping redirect');
               return;
             }
 
-            console.log(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
+            console.info(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
             isRedirecting = true;
 
             // Use replace to avoid adding to browser history
             window.location.replace(targetPath);
           } else {
-            console.log('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
+            console.info('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
             // Just refresh navigation if we're already on the right page
             this.refresh();
           }
@@ -391,7 +391,7 @@ class UnifiedNavigation {
           }
         }
 
-        console.log('[UnifiedNav] Role determined:', {
+        console.info('[UnifiedNav] Role determined:', {
           currentPath,
           storedUserRole,
           tokenRole: payload.role,
@@ -489,18 +489,18 @@ class UnifiedNavigation {
             userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
           const lastName =
             userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
-          console.log('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
+          console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             headerUserName.textContent = fullName;
-            console.log('[UnifiedNav] Set header name to:', fullName);
+            console.info('[UnifiedNav] Set header name to:', fullName);
           } else {
             // Fallback auf Email oder Username wenn keine Namen vorhanden
             const email = userData.email ?? userData.data?.email ?? user.email ?? this.currentUser?.email;
             const username = userData.username ?? user.username ?? this.currentUser?.username;
             headerUserName.textContent = email ?? username ?? 'User';
-            console.log('[UnifiedNav] Fallback to email/username:', email ?? username);
+            console.info('[UnifiedNav] Fallback to email/username:', email ?? username);
           }
         }
 
@@ -1031,7 +1031,7 @@ class UnifiedNavigation {
 
       // Re-attach event listeners after inserting HTML
       setTimeout(() => {
-        console.log('[UnifiedNav] Re-attaching event listeners for navigation-container');
+        console.info('[UnifiedNav] Re-attaching event listeners for navigation-container');
         this.attachEventListeners();
         void this.updateUnreadMessages();
         void this.updatePendingSurveys();
@@ -1438,10 +1438,10 @@ class UnifiedNavigation {
 
     // Debug: Check how many sidebars exist
     const allSidebars = document.querySelectorAll('.sidebar');
-    console.log('[UnifiedNav] Number of sidebars found:', allSidebars.length);
+    console.info('[UnifiedNav] Number of sidebars found:', allSidebars.length);
     allSidebars.forEach((sb, index) => {
-      console.log(`[UnifiedNav] Sidebar ${index}:`, sb);
-      console.log(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
+      console.info(`[UnifiedNav] Sidebar ${index}:`, sb);
+      console.info(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
     });
 
     // Try to find the navigation sidebar specifically
@@ -1453,11 +1453,11 @@ class UnifiedNavigation {
     const chatMain = document.querySelector('.chat-main') as HTMLElement;
     const chatSidebar = document.querySelector('.chat-sidebar') as HTMLElement;
 
-    console.log('[UnifiedNav] Toggle button:', toggleBtn);
-    console.log('[UnifiedNav] Sidebar:', sidebar);
-    console.log('[UnifiedNav] Sidebar ID:', sidebar?.id);
-    console.log('[UnifiedNav] Sidebar class:', sidebar?.className);
-    console.log('[UnifiedNav] Main content:', mainContent);
+    console.info('[UnifiedNav] Toggle button:', toggleBtn);
+    console.info('[UnifiedNav] Sidebar:', sidebar);
+    console.info('[UnifiedNav] Sidebar ID:', sidebar?.id);
+    console.info('[UnifiedNav] Sidebar class:', sidebar?.className);
+    console.info('[UnifiedNav] Main content:', mainContent);
 
     if (!toggleBtn || !sidebar) {
       console.error('[UnifiedNav] Toggle button or sidebar not found!');
@@ -1482,9 +1482,9 @@ class UnifiedNavigation {
       e.preventDefault();
       e.stopPropagation();
 
-      console.log('[UnifiedNav] Toggle clicked!');
-      console.log('[UnifiedNav] Sidebar classes before:', sidebar.className);
-      console.log('[UnifiedNav] Sidebar computed width:', window.getComputedStyle(sidebar).width);
+      console.info('[UnifiedNav] Toggle clicked!');
+      console.info('[UnifiedNav] Sidebar classes before:', sidebar.className);
+      console.info('[UnifiedNav] Sidebar computed width:', window.getComputedStyle(sidebar).width);
 
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
@@ -1495,19 +1495,19 @@ class UnifiedNavigation {
       chatSidebar?.classList.toggle('sidebar-collapsed');
 
       // Set width directly as inline style to override any CSS
-      console.log('[UnifiedNav] Setting width for collapsed state:', newState);
+      console.info('[UnifiedNav] Setting width for collapsed state:', newState);
       if (newState) {
         sidebar.style.width = '70px';
         sidebar.style.setProperty('width', '70px', 'important');
-        console.log('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
+        console.info('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
 
         // Check if there's a CSS rule overriding
         const computedStyle = window.getComputedStyle(sidebar);
-        console.log('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
+        console.info('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
       } else {
         sidebar.style.width = '280px';
         sidebar.style.setProperty('width', '280px', 'important');
-        console.log('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
+        console.info('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
       }
 
       // Force browser to recalculate styles
@@ -1526,9 +1526,9 @@ class UnifiedNavigation {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
 
-      console.log('[UnifiedNav] Sidebar collapsed state:', newState);
-      console.log('[UnifiedNav] Sidebar classes after:', sidebar.className);
-      console.log('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
+      console.info('[UnifiedNav] Sidebar collapsed state:', newState);
+      console.info('[UnifiedNav] Sidebar classes after:', sidebar.className);
+      console.info('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
     });
 
     // Hover effect for toggle button
@@ -1610,17 +1610,17 @@ class UnifiedNavigation {
 
       // Check if already initialized
       if (dropdownDisplay?.hasAttribute('data-initialized')) {
-        console.log('[UnifiedNav] Role switch dropdown already initialized, skipping');
+        console.info('[UnifiedNav] Role switch dropdown already initialized, skipping');
         return;
       }
 
-      console.log('[UnifiedNav] Looking for dropdown elements for root user');
-      console.log('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
-      console.log('[UnifiedNav] dropdownOptions:', dropdownOptions);
+      console.info('[UnifiedNav] Looking for dropdown elements for root user');
+      console.info('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
+      console.info('[UnifiedNav] dropdownOptions:', dropdownOptions);
 
       if (dropdownDisplay && dropdownOptions) {
-        console.log('[UnifiedNav] Initializing role switch dropdown for root user');
-        console.log('[UnifiedNav] Dropdown elements found:', { dropdownDisplay, dropdownOptions });
+        console.info('[UnifiedNav] Initializing role switch dropdown for root user');
+        console.info('[UnifiedNav] Dropdown elements found:', { dropdownDisplay, dropdownOptions });
 
         // Mark as initialized
         dropdownDisplay.setAttribute('data-initialized', 'true');
@@ -1629,19 +1629,19 @@ class UnifiedNavigation {
         dropdownDisplay.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          console.log('[UnifiedNav] Dropdown clicked');
-          console.log('[UnifiedNav] Current classes:', dropdownDisplay.className, dropdownOptions.className);
+          console.info('[UnifiedNav] Dropdown clicked');
+          console.info('[UnifiedNav] Current classes:', dropdownDisplay.className, dropdownOptions.className);
 
           const isActive = dropdownDisplay.classList.contains('active');
 
           if (isActive) {
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
-            console.log('[UnifiedNav] Dropdown closed');
+            console.info('[UnifiedNav] Dropdown closed');
           } else {
             dropdownDisplay.classList.add('active');
             dropdownOptions.classList.add('active');
-            console.log('[UnifiedNav] Dropdown opened');
+            console.info('[UnifiedNav] Dropdown opened');
           }
         });
 
@@ -1656,7 +1656,7 @@ class UnifiedNavigation {
                 | 'root'
                 | 'admin'
                 | 'employee';
-              console.log('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
+              console.info('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
 
               // Update display text
               const displayText = dropdownDisplay.querySelector('span');
@@ -1676,7 +1676,7 @@ class UnifiedNavigation {
 
               // Call the role switch function from role-switch module
               // This will handle the toast notification
-              console.log('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
+              console.info('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
               await switchRoleForRoot(selectedRole);
             })();
           });
@@ -1700,16 +1700,16 @@ class UnifiedNavigation {
 
       // Check if already initialized
       if (dropdownDisplay?.hasAttribute('data-initialized')) {
-        console.log('[UnifiedNav] Role switch dropdown already initialized, skipping');
+        console.info('[UnifiedNav] Role switch dropdown already initialized, skipping');
         return;
       }
 
-      console.log('[UnifiedNav] Looking for dropdown elements for admin user');
-      console.log('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
-      console.log('[UnifiedNav] dropdownOptions:', dropdownOptions);
+      console.info('[UnifiedNav] Looking for dropdown elements for admin user');
+      console.info('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
+      console.info('[UnifiedNav] dropdownOptions:', dropdownOptions);
 
       if (dropdownDisplay && dropdownOptions) {
-        console.log('[UnifiedNav] Initializing role switch dropdown for admin user');
+        console.info('[UnifiedNav] Initializing role switch dropdown for admin user');
 
         // Mark as initialized
         dropdownDisplay.setAttribute('data-initialized', 'true');
@@ -1718,18 +1718,18 @@ class UnifiedNavigation {
         dropdownDisplay.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          console.log('[UnifiedNav] Dropdown clicked');
+          console.info('[UnifiedNav] Dropdown clicked');
 
           const isActive = dropdownDisplay.classList.contains('active');
 
           if (isActive) {
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
-            console.log('[UnifiedNav] Dropdown closed');
+            console.info('[UnifiedNav] Dropdown closed');
           } else {
             dropdownDisplay.classList.add('active');
             dropdownOptions.classList.add('active');
-            console.log('[UnifiedNav] Dropdown opened');
+            console.info('[UnifiedNav] Dropdown opened');
           }
         });
 
@@ -1741,7 +1741,7 @@ class UnifiedNavigation {
               e.stopPropagation();
               const selectedRole = (option as HTMLElement).dataset.value;
               if (selectedRole) {
-                console.log('[UnifiedNav] Admin switching to role:', selectedRole);
+                console.info('[UnifiedNav] Admin switching to role:', selectedRole);
 
                 // Close dropdown
                 dropdownDisplay.classList.remove('active');
@@ -2063,7 +2063,7 @@ class UnifiedNavigation {
 
   // Public method to refresh navigation
   public refresh(): void {
-    console.log('[UnifiedNav] Refreshing navigation');
+    console.info('[UnifiedNav] Refreshing navigation');
 
     // Reload user info from token
     this.loadUserInfo();
@@ -2172,10 +2172,10 @@ class UnifiedNavigation {
           if (currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount)) {
             badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
             badge.style.display = 'inline-block';
-            console.log('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
+            console.info('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
           } else {
             badge.style.display = 'none';
-            console.log('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
+            console.info('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
           }
 
           // Update the last known count if it has changed
@@ -2194,18 +2194,18 @@ class UnifiedNavigation {
   public async updatePendingSurveys(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      console.log('[UnifiedNav] updatePendingSurveys - Token exists:', !!token);
+      console.info('[UnifiedNav] updatePendingSurveys - Token exists:', !!token);
       if (!token || token === 'test-mode') return;
 
       // Nur für Employees
       const role = localStorage.getItem('userRole');
-      console.log('[UnifiedNav] updatePendingSurveys - User role:', role);
+      console.info('[UnifiedNav] updatePendingSurveys - User role:', role);
       if (role !== 'employee') {
-        console.log('[UnifiedNav] updatePendingSurveys - Skipping, not an employee');
+        console.info('[UnifiedNav] updatePendingSurveys - Skipping, not an employee');
         return;
       }
 
-      console.log('[UnifiedNav] updatePendingSurveys - Fetching pending count...');
+      console.info('[UnifiedNav] updatePendingSurveys - Fetching pending count...');
       // Auf allen Seiten ausführen, da Badge in Sidebar immer sichtbar ist
 
       const response = await fetch('/api/surveys/pending-count', {
@@ -2215,15 +2215,15 @@ class UnifiedNavigation {
         },
       });
 
-      console.log('[UnifiedNav] updatePendingSurveys - Response status:', response.status);
+      console.info('[UnifiedNav] updatePendingSurveys - Response status:', response.status);
 
       if (response.ok) {
         const data: PendingCountResponse = await response.json();
-        console.log('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
+        console.info('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
         const badge = document.getElementById('surveys-pending-badge');
         const parentBadge = document.getElementById('lean-management-badge');
-        console.log('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
-        console.log('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
+        console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
+        console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
 
         const count = data.pendingCount ?? 0;
 
@@ -2232,10 +2232,10 @@ class UnifiedNavigation {
           if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count.toString();
             badge.style.display = 'inline-block';
-            console.log('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
+            console.info('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
           } else {
             badge.style.display = 'none';
-            console.log('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
+            console.info('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
           }
         }
 
@@ -2244,21 +2244,21 @@ class UnifiedNavigation {
           if (count > 0) {
             parentBadge.textContent = count > 99 ? '99+' : count.toString();
             parentBadge.style.display = 'inline-block';
-            console.log('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
+            console.info('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
           } else {
             parentBadge.style.display = 'none';
-            console.log('[UnifiedNav] updatePendingSurveys - Parent badge hidden, count is 0');
+            console.info('[UnifiedNav] updatePendingSurveys - Parent badge hidden, count is 0');
           }
         }
       } else if (response.status === 404) {
-        console.log('[UnifiedNav] updatePendingSurveys - 404 error, endpoint not found');
+        console.info('[UnifiedNav] updatePendingSurveys - 404 error, endpoint not found');
         // API endpoint doesn't exist yet - hide badge silently
         const badge = document.getElementById('surveys-pending-badge');
         if (badge) {
           badge.style.display = 'none';
         }
       } else {
-        console.log('[UnifiedNav] updatePendingSurveys - Error response:', response.status, response.statusText);
+        console.info('[UnifiedNav] updatePendingSurveys - Error response:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('[UnifiedNav] updatePendingSurveys - Exception:', error);
@@ -2386,12 +2386,12 @@ class UnifiedNavigation {
 
   // Reset KVP badge when admin/root clicks on KVP
   private async resetKvpBadge(): Promise<void> {
-    console.log('[UnifiedNav] Resetting KVP badge');
+    console.info('[UnifiedNav] Resetting KVP badge');
     const badge = document.getElementById('kvp-badge');
     if (badge) {
       badge.style.display = 'none';
       badge.textContent = '0';
-      console.log('[UnifiedNav] KVP badge hidden');
+      console.info('[UnifiedNav] KVP badge hidden');
     }
 
     // Save the timestamp of when the user clicked on KVP
@@ -2414,7 +2414,7 @@ class UnifiedNavigation {
           if (data.company) {
             this.lastKnownKvpCount = data.company.byStatus?.new ?? 0;
             localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
-            console.log('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
+            console.info('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
           }
         }
       }
@@ -2491,7 +2491,7 @@ class UnifiedNavigation {
   // CSS injection method
   private injectCSS(): void {
     if (!document.querySelector('#unified-navigation-styles')) {
-      console.log('[UnifiedNav] Injecting CSS styles in init');
+      console.info('[UnifiedNav] Injecting CSS styles in init');
       const styleSheet = document.createElement('style');
       styleSheet.id = 'unified-navigation-styles';
       styleSheet.textContent = unifiedNavigationCSS;
@@ -2500,7 +2500,7 @@ class UnifiedNavigation {
       // Force style recalculation
       void document.body.offsetHeight;
     } else {
-      console.log('[UnifiedNav] CSS styles already present');
+      console.info('[UnifiedNav] CSS styles already present');
     }
   }
 
@@ -3098,7 +3098,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon {
         color: var(--primary-color);
     }
-    
+
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
         content: '';
         position: absolute;
@@ -3112,7 +3112,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-link:hover .icon {
         color: var(--primary-color);
     }
-    
+
     /* Hover nur bei NICHT active */
     .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
         content: '';
@@ -3795,13 +3795,13 @@ const unifiedNavigationCSS = `
 
 // CSS automatisch einbinden
 if (!document.querySelector('#unified-navigation-styles')) {
-  console.log('[UnifiedNav] Injecting CSS styles');
+  console.info('[UnifiedNav] Injecting CSS styles');
   const styleSheet = document.createElement('style');
   styleSheet.id = 'unified-navigation-styles';
   styleSheet.textContent = unifiedNavigationCSS;
   document.head.appendChild(styleSheet);
 } else {
-  console.log('[UnifiedNav] CSS styles already present');
+  console.info('[UnifiedNav] CSS styles already present');
 }
 
 // Export to window for backwards compatibility
