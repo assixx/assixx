@@ -3071,9 +3071,9 @@ const unifiedNavigationCSS = `
         flex-direction: column;
         align-items: center;
         min-height: auto;
-        margin-top: 28px;
-        margin-bottom: 85px;
-        margin-top: 93px;}
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
 
     .sidebar.collapsed .user-details {
         display: none;
@@ -3127,7 +3127,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-title {
         position: relative;
         padding-right: 0px;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
     .sidebar.collapsed .sidebar-link:hover::after,
@@ -3218,7 +3218,7 @@ const unifiedNavigationCSS = `
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
         /*animation: fadeInUp 0.6s ease-out;*/
-        margin-top: 39px;
+        margin-top: 20px;
     }
 
     /* Welcome hero style gradient backgrounds */
@@ -3458,6 +3458,7 @@ const unifiedNavigationCSS = `
         border: 1px solid transparent;
         font-size: 0.9rem;
         margin-left: -1px;
+        margin-bottom: 4px;
     }
 
     .sidebar-link:hover {
