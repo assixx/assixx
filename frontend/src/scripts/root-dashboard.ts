@@ -100,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = data.data ?? data.user;
 
         // Check if user has temporary employee number
-        if (user.employeeNumber === '000001' || user.employee_number === '000001') {
+        const employeeNumber = user.employeeNumber ?? user.employee_number ?? '';
+        if (employeeNumber === '000001' || employeeNumber.startsWith('TEMP-')) {
           showEmployeeNumberModal();
         }
       }

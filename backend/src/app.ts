@@ -70,6 +70,36 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Input sanitization middleware - apply globally to all routes
 app.use(sanitizeInputs);
 
+// Define paths early for feature-flags.js handler
+const distPath = path.join(currentDirPath, "../../frontend/dist");
+
+// Serve feature-flags.js with correct MIME type
+app.get("/feature-flags.js", (_req: Request, res: Response): void => {
+  // Try multiple locations for feature-flags.js
+  const possiblePaths = [
+    path.join(distPath, "feature-flags.js"),
+    path.join(currentDirPath, "../../frontend/public/feature-flags.js"),
+    path.join(currentDirPath, "../../dist/feature-flags.js"),
+  ];
+
+  let featureFlagsPath = "";
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      featureFlagsPath = p;
+      break;
+    }
+  }
+
+  if (!featureFlagsPath) {
+    res.status(404).send("feature-flags.js not found");
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.sendFile(featureFlagsPath);
+});
+
 // Clean URLs redirect middleware - MUST BE BEFORE static files
 app.use((req: Request, res: Response, next: NextFunction): void => {
   if (req.path.endsWith(".html") && req.path.startsWith("/pages/")) {
@@ -99,7 +129,7 @@ app.use(
 );
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
-const distPath = path.join(currentDirPath, "../../frontend/dist");
+// distPath already defined above
 const srcPath = path.join(currentDirPath, "../../frontend/src");
 
 // Serve built files first (HTML, JS, CSS)
@@ -650,12 +680,12 @@ app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
     console.error("[ERROR]", err.stack ?? (err.message || err));
 
-    const isDevelopment = process.env.NODE_ENV === "development";
-
     res.status(500).json({
       error: "Internal Server Error",
-      message: isDevelopment ? err.message : "Something went wrong",
-      ...(isDevelopment && { stack: err.stack }),
+      message: err.message, // Always show message for debugging
+      stack: err.stack, // Always show stack for debugging
+      name: err.name,
+      details: err,
     });
   },
 );

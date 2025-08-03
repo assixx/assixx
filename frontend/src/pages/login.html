@@ -7,12 +7,14 @@
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
     <link rel="preload" as="image" href="../favicon.ico" />
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <!-- Feature Flags for API v2 Migration -->
+    <script src="/feature-flags.js"></script>
   </head>
   <body>
     <!-- Quick redirect check before page renders -->
     <script>
       // Immediate redirect check - no async, no fingerprint, just redirect
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const userRole = localStorage.getItem('userRole');
       if (token && userRole) {
         // Hide login form immediately while we redirect
@@ -92,7 +94,7 @@
 
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
         const userRole = localStorage.getItem('userRole');
 
         // If we still have token/role but are on login page, validate
@@ -176,16 +178,33 @@
         const password = document.getElementById('password').value;
 
         try {
+          // Check if v2 API should be used
+          const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
+          
           // Generate browser fingerprint
           const fingerprint = await BrowserFingerprint.generate();
           BrowserFingerprint.store(fingerprint);
 
-          const response = await fetch('/api/auth/login', {
+          // Prepare request based on API version
+          let apiUrl, requestBody;
+          if (useV2) {
+            apiUrl = '/api/v2/auth/login';
+            // v2 uses 'email' instead of 'username'
+            requestBody = { email: username, password };
+          } else {
+            apiUrl = '/api/auth/login';
+            requestBody = { username, password, fingerprint };
+          }
+
+          console.log(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
+
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-Browser-Fingerprint': fingerprint,
             },
-            body: JSON.stringify({ username, password, fingerprint }),
+            body: JSON.stringify(requestBody),
           });
 
           // Handle rate limiting error
@@ -196,16 +215,46 @@
 
           const data = await response.json();
 
-          if (response.ok) {
-            // Store token for JavaScript API calls
-            localStorage.setItem('token', data.data.token);
+          if (response.ok || (useV2 && data.success)) {
+            let token, role, user;
+            
+            if (useV2) {
+              // v2 response format
+              if (data.success && data.data) {
+                token = data.data.accessToken;
+                const refreshToken = data.data.refreshToken;
+                user = data.data.user;
+                role = user?.role || data.data.role;
+                
+                // Store v2 tokens
+                localStorage.setItem('accessToken', token);
+                localStorage.setItem('refreshToken', refreshToken);
+                
+                // Also store in old format for compatibility
+                localStorage.setItem('token', token);
+                
+                // Set cookie for server-side page protection (temporary compatibility)
+                document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+              } else {
+                showError(data.error?.message || 'Login fehlgeschlagen');
+                return;
+              }
+            } else {
+              // v1 response format
+              token = data.data.token;
+              role = data.data.role;
+              user = data.data.user;
+              
+              // Store v1 token
+              localStorage.setItem('token', token);
+            }
 
             // Store role separately for easy access
-            localStorage.setItem('userRole', data.data.role);
+            localStorage.setItem('userRole', role);
 
             // Also store user info
-            if (data.data.user) {
-              localStorage.setItem('user', JSON.stringify(data.data.user));
+            if (user) {
+              localStorage.setItem('user', JSON.stringify(user));
             }
 
             // Clear any stored navigation state to ensure dashboard is active
@@ -213,7 +262,7 @@
             localStorage.removeItem('activeRole'); // Clear role switching state
 
             // Redirect based on role
-            switch (data.data.role) {
+            switch (role) {
               case 'root':
                 window.location.href = '/root-dashboard';
                 break;
@@ -228,7 +277,10 @@
             }
           } else {
             // Show specific error message from backend
-            showError(data.message || 'Login fehlgeschlagen');
+            const errorMessage = useV2 
+              ? (data.error?.message || data.message || 'Login fehlgeschlagen')
+              : (data.message || 'Login fehlgeschlagen');
+            showError(errorMessage);
           }
         } catch (error) {
           console.error('Login error:', error);

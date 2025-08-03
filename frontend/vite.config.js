@@ -124,11 +124,20 @@ export default defineConfig({
         const scriptsDir = resolve(__dirname, '../dist/scripts/lib');
         const stylesDir = resolve(__dirname, '../dist/styles/lib');
         const fontsDir = resolve(__dirname, '../dist/fonts');
+        const distDir = resolve(__dirname, '../dist');
 
         // Create directories if they don't exist
         if (!existsSync(scriptsDir)) mkdirSync(scriptsDir, { recursive: true });
         if (!existsSync(stylesDir)) mkdirSync(stylesDir, { recursive: true });
         if (!existsSync(fontsDir)) mkdirSync(fontsDir, { recursive: true });
+        
+        // Copy feature-flags.js to dist
+        const featureFlagsSource = resolve(__dirname, 'public/feature-flags.js');
+        const featureFlagsDest = resolve(distDir, 'feature-flags.js');
+        if (existsSync(featureFlagsSource)) {
+          copyFileSync(featureFlagsSource, featureFlagsDest);
+          console.log('✅ Copied feature-flags.js to dist');
+        }
 
         // Copy FullCalendar JS files
         const fullcalendarSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar.min.js');

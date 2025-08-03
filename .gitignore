@@ -57,6 +57,9 @@ coverage/
 # ESLint
 eslint-report.json
 
+# Feature flags (local development only)
+frontend/public/feature-flags.js
+
 # Database Backups
 backups/daily/
 backups/weekly/

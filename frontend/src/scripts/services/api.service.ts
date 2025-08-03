@@ -5,6 +5,8 @@
 
 import type { ApiResponse, User, LoginRequest, LoginResponse, Document } from '../../types/api.types';
 import type { PaginationParams, PaginatedResponse } from '../../types/utils.types';
+import { apiClient } from '../../utils/api-client';
+import { ResponseAdapter } from '../../utils/response-adapter';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -15,21 +17,32 @@ interface RequestOptions extends RequestInit {
 export class ApiService {
   private baseURL: string;
   private token: string | null;
+  private useV2: boolean = false;
 
   constructor(baseURL: string = '/api') {
     this.baseURL = baseURL;
-    this.token = localStorage.getItem('token');
+    // Check for v2 token first, then v1
+    this.token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
+    // Check if any v2 API is enabled
+    this.useV2 = window.FEATURE_FLAGS?.USE_API_V2_GLOBAL ?? false;
   }
 
   /**
    * Set authentication token
    */
-  setToken(token: string | null): void {
+  setToken(token: string | null, refreshToken?: string | null): void {
     this.token = token;
     if (token) {
+      // Store in both formats for compatibility
       localStorage.setItem('token', token);
+      localStorage.setItem('accessToken', token);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
     } else {
       localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
     }
   }
 
@@ -86,51 +99,95 @@ export class ApiService {
     options?: RequestOptions,
   ): Promise<T> {
     const { params, ...fetchOptions } = options ?? {};
-    const url = this.buildUrl(endpoint, params);
 
-    const requestOptions: RequestInit = {
-      method,
-      headers: this.getHeaders(fetchOptions.headers),
-      ...fetchOptions,
-    };
+    // Check if we should use v2 API
+    const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
+    const useV2ForThisEndpoint = window.FEATURE_FLAGS?.[featureKey] ?? this.useV2;
 
-    if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
-      if (data instanceof FormData) {
-        // Remove Content-Type header for FormData
-        requestOptions.headers = new Headers(requestOptions.headers);
-        (requestOptions.headers as Headers).delete('Content-Type');
-        requestOptions.body = data;
-      } else {
-        requestOptions.body = JSON.stringify(data);
+    if (useV2ForThisEndpoint) {
+      // Use new API client for v2
+      try {
+        let response: unknown;
+
+        // Build query string for GET requests
+        const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+        const fullEndpoint = endpoint + queryString;
+
+        switch (method) {
+          case 'GET':
+            response = await apiClient.get(fullEndpoint);
+            break;
+          case 'POST':
+            if (data instanceof FormData) {
+              response = await apiClient.upload(endpoint, data);
+            } else {
+              response = await apiClient.post(endpoint, data);
+            }
+            break;
+          case 'PUT':
+            response = await apiClient.put(endpoint, data);
+            break;
+          case 'PATCH':
+            response = await apiClient.patch(endpoint, data);
+            break;
+          case 'DELETE':
+            response = await apiClient.delete(endpoint);
+            break;
+        }
+
+        return response as T;
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
       }
-    }
+    } else {
+      // Use original v1 implementation
+      const url = this.buildUrl(endpoint, params);
 
-    try {
-      const response = await fetch(url, requestOptions);
+      const requestOptions: RequestInit = {
+        method,
+        headers: this.getHeaders(fetchOptions.headers),
+        ...fetchOptions,
+      };
 
-      // Handle 401 Unauthorized
-      if (response.status === 401) {
-        this.setToken(null);
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
+      if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
+        if (data instanceof FormData) {
+          // Remove Content-Type header for FormData
+          requestOptions.headers = new Headers(requestOptions.headers);
+          (requestOptions.headers as Headers).delete('Content-Type');
+          requestOptions.body = data;
+        } else {
+          requestOptions.body = JSON.stringify(data);
+        }
       }
 
-      // Handle 204 No Content
-      if (response.status === 204) {
-        return {} as T;
+      try {
+        const response = await fetch(url, requestOptions);
+
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          this.setToken(null);
+          window.location.href = '/login';
+          throw new Error('Unauthorized');
+        }
+
+        // Handle 204 No Content
+        if (response.status === 204) {
+          return {} as T;
+        }
+
+        // Parse JSON response
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData.error ?? responseData.message ?? `HTTP error! status: ${response.status}`);
+        }
+
+        return responseData as T;
+      } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
       }
-
-      // Parse JSON response
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.error ?? responseData.message ?? `HTTP error! status: ${response.status}`);
-      }
-
-      return responseData as T;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
     }
   }
 
@@ -157,16 +214,51 @@ export class ApiService {
 
   // Auth endpoints
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await this.post<LoginResponse>('/auth/login', credentials);
-    if (response.token) {
-      this.setToken(response.token);
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
+
+    if (useV2) {
+      // Use API client for v2
+      const response = await apiClient.post<{
+        accessToken?: string;
+        refreshToken?: string;
+        user?: User;
+      }>('/auth/login', credentials);
+
+      // v2 response format has accessToken and refreshToken
+      if (response.accessToken && response.refreshToken) {
+        this.setToken(response.accessToken, response.refreshToken);
+
+        // Convert v2 response to v1 format for compatibility
+        return {
+          token: response.accessToken,
+          user: response.user,
+          role: response.user?.role,
+          message: 'Login successful',
+        } as LoginResponse;
+      }
+
+      throw new Error('Invalid response format');
+    } else {
+      // Use v1 implementation
+      const response = await this.post<LoginResponse>('/auth/login', credentials);
+      if (response.token) {
+        this.setToken(response.token);
+      }
+      return response;
     }
-    return response;
   }
 
   async logout(): Promise<void> {
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
+
     try {
-      await this.post('/auth/logout');
+      if (useV2) {
+        // Use API client for v2
+        await apiClient.post('/auth/logout', {});
+      } else {
+        // Use v1 implementation
+        await this.post('/auth/logout');
+      }
     } catch {
       // Ignore logout errors
     } finally {
@@ -175,17 +267,67 @@ export class ApiService {
     }
   }
 
-  checkAuth(): Promise<ApiResponse<{ authenticated: boolean }>> {
-    return this.get('/auth/check');
+  async checkAuth(): Promise<ApiResponse<{ authenticated: boolean }>> {
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
+
+    if (useV2) {
+      try {
+        const response = await apiClient.get<{ valid?: boolean; message?: string }>('/auth/validate');
+        // Convert v2 response to v1 format
+        return {
+          success: response.valid === true,
+          data: { authenticated: response.valid === true },
+          message: response.message ?? 'Authentication check complete',
+        };
+      } catch (error) {
+        return {
+          success: false,
+          data: { authenticated: false },
+          message: (error as Error).message ?? 'Authentication check failed',
+        };
+      }
+    } else {
+      return this.get('/auth/check');
+    }
   }
 
   // User endpoints
-  getProfile(): Promise<User> {
-    return this.get<User>('/user/profile');
+  async getProfile(): Promise<User> {
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
+
+    if (useV2) {
+      const response = await apiClient.get<User>('/users/me');
+      // Convert v2 response (camelCase) to v1 format (snake_case)
+      return ResponseAdapter.adaptUserResponse(response) as User;
+    } else {
+      return this.get<User>('/user/profile');
+    }
   }
 
-  updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
-    return this.patch('/user/profile', data);
+  async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
+
+    if (useV2) {
+      try {
+        // Convert v1 format (snake_case) to v2 format (camelCase) for request
+        const v2Data = ResponseAdapter.adaptUserRequest(data);
+        const response = await apiClient.patch('/users/me', v2Data);
+        // Convert v2 response back to v1 format
+        const adaptedUser = ResponseAdapter.adaptUserResponse(response) as User;
+        return {
+          success: true,
+          data: adaptedUser,
+          message: 'Profile updated successfully',
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: (error as Error).message ?? 'Failed to update profile',
+        };
+      }
+    } else {
+      return this.patch('/user/profile', data);
+    }
   }
 
   uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {

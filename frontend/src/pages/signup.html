@@ -660,6 +660,8 @@
         }
       }
     </style>
+    <!-- Feature Flags for API v2 Migration -->
+    <script src="/feature-flags.js"></script>
   </head>
   <body>
     <!-- Back to Homepage Button -->
@@ -1197,8 +1199,23 @@
         const phoneNumber = data.phone;
         const fullPhone = `${currentCountryCode}${phoneNumber.replace(/\s+/g, '')}`;
 
-        // Add root user credentials
-        const signupData = {
+        // Check if v2 API should be used
+        const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
+        
+        // Add root user credentials - use camelCase for v2, snake_case for v1
+        const signupData = useV2 ? {
+          // v2 format (camelCase)
+          companyName: data.company_name,
+          subdomain: data.subdomain,
+          email: data.email,
+          adminEmail: data.email,
+          adminPassword: data.password,
+          adminFirstName: data.first_name,
+          adminLastName: data.last_name,
+          phone: fullPhone,
+          plan: currentPlan,
+        } : {
+          // v1 format (snake_case)
           company_name: data.company_name,
           subdomain: data.subdomain,
           email: data.email,
@@ -1217,7 +1234,12 @@
           submitButton.disabled = true;
           submitButton.innerHTML = '⏳ Wird erstellt...';
 
-          const response = await fetch('/api/signup', {
+          // API URL based on feature flag (useV2 already defined above)
+          const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
+          
+          console.log(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
+
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1235,7 +1257,20 @@
             result = { message: 'Server response was not valid JSON: ' + responseText };
           }
 
-          if (response.ok) {
+          // Handle v2 response format
+          if (useV2 && result.success === false) {
+            // v2 error format
+            const errorMessage = result.error?.message || result.message || 'Fehler bei der Registrierung';
+            alert(errorMessage);
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
+            return;
+          }
+
+          if (response.ok || (useV2 && result.success)) {
+            // Extract data from v2 response if needed
+            const responseData = useV2 && result.data ? result.data : result;
+            
             document.getElementById('successMessage').style.display = 'block';
             document.getElementById('successMessage').innerHTML =
               `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
@@ -1248,6 +1283,7 @@
               window.location.href = '/login';
             }, 3000);
           } else {
+            // v1 error handling
             alert(result.message || 'Fehler bei der Registrierung');
             submitButton.disabled = false;
             submitButton.innerHTML = originalText;

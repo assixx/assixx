@@ -1,22 +1,26 @@
 # Frontend API v2 Migration Checklist - LOGISCHE REIHENFOLGE
 
+**Stand:** 03.08.2025  
+**Status:** Phase 1-3 abgeschlossen ✅  
+**LIVE IN PRODUCTION:** Signup & Auth APIs (v2) ✅
+
 ## 🎯 Ziel: Alle `/api/*` Calls zu `/api/v2/*` ändern
 
 ## 📋 Migration Reihenfolge (65 Files)
 
 ### PHASE 1: Signup & Initial Setup (ZUERST!)
 **Warum:** Ohne Signup kann kein neuer Tenant erstellt werden
-- [ ] signup.html (signup API) - Tenant Registration
+- [x] signup.html (signup API) - Tenant Registration ✅
 
 ### PHASE 2: Authentication Core (KRITISCH!)
 **Warum:** Ohne Auth kommt niemand ins System
-- [ ] auth.ts - Login/Logout/Token Management
-- [ ] login.html - Login Page
+- [x] auth.ts - Login/Logout/Token Management ✅
+- [x] login.html - Login Page ✅
 
 ### PHASE 3: Core Infrastructure (BASIS!)
 **Warum:** Diese Files werden von ALLEN anderen verwendet
-- [ ] api.service.ts - Zentraler API Service
-- [ ] common.ts - Shared Utilities & API Helpers
+- [x] api.service.ts - Zentraler API Service ✅
+- [x] common.ts - Shared Utilities & API Helpers ✅
 
 ### PHASE 4: Post-Login UI Components
 **Warum:** Navigation und Header werden sofort nach Login geladen
@@ -111,19 +115,19 @@
 
 ---
 
-## ✅ Fortschritt: 0/65 Files
+## ✅ Fortschritt: 5/65 Files (7.7% abgeschlossen)
 
 ## 🎯 Test-Strategie nach jeder Phase:
 
-### Nach Phase 1-2 (Signup & Auth):
-1. Neuen Tenant erstellen
-2. Login/Logout testen
-3. Token in localStorage prüfen
+### Nach Phase 1-2 (Signup & Auth): ✅ GETESTET
+1. Neuen Tenant erstellen ✅
+2. Login/Logout testen ✅
+3. Token in localStorage prüfen ✅
 
-### Nach Phase 3-4 (Infrastructure):
-1. API Calls funktionieren
-2. Navigation wird angezeigt
-3. User Info im Header korrekt
+### Nach Phase 3-4 (Infrastructure): ✅ GETESTET
+1. API Calls funktionieren ✅
+2. Navigation wird angezeigt ✅
+3. User Info im Header korrekt ✅
 
 ### Nach Phase 5 (Dashboards):
 1. Alle Dashboards laden
@@ -142,3 +146,14 @@
 ## 📝 API Coverage (27 APIs):
 Alle 27 Backend v2 APIs sind durch diese 65 Files abgedeckt.
 Einzige Ausnahme: `machines` API hat keine Frontend Implementation.
+
+## 🚀 Implementierte Komponenten:
+1. **API Client** (`/frontend/src/utils/api-client.ts`) - Zentrale v1/v2 Kommunikation ✅
+2. **Feature Flags** (`/frontend/public/feature-flags.js`) - Granulare API-Kontrolle ✅
+3. **Response Adapter** (`/frontend/src/utils/response-adapter.ts`) - Format-Konvertierung ✅
+4. **Test Script** (`/test-v2-api.sh`) - Automatisierte v2 API Tests ✅
+
+## 📊 Nächste Schritte:
+- Phase 4: Post-Login UI Components (header-user-info.ts, unified-navigation.ts, role-switch.ts)
+- Phase 5: Dashboards Migration
+- Phase 6-10: Feature-by-Feature Migration

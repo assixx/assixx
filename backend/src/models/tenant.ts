@@ -109,6 +109,13 @@ export class Tenant {
       const hashedPassword = await bcrypt.hash(admin_password, 10);
 
       // Create user first without employee_id but WITH phone
+      // Generate unique TEMPORARY employee number using timestamp and random component
+      const timestamp = Date.now().toString().slice(-6);
+      const random = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
+      const employeeNumber = `TEMP-${timestamp}${random}`;
+
       const [userResult] = await connection.query<ResultSetHeader>(
         `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number) 
          VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
@@ -120,7 +127,7 @@ export class Tenant {
           admin_last_name,
           tenantId,
           phone,
-          "000001", // Temporäre Personalnummer für Root-User
+          employeeNumber, // Unique employee number
         ],
       );
 

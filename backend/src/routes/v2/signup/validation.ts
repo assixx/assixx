@@ -57,7 +57,7 @@ export const signupValidation = [
     .withMessage("Admin last name is required")
     .isLength({ max: 100 })
     .withMessage("Last name must be at most 100 characters"),
-  body("selectedPlan")
+  body("plan")
     .optional()
     .isIn(["basic", "professional", "enterprise"])
     .withMessage("Invalid plan selected"),

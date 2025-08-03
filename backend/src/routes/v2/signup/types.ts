@@ -13,7 +13,7 @@ export interface SignupRequest {
   adminPassword: string;
   adminFirstName: string;
   adminLastName: string;
-  selectedPlan?: string;
+  plan?: string;
 }
 
 export interface SignupResponse {

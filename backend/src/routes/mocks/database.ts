@@ -3,8 +3,9 @@
  * Provides test database setup, cleanup, and helper functions
  */
 
-import bcrypt from "bcryptjs";
 import crypto from "crypto";
+
+import bcrypt from "bcryptjs";
 import { Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
@@ -35,16 +36,16 @@ let schemaInitialized = false;
  */
 function getSecureRandomNumber(max: number): number {
   if (max <= 0) throw new Error("max must be greater than 0");
-  
+
   // Calculate the largest multiple of max that fits in the random source
   const maxValidValue = Math.floor(4294967296 / max) * max;
-  
+
   let randomNumber: number;
   do {
     const randomBytes = crypto.randomBytes(4);
     randomNumber = randomBytes.readUInt32BE(0);
   } while (randomNumber >= maxValidValue);
-  
+
   return randomNumber % max;
 }
 

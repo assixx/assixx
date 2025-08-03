@@ -4,6 +4,8 @@
  */
 
 import type { User, BlackboardEntry } from '../types/api.types';
+import { apiClient } from '../utils/api-client';
+import { ResponseAdapter } from '../utils/response-adapter';
 
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
@@ -43,16 +45,34 @@ async function loadNavigation(): Promise<void> {
     let userData: User | null = null;
 
     if (token) {
-      const userResponse = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Check if v2 API should be used
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
 
-      if (userResponse.ok) {
-        userData = await userResponse.json();
-        userRole = userData?.role ?? 'employee';
-      } else {
+      try {
+        if (useV2) {
+          // Use API client for v2
+          const response = await apiClient.get<User>('/users/me');
+          // Convert v2 response to v1 format
+          userData = ResponseAdapter.adaptUserResponse(response) as User;
+          userRole = userData?.role ?? 'employee';
+        } else {
+          // Use traditional fetch for v1
+          const userResponse = await fetch('/api/user/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (userResponse.ok) {
+            userData = await userResponse.json();
+            userRole = userData?.role ?? 'employee';
+          } else {
+            navPlaceholder.innerHTML = createGuestNavigation();
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
         navPlaceholder.innerHTML = createGuestNavigation();
         return;
       }
@@ -242,16 +262,31 @@ async function checkUnreadNotifications(): Promise<void> {
     const token = getAuthToken();
     if (!token) return;
 
-    const response = await fetch('/api/notifications/unread-count', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Check if v2 API should be used
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_NOTIFICATIONS;
 
-    if (response.ok) {
-      const data = await response.json();
-      const count = data.count ?? 0;
-      updateNotificationBadge(count);
+    if (useV2) {
+      try {
+        // Use API client for v2
+        const response = await apiClient.get<{ count?: number }>('/notifications/unread-count');
+        const count = response.count ?? 0;
+        updateNotificationBadge(count);
+      } catch (error) {
+        console.error('Error checking notifications (v2):', error);
+      }
+    } else {
+      // Use traditional fetch for v1
+      const response = await fetch('/api/notifications/unread-count', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const count = data.count ?? 0;
+        updateNotificationBadge(count);
+      }
     }
   } catch (error) {
     console.error('Error checking notifications:', error);
@@ -337,15 +372,31 @@ export async function loadBlackboardPreview(): Promise<void> {
     const token = getAuthToken();
     if (!token) return;
 
-    const response = await fetch('/api/blackboard?limit=5', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Check if v2 API should be used
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
 
-    if (response.ok) {
-      const entries = await response.json();
-      displayBlackboardItems(entries);
+    if (useV2) {
+      try {
+        // Use API client for v2
+        const response = await apiClient.get<BlackboardEntry[] | { data?: BlackboardEntry[]; items?: BlackboardEntry[] }>('/blackboard?limit=5');
+        // v2 response might have different format, adapt if needed
+        const entries = Array.isArray(response) ? response : ((response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).data ?? (response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).items ?? []);
+        displayBlackboardItems(entries);
+      } catch (error) {
+        console.error('Error loading blackboard (v2):', error);
+      }
+    } else {
+      // Use traditional fetch for v1
+      const response = await fetch('/api/blackboard?limit=5', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const entries = await response.json();
+        displayBlackboardItems(entries);
+      }
     }
   } catch (error) {
     console.error('Error loading blackboard:', error);

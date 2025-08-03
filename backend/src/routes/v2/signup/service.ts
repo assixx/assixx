@@ -19,20 +19,46 @@ export class SignupService {
     subdomain: string;
     trialEndsAt: string;
   }> {
+    console.log("[SignupService] METHOD CALLED");
+    console.log("[SignupService] Input data:", data);
+    logger.info("[SignupService] Starting registerTenant with data:", {
+      companyName: data.companyName,
+      subdomain: data.subdomain,
+      email: data.email,
+      adminEmail: data.adminEmail,
+      phone: data.phone,
+      plan: data.plan,
+    });
+    console.log("[SignupService] Logger called");
+
     try {
+      console.log("[SignupService] Entering try block");
       // Validate subdomain format
+      logger.info("[SignupService] Validating subdomain:", data.subdomain);
+      console.log("[SignupService] About to validate subdomain");
       const subdomainValidation: SubdomainValidation = Tenant.validateSubdomain(
         data.subdomain,
       );
+      console.log("[SignupService] Validation result:", subdomainValidation);
+      logger.info(
+        "[SignupService] Subdomain validation result:",
+        subdomainValidation,
+      );
+
       if (!subdomainValidation.valid) {
+        console.log("[SignupService] Invalid subdomain, throwing error");
         throw new ServiceError(
           "INVALID_SUBDOMAIN",
           subdomainValidation.error ?? "Invalid subdomain format",
         );
       }
+      console.log("[SignupService] Subdomain is valid");
 
       // Check if subdomain is available
+      logger.info("[SignupService] Checking subdomain availability");
       const isAvailable = await Tenant.isSubdomainAvailable(data.subdomain);
+      logger.info("[SignupService] Subdomain available:", isAvailable);
+
       if (!isAvailable) {
         throw new ServiceError(
           "SUBDOMAIN_TAKEN",
@@ -54,7 +80,9 @@ export class SignupService {
       };
 
       // Create tenant and admin user
+      logger.info("[SignupService] Creating tenant with data:", tenantData);
       const result = await Tenant.create(tenantData);
+      logger.info("[SignupService] Tenant created successfully:", result);
 
       logger.info(
         `New tenant registered: ${data.companyName} (${data.subdomain})`,
@@ -70,9 +98,27 @@ export class SignupService {
         trialEndsAt: result.trialEndsAt.toISOString(),
       };
     } catch (error) {
-      if (error instanceof ServiceError) throw error;
+      console.log("[SignupService] CATCH BLOCK ENTERED");
+      console.log("[SignupService] Error type:", error?.constructor?.name);
+      console.log(
+        "[SignupService] Error message:",
+        error instanceof Error ? error.message : error,
+      );
 
+      if (error instanceof ServiceError) {
+        console.log("[SignupService] Re-throwing ServiceError");
+        throw error;
+      }
+
+      console.log(
+        "[SignupService] Not a ServiceError, logging and throwing REGISTRATION_FAILED",
+      );
       logger.error("Error registering tenant:", error);
+      logger.error("Error details:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        data: data,
+      });
       throw new ServiceError(
         "REGISTRATION_FAILED",
         "Failed to complete registration",
