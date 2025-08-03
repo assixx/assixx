@@ -66,7 +66,8 @@
       }
 
       .admin-table td {
-        padding: 12px;
+        padding-top: 15px;
+        padding-bottom: 15px;
         color: var(--text-secondary);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
@@ -377,7 +378,7 @@
         border-radius: 20px;
         font-size: 12px;
         font-weight: 500;
-        display: block ruby;
+        /*display: block ruby;*/
       }
 
       .status-badge.active {
@@ -458,6 +459,162 @@
         border-left: 6px solid transparent;
         border-right: 6px solid transparent;
         border-top: 6px solid rgba(18, 18, 18, 0.95);
+      }
+
+      /* Radio Button Styles */
+      .permission-type-selection {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+        margin-bottom: 16px;
+      }
+
+      .radio-label {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .radio-label:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(33, 150, 243, 0.3);
+        transform: translateY(-1px);
+      }
+
+      .radio-label:has(input:checked) {
+        background: rgba(33, 150, 243, 0.1);
+        border-color: rgba(33, 150, 243, 0.5);
+        box-shadow: 0 0 20px rgba(33, 150, 243, 0.15);
+      }
+
+      .radio-label input[type="radio"] {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        margin-right: 12px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+      }
+
+      .radio-label input[type="radio"]:checked {
+        border-color: var(--primary-color);
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      .radio-label input[type="radio"]:checked::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        animation: radioCheck 0.3s ease;
+      }
+
+      @keyframes radioCheck {
+        0% {
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 0;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+      }
+
+      .radio-text {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.4;
+      }
+
+      .radio-label:has(input:checked) .radio-text {
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 500;
+      }
+
+      /* Checkbox Styles */
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .checkbox-label:last-child {
+        margin-bottom: 0;
+      }
+
+      .checkbox-label:hover .checkbox-text {
+        color: rgba(255, 255, 255, 0.95);
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        margin-right: 10px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+      }
+
+      .checkbox-label input[type="checkbox"]:hover {
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .checkbox-label input[type="checkbox"]:checked {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .checkbox-label input[type="checkbox"]:checked::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .checkbox-label input[type="checkbox"]:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .checkbox-text {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        transition: color 0.3s ease;
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -583,7 +740,7 @@
                 border: 1px solid rgba(255, 193, 7, 0.3);
                 padding: 12px;
                 border-radius: 8px;
-                margin-bottom: 16px;
+                margin-top: 8px;
               "
             >
               <i class="fas fa-info-circle" style="color: #ffc107; margin-right: 8px"></i>
@@ -593,24 +750,24 @@
             </div>
 
             <div class="permission-type-selection">
-              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
-                <input type="radio" name="permissionType" value="none" checked class="u-mr-8" />
-                <span>Keine Abteilungen (Standard - Sicher)</span>
+              <label class="radio-label">
+                <input type="radio" name="permissionType" value="none" checked />
+                <span class="radio-text">Keine Abteilungen (Standard - Sicher)</span>
               </label>
 
-              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
-                <input type="radio" name="permissionType" value="specific" class="u-mr-8" />
-                <span>Spezifische Abteilungen auswählen</span>
+              <label class="radio-label">
+                <input type="radio" name="permissionType" value="specific" />
+                <span class="radio-text">Spezifische Abteilungen auswählen</span>
               </label>
 
-              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
-                <input type="radio" name="permissionType" value="groups" class="u-mr-8" />
-                <span>Abteilungsgruppen auswählen</span>
+              <label class="radio-label">
+                <input type="radio" name="permissionType" value="groups" />
+                <span class="radio-text">Abteilungsgruppen auswählen</span>
               </label>
 
-              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
-                <input type="radio" name="permissionType" value="all" class="u-mr-8" />
-                <span>Alle Abteilungen (Vollzugriff)</span>
+              <label class="radio-label">
+                <input type="radio" name="permissionType" value="all" />
+                <span class="radio-text">Alle Abteilungen (Vollzugriff)</span>
               </label>
             </div>
 
@@ -775,17 +932,17 @@
             style="margin-bottom: 20px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px"
           >
             <h4 style="margin: 0 0 12px 0; font-size: 14px">Berechtigungsstufen:</h4>
-            <label style="display: flex; align-items: center; margin-bottom: 8px">
-              <input type="checkbox" id="permCanRead" checked disabled class="u-mr-8" />
-              <span>Lesen (Standard)</span>
+            <label class="checkbox-label">
+              <input type="checkbox" id="permCanRead" checked disabled />
+              <span class="checkbox-text">Lesen (Standard)</span>
             </label>
-            <label style="display: flex; align-items: center; margin-bottom: 8px">
-              <input type="checkbox" id="permCanWrite" class="u-mr-8" />
-              <span>Schreiben</span>
+            <label class="checkbox-label">
+              <input type="checkbox" id="permCanWrite" />
+              <span class="checkbox-text">Schreiben</span>
             </label>
-            <label style="display: flex; align-items: center">
-              <input type="checkbox" id="permCanDelete" class="u-mr-8" />
-              <span>Löschen</span>
+            <label class="checkbox-label">
+              <input type="checkbox" id="permCanDelete" />
+              <span class="checkbox-text">Löschen</span>
             </label>
           </div>
 

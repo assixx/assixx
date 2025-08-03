@@ -3090,6 +3090,11 @@ const unifiedNavigationCSS = `
         background: transparent;
     }
 
+    /* Wichtig: overflow visible für collapsed sidebar damit der Kreis größer werden kann */
+    .sidebar.collapsed .sidebar-link {
+        overflow: visible !important;
+    }
+
     .sidebar.collapsed .sidebar-link .icon {
         position: relative;
     }
@@ -3102,8 +3107,8 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
         content: '';
         position: absolute;
-        inset: -7px;
-        background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
+        inset: -9px;
+        background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         border-radius: 50%;
         z-index: -1;
     }
@@ -3117,7 +3122,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
         content: '';
         position: absolute;
-        inset: -7px;
+        inset: -12px;
         background: rgba(33, 150, 243, 0.1);
         border-radius: 50%;
         z-index: -1;
@@ -3493,7 +3498,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-        background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
+        background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         color: var(--primary-color);
     }
 
