@@ -7,6 +7,7 @@ import {
 } from "../../../utils/db";
 import { fieldMapper } from "../../../utils/fieldMapper";
 import { logger } from "../../../utils/logger";
+import { ServiceError as ServiceErrorClass } from "../../../utils/ServiceError";
 
 import {
   Feature,
@@ -300,11 +301,7 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        const error = new Error(
-          `Feature ${featureCode} not found`,
-        ) as ServiceError;
-        error.statusCode = 404;
-        throw error;
+        throw new ServiceErrorClass("NOT_FOUND", `Feature ${featureCode} not found`);
       }
 
       const [result] = await execute<ResultSetHeader>(
@@ -317,11 +314,7 @@ export class FeaturesService {
       );
 
       if (result.affectedRows === 0) {
-        const error = new Error(
-          `Feature ${featureCode} not found for tenant`,
-        ) as ServiceError;
-        error.statusCode = 404;
-        throw error;
+        throw new ServiceErrorClass("NOT_FOUND", `Feature ${featureCode} not found for tenant`);
       }
 
       // Log the deactivation
@@ -350,11 +343,7 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        const error = new Error(
-          `Feature ${featureCode} not found`,
-        ) as ServiceError;
-        error.statusCode = 404;
-        throw error;
+        throw new ServiceErrorClass("NOT_FOUND", `Feature ${featureCode} not found`);
       }
 
       const [rows] = await query<DbFeatureUsageStats[]>(
