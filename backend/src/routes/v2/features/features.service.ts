@@ -21,7 +21,6 @@ import {
   DbFeature,
   DbTenantFeature,
   DbFeatureUsageStats,
-  ServiceError,
   ActivationOptions,
 } from "./types";
 
@@ -212,11 +211,7 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(request.featureCode);
       if (!feature) {
-        const error = new Error(
-          `Feature ${request.featureCode} not found`,
-        ) as ServiceError;
-        error.statusCode = 404;
-        throw error;
+        throw new ServiceErrorClass("NOT_FOUND", `Feature ${request.featureCode} not found`);
       }
 
       const options: ActivationOptions = {

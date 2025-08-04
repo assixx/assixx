@@ -4,3 +4,6 @@ packages:
   - "scripts"
 ignoredBuiltDependencies:
   - unrs-resolver
+onlyBuiltDependencies:
+  - "@swc/core"
+  - "esbuild"
