@@ -1,12 +1,12 @@
 # Frontend API v2 Migration Checklist - LOGISCHE REIHENFOLGE
 
-**Stand:** 03.08.2025  
-**Status:** Phase 1-3 abgeschlossen ✅  
+**Stand:** 04.08.2025
+**Status:** Phase 1-4 größtenteils abgeschlossen ✅
 **LIVE IN PRODUCTION:** Signup & Auth APIs (v2) ✅
 
 ## 🎯 Ziel: Alle `/api/*` Calls zu `/api/v2/*` ändern
 
-## 📋 Migration Reihenfolge (65 Files)
+## 📋 Migration Reihenfolge (64 Files)
 
 ### PHASE 1: Signup & Initial Setup (ZUERST!)
 **Warum:** Ohne Signup kann kein neuer Tenant erstellt werden
@@ -24,15 +24,14 @@
 
 ### PHASE 4: Post-Login UI Components
 **Warum:** Navigation und Header werden sofort nach Login geladen
-- [ ] header-user-info.ts - User Info in Header
-- [ ] unified-navigation.ts - Hauptnavigation
-- [ ] role-switch.ts - Rollenwechsel (Admin/Employee)
+- [x] header-user-info.ts - User Info in Header ✅
+- [x] unified-navigation.ts - Hauptnavigation (TEILWEISE: role-switch Teil migriert) ✅
+- [x] role-switch.ts - Rollenwechsel (Admin/Employee) ✅
 
 ### PHASE 5: Dashboards (Landing Pages nach Login)
 **Warum:** Erste Seite die User nach Login sehen
-- [ ] index.html - Main Landing
-- [ ] employee-dashboard.ts
-- [ ] employee-dashboard.html
+- [x] employee-dashboard.ts - Employee Dashboard (migriert zu apiClient) ✅
+- [x] employee-dashboard.html - Employee Dashboard (Survey API noch v1) ✅
 - [ ] admin-dashboard.ts
 - [ ] admin-dashboard.html
 - [ ] root-dashboard.ts
@@ -88,7 +87,7 @@
 - [ ] employee-deletion.ts
 
 #### Organization Management
-- [ ] departments.html
+- [x] departments.html - Department Management (v2 API + Feature Flag aktiv) ✅
 - [ ] manage-department-groups.ts
 - [ ] org-management.html (teams/areas API)
 
@@ -115,7 +114,36 @@
 
 ---
 
-## ✅ Fortschritt: 5/65 Files (7.7% abgeschlossen)
+## ✅ Fortschritt: 11/64 Files (16.9% abgeschlossen)
+
+### ⚠️ WICHTIGE NOTIZEN:
+- **Chat unread-count**: Die Navigation ist bereits für v2 vorbereitet, aber das Feature Flag muss deaktiviert bleiben bis die komplette Chat-Seite migriert ist
+- **KVP stats**: Gleiches Problem - Navigation nutzt v2, aber KVP-Seite noch v1
+- **Survey pending-count**: Auch hier - Navigation ready, aber Survey-Seiten noch v1
+
+**LEARNING:** Badge-Updates in Navigation sollten eigentlich NACH der Haupt-Feature-Migration kommen!
+
+### 🎯 HEUTE ERREICHT (04.08.2025):
+1. **departments.html** → v2 API Migration + Feature Flag `USE_API_V2_DEPARTMENTS` aktiviert ✅
+2. **Employee Creation** → Departments Dropdown funktioniert mit v2 API ✅
+3. **role-switch.ts** → Admin Rollenwechsel nutzt jetzt v2 API ✅
+4. **unified-navigation.ts** → Role-Switch Teil auf v2 migriert (Badge-Updates folgen später) ✅
+5. **employee-dashboard.html** → Funktioniert vollständig (Survey API wird später migriert) ✅
+6. **header-user-info.ts** → Bereits v2-ready durch apiClient usage ✅
+7. **employee-dashboard.ts** → Vollständig auf apiClient migriert (Dashboard Data Loading) ✅
+
+**NÄCHSTE SCHRITTE:**
+- unified-navigation.ts (Badge-Updates: Chat, KVP, Survey)
+- index.html (Main Landing Page)
+- Phase 5: Dashboard Migration beginnen
+
+### 🚨 KRITISCHE REGEL:
+**NIEMALS eine Checkbox abhaken ohne:**
+1. Vollständiges Testen der Funktionalität
+2. Explizite Genehmigung und Freigabe vom User
+3. Bestätigung dass ALLES funktioniert, nicht nur API-Calls
+
+**Nur weil eine API 200 OK zurückgibt, heißt das NICHT dass die Feature funktioniert!**
 
 ## 🎯 Test-Strategie nach jeder Phase:
 
@@ -124,10 +152,11 @@
 2. Login/Logout testen ✅
 3. Token in localStorage prüfen ✅
 
-### Nach Phase 3-4 (Infrastructure): ✅ GETESTET
+### Nach Phase 3-4 (Infrastructure): ✅ GETESTET & COMPLETED
 1. API Calls funktionieren ✅
 2. Navigation wird angezeigt ✅
 3. User Info im Header korrekt ✅
+4. Phase 4 komplett abgeschlossen ✅
 
 ### Nach Phase 5 (Dashboards):
 1. Alle Dashboards laden
@@ -144,7 +173,7 @@
 - **Bei Fehlern** sofort stoppen und debuggen
 
 ## 📝 API Coverage (27 APIs):
-Alle 27 Backend v2 APIs sind durch diese 65 Files abgedeckt.
+Alle 27 Backend v2 APIs sind durch diese 64 Files abgedeckt.
 Einzige Ausnahme: `machines` API hat keine Frontend Implementation.
 
 ## 🚀 Implementierte Komponenten:

@@ -396,6 +396,9 @@
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    
+    <!-- Common Scripts with ApiClient -->
+    <script type="module" src="/scripts/common.js"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -481,14 +484,8 @@
       // Load departments
       async function loadDepartments() {
         try {
-          const response = await fetch('/api/departments', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const departments = await response.json();
-            renderDepartments(departments);
-          }
+          const departments = await apiClient.get('/departments');
+          renderDepartments(departments);
         } catch (error) {
           console.error('Error loading departments:', error);
         }
@@ -583,23 +580,17 @@
 
       window.editDepartment = async function (id) {
         try {
-          const response = await fetch(`/api/departments/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const dept = await apiClient.get(`/departments/${id}`);
+          document.getElementById('modalTitle').textContent = 'Abteilung bearbeiten';
 
-          if (response.ok) {
-            const dept = await response.json();
-            document.getElementById('modalTitle').textContent = 'Abteilung bearbeiten';
+          const form = document.getElementById('department-form');
+          form.name.value = dept.name || '';
+          form.description.value = dept.description || '';
+          form.status.value = dept.status || 'active';
+          form.visibility.value = dept.visibility || 'public';
 
-            const form = document.getElementById('department-form');
-            form.name.value = dept.name || '';
-            form.description.value = dept.description || '';
-            form.status.value = dept.status || 'active';
-            form.visibility.value = dept.visibility || 'public';
-
-            form.dataset.departmentId = id;
-            document.getElementById('department-modal').classList.add('active');
-          }
+          form.dataset.departmentId = id;
+          document.getElementById('department-modal').classList.add('active');
         } catch (error) {
           console.error('Error loading department:', error);
         }
@@ -638,21 +629,12 @@
         }
 
         try {
-          const response = await fetch(`/api/departments/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            alert('Abteilung erfolgreich gelöscht');
-            window.location.reload();
-          } else {
-            const error = await response.json();
-            alert('Fehler: ' + (error.message || 'Abteilung konnte nicht gelöscht werden'));
-          }
+          await apiClient.delete(`/departments/${id}`);
+          alert('Abteilung erfolgreich gelöscht');
+          window.location.reload();
         } catch (error) {
           console.error('Error deleting department:', error);
-          alert('Netzwerkfehler beim Löschen');
+          alert(error.message || 'Netzwerkfehler beim Löschen');
         }
       };
 
@@ -665,25 +647,16 @@
         const departmentId = e.target.dataset.departmentId;
 
         try {
-          const url = departmentId ? `/api/departments/${departmentId}` : '/api/departments';
-          const method = departmentId ? 'PUT' : 'POST';
-
-          const response = await fetch(url, {
-            method,
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-          });
-
-          if (response.ok) {
-            alert(departmentId ? 'Abteilung aktualisiert' : 'Abteilung erstellt');
-            window.location.reload();
+          if (departmentId) {
+            // Update existing department
+            await apiClient.put(`/departments/${departmentId}`, data);
+            alert('Abteilung aktualisiert');
           } else {
-            const error = await response.json();
-            alert('Fehler: ' + (error.message || 'Speichern fehlgeschlagen'));
+            // Create new department
+            await apiClient.post('/departments', data);
+            alert('Abteilung erstellt');
           }
+          window.location.reload();
         } catch (error) {
           console.error('Error saving department:', error);
           alert('Netzwerkfehler beim Speichern');

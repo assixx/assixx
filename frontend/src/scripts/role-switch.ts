@@ -3,6 +3,8 @@
  * Ermöglicht Admins zwischen Admin und Employee View zu wechseln
  */
 
+import { apiClient } from '../utils/api-client';
+
 // Check if user is admin or root
 const userRole = localStorage.getItem('userRole');
 let currentView = localStorage.getItem('activeRole') ?? userRole;
@@ -19,9 +21,6 @@ async function switchRole(): Promise<void> {
   switchBtn.style.opacity = '0.5';
 
   try {
-    const token = localStorage.getItem('token');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-
     // Update currentView from localStorage in case it changed
     currentView = localStorage.getItem('activeRole') ?? userRole;
 
@@ -31,48 +30,38 @@ async function switchRole(): Promise<void> {
 
     if (userRole === 'root') {
       // Root switching logic
-      if (currentView === 'employee') {
-        endpoint = '/api/role-switch/to-root'; // Employee → Root
-      } else if (currentView === 'admin') {
-        endpoint = '/api/role-switch/to-root'; // Admin → Root
+      if (currentView === 'employee' || currentView === 'admin') {
+        endpoint = '/api/role-switch/to-original'; // Back to Root
       } else {
         // Root can switch to admin or employee (handled by dropdown)
         endpoint = '/api/role-switch/to-employee'; // Default
       }
     } else {
-      // Admin switching logic (existing)
-      endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
+      // Admin switching logic
+      endpoint = isCurrentlyEmployee ? '/api/role-switch/to-original' : '/api/role-switch/to-employee';
     }
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken,
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Rollenwechsel fehlgeschlagen');
-    }
-
-    const data = await response.json();
+    const response = await apiClient.post<{
+      token: string;
+      user: {
+        activeRole: string;
+      };
+      message?: string;
+    }>(endpoint.replace('/api', ''), {});
 
     // Update token and storage
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('activeRole', data.user.activeRole);
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('activeRole', response.user.activeRole);
 
     // Also update sessionStorage for KVP page compatibility
-    if (data.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
+    if (response.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
       sessionStorage.setItem('roleSwitch', 'employee');
     } else {
       sessionStorage.removeItem('roleSwitch');
     }
 
     // Update currentView immediately
-    currentView = data.user.activeRole;
+    currentView = response.user.activeRole;
 
     // Clear all role switch banner dismissal states when switching roles
     ['root', 'admin', 'employee'].forEach((role) => {
@@ -82,15 +71,22 @@ async function switchRole(): Promise<void> {
     // Update UI immediately before redirect
     updateRoleUI();
 
-    // Show success message
-    const message = isCurrentlyEmployee ? 'Wechsel zur Admin-Ansicht...' : 'Wechsel zur Mitarbeiter-Ansicht...';
+    // Show success message based on target role
+    let message = '';
+    if (response.user.activeRole === 'employee') {
+      message = 'Wechsel zur Mitarbeiter-Ansicht...';
+    } else if (response.user.activeRole === 'admin') {
+      message = 'Wechsel zur Admin-Ansicht...';
+    } else if (response.user.activeRole === 'root') {
+      message = 'Wechsel zur Root-Ansicht...';
+    }
 
     // Create toast notification
     showToast(message, 'success');
 
     // Always redirect to the appropriate dashboard
     setTimeout(() => {
-      const newRole = data.user.activeRole;
+      const newRole = response.user.activeRole;
 
       // Direct redirect to dashboard based on role
       if (newRole === 'admin') {
@@ -274,51 +270,40 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
   }
 
   try {
-    const token = localStorage.getItem('token');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-
     // Update currentView
     currentView = localStorage.getItem('activeRole') ?? userRole;
 
     // Determine endpoint based on target role
     let endpoint = '';
     if (targetRole === 'root') {
-      endpoint = '/api/role-switch/to-root';
+      endpoint = '/api/role-switch/to-original'; // Back to root
     } else if (targetRole === 'admin') {
-      endpoint = '/api/role-switch/root-to-admin';
+      endpoint = '/api/role-switch/root-to-admin'; // Root → Admin
     } else if (targetRole === 'employee') {
-      endpoint = '/api/role-switch/to-employee';
+      endpoint = '/api/role-switch/to-employee'; // → Employee
     }
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken,
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Rollenwechsel fehlgeschlagen');
-    }
-
-    const data = await response.json();
+    const response = await apiClient.post<{
+      token: string;
+      user: {
+        activeRole: string;
+      };
+      message?: string;
+    }>(endpoint.replace('/api', ''), {});
 
     // Update token and storage
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('activeRole', data.user.activeRole);
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('activeRole', response.user.activeRole);
 
     // Also update sessionStorage for KVP page compatibility
-    if (data.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
+    if (response.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
       sessionStorage.setItem('roleSwitch', 'employee');
     } else {
       sessionStorage.removeItem('roleSwitch');
     }
 
     // Update currentView immediately
-    currentView = data.user.activeRole;
+    currentView = response.user.activeRole;
 
     // Clear all role switch banner dismissal states when switching roles
     ['root', 'admin', 'employee'].forEach((role) => {

@@ -6,6 +6,7 @@
 import { Request, Response } from "express";
 
 import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
+import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { execute } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -645,22 +646,23 @@ export class RootController {
   async getStorageInfo(req: Request, res: Response): Promise<void> {
     try {
       const storage = await rootService.getStorageInfo(req.user.tenant_id);
-      res.json(storage);
+      res.json(successResponse(storage));
     } catch (error: unknown) {
       logger.error("Error getting storage info:", error);
 
       if ((error as { code: string }).code === "NOT_FOUND") {
-        res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Tenant not found",
-        });
+        res.status(404).json(errorResponse("NOT_FOUND", "Tenant not found"));
         return;
       }
 
-      res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve storage information",
-      });
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            "SERVER_ERROR",
+            "Failed to retrieve storage information",
+          ),
+        );
     }
   }
 

@@ -1456,29 +1456,32 @@
         const data = Object.fromEntries(formData.entries());
 
         try {
-          const response = await fetch('/api/signup', {
+          const response = await fetch('/api/v2/signup', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              ...data,
-              admin_email: data.email,
-              admin_password: data.password,
-              admin_first_name: data.first_name,
-              admin_last_name: data.last_name,
+              companyName: data.company_name,
+              subdomain: data.subdomain,
+              email: data.company_email,
+              phone: data.phone,
+              adminEmail: data.email,
+              adminPassword: data.password,
+              adminFirstName: data.first_name,
+              adminLastName: data.last_name,
               selectedPlan: localStorage.getItem('selectedPlan') || 'premium',
             }),
           });
 
-          if (response.ok) {
-            const result = await response.json();
+          const result = await response.json();
+          
+          if (result.success) {
             alert(`Erfolg! Sie können sich jetzt unter ${data.subdomain}.assixx.com anmelden.`);
             // Später: Direkte Weiterleitung mit Auto-Login
             window.location.href = `/login`;
           } else {
-            const error = await response.json();
-            alert(error.message || 'Fehler bei der Registrierung');
+            alert(result.error?.message || 'Fehler bei der Registrierung');
           }
         } catch (error) {
           alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');

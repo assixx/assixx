@@ -666,12 +666,15 @@ export class RootService {
       );
 
       const [attachments] = await execute<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(file_size), 0) as total FROM kvp_attachments WHERE tenant_id = ?",
+        `SELECT COALESCE(SUM(ka.file_size), 0) as total 
+         FROM kvp_attachments ka
+         JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
+         WHERE ks.tenant_id = ?`,
         [tenantId],
       );
 
       const [logs] = await execute<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(old_values, '')) + LENGTH(COALESCE(new_values, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
+        "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
         [tenantId],
       );
 

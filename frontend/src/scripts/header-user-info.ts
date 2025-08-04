@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+import { apiClient } from '../utils/api-client';
 
 import { getAuthToken, parseJwt } from './auth';
 
@@ -32,16 +33,9 @@ async function loadHeaderUserInfo(): Promise<void> {
     }
 
     // Load full profile
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const userData = await response.json();
-      const user: User = userData.user ?? userData;
+    try {
+      const userData = await apiClient.get<User>('/users/me');
+      const user: User = userData;
 
       // Update with full name
       if (userNameElement && (user.first_name || user.last_name)) {
@@ -52,8 +46,8 @@ async function loadHeaderUserInfo(): Promise<void> {
       // Update avatar
       const avatarElement = document.getElementById('user-avatar') as HTMLImageElement;
       if (avatarElement) {
-        if (user.profile_picture) {
-          avatarElement.src = user.profile_picture;
+        if (user.profile_picture || user.profile_picture_url) {
+          avatarElement.src = user.profile_picture ?? user.profile_picture_url ?? '';
           avatarElement.classList.remove('avatar-initials');
         } else {
           // Display initials if no profile picture
@@ -75,6 +69,8 @@ async function loadHeaderUserInfo(): Promise<void> {
       if (payload.role === 'admin') {
         void loadDepartmentBadge();
       }
+    } catch (error) {
+      console.error('Error loading user info:', error);
     }
   } catch (error) {
     console.error('Error loading user info:', error);
@@ -89,48 +85,42 @@ async function loadDepartmentBadge(): Promise<void> {
   if (!token) return;
 
   try {
-    const response = await fetch('/api/admin-permissions/my-departments', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const data = await apiClient.get<{
+      hasAllAccess?: boolean;
+      departments?: Array<{ name: string }>;
+    }>('/admin-permissions/my');
 
-    if (response.ok) {
-      const data = await response.json();
+    // Look for department badge element in user info card
+    let badgeContainer = document.getElementById('departmentBadge');
 
-      // Look for department badge element in user info card
-      let badgeContainer = document.getElementById('departmentBadge');
-
-      // If not found, create it
-      if (!badgeContainer && document.querySelector('.user-info-card')) {
-        const userCard = document.querySelector('.user-info-card');
-        if (userCard) {
-          badgeContainer = document.createElement('div');
-          badgeContainer.id = 'departmentBadge';
-          badgeContainer.className = 'user-departments-badge';
-          badgeContainer.innerHTML = `
+    // If not found, create it
+    if (!badgeContainer && document.querySelector('.user-info-card')) {
+      const userCard = document.querySelector('.user-info-card');
+      if (userCard) {
+        badgeContainer = document.createElement('div');
+        badgeContainer.id = 'departmentBadge';
+        badgeContainer.className = 'user-departments-badge';
+        badgeContainer.innerHTML = `
             <i class="fas fa-building"></i>
             <span class="badge loading">Lade...</span>
           `;
-          userCard.appendChild(badgeContainer);
-        }
+        userCard.appendChild(badgeContainer);
       }
+    }
 
-      if (badgeContainer) {
-        const badgeSpan = badgeContainer.querySelector('.badge');
-        if (badgeSpan) {
-          if (data.hasAllAccess) {
-            badgeSpan.className = 'badge badge-success';
-            badgeSpan.textContent = 'Alle Abteilungen';
-          } else if (data.departments && data.departments.length === 0) {
-            badgeSpan.className = 'badge badge-warning';
-            badgeSpan.textContent = 'Keine Abteilungen';
-          } else if (data.departments && data.departments.length > 0) {
-            badgeSpan.className = 'badge badge-info';
-            badgeSpan.textContent = `${data.departments.length} Abteilungen`;
-            (badgeSpan as HTMLElement).title = data.departments.map((d: { name: string }) => d.name).join(', ');
-          }
+    if (badgeContainer) {
+      const badgeSpan = badgeContainer.querySelector('.badge');
+      if (badgeSpan) {
+        if (data.hasAllAccess) {
+          badgeSpan.className = 'badge badge-success';
+          badgeSpan.textContent = 'Alle Abteilungen';
+        } else if (data.departments && data.departments.length === 0) {
+          badgeSpan.className = 'badge badge-warning';
+          badgeSpan.textContent = 'Keine Abteilungen';
+        } else if (data.departments && data.departments.length > 0) {
+          badgeSpan.className = 'badge badge-info';
+          badgeSpan.textContent = `${data.departments.length} Abteilungen`;
+          (badgeSpan as HTMLElement).title = data.departments.map((d: { name: string }) => d.name).join(', ');
         }
       }
     }

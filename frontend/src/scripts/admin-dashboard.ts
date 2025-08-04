@@ -118,7 +118,13 @@ let token: string | null = null;
 const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
   try {
     const authToken = token ?? getAuthToken();
-    const response = await fetch('/api/departments', {
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS;
+    console.log('[loadDepartmentsForEmployeeSelect] Feature flag USE_API_V2_DEPARTMENTS:', useV2);
+    console.log('[loadDepartmentsForEmployeeSelect] window.FEATURE_FLAGS:', window.FEATURE_FLAGS);
+    const apiPath = useV2 ? '/api/v2/departments' : '/api/departments';
+    console.log('[loadDepartmentsForEmployeeSelect] Using API path:', apiPath);
+
+    const response = await fetch(apiPath, {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -128,10 +134,16 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       throw new Error('Failed to load departments for select');
     }
 
-    const departments = await response.json();
+    const responseData = await response.json();
+    console.log('[loadDepartmentsForEmployeeSelect] Response data:', responseData);
+    const departments = useV2 ? responseData.data : responseData;
+    console.log('[loadDepartmentsForEmployeeSelect] Departments:', departments);
     const dropdownOptions = document.getElementById('employee-department-dropdown');
 
-    if (!dropdownOptions) return;
+    if (!dropdownOptions) {
+      console.error('[loadDepartmentsForEmployeeSelect] Dropdown options element not found!');
+      return;
+    }
 
     // Clear existing options and add placeholder
     dropdownOptions.innerHTML = `
@@ -140,7 +152,9 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       </div>
     `;
 
+    console.log('[loadDepartmentsForEmployeeSelect] Adding departments to dropdown:', departments.length);
     departments.forEach((dept: Department) => {
+      console.log('[loadDepartmentsForEmployeeSelect] Adding department:', dept);
       const optionDiv = document.createElement('div');
       optionDiv.className = 'dropdown-option';
       optionDiv.setAttribute('data-value', dept.id.toString());
@@ -152,6 +166,7 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       };
       dropdownOptions.appendChild(optionDiv);
     });
+    console.log('[loadDepartmentsForEmployeeSelect] Dropdown content:', dropdownOptions.innerHTML);
   } catch (error) {
     console.error('Error loading departments for select:', error);
     showError('Fehler beim Laden der Abteilungen');
@@ -774,14 +789,13 @@ document.addEventListener('DOMContentLoaded', () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          username: employeeData.email.split('@')[0], // Generate username from email
           email: employeeData.email,
           password: employeeData.password,
           first_name: employeeData.first_name,
           last_name: employeeData.last_name,
           employee_id: employeeData.employee_id,
-          position: employeeData.position ?? '',
           department_id: employeeData.department_id ? parseInt(employeeData.department_id) : null,
-          team_id: employeeData.team_id ? parseInt(employeeData.team_id) : null,
           phone: employeeData.phone ?? '',
           birth_date: employeeData.birth_date ?? null,
           start_date: employeeData.start_date ?? null,

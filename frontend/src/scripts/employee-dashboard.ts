@@ -4,6 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
+import { apiClient } from '../utils/api-client';
 
 import { getAuthToken, showError } from './auth';
 import { formatDate, escapeHtml } from './common';
@@ -28,14 +29,18 @@ function downloadDocument(docId?: string | number): void {
   const token = getAuthToken();
   if (!token) return;
 
-  // Create a download link and trigger it
+  // Create a download link with proper API version and authorization
+  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+  const apiPrefix = useV2 ? '/api/v2' : '/api';
+
   const link = document.createElement('a');
-  link.href = `/api/documents/${docId}/download`;
+  link.href = `${apiPrefix}/documents/${docId}/download`;
   link.download = '';
   link.style.display = 'none';
 
-  // Add authorization header
-  link.setAttribute('download', '');
+  // Add authorization header via query parameter for download
+  // Note: This is a workaround since we can't set headers on anchor tag downloads
+  link.href += `?token=${encodeURIComponent(token)}`;
 
   document.body.appendChild(link);
   link.click();
@@ -125,23 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
    * Search documents
    */
   async function searchDocuments(query: string): Promise<void> {
-    const token = getAuthToken();
-    if (!token) return;
-
     try {
-      const response = await fetch(`/api/documents/search?query=${encodeURIComponent(query)}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const documents: Document[] = await response.json();
-        displayDocuments(documents);
-      } else {
-        const error = await response.json();
-        showError(error.message ?? 'Fehler bei der Dokumentensuche');
-      }
+      const documents = await apiClient.get<Document[]>(`/documents/search?query=${encodeURIComponent(query)}`);
+      displayDocuments(documents);
     } catch (error) {
       console.error('Fehler bei der Dokumentensuche:', error);
       showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -152,23 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
    * Load employee information
    */
   async function loadEmployeeInfo(): Promise<void> {
-    const token = getAuthToken();
-    if (!token) return;
-
     try {
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const employeeInfo: EmployeeInfo = await response.json();
-        displayEmployeeInfo(employeeInfo);
-      } else {
-        const error = await response.json();
-        showError(error.message ?? 'Fehler beim Laden der Mitarbeiterinformationen');
-      }
+      const employeeInfo = await apiClient.get<EmployeeInfo>('/user/profile');
+      displayEmployeeInfo(employeeInfo);
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiterinformationen:', error);
       showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -219,22 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
    * Load employee documents
    */
   async function loadDocuments(): Promise<void> {
-    const token = getAuthToken();
-    if (!token) return;
-
     try {
-      const response = await fetch('/api/documents/my-documents', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const documents: Document[] = await response.json();
-        displayDocuments(documents);
-      } else {
-        console.error('Fehler beim Laden der Dokumente');
-      }
+      const documents = await apiClient.get<Document[]>('/documents/my-documents');
+      displayDocuments(documents);
     } catch (error) {
       console.error('Fehler beim Laden der Dokumente:', error);
     }

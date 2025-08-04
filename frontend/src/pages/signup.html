@@ -1201,31 +1201,33 @@
 
         // Check if v2 API should be used
         const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
-        
+
         // Add root user credentials - use camelCase for v2, snake_case for v1
-        const signupData = useV2 ? {
-          // v2 format (camelCase)
-          companyName: data.company_name,
-          subdomain: data.subdomain,
-          email: data.email,
-          adminEmail: data.email,
-          adminPassword: data.password,
-          adminFirstName: data.first_name,
-          adminLastName: data.last_name,
-          phone: fullPhone,
-          plan: currentPlan,
-        } : {
-          // v1 format (snake_case)
-          company_name: data.company_name,
-          subdomain: data.subdomain,
-          email: data.email,
-          admin_email: data.email,
-          admin_password: data.password,
-          admin_first_name: data.first_name,
-          admin_last_name: data.last_name,
-          phone: fullPhone,
-          plan: currentPlan,
-        };
+        const signupData = useV2
+          ? {
+              // v2 format (camelCase)
+              companyName: data.company_name,
+              subdomain: data.subdomain,
+              email: data.email,
+              adminEmail: data.email,
+              adminPassword: data.password,
+              adminFirstName: data.first_name,
+              adminLastName: data.last_name,
+              phone: fullPhone,
+              plan: currentPlan,
+            }
+          : {
+              // v1 format (snake_case)
+              company_name: data.company_name,
+              subdomain: data.subdomain,
+              email: data.email,
+              admin_email: data.email,
+              admin_password: data.password,
+              admin_first_name: data.first_name,
+              admin_last_name: data.last_name,
+              phone: fullPhone,
+              plan: currentPlan,
+            };
 
         const submitButton = e.target.querySelector('button[type="submit"]');
         const originalText = submitButton.innerHTML;
@@ -1236,7 +1238,7 @@
 
           // API URL based on feature flag (useV2 already defined above)
           const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
-          
+
           console.log(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
 
           const response = await fetch(apiUrl, {
@@ -1270,7 +1272,7 @@
           if (response.ok || (useV2 && result.success)) {
             // Extract data from v2 response if needed
             const responseData = useV2 && result.data ? result.data : result;
-            
+
             document.getElementById('successMessage').style.display = 'block';
             document.getElementById('successMessage').innerHTML =
               `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;

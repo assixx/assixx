@@ -592,6 +592,8 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
+    <!-- Feature Flags -->
+    <script src="/feature-flags.js"></script>
   </head>
   <body class="admin-dashboard">
     <!-- Unified Navigation -->
@@ -790,7 +792,6 @@
                       <th>Name</th>
                       <th>E-Mail</th>
                       <th>Mitarbeiter-ID</th>
-                      <th>Position</th>
                       <th>Abteilung</th>
                       <th>Status</th>
                       <th>Verfügbarkeit</th>
@@ -1024,10 +1025,6 @@
             <input type="text" name="last_name" class="form-control" required />
           </div>
           <div class="form-group">
-            <label class="form-label">Alter</label>
-            <input type="number" name="age" class="form-control" min="18" max="100" required />
-          </div>
-          <div class="form-group">
             <label class="form-label">Personalnummer *</label>
             <input
               type="text"
@@ -1044,10 +1041,6 @@
           </div>
           <!-- Mitarbeiter-ID wird automatisch generiert -->
           <!-- IBAN-Feld wurde entfernt -->
-          <div class="form-group">
-            <label class="form-label">Position</label>
-            <input type="text" name="position" class="form-control" />
-          </div>
           <div class="form-group">
             <label class="form-label">Abteilung</label>
             <div class="custom-dropdown">
@@ -2453,8 +2446,7 @@
             row.innerHTML = `
               <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
               <td>${employee.email || ''}</td>
-              <td>${employee.id || ''}</td>
-              <td>${employee.position || 'Mitarbeiter'}</td>
+              <td>${employee.employee_id || employee.id || ''}</td>
               <td>${employee.department || 'Keine Abteilung'}</td>
               <td>
                 <span class="badge ${employee.is_active ? 'badge-success' : 'badge-danger'}">

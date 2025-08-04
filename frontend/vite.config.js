@@ -130,7 +130,7 @@ export default defineConfig({
         if (!existsSync(scriptsDir)) mkdirSync(scriptsDir, { recursive: true });
         if (!existsSync(stylesDir)) mkdirSync(stylesDir, { recursive: true });
         if (!existsSync(fontsDir)) mkdirSync(fontsDir, { recursive: true });
-        
+
         // Copy feature-flags.js to dist
         const featureFlagsSource = resolve(__dirname, 'public/feature-flags.js');
         const featureFlagsDest = resolve(distDir, 'feature-flags.js');

@@ -600,6 +600,9 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    
+    <!-- Common Scripts with ApiClient -->
+    <script type="module" src="/scripts/common.js"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -648,10 +651,6 @@
 
           <!-- Employee Info Grid -->
           <div class="info-grid">
-            <div class="info-card">
-              <div class="info-label">Mitarbeiter-ID</div>
-              <div class="info-value" id="employee-id">-</div>
-            </div>
             <div class="info-card">
               <div class="info-label">Abteilung</div>
               <div class="info-value" id="employee-department">-</div>
@@ -774,29 +773,20 @@
 
       async function loadUserInfo() {
         try {
-          const token = localStorage.getItem('token');
-          const response = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const userData = await apiClient.get('/users/me');
+          const userName = document.getElementById('user-name');
+          const userAvatar = document.getElementById('user-avatar');
 
-          if (response.ok) {
-            const userData = await response.json();
-            const userName = document.getElementById('user-name');
-            const userAvatar = document.getElementById('user-avatar');
+          // Display first and last name
+          const displayName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.username || 'Benutzer';
+          userName.textContent = displayName;
 
-            // Display first and last name
-            const displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username || 'Benutzer';
-            userName.textContent = displayName;
-
-            // Update avatar if available
-            if (userData.profile_picture_url) {
-              userAvatar.src = userData.profile_picture_url;
-              userAvatar.onerror = function () {
-                this.src = '/assets/images/default-avatar.svg';
-              };
-            }
+          // Update avatar if available
+          if (userData.profilePictureUrl) {
+            userAvatar.src = userData.profilePictureUrl;
+            userAvatar.onerror = function () {
+              this.src = '/assets/images/default-avatar.svg';
+            };
           }
         } catch (error) {
           console.error('Error loading user info:', error);
@@ -846,25 +836,6 @@
         }
       }
 
-      async function apiCall(url, options = {}) {
-        const token = localStorage.getItem('token');
-        const defaultOptions = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        };
-
-        const response = await fetch(url, { ...defaultOptions, ...options });
-
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return;
-        }
-
-        return response;
-      }
 
       async function loadDashboardData() {
         try {
@@ -886,14 +857,17 @@
 
       async function loadEmployeeProfile() {
         try {
-          const response = await apiCall('/api/user/profile');
-          const data = await response.json();
-
-          if (data.success) {
-            const user = data.data;
-            document.getElementById('employee-id').textContent = user.employee_id || 'Nicht zugewiesen';
-            document.getElementById('employee-department').textContent = user.department || 'Nicht zugewiesen';
-            document.getElementById('employee-position').textContent = user.position || 'Mitarbeiter';
+          const user = await apiClient.get('/users/me');
+          
+          // employee-id element was removed, skip it
+          const deptElement = document.getElementById('employee-department');
+          if (deptElement) {
+            deptElement.textContent = user.department || 'Nicht zugewiesen';
+          }
+          
+          const posElement = document.getElementById('employee-position');
+          if (posElement) {
+            posElement.textContent = user.position || 'Mitarbeiter';
           }
         } catch (error) {
           console.error('Error loading profile:', error);

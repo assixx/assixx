@@ -177,7 +177,8 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 7. README.md
 8. Database Migration Guide
 9. BEFORE-STARTING-DEV befolgen (Anleitung lesen und Befehle durchführen)!!!!
-10. Entwicklung beginnen
+10.DAILY-PROGRESS.md lesen
+11. Entwicklung beginnen
 
 ## 📊 FORTSCHRITTS-DOKUMENTATION (NEU! WICHTIG!)
 

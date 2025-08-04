@@ -10,6 +10,16 @@ import { ResponseAdapter } from '../utils/response-adapter';
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
 
+// Extend window interface
+declare global {
+  interface Window {
+    apiClient: typeof apiClient;
+  }
+}
+
+// Make apiClient globally available
+window.apiClient = apiClient;
+
 // Navigation initialization
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize page protection first
@@ -378,9 +388,15 @@ export async function loadBlackboardPreview(): Promise<void> {
     if (useV2) {
       try {
         // Use API client for v2
-        const response = await apiClient.get<BlackboardEntry[] | { data?: BlackboardEntry[]; items?: BlackboardEntry[] }>('/blackboard?limit=5');
+        const response = await apiClient.get<
+          BlackboardEntry[] | { data?: BlackboardEntry[]; items?: BlackboardEntry[] }
+        >('/blackboard?limit=5');
         // v2 response might have different format, adapt if needed
-        const entries = Array.isArray(response) ? response : ((response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).data ?? (response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).items ?? []);
+        const entries = Array.isArray(response)
+          ? response
+          : ((response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).data ??
+            (response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).items ??
+            []);
         displayBlackboardItems(entries);
       } catch (error) {
         console.error('Error loading blackboard (v2):', error);

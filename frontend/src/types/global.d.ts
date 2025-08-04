@@ -11,6 +11,7 @@ interface Window {
   showError?: (message: string) => void;
   showInfo?: (message: string) => void;
   showSection?: (section: string) => void;
+  FEATURE_FLAGS?: Record<string, boolean | undefined>;
 }
 
 // Declare global functions

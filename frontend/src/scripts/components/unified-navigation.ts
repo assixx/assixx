@@ -5,8 +5,10 @@
 
 // Import types
 import type { User } from '../../../../backend/src/types/models';
+import type { Document } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
+import { apiClient } from '../../utils/api-client';
 import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
 import { switchRoleForRoot } from '../role-switch';
 
@@ -50,13 +52,7 @@ interface UserProfileResponse {
   employeeNumber?: string;
 }
 
-interface UnreadCountResponse {
-  unreadCount?: number;
-}
-
-interface PendingCountResponse {
-  pendingCount?: number;
-}
+// Removed unused interfaces
 
 // Access Control Map - Definiert welche Rollen auf welche Seiten zugreifen dürfen
 const accessControlMap: Record<string, Array<'root' | 'admin' | 'employee'>> = {
@@ -1754,9 +1750,13 @@ class UnifiedNavigation {
                   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
                   // const currentRole = localStorage.getItem('activeRole') ?? 'admin';
 
-                  // Determine endpoint based on target role
+                  // Determine endpoint based on target role and API version
+                  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_ROLE_SWITCH;
+                  const apiPrefix = useV2 ? '/api/v2' : '/api';
                   const endpoint =
-                    selectedRole === 'employee' ? '/api/role-switch/to-employee' : '/api/role-switch/to-admin';
+                    selectedRole === 'employee'
+                      ? `${apiPrefix}/role-switch/to-employee`
+                      : `${apiPrefix}/role-switch/to-admin`;
 
                   try {
                     const response = await fetch(endpoint, {
@@ -1775,12 +1775,15 @@ class UnifiedNavigation {
 
                     const data = await response.json();
 
+                    // Handle v2 API response format
+                    const tokenData = data.data ?? data; // v2 API wraps in data property
+
                     // Update token and storage
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('activeRole', data.user.activeRole);
+                    localStorage.setItem('token', tokenData.token);
+                    localStorage.setItem('activeRole', tokenData.user.activeRole);
 
                     // Also update sessionStorage for compatibility
-                    if (data.user.activeRole === 'employee') {
+                    if (tokenData.user.activeRole === 'employee') {
                       sessionStorage.setItem('roleSwitch', 'employee');
                     } else {
                       sessionStorage.removeItem('roleSwitch');
@@ -1802,7 +1805,7 @@ class UnifiedNavigation {
 
                     // Redirect to appropriate dashboard
                     setTimeout(() => {
-                      if (data.user.activeRole === 'admin') {
+                      if (tokenData.user.activeRole === 'admin') {
                         window.location.href = '/admin-dashboard';
                       } else {
                         window.location.href = '/employee-dashboard';
@@ -2112,24 +2115,15 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      const response = await fetch('/api/chat/unread-count', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data: UnreadCountResponse = await response.json();
-        const badge = document.getElementById('chat-unread-badge');
-        if (badge) {
-          const count = data.unreadCount ?? 0;
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count.toString();
-            badge.style.display = 'inline-block';
-          } else {
-            badge.style.display = 'none';
-          }
+      const data = await apiClient.get<{ unreadCount: number }>('/chat/unread-count');
+      const badge = document.getElementById('chat-unread-badge');
+      if (badge) {
+        const count = data.unreadCount ?? 0;
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count.toString();
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
         }
       }
     } catch (error) {
@@ -2150,39 +2144,37 @@ class UnifiedNavigation {
         return;
       }
 
-      const response = await fetch('/api/kvp/stats', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const data = await apiClient.get<{
+        totalSuggestions: number;
+        newSuggestions: number;
+        inProgress: number;
+        implemented: number;
+        rejected: number;
+        avgSavings: number | null;
+      }>('/kvp/dashboard/stats');
+      const badge = document.getElementById('kvp-badge');
+      if (badge && data) {
+        const currentCount = data.newSuggestions ?? 0;
 
-      if (response.ok) {
-        const data = await response.json();
-        const badge = document.getElementById('kvp-badge');
-        if (badge && data.company) {
-          const currentCount = data.company.byStatus?.new ?? 0;
+        // Check if user has clicked on KVP before
+        const hasClickedKvp = this.lastKvpClickTimestamp !== null;
 
-          // Check if user has clicked on KVP before
-          const hasClickedKvp = this.lastKvpClickTimestamp !== null;
+        // Only show badge if:
+        // 1. There are new suggestions AND
+        // 2. Either the user has never clicked on KVP OR the count has increased since last click
+        if (currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount)) {
+          badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
+          badge.style.display = 'inline-block';
+          console.info('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
+        } else {
+          badge.style.display = 'none';
+          console.info('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
+        }
 
-          // Only show badge if:
-          // 1. There are new suggestions AND
-          // 2. Either the user has never clicked on KVP OR the count has increased since last click
-          if (currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount)) {
-            badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
-            badge.style.display = 'inline-block';
-            console.info('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
-          } else {
-            badge.style.display = 'none';
-            console.info('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
-          }
-
-          // Update the last known count if it has changed
-          if (currentCount !== this.lastKnownKvpCount && !hasClickedKvp) {
-            this.lastKnownKvpCount = currentCount;
-            localStorage.setItem('lastKnownKvpCount', currentCount.toString());
-          }
+        // Update the last known count if it has changed
+        if (currentCount !== this.lastKnownKvpCount && !hasClickedKvp) {
+          this.lastKnownKvpCount = currentCount;
+          localStorage.setItem('lastKnownKvpCount', currentCount.toString());
         }
       }
     } catch (error) {
@@ -2208,57 +2200,37 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] updatePendingSurveys - Fetching pending count...');
       // Auf allen Seiten ausführen, da Badge in Sidebar immer sichtbar ist
 
-      const response = await fetch('/api/surveys/pending-count', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const data = await apiClient.get<{ pendingCount: number }>('/surveys/pending-count');
+      console.info('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
+      const badge = document.getElementById('surveys-pending-badge');
+      const parentBadge = document.getElementById('lean-management-badge');
+      console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
+      console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
 
-      console.info('[UnifiedNav] updatePendingSurveys - Response status:', response.status);
+      const count = data.pendingCount ?? 0;
 
-      if (response.ok) {
-        const data: PendingCountResponse = await response.json();
-        console.info('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
-        const badge = document.getElementById('surveys-pending-badge');
-        const parentBadge = document.getElementById('lean-management-badge');
-        console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
-        console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
-
-        const count = data.pendingCount ?? 0;
-
-        // Update child badge (in submenu)
-        if (badge) {
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count.toString();
-            badge.style.display = 'inline-block';
-            console.info('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
-          } else {
-            badge.style.display = 'none';
-            console.info('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
-          }
-        }
-
-        // Update parent badge (on LEAN-Management)
-        if (parentBadge) {
-          if (count > 0) {
-            parentBadge.textContent = count > 99 ? '99+' : count.toString();
-            parentBadge.style.display = 'inline-block';
-            console.info('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
-          } else {
-            parentBadge.style.display = 'none';
-            console.info('[UnifiedNav] updatePendingSurveys - Parent badge hidden, count is 0');
-          }
-        }
-      } else if (response.status === 404) {
-        console.info('[UnifiedNav] updatePendingSurveys - 404 error, endpoint not found');
-        // API endpoint doesn't exist yet - hide badge silently
-        const badge = document.getElementById('surveys-pending-badge');
-        if (badge) {
+      // Update child badge (in submenu)
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count.toString();
+          badge.style.display = 'inline-block';
+          console.info('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
+        } else {
           badge.style.display = 'none';
+          console.info('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
         }
-      } else {
-        console.info('[UnifiedNav] updatePendingSurveys - Error response:', response.status, response.statusText);
+      }
+
+      // Update parent badge (on LEAN-Management)
+      if (parentBadge) {
+        if (count > 0) {
+          parentBadge.textContent = count > 99 ? '99+' : count.toString();
+          parentBadge.style.display = 'inline-block';
+          console.info('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
+        } else {
+          parentBadge.style.display = 'none';
+          console.info('[UnifiedNav] updatePendingSurveys - Parent badge hidden, count is 0');
+        }
       }
     } catch (error) {
       console.error('[UnifiedNav] updatePendingSurveys - Exception:', error);
@@ -2281,18 +2253,14 @@ class UnifiedNavigation {
       if (role !== 'employee' && role !== 'admin') return;
 
       // Fetch all documents with unread status
-      const response = await fetch('/api/v2/documents', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const result = await apiClient.get<{
+        documents: Document[];
+        pagination?: { total: number; page: number; perPage: number };
+      }>('/documents');
+      // Backend returns {documents: Document[], pagination: {...}}
+      const documents = result.documents ?? [];
 
-      if (response.ok) {
-        const result = await response.json();
-        // Backend returns {data: {documents: Document[], pagination: {...}}}
-        const documents = result.data?.documents ?? result.documents ?? [];
-
+      if (documents && documents.length > 0) {
         // Count unread documents by category
         const unreadCounts = {
           company: 0,
@@ -2364,20 +2332,12 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      const response = await fetch('/api/employee/documents/mark-all-read', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      await apiClient.post('/documents/mark-all-read');
 
-      if (response.ok) {
-        // Hide the badge immediately
-        const badge = document.getElementById('documents-unread-badge');
-        if (badge) {
-          badge.style.display = 'none';
-        }
+      // Hide the badge immediately
+      const badge = document.getElementById('documents-unread-badge');
+      if (badge) {
+        badge.style.display = 'none';
       }
     } catch (error) {
       console.error('Error marking documents as read:', error);
@@ -2402,20 +2362,18 @@ class UnifiedNavigation {
     try {
       const token = localStorage.getItem('token');
       if (token && token !== 'test-mode') {
-        const response = await fetch('/api/kvp/stats', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.company) {
-            this.lastKnownKvpCount = data.company.byStatus?.new ?? 0;
-            localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
-            console.info('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
-          }
+        const data = await apiClient.get<{
+          totalSuggestions: number;
+          newSuggestions: number;
+          inProgress: number;
+          implemented: number;
+          rejected: number;
+          avgSavings: number | null;
+        }>('/kvp/dashboard/stats');
+        if (data) {
+          this.lastKnownKvpCount = data.newSuggestions ?? 0;
+          localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
+          console.info('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
         }
       }
     } catch (error) {
@@ -2541,39 +2499,36 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      const response = await fetch('/api/root/storage-info', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const data = await apiClient.get<{
+        used: number;
+        total: number;
+        percentage: number;
+        plan: string;
+        breakdown?: { documents: number; attachments: number; logs: number; backups: number };
+      }>('/root/storage');
+      const { used, total, percentage } = data;
 
-      if (response.ok) {
-        const data = await response.json();
-        const { used, total, percentage } = data;
+      // Update UI
+      const usedElement = document.getElementById('storage-used');
+      const totalElement = document.getElementById('storage-total');
+      const progressBar = document.getElementById('storage-progress-bar') as HTMLElement;
+      const percentageElement = document.getElementById('storage-percentage');
 
-        // Update UI
-        const usedElement = document.getElementById('storage-used');
-        const totalElement = document.getElementById('storage-total');
-        const progressBar = document.getElementById('storage-progress-bar') as HTMLElement;
-        const percentageElement = document.getElementById('storage-percentage');
+      if (usedElement) usedElement.textContent = this.formatBytes(used);
+      if (totalElement) totalElement.textContent = this.formatBytes(total);
+      if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
 
-        if (usedElement) usedElement.textContent = this.formatBytes(used);
-        if (totalElement) totalElement.textContent = this.formatBytes(total);
-        if (progressBar) {
-          progressBar.style.width = `${percentage}%`;
-
-          // Farbe basierend auf Nutzung
-          if (percentage >= 90) {
-            progressBar.style.backgroundColor = 'var(--error-color)';
-          } else if (percentage >= 70) {
-            progressBar.style.backgroundColor = 'var(--warning-color)';
-          } else {
-            progressBar.style.backgroundColor = 'var(--success-color)';
-          }
+        // Farbe basierend auf Nutzung
+        if (percentage >= 90) {
+          progressBar.style.backgroundColor = 'var(--error-color)';
+        } else if (percentage >= 70) {
+          progressBar.style.backgroundColor = 'var(--warning-color)';
+        } else {
+          progressBar.style.backgroundColor = 'var(--success-color)';
         }
-        if (percentageElement) percentageElement.textContent = `${percentage}% belegt`;
       }
+      if (percentageElement) percentageElement.textContent = `${percentage}% belegt`;
     } catch (error) {
       console.error('Error updating storage info:', error);
     }

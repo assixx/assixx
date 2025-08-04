@@ -180,7 +180,7 @@
         try {
           // Check if v2 API should be used
           const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
-          
+
           // Generate browser fingerprint
           const fingerprint = await BrowserFingerprint.generate();
           BrowserFingerprint.store(fingerprint);
@@ -217,7 +217,7 @@
 
           if (response.ok || (useV2 && data.success)) {
             let token, role, user;
-            
+
             if (useV2) {
               // v2 response format
               if (data.success && data.data) {
@@ -225,14 +225,14 @@
                 const refreshToken = data.data.refreshToken;
                 user = data.data.user;
                 role = user?.role || data.data.role;
-                
+
                 // Store v2 tokens
                 localStorage.setItem('accessToken', token);
                 localStorage.setItem('refreshToken', refreshToken);
-                
+
                 // Also store in old format for compatibility
                 localStorage.setItem('token', token);
-                
+
                 // Set cookie for server-side page protection (temporary compatibility)
                 document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
               } else {
@@ -244,7 +244,7 @@
               token = data.data.token;
               role = data.data.role;
               user = data.data.user;
-              
+
               // Store v1 token
               localStorage.setItem('token', token);
             }
@@ -277,9 +277,9 @@
             }
           } else {
             // Show specific error message from backend
-            const errorMessage = useV2 
-              ? (data.error?.message || data.message || 'Login fehlgeschlagen')
-              : (data.message || 'Login fehlgeschlagen');
+            const errorMessage = useV2
+              ? data.error?.message || data.message || 'Login fehlgeschlagen'
+              : data.message || 'Login fehlgeschlagen';
             showError(errorMessage);
           }
         } catch (error) {
