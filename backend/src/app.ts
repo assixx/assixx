@@ -74,6 +74,7 @@ app.use(sanitizeInputs);
 const distPath = path.join(currentDirPath, "../../frontend/dist");
 
 // Serve feature-flags.js with correct MIME type
+// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
 app.get("/feature-flags.js", rateLimiter.public, (_req: Request, res: Response): void => {
   // Try multiple locations for feature-flags.js
   const possiblePaths = [
