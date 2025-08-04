@@ -74,7 +74,7 @@ app.use(sanitizeInputs);
 const distPath = path.join(currentDirPath, "../../frontend/dist");
 
 // Serve feature-flags.js with correct MIME type
-app.get("/feature-flags.js", (_req: Request, res: Response): void => {
+app.get("/feature-flags.js", rateLimiter.public, (_req: Request, res: Response): void => {
   // Try multiple locations for feature-flags.js
   const possiblePaths = [
     path.join(distPath, "feature-flags.js"),
