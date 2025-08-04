@@ -76,7 +76,7 @@ jobs:
 
       - name: Run Docker Compose tests
         run: |
-          cp docker/.env.docker.example docker/.env.docker
+          cp docker/.env.docker.example docker/.env
           cd docker && docker compose -f docker-compose.test.yml up -d
 
           # Wait for backend to be healthy (max 90 seconds)
