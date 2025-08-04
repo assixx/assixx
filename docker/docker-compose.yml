@@ -78,6 +78,7 @@ services:
         condition: service_healthy
     networks:
       - assixx-network
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     healthcheck:
       test:
         [
@@ -157,6 +158,7 @@ services:
         condition: service_healthy
     networks:
       - assixx-network
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     healthcheck:
       test:
         [
