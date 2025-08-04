@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { randomBytes } from "crypto";
 
 import bcrypt from "bcryptjs";
 
@@ -109,11 +110,12 @@ export class Tenant {
       const hashedPassword = await bcrypt.hash(admin_password, 10);
 
       // Create user first without employee_id but WITH phone
-      // Generate unique TEMPORARY employee number using timestamp and random component
+      // Generate unique TEMPORARY employee number using timestamp and cryptographically secure random component
       const timestamp = Date.now().toString().slice(-6);
-      const random = Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, "0");
+      // Generate cryptographically secure random number between 0-999
+      const randomBuffer = randomBytes(2); // 2 bytes = 16 bits
+      const randomInt = randomBuffer.readUInt16BE(0) % 1000; // Modulo to get 0-999
+      const random = randomInt.toString().padStart(3, "0");
       const employeeNumber = `TEMP-${timestamp}${random}`;
 
       const [userResult] = await connection.query<ResultSetHeader>(
