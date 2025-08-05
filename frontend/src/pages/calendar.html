@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
     <!-- Calendar spezifische Styles -->
     <link rel="stylesheet" href="/styles/calendar.css" />
+    <script src="/feature-flags.js"></script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -536,8 +537,6 @@
       }
     </style>
     <!-- Calendar Scripts -->
-    <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
 
     <!-- MutationObserver zum Schutz der Header-Struktur -->
     <script>
@@ -595,6 +594,7 @@
     <script type="module" src="/scripts/calendar.ts"></script>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

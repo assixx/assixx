@@ -20,6 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <meta http-equiv="refresh" content="0; url=/pages/documents-search.html" />
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
@@ -916,6 +917,9 @@
       window.location.href = '/documents-search';
     </script>
 
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb Component -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

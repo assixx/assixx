@@ -155,4 +155,75 @@ Completion of Phase 4 (Post-Login UI) und Start of Phase 5 (Dashboards)
 
 ---
 
+## 📅 05.08.2025 (Montag) - Admin Dashboard Migration
+
+### 🎯 Tagesaufgabe
+Migration von admin-dashboard.ts auf API v2
+
+### ✅ Erfolge
+
+**admin-dashboard.ts vollständig migriert:**
+- ✅ loadDashboardStats - v2 Support für Admin Stats
+- ✅ loadDashboardStatsIndividually - Alle APIs (users, documents, departments, teams)
+- ✅ loadBlackboardPreview - v2 Blackboard API mit Feldnamen-Mapping
+- ✅ loadBlackboardWidget - v2 Support mit Attachment-Pfaden
+- ✅ loadRecentEmployees - v2 Users API
+- ✅ loadRecentDocuments - v2 Documents API mit Feldnamen-Mapping
+- ✅ loadTeams - v2 Teams API
+- ✅ createEmployee - v2 Users API mit snake_case zu camelCase Konvertierung
+- ✅ createDepartment - v2 Departments API
+- ✅ createTeam - v2 Teams API mit camelCase Konvertierung
+
+**Technische Verbesserungen:**
+- TypeScript Fehler behoben (response typing für apiClient)
+- Feldnamen-Mapping für v1/v2 Kompatibilität implementiert
+- Feature Flag Checks für alle API-Aufrufe hinzugefügt
+- Konsistente Error Handling für v1 und v2 APIs
+
+### 🔧 Technische Details
+
+**Implementierte Patterns:**
+```typescript
+// Feature Flag Check
+const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+
+// v2 API Aufruf mit korrektem Typing
+employees = await apiClient.get<User[]>('/users?role=employee') ?? [];
+
+// Feldnamen-Mapping für Kompatibilität
+const fileName = doc.file_name ?? doc.fileName ?? 'Unknown';
+const createdAt = doc.created_at ?? doc.createdAt ?? '';
+```
+
+### 📊 Metriken
+
+- 📝 **22 TODOs** abgearbeitet für admin-dashboard.ts
+- ✅ **12 Frontend-Dateien** migriert (18.5% von 65)
+- 🐛 **10 TypeScript Fehler** behoben
+- ⏱️ **~2 Stunden** für komplette Migration
+- 🚀 **10 API-Endpoints** in admin-dashboard.ts migriert
+
+### 🎉 Meilenstein
+
+**ADMIN-DASHBOARD.TS VOLLSTÄNDIG AUF API v2 MIGRIERT UND GETESTET!**
+
+**Zusätzliche Fixes:**
+- ✅ Blackboard Query Parameter angepasst (sortDir statt sortOrder, created_at statt createdAt)
+- ✅ Dashboard Stats nutzt jetzt loadDashboardStatsIndividually() wenn v2 APIs aktiv
+- ✅ Departments slice Error behoben - v2 Response Format korrekt behandelt
+- ✅ Alle v1 API Calls entfernt 
+
+### 📚 Status Update
+
+| Phase | Status | Fortschritt | % |
+|-------|--------|-------------|---|
+| Phase 1 (Signup) | ✅ Live | 1/1 | 100% |
+| Phase 2 (Auth) | ✅ Live | 2/2 | 100% |
+| Phase 3 (Infrastructure) | ✅ Done | 2/2 | 100% |
+| Phase 4 (Post-Login UI) | ✅ Done | 3/3 | 100% |
+| Phase 5 (Dashboards) | 🔄 In Progress | 4/8 | 50% |
+| Phase 6-10 | ⏳ Pending | 0/47 | 0% |
+
+---
+
 *Hinweis: Die vorherige DAILY-PROGRESS.md wurde archiviert unter `/docs/archive/daily-progress/DAILY-PROGRESS-2025-07-28-to-2025-08-03.md`*

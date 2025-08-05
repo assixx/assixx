@@ -32,7 +32,7 @@
 **Warum:** Erste Seite die User nach Login sehen
 - [x] employee-dashboard.ts - Employee Dashboard (migriert zu apiClient) ✅
 - [x] employee-dashboard.html - Employee Dashboard (Survey API noch v1) ✅
-- [ ] admin-dashboard.ts
+- [x] admin-dashboard.ts ✅ (05.08.2025 - Vollständig getestet und funktioniert)
 - [ ] admin-dashboard.html
 - [ ] root-dashboard.ts
 - [ ] root-dashboard.html

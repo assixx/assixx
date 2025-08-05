@@ -20,6 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/blackboard.css');
@@ -1031,6 +1032,8 @@
         await import('/scripts/auth.ts');
         // Then load unified navigation
         await import('/scripts/components/unified-navigation.ts');
+        // Load role switch
+        await import('/scripts/role-switch.ts');
         // Load breadcrumb
         const { initBreadcrumb } = await import('/scripts/components/breadcrumb.js');
         initBreadcrumb();

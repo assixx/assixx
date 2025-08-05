@@ -28,17 +28,17 @@
   );
   --accent-glow: rgba(255, 255, 255, 0.6);
 
-  /* Abstände */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
+  /* Abstände - rem für zoom-freundlichkeit */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem;  /* 8px */
+  --spacing-md: 1rem;    /* 16px */
+  --spacing-lg: 1.5rem;  /* 24px */
+  --spacing-xl: 2rem;    /* 32px */
 
-  /* Rundungen */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  /* Rundungen - rem für konsistentes scaling */
+  --radius-sm: 0.5rem;   /* 8px */
+  --radius-md: 0.75rem;  /* 12px */
+  --radius-lg: 1rem;     /* 16px */
 
   /* Schatten */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -148,12 +148,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-primary);
   line-height: 1.6;
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px - rem für zoom scaling */
 }
 
 /* Header mit Logo */
 .header {
-  padding: 8px 16px;
+  padding: 0.5rem 1rem; /* 8px 16px */
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -161,7 +161,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 56px;
+  min-height: 3.5rem; /* 56px - min-height statt height für flexibilität */
 }
 
 .logo-container {
@@ -173,13 +173,13 @@ body {
 }
 
 .logo {
-  height: 40px;
+  height: 2.5rem; /* 40px */
   width: auto;
   filter: none;
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: 1.25rem; /* 20px */
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -225,7 +225,7 @@ body {
 }
 
 .card-title {
-  font-size: 18px;
+  font-size: 1.125rem; /* 18px */
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -235,12 +235,13 @@ body {
   padding: var(--spacing-sm) var(--spacing-md);
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px */
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
+  min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
 }
 
 .btn-primary {
@@ -312,7 +313,7 @@ body {
   display: block;
   margin-bottom: var(--spacing-xs);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px */
 }
 
 .form-control {
@@ -324,7 +325,7 @@ body {
   border: var(--glass-form-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px */
 }
 
 .form-control:hover {
@@ -447,7 +448,7 @@ body {
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 2rem; /* 32px */
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: var(--spacing-xs);
@@ -455,7 +456,7 @@ body {
 
 .stat-label {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 0.875rem; /* 14px */
 }
 
 /* Responsive */

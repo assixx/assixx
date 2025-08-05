@@ -47,6 +47,7 @@ interface UserProfileResponse {
   birthDate?: string;
   profilePicture?: string;
   company_name?: string;
+  companyName?: string;
   subdomain?: string;
   employee_number?: string;
   employeeNumber?: string;
@@ -421,38 +422,48 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      // Use cached loadUserInfo from auth module instead of making a separate call
-      console.info('[UnifiedNav] Using cached loadUserInfo');
-      const userData = (await loadUserInfoFromAuth()) as UserProfileResponse & { data?: UserProfileResponse };
-      if (userData) {
-        const user = userData.user ?? userData;
+      // Make direct API call to get full user data including company_name
+      console.info('[UnifiedNav] Fetching full user profile with company data');
 
-        // Update company info (new)
+      // Check if we should use v1 or v2 API
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH || window.FEATURE_FLAGS?.USE_API_V2_USERS;
+      console.info('[UnifiedNav] useV2 flag:', useV2); // DEBUG
+
+      try {
+        if (useV2) {
+          // Use v2 API - /users/me endpoint
+          console.info('[UnifiedNav] Calling apiClient.get for /users/me'); // DEBUG
+          const userData = await apiClient.get<any>('/users/me');
+          console.info('[UnifiedNav] Full user data from v2 API:', userData); // DEBUG
+
+          if (!userData) {
+            console.error('[UnifiedNav] No user data received from v2 API');
+            return;
+          }
+
+        // Update company info - v2 uses camelCase!
         const companyElement = document.getElementById('sidebar-company-name');
-        if (companyElement) {
-          const companyName = userData.company_name ?? userData.data?.company_name ?? 'Firmenname';
+        if (companyElement && (userData.companyName || userData.company_name)) {
+          const companyName = userData.companyName || userData.company_name;
+          console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
           companyElement.textContent = companyName;
         }
 
         const domainElement = document.getElementById('sidebar-domain');
-        if (domainElement) {
-          const subdomain = userData.subdomain ?? userData.data?.subdomain ?? 'demo';
-          domainElement.textContent = `${subdomain}.assixx.de`;
+        if (domainElement && userData.subdomain) {
+          domainElement.textContent = `${userData.subdomain}.assixx.de`;
         }
 
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          const email = userData.email ?? userData.data?.email ?? user.email ?? this.currentUser?.email ?? 'User';
-          sidebarUserName.textContent = email;
+          sidebarUserName.textContent = userData.email ?? this.currentUser?.email ?? 'User';
         }
 
         const sidebarFullName = document.getElementById('sidebar-user-fullname');
         if (sidebarFullName) {
-          const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
-          const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
+          const firstName = userData.firstName || userData.first_name || '';
+          const lastName = userData.lastName || userData.last_name || '';
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             sidebarFullName.textContent = fullName;
@@ -461,15 +472,12 @@ class UnifiedNavigation {
 
         // Birthdate removed as requested
 
-        // Update employee number
+        // Update employee number - v2 uses camelCase!
         const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
-        if (sidebarEmployeeNumber) {
-          const employeeNumber =
-            userData.employee_number ??
-            userData.data?.employee_number ??
-            userData.employeeNumber ??
-            ((user as User).employeeNumber || '');
-          if (employeeNumber && employeeNumber !== '000001') {
+        const employeeNumber = userData.employeeNumber || userData.employee_number;
+        if (sidebarEmployeeNumber && employeeNumber) {
+          console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
+          if (employeeNumber !== '000001') {
             sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
           } else if (employeeNumber === '000001') {
             sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
@@ -482,9 +490,9 @@ class UnifiedNavigation {
         if (headerUserName) {
           // Same logic as sidebar-user-fullname which works correctly
           const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((userData as User).firstName || '');
           const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((userData as User).lastName || '');
           console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
           if (firstName || lastName) {
@@ -493,8 +501,8 @@ class UnifiedNavigation {
             console.info('[UnifiedNav] Set header name to:', fullName);
           } else {
             // Fallback auf Email oder Username wenn keine Namen vorhanden
-            const email = userData.email ?? userData.data?.email ?? user.email ?? this.currentUser?.email;
-            const username = userData.username ?? user.username ?? this.currentUser?.username;
+            const email = userData.email ?? userData.data?.email ?? userData.email ?? this.currentUser?.email;
+            const username = userData.username ?? userData.username ?? this.currentUser?.username;
             headerUserName.textContent = email ?? username ?? 'User';
             console.info('[UnifiedNav] Fallback to email/username:', email ?? username);
           }
@@ -507,12 +515,12 @@ class UnifiedNavigation {
             userData.profile_picture ??
             userData.data?.profile_picture ??
             userData.profilePicture ??
-            (user as User).profilePicture ??
+            (userData as User).profilePicture ??
             null;
           const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((userData as User).firstName || '');
           const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((userData as User).lastName || '');
           this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
         }
 
@@ -523,20 +531,23 @@ class UnifiedNavigation {
             userData.profile_picture ??
             userData.data?.profile_picture ??
             userData.profilePicture ??
-            (user as User).profilePicture ??
+            (userData as User).profilePicture ??
             null;
           const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((user as User).firstName || '');
+            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((userData as User).firstName || '');
           const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((user as User).lastName || '');
+            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((userData as User).lastName || '');
           this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
         }
 
         // Store profile data
         this.userProfileData = userData;
+        }
+      } catch (error) {
+        console.error('[UnifiedNav] Error in v2 API call:', error);
       }
     } catch (error) {
-      console.error('Error loading full user profile:', error);
+      console.error('[UnifiedNav] Error loading full user profile:', error);
     }
   }
 
@@ -1748,15 +1759,24 @@ class UnifiedNavigation {
                   // Admin uses different API endpoints
                   const token = localStorage.getItem('token');
                   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-                  // const currentRole = localStorage.getItem('activeRole') ?? 'admin';
+                  const currentActiveRole = localStorage.getItem('activeRole') ?? 'admin';
 
                   // Determine endpoint based on target role and API version
                   const useV2 = window.FEATURE_FLAGS?.USE_API_V2_ROLE_SWITCH;
                   const apiPrefix = useV2 ? '/api/v2' : '/api';
-                  const endpoint =
-                    selectedRole === 'employee'
-                      ? `${apiPrefix}/role-switch/to-employee`
-                      : `${apiPrefix}/role-switch/to-admin`;
+                  
+                  // Admin switching logic:
+                  // - If currently admin and switching to employee: use to-employee
+                  // - If currently employee and switching to admin: use to-original (back to admin)
+                  let endpoint;
+                  if (selectedRole === 'employee' && currentActiveRole === 'admin') {
+                    endpoint = `${apiPrefix}/role-switch/to-employee`;
+                  } else if (selectedRole === 'admin' && currentActiveRole === 'employee') {
+                    endpoint = `${apiPrefix}/role-switch/to-original`;
+                  } else {
+                    console.warn('[UnifiedNav] Invalid role switch combination:', currentActiveRole, '->', selectedRole);
+                    return;
+                  }
 
                   try {
                     const response = await fetch(endpoint, {
@@ -3043,6 +3063,8 @@ const unifiedNavigationCSS = `
     /* Collapsed state: Hover/Active NUR auf Icon */
     .sidebar.collapsed .sidebar-link {
         background: transparent;
+        font-size: 14px !important; /* Gleiche font-size wie normal state */
+        line-height: 20px !important; /* Gleiche line-height wie normal state */
     }
 
     /* Wichtig: overflow visible für collapsed sidebar damit der Kreis größer werden kann */
@@ -3062,7 +3084,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
         content: '';
         position: absolute;
-        inset: -9px;
+        inset: -8px;
         background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         border-radius: 50%;
         z-index: -1;
@@ -3101,7 +3123,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 71.9px;
+        margin-top: 72px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
     }
 
 
@@ -3293,7 +3315,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed #sidebar-user-avatar,
     .sidebar.collapsed .user-avatar,
     .sidebar.collapsed .user-info-card .user-avatar {
-        margin-left: -14px !important;
+        margin-left: -13.5px !important;
     }
 
     .user-info-card:hover .user-avatar {
@@ -3439,8 +3461,8 @@ const unifiedNavigationCSS = `
         border-radius: 18px;
         position: relative;
         overflow: hidden;
-        border: 1px solid transparent;
-        font-size: 0.9rem;
+        font-size: 14px; /* Explizite px statt rem für konsistenz */
+        line-height: 20px; /* Explizite line-height */
         margin-bottom: 6px;
         height: 36px;
         box-sizing: border-box;
@@ -3589,10 +3611,11 @@ const unifiedNavigationCSS = `
 
     /* Storage Widget - Glassmorphismus Style */
     .storage-widget {
-        /*position: sticky;*/
+        margin-top: 50px
+        /*position: sticky;
         bottom: 0;
         margin: var(--spacing-md);
-        /*margin-top: auto;*/
+        margin-top: auto;
         margin-top: 40px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px) saturate(180%);
@@ -3603,15 +3626,15 @@ const unifiedNavigationCSS = `
         box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        /* transition: all 0.3s ease; */
+        transition: all 0.3s ease; */
     }
 
     .storage-widget:hover {
-        background: rgba(255, 255, 255, 0.05);
+        /*background: rgba(255, 255, 255, 0.05);
         transform: translateY(-2px);
         box-shadow:
             0 10px 40px rgba(33, 150, 243, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);*/
     }
 
     .storage-header {

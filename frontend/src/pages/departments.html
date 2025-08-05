@@ -20,13 +20,14 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
 
-      /* CSS Variablen */
+      /* CSS Variablen
       :root {
         --primary-color: #2196f3;
         --secondary-color: #6c757d;
@@ -36,7 +37,7 @@
         --radius-md: 12px;
         --radius-lg: 16px;
         --background-light: rgba(255, 255, 255, 0.02);
-      }
+      }*/
 
       /* Glassmorphismus Background */
       body {
@@ -94,40 +95,85 @@
         -webkit-overflow-scrolling: touch;
       }
 
-      /* Table Styles - Genau wie in admin-dashboard */
-      .table {
+      /* Table Styles - Using admin-table design from manage-admins */
+      .admin-table {
         width: 100%;
         border-collapse: collapse;
-        background-color: var(--background-light);
-        border-radius: var(--radius-md);
-        overflow: hidden;
+        margin-top: 20px;
       }
 
-      .table th {
-        background: hsla(0, 0%, 100%, 0.03);
-        padding: 12px 16px;
+      .admin-table th {
+        background: rgba(33, 150, 243, 0.1);
+        padding: 12px;
         text-align: left;
         font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
-      }
-
-      .table td {
-        padding: 16px;
-        border-bottom: 1px solid hsla(0, 0%, 100%, 0.05);
         color: var(--text-primary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .admin-table td {
+        padding: 12px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .admin-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      /* Action Buttons - From manage-admins */
+      .action-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        cursor: pointer;
         font-size: 14px;
-      }
-
-      .table tbody tr {
         transition: all 0.2s ease;
+        margin: 0 4px;
       }
 
-      .table tbody tr:hover {
-        background: hsla(0, 0%, 100%, 0.02);
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+      }
+
+      .action-btn.edit {
+        border-color: rgba(33, 150, 243, 0.3);
+      }
+
+      .action-btn.edit:hover {
+        background: rgba(33, 150, 243, 0.2);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .action-btn.delete {
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .action-btn.delete:hover {
+        background: rgba(244, 67, 54, 0.2);
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      .action-btn.activate {
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+
+      .action-btn.activate:hover {
+        background: rgba(76, 175, 80, 0.2);
+        border-color: rgba(76, 175, 80, 0.5);
+      }
+
+      .action-btn.deactivate {
+        border-color: rgba(255, 152, 0, 0.3);
+      }
+
+      .action-btn.deactivate:hover {
+        background: rgba(255, 152, 0, 0.2);
+        border-color: rgba(255, 152, 0, 0.5);
       }
 
       /* Badge Styles - Exakt aus admin-dashboard.html kopiert */
@@ -386,6 +432,33 @@
         opacity: 0.7;
       }
 
+      /* Floating Add Button - wie bei manage-admins */
+      .add-department-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: rgba(33, 150, 243, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .add-department-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
+      }
+
       /* Utility Classes */
       .mb-3 {
         margin-bottom: 1rem;
@@ -396,7 +469,7 @@
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    
+
     <!-- Common Scripts with ApiClient -->
     <script type="module" src="/scripts/common.js"></script>
   </head>
@@ -418,7 +491,6 @@
                 <h2 class="card-title">Abteilungsübersicht</h2>
                 <p class="text-secondary" class="u-mt-text">Abteilungen erstellen und verwalten</p>
               </div>
-              <button class="btn btn-primary" id="direct-department-button" onclick="showDepartmentModal()">Neue Abteilung</button>
             </div>
             <div class="table-responsive">
               <div id="departmentTableContent">
@@ -468,8 +540,12 @@
       </div>
     </div>
 
+    <!-- Floating Add Button -->
+    <button class="add-department-btn" onclick="showDepartmentModal()">+</button>
+
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
     <script type="module">
@@ -506,7 +582,7 @@
         }
 
         const tableHTML = `
-          <table class="table">
+          <table class="admin-table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -550,11 +626,11 @@
                     <td>${dept.employee_count || 0}</td>
                     <td>${dept.team_count || 0}</td>
                     <td>
-                      <button class="btn btn-sm ${dept.status === 'active' ? 'btn-status-active' : 'btn-status-inactive'}" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
+                      <button class="action-btn ${dept.status === 'active' ? 'deactivate' : 'activate'}" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
                         ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
                       </button>
-                      <button class="btn btn-sm btn-primary" onclick="editDepartment(${dept.id})">Bearbeiten</button>
-                      <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${dept.id})">Löschen</button>
+                      <button class="action-btn edit" onclick="editDepartment(${dept.id})">Bearbeiten</button>
+                      <button class="action-btn delete" onclick="deleteDepartment(${dept.id})">Löschen</button>
                     </td>
                   </tr>
                   `;

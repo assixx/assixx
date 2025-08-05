@@ -57,14 +57,18 @@ body[data-page="blackboard"] #breadcrumb-container + * {
    ======================================== */
 
 /* Admin Dashboard - benötigt mehr negativen Abstand */
+/* REMOVED - Now using standard -37px like other pages
 .admin-dashboard #breadcrumb-container + * {
   margin-top: -22px !important;
 }
+*/
 
 /* Document Upload - benötigt dieselben Anpassungen wie Admin Dashboard */
+/* REMOVED - Now using standard -37px like other pages
 .document-upload #breadcrumb-container + * {
   margin-top: -22px !important;
 }
+*/
 
 /* Root features page - minimal spacing */
 #breadcrumb-container + .plan-header {
