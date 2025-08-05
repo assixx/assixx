@@ -211,7 +211,10 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(request.featureCode);
       if (!feature) {
-        throw new ServiceErrorClass("NOT_FOUND", `Feature ${request.featureCode} not found`);
+        throw new ServiceErrorClass(
+          "NOT_FOUND",
+          `Feature ${request.featureCode} not found`,
+        );
       }
 
       const options: ActivationOptions = {
@@ -296,7 +299,10 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        throw new ServiceErrorClass("NOT_FOUND", `Feature ${featureCode} not found`);
+        throw new ServiceErrorClass(
+          "NOT_FOUND",
+          `Feature ${featureCode} not found`,
+        );
       }
 
       const [result] = await execute<ResultSetHeader>(
@@ -309,7 +315,10 @@ export class FeaturesService {
       );
 
       if (result.affectedRows === 0) {
-        throw new ServiceErrorClass("NOT_FOUND", `Feature ${featureCode} not found for tenant`);
+        throw new ServiceErrorClass(
+          "NOT_FOUND",
+          `Feature ${featureCode} not found for tenant`,
+        );
       }
 
       // Log the deactivation
@@ -338,7 +347,10 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        throw new ServiceErrorClass("NOT_FOUND", `Feature ${featureCode} not found`);
+        throw new ServiceErrorClass(
+          "NOT_FOUND",
+          `Feature ${featureCode} not found`,
+        );
       }
 
       const [rows] = await query<DbFeatureUsageStats[]>(

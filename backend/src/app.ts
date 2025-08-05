@@ -75,31 +75,35 @@ const distPath = path.join(currentDirPath, "../../frontend/dist");
 
 // Serve feature-flags.js with correct MIME type
 // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-app.get("/feature-flags.js", rateLimiter.public, (_req: Request, res: Response): void => {
-  // Try multiple locations for feature-flags.js
-  const possiblePaths = [
-    path.join(distPath, "feature-flags.js"),
-    path.join(currentDirPath, "../../frontend/public/feature-flags.js"),
-    path.join(currentDirPath, "../../dist/feature-flags.js"),
-  ];
+app.get(
+  "/feature-flags.js",
+  rateLimiter.public,
+  (_req: Request, res: Response): void => {
+    // Try multiple locations for feature-flags.js
+    const possiblePaths = [
+      path.join(distPath, "feature-flags.js"),
+      path.join(currentDirPath, "../../frontend/public/feature-flags.js"),
+      path.join(currentDirPath, "../../dist/feature-flags.js"),
+    ];
 
-  let featureFlagsPath = "";
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-      featureFlagsPath = p;
-      break;
+    let featureFlagsPath = "";
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        featureFlagsPath = p;
+        break;
+      }
     }
-  }
 
-  if (!featureFlagsPath) {
-    res.status(404).send("feature-flags.js not found");
-    return;
-  }
+    if (!featureFlagsPath) {
+      res.status(404).send("feature-flags.js not found");
+      return;
+    }
 
-  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.sendFile(featureFlagsPath);
-});
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.sendFile(featureFlagsPath);
+  },
+);
 
 // Clean URLs redirect middleware - MUST BE BEFORE static files
 app.use((req: Request, res: Response, next: NextFunction): void => {

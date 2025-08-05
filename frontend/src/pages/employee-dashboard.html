@@ -601,7 +601,7 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    
+
     <!-- Common Scripts with ApiClient -->
     <script type="module" src="/scripts/common.js"></script>
   </head>
@@ -837,7 +837,6 @@
         }
       }
 
-
       async function loadDashboardData() {
         try {
           // Load employee profile data
@@ -859,13 +858,13 @@
       async function loadEmployeeProfile() {
         try {
           const user = await apiClient.get('/users/me');
-          
+
           // employee-id element was removed, skip it
           const deptElement = document.getElementById('employee-department');
           if (deptElement) {
             deptElement.textContent = user.department || 'Nicht zugewiesen';
           }
-          
+
           const posElement = document.getElementById('employee-position');
           if (posElement) {
             posElement.textContent = user.position || 'Mitarbeiter';

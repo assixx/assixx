@@ -9,7 +9,7 @@ import type { Document } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
-import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
+// import { loadUserInfo as loadUserInfoFromAuth } from '../auth'; // Currently unused
 import { switchRoleForRoot } from '../role-switch';
 
 // Declare global type for window
@@ -426,14 +426,14 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] Fetching full user profile with company data');
 
       // Check if we should use v1 or v2 API
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH || window.FEATURE_FLAGS?.USE_API_V2_USERS;
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? window.FEATURE_FLAGS?.USE_API_V2_USERS;
       console.info('[UnifiedNav] useV2 flag:', useV2); // DEBUG
 
       try {
         if (useV2) {
           // Use v2 API - /users/me endpoint
           console.info('[UnifiedNav] Calling apiClient.get for /users/me'); // DEBUG
-          const userData = await apiClient.get<any>('/users/me');
+          const userData = await apiClient.get<User>('/users/me');
           console.info('[UnifiedNav] Full user data from v2 API:', userData); // DEBUG
 
           if (!userData) {
@@ -441,107 +441,125 @@ class UnifiedNavigation {
             return;
           }
 
-        // Update company info - v2 uses camelCase!
-        const companyElement = document.getElementById('sidebar-company-name');
-        if (companyElement && (userData.companyName || userData.company_name)) {
-          const companyName = userData.companyName || userData.company_name;
-          console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
-          companyElement.textContent = companyName;
-        }
-
-        const domainElement = document.getElementById('sidebar-domain');
-        if (domainElement && userData.subdomain) {
-          domainElement.textContent = `${userData.subdomain}.assixx.de`;
-        }
-
-        // Update user info card with full details
-        const sidebarUserName = document.getElementById('sidebar-user-name');
-        if (sidebarUserName) {
-          sidebarUserName.textContent = userData.email ?? this.currentUser?.email ?? 'User';
-        }
-
-        const sidebarFullName = document.getElementById('sidebar-user-fullname');
-        if (sidebarFullName) {
-          const firstName = userData.firstName || userData.first_name || '';
-          const lastName = userData.lastName || userData.last_name || '';
-          if (firstName || lastName) {
-            const fullName = `${firstName} ${lastName}`.trim();
-            sidebarFullName.textContent = fullName;
+          // Update company info - v2 uses camelCase!
+          const companyElement = document.getElementById('sidebar-company-name');
+          if (companyElement && (userData.companyName ?? userData.company_name)) {
+            const companyName = userData.companyName ?? userData.company_name;
+            console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
+            companyElement.textContent = companyName;
           }
-        }
 
-        // Birthdate removed as requested
-
-        // Update employee number - v2 uses camelCase!
-        const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
-        const employeeNumber = userData.employeeNumber || userData.employee_number;
-        if (sidebarEmployeeNumber && employeeNumber) {
-          console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
-          if (employeeNumber !== '000001') {
-            sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
-          } else if (employeeNumber === '000001') {
-            sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
-            sidebarEmployeeNumber.style.color = 'var(--warning-color)';
+          const domainElement = document.getElementById('sidebar-domain');
+          if (domainElement && userData.subdomain) {
+            domainElement.textContent = `${userData.subdomain}.assixx.de`;
           }
-        }
 
-        // Update header user name with full name
-        const headerUserName = document.getElementById('user-name');
-        if (headerUserName) {
-          // Same logic as sidebar-user-fullname which works correctly
-          const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((userData as User).firstName || '');
-          const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((userData as User).lastName || '');
-          console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
-
-          if (firstName || lastName) {
-            const fullName = `${firstName} ${lastName}`.trim();
-            headerUserName.textContent = fullName;
-            console.info('[UnifiedNav] Set header name to:', fullName);
-          } else {
-            // Fallback auf Email oder Username wenn keine Namen vorhanden
-            const email = userData.email ?? userData.data?.email ?? userData.email ?? this.currentUser?.email;
-            const username = userData.username ?? userData.username ?? this.currentUser?.username;
-            headerUserName.textContent = email ?? username ?? 'User';
-            console.info('[UnifiedNav] Fallback to email/username:', email ?? username);
+          // Update user info card with full details
+          const sidebarUserName = document.getElementById('sidebar-user-name');
+          if (sidebarUserName) {
+            sidebarUserName.textContent = userData.email ?? this.currentUser?.email ?? 'User';
           }
-        }
 
-        // Update avatar if we have profile picture
-        const sidebarAvatar = document.getElementById('sidebar-user-avatar');
-        if (sidebarAvatar) {
-          const profilePic =
-            userData.profile_picture ??
-            userData.data?.profile_picture ??
-            userData.profilePicture ??
-            (userData as User).profilePicture ??
-            null;
-          const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((userData as User).firstName || '');
-          const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((userData as User).lastName || '');
-          this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
-        }
+          const sidebarFullName = document.getElementById('sidebar-user-fullname');
+          if (sidebarFullName) {
+            const firstName = userData.firstName ?? userData.first_name ?? '';
+            const lastName = userData.lastName ?? userData.last_name ?? '';
+            if (firstName || lastName) {
+              const fullName = `${firstName} ${lastName}`.trim();
+              sidebarFullName.textContent = fullName;
+            }
+          }
 
-        // Also update header avatar
-        const headerAvatar = document.getElementById('user-avatar');
-        if (headerAvatar) {
-          const profilePic =
-            userData.profile_picture ??
-            userData.data?.profile_picture ??
-            userData.profilePicture ??
-            (userData as User).profilePicture ??
-            null;
-          const firstName =
-            userData.first_name ?? userData.data?.first_name ?? userData.firstName ?? ((userData as User).firstName || '');
-          const lastName =
-            userData.last_name ?? userData.data?.last_name ?? userData.lastName ?? ((userData as User).lastName || '');
-          this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
-        }
+          // Birthdate removed as requested
 
-        // Store profile data
-        this.userProfileData = userData;
+          // Update employee number - v2 uses camelCase!
+          const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
+          const employeeNumber = userData.employeeNumber ?? userData.employee_number;
+          if (sidebarEmployeeNumber && employeeNumber) {
+            console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
+            if (employeeNumber !== '000001') {
+              sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
+            } else if (employeeNumber === '000001') {
+              sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
+              sidebarEmployeeNumber.style.color = 'var(--warning-color)';
+            }
+          }
+
+          // Update header user name with full name
+          const headerUserName = document.getElementById('user-name');
+          if (headerUserName) {
+            // Same logic as sidebar-user-fullname which works correctly
+            const firstName =
+              userData.first_name ??
+              userData.data?.first_name ??
+              userData.firstName ??
+              ((userData as User).firstName || '');
+            const lastName =
+              userData.last_name ??
+              userData.data?.last_name ??
+              userData.lastName ??
+              ((userData as User).lastName || '');
+            console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
+
+            if (firstName || lastName) {
+              const fullName = `${firstName} ${lastName}`.trim();
+              headerUserName.textContent = fullName;
+              console.info('[UnifiedNav] Set header name to:', fullName);
+            } else {
+              // Fallback auf Email oder Username wenn keine Namen vorhanden
+              const email = userData.email ?? userData.data?.email ?? userData.email ?? this.currentUser?.email;
+              const username = userData.username ?? userData.username ?? this.currentUser?.username;
+              headerUserName.textContent = email ?? username ?? 'User';
+              console.info('[UnifiedNav] Fallback to email/username:', email ?? username);
+            }
+          }
+
+          // Update avatar if we have profile picture
+          const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+          if (sidebarAvatar) {
+            const profilePic =
+              userData.profile_picture ??
+              userData.data?.profile_picture ??
+              userData.profilePicture ??
+              (userData as User).profilePicture ??
+              null;
+            const firstName =
+              userData.first_name ??
+              userData.data?.first_name ??
+              userData.firstName ??
+              ((userData as User).firstName || '');
+            const lastName =
+              userData.last_name ??
+              userData.data?.last_name ??
+              userData.lastName ??
+              ((userData as User).lastName || '');
+            this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
+          }
+
+          // Also update header avatar
+          const headerAvatar = document.getElementById('user-avatar');
+          if (headerAvatar) {
+            const profilePic =
+              userData.profile_picture ??
+              userData.data?.profile_picture ??
+              userData.profilePicture ??
+              (userData as User).profilePicture ??
+              null;
+            const firstName =
+              userData.first_name ??
+              userData.data?.first_name ??
+              userData.firstName ??
+              ((userData as User).firstName || '');
+            const lastName =
+              userData.last_name ??
+              userData.data?.last_name ??
+              userData.lastName ??
+              ((userData as User).lastName || '');
+            this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
+          }
+
+          // Store profile data
+          this.userProfileData = userData;
         }
       } catch (error) {
         console.error('[UnifiedNav] Error in v2 API call:', error);
@@ -1764,7 +1782,7 @@ class UnifiedNavigation {
                   // Determine endpoint based on target role and API version
                   const useV2 = window.FEATURE_FLAGS?.USE_API_V2_ROLE_SWITCH;
                   const apiPrefix = useV2 ? '/api/v2' : '/api';
-                  
+
                   // Admin switching logic:
                   // - If currently admin and switching to employee: use to-employee
                   // - If currently employee and switching to admin: use to-original (back to admin)
@@ -1774,7 +1792,12 @@ class UnifiedNavigation {
                   } else if (selectedRole === 'admin' && currentActiveRole === 'employee') {
                     endpoint = `${apiPrefix}/role-switch/to-original`;
                   } else {
-                    console.warn('[UnifiedNav] Invalid role switch combination:', currentActiveRole, '->', selectedRole);
+                    console.warn(
+                      '[UnifiedNav] Invalid role switch combination:',
+                      currentActiveRole,
+                      '->',
+                      selectedRole,
+                    );
                     return;
                   }
 
