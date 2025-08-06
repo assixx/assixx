@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+import { ApiClient } from '../utils/api-client';
 
 import { getAuthToken } from './auth';
 
@@ -74,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Initialize API client
+  const apiClient = ApiClient.getInstance();
+
   // Load user info in header
   void loadHeaderUserInfo();
 
@@ -89,21 +93,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user has temporary employee number
   async function checkEmployeeNumber(): Promise<void> {
     try {
-      const response = await fetch('/api/users/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      interface UserWithEmployeeNumber extends User {
+        employeeNumber?: string;
+        employee_number?: string;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
-        const user = data.data ?? data.user;
+      const user = await apiClient.request<UserWithEmployeeNumber>('/users/me');
 
-        // Check if user has temporary employee number
-        const employeeNumber = user.employeeNumber ?? user.employee_number ?? '';
-        if (employeeNumber === '000001' || employeeNumber.startsWith('TEMP-')) {
-          showEmployeeNumberModal();
-        }
+      // Check if user has temporary employee number
+      const employeeNumber = user.employeeNumber ?? user.employee_number ?? '';
+      if (employeeNumber === '000001' || employeeNumber.startsWith('TEMP-')) {
+        showEmployeeNumberModal();
       }
     } catch (error) {
       console.error('Error checking employee number:', error);
@@ -139,24 +139,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-          const response = await fetch('/api/users/me', {
+          await apiClient.request('/users/me', {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
             body: JSON.stringify({ employee_number: employeeNumber }),
           });
 
-          if (response.ok) {
-            alert('Personalnummer erfolgreich gespeichert.');
-            modal.style.display = 'none';
-            // Reload to update UI
-            window.location.reload();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message ?? 'Personalnummer konnte nicht gespeichert werden.'}`);
-          }
+          alert('Personalnummer erfolgreich gespeichert.');
+          modal.style.display = 'none';
+          // Reload to update UI
+          window.location.reload();
         } catch (error) {
           console.error('Error updating employee number:', error);
           alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -199,26 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const response = await fetch('/root/create-admin', {
+      await apiClient.request('/root/admins', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(adminData),
       });
 
-      if (response.ok) {
-        await response.json();
-
-        alert('Admin erfolgreich erstellt');
-        createAdminForm.reset();
-        void loadAdmins();
-      } else {
-        const error = await response.json();
-
-        alert(`Fehler: ${error.message}`);
-      }
+      alert('Admin erfolgreich erstellt');
+      createAdminForm.reset();
+      void loadAdmins();
     } catch (error) {
       console.error('Fehler beim Erstellen des Admins:', error);
 
@@ -233,19 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dashboardContent) return;
 
     try {
-      const response = await fetch('/api/root-dashboard-data', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data: DashboardData = await response.json();
-        console.info('Dashboard data:', data);
-        dashboardContent.innerHTML = ``;
-      } else {
-        console.error('Error loading dashboard:', response.status);
-      }
+      const data: DashboardData = await apiClient.request('/root/dashboard');
+      console.info('Dashboard data:', data);
+      dashboardContent.innerHTML = ``;
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
@@ -255,34 +224,25 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadDashboardStats(): Promise<void> {
     try {
       const [adminsResponse, usersResponse] = await Promise.all([
-        fetch('/root/admins', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('/api/users', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        apiClient.request<{ admins: AdminUser[] }>('/root/admins'),
+        apiClient.request<{ data: User[] }>('/users'),
       ]);
 
-      if (adminsResponse.ok && usersResponse.ok) {
-        const adminsData = await adminsResponse.json();
-        const usersData = await usersResponse.json();
+      const admins = adminsResponse.admins || [];
+      const users = usersResponse.data || [];
 
-        const admins: AdminUser[] = adminsData.data ?? adminsData ?? [];
-        const users: User[] = usersData.data ?? usersData ?? [];
+      // Update counters
+      const adminCount = document.getElementById('admin-count');
+      const userCount = document.getElementById('user-count');
+      const tenantCount = document.getElementById('tenant-count');
 
-        // Update counters
-        const adminCount = document.getElementById('admin-count');
-        const userCount = document.getElementById('user-count');
-        const tenantCount = document.getElementById('tenant-count');
-
-        if (adminCount && Array.isArray(admins)) {
-          adminCount.textContent = admins.length.toString();
-        }
-        if (userCount && Array.isArray(users)) {
-          userCount.textContent = users.length.toString();
-        }
-        if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
+      if (adminCount && Array.isArray(admins)) {
+        adminCount.textContent = admins.length.toString();
       }
+      if (userCount && Array.isArray(users)) {
+        userCount.textContent = users.length.toString();
+      }
+      if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
     }
@@ -292,25 +252,15 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadAdmins(): Promise<void> {
     try {
       console.info('Loading admins...');
-      const response = await fetch('/root/admins', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.request<{ admins: AdminUser[] }>('/root/admins');
+      const admins = response.admins || [];
+      console.info('Loaded admins:', admins);
+      displayAdmins(admins);
 
-      if (response.ok) {
-        const data = await response.json();
-        const admins: AdminUser[] = data.data ?? data ?? [];
-        console.info('Loaded admins:', admins);
-        displayAdmins(admins);
-
-        // Update admin count
-        const adminCount = document.getElementById('admin-count');
-        if (adminCount && Array.isArray(admins)) {
-          adminCount.textContent = admins.length.toString();
-        }
-      } else {
-        console.error('Error loading admins:', response.status);
+      // Update admin count
+      const adminCount = document.getElementById('admin-count');
+      if (adminCount && Array.isArray(admins)) {
+        adminCount.textContent = admins.length.toString();
       }
     } catch (error) {
       console.error('Fehler beim Laden der Admins:', error);
@@ -358,15 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Try to fetch full user profile for more details
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = (await response.json()) as { data?: User; user?: User } & User;
-        const user = userData.data ?? userData.user ?? userData;
+      try {
+        const user = await apiClient.request<User>('/users/me');
 
         // Update username with full name if available
         if (user.first_name || user.last_name) {
@@ -383,6 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.src = '/images/default-avatar.svg';
           };
         }
+      } catch {
+        // Error is already logged in the outer catch
       }
     } catch (error) {
       console.error('Error loading user info:', error);
@@ -398,37 +343,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // Activity Logs laden
   async function loadActivityLogs(): Promise<void> {
     try {
-      const response = await fetch('/api/logs?limit=20', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Use v2 API directly via apiClient
+      interface LogEntry {
+        id: number;
+        created_at: string;
+        action: string;
+        user_name: string;
+        user_role: string;
+        details?: string;
+      }
 
-      if (response.ok) {
-        const result = await response.json();
-        const logsContainer = document.getElementById('activity-logs');
+      const result = await apiClient.request<{
+        logs?: LogEntry[];
+        data?: {
+          logs: LogEntry[];
+          pagination?: { limit: number; offset: number; total: number; hasMore: boolean };
+        };
+      }>('/logs?limit=20');
+      const logsContainer = document.getElementById('activity-logs');
 
-        if (logsContainer && result.success && result.data) {
-          const logs = result.data.logs;
+      if (logsContainer && result) {
+        // Handle both response formats (direct logs array or nested in data)
+        const logs = result.logs ?? result.data?.logs ?? [];
 
-          if (logs.length === 0) {
-            logsContainer.innerHTML =
-              '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>';
-            return;
-          }
+        if (logs.length === 0) {
+          logsContainer.innerHTML =
+            '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>';
+          return;
+        }
 
-          logsContainer.innerHTML = logs
-            .map(
-              (log: { created_at: string; action: string; user_name: string; user_role: string; details?: string }) => {
-                const date = new Date(log.created_at);
-                const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-                const dateString = date.toLocaleDateString('de-DE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                });
+        logsContainer.innerHTML = logs
+          .map(
+            (log: { created_at: string; action: string; user_name: string; user_role: string; details?: string }) => {
+              const date = new Date(log.created_at);
+              const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+              const dateString = date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
 
-                return `
+              return `
               <div class="log-entry" onclick="window.location.href = "/logs"">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
@@ -441,10 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
             `;
-              },
-            )
-            .join('');
-        }
+            },
+          )
+          .join('');
       }
     } catch (error) {
       console.error('Error loading activity logs:', error);

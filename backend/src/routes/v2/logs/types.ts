@@ -25,7 +25,9 @@ export interface LogsListResponse {
     total: number;
     page: number;
     limit: number;
+    offset: number;
     totalPages: number;
+    hasMore: boolean;
   };
 }
 

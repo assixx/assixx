@@ -57,6 +57,25 @@
 
       <!-- Login Form -->
       <div class="login-card card">
+        <!-- Session Expired Alert -->
+        <div id="session-expired-alert" class="alert-warning" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; color: #ffc107;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">⚠️</span>
+            <div>
+              <strong>Sitzung abgelaufen</strong><br>
+              <span style="font-size: 14px;">Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div id="error-alert" class="alert-danger" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3); border-radius: 8px; color: #dc3545;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">❌</span>
+            <div id="error-message"></div>
+          </div>
+        </div>
+
         <form id="loginForm">
           <div class="form-group">
             <label class="form-label">E-Mail</label>
@@ -91,6 +110,34 @@
 
     <script type="module">
       import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
+
+      // Check for session expired parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('session') === 'expired' || urlParams.get('timeout') === 'true') {
+        const sessionAlert = document.getElementById('session-expired-alert');
+        if (sessionAlert) {
+          sessionAlert.style.display = 'block';
+        }
+        // Clear the URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // Show error function
+      function showError(message) {
+        const errorAlert = document.getElementById('error-alert');
+        const errorMessage = document.getElementById('error-message');
+        if (errorAlert && errorMessage) {
+          errorMessage.textContent = message;
+          errorAlert.style.display = 'block';
+          // Hide after 5 seconds
+          setTimeout(() => {
+            errorAlert.style.display = 'none';
+          }, 5000);
+        }
+      }
+
+      // Make showError globally available
+      window.showError = showError;
 
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {

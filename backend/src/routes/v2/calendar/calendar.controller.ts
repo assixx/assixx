@@ -401,7 +401,7 @@ export async function updateEvent(
         userId,
         userDepartmentId,
       )) as unknown as CalendarEvent;
-    } catch (error) {
+    } catch {
       // If we can't get the old event (e.g., no permission), that's okay
       // The updateEvent method will handle permission checks properly
     }
@@ -523,7 +523,7 @@ export async function deleteEvent(
         userId,
         userDepartmentId,
       )) as unknown as CalendarEvent;
-    } catch (error) {
+    } catch {
       // If we can't get the event (e.g., no permission), that's okay
       // The deleteEvent method will handle permission checks properly
     }

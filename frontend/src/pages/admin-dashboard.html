@@ -930,7 +930,7 @@
     </div>
 
     <!-- Employee Status Modal -->
-    <div id="employee-status-modal" class="modal" class="u-hidden">
+    <div id="employee-status-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Mitarbeiter-Status ändern</h3>
@@ -951,7 +951,7 @@
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="dropdown-options" id="employee-status-dropdown" class="u-hidden">
+              <div class="dropdown-options" id="employee-status-dropdown">
                 <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'available', 'Verfügbar')">
                   <span class="badge badge-success">Verfügbar</span>
                 </div>
@@ -1050,7 +1050,7 @@
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="dropdown-options" id="employee-department-dropdown" style="display: none">
+              <div class="dropdown-options" id="employee-department-dropdown">
                 <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
                   Keine Abteilung
                 </div>
@@ -1274,6 +1274,7 @@
       }
 
       .dropdown-options {
+        display: none; /* Initially hidden */
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
@@ -1287,6 +1288,10 @@
         max-height: 200px;
         overflow-y: auto;
         z-index: 1001;
+      }
+
+      .dropdown-options.show {
+        display: block;
       }
 
       .dropdown-option {
@@ -1383,11 +1388,7 @@
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      import apiService from '/scripts/services/api.service.js';
-      
-      // Make apiClient available globally for inline scripts
-      window.apiClient = apiService;
-      
+
       // Breadcrumb wird automatisch generiert basierend auf der URL
       initBreadcrumb();
     </script>
@@ -1604,15 +1605,16 @@
         const display = document.getElementById(dropdownId + '-display');
 
         if (dropdown && display) {
-          dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+          // Use class toggle instead of inline style
+          dropdown.classList.toggle('show');
           display.classList.toggle('active');
 
           // Optional: Close when clicking outside
-          if (dropdown.style.display === 'block') {
+          if (dropdown.classList.contains('show')) {
             setTimeout(() => {
               document.addEventListener('click', function closeDropdown(e) {
                 if (!e.target.closest('.custom-dropdown')) {
-                  dropdown.style.display = 'none';
+                  dropdown.classList.remove('show');
                   display.classList.remove('active');
                   document.removeEventListener('click', closeDropdown);
                 }
@@ -1630,7 +1632,7 @@
         if (hiddenInput && display && dropdown) {
           hiddenInput.value = value;
           display.querySelector('span').textContent = text;
-          dropdown.style.display = 'none';
+          dropdown.classList.remove('show');
           display.classList.remove('active');
 
           // Spezielle Logik für Employee Status Dropdown
@@ -1754,11 +1756,12 @@
         try {
           // Mitarbeiter-Daten laden
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? window.apiClient.request(`/users/${employeeId}`, {
-                method: 'GET'
+            ? fetch(`/api/v2/users/${employeeId}`, {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
               })
-              .then(data => ({ ok: true, json: async () => data }))
-              .catch(err => ({ ok: false, statusText: err.message }))
             : fetch(`/api/users/${employeeId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               }));
@@ -1770,14 +1773,28 @@
             throw new Error('Failed to load employee data');
           }
 
-          const employee = await response.json();
+          const responseData = await response.json();
+          // Handle v2 API response structure
+          const employee =
+            window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
           console.log('Employee data loaded:', employee);
 
           // Modal-Felder befüllen
+          console.log('Looking for modal elements...');
+          const modal = document.getElementById('employee-status-modal');
+          console.log('Modal found:', !!modal);
+
           const employeeIdInput = document.getElementById('status-employee-id');
           const employeeName = document.getElementById('status-employee-name');
           const statusDropdown = document.getElementById('employee-status-dropdown');
           const statusDisplay = document.getElementById('employee-status-display');
+
+          console.log('Elements found:', {
+            employeeIdInput: !!employeeIdInput,
+            employeeName: !!employeeName,
+            statusDropdown: !!statusDropdown,
+            statusDisplay: !!statusDisplay,
+          });
 
           console.log('DOM Elements:', {
             employeeIdInput: employeeIdInput,
@@ -1790,15 +1807,29 @@
             console.log('Set employee ID:', employeeId);
           }
           if (employeeName) {
-            const fullName = `${employee.first_name || ''} ${employee.last_name || ''}`;
+            // Handle both v1 (snake_case) and v2 (camelCase) field names
+            const firstName = employee.firstName || employee.first_name || '';
+            const lastName = employee.lastName || employee.last_name || '';
+            const fullName = `${firstName} ${lastName}`;
             employeeName.value = fullName;
             console.log('Set employee name:', fullName);
           } else {
-            console.error('Employee name input not found!');
+            console.error('Employee name input not found! Element might not exist in DOM.');
+            // Try to recover by checking if modal exists
+            const modalCheck = document.getElementById('employee-status-modal');
+            if (!modalCheck) {
+              console.error('Modal itself not found! Cannot proceed.');
+              alert('Ein Fehler ist aufgetreten. Bitte laden Sie die Seite neu.');
+              return;
+            }
           }
 
-          // Aktuellen Status setzen
-          const currentStatus = employee.availability_status || 'available';
+          // Aktuellen Status setzen - handle both v1 and v2 field names
+          let currentStatus = employee.availabilityStatus || employee.availability_status || 'available';
+          // Map v2 API's "other" back to "unavailable" for display
+          if (window.FEATURE_FLAGS?.USE_API_V2_USERS && currentStatus === 'other') {
+            currentStatus = 'unavailable';
+          }
           if (statusDisplay) {
             const statusText =
               {
@@ -1840,8 +1871,7 @@
             }
           }
 
-          // Modal öffnen
-          const modal = document.getElementById('employee-status-modal');
+          // Modal öffnen (reuse the already declared modal variable)
           if (modal) {
             modal.style.display = 'flex';
             console.log('Modal opened');
@@ -1881,21 +1911,52 @@
             const employeeId = document.getElementById('status-employee-id').value;
             const token = localStorage.getItem('token');
 
-            const statusData = {
-              availability_status: formData.get('status'),
-              availability_start: formData.get('start_date'),
-              availability_end: formData.get('end_date'),
-              availability_notes: formData.get('notes'),
-            };
+            // Get the status and map "unavailable" to "other" for v2 API
+            const rawStatus = formData.get('status');
+            const v2Status = rawStatus === 'unavailable' ? 'other' : rawStatus;
+
+            // Get dates and convert to ISO format for v2
+            const startDate = formData.get('start_date');
+            const endDate = formData.get('end_date');
+
+            // Build the data object based on API version
+            const statusData = window.FEATURE_FLAGS?.USE_API_V2_USERS
+              ? (() => {
+                  // v2 API expects camelCase and specific status values
+                  const data = {
+                    availabilityStatus: v2Status,
+                  };
+                  // Only include dates if they have values (v2 validation expects ISO format or nothing)
+                  if (startDate) {
+                    data.availabilityStart = new Date(startDate).toISOString();
+                  }
+                  if (endDate) {
+                    data.availabilityEnd = new Date(endDate).toISOString();
+                  }
+                  const notes = formData.get('notes');
+                  if (notes) {
+                    data.availabilityNotes = notes;
+                  }
+                  return data;
+                })()
+              : {
+                  // v1 API expects snake_case
+                  availability_status: formData.get('status'),
+                  availability_start: formData.get('start_date'),
+                  availability_end: formData.get('end_date'),
+                  availability_notes: formData.get('notes'),
+                };
 
             try {
               const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-                ? window.apiClient.request(`/users/${employeeId}/availability`, {
+                ? fetch(`/api/v2/users/${employeeId}/availability`, {
                     method: 'PUT',
-                    body: JSON.stringify(statusData)
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                    },
+                    body: JSON.stringify(statusData),
                   })
-                  .then(data => ({ ok: true, json: async () => data }))
-                  .catch(err => ({ ok: false, statusText: err.message }))
                 : fetch(`/api/users/${employeeId}/availability`, {
                     method: 'PUT',
                     headers: {
@@ -1911,8 +1972,15 @@
                 // Seite neu laden für vollständige Aktualisierung
                 window.location.reload();
               } else {
-                const error = await response.json();
-                alert(`Fehler: ${error.message || 'Status konnte nicht aktualisiert werden'}`);
+                const errorData = await response.json();
+                console.error('API Error Response:', errorData);
+                // Handle v2 API error format
+                const errorMessage = window.FEATURE_FLAGS?.USE_API_V2_USERS
+                  ? errorData.error?.message || errorData.message || 'Status konnte nicht aktualisiert werden'
+                  : errorData.message || 'Status konnte nicht aktualisiert werden';
+                alert(`Fehler: ${errorMessage}`);
+                // Log the full request data for debugging
+                console.log('Request data sent was:', statusData);
               }
             } catch (error) {
               console.error('Error updating availability status:', error);
@@ -1933,11 +2001,12 @@
 
         try {
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
-            ? window.apiClient.request(`/departments/${departmentId}`, {
-                method: 'DELETE'
+            ? fetch(`/api/v2/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
               })
-              .then(() => ({ ok: true }))
-              .catch(err => ({ ok: false, statusText: err.message }))
             : fetch(`/api/departments/${departmentId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
@@ -1963,17 +2032,21 @@
 
         try {
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? window.apiClient.request(`/users/${employeeId}`, {
-                method: 'GET'
+            ? fetch(`/api/v2/users/${employeeId}`, {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
               })
-              .then(data => ({ ok: true, json: async () => data }))
-              .catch(err => ({ ok: false, statusText: err.message }))
             : fetch(`/api/users/${employeeId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               }));
 
           if (response.ok) {
-            const employee = await response.json();
+            const responseData = await response.json();
+            // Handle v2 API response structure
+            const employee =
+              window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
             console.log('Employee data:', employee);
 
             // Erstelle ein Modal für die Bearbeitung
@@ -1996,11 +2069,11 @@
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Vorname</label>
-                                            <input type="text" name="first_name" class="form-control" value="${employee.first_name || ''}" required>
+                                            <input type="text" name="first_name" class="form-control" value="${employee.firstName || employee.first_name || ''}" required>
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Nachname</label>
-                                            <input type="text" name="last_name" class="form-control" value="${employee.last_name || ''}" required>
+                                            <input type="text" name="last_name" class="form-control" value="${employee.lastName || employee.last_name || ''}" required>
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Telefon</label>
@@ -2019,7 +2092,7 @@
                                                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                                                     </svg>
                                                 </div>
-                                                <div class="dropdown-options" id="edit-employee-department-dropdown" class="u-hidden">
+                                                <div class="dropdown-options" id="edit-employee-department-dropdown">
                                                     <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
                                                         Keine Abteilung
                                                     </div>
@@ -2045,7 +2118,7 @@
                                                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                                                     </svg>
                                                 </div>
-                                                <div class="dropdown-options" id="edit-employee-status-dropdown" class="u-hidden">
+                                                <div class="dropdown-options" id="edit-employee-status-dropdown">
                                                     <div class="dropdown-option" data-value="1" onclick="selectDropdownOption('edit-employee-status', '1', 'Aktiv')">
                                                         Aktiv
                                                     </div>
@@ -2088,17 +2161,23 @@
               const loadDepts = async () => {
                 try {
                   const deptResponse = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
-                    ? window.apiClient.request('/departments', {
-                        method: 'GET'
+                    ? fetch('/api/v2/departments', {
+                        method: 'GET',
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                        },
                       })
-                      .then(data => ({ ok: true, json: async () => data }))
-                      .catch(err => ({ ok: false }))
                     : fetch('/api/departments', {
                         headers: { Authorization: `Bearer ${token}` },
                       }));
 
                   if (deptResponse.ok) {
-                    const departments = await deptResponse.json();
+                    const deptData = await deptResponse.json();
+
+                    // Handle v2 API response structure
+                    const departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
+                      ? deptData.data || deptData // v2 returns {success: true, data: [...]}
+                      : deptData; // v1 returns array directly
 
                     // Clear existing options and add placeholder
                     departmentDropdown.innerHTML = `
@@ -2108,21 +2187,25 @@
                     `;
 
                     // Add department options
-                    departments.forEach((dept) => {
-                      const optionDiv = document.createElement('div');
-                      optionDiv.className = 'dropdown-option';
-                      optionDiv.setAttribute('data-value', dept.id.toString());
-                      optionDiv.textContent = dept.name;
-                      optionDiv.onclick = () => {
-                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
-                      };
-                      departmentDropdown.appendChild(optionDiv);
+                    if (Array.isArray(departments)) {
+                      departments.forEach((dept) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'dropdown-option';
+                        optionDiv.setAttribute('data-value', dept.id.toString());
+                        optionDiv.textContent = dept.name;
+                        optionDiv.onclick = () => {
+                          selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
+                        };
+                        departmentDropdown.appendChild(optionDiv);
 
-                      // If this is the current department, select it
-                      if (dept.id == employee.department_id) {
-                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
-                      }
-                    });
+                        // If this is the current department, select it
+                        if (dept.id == employee.department_id) {
+                          selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
+                        }
+                      });
+                    } else {
+                      console.error('Departments is not an array:', departments);
+                    }
                   }
                 } catch (err) {
                   console.error('Error loading departments:', err);
@@ -2193,12 +2276,14 @@
 
         try {
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? window.apiClient.request(`/users/${employeeId}`, {
+            ? fetch(`/api/v2/users/${employeeId}`, {
                 method: 'PUT',
-                body: JSON.stringify(data)
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
+                body: JSON.stringify(data),
               })
-              .then(data => ({ ok: true, json: async () => data }))
-              .catch(err => ({ ok: false, statusText: err.message }))
             : fetch(`/api/users/${employeeId}`, {
                 method: 'PUT',
                 headers: {
@@ -2399,11 +2484,12 @@
 
         try {
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? window.apiClient.request('/users?role=employee', {
-                method: 'GET'
+            ? fetch('/api/v2/users?role=employee', {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
               })
-              .then(data => ({ ok: true, json: async () => data }))
-              .catch(err => ({ ok: false, statusText: err.message }))
             : fetch('/api/users?role=employee', {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -2414,8 +2500,20 @@
             throw new Error('Failed to load employees');
           }
 
-          const employees = await response.json();
-          console.log('Loaded employees:', employees); // Debug
+          const responseData = await response.json();
+          console.log('Loaded employees response:', responseData); // Debug
+
+          // Handle v2 API response structure
+          let employees;
+          if (window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined) {
+            // v2 API returns { success: true, data: [...] }
+            employees = responseData.data || [];
+          } else {
+            // v1 API returns array directly
+            employees = responseData;
+          }
+
+          console.log('Processed employees:', employees); // Debug
           const tableBody = document.getElementById('employees-table-body');
 
           if (!tableBody) {
@@ -2425,7 +2523,7 @@
 
           tableBody.innerHTML = '';
 
-          if (employees.length === 0) {
+          if (!employees || !Array.isArray(employees) || employees.length === 0) {
             tableBody.innerHTML = `
               <tr>
                 <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
@@ -2437,25 +2535,34 @@
           employees.forEach((employee) => {
             const row = document.createElement('tr');
 
+            // Handle both v1 (snake_case) and v2 (camelCase) field names for availability
+            let availabilityStatus = employee.availabilityStatus || employee.availability_status || 'available';
+            // Map v2 API's "other" back to "unavailable" for display
+            if (window.FEATURE_FLAGS?.USE_API_V2_USERS && availabilityStatus === 'other') {
+              availabilityStatus = 'unavailable';
+            }
+            const availabilityStart = employee.availabilityStart || employee.availability_start;
+            const availabilityEnd = employee.availabilityEnd || employee.availability_end;
+
             // Verfügbarkeitsstatus bestimmen - prüfe ob innerhalb des Datumbereichs
-            let effectiveStatus = employee.availability_status || 'available';
+            let effectiveStatus = availabilityStatus;
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Zeit auf Mitternacht setzen für korrekten Vergleich
 
             // Debug-Ausgabe für ersten Mitarbeiter
             if (employee.id === 19) {
               console.log('Employee 19 debug:', {
-                availability_status: employee.availability_status,
-                availability_start: employee.availability_start,
-                availability_end: employee.availability_end,
+                availability_status: availabilityStatus,
+                availability_start: availabilityStart,
+                availability_end: availabilityEnd,
                 today: today.toISOString(),
               });
             }
 
             // Prüfe ob Verfügbarkeitsdaten vorhanden sind und ob wir im Zeitraum sind
-            if (employee.availability_status !== 'available' && employee.availability_start && employee.availability_end) {
-              const startDate = new Date(employee.availability_start);
-              const endDate = new Date(employee.availability_end);
+            if (availabilityStatus !== 'available' && availabilityStart && availabilityEnd) {
+              const startDate = new Date(availabilityStart);
+              const endDate = new Date(availabilityEnd);
               startDate.setHours(0, 0, 0, 0);
               endDate.setHours(23, 59, 59, 999);
 
@@ -2492,14 +2599,18 @@
                 unavailable: 'Beurlaubt',
               }[effectiveStatus] || 'Verfügbar';
 
+            // Handle both v1 (snake_case) and v2 (camelCase) field names
+            const firstName = employee.firstName || employee.first_name || '';
+            const lastName = employee.lastName || employee.last_name || '';
+
             row.innerHTML = `
-              <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
+              <td>${firstName} ${lastName}</td>
               <td>${employee.email || ''}</td>
-              <td>${employee.employee_id || employee.id || ''}</td>
-              <td>${employee.department || 'Keine Abteilung'}</td>
+              <td>${employee.employeeId || employee.employee_id || employee.id || ''}</td>
+              <td>${employee.departmentName || employee.department || 'Keine Abteilung'}</td>
               <td>
-                <span class="badge ${employee.is_active ? 'badge-success' : 'badge-danger'}">
-                  ${employee.is_active ? 'Aktiv' : 'Inaktiv'}
+                <span class="badge ${(employee.isActive ?? employee.is_active) ? 'badge-success' : 'badge-danger'}">
+                  ${(employee.isActive ?? employee.is_active) ? 'Aktiv' : 'Inaktiv'}
                 </span>
               </td>
               <td>
@@ -2507,8 +2618,8 @@
                   ${availabilityText}
                 </span>
                 ${
-                  effectiveStatus !== 'available' && employee.availability_start && employee.availability_end
-                    ? `<br><small class="text-muted">${new Date(employee.availability_start).toLocaleDateString('de-DE')} - ${new Date(employee.availability_end).toLocaleDateString('de-DE')}</small>`
+                  effectiveStatus !== 'available' && availabilityStart && availabilityEnd
+                    ? `<br><small class="text-muted">${new Date(availabilityStart).toLocaleDateString('de-DE')} - ${new Date(availabilityEnd).toLocaleDateString('de-DE')}</small>`
                     : ''
                 }
               </td>
@@ -2584,11 +2695,12 @@
 
         try {
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? window.apiClient.request(`/users/${employeeId}`, {
-                method: 'DELETE'
+            ? fetch(`/api/v2/users/${employeeId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
               })
-              .then(() => ({ ok: true }))
-              .catch(err => ({ ok: false, statusText: err.message }))
             : fetch(`/api/users/${employeeId}`, {
                 method: 'DELETE',
                 headers: {

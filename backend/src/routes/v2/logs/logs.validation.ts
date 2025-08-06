@@ -9,6 +9,10 @@ export const logsValidation = {
       .optional()
       .isInt({ min: 1 })
       .withMessage("Page must be a positive integer"),
+    query("offset")
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage("Offset must be a non-negative integer"),
     query("limit")
       .optional()
       .isInt({ min: 1, max: 100 })
@@ -59,10 +63,22 @@ export const logsValidation = {
       .optional()
       .isInt({ min: 1 })
       .withMessage("Tenant ID must be a positive integer"),
+    body("action")
+      .optional()
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage("Action must be a non-empty string"),
+    body("entityType")
+      .optional()
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage("Entity type must be a non-empty string"),
     body("olderThanDays")
       .optional()
-      .isInt({ min: 1 })
-      .withMessage("Days must be a positive integer"),
+      .isInt({ min: 0 })  // 0 means delete all logs (no age filter)
+      .withMessage("Days must be a non-negative integer"),
     body("confirmPassword")
       .notEmpty()
       .withMessage("Password confirmation is required for log deletion"),

@@ -33,9 +33,9 @@
 - [x] employee-dashboard.ts - Employee Dashboard (migriert zu apiClient) ✅
 - [x] employee-dashboard.html - Employee Dashboard (Survey API noch v1) ✅
 - [x] admin-dashboard.ts ✅ (05.08.2025 - Vollständig getestet und funktioniert)
-- [ ] admin-dashboard.html
-- [ ] root-dashboard.ts
-- [ ] root-dashboard.html
+- [x] admin-dashboard.html ✅ (06.08.2025 - API v2 Migration abgeschlossen)
+- [ ] root-dashboard.ts (MIGRIERT - WARTET AUF TEST & GENEHMIGUNG)
+- [ ] root-dashboard.html (GEPRÜFT - Keine direkten API Calls - WARTET AUF GENEHMIGUNG)
 - [ ] dashboard-scripts.ts - Shared Dashboard Logic
 
 ### PHASE 6: User Profile & Settings
@@ -114,7 +114,7 @@
 
 ---
 
-## ✅ Fortschritt: 11/64 Files (16.9% abgeschlossen)
+## ✅ Fortschritt: 12/64 Files (18.8% abgeschlossen)
 
 ### ⚠️ WICHTIGE NOTIZEN:
 - **Chat unread-count**: Die Navigation ist bereits für v2 vorbereitet, aber das Feature Flag muss deaktiviert bleiben bis die komplette Chat-Seite migriert ist
@@ -123,7 +123,21 @@
 
 **LEARNING:** Badge-Updates in Navigation sollten eigentlich NACH der Haupt-Feature-Migration kommen!
 
-### 🎯 HEUTE ERREICHT (04.08.2025):
+### 🎯 HEUTE MIGRIERT - WARTET AUF TEST (06.08.2025):
+1. **root-dashboard.ts** → Vollständige v2 API Migration mit apiClient (WARTET AUF TEST)
+2. **root-dashboard.html** → Bestätigt keine direkten API Calls (WARTET AUF GENEHMIGUNG)
+3. **Feature Flag aktiviert** → `USE_API_V2_LOGS` für Activity Logs
+4. **TypeScript Fehler behoben** → Alle Kompilierungsfehler gelöst
+5. **9 API Endpoints migriert**:
+   - `/api/users/me` → `/api/v2/users/me`
+   - `/root/create-admin` → `/api/v2/root/admins`
+   - `/api/root-dashboard-data` → `/api/v2/root/dashboard`
+   - `/root/admins` → `/api/v2/root/admins`
+   - `/api/users` → `/api/v2/users`
+   - `/api/user/profile` → `/api/v2/users/profile`
+   - `/api/logs` → `/api/v2/logs`
+
+### 🎯 ERREICHT AM 04.08.2025:
 1. **departments.html** → v2 API Migration + Feature Flag `USE_API_V2_DEPARTMENTS` aktiviert ✅
 2. **Employee Creation** → Departments Dropdown funktioniert mit v2 API ✅
 3. **role-switch.ts** → Admin Rollenwechsel nutzt jetzt v2 API ✅
@@ -133,9 +147,10 @@
 7. **employee-dashboard.ts** → Vollständig auf apiClient migriert (Dashboard Data Loading) ✅
 
 **NÄCHSTE SCHRITTE:**
-- unified-navigation.ts (Badge-Updates: Chat, KVP, Survey)
-- index.html (Main Landing Page)
-- Phase 5: Dashboard Migration beginnen
+- dashboard-scripts.ts (Shared Dashboard Logic - letztes File in Phase 5)
+- Phase 6: User Profile & Settings Migration beginnen
+- profile.html, employee-profile.html, admin-profile.html
+- account-settings.html (settings API)
 
 ### 🚨 KRITISCHE REGEL:
 **NIEMALS eine Checkbox abhaken ohne:**

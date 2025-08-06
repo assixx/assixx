@@ -150,14 +150,20 @@ export class ApiClient {
 
     // Check for expired token error
     if (response.status === 401 || response.status === 403) {
-      const errorMessage = data.error ?? data.message ?? '';
-      const errorDetails = data.details ?? '';
+      // Handle v2 API error structure: data.error.message or data.message
+      const errorMessage = String(data.error?.message ?? data.error ?? data.message ?? '');
+      const errorDetails =
+        typeof data.details === 'string'
+          ? data.details
+          : typeof data.error?.details === 'string'
+            ? data.error.details
+            : '';
 
       // Check if token is expired
       if (
         errorMessage.toLowerCase().includes('expired') ||
         errorMessage.toLowerCase().includes('invalid token') ||
-        errorDetails.toLowerCase().includes('expired')
+        errorDetails?.toLowerCase().includes('expired')
       ) {
         console.log('[API] Token expired, redirecting to login with session expired message');
         this.clearTokens();
@@ -168,19 +174,35 @@ export class ApiClient {
     }
 
     if (version === 'v2') {
-      const apiResponse = data as ApiResponse<T>;
+      // Check if response has the standard v2 format with success flag
+      if ('success' in data && typeof data.success === 'boolean') {
+        const apiResponse = data as ApiResponse<T>;
 
-      // v2 uses success flag
-      if (!apiResponse.success) {
-        throw new ApiError(
-          apiResponse.error?.message ?? 'Unknown error',
-          apiResponse.error?.code ?? 'UNKNOWN_ERROR',
-          response.status,
-          apiResponse.error?.details,
-        );
+        if (!apiResponse.success) {
+          throw new ApiError(
+            apiResponse.error?.message ?? 'Unknown error',
+            apiResponse.error?.code ?? 'UNKNOWN_ERROR',
+            response.status,
+            apiResponse.error?.details,
+          );
+        }
+
+        return apiResponse.data as T;
+      } else {
+        // Some v2 endpoints (like /root/*) return data directly without wrapper
+        // Check if response is ok based on status code
+        if (!response.ok) {
+          throw new ApiError(
+            data.error?.message ?? data.message ?? `Request failed with status ${response.status}`,
+            data.error?.code ?? 'API_ERROR',
+            response.status,
+            data.error?.details,
+          );
+        }
+
+        // Return the data directly
+        return data as T;
       }
-
-      return apiResponse.data as T;
     } else {
       // v1 response handling
       if (!response.ok) {

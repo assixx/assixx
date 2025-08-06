@@ -162,11 +162,8 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       optionDiv.className = 'dropdown-option';
       optionDiv.setAttribute('data-value', dept.id.toString());
       optionDiv.textContent = dept.name;
-      optionDiv.onclick = () => {
-        if ('selectDropdownOption' in window && typeof window.selectDropdownOption === 'function') {
-          window.selectDropdownOption('employee-department', dept.id.toString(), dept.name);
-        }
-      };
+      // Set onclick as an attribute so it shows in HTML and works correctly
+      optionDiv.setAttribute('onclick', `selectDropdownOption('employee-department', '${dept.id}', '${dept.name}')`);
       dropdownOptions.appendChild(optionDiv);
     });
     console.log('[loadDepartmentsForEmployeeSelect] Dropdown content:', dropdownOptions.innerHTML);

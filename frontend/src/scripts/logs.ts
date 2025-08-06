@@ -1,7 +1,11 @@
 // Logs page functionality
+import { ApiClient } from '../utils/api-client';
+
 (() => {
+  // Initialize API client
+  const apiClient = ApiClient.getInstance();
   // Auth check
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') ?? localStorage.getItem('accessToken');
   const userRole = localStorage.getItem('userRole');
 
   if (!token || userRole !== 'root') {
@@ -11,28 +15,27 @@
 
   interface LogEntry {
     id: number;
-    user_id: number;
-    user_name: string;
-    user_role: string;
+    userId: number;
+    userName: string;
+    userRole: string;
     action: string;
-    entity_type?: string;
-    entity_id?: number;
+    entityType?: string;
+    entityId?: number;
+    oldValues?: unknown;
+    newValues?: unknown;
     details?: string;
-    ip_address?: string;
-    user_agent?: string;
-    created_at: string;
+    ipAddress?: string;
+    userAgent?: string;
+    createdAt: string;
   }
 
   interface LogsResponse {
-    success: boolean;
-    data: {
-      logs: LogEntry[];
-      pagination: {
-        limit: number;
-        offset: number;
-        total: number;
-        hasMore: boolean;
-      };
+    logs: LogEntry[];
+    pagination: {
+      limit: number;
+      offset: number;
+      total: number;
+      hasMore: boolean;
     };
   }
 
@@ -110,32 +113,48 @@
 
       // Add filters - don't send 'all' to backend
       if (currentFilters.user) {
-        params.append('user_id', currentFilters.user);
+        params.append('userId', currentFilters.user);
       }
       if (currentFilters.action && currentFilters.action !== 'all') {
         params.append('action', currentFilters.action);
       }
       if (currentFilters.entity_type && currentFilters.entity_type !== 'all') {
-        params.append('entity_type', currentFilters.entity_type);
+        params.append('entityType', currentFilters.entity_type);
       }
+      // v2 API uses startDate/endDate instead of timerange
       if (currentFilters.timerange && currentFilters.timerange !== 'all') {
-        params.append('timerange', currentFilters.timerange);
+        const now = new Date();
+        const endDate = now.toISOString();
+        let startDate: string;
+
+        switch (currentFilters.timerange) {
+          case '24h':
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case '7d':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case '30d':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          default:
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+        }
+
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
       }
 
-      const response = await fetch(`/api/logs?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Use apiClient which will automatically use v2 if feature flag is enabled
+      try {
+        const result: LogsResponse = await apiClient.request(`/logs?${params}`);
 
-      if (response.ok) {
-        const result: LogsResponse = await response.json();
-
-        if (result.success && result.data) {
-          displayLogs(result.data.logs);
-          updatePagination(result.data.pagination);
+        if (result) {
+          displayLogs(result.logs);
+          updatePagination(result.pagination);
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading logs:', error);
         container.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">⚠️</div>
@@ -186,7 +205,7 @@
       <tbody>
         ${logs
           .map((log) => {
-            const date = new Date(log.created_at);
+            const date = new Date(log.createdAt);
             const dateString = date.toLocaleDateString('de-DE', {
               day: '2-digit',
               month: '2-digit',
@@ -205,20 +224,25 @@
                 <div style="font-size: 12px; color: var(--text-secondary);">${timeString}</div>
               </td>
               <td>
-                <div>${log.user_name}</div>
-                <span class="role-badge role-${log.user_role}">${getRoleLabel(log.user_role)}</span>
+                <div>${log.userName}</div>
+                <span class="role-badge role-${log.userRole}">${getRoleLabel(log.userRole)}</span>
               </td>
               <td>
                 <span class="action-badge action-${log.action}">${getActionLabel(log.action)}</span>
               </td>
-              <td>${log.entity_type ?? '-'}</td>
+              <td>${log.entityType ?? '-'}</td>
               <td>
                 ${
-                  log.details
+                  log.newValues || log.oldValues || log.details
                     ? (() => {
+                        // For v2 API, use newValues/oldValues
+                        const details =
+                          log.details ??
+                          (log.newValues ? JSON.stringify(log.newValues) : JSON.stringify(log.oldValues));
+
                         // Check if details is JSON or plain text
                         try {
-                          const parsedDetails = JSON.parse(log.details);
+                          const parsedDetails = typeof details === 'string' ? JSON.parse(details) : details;
 
                           // Format KVP details specially
                           if (log.action === 'kvp_created' || log.action === 'kvp_shared') {
@@ -232,13 +256,25 @@
                             return `<span style="color: var(--text-secondary);">${formatted}</span>`;
                           }
 
+                          // For login/logout show simplified info
+                          if (log.action === 'login' || log.action === 'logout') {
+                            if (parsedDetails.login_method) {
+                              return `<span style="color: var(--text-secondary);">Method: ${parsedDetails.login_method}</span>`;
+                            }
+                            if (parsedDetails.role) {
+                              return `<span style="color: var(--text-secondary);">Role: ${parsedDetails.role}</span>`;
+                            }
+                          }
+
                           // For other JSON details, show with click handler
-                          return `<span class="details-preview" onclick="showFullDetails('${btoa(log.details)}')" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
-                        ${log.details.length > 50 ? `${log.details.substring(0, 50)}...` : log.details}
+                          const detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
+                          return `<span class="details-preview" onclick="showFullDetails('${btoa(detailsStr)}')" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
+                        ${detailsStr.length > 50 ? `${detailsStr.substring(0, 50)}...` : detailsStr}
                       </span>`;
                         } catch {
                           // It's plain text, just show it
-                          return `<span style="color: var(--text-secondary);">${log.details}</span>`;
+                          const detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
+                          return `<span style="color: var(--text-secondary);">${detailsStr}</span>`;
                         }
                       })()
                     : '-'
@@ -246,7 +282,7 @@
               </td>
               <td>
                 <span style="font-size: 12px; color: var(--text-secondary);">
-                  ${log.ip_address ?? '-'}
+                  ${log.ipAddress ?? '-'}
                 </span>
               </td>
             </tr>
@@ -299,13 +335,18 @@
     const entityFilter = (document.getElementById('filter-entity') as HTMLInputElement)?.value;
     const timerangeFilter = (document.getElementById('filter-timerange') as HTMLInputElement)?.value;
 
+    console.log('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
+
     currentFilters = {};
 
-    // Add filters - 'all' is treated as a special active filter
+    // Add filters - 'all' SHOULD be treated as an active filter for delete button!
     if (userFilter) currentFilters.user = userFilter;
-    if (actionFilter && actionFilter !== '') currentFilters.action = actionFilter;
-    if (entityFilter && entityFilter !== '') currentFilters.entity_type = entityFilter;
-    if (timerangeFilter && timerangeFilter !== '') currentFilters.timerange = timerangeFilter;
+    // WICHTIG: Auch 'all' als aktiven Filter speichern, damit der Delete-Button aktiviert wird
+    if (actionFilter) currentFilters.action = actionFilter; // Removed check for empty string
+    if (entityFilter) currentFilters.entity_type = entityFilter; // Removed check for empty string
+    if (timerangeFilter) currentFilters.timerange = timerangeFilter; // Removed check for empty string
+
+    console.log('currentFilters after setting:', currentFilters);
 
     // Update delete button state
     updateDeleteButtonState();
@@ -428,15 +469,11 @@
         confirmInput.focus();
       }
 
-      // Show password field only if "Alle Aktionen" is selected
+      // v2 API requires password for ALL delete operations
       if (passwordSection && passwordInput) {
-        if (currentFilters.action === 'all') {
-          passwordSection.style.display = 'block';
-          passwordInput.value = '';
-        } else {
-          passwordSection.style.display = 'none';
-          passwordInput.value = '';
-        }
+        passwordSection.style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.focus();
       }
     }
   }
@@ -446,12 +483,10 @@
     const confirmBtn = document.getElementById('confirmDeleteLogsBtn') as HTMLButtonElement;
     const passwordInput = document.getElementById('deleteLogsPassword') as HTMLInputElement;
 
-    // Check if password is required (when action = 'all')
-    if (currentFilters.action === 'all') {
-      if (!passwordInput?.value) {
-        alert('❌ Bitte geben Sie Ihr Root-Passwort ein!');
-        return;
-      }
+    // v2 API requires password for ALL delete operations
+    if (!passwordInput?.value) {
+      alert('❌ Bitte geben Sie Ihr Root-Passwort ein!');
+      return;
     }
 
     if (confirmBtn) {
@@ -460,14 +495,17 @@
     }
 
     try {
-      // Build query params for deletion - don't send 'all' to backend
-      const params = new URLSearchParams();
-      if (currentFilters.user) params.append('user_id', currentFilters.user);
-      if (currentFilters.action && currentFilters.action !== 'all') params.append('action', currentFilters.action);
-      if (currentFilters.entity_type && currentFilters.entity_type !== 'all')
-        params.append('entity_type', currentFilters.entity_type);
-      if (currentFilters.timerange && currentFilters.timerange !== 'all')
-        params.append('timerange', currentFilters.timerange);
+      // Check if we're deleting ALL logs (all filters are 'all' or empty)
+      const isDeletingAll =
+        (!currentFilters.user || currentFilters.user === '') &&
+        (!currentFilters.action || currentFilters.action === 'all') &&
+        (!currentFilters.entity_type || currentFilters.entity_type === 'all') &&
+        (!currentFilters.timerange || currentFilters.timerange === 'all');
+
+      console.log('confirmDeleteLogs - Current filters:', currentFilters);
+      console.log('confirmDeleteLogs - isDeletingAll:', isDeletingAll);
+
+      // v2 API expects ALL filters in the body, not as query params
 
       // Prepare request options
       const requestOptions: RequestInit = {
@@ -478,17 +516,86 @@
         },
       };
 
-      // Add password to body if deleting all actions
-      if (currentFilters.action === 'all' && passwordInput?.value) {
-        requestOptions.body = JSON.stringify({
-          password: passwordInput.value,
-        });
+      // v2 API requires confirmPassword for all delete operations
+      if (!passwordInput?.value) {
+        console.error('Password input not found or empty');
+        alert('❌ Passwort ist erforderlich!');
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = '<i class="fas fa-trash"></i> Logs löschen';
+        }
+        return;
       }
 
-      const response = await fetch(`/api/logs?${params}`, requestOptions);
+      interface DeleteLogsBody {
+        confirmPassword: string;
+        userId?: number;
+        tenantId?: number;
+        action?: string;
+        entityType?: string;
+        olderThanDays?: number;
+      }
 
-      if (response.ok) {
-        const result = await response.json();
+      const bodyData: DeleteLogsBody = {
+        confirmPassword: passwordInput.value, // Always use the actual password
+      };
+
+      // Add filters to body based on what's selected
+      // v2 API now supports all filters in body
+      if (currentFilters.user) {
+        bodyData.userId = parseInt(currentFilters.user);
+      }
+
+      // Now the backend supports action and entityType directly!
+      if (currentFilters.action && currentFilters.action !== 'all') {
+        bodyData.action = currentFilters.action;
+        console.log(`Deleting logs with action="${currentFilters.action}"`);
+      }
+
+      if (currentFilters.entity_type && currentFilters.entity_type !== 'all') {
+        bodyData.entityType = currentFilters.entity_type; // Note: camelCase for v2 API
+        console.log(`Deleting logs with entityType="${currentFilters.entity_type}"`);
+      }
+
+      // Handle timerange filter properly - convert to days
+      if (currentFilters.timerange && currentFilters.timerange !== 'all') {
+        switch (currentFilters.timerange) {
+          case '24h':
+            bodyData.olderThanDays = 1; // Delete logs older than 1 day
+            break;
+          case '7d':
+            bodyData.olderThanDays = 7; // Delete logs older than 7 days
+            break;
+          case '30d':
+            bodyData.olderThanDays = 30; // Delete logs older than 30 days
+            break;
+          default:
+            // For "today" or other specific ranges, use 0 to delete all matching logs
+            bodyData.olderThanDays = 0;
+        }
+        console.log(`Timerange filter "${currentFilters.timerange}" -> olderThanDays: ${bodyData.olderThanDays}`);
+      }
+
+      // If deleting ALL logs (no specific filters), use olderThanDays=0
+      if (
+        isDeletingAll ||
+        (!bodyData.userId &&
+          !bodyData.tenantId &&
+          !bodyData.action &&
+          !bodyData.entityType &&
+          bodyData.olderThanDays === undefined)
+      ) {
+        bodyData.olderThanDays = 0; // This will delete all logs (no age restriction)
+        console.log('Ensuring at least one filter is provided - using olderThanDays: 0 (delete all)');
+      }
+
+      requestOptions.body = JSON.stringify(bodyData);
+      console.log('confirmDeleteLogs - Final body data:', bodyData);
+
+      // Use apiClient for v2 API
+      // Note: We're not passing query params since v2 expects everything in body
+      try {
+        const result = await apiClient.request<{ deletedCount: number }>('/logs', requestOptions);
 
         // Close modal
         const modal = document.getElementById('deleteLogsModal');
@@ -502,9 +609,26 @@
         // Reload logs to show updated list
         currentOffset = 0;
         void loadLogs();
-      } else {
-        const error = await response.json();
-        alert(`❌ Fehler beim Löschen der Logs: ${error.error ?? 'Unbekannter Fehler'}`);
+      } catch (apiError) {
+        console.error('Delete logs error:', apiError);
+        let errorMessage = 'Unbekannter Fehler';
+
+        if (apiError && typeof apiError === 'object' && 'message' in apiError) {
+          errorMessage = String(apiError.message);
+        } else if (apiError instanceof Error) {
+          errorMessage = apiError.message;
+        } else if (typeof apiError === 'string') {
+          errorMessage = apiError;
+        }
+
+        // Special handling for common errors
+        if (errorMessage.includes('Invalid password') || errorMessage.includes('Unauthorized')) {
+          errorMessage = 'Falsches Passwort';
+        } else if (errorMessage.includes('Validation failed')) {
+          errorMessage = 'Validierungsfehler - bitte prüfen Sie Ihre Eingaben';
+        }
+
+        alert(`❌ Fehler beim Löschen der Logs: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error deleting logs:', error);

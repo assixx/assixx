@@ -485,11 +485,19 @@ class UnifiedNavigation {
 
           // Update employee number
           const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
+          interface UserDataWithEmployeeNumber extends UserProfileResponse {
+            employee_number?: string;
+            data?: {
+              employeeNumber?: string;
+              employee_number?: string;
+            };
+          }
+          const userDataTyped = userData as UserDataWithEmployeeNumber;
           const employeeNumber =
             userData.employeeNumber ??
-            userData.employee_number ??
+            userDataTyped.employee_number ??
             userData.data?.employeeNumber ??
-            userData.data?.employee_number;
+            userDataTyped.data?.employee_number;
           if (sidebarEmployeeNumber && employeeNumber) {
             console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
             if (employeeNumber !== '000001') {
@@ -3352,7 +3360,6 @@ const unifiedNavigationCSS = `
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
         white-space: normal;
         margin-top: 8px;
     }

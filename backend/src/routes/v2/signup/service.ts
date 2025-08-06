@@ -89,7 +89,7 @@ export class SignupService {
       };
       logger.info("[SignupService] Creating tenant for:", safeLogData);
       const result = await Tenant.create(tenantData);
-      
+
       // Log only safe result data
       const safeResult = {
         tenantId: result.tenantId,

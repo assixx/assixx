@@ -1,17 +1,17 @@
 # Assixx TODO-Liste
 
-## 🚀 AKTUELLER STATUS (05.08.2025)
+## 🚀 AKTUELLER STATUS (06.08.2025)
 
 **Gerade erledigt:**
-- ✅ admin-dashboard.ts vollständig auf API v2 migriert
-- ✅ Alle API-Aufrufe mit Feature Flags versehen
-- ✅ TypeScript Fehler behoben
-- ✅ 12/65 Frontend-Dateien migriert (18.5%)
+- ✅ root-dashboard.ts vollständig auf API v2 migriert
+- ✅ root-dashboard.html bestätigt (keine direkten API Calls)
+- ✅ Feature Flag USE_API_V2_LOGS aktiviert
+- ✅ 14/64 Frontend-Dateien migriert (21.9%)
 
 **Nächste Schritte:**
-- admin-dashboard.html
-- root-dashboard.ts/html  
-- Weitere 52 Frontend-Dateien (13/65 = 20% fertig)
+- dashboard-scripts.ts (letztes File in Phase 5)
+- Phase 6: User Profile & Settings beginnen
+- Weitere 50 Frontend-Dateien (14/64 = 21.9% fertig)
 
 ## 🎉 API v2 MIGRATION ABGESCHLOSSEN! (03.08.2025 - 01:00 Uhr) 🎉
 

@@ -90,12 +90,27 @@ const router: Router = express.Router();
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
+// Temporärer Debug-Wrapper
+const debugWrapper = (handler: RequestHandler): RequestHandler => {
+  return async (req, res, next) => {
+    console.log("[LOGS DEBUG] Request received at /api/v2/logs");
+    console.log("[LOGS DEBUG] Query params:", req.query);
+    console.log("[LOGS DEBUG] User:", req.user);
+    try {
+      await handler(req, res, next);
+    } catch (error) {
+      console.error("[LOGS DEBUG] Error in handler:", error);
+      throw error;
+    }
+  };
+};
+
 router.get(
   "/",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.listLogs,
-  typed.auth(logsController.getLogs)
+  debugWrapper(typed.auth(logsController.getLogs))
 );
 
 /**
