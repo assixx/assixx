@@ -80,9 +80,23 @@ export class SignupService {
       };
 
       // Create tenant and admin user
-      logger.info("[SignupService] Creating tenant with data:", tenantData);
+      // Log without sensitive data
+      const safeLogData = {
+        company_name: data.companyName,
+        subdomain: data.subdomain,
+        email: data.email,
+        // Explicitly exclude: admin_password, phone, address
+      };
+      logger.info("[SignupService] Creating tenant for:", safeLogData);
       const result = await Tenant.create(tenantData);
-      logger.info("[SignupService] Tenant created successfully:", result);
+      
+      // Log only safe result data
+      const safeResult = {
+        tenantId: result.tenantId,
+        subdomain: result.subdomain,
+        // Explicitly exclude any sensitive data from result
+      };
+      logger.info("[SignupService] Tenant created successfully:", safeResult);
 
       logger.info(
         `New tenant registered: ${data.companyName} (${data.subdomain})`,

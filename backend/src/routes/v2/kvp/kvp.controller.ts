@@ -491,7 +491,8 @@ export async function uploadAttachments(
     const suggestionId = parseInt(req.params.id);
     const files = req.files as Express.Multer.File[];
 
-    if (!files || files.length === 0) {
+    // Type guard: Ensure files is an array
+    if (!files || !Array.isArray(files) || files.length === 0) {
       res
         .status(400)
         .json(errorResponse("VALIDATION_ERROR", "No files uploaded"));
