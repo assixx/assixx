@@ -485,7 +485,11 @@ class UnifiedNavigation {
 
           // Update employee number
           const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
-          const employeeNumber = userData.employeeNumber ?? userData.employee_number ?? userData.data?.employeeNumber ?? userData.data?.employee_number;
+          const employeeNumber =
+            userData.employeeNumber ??
+            userData.employee_number ??
+            userData.data?.employeeNumber ??
+            userData.data?.employee_number;
           if (sidebarEmployeeNumber && employeeNumber) {
             console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
             if (employeeNumber !== '000001') {
