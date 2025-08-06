@@ -38,6 +38,14 @@ interface UserProfileResponse extends User {
   // Company/Tenant related properties
   companyName?: string;
   subdomain?: string;
+  // API v2 returns camelCase fields
+  firstName?: string;
+  lastName?: string;
+  employeeId?: string;
+  employeeNumber?: string;
+  profilePicture?: string;
+  profilePictureUrl?: string;
+  tenantId?: number;
   // Additional user properties that may come from API but aren't in base User type
   data?: {
     first_name?: string;
@@ -45,6 +53,11 @@ interface UserProfileResponse extends User {
     profile_picture?: string;
     employee_number?: string;
     birthdate?: string;
+    firstName?: string;
+    lastName?: string;
+    employeeId?: string;
+    employeeNumber?: string;
+    profilePicture?: string;
   };
   // Tenant information
   tenant?: Tenant;
@@ -460,8 +473,8 @@ class UnifiedNavigation {
 
           const sidebarFullName = document.getElementById('sidebar-user-fullname');
           if (sidebarFullName) {
-            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
-            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
+            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             if (firstName || lastName) {
               const fullName = `${firstName} ${lastName}`.trim();
               sidebarFullName.textContent = fullName;
@@ -472,7 +485,7 @@ class UnifiedNavigation {
 
           // Update employee number
           const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
-          const employeeNumber = userData.employee_id ?? userData.data?.employee_number;
+          const employeeNumber = userData.employeeNumber ?? userData.employee_number ?? userData.data?.employeeNumber ?? userData.data?.employee_number;
           if (sidebarEmployeeNumber && employeeNumber) {
             console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
             if (employeeNumber !== '000001') {
@@ -487,8 +500,8 @@ class UnifiedNavigation {
           const headerUserName = document.getElementById('user-name');
           if (headerUserName) {
             // Same logic as sidebar-user-fullname which works correctly
-            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
-            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
+            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
             if (firstName || lastName) {
@@ -507,18 +520,18 @@ class UnifiedNavigation {
           // Update avatar if we have profile picture
           const sidebarAvatar = document.getElementById('sidebar-user-avatar');
           if (sidebarAvatar) {
-            const profilePic = userData.profile_picture ?? userData.data?.profile_picture ?? null;
-            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
-            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
+            const profilePic = userData.profilePicture ?? userData.data?.profilePicture ?? null;
+            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
           }
 
           // Also update header avatar
           const headerAvatar = document.getElementById('user-avatar');
           if (headerAvatar) {
-            const profilePic = userData.profile_picture ?? userData.data?.profile_picture ?? null;
-            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
-            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
+            const profilePic = userData.profilePicture ?? userData.data?.profilePicture ?? null;
+            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
           }
 
