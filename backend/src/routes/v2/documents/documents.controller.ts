@@ -10,11 +10,22 @@
 import { Response } from "express";
 import multer from "multer";
 
+import { RootLog } from "../../../models/rootLog";
 import { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { logger } from "../../../utils/logger";
 
 import { documentsService, ServiceError } from "./documents.service";
+
+interface Document {
+  id: number;
+  filename: string;
+  category?: string;
+  fileSize?: number;
+  mimeType?: string;
+  recipientType?: string;
+  [key: string]: unknown;
+}
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -328,6 +339,28 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
     );
 
+    // Log document upload
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "upload",
+      entity_type: "document",
+      entity_id: (document as unknown as Document).id,
+      details: `Hochgeladen: ${(document as unknown as Document).filename ?? documentData.filename}`,
+      new_values: {
+        filename:
+          (document as unknown as Document).filename ?? documentData.filename,
+        category: documentData.category,
+        file_size: documentData.fileSize,
+        mime_type: documentData.mimeType,
+        recipient_type: documentData.recipientType,
+        uploaded_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
+
     res.status(201).json(successResponse(document));
   } catch (error) {
     logger.error(`Create document error: ${(error as Error).message}`);
@@ -488,11 +521,43 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
   try {
     const documentId = parseInt(req.params.id);
 
+    // Get document details before deletion for logging
+    const document = await documentsService.getDocumentById(
+      documentId,
+      req.user.id,
+      req.user.tenant_id,
+    );
+
     const result = await documentsService.deleteDocument(
       documentId,
       req.user.id,
       req.user.tenant_id,
     );
+
+    // Log document deletion
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "delete",
+      entity_type: "document",
+      entity_id: documentId,
+      details: `Gelöscht: ${(document as unknown as Document | null)?.filename ?? "unknown"}`,
+      old_values: {
+        filename:
+          (document as unknown as Document | null)?.filename ?? "unknown",
+        category:
+          (document as unknown as Document | null)?.category ?? "unknown",
+        file_size: (document as unknown as Document | null)?.fileSize ?? 0,
+        mime_type:
+          (document as unknown as Document | null)?.mimeType ?? "unknown",
+        recipient_type:
+          (document as unknown as Document | null)?.recipientType ?? "unknown",
+        deleted_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(successResponse(result));
   } catch (error) {

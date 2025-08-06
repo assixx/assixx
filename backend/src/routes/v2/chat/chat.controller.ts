@@ -9,6 +9,7 @@ import path from "path";
 
 import { Response, NextFunction } from "express";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import {
@@ -23,6 +24,18 @@ import type {
   CreateConversationData,
   SendMessageData,
 } from "./chat.service.js";
+
+interface ChatConversationResult {
+  id: number;
+  conversationId: number;
+  [key: string]: unknown;
+}
+
+interface ChatMessageResult {
+  id: number;
+  messageId: number;
+  [key: string]: unknown;
+}
 
 export class ChatController {
   /**
@@ -138,6 +151,28 @@ export class ChatController {
         data,
       );
 
+      // Log conversation creation
+      await RootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: "create",
+        entity_type: "chat_conversation",
+        entity_id:
+          (result as unknown as ChatConversationResult).conversationId ??
+          (result as unknown as ChatConversationResult).id,
+        details: `Erstellt: ${data.name ?? "Chat-Unterhaltung"}`,
+        new_values: {
+          name: data.name,
+          is_group: data.isGroup,
+          participant_ids: data.participantIds,
+          participant_count: data.participantIds.length + 1,
+          created_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+
       res.status(201).json(successResponse(result));
     } catch (error) {
       logError("[Chat Controller] createConversation error:", error);
@@ -250,6 +285,29 @@ export class ChatController {
         data,
       );
 
+      // Log message sending
+      await RootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: "send_message",
+        entity_type: "chat_message",
+        entity_id:
+          (result as unknown as ChatMessageResult).messageId ??
+          (result as unknown as ChatMessageResult).id,
+        details: `Nachricht gesendet${data.attachment ? " mit Anhang" : ""}`,
+        new_values: {
+          conversation_id: conversationId,
+          content_length: data.content.length,
+          has_attachment: !!data.attachment,
+          attachment_name: data.attachment?.filename,
+          attachment_size: data.attachment?.size,
+          sent_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+
       res.status(201).json(successResponse(result));
     } catch (error) {
       next(error);
@@ -343,6 +401,24 @@ export class ChatController {
       const conversationId = parseInt(req.params.id);
 
       await chatService.deleteConversation(conversationId, userId, userRole);
+
+      // Log conversation deletion
+      await RootLog.create({
+        tenant_id: user.tenant_id,
+        user_id: userId,
+        action: "delete",
+        entity_type: "chat_conversation",
+        entity_id: conversationId,
+        details: `Gelöscht: Chat-Unterhaltung`,
+        old_values: {
+          conversation_id: conversationId,
+          deleted_by: user.email,
+          deleted_by_role: userRole,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(
         successResponse({

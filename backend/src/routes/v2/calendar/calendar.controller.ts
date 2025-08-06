@@ -9,6 +9,8 @@
 
 import { Response, NextFunction } from "express";
 
+import type { CalendarEvent } from "../../../models/calendar.js";
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../users/users.service.js";
@@ -267,11 +269,35 @@ export async function createEvent(
     const tenantId = user.tenant_id;
     const userId = user.id;
 
+    const eventData = req.body as CalendarEventData;
     const event = await calendarService.createEvent(
-      req.body as CalendarEventData,
+      eventData,
       tenantId,
       userId,
     );
+
+    // Log calendar event creation
+    await RootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: "create",
+      entity_type: "calendar_event",
+      entity_id: (event as unknown as CalendarEvent).id,
+      details: `Erstellt: ${eventData.title}`,
+      new_values: {
+        title: eventData.title,
+        start_time: eventData.startTime,
+        end_time: eventData.endTime,
+        location: eventData.location,
+        org_level: eventData.orgLevel,
+        org_id: eventData.orgId,
+        all_day: eventData.allDay,
+        created_by: user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.status(201).json(successResponse({ event }));
   } catch (error) {
@@ -364,14 +390,81 @@ export async function updateEvent(
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
+    const userDepartmentId = user.department_id ?? null;
 
+    // Try to get old event data for logging, but don't fail if user doesn't have permission
+    let oldEvent: CalendarEvent | null = null;
+    try {
+      oldEvent = (await calendarService.getEventById(
+        eventId,
+        tenantId,
+        userId,
+        userDepartmentId,
+      )) as unknown as CalendarEvent;
+    } catch (error) {
+      // If we can't get the old event (e.g., no permission), that's okay
+      // The updateEvent method will handle permission checks properly
+    }
+
+    const updateData = req.body as CalendarEventUpdateData;
     const event = await calendarService.updateEvent(
       eventId,
-      req.body as CalendarEventUpdateData,
+      updateData,
       tenantId,
       userId,
       userRole,
     );
+
+    // Log calendar event update (only if we have old values)
+    if (oldEvent) {
+      await RootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: "update",
+        entity_type: "calendar_event",
+        entity_id: eventId,
+        details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
+        old_values: {
+          title: oldEvent.title,
+          start_time: oldEvent.startTime,
+          end_time: oldEvent.endTime,
+          location: oldEvent.location,
+          status: oldEvent.status,
+        },
+        new_values: {
+          title: updateData.title,
+          start_time: updateData.startTime,
+          end_time: updateData.endTime,
+          location: updateData.location,
+          status: updateData.status,
+          updated_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+    } else {
+      // Log without old values if we couldn't access them
+      await RootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: "update",
+        entity_type: "calendar_event",
+        entity_id: eventId,
+        details: `Aktualisiert: Event ID ${eventId}`,
+        new_values: {
+          title: updateData.title,
+          start_time: updateData.startTime,
+          end_time: updateData.endTime,
+          location: updateData.location,
+          status: updateData.status,
+          updated_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+    }
 
     res.json(successResponse({ event }));
   } catch (err) {
@@ -419,8 +512,63 @@ export async function deleteEvent(
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
+    const userDepartmentId = user.department_id ?? null;
+
+    // Try to get event data before deletion for logging, but don't fail if user doesn't have permission
+    let deletedEvent: CalendarEvent | null = null;
+    try {
+      deletedEvent = (await calendarService.getEventById(
+        eventId,
+        tenantId,
+        userId,
+        userDepartmentId,
+      )) as unknown as CalendarEvent;
+    } catch (error) {
+      // If we can't get the event (e.g., no permission), that's okay
+      // The deleteEvent method will handle permission checks properly
+    }
 
     await calendarService.deleteEvent(eventId, tenantId, userId, userRole);
+
+    // Log calendar event deletion
+    if (deletedEvent) {
+      await RootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: "delete",
+        entity_type: "calendar_event",
+        entity_id: eventId,
+        details: `Gelöscht: ${deletedEvent.title}`,
+        old_values: {
+          title: deletedEvent.title,
+          start_time: deletedEvent.startTime,
+          end_time: deletedEvent.endTime,
+          location: deletedEvent.location,
+          org_level: deletedEvent.orgLevel,
+          status: deletedEvent.status,
+          deleted_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+    } else {
+      // Log without details if we couldn't access the event
+      await RootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: "delete",
+        entity_type: "calendar_event",
+        entity_id: eventId,
+        details: `Gelöscht: Event ID ${eventId}`,
+        old_values: {
+          deleted_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+    }
 
     res.json(successResponse({ message: "Event deleted successfully" }));
   } catch (err) {
@@ -487,6 +635,23 @@ export async function updateAttendeeResponse(
       response,
       tenantId,
     );
+
+    // Log attendee response update
+    await RootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: "update_attendee_response",
+      entity_type: "calendar_event",
+      entity_id: eventId,
+      details: `Teilnehmer Antwort: ${response}`,
+      new_values: {
+        attendee_response: response,
+        responded_by: user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(successResponse({ message: "Response updated successfully" }));
   } catch (error) {

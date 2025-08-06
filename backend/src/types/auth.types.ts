@@ -18,6 +18,7 @@ export interface TokenPayload {
   role: "admin" | "employee" | "root";
   activeRole?: "admin" | "employee" | "root"; // For role switching
   tenant_id: number | null;
+  tenantId?: number | null; // Alternative camelCase naming from v2 APIs
   fingerprint?: string; // Browser fingerprint for session isolation
   sessionId?: string; // Unique session identifier
   iat?: number;

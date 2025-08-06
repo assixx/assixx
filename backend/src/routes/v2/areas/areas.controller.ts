@@ -5,6 +5,7 @@
 
 import { Response } from "express";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   successResponse,
@@ -14,7 +15,12 @@ import { getErrorMessage } from "../../../utils/errorHandler.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { AreasService } from "./areas.service.js";
-import { CreateAreaRequest, UpdateAreaRequest, AreaFilters } from "./types.js";
+import {
+  CreateAreaRequest,
+  UpdateAreaRequest,
+  AreaFilters,
+  Area,
+} from "./types.js";
 
 export class AreasController {
   /**
@@ -116,6 +122,27 @@ export class AreasController {
         req.user.id,
       );
 
+      // Log area creation
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "create",
+        entity_type: "area",
+        entity_id: (newArea as Area).id,
+        details: `Erstellt: ${data.name}`,
+        new_values: {
+          name: data.name,
+          type: data.type,
+          parent_id: data.parentId,
+          address: data.address,
+          capacity: data.capacity,
+          created_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+
       res
         .status(201)
         .json(successResponse(newArea, "Area created successfully"));
@@ -153,12 +180,48 @@ export class AreasController {
         return;
       }
 
+      // Get old area data for logging
+      const oldArea = await AreasService.getAreaById(
+        areaId,
+        req.user.tenant_id,
+      );
+
       const data = req.body as UpdateAreaRequest;
       const updatedArea = await AreasService.updateArea(
         areaId,
         data,
         req.user.tenant_id,
       );
+
+      // Log area update
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "update",
+        entity_type: "area",
+        entity_id: areaId,
+        details: `Aktualisiert: ${data.name}`,
+        old_values: {
+          name: (oldArea as Area | null)?.name,
+          type: (oldArea as Area | null)?.type,
+          parent_id: (oldArea as Area | null)?.parent_id,
+          address: (oldArea as Area | null)?.address,
+          capacity: (oldArea as Area | null)?.capacity,
+          is_active: (oldArea as Area | null)?.is_active,
+        },
+        new_values: {
+          name: data.name,
+          type: data.type,
+          parent_id: data.parentId,
+          address: data.address,
+          capacity: data.capacity,
+          is_active: data.isActive,
+          updated_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(updatedArea, "Area updated successfully"));
     } catch (error) {
@@ -195,7 +258,34 @@ export class AreasController {
         return;
       }
 
+      // Get area data before deletion for logging
+      const deletedArea = await AreasService.getAreaById(
+        areaId,
+        req.user.tenant_id,
+      );
+
       await AreasService.deleteArea(areaId, req.user.tenant_id);
+
+      // Log area deletion
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "delete",
+        entity_type: "area",
+        entity_id: areaId,
+        details: `Gelöscht: ${(deletedArea as Area | null)?.name}`,
+        old_values: {
+          name: (deletedArea as Area | null)?.name,
+          type: (deletedArea as Area | null)?.type,
+          parent_id: (deletedArea as Area | null)?.parent_id,
+          address: (deletedArea as Area | null)?.address,
+          capacity: (deletedArea as Area | null)?.capacity,
+          deleted_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(null, "Area deleted successfully"));
     } catch (error) {

@@ -127,10 +127,10 @@
 
       // Setup the page
       document.addEventListener('DOMContentLoaded', async function () {
-        // Check for timeout parameter
+        // Check for timeout or session expired parameter
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('timeout') === 'true') {
-          showError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+        if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
+          showError('Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.');
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
         }

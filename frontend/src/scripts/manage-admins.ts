@@ -170,13 +170,13 @@
     });
 
     if (admin.hasAllAccess) {
-      return '<span class="status-badge active" style="background: rgba(76, 175, 80, 0.2); color: #4caf50; border-color: rgba(76, 175, 80, 0.3);">Alle Abteilungen</span>';
+      return '<span class="status-badge active" style="background: rgba(76, 175, 80, 0.2); color: #4caf50; border-color: rgba(76, 175, 80, 0.3); white-space: nowrap;">Alle Abteilungen</span>';
     } else if (admin.departments && admin.departments.length > 0) {
       const departmentNames = admin.departments.map((d) => d.name).join(', ');
       const singularPlural = admin.departments.length === 1 ? 'Abteilung' : 'Abteilungen';
       return `
       <span class="status-badge department-badge" 
-            style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative;" 
+            style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative; white-space: nowrap;" 
             data-departments="${departmentNames.replace(/"/g, '&quot;')}">
         ${admin.departments.length} ${singularPlural}
         <span class="department-tooltip" style="
@@ -205,7 +205,7 @@
       </span>
     `;
     } else {
-      return '<span class="status-badge inactive" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border-color: rgba(255, 152, 0, 0.3);">Keine Abteilungen</span>';
+      return '<span class="status-badge inactive" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border-color: rgba(255, 152, 0, 0.3); white-space: nowrap;">Keine Abteilungen</span>';
     }
   }
 

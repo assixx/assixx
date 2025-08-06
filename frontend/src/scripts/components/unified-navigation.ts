@@ -4,8 +4,7 @@
  */
 
 // Import types
-import type { User } from '../../../../backend/src/types/models';
-import type { Document } from '../../types/api.types';
+import type { User, Tenant, Document } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
@@ -34,23 +33,21 @@ interface TokenPayload {
   email?: string;
 }
 
-interface UserProfileResponse {
+interface UserProfileResponse extends User {
   user?: User;
-  username?: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  birthdate?: string;
-  profile_picture?: string;
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-  profilePicture?: string;
-  company_name?: string;
+  // Company/Tenant related properties
   companyName?: string;
   subdomain?: string;
-  employee_number?: string;
-  employeeNumber?: string;
+  // Additional user properties that may come from API but aren't in base User type
+  data?: {
+    first_name?: string;
+    last_name?: string;
+    profile_picture?: string;
+    employee_number?: string;
+    birthdate?: string;
+  };
+  // Tenant information
+  tenant?: Tenant;
 }
 
 // Removed unused interfaces
@@ -433,7 +430,7 @@ class UnifiedNavigation {
         if (useV2) {
           // Use v2 API - /users/me endpoint
           console.info('[UnifiedNav] Calling apiClient.get for /users/me'); // DEBUG
-          const userData = await apiClient.get<User>('/users/me');
+          const userData = await apiClient.get<UserProfileResponse>('/users/me');
           console.info('[UnifiedNav] Full user data from v2 API:', userData); // DEBUG
 
           if (!userData) {
@@ -441,17 +438,18 @@ class UnifiedNavigation {
             return;
           }
 
-          // Update company info - v2 uses camelCase!
+          // Update company info - check tenant and fallback properties
           const companyElement = document.getElementById('sidebar-company-name');
-          if (companyElement && (userData.companyName ?? userData.company_name)) {
-            const companyName = userData.companyName ?? userData.company_name;
+          const companyName = userData.tenant?.company_name ?? userData.companyName;
+          if (companyElement && companyName) {
             console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
             companyElement.textContent = companyName;
           }
 
           const domainElement = document.getElementById('sidebar-domain');
-          if (domainElement && userData.subdomain) {
-            domainElement.textContent = `${userData.subdomain}.assixx.de`;
+          const subdomain = userData.tenant?.subdomain ?? userData.subdomain;
+          if (domainElement && subdomain) {
+            domainElement.textContent = `${subdomain}.assixx.de`;
           }
 
           // Update user info card with full details
@@ -462,8 +460,8 @@ class UnifiedNavigation {
 
           const sidebarFullName = document.getElementById('sidebar-user-fullname');
           if (sidebarFullName) {
-            const firstName = userData.firstName ?? userData.first_name ?? '';
-            const lastName = userData.lastName ?? userData.last_name ?? '';
+            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
+            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
             if (firstName || lastName) {
               const fullName = `${firstName} ${lastName}`.trim();
               sidebarFullName.textContent = fullName;
@@ -472,9 +470,9 @@ class UnifiedNavigation {
 
           // Birthdate removed as requested
 
-          // Update employee number - v2 uses camelCase!
+          // Update employee number
           const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
-          const employeeNumber = userData.employeeNumber ?? userData.employee_number;
+          const employeeNumber = userData.employee_id ?? userData.data?.employee_number;
           if (sidebarEmployeeNumber && employeeNumber) {
             console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
             if (employeeNumber !== '000001') {
@@ -489,16 +487,8 @@ class UnifiedNavigation {
           const headerUserName = document.getElementById('user-name');
           if (headerUserName) {
             // Same logic as sidebar-user-fullname which works correctly
-            const firstName =
-              userData.first_name ??
-              userData.data?.first_name ??
-              userData.firstName ??
-              ((userData as User).firstName || '');
-            const lastName =
-              userData.last_name ??
-              userData.data?.last_name ??
-              userData.lastName ??
-              ((userData as User).lastName || '');
+            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
+            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
             console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
             if (firstName || lastName) {
@@ -507,8 +497,8 @@ class UnifiedNavigation {
               console.info('[UnifiedNav] Set header name to:', fullName);
             } else {
               // Fallback auf Email oder Username wenn keine Namen vorhanden
-              const email = userData.email ?? userData.data?.email ?? userData.email ?? this.currentUser?.email;
-              const username = userData.username ?? userData.username ?? this.currentUser?.username;
+              const email = userData.email ?? this.currentUser?.email;
+              const username = userData.username ?? this.currentUser?.username;
               headerUserName.textContent = email ?? username ?? 'User';
               console.info('[UnifiedNav] Fallback to email/username:', email ?? username);
             }
@@ -517,44 +507,18 @@ class UnifiedNavigation {
           // Update avatar if we have profile picture
           const sidebarAvatar = document.getElementById('sidebar-user-avatar');
           if (sidebarAvatar) {
-            const profilePic =
-              userData.profile_picture ??
-              userData.data?.profile_picture ??
-              userData.profilePicture ??
-              (userData as User).profilePicture ??
-              null;
-            const firstName =
-              userData.first_name ??
-              userData.data?.first_name ??
-              userData.firstName ??
-              ((userData as User).firstName || '');
-            const lastName =
-              userData.last_name ??
-              userData.data?.last_name ??
-              userData.lastName ??
-              ((userData as User).lastName || '');
+            const profilePic = userData.profile_picture ?? userData.data?.profile_picture ?? null;
+            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
+            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
             this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
           }
 
           // Also update header avatar
           const headerAvatar = document.getElementById('user-avatar');
           if (headerAvatar) {
-            const profilePic =
-              userData.profile_picture ??
-              userData.data?.profile_picture ??
-              userData.profilePicture ??
-              (userData as User).profilePicture ??
-              null;
-            const firstName =
-              userData.first_name ??
-              userData.data?.first_name ??
-              userData.firstName ??
-              ((userData as User).firstName || '');
-            const lastName =
-              userData.last_name ??
-              userData.data?.last_name ??
-              userData.lastName ??
-              ((userData as User).lastName || '');
+            const profilePic = userData.profile_picture ?? userData.data?.profile_picture ?? null;
+            const firstName = userData.first_name ?? userData.data?.first_name ?? '';
+            const lastName = userData.last_name ?? userData.data?.last_name ?? '';
             this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
           }
 
@@ -984,7 +948,7 @@ class UnifiedNavigation {
       admin:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
       'user-shield':
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"/></svg>',
+        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"/></svg>',
       poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
       lean: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
       wrench:
@@ -1086,10 +1050,10 @@ class UnifiedNavigation {
     const userRole = storedUserRole ?? 'employee';
 
     const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
-    const firstName = this.userProfileData?.first_name ?? this.userProfileData?.firstName ?? '';
-    const lastName = this.userProfileData?.last_name ?? this.userProfileData?.lastName ?? '';
+    const firstName = this.userProfileData?.first_name ?? '';
+    const lastName = this.userProfileData?.last_name ?? '';
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
-    const profilePicture = this.userProfileData?.profile_picture ?? this.userProfileData?.profilePicture ?? null;
+    const profilePicture = this.userProfileData?.profile_picture ?? null;
 
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =
@@ -3146,7 +3110,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 72px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
+        margin-top: 73px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
     }
 
 

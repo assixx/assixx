@@ -3,10 +3,8 @@
  * Provides different rate limiting strategies for various endpoint types
  */
 
-import { Request } from "express";
 import rateLimit from "express-rate-limit";
 
-import { isAuthenticated } from "../types/middleware.types";
 import {
   RateLimiterMiddleware,
   RateLimiterType,
@@ -47,13 +45,7 @@ const rateLimiterConfigs = {
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
-    keyGenerator: (req: Request) => {
-      // Use user ID if authenticated, otherwise IP
-      if (isAuthenticated(req)) {
-        return `user_${req.user.id}`;
-      }
-      return req.ip ?? "unknown";
-    },
+    // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   },
 
   // Admin endpoints
@@ -64,12 +56,7 @@ const rateLimiterConfigs = {
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
-    keyGenerator: (req: Request) => {
-      if (isAuthenticated(req)) {
-        return `admin_${req.user.id}`;
-      }
-      return req.ip ?? "unknown";
-    },
+    // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   },
 
   // API endpoints (for external integrations)
@@ -80,17 +67,7 @@ const rateLimiterConfigs = {
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
-    keyGenerator: (req: Request) => {
-      // Use API key if present, otherwise user ID or IP
-      const apiKey = req.headers["x-api-key"];
-      if (apiKey) {
-        return `api_${apiKey}`;
-      }
-      if (isAuthenticated(req)) {
-        return `user_${req.user.id}`;
-      }
-      return req.ip ?? "unknown";
-    },
+    // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   },
 
   // File upload endpoints
@@ -101,12 +78,7 @@ const rateLimiterConfigs = {
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
-    keyGenerator: (req: Request) => {
-      if (isAuthenticated(req)) {
-        return `upload_${req.user.id}`;
-      }
-      return req.ip ?? "unknown";
-    },
+    // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   },
 
   // File download endpoints
@@ -117,12 +89,7 @@ const rateLimiterConfigs = {
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
-    keyGenerator: (req: Request) => {
-      if (isAuthenticated(req)) {
-        return `download_${req.user.id}`;
-      }
-      return req.ip ?? "unknown";
-    },
+    // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   },
 };
 

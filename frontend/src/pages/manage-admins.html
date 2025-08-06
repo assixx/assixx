@@ -79,13 +79,15 @@
       /* Action Buttons */
       .action-btn {
         padding: 6px 12px;
-        margin: 0 4px;
+        margin: 0 2px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 6px;
         color: var(--text-secondary);
         cursor: pointer;
         font-size: 12px;
+        white-space: nowrap;
+        display: inline-block;
       }
 
       .action-btn:hover {
@@ -378,7 +380,8 @@
         border-radius: 20px;
         font-size: 12px;
         font-weight: 500;
-        /*display: block ruby;*/
+        white-space: nowrap;
+        display: inline-block;
       }
 
       .status-badge.active {
@@ -615,6 +618,58 @@
         color: rgba(255, 255, 255, 0.8);
         font-size: 14px;
         transition: color 0.3s ease;
+      }
+
+      /* Actions column - ensure buttons stay inline */
+      .admin-table td:last-child {
+        white-space: nowrap;
+        min-width: 280px;
+      }
+
+      /* Responsive Styles */
+      @media (max-width: 1400px) {
+        .action-btn {
+          padding: 5px 10px;
+          font-size: 11px;
+        }
+
+        .status-badge {
+          font-size: 11px;
+          padding: 3px 10px;
+        }
+      }
+
+      @media (max-width: 1200px) {
+        .admin-table {
+          font-size: 14px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+          padding: 10px 8px;
+        }
+
+        /* Make table scrollable horizontally */
+        .card-body {
+          overflow-x: auto;
+        }
+
+        .admin-table {
+          min-width: 1000px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        /* On mobile, stack buttons vertically but in a controlled way */
+        .admin-table td:last-child {
+          min-width: auto;
+        }
+
+        .action-btn {
+          display: block;
+          width: 100%;
+          margin: 2px 0;
+        }
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />

@@ -5,6 +5,7 @@
 
 import { Response } from "express";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   successResponse,
@@ -17,6 +18,7 @@ import { kvpService } from "./kvp.service.js";
 import type {
   KVPCreateData,
   KVPUpdateData,
+  KVPSuggestion,
   CommentData,
   PointsData,
 } from "./kvp.service.js";
@@ -189,6 +191,30 @@ export async function createSuggestion(
       req.user.id,
     );
 
+    // Log KVP suggestion creation
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "create",
+      entity_type: "kvp_suggestion",
+      entity_id: (suggestion as KVPSuggestion).id,
+      details: `Erstellt: ${data.title}`,
+      new_values: {
+        title: data.title,
+        description: data.description,
+        category_id: data.categoryId,
+        org_level: data.orgLevel,
+        org_id: data.orgId,
+        priority: data.priority,
+        expected_benefit: data.expectedBenefit,
+        estimated_cost: data.estimatedCost,
+        created_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
+
     res.status(201).json(successResponse(suggestion));
   } catch (error) {
     if (error instanceof Error && "code" in error) {
@@ -225,6 +251,14 @@ export async function updateSuggestion(
       status: body.status,
       assignedTo: body.assignedTo,
     };
+    // Get old suggestion data for logging
+    const oldSuggestion = await kvpService.getSuggestionById(
+      suggestionId,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
+
     const suggestion = await kvpService.updateSuggestion(
       suggestionId,
       data,
@@ -232,6 +266,36 @@ export async function updateSuggestion(
       req.user.id,
       req.user.role,
     );
+
+    // Log KVP suggestion update
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "update",
+      entity_type: "kvp_suggestion",
+      entity_id: suggestionId,
+      details: `Aktualisiert: ${data.title}`,
+      old_values: {
+        title: (oldSuggestion as KVPSuggestion | null)?.title,
+        description: (oldSuggestion as KVPSuggestion | null)?.description,
+        status: (oldSuggestion as KVPSuggestion | null)?.status,
+        priority: (oldSuggestion as KVPSuggestion | null)?.priority,
+        estimated_cost: (oldSuggestion as KVPSuggestion | null)?.estimatedCost,
+        actual_savings: (oldSuggestion as KVPSuggestion | null)?.actualSavings,
+      },
+      new_values: {
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        priority: data.priority,
+        estimated_cost: data.estimatedCost,
+        actual_savings: data.actualSavings,
+        updated_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(successResponse(suggestion));
   } catch (error) {
@@ -257,12 +321,41 @@ export async function deleteSuggestion(
 ) {
   try {
     const suggestionId = parseInt(req.params.id);
+
+    // Get suggestion data before deletion for logging
+    const deletedSuggestion = await kvpService.getSuggestionById(
+      suggestionId,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
+
     await kvpService.deleteSuggestion(
       suggestionId,
       req.user.tenant_id,
       req.user.id,
       req.user.role,
     );
+
+    // Log KVP suggestion deletion
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "delete",
+      entity_type: "kvp_suggestion",
+      entity_id: suggestionId,
+      details: `Gelöscht: ${(deletedSuggestion as KVPSuggestion | null)?.title}`,
+      old_values: {
+        title: (deletedSuggestion as KVPSuggestion | null)?.title,
+        description: (deletedSuggestion as KVPSuggestion | null)?.description,
+        status: (deletedSuggestion as KVPSuggestion | null)?.status,
+        priority: (deletedSuggestion as KVPSuggestion | null)?.priority,
+        deleted_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(successResponse({ message: "Suggestion deleted successfully" }));
   } catch (error) {
@@ -325,6 +418,24 @@ export async function addComment(req: AuthenticatedRequest, res: Response) {
       req.user.id,
       req.user.role,
     );
+
+    // Log comment addition
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "add_comment",
+      entity_type: "kvp_suggestion",
+      entity_id: suggestionId,
+      details: `Kommentar hinzugefügt`,
+      new_values: {
+        comment: data.comment,
+        is_internal: data.isInternal,
+        comment_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.status(201).json(successResponse(comment));
   } catch (error) {
@@ -405,6 +516,25 @@ export async function uploadAttachments(
       ),
     );
 
+    // Log attachment upload
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "upload_attachment",
+      entity_type: "kvp_suggestion",
+      entity_id: suggestionId,
+      details: `Anhänge hochgeladen: ${files.map((f) => f.filename).join(", ")}`,
+      new_values: {
+        files_count: files.length,
+        file_names: files.map((f) => f.filename).join(", "),
+        total_size: files.reduce((sum, f) => sum + f.size, 0),
+        uploaded_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
+
     res.status(201).json(successResponse(attachments));
   } catch (error) {
     if (error instanceof Error && "code" in error) {
@@ -471,6 +601,26 @@ export async function awardPoints(req: AuthenticatedRequest, res: Response) {
       req.user.id,
       req.user.role,
     );
+
+    // Log points awarding
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "award_points",
+      entity_type: "kvp_points",
+      entity_id: data.suggestionId,
+      details: `Punkte vergeben: ${data.points} Punkte`,
+      new_values: {
+        user_id: data.userId,
+        suggestion_id: data.suggestionId,
+        points: data.points,
+        reason: data.reason,
+        awarded_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.status(201).json(successResponse(points));
   } catch (error) {

@@ -7,11 +7,13 @@ import bcryptjs from "bcryptjs";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
+import { RootLog } from "../../../models/rootLog";
 import User from "../../../models/user";
 import { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { dbToApi } from "../../../utils/fieldMapping";
 import { logger } from "../../../utils/logger";
+import { createLog } from "../../logs";
 // Get secrets from environment variables
 const JWT_SECRET = process.env.JWT_SECRET ?? "default-jwt-secret";
 const JWT_REFRESH_SECRET =
@@ -124,6 +126,37 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // TODO: Update last login - need to add updateLastLogin method to User model
 
+    // Log successful login to both log systems
+    // 1. Log to activity_logs for frontend display
+    await createLog(
+      user.id,
+      user.tenant_id,
+      "login",
+      "user",
+      user.id,
+      `Angemeldet als ${user.role}`,
+      req.ip ?? req.socket.remoteAddress,
+      req.get("user-agent"),
+    );
+
+    // 2. Log to root_logs for detailed audit
+    await RootLog.create({
+      tenant_id: user.tenant_id,
+      user_id: user.id,
+      action: "login",
+      entity_type: "auth",
+      entity_id: user.id,
+      details: `Angemeldet als ${user.role}`,
+      new_values: {
+        email: user.email,
+        role: user.role,
+        login_method: "password",
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
+
     // Remove sensitive data - create new object without password
     const {
       password: _password,
@@ -226,6 +259,40 @@ export async function register(
       throw new Error("Failed to retrieve created user");
     }
 
+    // Log user creation to both log systems
+    // 1. Log to activity_logs for frontend display
+    await createLog(
+      user.id,
+      tenantId,
+      "create_user",
+      "user",
+      userId,
+      `Neuer Benutzer erstellt: ${email} (${role})`,
+      req.ip ?? req.socket.remoteAddress,
+      req.get("user-agent"),
+    );
+
+    // 2. Log to root_logs for detailed audit
+    await RootLog.create({
+      tenant_id: tenantId,
+      user_id: user.id, // Admin who created the user
+      action: "create",
+      entity_type: "user",
+      entity_id: userId,
+      details: `Neuer Benutzer erstellt: ${email} (${role})`,
+      new_values: {
+        email,
+        username,
+        first_name: firstName,
+        last_name: lastName,
+        role,
+        created_by: user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
+
     // Remove sensitive data - create new object without password
     const { password: _password, ...safeUser } = newUser;
 
@@ -246,12 +313,47 @@ export async function register(
 /**
  * User logout
  */
-export async function logout(_req: Request, res: Response): Promise<void> {
+export async function logout(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     // In a real implementation, you might want to:
     // 1. Blacklist the token
     // 2. Clear refresh token from database
     // 3. Clear any server-side sessions
+
+    // Log logout if user is authenticated
+    if (req.user) {
+      // 1. Log to activity_logs for frontend display
+      await createLog(
+        req.user.id,
+        req.user.tenant_id,
+        "logout",
+        "user",
+        req.user.id,
+        "Abgemeldet",
+        req.ip ?? req.socket.remoteAddress,
+        req.get("user-agent"),
+      );
+
+      // 2. Log to root_logs for detailed audit
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "logout",
+        entity_type: "auth",
+        entity_id: req.user.id,
+        details: "Abgemeldet",
+        new_values: {
+          email: req.user.email,
+          role: req.user.role,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+    }
 
     res.json(
       successResponse({

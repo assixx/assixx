@@ -148,6 +148,25 @@ export class ApiClient {
 
     const data = await response.json();
 
+    // Check for expired token error
+    if (response.status === 401 || response.status === 403) {
+      const errorMessage = data.error ?? data.message ?? '';
+      const errorDetails = data.details ?? '';
+
+      // Check if token is expired
+      if (
+        errorMessage.toLowerCase().includes('expired') ||
+        errorMessage.toLowerCase().includes('invalid token') ||
+        errorDetails.toLowerCase().includes('expired')
+      ) {
+        console.log('[API] Token expired, redirecting to login with session expired message');
+        this.clearTokens();
+        // Redirect to login with session expired parameter
+        window.location.href = '/login?session=expired';
+        throw new ApiError('Session expired', 'SESSION_EXPIRED', 401);
+      }
+    }
+
     if (version === 'v2') {
       const apiResponse = data as ApiResponse<T>;
 
@@ -198,9 +217,9 @@ export class ApiClient {
       return false;
     } catch (error) {
       console.error('[API] Token refresh failed:', error);
-      // Refresh failed, clear tokens and redirect to login
+      // Refresh failed, clear tokens and redirect to login with session expired message
       this.clearTokens();
-      window.location.href = '/login.html';
+      window.location.href = '/login?session=expired';
       return false;
     }
   }
@@ -309,10 +328,15 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('[API] Unhandled API Error:', event.reason);
 
     // Handle specific error codes
-    if (event.reason.code === 'UNAUTHORIZED' || event.reason.status === 401) {
-      // Token might be invalid, redirect to login
+    if (
+      event.reason.code === 'UNAUTHORIZED' ||
+      event.reason.code === 'SESSION_EXPIRED' ||
+      event.reason.status === 401
+    ) {
+      // Token might be invalid or expired, redirect to login with session expired message
+      event.preventDefault(); // Prevent console error
       apiClient.clearTokens();
-      window.location.href = '/login.html';
+      window.location.href = '/login?session=expired';
     }
   }
 });

@@ -6,11 +6,18 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { signupService } from "./service.js";
 import { SignupRequest } from "./types.js";
+
+interface SignupResult {
+  tenantId: number;
+  userId: number;
+  [key: string]: unknown;
+}
 
 export class SignupController {
   /**
@@ -53,6 +60,29 @@ export class SignupController {
       const result = await signupService.registerTenant(signupData);
       console.log("[SignupController] Service returned:", result);
       logger.info("[SignupController] Registration successful:", result);
+
+      // Log tenant registration
+      await RootLog.create({
+        tenant_id: (result as SignupResult).tenantId,
+        user_id: (result as SignupResult).userId,
+        action: "register",
+        entity_type: "tenant",
+        entity_id: (result as SignupResult).tenantId,
+        details: `Registriert: ${signupData.companyName}`,
+        new_values: {
+          company_name: signupData.companyName,
+          subdomain: signupData.subdomain,
+          admin_email: signupData.adminEmail,
+          admin_first_name: signupData.adminFirstName,
+          admin_last_name: signupData.adminLastName,
+          phone: signupData.phone,
+          address: signupData.address,
+          plan: signupData.plan ?? "trial",
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.status(201).json({
         success: true,

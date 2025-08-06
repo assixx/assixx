@@ -6,6 +6,7 @@
 import { Response } from "express";
 import { validationResult, ValidationError } from "express-validator";
 
+import { RootLog } from "../../../models/rootLog";
 import { AuthenticatedRequest } from "../../../types/request.types";
 import {
   successResponse,
@@ -23,6 +24,17 @@ import {
   UpdateAvailabilityBody,
   ListUsersQuery,
 } from "./users.types";
+
+interface User {
+  id: number;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  isActive?: boolean;
+  [key: string]: unknown;
+}
 
 // Helper to map validation errors to our error response format
 function mapValidationErrors(
@@ -172,6 +184,27 @@ export const usersController = {
       }
       const user = await usersService.createUser(body, req.tenantId);
 
+      // Log user creation
+      await RootLog.create({
+        tenant_id: req.tenantId,
+        user_id: req.userId ?? 0,
+        action: "create",
+        entity_type: "user",
+        entity_id: (user as User).id,
+        details: `Benutzer erstellt: ${(user as User).email}`,
+        new_values: {
+          email: (user as User).email,
+          username: (user as User).username,
+          first_name: (user as User).firstName,
+          last_name: (user as User).lastName,
+          role: (user as User).role,
+          created_by: req.user?.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+
       res.status(201).json(successResponse(user, "User created successfully"));
     } catch (error) {
       console.error("[Users v2] Create error:", error);
@@ -212,7 +245,41 @@ export const usersController = {
           .json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
         return;
       }
+
+      // Get old user data for logging
+      const oldUser = await usersService.getUserById(userId, req.tenantId);
+
       const user = await usersService.updateUser(userId, body, req.tenantId);
+
+      // Log user update
+      await RootLog.create({
+        tenant_id: req.tenantId,
+        user_id: req.userId ?? 0,
+        action: "update",
+        entity_type: "user",
+        entity_id: userId,
+        details: `Benutzer aktualisiert: ${(user as User).email}`,
+        old_values: {
+          email: (oldUser as User | null)?.email,
+          username: (oldUser as User | null)?.username,
+          first_name: (oldUser as User | null)?.firstName,
+          last_name: (oldUser as User | null)?.lastName,
+          role: (oldUser as User | null)?.role,
+          is_active: (oldUser as User | null)?.isActive,
+        },
+        new_values: {
+          email: (user as User).email,
+          username: (user as User).username,
+          first_name: (user as User).firstName,
+          last_name: (user as User).lastName,
+          role: (user as User).role,
+          is_active: (user as User).isActive,
+          updated_by: req.user?.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(user, "User updated successfully"));
     } catch (error) {
@@ -350,7 +417,32 @@ export const usersController = {
           .json(errorResponse("UNAUTHORIZED", "User ID or Tenant ID missing"));
         return;
       }
+
+      // Get user data before deletion for logging
+      const deletedUser = await usersService.getUserById(userId, req.tenantId);
+
       await usersService.deleteUser(userId, req.userId, req.tenantId);
+
+      // Log user deletion
+      await RootLog.create({
+        tenant_id: req.tenantId,
+        user_id: req.userId,
+        action: "delete",
+        entity_type: "user",
+        entity_id: userId,
+        details: `Benutzer gelöscht: ${(deletedUser as User | null)?.email}`,
+        old_values: {
+          email: (deletedUser as User | null)?.email,
+          username: (deletedUser as User | null)?.username,
+          first_name: (deletedUser as User | null)?.firstName,
+          last_name: (deletedUser as User | null)?.lastName,
+          role: (deletedUser as User | null)?.role,
+          deleted_by: req.user?.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(null, "User deleted successfully"));
     } catch (error) {

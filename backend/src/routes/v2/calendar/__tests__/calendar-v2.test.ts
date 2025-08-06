@@ -773,19 +773,43 @@ describe("Calendar v2 API Endpoints", () => {
 
   describe("Multi-Tenant Isolation", () => {
     let tenant2EventId: number;
+    let tenant2Admin: any;
+
+    beforeAll(async () => {
+      // Create admin user for tenant2 once
+      try {
+        // First check if tenant2 exists
+        const [tenantCheck] = await testDb.execute(
+          "SELECT id FROM tenants WHERE id = ?",
+          [tenant2Id],
+        );
+        if (!Array.isArray(tenantCheck) || tenantCheck.length === 0) {
+          console.error(`Tenant2 with ID ${tenant2Id} does not exist!`);
+          // Re-create tenant2 if it doesn't exist
+          tenant2Id = await createTestTenant(
+            testDb,
+            "calendarv2test2",
+            "Calendar v2 Test Company 2",
+          );
+        }
+
+        tenant2Admin = await createTestUser(testDb, {
+          username: "admin.tenant2.cal@test.com",
+          email: "admin.tenant2.cal@test.com",
+          password: "AdminT2Pass123!",
+          role: "admin",
+          tenant_id: tenant2Id,
+          first_name: "Admin",
+          last_name: "Tenant2",
+        });
+      } catch (error) {
+        console.error("Failed to create tenant2 admin:", error);
+        throw error;
+      }
+    });
 
     beforeEach(async () => {
-      // Create event in tenant2
-      const tenant2Admin = await createTestUser(testDb, {
-        username: "admin.tenant2@test.com",
-        email: "admin.tenant2@test.com",
-        password: "AdminT2Pass123!",
-        role: "admin",
-        tenant_id: tenant2Id,
-        first_name: "Admin",
-        last_name: "Tenant2",
-      });
-
+      // Create event in tenant2 for each test
       const [result] = await testDb.execute(
         `INSERT INTO calendar_events 
          (tenant_id, user_id, title, start_date, end_date, type, status) 

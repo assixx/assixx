@@ -5,6 +5,7 @@
 
 import { Response } from "express";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   successResponse,
@@ -53,6 +54,15 @@ interface AttachmentResponse {
   uploadedBy: number;
   uploadedAt: string;
   uploaderName?: string;
+}
+
+interface BlackboardEntry {
+  id: number;
+  title: string;
+  content: string;
+  status: string;
+  priority: string;
+  [key: string]: unknown;
 }
 
 export async function listEntries(req: AuthenticatedRequest, res: Response) {
@@ -150,6 +160,29 @@ export async function createEntry(req: AuthenticatedRequest, res: Response) {
       req.user.id,
     );
 
+    // Log blackboard entry creation
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "create",
+      entity_type: "blackboard_entry",
+      entity_id: (entry as BlackboardEntry).id,
+      details: `Erstellt: ${entryData.title}`,
+      new_values: {
+        title: entryData.title,
+        content: entryData.content,
+        org_level: entryData.orgLevel,
+        org_id: entryData.orgId,
+        priority: entryData.priority,
+        expires_at: entryData.expiresAt,
+        requires_confirmation: entryData.requiresConfirmation,
+        created_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
+
     res.status(201).json(successResponse(entry));
   } catch (error) {
     logger.error("Error creating blackboard entry:", error);
@@ -182,12 +215,45 @@ export async function updateEntry(req: AuthenticatedRequest, res: Response) {
       tags: body.tags,
     };
 
+    // Get old entry data for logging
+    const oldEntry = await blackboardService.getEntryById(
+      entryId,
+      req.user.tenant_id,
+      req.user.id,
+    );
+
     const entry = await blackboardService.updateEntry(
       entryId,
       updateData,
       req.user.tenant_id,
       req.user.id,
     );
+
+    // Log blackboard entry update
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "update",
+      entity_type: "blackboard_entry",
+      entity_id: entryId,
+      details: `Aktualisiert: ${updateData.title}`,
+      old_values: {
+        title: (oldEntry as BlackboardEntry).title,
+        content: (oldEntry as BlackboardEntry).content,
+        status: (oldEntry as BlackboardEntry).status,
+        priority: (oldEntry as BlackboardEntry).priority,
+      },
+      new_values: {
+        title: updateData.title,
+        content: updateData.content,
+        status: updateData.status,
+        priority: updateData.priority,
+        updated_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(successResponse(entry));
   } catch (error) {
@@ -207,11 +273,39 @@ export async function updateEntry(req: AuthenticatedRequest, res: Response) {
 export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
   try {
     const entryId = parseInt(req.params.id, 10);
+
+    // Get entry data before deletion for logging
+    const deletedEntry = await blackboardService.getEntryById(
+      entryId,
+      req.user.tenant_id,
+      req.user.id,
+    );
+
     const result = await blackboardService.deleteEntry(
       entryId,
       req.user.tenant_id,
       req.user.id,
     );
+
+    // Log blackboard entry deletion
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "delete",
+      entity_type: "blackboard_entry",
+      entity_id: entryId,
+      details: `Gelöscht: ${(deletedEntry as BlackboardEntry).title}`,
+      old_values: {
+        title: (deletedEntry as BlackboardEntry).title,
+        content: (deletedEntry as BlackboardEntry).content,
+        status: (deletedEntry as BlackboardEntry).status,
+        priority: (deletedEntry as BlackboardEntry).priority,
+        deleted_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(successResponse(result));
   } catch (error) {
@@ -236,6 +330,23 @@ export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
       req.user.id,
     );
+
+    // Log blackboard entry archiving
+    await RootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: "archive",
+      entity_type: "blackboard_entry",
+      entity_id: entryId,
+      details: `Archiviert: Schwarzes Brett Eintrag`,
+      new_values: {
+        status: "archived",
+        archived_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get("user-agent"),
+      was_role_switched: false,
+    });
 
     res.json(
       successResponse({ message: "Entry archived successfully", entry }),

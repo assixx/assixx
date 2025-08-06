@@ -13,6 +13,7 @@ interface DbRootLog extends RowDataPacket {
   action: string;
   entity_type?: string;
   entity_id?: number;
+  details?: string;
   old_values?: string | Record<string, unknown> | null;
   new_values?: string | Record<string, unknown> | null;
   ip_address?: string;
@@ -28,6 +29,7 @@ interface RootLogCreateData {
   ip_address?: string;
   entity_type?: string;
   entity_id?: number;
+  details?: string;
   old_values?: Record<string, unknown>;
   new_values?: Record<string, unknown>;
   user_agent?: string;
@@ -59,14 +61,15 @@ export class RootLog {
       tenant_id,
       entity_type,
       entity_id,
+      details,
       old_values,
       new_values,
       user_agent,
       was_role_switched,
     } = logData;
 
-    const query = `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, was_role_switched) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, details, old_values, new_values, ip_address, user_agent, was_role_switched) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -75,6 +78,7 @@ export class RootLog {
         action,
         entity_type ?? null,
         entity_id ?? null,
+        details ?? null,
         old_values ? JSON.stringify(old_values) : null,
         new_values ? JSON.stringify(new_values) : null,
         ip_address ?? null,

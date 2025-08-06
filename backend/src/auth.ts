@@ -275,7 +275,11 @@ export async function authenticateToken(
       role: user.role,
       activeRole: user.activeRole ?? user.role, // Support für Dual-Role
       isRoleSwitched: user.isRoleSwitched ?? false,
-      tenant_id: user.tenant_id ? parseInt(user.tenant_id.toString(), 10) : 0,
+      tenant_id: user.tenant_id
+        ? parseInt(user.tenant_id.toString(), 10)
+        : user.tenantId
+          ? parseInt(user.tenantId.toString(), 10)
+          : 0,
       department_id: null,
       position: null,
     };

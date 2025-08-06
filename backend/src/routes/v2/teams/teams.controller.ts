@@ -5,11 +5,21 @@
 
 import { Response } from "express";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
 
 import { teamsService, ServiceError } from "./teams.service.js";
+
+interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  departmentId?: number;
+  leaderId?: number;
+  [key: string]: unknown;
+}
 
 // Request body types
 interface CreateTeamBody {
@@ -129,6 +139,26 @@ export class TeamsController {
       }
       const team = await teamsService.createTeam(teamData, req.user.tenant_id);
 
+      // Log team creation
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "create",
+        entity_type: "team",
+        entity_id: (team as Team).id,
+        details: `Erstellt: ${teamData.name}`,
+        new_values: {
+          name: teamData.name,
+          description: teamData.description,
+          department_id: teamData.departmentId,
+          leader_id: teamData.leaderId,
+          created_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+
       res.status(201).json(successResponse(team, "Team created successfully"));
     } catch (error) {
       logger.error("Error in createTeam:", error);
@@ -170,11 +200,43 @@ export class TeamsController {
           .json(errorResponse("UNAUTHORIZED", "User not authenticated"));
         return;
       }
+      // Get old team data for logging
+      const oldTeam = await teamsService.getTeamById(
+        teamId,
+        req.user.tenant_id,
+      );
+
       const team = await teamsService.updateTeam(
         teamId,
         updateData,
         req.user.tenant_id,
       );
+
+      // Log team update
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "update",
+        entity_type: "team",
+        entity_id: teamId,
+        details: `Aktualisiert: ${updateData.name}`,
+        old_values: {
+          name: (oldTeam as Team | null)?.name,
+          description: (oldTeam as Team | null)?.description,
+          department_id: (oldTeam as Team | null)?.departmentId,
+          leader_id: (oldTeam as Team | null)?.leaderId,
+        },
+        new_values: {
+          name: updateData.name,
+          description: updateData.description,
+          department_id: updateData.departmentId,
+          leader_id: updateData.leaderId,
+          updated_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(team, "Team updated successfully"));
     } catch (error) {
@@ -209,7 +271,33 @@ export class TeamsController {
           .json(errorResponse("UNAUTHORIZED", "User not authenticated"));
         return;
       }
+      // Get team data before deletion for logging
+      const deletedTeam = await teamsService.getTeamById(
+        teamId,
+        req.user.tenant_id,
+      );
+
       const result = await teamsService.deleteTeam(teamId, req.user.tenant_id);
+
+      // Log team deletion
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "delete",
+        entity_type: "team",
+        entity_id: teamId,
+        details: `Gelöscht: ${(deletedTeam as Team | null)?.name}`,
+        old_values: {
+          name: (deletedTeam as Team | null)?.name,
+          description: (deletedTeam as Team | null)?.description,
+          department_id: (deletedTeam as Team | null)?.departmentId,
+          leader_id: (deletedTeam as Team | null)?.leaderId,
+          deleted_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(result));
     } catch (error) {
@@ -293,6 +381,23 @@ export class TeamsController {
         userId,
         req.user.tenant_id,
       );
+
+      // Log team member addition
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "add_member",
+        entity_type: "team",
+        entity_id: teamId,
+        details: `Mitglied hinzugefügt`,
+        new_values: {
+          user_id: userId,
+          added_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.status(201).json(successResponse(result));
     } catch (error) {

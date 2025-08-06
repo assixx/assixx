@@ -100,6 +100,7 @@ export default defineConfig({
         handler(html) {
           // Temporarily comment out external scripts to avoid warnings
           return html
+            .replace(/<script src="\/feature-flags\.js"[^>]*><\/script>/g, '<!-- EXTERNAL_FEATURE_FLAGS: $& -->')
             .replace(/<script src="\/scripts\/lib\/fullcalendar[^"]*"[^>]*><\/script>/g, '<!-- EXTERNAL_SCRIPT: $& -->')
             .replace(/<link[^>]*href="[^"]*fontawesome[^"]*\.css"[^>]*>/g, '<!-- EXTERNAL_STYLE: $& -->');
         },
@@ -112,6 +113,7 @@ export default defineConfig({
         handler(html) {
           // Restore external scripts after processing
           return html
+            .replace(/<!-- EXTERNAL_FEATURE_FLAGS: (<script[^>]*><\/script>) -->/g, '$1')
             .replace(/<!-- EXTERNAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1')
             .replace(/<!-- EXTERNAL_STYLE: (<link[^>]*>) -->/g, '$1');
         },

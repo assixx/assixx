@@ -168,7 +168,7 @@ router.get(
           al.ip_address,
           al.user_agent,
           al.created_at
-        FROM activity_logs al
+        FROM root_logs al
         JOIN users u ON al.user_id = u.id
         ${whereClause}
         ORDER BY al.created_at DESC
@@ -181,7 +181,7 @@ router.get(
       const [countResult] = await executeQuery<CountResult[]>(
         `
         SELECT COUNT(*) as total
-        FROM activity_logs al
+        FROM root_logs al
         ${whereClause}
       `,
         params,
@@ -390,7 +390,7 @@ router.delete(
       // Delete logs matching the filters
       const [result] = await executeQuery<ResultSetHeader>(
         `
-        DELETE FROM activity_logs
+        DELETE FROM root_logs
         ${whereClause}
       `,
         params,
@@ -478,6 +478,7 @@ router.delete(
 );
 
 // Log-Eintrag erstellen (interne Funktion)
+// DEPRECATED: Use RootLog.create() instead - this function now writes to root_logs for compatibility
 export async function createLog(
   userId: number,
   tenantId: number | null,
@@ -491,7 +492,7 @@ export async function createLog(
   try {
     await executeQuery(
       `
-      INSERT INTO activity_logs 
+      INSERT INTO root_logs 
       (tenant_id, user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `,

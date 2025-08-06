@@ -1,10 +1,22 @@
 import { Response, NextFunction } from "express";
 
+import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
 
 import { departmentService } from "./departments.service.js";
+
+interface Department {
+  id: number;
+  name: string;
+  description?: string;
+  manager_id?: number;
+  parent_id?: number;
+  status: string;
+  visibility: string;
+  [key: string]: unknown;
+}
 
 export class DepartmentController {
   /**
@@ -145,6 +157,28 @@ export class DepartmentController {
         req.user.tenant_id,
       );
 
+      // Log department creation
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "create",
+        entity_type: "department",
+        entity_id: (department as unknown as Department).id,
+        details: `Erstellt: ${body.name}`,
+        new_values: {
+          name: body.name,
+          description: body.description,
+          manager_id: body.managerId,
+          parent_id: body.parentId,
+          status: body.status,
+          visibility: body.visibility,
+          created_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
+
       res
         .status(201)
         .json(successResponse(department, "Department created successfully"));
@@ -219,6 +253,12 @@ export class DepartmentController {
         visibility?: string;
       };
 
+      // Get old department data for logging
+      const oldDepartment = await departmentService.getDepartmentById(
+        departmentId,
+        req.user.tenant_id,
+      );
+
       const department = await departmentService.updateDepartment(
         departmentId,
         {
@@ -231,6 +271,39 @@ export class DepartmentController {
         },
         req.user.tenant_id,
       );
+
+      // Log department update
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "update",
+        entity_type: "department",
+        entity_id: departmentId,
+        details: `Aktualisiert: ${body.name}`,
+        old_values: {
+          name: (oldDepartment as unknown as Department | null)?.name,
+          description: (oldDepartment as unknown as Department | null)
+            ?.description,
+          manager_id: (oldDepartment as unknown as Department | null)
+            ?.manager_id,
+          parent_id: (oldDepartment as unknown as Department | null)?.parent_id,
+          status: (oldDepartment as unknown as Department | null)?.status,
+          visibility: (oldDepartment as unknown as Department | null)
+            ?.visibility,
+        },
+        new_values: {
+          name: body.name,
+          description: body.description,
+          manager_id: body.managerId,
+          parent_id: body.parentId,
+          status: body.status,
+          visibility: body.visibility,
+          updated_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(successResponse(department, "Department updated successfully"));
     } catch (error) {
@@ -291,10 +364,40 @@ export class DepartmentController {
         return;
       }
 
+      // Get department data before deletion for logging
+      const deletedDepartment = await departmentService.getDepartmentById(
+        departmentId,
+        req.user.tenant_id,
+      );
+
       await departmentService.deleteDepartment(
         departmentId,
         req.user.tenant_id,
       );
+
+      // Log department deletion
+      await RootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: "delete",
+        entity_type: "department",
+        entity_id: departmentId,
+        details: `Gelöscht: ${(deletedDepartment as unknown as Department | null)?.name}`,
+        old_values: {
+          name: (deletedDepartment as unknown as Department | null)?.name,
+          description: (deletedDepartment as unknown as Department | null)
+            ?.description,
+          manager_id: (deletedDepartment as unknown as Department | null)
+            ?.manager_id,
+          status: (deletedDepartment as unknown as Department | null)?.status,
+          visibility: (deletedDepartment as unknown as Department | null)
+            ?.visibility,
+          deleted_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get("user-agent"),
+        was_role_switched: false,
+      });
 
       res.json(
         successResponse(
