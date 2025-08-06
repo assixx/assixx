@@ -122,22 +122,6 @@
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      // Show error function
-      function showError(message) {
-        const errorAlert = document.getElementById('error-alert');
-        const errorMessage = document.getElementById('error-message');
-        if (errorAlert && errorMessage) {
-          errorMessage.textContent = message;
-          errorAlert.style.display = 'block';
-          // Hide after 5 seconds
-          setTimeout(() => {
-            errorAlert.style.display = 'none';
-          }, 5000);
-        }
-      }
-
-      // Make showError globally available
-      window.showError = showError;
 
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {
