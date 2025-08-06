@@ -1383,6 +1383,11 @@
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      import apiService from '/scripts/services/api.service.js';
+      
+      // Make apiClient available globally for inline scripts
+      window.apiClient = apiService;
+      
       // Breadcrumb wird automatisch generiert basierend auf der URL
       initBreadcrumb();
     </script>
@@ -1748,9 +1753,15 @@
 
         try {
           // Mitarbeiter-Daten laden
-          const response = await fetch(`/api/users/${employeeId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? window.apiClient.request(`/users/${employeeId}`, {
+                method: 'GET'
+              })
+              .then(data => ({ ok: true, json: async () => data }))
+              .catch(err => ({ ok: false, statusText: err.message }))
+            : fetch(`/api/users/${employeeId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }));
 
           if (!response.ok) {
             console.error('Response not OK:', response.status, response.statusText);
@@ -1878,14 +1889,21 @@
             };
 
             try {
-              const response = await fetch(`/api/users/${employeeId}/availability`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(statusData),
-              });
+              const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+                ? window.apiClient.request(`/users/${employeeId}/availability`, {
+                    method: 'PUT',
+                    body: JSON.stringify(statusData)
+                  })
+                  .then(data => ({ ok: true, json: async () => data }))
+                  .catch(err => ({ ok: false, statusText: err.message }))
+                : fetch(`/api/users/${employeeId}/availability`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(statusData),
+                  }));
 
               if (response.ok) {
                 alert('Verfügbarkeitsstatus erfolgreich aktualisiert');
@@ -1914,10 +1932,16 @@
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/api/departments/${departmentId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
+            ? window.apiClient.request(`/departments/${departmentId}`, {
+                method: 'DELETE'
+              })
+              .then(() => ({ ok: true }))
+              .catch(err => ({ ok: false, statusText: err.message }))
+            : fetch(`/api/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+              }));
 
           if (response.ok) {
             alert('Abteilung erfolgreich gelöscht');
@@ -1938,9 +1962,15 @@
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/api/users/${employeeId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? window.apiClient.request(`/users/${employeeId}`, {
+                method: 'GET'
+              })
+              .then(data => ({ ok: true, json: async () => data }))
+              .catch(err => ({ ok: false, statusText: err.message }))
+            : fetch(`/api/users/${employeeId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }));
 
           if (response.ok) {
             const employee = await response.json();
@@ -2057,9 +2087,15 @@
               // Hilfsfunktion zum Laden der Abteilungen
               const loadDepts = async () => {
                 try {
-                  const deptResponse = await fetch('/api/departments', {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  const deptResponse = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
+                    ? window.apiClient.request('/departments', {
+                        method: 'GET'
+                      })
+                      .then(data => ({ ok: true, json: async () => data }))
+                      .catch(err => ({ ok: false }))
+                    : fetch('/api/departments', {
+                        headers: { Authorization: `Bearer ${token}` },
+                      }));
 
                   if (deptResponse.ok) {
                     const departments = await deptResponse.json();
@@ -2156,14 +2192,21 @@
         console.log('Sending update data:', data);
 
         try {
-          const response = await fetch(`/api/users/${employeeId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? window.apiClient.request(`/users/${employeeId}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+              })
+              .then(data => ({ ok: true, json: async () => data }))
+              .catch(err => ({ ok: false, statusText: err.message }))
+            : fetch(`/api/users/${employeeId}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(data),
+              }));
 
           if (response.ok) {
             alert('Mitarbeiter erfolgreich aktualisiert');
@@ -2355,11 +2398,17 @@
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch('/api/users?role=employee', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? window.apiClient.request('/users?role=employee', {
+                method: 'GET'
+              })
+              .then(data => ({ ok: true, json: async () => data }))
+              .catch(err => ({ ok: false, statusText: err.message }))
+            : fetch('/api/users?role=employee', {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }));
 
           if (!response.ok) {
             throw new Error('Failed to load employees');
@@ -2534,12 +2583,18 @@
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/api/users/${employeeId}`, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? window.apiClient.request(`/users/${employeeId}`, {
+                method: 'DELETE'
+              })
+              .then(() => ({ ok: true }))
+              .catch(err => ({ ok: false, statusText: err.message }))
+            : fetch(`/api/users/${employeeId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }));
 
           if (response.ok) {
             alert('Mitarbeiter erfolgreich gelöscht');
