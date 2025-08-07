@@ -1327,7 +1327,9 @@
           hideSuccess();
 
           try {
-            const response = await fetch('/api/documents/upload', {
+            const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+            const endpoint = useV2Documents ? '/api/v2/documents/upload' : '/api/documents/upload';
+            const response = await fetch(endpoint, {
               method: 'POST',
               headers: {
                 Authorization: `Bearer ${token}`,

@@ -36,28 +36,29 @@
 - [x] admin-dashboard.html ✅ (06.08.2025 - API v2 Migration abgeschlossen)
 - [x] root-dashboard.ts (MIGRIERT - WARTET AUF TEST & GENEHMIGUNG)
 - [x] root-dashboard.html (GEPRÜFT - Keine direkten API Calls - WARTET AUF GENEHMIGUNG)
-- [ ] dashboard-scripts.ts - Shared Dashboard Logic
+- [x] dashboard-scripts.ts - Shared Dashboard Logic ✅ (07.08.2025)
 
 ### PHASE 6: User Profile & Settings
 **Warum:** Meist besuchte Features nach Dashboard
-- [ ] profile.html
-- [ ] employee-profile.html
-- [ ] admin-profile.html
-- [ ] admin-profile.ts
-- [ ] root-profile.html
-- [ ] account-settings.html (settings API)
-- [ ] profile-picture.ts
+- [x] profile.html
+- [x] employee-profile.html (keine API Calls)
+- [x] admin-profile.html
+- [x] admin-profile.ts
+- [x] root-profile.html (8 API Calls migriert)
+- [x] account-settings.html (2 API Calls migriert)
+- [x] profile-picture.ts (ENTFERNT - wurde nicht verwendet)
 
 ### PHASE 7: Core Business Features
 **Warum:** Hauptfunktionalität der App
 
-#### Documents & Files
-- [ ] documents.ts
-- [ ] documents.html
-- [ ] document-base.ts
-- [ ] upload-document.ts
-- [ ] document-upload.html
-- [ ] employee-documents.html
+#### Documents & Files ✅ ABGESCHLOSSEN & GETESTET (07.08.2025)
+- [x] documents.ts (4 API Calls migriert) ✅
+- [x] documents.html (keine API Calls) ✅
+- [x] document-base.ts (4 API Calls migriert) ✅
+- [x] upload-document.ts (2 API Calls migriert) ✅
+- [x] document-upload.html (4 API Calls, 3 bereits v2, 1 migriert) ✅
+- [x] employee-documents.html (2 API Calls migriert) ✅
+- [x] BUG FIX: Modal Display Issue (doppelte class Attribute korrigiert) ✅
 
 #### Communication
 - [ ] blackboard.ts
@@ -114,7 +115,7 @@
 
 ---
 
-## ✅ Fortschritt: 12/64 Files (18.8% abgeschlossen)
+## ✅ Fortschritt: 26/64 Files (40.6% abgeschlossen)
 
 ### ⚠️ WICHTIGE NOTIZEN:
 - **Chat unread-count**: Die Navigation ist bereits für v2 vorbereitet, aber das Feature Flag muss deaktiviert bleiben bis die komplette Chat-Seite migriert ist

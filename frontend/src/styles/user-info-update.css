@@ -108,17 +108,17 @@
   line-height: 1 !important;
 }
 
-/* Hide ALL images in user-info except the user-avatar */
-#user-info img,
-.user-info img,
-.header .header-actions #user-info img {
-  display: none !important;
-}
-
-/* Show only the user-avatar */
+/* Show the user-avatar and its image */
 #user-info #user-avatar,
 .user-info #user-avatar,
 .header .header-actions #user-info #user-avatar {
+  display: block !important;
+}
+
+/* Ensure avatar images are visible */
+#user-info #user-avatar img,
+.user-info #user-avatar img,
+.header .header-actions #user-info #user-avatar img {
   display: block !important;
 }
 

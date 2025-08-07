@@ -3,6 +3,8 @@
  * Handles admin profile functionality with limited edit capabilities
  */
 
+import { apiClient } from '../utils/api-client';
+
 import { getAuthToken } from './auth';
 
 interface UserProfile {
@@ -15,6 +17,17 @@ interface UserProfile {
   profile_picture_url?: string;
   role: string;
   tenant_id: number;
+}
+
+interface ExtendedUserProfile extends UserProfile {
+  profilePictureUrl?: string;
+  profilePicture?: string;
+  profile_picture?: string;
+  avatar?: string;
+  picture?: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
 }
 
 interface PositionMap {
@@ -67,34 +80,54 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadUserProfile(): Promise<void> {
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+    let profile: UserProfile | null = null;
 
-    if (response.ok) {
+    if (useV2Users) {
+      // Use API v2 with apiClient - use /me endpoint
+      profile = await apiClient.get<UserProfile>('/users/me');
+    } else {
+      // Use API v1 with fetch
+      const token = getAuthToken();
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load profile');
+      }
+
       const data = await response.json();
-      const profile = data.data ?? data.user ?? data;
+      profile = data.data ?? data.user ?? data;
+    }
 
+    if (profile) {
       populateProfileForm(profile);
 
       // Try different possible field names for profile picture
+      // API v2 uses profilePictureUrl (not profilePicture!)
+      const extProfile = profile as ExtendedUserProfile;
       const pictureUrl =
-        profile.profile_picture_url ??
-        profile.profilePictureUrl ??
-        profile.profile_picture ??
-        profile.avatar ??
-        profile.picture;
+        extProfile.profilePictureUrl ??
+        extProfile.profilePicture ??
+        extProfile.profile_picture_url ??
+        extProfile.profile_picture ??
+        extProfile.avatar ??
+        extProfile.picture;
 
-      updateProfilePicture(pictureUrl, profile.first_name, profile.last_name);
-    } else {
-      showMessage('Fehler beim Laden des Profils', 'error');
+      console.log('Profile picture URL:', pictureUrl);
+      console.log('Full profile data:', profile);
+
+      // Use camelCase for v2 API
+      const firstName = extProfile.firstName ?? profile.first_name;
+      const lastName = extProfile.lastName ?? profile.last_name;
+      updateProfilePicture(pictureUrl, firstName, lastName);
     }
   } catch (error) {
     console.error('Error loading profile:', error);
-    showMessage('Netzwerkfehler beim Laden des Profils', 'error');
+    showMessage('Fehler beim Laden des Profils', 'error');
   }
 }
 
@@ -102,16 +135,22 @@ async function loadUserProfile(): Promise<void> {
  * Populate form with profile data
  */
 function populateProfileForm(profile: UserProfile): void {
+  // Handle both snake_case (v1) and camelCase (v2)
+  const extProfile = profile as ExtendedUserProfile;
+  const firstName = extProfile.firstName ?? profile.first_name;
+  const lastName = extProfile.lastName ?? profile.last_name;
+  const companyName = extProfile.companyName ?? profile.company_name;
+
   // Editable fields
-  (document.getElementById('first_name') as HTMLInputElement).value = profile.first_name ?? '';
-  (document.getElementById('last_name') as HTMLInputElement).value = profile.last_name ?? '';
+  (document.getElementById('first_name') as HTMLInputElement).value = firstName ?? '';
+  (document.getElementById('last_name') as HTMLInputElement).value = lastName ?? '';
 
   // Read-only fields
   (document.getElementById('email') as HTMLInputElement).value = profile.email ?? '';
   (document.getElementById('position') as HTMLInputElement).value = profile.position
     ? positionMap[profile.position] || profile.position
     : '-';
-  (document.getElementById('company') as HTMLInputElement).value = profile.company_name ?? '-';
+  (document.getElementById('company') as HTMLInputElement).value = companyName ?? '-';
 }
 
 /**
@@ -145,18 +184,26 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
       console.error('Failed to load profile picture:', url);
       // Show initials on error
       showInitials(display, firstName, lastName);
+      // Hide remove button on error
+      if (removeBtn) {
+        removeBtn.style.display = 'none';
+      }
     };
 
     display.appendChild(img);
 
+    // Show remove button when picture exists
     if (removeBtn) {
-      removeBtn.style.display = 'inline-flex';
+      removeBtn.style.display = 'inline-block';
+      console.log('Remove button shown for picture:', url);
     }
   } else {
     // Show initials instead of icon
     showInitials(display, firstName, lastName);
+    // Hide remove button when no picture
     if (removeBtn) {
       removeBtn.style.display = 'none';
+      console.log('Remove button hidden - no picture');
     }
   }
 }
@@ -255,23 +302,40 @@ async function handleProfileUpdate(event: Event): Promise<void> {
   };
 
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(updateData),
-    });
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
 
-    if (response.ok) {
+    if (useV2Users) {
+      // Use API v2 with apiClient
+      // Convert to camelCase for v2
+      const v2UpdateData = {
+        firstName: updateData.first_name,
+        lastName: updateData.last_name,
+      };
+
+      await apiClient.put('/users/me/profile', v2UpdateData);
       showMessage('Profil erfolgreich aktualisiert', 'success');
       // Reload to update header info
       setTimeout(() => window.location.reload(), 1500);
     } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Aktualisieren des Profils', 'error');
+      // Use API v1 with fetch
+      const token = getAuthToken();
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        showMessage('Profil erfolgreich aktualisiert', 'success');
+        // Reload to update header info
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        const error = await response.json();
+        showMessage(error.message ?? 'Fehler beim Aktualisieren des Profils', 'error');
+      }
     }
   } catch (error) {
     console.error('Error updating profile:', error);
@@ -338,32 +402,64 @@ async function uploadProfilePicture(file: File): Promise<void> {
   formData.append('profilePicture', file);
 
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile-picture', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
 
-    if (response.ok) {
-      const result = await response.json();
-      // Check different possible response formats
-      const pictureUrl =
-        result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
-      // Get current name values for initials
-      const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
-      const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
-      updateProfilePicture(pictureUrl, firstName, lastName);
-      showMessage('Profilbild erfolgreich hochgeladen', 'success');
-      // Reload profile to ensure we have the latest data
-      setTimeout(() => {
-        void loadUserProfile();
-      }, 500);
+    if (useV2Users) {
+      // Use API v2 - Note: apiClient doesn't support FormData directly, use fetch
+      const token = getAuthToken();
+      const response = await fetch('/api/v2/users/me/profile-picture', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // API v2 returns the user object with profilePictureUrl field
+        const pictureUrl =
+          result.data?.profilePictureUrl ?? result.data?.profilePicture ?? result.data?.profile_picture;
+        console.log('Upload response:', result);
+        const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
+        const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+        updateProfilePicture(pictureUrl, firstName, lastName);
+        showMessage('Profilbild erfolgreich hochgeladen', 'success');
+        // Reload page to update header
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      } else {
+        const error = await response.json();
+        showMessage(error.error?.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
+      }
     } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
+      // Use API v1 with fetch
+      const token = getAuthToken();
+      const response = await fetch('/api/user/profile-picture', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const pictureUrl =
+          result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
+        const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
+        const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+        updateProfilePicture(pictureUrl, firstName, lastName);
+        showMessage('Profilbild erfolgreich hochgeladen', 'success');
+        // Reload page to update header
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const error = await response.json();
+        showMessage(error.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
+      }
     }
   } catch (error) {
     console.error('Error uploading profile picture:', error);
@@ -376,23 +472,42 @@ async function uploadProfilePicture(file: File): Promise<void> {
  */
 async function removeProfilePicture(): Promise<void> {
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile-picture', {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
 
-    if (response.ok) {
-      // Get current name values for initials
+    if (useV2Users) {
+      // Use API v2 with apiClient
+      await apiClient.delete('/users/me/profile-picture');
       const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
       const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
       updateProfilePicture(undefined, firstName, lastName);
       showMessage('Profilbild erfolgreich entfernt', 'success');
+      // Reload page to update header
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Entfernen des Profilbilds', 'error');
+      // Use API v1 with fetch
+      const token = getAuthToken();
+      const response = await fetch('/api/user/profile-picture', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
+        const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+        updateProfilePicture(undefined, firstName, lastName);
+        showMessage('Profilbild erfolgreich entfernt', 'success');
+        // Reload page to update header
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const error = await response.json();
+        showMessage(error.message ?? 'Fehler beim Entfernen des Profilbilds', 'error');
+      }
     }
   } catch (error) {
     console.error('Error removing profile picture:', error);

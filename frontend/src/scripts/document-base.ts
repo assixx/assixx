@@ -152,7 +152,9 @@ export class DocumentBase {
    */
   protected async loadDocuments(): Promise<void> {
     try {
-      const response = await fetchWithAuth('/api/documents/v2');
+      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+      const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents/v2';
+      const response = await fetchWithAuth(endpoint);
 
       if (!response.ok) {
         throw new Error('Failed to load documents');
@@ -378,7 +380,9 @@ export class DocumentBase {
       }
 
       // Mark as read
-      fetchWithAuth(`/api/documents/${documentId}/read`, { method: 'POST' })
+      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+      const endpoint = useV2Documents ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
+      fetchWithAuth(endpoint, { method: 'POST' })
         .then(() => {
           // Update local state
           doc.is_read = true;
@@ -414,7 +418,9 @@ export class DocumentBase {
     const previewError = document.getElementById('previewError');
 
     if (previewFrame && previewError) {
-      fetchWithAuth(`/api/documents/preview/${doc.id}`)
+      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+      const endpoint = useV2Documents ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
+      fetchWithAuth(endpoint)
         .then((response) => {
           if (!response.ok) throw new Error('Preview failed');
           return response.blob();
@@ -630,7 +636,11 @@ window.downloadDocument = function (docId?: string | number): void {
     }
 
     try {
-      const response = await fetchWithAuth(`/api/documents/download/${documentId}`);
+      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+      const endpoint = useV2Documents
+        ? `/api/v2/documents/download/${documentId}`
+        : `/api/documents/download/${documentId}`;
+      const response = await fetchWithAuth(endpoint);
 
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`);

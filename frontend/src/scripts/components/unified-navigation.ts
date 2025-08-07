@@ -534,7 +534,13 @@ class UnifiedNavigation {
           // Update avatar if we have profile picture
           const sidebarAvatar = document.getElementById('sidebar-user-avatar');
           if (sidebarAvatar) {
-            const profilePic = userData.profilePicture ?? userData.data?.profilePicture ?? null;
+            // API v2 uses profilePictureUrl
+            const profilePic =
+              userData.profilePictureUrl ??
+              userData.profilePicture ??
+              userData.data?.profilePicture ??
+              userData.data?.profile_picture ??
+              null;
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
             const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
@@ -543,7 +549,13 @@ class UnifiedNavigation {
           // Also update header avatar
           const headerAvatar = document.getElementById('user-avatar');
           if (headerAvatar) {
-            const profilePic = userData.profilePicture ?? userData.data?.profilePicture ?? null;
+            // API v2 uses profilePictureUrl
+            const profilePic =
+              userData.profilePictureUrl ??
+              userData.profilePicture ??
+              userData.data?.profilePicture ??
+              userData.data?.profile_picture ??
+              null;
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
             const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
@@ -1077,10 +1089,15 @@ class UnifiedNavigation {
     const userRole = storedUserRole ?? 'employee';
 
     const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
-    const firstName = this.userProfileData?.first_name ?? '';
-    const lastName = this.userProfileData?.last_name ?? '';
+    const firstName = this.userProfileData?.firstName ?? this.userProfileData?.first_name ?? '';
+    const lastName = this.userProfileData?.lastName ?? this.userProfileData?.last_name ?? '';
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
-    const profilePicture = this.userProfileData?.profile_picture ?? null;
+    // API v2 uses profilePictureUrl
+    const profilePicture =
+      this.userProfileData?.profilePictureUrl ??
+      this.userProfileData?.profilePicture ??
+      this.userProfileData?.profile_picture ??
+      null;
 
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =

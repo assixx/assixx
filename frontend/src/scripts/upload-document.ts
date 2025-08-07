@@ -63,7 +63,9 @@ async function loadEmployees(): Promise<void> {
   }
 
   try {
-    const response = await fetch('/api/users', {
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+    const endpoint = useV2Users ? '/api/v2/users' : '/api/users';
+    const response = await fetch(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -144,7 +146,9 @@ async function uploadDocument(e: Event): Promise<void> {
 
   try {
     console.info('Sending upload request');
-    const response = await fetch('/api/documents', {
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+    const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents';
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

@@ -476,7 +476,9 @@
       window.showDeleteModal = async function () {
         // First check if there are at least 2 root users
         try {
-          const response = await fetchWithAuth('/api/root/users');
+          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const endpoint = useV2Root ? '/api/v2/root/users' : '/api/root/users';
+          const response = await fetchWithAuth(endpoint);
           if (response.ok) {
             const data = await response.json();
             const rootUsers = data.data.filter((user) => user.role === 'root');
@@ -531,7 +533,9 @@
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
 
         try {
-          const response = await fetchWithAuth('/api/root/tenants/current', {
+          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const endpoint = useV2Root ? '/api/v2/root/tenants/current' : '/api/root/tenants/current';
+          const response = await fetchWithAuth(endpoint, {
             method: 'DELETE',
             body: JSON.stringify({
               reason: document.getElementById('deleteReason')?.value || 'Keine Angabe',

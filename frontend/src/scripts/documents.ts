@@ -82,7 +82,9 @@ function setupEventListeners(): void {
  */
 async function loadDocuments(): Promise<void> {
   try {
-    const response = await fetchWithAuth('/api/documents/v2');
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+    const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents/v2';
+    const response = await fetchWithAuth(endpoint);
 
     if (!response.ok) {
       throw new Error('Failed to load documents');
@@ -363,7 +365,9 @@ async function viewDocument(documentId: number): Promise<void> {
     currentDocument = doc;
 
     // Mark as read
-    fetchWithAuth(`/api/documents/${documentId}/read`, { method: 'POST' })
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+    const endpoint = useV2Documents ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
+    fetchWithAuth(endpoint, { method: 'POST' })
       .then(() => {
         // Update local state
         doc.is_read = true;
@@ -409,7 +413,8 @@ function showDocumentModal(doc: Document): void {
     }
 
     // Try to show PDF preview with authentication
-    const previewUrl = `/api/documents/preview/${doc.id}`;
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+    const previewUrl = useV2Documents ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
 
     // For iframe, we need to handle authentication differently
     // First, try to fetch the document
@@ -506,7 +511,11 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     }
 
     // Fetch with authentication
-    const response = await fetchWithAuth(`/api/documents/download/${documentId}`);
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+    const endpoint = useV2Documents
+      ? `/api/v2/documents/download/${documentId}`
+      : `/api/documents/download/${documentId}`;
+    const response = await fetchWithAuth(endpoint);
 
     if (!response.ok) {
       const errorText = await response.text();

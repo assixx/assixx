@@ -561,7 +561,9 @@
         // Funktionen
         async function loadDocuments() {
           try {
-            const response = await fetch('/api/employee/documents', {
+            const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+            const endpoint = useV2Documents ? '/api/v2/documents/employee' : '/api/employee/documents';
+            const response = await fetch(endpoint, {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
               },
@@ -586,7 +588,11 @@
 
           if (query) {
             try {
-              const response = await fetch(`/api/employee/search-documents?query=${encodeURIComponent(query)}`, {
+              const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+              const endpoint = useV2Documents
+                ? `/api/v2/documents/employee/search?query=${encodeURIComponent(query)}`
+                : `/api/employee/search-documents?query=${encodeURIComponent(query)}`;
+              const response = await fetch(endpoint, {
                 headers: {
                   Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },

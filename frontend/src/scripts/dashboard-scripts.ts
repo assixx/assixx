@@ -3,6 +3,7 @@
  */
 
 import type { User } from '../types/api.types';
+import { apiClient } from '../utils/api-client';
 
 import { getAuthToken, removeAuthToken } from './auth';
 // import { formatDate as formatDateUtil } from './common';
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
 
   // Logging-Handler für User Info und Logout
-  setupUserAndLogout();
+  void setupUserAndLogout();
 });
 
 /**
@@ -115,7 +116,7 @@ function initTabs(): void {
 /**
  * Benutzerdaten und Logout-Funktionalität
  */
-function setupUserAndLogout(): void {
+async function setupUserAndLogout(): Promise<void> {
   const userInfo = document.getElementById('user-info') as HTMLElement;
   const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
 
@@ -123,27 +124,40 @@ function setupUserAndLogout(): void {
     // Lade Benutzerdaten
     const token = getAuthToken();
     if (token) {
-      fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
+      try {
+        const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+        let userData: User | null = null;
+
+        if (useV2Users) {
+          // Use API v2 with apiClient
+          userData = await apiClient.get<User>('/users/profile');
+        } else {
+          // Use API v1 with fetch
+          const response = await fetch('/api/user/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Fehler beim Laden der Benutzerdaten');
           }
-          throw new Error('Fehler beim Laden der Benutzerdaten');
-        })
-        .then((data: User) => {
+
+          userData = await response.json();
+        }
+
+        if (userData) {
           // Anzeigename setzen (Name oder Username)
-          const displayName = data.first_name ? `${data.first_name} ${data.last_name ?? ''}` : data.username;
+          const displayName = userData.first_name
+            ? `${userData.first_name} ${userData.last_name ?? ''}`
+            : userData.username;
           userInfo.textContent = displayName;
-        })
-        .catch((error) => {
-          console.error('Fehler beim Laden der Benutzerdaten:', error);
-          // Bei Fehler zur Login-Seite weiterleiten
-          window.location.href = '/login';
-        });
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzerdaten:', error);
+        // Bei Fehler zur Login-Seite weiterleiten
+        window.location.href = '/login';
+      }
     } else {
       window.location.href = '/login';
     }
