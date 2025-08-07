@@ -17,14 +17,14 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
-# Use --ignore-scripts for CI/CD builds to avoid build script warnings
-RUN pnpm install --frozen-lockfile --ignore-scripts
+# Install with frozen lockfile (onlyBuiltDependencies in package.json handles script blocking)
+RUN pnpm install --frozen-lockfile
 
 # Frontend package files kopieren
 # In einem pnpm workspace gibt es nur einen gemeinsamen Lockfile im Root
 COPY frontend/package.json ./frontend/
 # Der Lockfile ist bereits im Root kopiert, daher nur pnpm install vom Root aus
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile
 
 # Scripts directory für ESM support
 COPY scripts/package.json ./scripts/
