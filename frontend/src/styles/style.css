@@ -34,7 +34,7 @@
 }
 
 /* Import Nunito font definitions */
-@import url('fonts-nunito.css');
+@import url("fonts-nunito.css");
 
 body {
   font-family: "Nunito", "Inter", Arial, sans-serif;

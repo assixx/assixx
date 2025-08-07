@@ -17,15 +17,15 @@ interface AdminUser extends User {
 interface DashboardData {
   user: {
     id: number;
-    username: string;
-    role: string;
+    userName: string;
+    userRole: string;
     iat: number;
     exp: number;
   };
 }
 
 interface CreateAdminFormElements extends HTMLFormControlsCollection {
-  username: HTMLInputElement;
+  userName: HTMLInputElement;
   first_name: HTMLInputElement;
   last_name: HTMLInputElement;
   email: HTMLInputElement;
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const adminData = {
-      username: elements.username.value,
+      userName: elements.userName.value,
       first_name: elements.first_name.value,
       last_name: elements.last_name.value,
       email: elements.email.value,
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Parse JWT token to get basic user info
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        userNameElement.textContent = payload.username ?? 'Root';
+        userNameElement.textContent = payload.userName ?? 'Root';
       } catch (e) {
         console.error('Error parsing JWT token:', e);
       }
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const user = JSON.parse(localStorage.getItem('user') ?? '{}');
       const userName = document.getElementById('user-name');
       if (userName) {
-        userName.textContent = user.username ?? 'Root';
+        userName.textContent = user.userName ?? 'Root';
       }
     }
   }
@@ -347,10 +347,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Use v2 API directly via apiClient
       interface LogEntry {
         id: number;
-        created_at: string;
+        createdAt: string;
         action: string;
-        user_name: string;
-        user_role: string;
+        userName: string;
+        userRole: string;
         details?: string;
       }
 
@@ -374,31 +374,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         logsContainer.innerHTML = logs
-          .map(
-            (log: { created_at: string; action: string; user_name: string; user_role: string; details?: string }) => {
-              const date = new Date(log.created_at);
-              const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-              const dateString = date.toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              });
+          .map((log: { createdAt: string; action: string; userName: string; userRole: string; details?: string }) => {
+            const date = new Date(log.createdAt);
+            const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            const dateString = date.toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            });
 
-              return `
+            return `
               <div class="log-entry" onclick="window.location.href = "/logs"">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
                   <div class="log-timestamp">${dateString} ${timeString}</div>
                 </div>
                 <div class="log-details">
-                  <span class="log-user">${log.user_name}</span>
-                  <span style="color: var(--text-secondary);">(${getRoleLabel(log.user_role)})</span>
+                  <span class="log-user">${log.userName}</span>
+                  <span class="role-badge role-${log.userRole}">${getuserRoleLabel(log.userRole)}</span>
                   ${log.details ? ` - ${log.details}` : ''}
                 </div>
               </div>
             `;
-            },
-          )
+          })
           .join('');
       }
     } catch (error) {
@@ -423,13 +421,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return actionLabels[action] ?? action;
   }
 
-  // Helper function to get readable role labels
-  function getRoleLabel(role: string): string {
-    const roleLabels: { [key: string]: string } = {
+  // Helper function to get readable userRole labels
+  function getuserRoleLabel(userRole: string): string {
+    const userRoleLabels: { [key: string]: string } = {
       root: 'Root',
       admin: 'Admin',
       employee: 'Mitarbeiter',
     };
-    return roleLabels[role] ?? role;
+    return userRoleLabels[userRole] ?? userRole;
   }
 });

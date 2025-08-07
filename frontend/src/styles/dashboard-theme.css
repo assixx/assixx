@@ -1183,7 +1183,9 @@ body {
   background: hsla(0, 0%, 3.5%, 0.86);
   border: var(--border-width) solid #2e2e2e;
   border-radius: var(--radius-md);
-  box-shadow: -28px 20px 30px rgba(255, 255, 255, 0.18),inset 0 0 1px hsla(0, 100%, 100%, 0.21);
+  box-shadow:
+    -28px 20px 30px rgba(255, 255, 255, 0.18),
+    inset 0 0 1px hsla(0, 100%, 100%, 0.21);
   display: flex;
   flex-direction: column;
   left: 50%;
@@ -1192,7 +1194,7 @@ body {
   min-height: var(--alert-modal-min-height);
   position: absolute;
   top: 35%;
-  transform: translate(-50%,-50%);
+  transform: translate(-50%, -50%);
   width: 100%;
   z-index: 1001;
 }
