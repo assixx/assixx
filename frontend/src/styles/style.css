@@ -33,8 +33,11 @@
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Import Nunito font definitions */
+@import url('fonts-nunito.css');
+
 body {
-  font-family: "Ubuntu", Arial, sans-serif;
+  font-family: "Nunito", "Inter", Arial, sans-serif;
   margin: 0;
   padding: 0;
   color: var(--text-primary);

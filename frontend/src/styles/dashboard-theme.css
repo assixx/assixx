@@ -13,10 +13,19 @@
   --background-light: #1e1e1e;
   --text-primary: #ffffff;
   --text-secondary: #ffffff;
-  --border-color: #333333;
   --success-color: #4caf50;
   --error-color: #f44336;
   --warning-color: #ff9800;
+
+  /* modals */
+  /* background: hsl(var(--default-modal));*/
+  --default-modal: 0, 4.3%, 9%, 0.65;
+  /* border */
+  --border-color: hsl(0, 0%, 23.9%);
+  --border-width: 1px;
+  /* alert modal sizes */
+  --alert-modal-max-width: 30rem;
+  --alert-modal-min-height: 20rem;
 
   /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
   --accent-color: rgba(255, 255, 255, 0.1);
@@ -31,13 +40,15 @@
   /* Abstände - rem für zoom-freundlichkeit */
   --spacing-xs: 0.25rem; /* 4px */
   --spacing-sm: 0.5rem; /* 8px */
+  --spacing-2sm: 0.75rem; /* 12px */
   --spacing-md: 1rem; /* 16px */
   --spacing-lg: 1.5rem; /* 24px */
   --spacing-xl: 2rem; /* 32px */
 
   /* Rundungen - rem für konsistentes scaling */
-  --radius-sm: 0.5rem; /* 8px */
-  --radius-md: 0.75rem; /* 12px */
+  --radius-xs: 0.5rem;
+  --radius-sm: 1rem; /* 8px */
+  --radius-md: 1.5rem; /* 12px */
   --radius-lg: 1rem; /* 16px */
 
   /* Schatten */
@@ -145,7 +156,13 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "Nunito",
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   color: var(--text-primary);
   line-height: 1.6;
   font-size: 0.875rem; /* 14px - rem für zoom scaling */
@@ -250,8 +267,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
+  /*background-color: var(--primary-dark);*/
   box-shadow: var(--shadow-md);
 }
 
@@ -288,7 +304,6 @@ body {
 .btn-warning:hover {
   background: rgba(255, 152, 0, 0.25);
   border-color: rgba(255, 152, 0, 0.5);
-  transform: translateY(-1px);
   box-shadow: 0 4px 20px rgba(255, 152, 0, 0.3);
   color: #ffa726;
 }
@@ -318,7 +333,7 @@ body {
 
 .form-control {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   background: var(--glass-form-bg);
   backdrop-filter: var(--glass-form-backdrop);
   -webkit-backdrop-filter: var(--glass-form-backdrop);
@@ -495,8 +510,7 @@ body {
   }
 } */
 
-.fade-in {
-}
+/* .fade-in rule removed - was empty */
 
 /* Glassmorphismus Utility Classes */
 .glass-card {
@@ -849,14 +863,16 @@ body {
   margin-left: 24px;
 }
 
-.modal-body {
+/* General modal body - but not for logout modal */
+.modal-body:not(#logoutModal .logout-modal .modal-body) {
   padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
 }
 
-.modal-footer {
+/* General modal footer - but not for logout modal */
+.modal-footer:not(#logoutModal .logout-modal .modal-footer) {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--spacing-md);
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
   margin: 0 calc(-1 * var(--spacing-lg));
@@ -882,7 +898,6 @@ body {
 .btn-role-switch:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: var(--employee-color);
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
 }
 
@@ -904,13 +919,14 @@ body {
 .role-switch-dropdown {
   position: relative;
   /* Inherits width: 100% from .custom-dropdown */
+  margin-right: 12px; /* Add space between dropdown and user-info */
 }
 
 .role-switch-dropdown .dropdown-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 6px 15px;
   background: rgba(255, 255, 255, 0.021);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -919,12 +935,12 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
+  gap: 16px; /* Add space between text and arrow */
 }
 
 .role-switch-dropdown .dropdown-display:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
@@ -935,6 +951,8 @@ body {
 .role-switch-dropdown .dropdown-display svg {
   width: 12px;
   height: 8px;
+  margin-left: 8px; /* Additional spacing for the arrow */
+  flex-shrink: 0; /* Prevent arrow from shrinking */
 }
 
 .role-switch-dropdown .dropdown-options {
@@ -946,7 +964,7 @@ body {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -960,10 +978,11 @@ body {
 }
 
 .role-switch-dropdown .dropdown-options.active {
+  display: block !important;
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  margin-right: -14px;
+  margin-right: -15px;
 }
 
 .role-switch-dropdown .dropdown-option {
@@ -1029,4 +1048,217 @@ body {
 
 #user-info {
   align-items: center;
+}
+
+/* Logout Button - Premium gradient style from user-info-update */
+#logout-btn,
+.btn-logout,
+.logout-btn,
+.header .header-actions #logout-btn {
+  background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.3rem !important;
+  text-decoration: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4) !important;
+  padding: 0.5rem 1rem !important;
+  min-height: 2.25rem !important;
+  white-space: nowrap !important;
+  transition: all 0.3s ease !important;
+  /* Fix width consistency across all dashboards */
+  min-width: 44px !important;
+  width: 44px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Shine effect on hover */
+#logout-btn::before,
+.logout-btn::before,
+.btn-logout::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+#logout-btn:hover,
+.logout-btn:hover,
+.btn-logout:hover {
+  box-shadow:
+    0 3px 12px rgba(244, 67, 54, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+#logout-btn:hover::before,
+.logout-btn:hover::before,
+.btn-logout:hover::before {
+  left: 100%;
+}
+
+#logout-btn:active,
+.btn-logout:active {
+  transform: translateY(0) !important;
+}
+
+/* Icon inside logout button */
+#logout-btn i,
+.logout-btn i,
+.btn-logout i,
+.header .header-actions #logout-btn i {
+  font-size: 1rem !important;
+}
+
+#logout-btn:hover i,
+.btn-logout:hover i {
+  transform: rotate(-15deg) !important;
+}
+
+/* Logout button text - responsive */
+.logout-text {
+  display: inline-block !important;
+  margin-left: 0.25rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* Hide text on small screens */
+@media (max-width: 768px) {
+  .logout-text {
+    display: none !important;
+  }
+
+  #logout-btn,
+  .logout-btn,
+  .btn-logout {
+    padding: 0.4rem 1rem !important;
+    font-size: 0.8rem !important;
+    min-width: auto !important;
+  }
+
+  #logout-btn i,
+  .logout-btn i,
+  .btn-logout i {
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Logout Modal Styles - Cleaned up and unified */
+#logoutModal.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: none;
+}
+
+#logoutModal .modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /*background-color: rgba(0, 0, 0, 0.7);*/
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 1000; /* Ensure overlay is above page content */
+}
+
+#logoutModal .logout-modal {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Premium Glassmorphism Effect */
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  background: hsl(var(--default-modal));
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.1);
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 80px);
+  max-width: var(--alert-modal-max-width);
+  min-height: var(--alert-modal-min-height);
+  width: 100%;
+  z-index: 1001;
+}
+
+#logoutModal .logout-modal .modal-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
+}
+
+#logoutModal .logout-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+#logoutModal .logout-modal .modal-body {
+  padding: var(--spacing-lg);
+}
+
+#logoutModal .logout-modal .logout-message {
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  text-align: left;
+}
+
+#logoutModal .logout-modal .logout-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-left: -6px;
+}
+
+#logoutModal .logout-modal .logout-info i {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+#logoutModal .logout-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid hsla(0, 0%, 100%, 0.1);
+  margin: 0; /* Override general modal-footer margin */
+}
+
+#logoutModal .logout-modal .btn {
+  min-width: 100px;
+}
+
+#logoutModal .logout-modal .btn-danger {
+  background: linear-gradient(135deg, #eb1000, #ff0600);
+}
+
+#logoutModal .logout-modal .btn-danger:hover {
+  background: linear-gradient(135deg, #ef5350, #f44336);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }

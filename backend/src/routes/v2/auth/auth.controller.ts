@@ -22,7 +22,7 @@ const JWT_REFRESH_SECRET =
   "default-jwt-secret";
 
 // Token expiration times
-const ACCESS_TOKEN_EXPIRES = "15m";
+const ACCESS_TOKEN_EXPIRES = "30m"; // 30 Minuten
 const REFRESH_TOKEN_EXPIRES = "7d";
 
 /**

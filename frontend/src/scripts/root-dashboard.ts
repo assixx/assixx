@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Elemente aus dem DOM holen
   const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm;
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
+  // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
   const dashboardContent = document.getElementById('dashboard-data') as HTMLElement;
 
   // Event-Listener hinzufügen
@@ -64,16 +64,17 @@ document.addEventListener('DOMContentLoaded', () => {
     createAdminForm.addEventListener('submit', (e) => void createAdmin(e));
   }
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      logout().catch((error) => {
-        console.error('Logout error:', error);
-        // Fallback
-        window.location.href = '/login';
-      });
-    });
-  }
+  // Logout Button - DISABLED: Handled by unified-navigation.ts
+  // if (logoutBtn) {
+  //   logoutBtn.addEventListener('click', (e) => {
+  //     e.preventDefault();
+  //     logout().catch((error) => {
+  //       console.error('Logout error:', error);
+  //       // Fallback
+  //       window.location.href = '/login';
+  //     });
+  //   });
+  // }
 
   // Initialize API client
   const apiClient = ApiClient.getInstance();
@@ -273,22 +274,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // But keeping it to not break loadAdmins() which updates the count
   }
 
-  // Ausloggen
-  async function logout(): Promise<void> {
-    console.info('Logging out...');
+  // Ausloggen - DISABLED: Handled by unified-navigation.ts
+  // async function logout(): Promise<void> {
+  //   console.info('Logging out...');
 
-    if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      try {
-        // Import and use the logout function from auth module
-        const { logout: authLogout } = await import('./auth.js');
-        await authLogout();
-      } catch (error) {
-        console.error('Logout error:', error);
-        // Fallback
-        window.location.href = '/login';
-      }
-    }
-  }
+  //   if (confirm('Möchten Sie sich wirklich abmelden?')) {
+  //     try {
+  //       // Import and use the logout function from auth module
+  //       const { logout: authLogout } = await import('./auth.js');
+  //       await authLogout();
+  //     } catch (error) {
+  //       console.error('Logout error:', error);
+  //       // Fallback
+  //       window.location.href = '/login';
+  //     }
+  //   }
+  // }
 
   // Load user info in header
   async function loadHeaderUserInfo(): Promise<void> {

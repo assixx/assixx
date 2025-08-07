@@ -154,7 +154,7 @@ export function generateToken(
         `sess_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`, // Cryptographically secure session ID
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "8h" }); // 8 Stunden wie bei den meisten SaaS
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "30m" }); // 30 Minuten
 
     return token;
   } catch (error) {
@@ -195,10 +195,10 @@ export async function authenticateToken(
 
   if (!token) {
     // Check if client expects HTML (browser page request) or JSON (API request)
-    const acceptHeader = req.headers.accept ?? '';
-    if (acceptHeader.includes('text/html')) {
+    const acceptHeader = req.headers.accept ?? "";
+    if (acceptHeader.includes("text/html")) {
       // Browser request - redirect to login
-      res.redirect('/login?session=expired');
+      res.redirect("/login?session=expired");
     } else {
       // API request - return JSON error
       res.status(401).json({ error: "Authentication token required" });
@@ -210,10 +210,10 @@ export async function authenticateToken(
   jwt.verify(token, JWT_SECRET, async (err, decoded) => {
     if (err || !decoded || typeof decoded === "string") {
       // Check if client expects HTML (browser page request) or JSON (API request)
-      const acceptHeader = req.headers.accept ?? '';
-      if (acceptHeader.includes('text/html')) {
+      const acceptHeader = req.headers.accept ?? "";
+      if (acceptHeader.includes("text/html")) {
         // Browser request - redirect to login with expired session message
-        res.redirect('/login?session=expired');
+        res.redirect("/login?session=expired");
       } else {
         // API request - return JSON error
         res.status(403).json({
@@ -266,10 +266,10 @@ export async function authenticateToken(
 
           if (sessions.length === 0) {
             // Check if client expects HTML (browser page request) or JSON (API request)
-            const acceptHeader = req.headers.accept ?? '';
-            if (acceptHeader.includes('text/html')) {
+            const acceptHeader = req.headers.accept ?? "";
+            if (acceptHeader.includes("text/html")) {
               // Browser request - redirect to login with session expired message
-              res.redirect('/login?session=expired');
+              res.redirect("/login?session=expired");
             } else {
               // API request - return JSON error
               res.status(403).json({
@@ -323,10 +323,10 @@ export function authorizeRole(role: "admin" | "employee" | "root") {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       // Check if client expects HTML (browser page request) or JSON (API request)
-      const acceptHeader = req.headers.accept ?? '';
-      if (acceptHeader.includes('text/html')) {
+      const acceptHeader = req.headers.accept ?? "";
+      if (acceptHeader.includes("text/html")) {
         // Browser request - redirect to login
-        res.redirect('/login?session=expired');
+        res.redirect("/login?session=expired");
       } else {
         // API request - return JSON error
         res.status(401).json({ error: "Authentication required" });
@@ -356,19 +356,21 @@ export function authorizeRole(role: "admin" | "employee" | "root") {
     }
 
     // Check if client expects HTML (browser page request) or JSON (API request)
-    const acceptHeader = req.headers.accept ?? '';
-    if (acceptHeader.includes('text/html')) {
+    const acceptHeader = req.headers.accept ?? "";
+    if (acceptHeader.includes("text/html")) {
       // Browser request - redirect to appropriate dashboard based on role
       const dashboardMap: Record<string, string> = {
-        'employee': '/employee-dashboard',
-        'admin': '/admin-dashboard',
-        'root': '/root-dashboard'
+        employee: "/employee-dashboard",
+        admin: "/admin-dashboard",
+        root: "/root-dashboard",
       };
-      const redirectPath = dashboardMap[req.user.role] ?? '/login';
+      const redirectPath = dashboardMap[req.user.role] ?? "/login";
       res.redirect(`${redirectPath}?error=unauthorized`);
     } else {
       // API request - return JSON error
-      res.status(403).json({ error: "Unauthorized - insufficient permissions" });
+      res
+        .status(403)
+        .json({ error: "Unauthorized - insufficient permissions" });
     }
   };
 }

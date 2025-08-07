@@ -6,31 +6,49 @@
     <title>Assixx - Login</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
     <link rel="preload" as="image" href="../favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <!-- Feature Flags for API v2 Migration -->
     <script src="/feature-flags.js"></script>
   </head>
   <body>
     <!-- Quick redirect check before page renders -->
     <script>
-      // Immediate redirect check - no async, no fingerprint, just redirect
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-      const userRole = localStorage.getItem('userRole');
-      if (token && userRole) {
-        // Hide login form immediately while we redirect
-        document.documentElement.style.visibility = 'hidden';
+      // FIRST: Check if session expired or timeout - clear storage before any redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('session') === 'expired' || urlParams.get('timeout') === 'true') {
+        // Clear all auth data immediately to prevent redirect loop
+        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('user');
+        sessionStorage.clear();
+        // Clear auth cookies
+        document.cookie.split(';').forEach(function (c) {
+          if (c.includes('token') || c.includes('Token')) {
+            document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date(0).toUTCString() + ';path=/');
+          }
+        });
+      } else {
+        // ONLY check for existing token if NOT coming from session expired
+        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+        const userRole = localStorage.getItem('userRole');
+        if (token && userRole) {
+          // Hide login form immediately while we redirect
+          document.documentElement.style.visibility = 'hidden';
 
-        // Redirect based on role (validation happens in background after redirect)
-        switch (userRole) {
-          case 'root':
-            window.location.replace('/root-dashboard');
-            break;
-          case 'admin':
-            window.location.replace('/admin-dashboard');
-            break;
-          case 'employee':
-            window.location.replace('/employee-dashboard');
-            break;
+          // Redirect based on role (validation happens in background after redirect)
+          switch (userRole) {
+            case 'root':
+              window.location.replace('/root-dashboard');
+              break;
+            case 'admin':
+              window.location.replace('/admin-dashboard');
+              break;
+            case 'employee':
+              window.location.replace('/employee-dashboard');
+              break;
+          }
         }
       }
     </script>
@@ -58,20 +76,45 @@
       <!-- Login Form -->
       <div class="login-card card">
         <!-- Session Expired Alert -->
-        <div id="session-expired-alert" class="alert-warning" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; color: #ffc107;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">⚠️</span>
+        <div
+          id="session-expired-alert"
+          class="alert-warning"
+          style="
+            display: none;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            color: #ffc107;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="font-size: 20px">⚠️</span>
             <div>
-              <strong>Sitzung abgelaufen</strong><br>
-              <span style="font-size: 14px;">Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.</span>
+              <strong>Sitzung abgelaufen</strong>
+              <br />
+              <span style="font-size: 14px">Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.</span>
             </div>
           </div>
         </div>
 
         <!-- Error Alert -->
-        <div id="error-alert" class="alert-danger" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(220, 53, 69, 0.1); border: 1px solid rgba(220, 53, 69, 0.3); border-radius: 8px; color: #dc3545;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">❌</span>
+        <div
+          id="error-alert"
+          class="alert-danger"
+          style="
+            display: none;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 8px;
+            color: #dc3545;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="font-size: 20px">❌</span>
             <div id="error-message"></div>
           </div>
         </div>
@@ -79,15 +122,7 @@
         <form id="loginForm">
           <div class="form-group">
             <label class="form-label">E-Mail</label>
-            <input
-              type="email"
-              id="username"
-              class="form-control"
-              required
-              autofocus
-              placeholder="ihre.email@firma.de"
-              autocomplete="email"
-            />
+            <input type="email" id="username" class="form-control" required autofocus placeholder="" autocomplete="email" />
           </div>
           <div class="form-group">
             <label class="form-label">Passwort</label>
@@ -121,7 +156,6 @@
         // Clear the URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-
 
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {
@@ -385,7 +419,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
+        /*background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);*/
         opacity: 0.9;
         z-index: -1;
       }
@@ -406,7 +440,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 100vh;
+        min-height: 75vh;
         padding: var(--spacing-lg);
       }
 
@@ -438,7 +472,7 @@
 
       .login-card {
         width: 100%;
-        max-width: 400px;
+        max-width: 450px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -467,10 +501,10 @@
       }
 
       .btn-block {
-        width: 50%;
+        width: 75%;
         padding: var(--spacing-md);
         font-size: 16px;
-        font-family: 'Ubuntu', sans-serif;
+        font-family: 'Inter', sans-serif;
         font-weight: 500;
         margin: 0 auto;
         display: block;
@@ -672,14 +706,14 @@
       }
 
       .btn-primary::before {
+        background: linear-gradient(90deg, transparent, hsla(0, 0%, 100%, 0.2), transparent);
         content: '';
+        height: 100%;
+        left: -100%;
         position: absolute;
         top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s ease;
+        width: 100%;
       }
 
       .btn-primary:hover {

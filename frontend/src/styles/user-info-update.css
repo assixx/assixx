@@ -133,56 +133,7 @@
   letter-spacing: 0.1px !important;
 }
 
-/* Logout button with awesome gradient style like Register button */
-#logout-btn,
-.logout-btn,
-.btn-logout,
-.header .header-actions #logout-btn {
-  background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
-  color: white !important;
-  border: none !important;
-  padding: 0.3rem 0.8rem !important;
-  border-radius: 6px !important;
-  font-size: 0.9rem !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.3rem !important;
-  text-decoration: none !important;
-  position: relative !important;
-  overflow: hidden !important;
-  box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4) !important;
-}
-
-/* Shine effect on hover */
-#logout-btn::before,
-.logout-btn::before,
-.btn-logout::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-}
-
-#logout-btn:hover,
-.logout-btn:hover,
-.btn-logout:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 3px 12px rgba(244, 67, 54, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-#logout-btn:hover::before,
-.logout-btn:hover::before,
-.btn-logout:hover::before {
-  left: 100%;
-}
+/* Logout button styles moved to dashboard-theme.css to prevent conflicts */
 
 /* Header actions container */
 .header-actions {
@@ -194,14 +145,6 @@
 /* Make the entire header more compact if needed */
 .header .header-actions {
   margin-left: auto;
-}
-
-/* Icon inside logout button */
-#logout-btn i,
-.logout-btn i,
-.btn-logout i,
-.header .header-actions #logout-btn i {
-  font-size: 1rem !important;
 }
 
 /* Responsive adjustments */
@@ -216,10 +159,5 @@
     display: none; /* Hide name on mobile for space */
   }
 
-  #logout-btn,
-  .logout-btn,
-  .btn-logout {
-    padding: 0.4rem 1rem;
-    font-size: 0.8rem;
-  }
+  /* Logout button responsive styles moved to dashboard-theme.css */
 }

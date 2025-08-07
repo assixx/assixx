@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
   const departmentForm = document.getElementById('department-form') as HTMLFormElement | null;
   const teamForm = document.getElementById('team-form') as HTMLFormElement | null;
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null;
+  // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null; // Not used - handled by unified-navigation
 
   // Buttons für Mitarbeiter-Modal
   const newEmployeeBtn = document.getElementById('new-employee-button') as HTMLButtonElement | null;
@@ -275,16 +275,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
   if (departmentForm) departmentForm.addEventListener('submit', (e) => void createDepartment(e));
   if (teamForm) teamForm.addEventListener('submit', (e) => void createTeam(e));
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      logout().catch((error) => {
-        console.error('Logout error:', error);
-        // Fallback
-        window.location.href = '/login';
-      });
-    });
-  }
+  // Logout Button - DISABLED: Handled by unified-navigation.ts
+  // if (logoutBtn) {
+  //   logoutBtn.addEventListener('click', (e) => {
+  //     e.preventDefault();
+  //     logout().catch((error) => {
+  //       console.error('Logout error:', error);
+  //       // Fallback
+  //       window.location.href = '/login';
+  //     });
+  //   });
+  // }
 
   // Event-Listener für Mitarbeiter-Buttons
   if (newEmployeeBtn) {
@@ -966,14 +967,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // loadHeaderUserInfo function removed - handled by unified-navigation.ts
 
-  // Logout function
-  async function logout(): Promise<void> {
-    if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      // Import and use the logout function from auth module
-      const { logout: authLogout } = await import('./auth.js');
-      await authLogout();
-    }
-  }
+  // Logout function - DISABLED: Handled by unified-navigation.ts
+  // async function logout(): Promise<void> {
+  //   if (confirm('Möchten Sie sich wirklich abmelden?')) {
+  //     // Import and use the logout function from auth module
+  //     const { logout: authLogout } = await import('./auth.js');
+  //     await authLogout();
+  //   }
+  // }
 
   // Placeholder functions - to be implemented
   async function loadRecentEmployees(): Promise<void> {

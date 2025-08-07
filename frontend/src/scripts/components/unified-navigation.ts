@@ -9,7 +9,7 @@ import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
 // import { loadUserInfo as loadUserInfoFromAuth } from '../auth'; // Currently unused
-import { switchRoleForRoot } from '../role-switch';
+import { switchRoleForRoot, switchRoleForAdmin } from '../role-switch';
 
 // Declare global type for window
 declare global {
@@ -250,6 +250,8 @@ class UnifiedNavigation {
     // Fix logo navigation after DOM is ready
     setTimeout(() => {
       this.fixLogoNavigation();
+      // Initialize role switch after navigation is injected
+      this.initializeRoleSwitch();
     }, 100);
 
     // Update badge counts
@@ -1130,6 +1132,7 @@ class UnifiedNavigation {
         <div class="header-content">
           <div class="header-actions">
             ${
+              // Root users always get the full dropdown with all 3 options
               userRole === 'root'
                 ? `
               <!-- Role Switch Custom Dropdown for Root -->
@@ -1177,13 +1180,39 @@ class UnifiedNavigation {
               <span id="user-name">${this.escapeHtml(displayName)}</span>
             </div>
 
-            <button id="logout-btn" class="btn-logout btn btn-secondary">
+            <button id="logout-btn" class="btn-logout">
               <i class="fas fa-sign-out-alt"></i>
-
             </button>
           </div>
         </div>
       </header>
+
+      <!-- Logout Confirmation Modal -->
+      <div id="logoutModal" class="modal" style="display: none;">
+        <div class="modal-overlay"></div>
+        <div class="logout-modal">
+          <div class="modal-header">
+            <h2>Abmeldung bestätigen</h2>
+          </div>
+          <div class="modal-body">
+            <div class="logout-info">
+              <i class="fas fa-info-circle"></i>
+              <span>Alle ungespeicherten Änderungen gehen verloren.</span>
+            </div>
+            <p class="logout-message">Möchten Sie sich wirklich abmelden?</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelLogout">
+              <i class="fas fa-times"></i>
+              Abbrechen
+            </button>
+            <button class="btn btn-danger" id="confirmLogout">
+              <i class="fas fa-sign-out-alt"></i>
+              Abmelden
+            </button>
+          </div>
+        </div>
+      </div>
 
       ${warningBanner}
 
@@ -1609,32 +1638,70 @@ class UnifiedNavigation {
   }
 
   private async handleLogout(): Promise<void> {
-    // Use the logout function from auth module which logs the action
-    const { logout } = await import('../auth.js');
-    await logout();
+    // Modal is already created in the navigation template, no need to check
+
+    // Show logout confirmation modal instead of direct logout
+    const modal = document.getElementById('logoutModal');
+    if (modal) {
+      modal.style.display = 'block';
+
+      // Setup modal event handlers
+      const confirmBtn = document.getElementById('confirmLogout');
+      const cancelBtn = document.getElementById('cancelLogout');
+      const overlay = modal.querySelector('.modal-overlay');
+
+      const closeModal = () => {
+        modal.style.display = 'none';
+      };
+
+      const performLogout = async () => {
+        // Use the logout function from auth module which logs the action
+        const { logout } = await import('../auth.js');
+        await logout();
+      };
+
+      // Add event listeners (remove old ones first to avoid duplicates)
+      if (confirmBtn) {
+        const newConfirmBtn = confirmBtn.cloneNode(true) as HTMLElement;
+        confirmBtn.parentNode?.replaceChild(newConfirmBtn, confirmBtn);
+        newConfirmBtn.addEventListener('click', () => {
+          void performLogout();
+        });
+      }
+
+      if (cancelBtn) {
+        const newCancelBtn = cancelBtn.cloneNode(true) as HTMLElement;
+        cancelBtn.parentNode?.replaceChild(newCancelBtn, cancelBtn);
+        newCancelBtn.addEventListener('click', closeModal);
+      }
+
+      if (overlay) {
+        const newOverlay = overlay.cloneNode(true) as HTMLElement;
+        overlay.parentNode?.replaceChild(newOverlay, overlay);
+        newOverlay.addEventListener('click', closeModal);
+      }
+    } else {
+      // Fallback to direct logout if modal not found
+      const { logout } = await import('../auth.js');
+      await logout();
+    }
   }
 
   private initializeRoleSwitch(): void {
     const userRole = localStorage.getItem('userRole');
+    // const activeRole = localStorage.getItem('activeRole'); // Currently not used in this method
 
-    // Handle root users with custom dropdown
+    // Simplified: Root users always get root handlers, admin users always get admin handlers
+    // The dropdown HTML already shows the correct options based on userRole
     if (userRole === 'root') {
       const dropdownDisplay = document.getElementById('roleSwitchDisplay');
       const dropdownOptions = document.getElementById('roleSwitchDropdown');
 
-      // Check if already initialized
-      if (dropdownDisplay?.hasAttribute('data-initialized')) {
-        console.info('[UnifiedNav] Role switch dropdown already initialized, skipping');
-        return;
-      }
-
-      console.info('[UnifiedNav] Looking for dropdown elements for root user');
-      console.info('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
-      console.info('[UnifiedNav] dropdownOptions:', dropdownOptions);
-
       if (dropdownDisplay && dropdownOptions) {
-        console.info('[UnifiedNav] Initializing role switch dropdown for root user');
-        console.info('[UnifiedNav] Dropdown elements found:', { dropdownDisplay, dropdownOptions });
+        // Check if already initialized
+        if (dropdownDisplay.hasAttribute('data-initialized')) {
+          return;
+        }
 
         // Mark as initialized
         dropdownDisplay.setAttribute('data-initialized', 'true');
@@ -1707,23 +1774,16 @@ class UnifiedNavigation {
       }
     }
 
-    // Handle admin users with dropdown (same as root)
-    if (userRole === 'admin') {
+    // Handle admin users (but not root users, they already have their handler)
+    else if (userRole === 'admin') {
       const dropdownDisplay = document.getElementById('roleSwitchDisplay');
       const dropdownOptions = document.getElementById('roleSwitchDropdown');
 
-      // Check if already initialized
-      if (dropdownDisplay?.hasAttribute('data-initialized')) {
-        console.info('[UnifiedNav] Role switch dropdown already initialized, skipping');
-        return;
-      }
-
-      console.info('[UnifiedNav] Looking for dropdown elements for admin user');
-      console.info('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
-      console.info('[UnifiedNav] dropdownOptions:', dropdownOptions);
-
       if (dropdownDisplay && dropdownOptions) {
-        console.info('[UnifiedNav] Initializing role switch dropdown for admin user');
+        // Check if already initialized
+        if (dropdownDisplay.hasAttribute('data-initialized')) {
+          return;
+        }
 
         // Mark as initialized
         dropdownDisplay.setAttribute('data-initialized', 'true');
@@ -1753,103 +1813,17 @@ class UnifiedNavigation {
           option.addEventListener('click', (e) => {
             void (async () => {
               e.stopPropagation();
-              const selectedRole = (option as HTMLElement).dataset.value;
+              const selectedRole = (option as HTMLElement).dataset.value as 'root' | 'admin' | 'employee';
               if (selectedRole) {
-                console.info('[UnifiedNav] Admin switching to role:', selectedRole);
+                console.info('[UnifiedNav] Admin view switching to role:', selectedRole);
 
                 // Close dropdown
                 dropdownDisplay.classList.remove('active');
                 dropdownOptions.classList.remove('active');
 
-                // Switch role for admin (different API endpoints than root)
-                if (selectedRole === 'admin' || selectedRole === 'employee') {
-                  // Admin uses different API endpoints
-                  const token = localStorage.getItem('token');
-                  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-                  const currentActiveRole = localStorage.getItem('activeRole') ?? 'admin';
-
-                  // Determine endpoint based on target role and API version
-                  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_ROLE_SWITCH;
-                  const apiPrefix = useV2 ? '/api/v2' : '/api';
-
-                  // Admin switching logic:
-                  // - If currently admin and switching to employee: use to-employee
-                  // - If currently employee and switching to admin: use to-original (back to admin)
-                  let endpoint;
-                  if (selectedRole === 'employee' && currentActiveRole === 'admin') {
-                    endpoint = `${apiPrefix}/role-switch/to-employee`;
-                  } else if (selectedRole === 'admin' && currentActiveRole === 'employee') {
-                    endpoint = `${apiPrefix}/role-switch/to-original`;
-                  } else {
-                    console.warn(
-                      '[UnifiedNav] Invalid role switch combination:',
-                      currentActiveRole,
-                      '->',
-                      selectedRole,
-                    );
-                    return;
-                  }
-
-                  try {
-                    const response = await fetch(endpoint, {
-                      method: 'POST',
-                      headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken,
-                      },
-                      credentials: 'include',
-                    });
-
-                    if (!response.ok) {
-                      throw new Error('Rollenwechsel fehlgeschlagen');
-                    }
-
-                    const data = await response.json();
-
-                    // Handle v2 API response format
-                    const tokenData = data.data ?? data; // v2 API wraps in data property
-
-                    // Update token and storage
-                    localStorage.setItem('token', tokenData.token);
-                    localStorage.setItem('activeRole', tokenData.user.activeRole);
-
-                    // Also update sessionStorage for compatibility
-                    if (tokenData.user.activeRole === 'employee') {
-                      sessionStorage.setItem('roleSwitch', 'employee');
-                    } else {
-                      sessionStorage.removeItem('roleSwitch');
-                    }
-
-                    // Clear role switch banner dismissal states
-                    ['admin', 'employee'].forEach((role) => {
-                      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
-                    });
-
-                    // Show success message with toast
-                    const message =
-                      selectedRole === 'employee'
-                        ? 'Wechsel zur Mitarbeiter-Ansicht...'
-                        : 'Wechsel zur Admin-Ansicht...';
-
-                    // Create and show toast notification
-                    this.showToast(message, 'success');
-
-                    // Redirect to appropriate dashboard
-                    setTimeout(() => {
-                      if (tokenData.user.activeRole === 'admin') {
-                        window.location.href = '/admin-dashboard';
-                      } else {
-                        window.location.href = '/employee-dashboard';
-                      }
-                    }, 1000);
-                  } catch (error) {
-                    console.error('Role switch error:', error);
-                    // Re-enable dropdown on error
-                    dropdownDisplay.style.pointerEvents = '';
-                    dropdownDisplay.style.opacity = '';
-                  }
-                }
+                // Admin users can only switch between admin and employee
+                console.info('[UnifiedNav] Admin user, calling switchRoleForAdmin');
+                await switchRoleForAdmin(selectedRole as 'admin' | 'employee');
               }
             })();
           });
@@ -2575,65 +2549,8 @@ class UnifiedNavigation {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   }
 
-  // Toast notification helper
-  private showToast(message: string, type: 'success' | 'error' = 'success'): void {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    toast.style.cssText = `
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      padding: 16px 24px;
-      background: ${type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)'};
-      border: 1px solid ${type === 'success' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'};
-      color: ${type === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(244, 67, 54, 0.9)'};
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      z-index: 10000;
-      font-size: 14px;
-      font-weight: 500;
-      backdrop-filter: blur(10px);
-      animation: slideInRight 0.3s ease-out;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    `;
-
-    // Add icon
-    const icon = document.createElement('span');
-    icon.innerHTML =
-      type === 'success'
-        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
-        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-    toast.prepend(icon);
-
-    // Add animation styles if not already added
-    if (!document.getElementById('toast-animations')) {
-      const style = document.createElement('style');
-      style.id = 'toast-animations';
-      style.textContent = `
-        @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-          from { transform: translateX(0); opacity: 1; }
-          to { transform: translateX(100%); opacity: 0; }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    document.body.appendChild(toast);
-
-    // Remove after delay
-    setTimeout(() => {
-      toast.style.animation = 'slideOutRight 0.3s ease-in';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
-  }
+  // Toast notification helper - Removed as it was unused
+  // If needed in future, consider using the showToast from role-switch.ts instead
 }
 
 // CSS Styles für die Unified Navigation
@@ -3111,7 +3028,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
         content: '';
         position: absolute;
-        inset: -12px;
+        inset: -8px;
         background: rgba(33, 150, 243, 0.1);
         border-radius: 50%;
         z-index: -1;

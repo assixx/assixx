@@ -34,8 +34,8 @@
 - [x] employee-dashboard.html - Employee Dashboard (Survey API noch v1) ✅
 - [x] admin-dashboard.ts ✅ (05.08.2025 - Vollständig getestet und funktioniert)
 - [x] admin-dashboard.html ✅ (06.08.2025 - API v2 Migration abgeschlossen)
-- [ ] root-dashboard.ts (MIGRIERT - WARTET AUF TEST & GENEHMIGUNG)
-- [ ] root-dashboard.html (GEPRÜFT - Keine direkten API Calls - WARTET AUF GENEHMIGUNG)
+- [x] root-dashboard.ts (MIGRIERT - WARTET AUF TEST & GENEHMIGUNG)
+- [x ] root-dashboard.html (GEPRÜFT - Keine direkten API Calls - WARTET AUF GENEHMIGUNG)
 - [ ] dashboard-scripts.ts - Shared Dashboard Logic
 
 ### PHASE 6: User Profile & Settings
@@ -93,8 +93,8 @@
 
 #### System Administration
 - [ ] admin-config.ts
-- [ ] logs.ts
-- [ ] logs.html
+- [x] logs.ts
+- [x] logs.html
 
 ### PHASE 9: Root-Only Features
 **Warum:** Nur für Root-User relevant
