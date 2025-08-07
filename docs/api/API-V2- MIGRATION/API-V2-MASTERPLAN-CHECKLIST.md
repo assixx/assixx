@@ -35,7 +35,7 @@
 - [x] admin-dashboard.ts ✅ (05.08.2025 - Vollständig getestet und funktioniert)
 - [x] admin-dashboard.html ✅ (06.08.2025 - API v2 Migration abgeschlossen)
 - [x] root-dashboard.ts (MIGRIERT - WARTET AUF TEST & GENEHMIGUNG)
-- [x ] root-dashboard.html (GEPRÜFT - Keine direkten API Calls - WARTET AUF GENEHMIGUNG)
+- [x] root-dashboard.html (GEPRÜFT - Keine direkten API Calls - WARTET AUF GENEHMIGUNG)
 - [ ] dashboard-scripts.ts - Shared Dashboard Logic
 
 ### PHASE 6: User Profile & Settings
