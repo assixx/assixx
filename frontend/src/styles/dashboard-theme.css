@@ -1178,25 +1178,21 @@ body {
 }
 
 #logoutModal .logout-modal {
-  position: absolute;
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  /* Premium Glassmorphism Effect */
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
-  background: hsl(var(--default-modal));
-  border: var(--border-width) solid var(--border-color);
+  background: hsla(0, 0%, 3.5%, 0.86);
+  border: var(--border-width) solid #2e2e2e;
   border-radius: var(--radius-md);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 hsla(0, 0%, 100%, 0.1);
-  /* Layout */
+  box-shadow: -28px 20px 30px rgba(255, 255, 255, 0.18),inset 0 0 1px hsla(0, 100%, 100%, 0.21);
   display: flex;
   flex-direction: column;
+  left: 50%;
   max-height: calc(100vh - 80px);
   max-width: var(--alert-modal-max-width);
   min-height: var(--alert-modal-min-height);
+  position: absolute;
+  top: 35%;
+  transform: translate(-50%,-50%);
   width: 100%;
   z-index: 1001;
 }
