@@ -268,7 +268,7 @@ class UnifiedNavigation {
       void this.updatePendingSurveys();
       void this.updateUnreadDocuments();
       void this.updateNewKvpSuggestions();
-    }, 30000);
+    }, 600000);
 
     // Listen for BroadcastChannel messages to update navigation
     const roleChannel = new BroadcastChannel('role_switch_channel');
@@ -1333,7 +1333,7 @@ class UnifiedNavigation {
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
     if (item.badge === 'unread-messages') {
-      badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
     } else if (item.badge === 'pending-surveys') {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 15px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-documents') {
@@ -1457,7 +1457,6 @@ class UnifiedNavigation {
 
     // Create and store the new handler
     this.documentClickHandler = (e: MouseEvent) => {
-
       const navLink = (e.target as HTMLElement).closest('.sidebar-link:not([onclick])') as HTMLElement;
       if (navLink) {
         this.handleNavigationClick(navLink, e);
@@ -2193,10 +2192,22 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      const data = await apiClient.get<{ unreadCount: number }>('/chat/unread-count');
+      // Use v2 API endpoint with camelCase response
+      // Note: apiClient automatically adds /api/v2 prefix for v2 endpoints
+      const data = await apiClient.get<{
+        totalUnread: number;
+        conversations: Array<{
+          conversationId: number;
+          conversationName: string | null;
+          unreadCount: number;
+          lastMessageTime: Date;
+        }>;
+      }>('/chat/unread-count');
+
       const badge = document.getElementById('chat-unread-badge');
       if (badge) {
-        const count = data.unreadCount ?? 0;
+        // v2 API uses totalUnread (camelCase)
+        const count = data.totalUnread ?? 0;
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count.toString();
           badge.style.display = 'inline-block';

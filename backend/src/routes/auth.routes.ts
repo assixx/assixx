@@ -21,7 +21,7 @@ import { typed } from "../utils/routeHandlers";
 const router: Router = express.Router();
 
 // Debug logging
-console.log("[DEBUG] Auth routes loading...");
+console.info("[DEBUG] Auth routes loading...");
 
 // Request body interfaces
 interface LoginBody {
@@ -63,7 +63,7 @@ router.post(
   strictAuthLimiter,
   ...security.auth(loginValidation),
   typed.body<LoginBody>(async (req, res) => {
-    console.log("[DEBUG] /api/auth/login endpoint hit");
+    console.info("[DEBUG] /api/auth/login endpoint hit");
     await authController.login(req, res);
   }),
 );

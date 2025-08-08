@@ -7,7 +7,7 @@
 import { createPool } from "mysql2/promise";
 
 export default async function globalTeardown() {
-  console.log("\n🧹 Running global test cleanup...");
+  console.info("\n🧹 Running global test cleanup...");
 
   const db = createPool({
     host: process.env.DB_HOST ?? "localhost",
@@ -46,7 +46,7 @@ export default async function globalTeardown() {
       `SELECT COUNT(*) as count FROM tenants WHERE subdomain LIKE '__AUTOTEST__%'`,
     );
 
-    console.log(
+    console.info(
       `✅ Global cleanup complete. Remaining test tenants: ${remaining[0].count}`,
     );
   } catch (error) {

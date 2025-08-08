@@ -27,7 +27,7 @@ describe("SIMPLE DEBUG: User Creation", () => {
       "simpledebug",
       "Simple Debug Company",
     );
-    console.log("Created tenant with ID:", tenantId);
+    console.info("Created tenant with ID:", tenantId);
 
     // Step 2: Create test user
     const userResult = await createTestUser(testDb, {
@@ -39,27 +39,27 @@ describe("SIMPLE DEBUG: User Creation", () => {
       first_name: "Simple",
       last_name: "Debug",
     });
-    console.log("Created user:", userResult);
+    console.info("Created user:", userResult);
 
     // Step 3: Check user in database immediately
     const [users] = await testDb.execute(
       "SELECT id, username, email, tenant_id, status FROM users WHERE id = ?",
       [userResult.id],
     );
-    console.log("Found users in DB:", users);
+    console.info("Found users in DB:", users);
 
     // Step 4: Check all test users
     const [allTestUsers] = await testDb.execute(
       "SELECT id, username, email FROM users WHERE email LIKE '%__AUTOTEST__%'",
     );
-    console.log("All test users count:", (allTestUsers as any[]).length);
+    console.info("All test users count:", (allTestUsers as any[]).length);
 
     // Step 5: Check if tenant exists
     const [tenants] = await testDb.execute(
       "SELECT id, company_name, subdomain FROM tenants WHERE id = ?",
       [tenantId],
     );
-    console.log("Tenant check:", tenants);
+    console.info("Tenant check:", tenants);
 
     expect((users as any[]).length).toBeGreaterThan(0);
   });

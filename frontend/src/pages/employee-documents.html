@@ -665,7 +665,7 @@
 
                   const docId = this.getAttribute('data-document-id');
                   if (docId) {
-                    console.log(`Download-Button geklickt für Dokument ID: ${docId}`);
+                    console.info(`Download-Button geklickt für Dokument ID: ${docId}`);
                     openDocumentInNewTab(docId);
                   }
                 });
@@ -676,7 +676,7 @@
 
         // Dokument per Blob-API herunterladen
         function openDocumentInNewTab(documentId) {
-          console.log(`Starte Download für Dokument mit ID ${documentId}`);
+          console.info(`Starte Download für Dokument mit ID ${documentId}`);
 
           // Den Token aus dem localStorage holen
           const token = localStorage.getItem('token');
@@ -756,7 +756,7 @@
         // Für Kompatibilität mit bestehendem Code behalten wir die globale Funktion bei
         window.downloadDocument = function (documentId) {
           try {
-            console.log(`Globale Funktion: Starte Download für Dokument ID: ${documentId}`);
+            console.info(`Globale Funktion: Starte Download für Dokument ID: ${documentId}`);
             openDocumentInNewTab(documentId); // Verwende unsere verbesserte Funktion
           } catch (error) {
             console.error('Fehler beim Herunterladen des Dokuments:', error);

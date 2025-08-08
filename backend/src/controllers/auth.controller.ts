@@ -124,15 +124,15 @@ class AuthController {
    * Login user
    */
   async login(req: LoginRequest, res: Response): Promise<void> {
-    console.log("[DEBUG] AuthController.login called");
+    console.info("[DEBUG] AuthController.login called");
     try {
       const { username, password, fingerprint } = req.body;
-      console.log("[DEBUG] Login attempt for username:", username);
-      console.log("[DEBUG] Browser fingerprint provided:", !!fingerprint);
+      console.info("[DEBUG] Login attempt for username:", username);
+      console.info("[DEBUG] Browser fingerprint provided:", !!fingerprint);
 
       // Validate input
       if (!username || !password) {
-        console.log("[DEBUG] Missing username or password");
+        console.info("[DEBUG] Missing username or password");
         res
           .status(400)
           .json(
@@ -147,17 +147,17 @@ class AuthController {
         | undefined;
 
       // Authenticate user with fingerprint and tenant validation
-      console.log("[DEBUG] Calling authService.authenticateUser");
-      console.log("[DEBUG] Username/Email:", username);
-      console.log("[DEBUG] Tenant subdomain from header:", tenantSubdomain);
+      console.info("[DEBUG] Calling authService.authenticateUser");
+      console.info("[DEBUG] Username/Email:", username);
+      console.info("[DEBUG] Tenant subdomain from header:", tenantSubdomain);
       const result = await authService.authenticateUser(
         username,
         password,
         fingerprint,
         tenantSubdomain,
       );
-      console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
-      console.log("[DEBUG] Auth result details:", JSON.stringify(result));
+      console.info("[DEBUG] Auth result:", result ? "Success" : "Failed");
+      console.info("[DEBUG] Auth result details:", JSON.stringify(result));
 
       if (!result.success) {
         // Track failed login attempt
@@ -448,7 +448,7 @@ class AuthController {
 
       // TODO: Implement password reset logic
       // For now, just return success for tests
-      console.log(`[AUTH] Password reset requested for email: ${email}`);
+      console.info(`[AUTH] Password reset requested for email: ${email}`);
       res
         .status(200)
         .json(successResponse(null, "Password reset E-Mail wurde gesendet"));

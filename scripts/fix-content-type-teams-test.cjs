@@ -46,4 +46,4 @@ patterns.forEach(({ regex }) => {
 // Write back the modified content
 fs.writeFileSync(filePath, content);
 
-console.log("Content-Type headers added to teams-v2.test.ts");
+console.info("Content-Type headers added to teams-v2.test.ts");

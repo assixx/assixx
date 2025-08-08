@@ -45,4 +45,4 @@ content = content.replace(
 // Write back the modified content
 fs.writeFileSync(filePath, content);
 
-console.log("user_teams inserts fixed to include tenant_id");
+console.info("user_teams inserts fixed to include tenant_id");

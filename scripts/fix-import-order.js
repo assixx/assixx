@@ -41,7 +41,7 @@ results.forEach((file) => {
   }
 });
 
-console.log(`Found ${filesToFix.size} files with import order issues`);
+console.info(`Found ${filesToFix.size} files with import order issues`);
 
 // Fix each file
 for (const [filePath, errors] of filesToFix) {
@@ -166,7 +166,7 @@ for (const [filePath, errors] of filesToFix) {
       );
 
       if (isDuplicate) {
-        console.log(`Removing duplicate import: ${module}`);
+        console.info(`Removing duplicate import: ${module}`);
         return;
       }
 
@@ -272,7 +272,7 @@ for (const [filePath, errors] of filesToFix) {
     // Write the fixed content back
     fs.writeFileSync(filePath, newLines.join("\n"));
     fixedCount++;
-    console.log(
+    console.info(
       `Fixed import order in ${path.relative(process.cwd(), filePath)}`,
     );
   } catch (e) {
@@ -280,8 +280,8 @@ for (const [filePath, errors] of filesToFix) {
   }
 }
 
-console.log(`\nTotal files fixed: ${fixedCount}`);
-console.log("Running ESLint to check remaining import issues...");
+console.info(`\nTotal files fixed: ${fixedCount}`);
+console.info("Running ESLint to check remaining import issues...");
 
 // Run ESLint again to see how many issues remain
 const remainingErrors = execSync(
@@ -289,4 +289,4 @@ const remainingErrors = execSync(
   { encoding: "utf8" },
 ).trim();
 
-console.log(`Remaining import order errors: ${remainingErrors}`);
+console.info(`Remaining import order errors: ${remainingErrors}`);

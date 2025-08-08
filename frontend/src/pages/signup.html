@@ -1239,7 +1239,7 @@
           // API URL based on feature flag (useV2 already defined above)
           const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
 
-          console.log(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
+          console.info(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
 
           const response = await fetch(apiUrl, {
             method: 'POST',

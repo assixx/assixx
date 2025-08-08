@@ -122,9 +122,9 @@ class ${model}Controller {
       res.json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -142,9 +142,9 @@ class ${model}Controller {
       res.json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -159,9 +159,9 @@ class ${model}Controller {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -173,16 +173,16 @@ class ${model}Controller {
   async update(req, res) {
     try {
       const result = await ${name}Service.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -197,9 +197,9 @@ class ${model}Controller {
       res.status(204).send();
     } catch (error) {
       console.error('Error in ${model}Controller.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -222,30 +222,30 @@ async function generateAll() {
     // Prüfe ob bereits existiert
     try {
       await fs.access(controllerFile);
-      console.log(`✓ ${feature.name}.controller.js bereits vorhanden`);
+      console.info(`✓ ${feature.name}.controller.js bereits vorhanden`);
     } catch {
       // Erstelle Controller
       await fs.writeFile(
         controllerFile,
         controllerTemplate(feature.name, feature.model),
       );
-      console.log(`✓ ${feature.name}.controller.js erstellt`);
+      console.info(`✓ ${feature.name}.controller.js erstellt`);
     }
 
     try {
       await fs.access(serviceFile);
-      console.log(`✓ ${feature.name}.service.js bereits vorhanden`);
+      console.info(`✓ ${feature.name}.service.js bereits vorhanden`);
     } catch {
       // Erstelle Service
       await fs.writeFile(
         serviceFile,
         serviceTemplate(feature.name, feature.model),
       );
-      console.log(`✓ ${feature.name}.service.js erstellt`);
+      console.info(`✓ ${feature.name}.service.js erstellt`);
     }
   }
 
-  console.log("\n✅ Alle Controller und Services generiert!");
+  console.info("\n✅ Alle Controller und Services generiert!");
 }
 
 // Führe Generation aus

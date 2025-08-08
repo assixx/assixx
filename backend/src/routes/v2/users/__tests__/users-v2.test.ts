@@ -93,12 +93,12 @@ describe("Users v2 API Endpoints", () => {
       });
 
     if (employeeLoginRes.status !== 200) {
-      console.log(
+      console.info(
         "Employee login failed:",
         employeeLoginRes.status,
         employeeLoginRes.body,
       );
-      console.log("Tried to login with email:", employeeUser.email);
+      console.info("Tried to login with email:", employeeUser.email);
       throw new Error("Employee login failed");
     }
 
@@ -571,7 +571,7 @@ describe("Users v2 API Endpoints", () => {
       });
       // Check dates separately as they are returned as ISO strings
       // Extract date part from ISO string (YYYY-MM-DD from YYYY-MM-DDTHH:mm:ss.sssZ)
-      console.log(
+      console.info(
         "Availability response:",
         response.body.data.availabilityStart,
         response.body.data.availabilityEnd,

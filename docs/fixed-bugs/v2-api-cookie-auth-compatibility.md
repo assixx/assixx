@@ -20,6 +20,7 @@ GET http://localhost:3000/root-dashboard [401 Unauthorized]
 Die v2 API verwendet Bearer Tokens (JWT), die im localStorage gespeichert werden. Die Server-seitige Seiten-Protection (`pageAuth.ts`) erwartet jedoch Authentifizierung über Cookies.
 
 Die `pageAuth.ts` Middleware sucht nach Tokens in dieser Reihenfolge:
+
 1. Cookie mit Namen "token"
 2. Authorization Header (Bearer Token)
 
@@ -33,7 +34,7 @@ Da HTML-Seiten direkt vom Server geladen werden (keine API-Calls), können sie k
 // Nach erfolgreichem v2 Login
 if (useV2) {
   // ... Token speichern ...
-  
+
   // Set cookie for server-side page protection (temporary compatibility)
   document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 }
@@ -42,23 +43,25 @@ if (useV2) {
 ### 2. auth.ts anpassen
 
 **setAuthToken Funktion:**
+
 ```javascript
 if (useV2) {
-  localStorage.setItem('accessToken', token);
+  localStorage.setItem("accessToken", token);
   if (refreshToken) {
-    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem("refreshToken", refreshToken);
   }
-  localStorage.setItem('token', token);
-  
+  localStorage.setItem("token", token);
+
   // Set cookie for server-side page protection
   document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 }
 ```
 
 **removeAuthToken Funktion:**
+
 ```javascript
 // Clear cookie for server-side page protection
-document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
 ```
 
 ## Cookie-Einstellungen
@@ -77,9 +80,10 @@ document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSi
 ## Test-Prozedur
 
 1. Feature Flags aktivieren:
+
    ```javascript
-   window.migrationHelpers.enableApi('auth');
-   window.migrationHelpers.enableApi('signup');
+   window.migrationHelpers.enableApi("auth");
+   window.migrationHelpers.enableApi("signup");
    ```
 
 2. Browser-Cache leeren (Ctrl+Shift+R)

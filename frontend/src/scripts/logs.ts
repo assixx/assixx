@@ -335,7 +335,7 @@ import { ApiClient } from '../utils/api-client';
     const entityFilter = (document.getElementById('filter-entity') as HTMLInputElement)?.value;
     const timerangeFilter = (document.getElementById('filter-timerange') as HTMLInputElement)?.value;
 
-    console.log('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
+    console.info('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
 
     currentFilters = {};
 
@@ -346,7 +346,7 @@ import { ApiClient } from '../utils/api-client';
     if (entityFilter) currentFilters.entity_type = entityFilter; // Removed check for empty string
     if (timerangeFilter) currentFilters.timerange = timerangeFilter; // Removed check for empty string
 
-    console.log('currentFilters after setting:', currentFilters);
+    console.info('currentFilters after setting:', currentFilters);
 
     // Update delete button state
     updateDeleteButtonState();
@@ -399,7 +399,7 @@ import { ApiClient } from '../utils/api-client';
   }
 
   // Delete filtered logs
-  async function deleteFilteredLogs() {
+  function deleteFilteredLogs() {
     // Check if any filters are applied
     if (Object.keys(currentFilters).length === 0) {
       alert(
@@ -502,8 +502,8 @@ import { ApiClient } from '../utils/api-client';
         (!currentFilters.entity_type || currentFilters.entity_type === 'all') &&
         (!currentFilters.timerange || currentFilters.timerange === 'all');
 
-      console.log('confirmDeleteLogs - Current filters:', currentFilters);
-      console.log('confirmDeleteLogs - isDeletingAll:', isDeletingAll);
+      console.info('confirmDeleteLogs - Current filters:', currentFilters);
+      console.info('confirmDeleteLogs - isDeletingAll:', isDeletingAll);
 
       // v2 API expects ALL filters in the body, not as query params
 
@@ -549,12 +549,12 @@ import { ApiClient } from '../utils/api-client';
       // Now the backend supports action and entityType directly!
       if (currentFilters.action && currentFilters.action !== 'all') {
         bodyData.action = currentFilters.action;
-        console.log(`Deleting logs with action="${currentFilters.action}"`);
+        console.info(`Deleting logs with action="${currentFilters.action}"`);
       }
 
       if (currentFilters.entity_type && currentFilters.entity_type !== 'all') {
         bodyData.entityType = currentFilters.entity_type; // Note: camelCase for v2 API
-        console.log(`Deleting logs with entityType="${currentFilters.entity_type}"`);
+        console.info(`Deleting logs with entityType="${currentFilters.entity_type}"`);
       }
 
       // Handle timerange filter properly - convert to days
@@ -573,7 +573,7 @@ import { ApiClient } from '../utils/api-client';
             // For "today" or other specific ranges, use 0 to delete all matching logs
             bodyData.olderThanDays = 0;
         }
-        console.log(`Timerange filter "${currentFilters.timerange}" -> olderThanDays: ${bodyData.olderThanDays}`);
+        console.info(`Timerange filter "${currentFilters.timerange}" -> olderThanDays: ${bodyData.olderThanDays}`);
       }
 
       // If deleting ALL logs (no specific filters), use olderThanDays=0
@@ -586,11 +586,11 @@ import { ApiClient } from '../utils/api-client';
           bodyData.olderThanDays === undefined)
       ) {
         bodyData.olderThanDays = 0; // This will delete all logs (no age restriction)
-        console.log('Ensuring at least one filter is provided - using olderThanDays: 0 (delete all)');
+        console.info('Ensuring at least one filter is provided - using olderThanDays: 0 (delete all)');
       }
 
       requestOptions.body = JSON.stringify(bodyData);
-      console.log('confirmDeleteLogs - Final body data:', bodyData);
+      console.info('confirmDeleteLogs - Final body data:', bodyData);
 
       // Use apiClient for v2 API
       // Note: We're not passing query params since v2 expects everything in body

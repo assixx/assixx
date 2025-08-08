@@ -87,8 +87,8 @@ describe("Signup API Endpoints", () => {
         .post("/api/signup")
         .send(validSignupData);
 
-      console.log("Response status:", response.status);
-      console.log("Response body:", JSON.stringify(response.body, null, 2));
+      console.info("Response status:", response.status);
+      console.info("Response body:", JSON.stringify(response.body, null, 2));
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -122,7 +122,7 @@ describe("Signup API Endpoints", () => {
         [tenantId],
       );
       const allUsers = asTestRows<any>(allUserRows);
-      console.log("All users for tenant:", allUsers);
+      console.info("All users for tenant:", allUsers);
 
       const [userRows] = await testDb.execute(
         "SELECT * FROM users WHERE tenant_id = ? AND role = 'admin'",

@@ -111,7 +111,7 @@ describe("Teams v2 API Endpoints", () => {
     );
 
     // Debug: Check if users were created
-    console.log("Created users:", {
+    console.info("Created users:", {
       adminUser: adminUser,
       employeeUser: employeeUser,
       rootUser: rootUser,
@@ -134,7 +134,7 @@ describe("Teams v2 API Endpoints", () => {
         `Admin login failed: ${JSON.stringify(adminLoginV2.body)}`,
       );
     }
-    console.log("Admin login response:", adminLoginV2.body);
+    console.info("Admin login response:", adminLoginV2.body);
     adminTokenV2 =
       adminLoginV2.body.data.accessToken || adminLoginV2.body.data.token;
 

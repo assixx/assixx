@@ -49,10 +49,10 @@ router.get(
 
       // Get all active surveys assigned to the employee
       const [surveys] = await execute<RowDataPacket[]>(
-        `SELECT DISTINCT s.id 
+        `SELECT DISTINCT s.id
        FROM surveys s
        INNER JOIN survey_assignments sa ON s.id = sa.survey_id
-       WHERE s.tenant_id = ? 
+       WHERE s.tenant_id = ?
        AND s.status = 'active'
        AND (s.end_date IS NULL OR s.end_date > NOW())
        AND (
@@ -331,7 +331,7 @@ router.post(
       if (req.user.role === "admin" && req.body.assignments) {
         // Get admin's authorized departments
         const [adminDepts] = await execute<RowDataPacket[]>(
-          `SELECT department_id FROM admin_department_permissions 
+          `SELECT department_id FROM admin_department_permissions
            WHERE admin_user_id = ? AND tenant_id = ? AND can_write = 1`,
           [req.user.id, req.user.tenant_id],
         );
@@ -524,7 +524,7 @@ router.post(
       const userId = req.user.id;
       const answers = req.body.answers;
 
-      console.log("Submitting response:", {
+      console.info("Submitting response:", {
         surveyId,
         userId,
         userIdType: typeof userId,
@@ -545,7 +545,7 @@ router.post(
         return;
       }
 
-      console.log(
+      console.info(
         "Survey is_anonymous:",
         survey.is_anonymous,
         typeof survey.is_anonymous,
@@ -600,7 +600,7 @@ router.post(
 
         // Save answers
         for (const answer of answers) {
-          console.log("Saving answer:", {
+          console.info("Saving answer:", {
             tenant_id: req.user.tenant_id,
             response_id: responseId,
             question_id: answer.question_id,
@@ -615,7 +615,7 @@ router.post(
           await connection.execute(
             `
           INSERT INTO survey_answers (
-            tenant_id, response_id, question_id, answer_text, answer_options, 
+            tenant_id, response_id, question_id, answer_text, answer_options,
             answer_number, answer_date
           ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
@@ -640,7 +640,7 @@ router.post(
         );
 
         await connection.commit();
-        console.log(
+        console.info(
           `Response ${responseId} saved successfully for user ${userId} on survey ${surveyId}`,
         );
         res.json(
@@ -675,13 +675,13 @@ router.get(
       const surveyId = parseInt(req.params.id);
       const userId = req.user.id;
 
-      console.log(
+      console.info(
         `Checking response for survey ${surveyId} and user ${userId}`,
       );
 
       const [responses] = await execute<RowDataPacket[]>(
         `
-      SELECT sr.*, sa.question_id, sa.answer_text, sa.answer_options, 
+      SELECT sr.*, sa.question_id, sa.answer_text, sa.answer_options,
              sa.answer_number, sa.answer_date
       FROM survey_responses sr
       LEFT JOIN survey_answers sa ON sr.id = sa.response_id
@@ -690,7 +690,7 @@ router.get(
         [surveyId, userId],
       );
 
-      console.log(
+      console.info(
         `Found ${responses.length} responses for user ${userId} on survey ${surveyId}`,
       );
 

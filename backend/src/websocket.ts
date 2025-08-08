@@ -100,11 +100,11 @@ export class ChatWebSocketServer {
 
       const decoded = jwt.verify(token, jwtSecret) as {
         id: number;
-        tenant_id: number;
+        tenantId: number; // v2 uses camelCase!
         role: string;
       };
       const userId = decoded.id;
-      const tenantId = decoded.tenant_id;
+      const tenantId = decoded.tenantId; // Use camelCase to match v2 tokens
 
       // Benutzer-Informationen zur Verbindung hinzufügen
       ws.userId = userId;
@@ -201,11 +201,13 @@ export class ChatWebSocketServer {
         SELECT cp.user_id 
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? AND c.tenant_id = ?
+        WHERE cp.conversation_id = ? 
+        AND c.tenant_id = ?
+        AND cp.tenant_id = ?
       `;
       const [participants] = await pool.query<RowDataPacket[]>(
         participantQuery,
-        [conversationId, ws.tenantId],
+        [conversationId, ws.tenantId, ws.tenantId],
       );
 
       const participantIds = participants.map(
@@ -214,6 +216,18 @@ export class ChatWebSocketServer {
 
       // Convert IDs to strings for comparison since ws.userId might be a string
       const participantIdsStr = participantIds.map((id: number) => String(id));
+
+      // Debug logging
+      logger.error(`[WebSocket Debug] Permission check:`, {
+        conversationId,
+        wsUserId: ws.userId,
+        wsTenantId: ws.tenantId,
+        participantIds,
+        participantIdsStr,
+        userIdString: String(ws.userId),
+        isIncluded: participantIdsStr.includes(String(ws.userId)),
+      });
+
       if (!participantIdsStr.includes(String(ws.userId))) {
         this.sendMessage(ws, {
           type: "error",
@@ -307,11 +321,14 @@ export class ChatWebSocketServer {
         SELECT cp.user_id 
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
+        WHERE cp.conversation_id = ? 
+        AND c.tenant_id = ? 
+        AND cp.tenant_id = ?
+        AND cp.user_id != ?
       `;
       const [participants] = await pool.query<RowDataPacket[]>(
         participantQuery,
-        [conversationId, ws.tenantId, ws.userId],
+        [conversationId, ws.tenantId, ws.tenantId, ws.userId],
       );
 
       // Typing-Event an andere Teilnehmer senden
@@ -400,11 +417,14 @@ export class ChatWebSocketServer {
         SELECT cp.user_id 
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
+        WHERE cp.conversation_id = ? 
+        AND c.tenant_id = ? 
+        AND cp.tenant_id = ?
+        AND cp.user_id != ?
       `;
       const [participants] = await pool.query<RowDataPacket[]>(
         participantQuery,
-        [conversationId, ws.tenantId, ws.userId],
+        [conversationId, ws.tenantId, ws.tenantId, ws.userId],
       );
 
       for (const participant of participants) {

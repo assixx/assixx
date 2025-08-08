@@ -184,7 +184,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 14. Lies API-V2-FRONTEND-MIGRATION-DETAILS.md
 15. Lies workshop-decisions.md
 16. Lies API-DESIGN-WORKSHOP-PLAN.md
-15. Entwicklung beginnen
+17. Entwicklung beginnen
 
 ## 📊 FORTSCHRITTS-DOKUMENTATION (NEU! WICHTIG!)
 
@@ -307,7 +307,7 @@ docker logs -f assixx-backend
 docker exec assixx-backend pnpm run type-check
 docker exec assixx-backend pnpm run lint:fix
 docker exec assixx-backend pnpm run format
-docker exec assixx-backend pnpm run build:ts
+docker exec assixx-backend pnpm run build
 ```
 
 ### Git

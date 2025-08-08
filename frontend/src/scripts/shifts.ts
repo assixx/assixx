@@ -120,27 +120,27 @@ class ShiftPlanningSystem {
 
     try {
       // Check user authentication and role
-      console.log('[SHIFTS DEBUG] Checking user role...');
+      console.info('[SHIFTS DEBUG] Checking user role...');
       await this.checkUserRole();
-      console.log('[SHIFTS DEBUG] User role:', this.userRole, 'Is admin:', this.isAdmin);
+      console.info('[SHIFTS DEBUG] User role:', this.userRole, 'Is admin:', this.isAdmin);
 
       // Initialize event listeners
-      console.log('[SHIFTS DEBUG] Setting up event listeners...');
+      console.info('[SHIFTS DEBUG] Setting up event listeners...');
       this.setupEventListeners();
 
       // Load context data
-      console.log('[SHIFTS DEBUG] Loading context data...');
+      console.info('[SHIFTS DEBUG] Loading context data...');
       await this.loadContextData();
 
       // Load initial data
-      console.log('[SHIFTS DEBUG] Loading employees...');
+      console.info('[SHIFTS DEBUG] Loading employees...');
       await this.loadEmployees();
-      console.log('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
+      console.info('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
 
-      console.log('[SHIFTS DEBUG] Loading current week data...');
+      console.info('[SHIFTS DEBUG] Loading current week data...');
       await this.loadCurrentWeekData();
 
-      console.log('[SHIFTS DEBUG] Loading weekly notes...');
+      console.info('[SHIFTS DEBUG] Loading weekly notes...');
       try {
         await this.loadWeeklyNotes();
       } catch (error) {
@@ -148,7 +148,7 @@ class ShiftPlanningSystem {
       }
 
       // Update UI based on user role
-      console.log('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
+      console.info('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
       this.updateUIForRole();
 
       // Check if department is selected and toggle visibility
@@ -161,7 +161,7 @@ class ShiftPlanningSystem {
 
       // Load notes again after department is properly set
       if (this.selectedContext.departmentId) {
-        console.log('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
+        console.info('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
         await this.loadWeeklyNotes();
       }
 
@@ -195,7 +195,7 @@ class ShiftPlanningSystem {
         // For employees, set their department as selected
         if (!this.isAdmin && user.department_id) {
           this.selectedContext.departmentId = user.department_id;
-          console.log('[SHIFTS DEBUG] Employee department auto-selected:', user.department_id);
+          console.info('[SHIFTS DEBUG] Employee department auto-selected:', user.department_id);
         }
 
         // Update info row with user's department/team info
@@ -236,18 +236,18 @@ class ShiftPlanningSystem {
   }
 
   setupEventListeners(): void {
-    console.log('[SHIFTS DEBUG] Setting up event listeners');
+    console.info('[SHIFTS DEBUG] Setting up event listeners');
 
     // Week navigation
     const prevBtn = document.getElementById('prevWeekBtn');
     const nextBtn = document.getElementById('nextWeekBtn');
 
-    console.log('[SHIFTS DEBUG] Previous week button:', prevBtn);
-    console.log('[SHIFTS DEBUG] Next week button:', nextBtn);
+    console.info('[SHIFTS DEBUG] Previous week button:', prevBtn);
+    console.info('[SHIFTS DEBUG] Next week button:', nextBtn);
 
     if (prevBtn) {
       prevBtn.addEventListener('click', () => {
-        console.log('[SHIFTS DEBUG] Previous week button clicked');
+        console.info('[SHIFTS DEBUG] Previous week button clicked');
         this.navigateWeek(-1);
       });
     } else {
@@ -256,7 +256,7 @@ class ShiftPlanningSystem {
 
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        console.log('[SHIFTS DEBUG] Next week button clicked');
+        console.info('[SHIFTS DEBUG] Next week button clicked');
         this.navigateWeek(1);
       });
     } else {
@@ -301,9 +301,9 @@ class ShiftPlanningSystem {
   }
 
   setupDragAndDrop(): void {
-    console.log('[SHIFTS DEBUG] Setting up drag and drop. Is admin:', this.isAdmin);
+    console.info('[SHIFTS DEBUG] Setting up drag and drop. Is admin:', this.isAdmin);
     if (!this.isAdmin) {
-      console.log('[SHIFTS DEBUG] User is not admin, drag & drop disabled');
+      console.info('[SHIFTS DEBUG] User is not admin, drag & drop disabled');
       return;
     }
 
@@ -313,11 +313,11 @@ class ShiftPlanningSystem {
       const employeeItem = target.closest('.employee-item') as HTMLElement;
 
       if (employeeItem) {
-        console.log('[SHIFTS DEBUG] Drag start on employee:', employeeItem.dataset.employeeId);
+        console.info('[SHIFTS DEBUG] Drag start on employee:', employeeItem.dataset.employeeId);
 
         // Check if employee is available for dragging
         if (employeeItem.getAttribute('draggable') === 'false') {
-          console.log('[SHIFTS DEBUG] Employee not draggable, preventing drag');
+          console.info('[SHIFTS DEBUG] Employee not draggable, preventing drag');
           e.preventDefault();
           return;
         }
@@ -327,7 +327,7 @@ class ShiftPlanningSystem {
 
         const employeeId = employeeItem.dataset.employeeId;
         if (employeeId && e.dataTransfer) {
-          console.log('[SHIFTS DEBUG] Setting drag data:', employeeId);
+          console.info('[SHIFTS DEBUG] Setting drag data:', employeeId);
           e.dataTransfer.effectAllowed = 'copy';
           e.dataTransfer.setData('text/plain', employeeId);
         }
@@ -374,14 +374,14 @@ class ShiftPlanningSystem {
       const target = e.target as HTMLElement;
       const shiftCell = target.closest('.shift-cell') as HTMLElement;
 
-      console.log('[SHIFTS DEBUG] Drop event on:', target);
+      console.info('[SHIFTS DEBUG] Drop event on:', target);
 
       if (shiftCell) {
         e.preventDefault();
         shiftCell.classList.remove('drag-over');
 
         const employeeId = e.dataTransfer?.getData('text/plain');
-        console.log('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
+        console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
 
         if (employeeId) {
           this.assignShift(shiftCell, parseInt(employeeId));
@@ -491,7 +491,7 @@ class ShiftPlanningSystem {
     this.populateMachineSelect();
   }
 
-  async loadTeamLeaders(): Promise<void> {
+  loadTeamLeaders(): void {
     // Skip loading team leaders for non-admins
     // Team leaders are not used anymore
     this.teamLeaders = [];
@@ -598,7 +598,7 @@ class ShiftPlanningSystem {
       void this.loadCurrentWeekData().then(() => {
         // Load notes after shift data is loaded
         if (this.selectedContext.departmentId) {
-          console.log('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
+          console.info('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
           void this.loadWeeklyNotes();
         }
       });
@@ -614,7 +614,7 @@ class ShiftPlanningSystem {
   async loadEmployees(): Promise<void> {
     // For non-admins, we need to load employees from their department only
     if (!this.isAdmin && !this.selectedContext.departmentId) {
-      console.log('[SHIFTS DEBUG] No department selected for employee');
+      console.info('[SHIFTS DEBUG] No department selected for employee');
       this.employees = [];
       return;
     }
@@ -647,8 +647,8 @@ class ShiftPlanningSystem {
         const users = Array.isArray(data) ? data : (data.users ?? []);
         this.employees = users.filter((user: User) => user.role === 'employee');
 
-        console.log('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
-        console.log('[SHIFTS DEBUG] Employee data:', this.employees);
+        console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
+        console.info('[SHIFTS DEBUG] Employee data:', this.employees);
 
         // Now load current availability status
         await this.loadAvailabilityStatus();
@@ -699,12 +699,12 @@ class ShiftPlanningSystem {
   renderEmployeeList(): void {
     // Don't render if no employees loaded
     if (this.employees.length === 0) {
-      console.log('[SHIFTS DEBUG] No employees to render');
+      console.info('[SHIFTS DEBUG] No employees to render');
       return;
     }
 
     const container = document.getElementById('employeeList');
-    console.log('[SHIFTS DEBUG] Employee list container:', container);
+    console.info('[SHIFTS DEBUG] Employee list container:', container);
 
     if (!container) {
       console.error('[SHIFTS ERROR] Employee list container not found!');
@@ -712,7 +712,7 @@ class ShiftPlanningSystem {
     }
 
     container.innerHTML = '';
-    console.log('[SHIFTS DEBUG] Rendering employees:', this.employees.length);
+    console.info('[SHIFTS DEBUG] Rendering employees:', this.employees.length);
 
     this.employees.forEach((employee) => {
       const item = document.createElement('div');
@@ -724,7 +724,7 @@ class ShiftPlanningSystem {
         this.isAdmin && (employee.availability_status === 'available' || !employee.availability_status);
       item.setAttribute('draggable', isDraggable.toString());
 
-      console.log(
+      console.info(
         '[SHIFTS DEBUG] Employee:',
         employee.username,
         'Draggable:',
@@ -756,7 +756,7 @@ class ShiftPlanningSystem {
       container.appendChild(item);
     });
 
-    console.log('[SHIFTS DEBUG] Employee list rendered');
+    console.info('[SHIFTS DEBUG] Employee list rendered');
     // Update shift counts
     this.updateEmployeeShiftCounts();
   }
@@ -856,7 +856,7 @@ class ShiftPlanningSystem {
       }
     }
 
-    console.log('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
+    console.info('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
 
     if (!date || !shift) {
       console.error('[SHIFTS ERROR] Missing date or shift data on cell');
@@ -869,11 +869,11 @@ class ShiftPlanningSystem {
       return;
     }
 
-    console.log('[SHIFTS DEBUG] Found employee:', employee);
+    console.info('[SHIFTS DEBUG] Found employee:', employee);
 
     // Check if employee is available
     if (employee.availability_status && employee.availability_status !== 'available') {
-      console.log('[SHIFTS DEBUG] Employee not available:', employee.availability_status);
+      console.info('[SHIFTS DEBUG] Employee not available:', employee.availability_status);
 
       // Get status text and badge color
       const statusText =
@@ -971,7 +971,7 @@ class ShiftPlanningSystem {
       const startStr = this.formatDate(weekStart);
       const endStr = this.formatDate(weekEnd);
 
-      console.log('[SHIFTS DEBUG] Loading shifts for range:', startStr, 'to', endStr);
+      console.info('[SHIFTS DEBUG] Loading shifts for range:', startStr, 'to', endStr);
 
       const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
         headers: {
@@ -981,10 +981,10 @@ class ShiftPlanningSystem {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[SHIFTS DEBUG] API Response:', data);
-        console.log('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
+        console.info('[SHIFTS DEBUG] API Response:', data);
+        console.info('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
         if (data.shifts && data.shifts.length > 0) {
-          console.log('[SHIFTS DEBUG] First shift:', data.shifts[0]);
+          console.info('[SHIFTS DEBUG] First shift:', data.shifts[0]);
         }
         this.processShiftData(data.shifts ?? []);
         this.renderWeekView();
@@ -1009,7 +1009,7 @@ class ShiftPlanningSystem {
   ): void {
     this.weeklyShifts = {};
     this.shiftDetails = {}; // Store full shift details including names
-    console.log('[SHIFTS DEBUG] Processing shifts:', shifts);
+    console.info('[SHIFTS DEBUG] Processing shifts:', shifts);
 
     shifts.forEach((shift) => {
       // Extract date part only (YYYY-MM-DD) from potentially full datetime string
@@ -1019,11 +1019,11 @@ class ShiftPlanningSystem {
 
       // Skip custom shifts or convert them based on time
       if (shiftType === 'custom') {
-        console.log('[SHIFTS DEBUG] Skipping custom shift type');
+        console.info('[SHIFTS DEBUG] Skipping custom shift type');
         return; // Skip this shift for now
       }
 
-      console.log('[SHIFTS DEBUG] Processing shift:', {
+      console.info('[SHIFTS DEBUG] Processing shift:', {
         originalDate: dateString,
         extractedDate: date,
         shiftType,
@@ -1051,14 +1051,14 @@ class ShiftPlanningSystem {
       }
     });
 
-    console.log('[SHIFTS DEBUG] Final weeklyShifts:', this.weeklyShifts);
-    console.log('[SHIFTS DEBUG] Shift details:', this.shiftDetails);
+    console.info('[SHIFTS DEBUG] Final weeklyShifts:', this.weeklyShifts);
+    console.info('[SHIFTS DEBUG] Shift details:', this.shiftDetails);
   }
 
   renderWeekView(): void {
     const weekStart = this.getWeekStart(this.currentWeek);
 
-    console.log('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
+    console.info('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
 
     // Update week display
     const currentWeekElement = document.getElementById('currentWeekInfo');
@@ -1073,19 +1073,20 @@ class ShiftPlanningSystem {
   }
 
   navigateWeek(direction: number): void {
-    console.log('[SHIFTS DEBUG] Navigating week. Direction:', direction);
-    console.log('[SHIFTS DEBUG] Current week before:', this.currentWeek);
+    console.info('[SHIFTS DEBUG] Navigating week. Direction:', direction);
+    console.info('[SHIFTS DEBUG] Current week before:', this.currentWeek);
 
     const newDate = new Date(this.currentWeek);
+
     newDate.setDate(newDate.getDate() + direction * 7);
     this.currentWeek = newDate;
 
-    console.log('[SHIFTS DEBUG] New week after:', this.currentWeek);
+    console.info('[SHIFTS DEBUG] New week after:', this.currentWeek);
 
     // Load both shift data and notes for the new week
     Promise.all([this.loadCurrentWeekData(), this.loadWeeklyNotes()])
       .then(() => {
-        console.log('[SHIFTS DEBUG] Week data and notes loaded successfully');
+        console.info('[SHIFTS DEBUG] Week data and notes loaded successfully');
       })
       .catch((error) => {
         console.error('[SHIFTS ERROR] Failed to load week data:', error);
@@ -1128,7 +1129,7 @@ class ShiftPlanningSystem {
   }
 
   updateShiftCells(weekStart: Date): void {
-    console.log('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
+    console.info('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
 
     // Update day headers with dates
     const dayHeaders = document.querySelectorAll('.day-header');
@@ -1169,7 +1170,7 @@ class ShiftPlanningSystem {
           // Get assignments for this shift
           const assignments = this.weeklyShifts[dateKey]?.[shiftType] ?? [];
 
-          console.log('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
+          console.info('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
 
           if (assignments.length > 0) {
             // Add employee cards
@@ -1181,7 +1182,7 @@ class ShiftPlanningSystem {
               const shiftDetailKey = `${dateKey}_${shiftType}_${employeeId}`;
               const shiftDetail = this.shiftDetails[shiftDetailKey];
 
-              console.log(
+              console.info(
                 '[SHIFTS DEBUG] Looking for employee:',
                 employeeId,
                 'Found in employees:',
@@ -1362,16 +1363,16 @@ class ShiftPlanningSystem {
   async loadWeeklyNotes(): Promise<void> {
     try {
       const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
-      console.log('[SHIFTS DEBUG] Loading notes for week:', weekStart);
-      console.log('[SHIFTS DEBUG] Current week:', this.currentWeek);
-      console.log('[SHIFTS DEBUG] Week start date:', this.getWeekStart(this.currentWeek));
-      console.log('[SHIFTS DEBUG] Selected department ID:', this.selectedContext.departmentId);
+      console.info('[SHIFTS DEBUG] Loading notes for week:', weekStart);
+      console.info('[SHIFTS DEBUG] Current week:', this.currentWeek);
+      console.info('[SHIFTS DEBUG] Week start date:', this.getWeekStart(this.currentWeek));
+      console.info('[SHIFTS DEBUG] Selected department ID:', this.selectedContext.departmentId);
 
       let url = `/api/shifts/notes?week=${weekStart}`;
       if (this.selectedContext.departmentId) {
         url += `&department_id=${this.selectedContext.departmentId}`;
       }
-      console.log('[SHIFTS DEBUG] Notes API URL:', url);
+      console.info('[SHIFTS DEBUG] Notes API URL:', url);
 
       const response = await fetch(url, {
         headers: {
@@ -1379,13 +1380,13 @@ class ShiftPlanningSystem {
         },
       });
 
-      console.log('[SHIFTS DEBUG] Notes API response status:', response.status);
+      console.info('[SHIFTS DEBUG] Notes API response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[SHIFTS DEBUG] Notes API response data:', data);
-        console.log('[SHIFTS DEBUG] Type of notes:', typeof data.notes);
-        console.log('[SHIFTS DEBUG] Notes value:', data.notes);
+        console.info('[SHIFTS DEBUG] Notes API response data:', data);
+        console.info('[SHIFTS DEBUG] Type of notes:', typeof data.notes);
+        console.info('[SHIFTS DEBUG] Notes value:', data.notes);
 
         // Make sure we're getting a string, not an object
         if (typeof data.notes === 'object' && data.notes !== null) {
@@ -1399,10 +1400,10 @@ class ShiftPlanningSystem {
         if (notesTextarea) {
           // If notes are empty, show placeholder by clearing value
           notesTextarea.value = this.weeklyNotes;
-          console.log('[SHIFTS DEBUG] Set textarea value to:', this.weeklyNotes);
+          console.info('[SHIFTS DEBUG] Set textarea value to:', this.weeklyNotes);
         }
       } else {
-        console.log('[SHIFTS DEBUG] Notes API error response');
+        console.info('[SHIFTS DEBUG] Notes API error response');
         // If error, clear the notes
         const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
         if (notesTextarea) {

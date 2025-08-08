@@ -46,16 +46,20 @@ Das Problem waren **UNIQUE Constraints** in der Datenbank:
 ### Fix:
 
 In `/backend/src/models/tenant.ts`:
+
 ```typescript
 // Generiere eindeutige Mitarbeiternummer
 const timestamp = Date.now().toString().slice(-6);
-const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+const random = Math.floor(Math.random() * 1000)
+  .toString()
+  .padStart(3, "0");
 const employeeNumber = `${timestamp}${random}`;
 ```
 
 ## Status
 
 ✅ **GELÖST** - v2 Signup funktioniert einwandfrei!
+
 - Neue Tenants können erstellt werden
 - Login mit den erstellten Accounts funktioniert
 - Frontend und Backend sind kompatibel

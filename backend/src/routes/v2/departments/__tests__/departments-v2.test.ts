@@ -103,12 +103,12 @@ describe("Departments v2 API Endpoints", () => {
     });
 
     if (adminLoginRes.status !== 200) {
-      console.log(
+      console.info(
         "Admin login failed:",
         adminLoginRes.status,
         adminLoginRes.body,
       );
-      console.log("Tried to login with email:", adminUser.email);
+      console.info("Tried to login with email:", adminUser.email);
       throw new Error("Admin login failed");
     }
     adminTokenV2 = adminLoginRes.body.data.accessToken;
@@ -121,12 +121,12 @@ describe("Departments v2 API Endpoints", () => {
       });
 
     if (employeeLoginRes.status !== 200) {
-      console.log(
+      console.info(
         "Employee login failed:",
         employeeLoginRes.status,
         employeeLoginRes.body,
       );
-      console.log("Tried to login with email:", employeeUser.email);
+      console.info("Tried to login with email:", employeeUser.email);
       throw new Error("Employee login failed");
     }
     employeeTokenV2 = employeeLoginRes.body.data.accessToken;
@@ -137,8 +137,12 @@ describe("Departments v2 API Endpoints", () => {
     });
 
     if (rootLoginRes.status !== 200) {
-      console.log("Root login failed:", rootLoginRes.status, rootLoginRes.body);
-      console.log("Tried to login with email:", rootUser.email);
+      console.info(
+        "Root login failed:",
+        rootLoginRes.status,
+        rootLoginRes.body,
+      );
+      console.info("Tried to login with email:", rootUser.email);
       throw new Error("Root login failed");
     }
     rootTokenV2 = rootLoginRes.body.data.accessToken;
@@ -149,12 +153,12 @@ describe("Departments v2 API Endpoints", () => {
     });
 
     if (tenant2LoginRes.status !== 200) {
-      console.log(
+      console.info(
         "Tenant2 login failed:",
         tenant2LoginRes.status,
         tenant2LoginRes.body,
       );
-      console.log("Tried to login with email:", tenant2User.email);
+      console.info("Tried to login with email:", tenant2User.email);
       throw new Error("Tenant2 login failed");
     }
     tenant2TokenV2 = tenant2LoginRes.body.data.accessToken;

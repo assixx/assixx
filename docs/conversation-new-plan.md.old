@@ -1,0 +1,320 @@
+# Chat/Conversation Database Consolidation Plan
+
+## Current Problem Analysis
+
+### 1. Database Table Chaos
+The current database has **redundant and inconsistent tables**:
+
+#### Duplicate/Redundant Tables Found:
+- `chat_messages` (empty) - Uses channel_id
+- `messages` (empty) - Uses conversation_id 
+- `message_groups` (empty)
+- `message_group_members` (empty)
+- `message_read_receipts` (empty)
+- `message_status` (empty)
+- `message_attachments` (empty)
+- `chat_message_edits` (empty)
+- `chat_message_reactions` (empty)
+- `chat_message_read_receipts` (empty)
+- `scheduled_messages` (has data)
+- `messages_old_backup` (backup table)
+
+#### Active Conversation Tables:
+- `conversations` (has data)
+- `conversation_participants` (has data)
+
+### 2. Naming Inconsistencies
+- Some tables use `chat_*` prefix
+- Some use `message_*` prefix  
+- Some use `conversation_*` prefix
+- WebSocket uses `messages` table
+- API v2 uses `conversations` table
+
+### 3. Current Error
+Messages aren't being saved because:
+- WebSocket tries to INSERT INTO `messages` table
+- The table exists but rows aren't being inserted
+- Likely missing foreign key constraints or wrong column structure
+
+## Proposed Solution
+
+### Phase 1: Immediate Fix (TODAY)
+Fix the WebSocket to work with existing structure:
+
+1. **Check why INSERT fails**:
+   ```sql
+   SHOW CREATE TABLE messages;
+   SHOW CREATE TABLE conversations;
+   ```
+
+2. **Fix WebSocket INSERT query**:
+   - Ensure conversation_id exists
+   - Check tenant_id is correct
+   - Add proper error handling
+
+### Phase 2: Database Consolidation (This Week)
+
+#### Keep These Tables (renamed for consistency):
+```sql
+-- Core conversation tables
+conversation                 -- Main conversations
+conversation_participants    -- Who's in each conversation
+conversation_messages        -- All messages
+conversation_message_reads   -- Read receipts
+conversation_message_edits   -- Edit history
+conversation_message_attachments -- File attachments
+conversation_message_reactions   -- Emoji reactions
+```
+
+#### Drop These Redundant Tables:
+```sql
+DROP TABLE IF EXISTS chat_messages;          -- Redundant
+DROP TABLE IF EXISTS chat_message_edits;     -- Redundant
+DROP TABLE IF EXISTS chat_message_reactions; -- Redundant
+DROP TABLE IF EXISTS chat_message_read_receipts; -- Redundant
+DROP TABLE IF EXISTS message_groups;         -- Use conversations instead
+DROP TABLE IF EXISTS message_group_members;  -- Use conversation_participants
+DROP TABLE IF EXISTS message_read_receipts;  -- Duplicate
+DROP TABLE IF EXISTS message_status;         -- Use conversation_message_reads
+DROP TABLE IF EXISTS message_attachments;    -- Use conversation_message_attachments
+```
+
+### Phase 3: New Unified Schema
+
+```sql
+-- Main conversation table
+CREATE TABLE conversations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
+    name VARCHAR(255) NULL, -- For group chats
+    is_group BOOLEAN DEFAULT FALSE,
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    
+    INDEX idx_tenant (tenant_id),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- Conversation participants
+CREATE TABLE conversation_participants (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id INT NOT NULL,
+    user_id INT NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    left_at TIMESTAMP NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
+    last_read_message_id INT NULL,
+    notification_enabled BOOLEAN DEFAULT TRUE,
+    
+    UNIQUE KEY unique_participant (conversation_id, user_id),
+    INDEX idx_user (user_id),
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Messages table (renamed from messages to conversation_messages)
+CREATE TABLE conversation_messages (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    content TEXT NOT NULL,
+    type ENUM('text', 'file', 'image', 'system', 'audio', 'video') DEFAULT 'text',
+    is_edited BOOLEAN DEFAULT FALSE,
+    edited_at TIMESTAMP NULL,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_conversation (conversation_id),
+    INDEX idx_sender (sender_id),
+    INDEX idx_created (created_at),
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id)
+);
+
+-- Message attachments
+CREATE TABLE conversation_message_attachments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    message_id INT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    file_size INT NOT NULL,
+    mime_type VARCHAR(100),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_message (message_id),
+    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE
+);
+
+-- Read receipts
+CREATE TABLE conversation_message_reads (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    message_id INT NOT NULL,
+    user_id INT NOT NULL,
+    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY unique_read (message_id, user_id),
+    INDEX idx_user (user_id),
+    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Message reactions
+CREATE TABLE conversation_message_reactions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    message_id INT NOT NULL,
+    user_id INT NOT NULL,
+    reaction VARCHAR(50) NOT NULL, -- emoji or reaction type
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY unique_reaction (message_id, user_id, reaction),
+    INDEX idx_message (message_id),
+    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Edit history
+CREATE TABLE conversation_message_edits (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    message_id INT NOT NULL,
+    previous_content TEXT NOT NULL,
+    edited_by INT NOT NULL,
+    edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_message (message_id),
+    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE,
+    FOREIGN KEY (edited_by) REFERENCES users(id)
+);
+```
+
+## Migration Steps
+
+### Step 1: Backup Everything
+```bash
+./scripts/quick-backup.sh "before_chat_consolidation"
+```
+
+### Step 2: Create New Tables
+Run the CREATE TABLE statements above
+
+### Step 3: Migrate Data
+```sql
+-- Migrate existing conversations (already good)
+-- Migrate existing messages if any
+INSERT INTO conversation_messages (conversation_id, sender_id, content, created_at)
+SELECT conversation_id, sender_id, content, created_at FROM messages WHERE deleted_at IS NULL;
+
+-- Migrate scheduled messages
+-- Keep as is, just update to reference conversation_messages
+```
+
+### Step 4: Update Application Code
+1. Update WebSocket server (`/backend/src/websocket.ts`)
+2. Update Chat Service (`/backend/src/routes/v2/chat/chat.service.ts`)
+3. Update Chat Controller (`/backend/src/routes/v2/chat/chat.controller.ts`)
+
+### Step 5: Drop Old Tables
+After verification, drop all redundant tables
+
+## Benefits of This Approach
+
+1. **Consistent Naming**: All chat-related tables start with `conversation_`
+2. **Clear Relationships**: Foreign keys properly defined
+3. **No Redundancy**: Each concept has one table
+4. **Feature Complete**: Supports all modern chat features (reactions, edits, read receipts)
+5. **Performance**: Proper indexes for common queries
+6. **Multi-tenant Safe**: tenant_id properly tracked
+
+## Immediate Action Required
+
+### ROOT CAUSE FOUND:
+**The `conversations` table is EMPTY!** The API v2 createConversation is not actually saving conversations to the database.
+
+### Fix #1: Chat Service createConversation (URGENT)
+The service returns a conversation but doesn't actually INSERT it into the database!
+
+```javascript
+// In chat.service.ts createConversation method
+// ADD this before returning:
+const [result] = await execute<ResultSetHeader>(
+  `INSERT INTO conversations (tenant_id, name, is_group, created_at, updated_at)
+   VALUES (?, ?, ?, NOW(), NOW())`,
+  [tenantId, data.name || null, isGroup]
+);
+
+const conversationId = result.insertId;
+
+// Then insert participants
+for (const participantId of [...data.participantIds, creatorId]) {
+  await execute(
+    `INSERT INTO conversation_participants (conversation_id, user_id, joined_at)
+     VALUES (?, ?, NOW())`,
+    [conversationId, participantId]
+  );
+}
+```
+
+### Fix #2: WebSocket Error Handling
+Add better error messages:
+
+```javascript
+// In websocket.ts handleSendMessage:
+} catch (error) {
+  logger.error("Fehler beim Senden der Nachricht:", error);
+  
+  // Send specific error to client
+  let errorMessage = "Fehler beim Senden der Nachricht";
+  if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+    errorMessage = "Unterhaltung existiert nicht";
+  }
+  
+  this.sendMessage(ws, {
+    type: "error",
+    data: { 
+      message: errorMessage,
+      code: error.code,
+      conversationId
+    }
+  });
+}
+```
+
+### Fix #3: Frontend Error Display
+Show WebSocket errors to user:
+
+```javascript
+// In chat.ts handleWebSocketMessage:
+case 'error':
+  console.error('WebSocket Error:', message.data);
+  this.showNotification(
+    message.data.message || 'Fehler beim Senden der Nachricht',
+    'error'
+  );
+  break;
+```
+
+## Timeline
+
+- **Today**: Fix WebSocket INSERT issue
+- **Tomorrow**: Create migration plan document
+- **This Week**: Execute migration in test environment
+- **Next Week**: Deploy to production
+
+## Risk Assessment
+
+- **Low Risk**: New tables don't affect existing functionality
+- **Medium Risk**: Data migration needs careful testing
+- **High Risk**: WebSocket/API code changes need thorough testing
+
+## Success Criteria
+
+1. ✅ Messages save correctly via WebSocket
+2. ✅ All chat features work (send, receive, edit, delete, reactions)
+3. ✅ No duplicate tables
+4. ✅ Consistent naming convention
+5. ✅ Proper foreign key constraints
+6. ✅ Multi-tenant isolation maintained

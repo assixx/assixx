@@ -87,7 +87,7 @@ describe("Department Management API Endpoints", () => {
     }
 
     // Debug: Log created users
-    console.log("Created users:", {
+    console.info("Created users:", {
       admin1: adminUser1,
       admin2: adminUser2,
       employee1: employeeUser1,

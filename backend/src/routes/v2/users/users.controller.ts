@@ -461,17 +461,17 @@ export const usersController = {
 
   // Archive user
   async archiveUser(req: AuthenticatedRequest, res: Response): Promise<void> {
-    console.log("[DEBUG] archiveUser called");
-    console.log("[DEBUG] req.params:", req.params);
-    console.log("[DEBUG] req.user:", req.user);
-    console.log("[DEBUG] req.tenantId:", req.tenantId);
+    console.info("[DEBUG] archiveUser called");
+    console.info("[DEBUG] req.params:", req.params);
+    console.info("[DEBUG] req.user:", req.user);
+    console.info("[DEBUG] req.tenantId:", req.tenantId);
 
     try {
       // Skip validation for now to debug
       /*
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        console.log("[DEBUG] Validation errors found:", errors.array());
+        console.info("[DEBUG] Validation errors found:", errors.array());
         res
           .status(400)
           .json(

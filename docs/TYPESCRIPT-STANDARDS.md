@@ -1,8 +1,8 @@
 # 📋 TypeScript Standards & Best Practices für Assixx
 
-> **Zweck:** Vermeidung häufiger TypeScript-Fehler und Sicherstellung konsistenter Code-Qualität  
-> **Erstellt:** 08.06.2025  
-> **Aktualisiert:** 24.07.2025 (API Workshop Decisions)  
+> **Zweck:** Vermeidung häufiger TypeScript-Fehler und Sicherstellung konsistenter Code-Qualität
+> **Erstellt:** 08.06.2025
+> **Aktualisiert:** 24.07.2025 (API Workshop Decisions)
 > **Status:** ✅ Aktiv
 
 ## 🎯 Übersicht
@@ -112,7 +112,7 @@ function calculateTotal(items: Item[]): number {
 ```typescript
 function handleClick(event: MouseEvent, index: number): void {
   // index wird nicht verwendet
-  console.log("Clicked!");
+  console.info("Clicked!");
 }
 ```
 
@@ -121,7 +121,7 @@ function handleClick(event: MouseEvent, index: number): void {
 ```typescript
 function handleClick(event: MouseEvent, _index: number): void {
   // Prefix mit _ für bewusst ungenutzte Parameter
-  console.log("Clicked!");
+  console.info("Clicked!");
 }
 ```
 
@@ -460,22 +460,22 @@ npm run format:check
 
 ### 8.1 "Cannot find name 'document'"
 
-**Problem:** Frontend-Code ohne DOM Types  
+**Problem:** Frontend-Code ohne DOM Types
 **Lösung:** `"lib": ["DOM"]` in tsconfig.json
 
 ### 8.2 "Property does not exist on type 'Window'"
 
-**Problem:** Globale Funktion nicht deklariert  
+**Problem:** Globale Funktion nicht deklariert
 **Lösung:** In `global.d.ts` hinzufügen
 
 ### 8.3 "All declarations must have identical modifiers"
 
-**Problem:** Mehrfache inkonsistente Deklarationen  
+**Problem:** Mehrfache inkonsistente Deklarationen
 **Lösung:** Eine zentrale Definition verwenden
 
 ### 8.4 "Type 'void' is not assignable to type 'Promise<void>'"
 
-**Problem:** Sync/Async Inkonsistenz  
+**Problem:** Sync/Async Inkonsistenz
 **Lösung:** Konsistente async/await Verwendung
 
 ## 📚 9. Dokumentation
@@ -724,7 +724,7 @@ const users: User[] = usersResponse.data;
 
 ---
 
-**Letzte Aktualisierung:** 24.07.2025 (API Workshop Integration)  
+**Letzte Aktualisierung:** 24.07.2025 (API Workshop Integration)
 **Maintainer:** Assixx Development Team
 
 Diese Standards sind verbindlich für alle TypeScript-Entwicklungen im Assixx-Projekt und werden regelmäßig überprüft und aktualisiert.

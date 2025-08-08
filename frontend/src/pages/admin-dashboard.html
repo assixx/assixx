@@ -584,6 +584,7 @@
 
       /* Prevent any layout shift during initial load */
       body:not(.loaded) * {
+        /* Reserved for dynamic styles to prevent layout shift */
       }
 
       /* Breadcrumb Styles sind jetzt in breadcrumb.js enthalten */
@@ -1275,6 +1276,7 @@
       }
 
       .dropdown-display svg {
+        /* Placeholder for future SVG styles */
       }
 
       .dropdown-options {
@@ -1315,14 +1317,14 @@
     <script type="module" src="/scripts/confirm-once.ts"></script>
 
     <script>
-      console.log('Admin dashboard HTML loaded');
+      console.info('Admin dashboard HTML loaded');
 
       // Globale Modal-Funktionen direkt definieren
       window.showModal = function (modalId) {
-        console.log('showModal called with:', modalId);
+        console.info('showModal called with:', modalId);
         const modal = document.getElementById(modalId);
         if (modal) {
-          console.log('Modal element found, showing it');
+          console.info('Modal element found, showing it');
           modal.style.display = 'flex';
         } else {
           console.error('Modal element not found:', modalId);
@@ -1351,14 +1353,14 @@
           const url = args[0];
           const startTime = performance.now();
 
-          console.log(`[Performance] Request #${requestId} starting: ${url}`);
+          console.info(`[Performance] Request #${requestId} starting: ${url}`);
 
           return originalFetch
             .apply(this, args)
             .then((response) => {
               const endTime = performance.now();
               const duration = (endTime - startTime).toFixed(2);
-              console.log(`[Performance] Request #${requestId} completed: ${url} - ${duration}ms (Status: ${response.status})`);
+              console.info(`[Performance] Request #${requestId} completed: ${url} - ${duration}ms (Status: ${response.status})`);
               return response;
             })
             .catch((error) => {
@@ -1373,10 +1375,10 @@
         window.addEventListener('load', () => {
           const perfData = performance.getEntriesByType('navigation')[0];
           if (perfData) {
-            console.log('[Performance] Page Load Metrics:');
-            console.log(`  - DOM Content Loaded: ${perfData.domContentLoadedEventEnd.toFixed(2)}ms`);
-            console.log(`  - Load Complete: ${perfData.loadEventEnd.toFixed(2)}ms`);
-            console.log(`  - Total Resources: ${performance.getEntriesByType('resource').length}`);
+            console.info('[Performance] Page Load Metrics:');
+            console.info(`  - DOM Content Loaded: ${perfData.domContentLoadedEventEnd.toFixed(2)}ms`);
+            console.info(`  - Load Complete: ${perfData.loadEventEnd.toFixed(2)}ms`);
+            console.info(`  - Total Resources: ${performance.getEntriesByType('resource').length}`);
           }
         });
       })();
@@ -1417,7 +1419,7 @@
             localStorage.setItem('userRole', userRole);
           }
 
-          console.log('[Admin Dashboard] Token analysis:', {
+          console.info('[Admin Dashboard] Token analysis:', {
             tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
             finalActiveRole: activeRole,
@@ -1433,22 +1435,22 @@
       // Admin and root users can access admin dashboard when in admin mode
       if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
         // User is correctly on admin dashboard
-        console.log('[Admin Dashboard] User has admin access');
+        console.info('[Admin Dashboard] User has admin access');
       } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'employee') {
         // User has switched to employee role - redirect
-        console.log('[Admin Dashboard] User has switched to employee - redirecting');
+        console.info('[Admin Dashboard] User has switched to employee - redirecting');
         window.location.replace('/employee-dashboard');
       } else if (userRole === 'root' && activeRole === 'root') {
         // Root user is in root mode - redirect to root dashboard
-        console.log('[Admin Dashboard] Root user in root mode - redirecting to root dashboard');
+        console.info('[Admin Dashboard] Root user in root mode - redirecting to root dashboard');
         window.location.replace('/root-dashboard');
       } else if (userRole === 'employee') {
         // Employee trying to access admin dashboard - redirect
-        console.log('[Admin Dashboard] Employee detected - redirecting to employee dashboard');
+        console.info('[Admin Dashboard] Employee detected - redirecting to employee dashboard');
         window.location.replace('/employee-dashboard');
       } else if (!userRole) {
         // No user role - redirect to login
-        console.log('[Admin Dashboard] No user role - redirecting to login');
+        console.info('[Admin Dashboard] No user role - redirecting to login');
         window.location.replace('/login');
       }
 
@@ -1483,12 +1485,12 @@
     </script>
     <script>
       // Direkte Event-Listener hinzufügen
-      console.log('Adding direct event listeners');
+      console.info('Adding direct event listeners');
 
       // Performance monitoring helper
       function measurePerformance(label, fn) {
         const startTime = performance.now();
-        console.log(`[Performance] Starting: ${label}`);
+        console.info(`[Performance] Starting: ${label}`);
 
         const result = fn();
 
@@ -1497,7 +1499,7 @@
           return result
             .then((res) => {
               const endTime = performance.now();
-              console.log(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
+              console.info(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
               return res;
             })
             .catch((err) => {
@@ -1508,13 +1510,13 @@
         } else {
           // Handle synchronous functions
           const endTime = performance.now();
-          console.log(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
+          console.info(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
           return result;
         }
       }
 
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('[Performance] DOMContentLoaded event fired');
+        console.info('[Performance] DOMContentLoaded event fired');
         const pageStartTime = performance.now();
         // Event-Listener für das Schließen des Mitarbeiter-Modals
         const closeEmployeeModalBtn = document.getElementById('close-employee-modal');
@@ -1522,17 +1524,17 @@
         const employeeModal = document.getElementById('employee-modal');
 
         if (closeEmployeeModalBtn && employeeModal) {
-          console.log('Close employee modal button found, adding event listener');
+          console.info('Close employee modal button found, adding event listener');
           closeEmployeeModalBtn.addEventListener('click', function () {
-            console.log('Close button clicked, hiding employee modal');
+            console.info('Close button clicked, hiding employee modal');
             employeeModal.style.display = 'none';
           });
         }
 
         if (cancelEmployeeBtn && employeeModal) {
-          console.log('Cancel employee button found, adding event listener');
+          console.info('Cancel employee button found, adding event listener');
           cancelEmployeeBtn.addEventListener('click', function () {
-            console.log('Cancel button clicked, hiding employee modal');
+            console.info('Cancel button clicked, hiding employee modal');
             employeeModal.style.display = 'none';
           });
         }
@@ -1540,35 +1542,35 @@
         // Schließen des Modals beim Klick außerhalb
         employeeModal?.addEventListener('click', function (event) {
           if (event.target === employeeModal) {
-            console.log('Clicked outside modal content, hiding employee modal');
+            console.info('Clicked outside modal content, hiding employee modal');
             employeeModal.style.display = 'none';
           }
         });
-        console.log('DOM loaded, setting up debugging handlers');
+        console.info('DOM loaded, setting up debugging handlers');
 
         // Debug-Funktionen für alle Buttons (ENTFERNT - blockiert role-switch)
         // document.querySelectorAll('button').forEach((button) => {
-        //   console.log('Found button:', button.textContent || button.innerHTML);
+        //   console.info('Found button:', button.textContent || button.innerHTML);
         //   button.addEventListener('click', function (e) {
-        //     console.log('Button clicked:', this.textContent || this.innerHTML);
+        //     console.info('Button clicked:', this.textContent || this.innerHTML);
         //   });
         // });
 
         // Spezieller Listener für den Dokument-Upload-Button
         const docUploadBtn = document.querySelector('button[type="submit"]');
         if (docUploadBtn && docUploadBtn.textContent.includes('Gehaltsabrechnung hochladen')) {
-          console.log('Dokument Upload Button gefunden:', docUploadBtn.textContent);
+          console.info('Dokument Upload Button gefunden:', docUploadBtn.textContent);
           // Button ist bereits Teil eines Formulars, kein zusätzlicher Listener nötig
         } else {
-          console.log('Dokument Upload Button ist ein Submit-Button im Formular');
+          console.info('Dokument Upload Button ist ein Submit-Button im Formular');
         }
 
         // Direkter Link für Sidebar-Links
         document.querySelectorAll('.sidebar-link').forEach((link) => {
-          console.log('Found sidebar link:', link.textContent);
+          console.info('Found sidebar link:', link.textContent);
           link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
-            console.log('Sidebar link clicked:', href);
+            console.info('Sidebar link clicked:', href);
 
             if (href === '#departments') {
               e.preventDefault();
@@ -1576,22 +1578,22 @@
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing employees section');
+              console.info('Showing employees section');
               showSection('employees');
             } else if (href === '#documents') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing documents section');
+              console.info('Showing documents section');
               showSection('documents');
             } else if (href === '#teams') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing teams section');
+              console.info('Showing teams section');
               showSection('teams');
             } else if (href === '#settings') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing settings section');
+              console.info('Showing settings section');
               showSection('settings');
             }
           });
@@ -1676,7 +1678,7 @@
 
       // Load documents table
       async function loadDocumentsTable() {
-        console.log('Loading documents table');
+        console.info('Loading documents table');
         const token = localStorage.getItem('token');
 
         try {
@@ -1687,7 +1689,7 @@
           if (response.ok) {
             const data = await response.json();
             const documents = data.documents || data;
-            console.log(`Loaded ${documents.length} documents`);
+            console.info(`Loaded ${documents.length} documents`);
 
             const tbody = document.getElementById('documents-table-body');
             if (tbody) {
@@ -1754,7 +1756,7 @@
 
       // Mitarbeiter-Status ändern
       async function changeEmployeeStatus(employeeId) {
-        console.log(`Changing status for employee ${employeeId}`);
+        console.info(`Changing status for employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
@@ -1781,26 +1783,26 @@
           // Handle v2 API response structure
           const employee =
             window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
-          console.log('Employee data loaded:', employee);
+          console.info('Employee data loaded:', employee);
 
           // Modal-Felder befüllen
-          console.log('Looking for modal elements...');
+          console.info('Looking for modal elements...');
           const modal = document.getElementById('employee-status-modal');
-          console.log('Modal found:', !!modal);
+          console.info('Modal found:', !!modal);
 
           const employeeIdInput = document.getElementById('status-employee-id');
           const employeeName = document.getElementById('status-employee-name');
           const statusDropdown = document.getElementById('employee-status-dropdown');
           const statusDisplay = document.getElementById('employee-status-display');
 
-          console.log('Elements found:', {
+          console.info('Elements found:', {
             employeeIdInput: !!employeeIdInput,
             employeeName: !!employeeName,
             statusDropdown: !!statusDropdown,
             statusDisplay: !!statusDisplay,
           });
 
-          console.log('DOM Elements:', {
+          console.info('DOM Elements:', {
             employeeIdInput: employeeIdInput,
             employeeName: employeeName,
             employeeNameType: employeeName ? employeeName.tagName : 'null',
@@ -1808,7 +1810,7 @@
 
           if (employeeIdInput) {
             employeeIdInput.value = employeeId;
-            console.log('Set employee ID:', employeeId);
+            console.info('Set employee ID:', employeeId);
           }
           if (employeeName) {
             // Handle both v1 (snake_case) and v2 (camelCase) field names
@@ -1816,7 +1818,7 @@
             const lastName = employee.lastName || employee.last_name || '';
             const fullName = `${firstName} ${lastName}`;
             employeeName.value = fullName;
-            console.log('Set employee name:', fullName);
+            console.info('Set employee name:', fullName);
           } else {
             console.error('Employee name input not found! Element might not exist in DOM.');
             // Try to recover by checking if modal exists
@@ -1878,7 +1880,7 @@
           // Modal öffnen (reuse the already declared modal variable)
           if (modal) {
             modal.style.display = 'flex';
-            console.log('Modal opened');
+            console.info('Modal opened');
 
             // Form zurücksetzen - NACH dem Setzen der Werte!
             // Das war das Problem - form.reset() löscht alle Werte
@@ -1984,7 +1986,7 @@
                   : errorData.message || 'Status konnte nicht aktualisiert werden';
                 alert(`Fehler: ${errorMessage}`);
                 // Log the full request data for debugging
-                console.log('Request data sent was:', statusData);
+                console.info('Request data sent was:', statusData);
               }
             } catch (error) {
               console.error('Error updating availability status:', error);
@@ -1996,7 +1998,7 @@
 
       // Abteilung löschen
       async function deleteDepartment(departmentId) {
-        console.log(`Deleting department ${departmentId}`);
+        console.info(`Deleting department ${departmentId}`);
         if (!confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')) {
           return;
         }
@@ -2031,7 +2033,7 @@
 
       // Mitarbeiter bearbeiten
       async function editEmployeeAsync(employeeId) {
-        console.log(`Editing employee ${employeeId}`);
+        console.info(`Editing employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
@@ -2051,7 +2053,7 @@
             // Handle v2 API response structure
             const employee =
               window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
-            console.log('Employee data:', employee);
+            console.info('Employee data:', employee);
 
             // Erstelle ein Modal für die Bearbeitung
             const modalHTML = `
@@ -2230,7 +2232,7 @@
 
       // Mitarbeiter aktualisieren
       async function updateEmployee(employeeId) {
-        console.log(`Updating employee ${employeeId}`);
+        console.info(`Updating employee ${employeeId}`);
         const token = localStorage.getItem('token');
         const form = document.getElementById('edit-employee-form');
 
@@ -2276,7 +2278,7 @@
         });
 
         // Debug log to check what we're sending
-        console.log('Sending update data:', data);
+        console.info('Sending update data:', data);
 
         try {
           const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
@@ -2341,7 +2343,7 @@
 
       // Mitarbeiterstatus ändern
       async function toggleEmployeeStatus(employeeId, currentStatus) {
-        console.log(`Toggling employee ${employeeId} status from ${currentStatus}`);
+        console.info(`Toggling employee ${employeeId} status from ${currentStatus}`);
         const token = localStorage.getItem('token');
         const newStatus = currentStatus === 'inactive' ? 'active' : 'inactive';
 
@@ -2399,10 +2401,10 @@
 
       // Modal functions redefined for redundancy
       function showModal(modalId) {
-        console.log('Inline showModal called with:', modalId);
+        console.info('Inline showModal called with:', modalId);
         const modal = document.getElementById(modalId);
         if (modal) {
-          console.log('Modal element found in inline function, showing it');
+          console.info('Modal element found in inline function, showing it');
           modal.style.display = 'flex';
         } else {
           console.error('Modal element not found in inline function:', modalId);
@@ -2410,10 +2412,10 @@
       }
 
       function hideModal(modalId) {
-        console.log('hideModal called for:', modalId);
+        console.info('hideModal called for:', modalId);
         const modal = document.getElementById(modalId);
         if (modal) {
-          console.log('Modal element found in hideModal, hiding it');
+          console.info('Modal element found in hideModal, hiding it');
           modal.style.display = 'none';
         } else {
           console.error('Modal element not found in hideModal:', modalId);
@@ -2421,10 +2423,10 @@
       }
 
       function showEmployeeModal() {
-        console.log('showEmployeeModal function called');
+        console.info('showEmployeeModal function called');
         const modal = document.getElementById('employee-modal');
         if (modal) {
-          console.log('employee-modal found, showing directly');
+          console.info('employee-modal found, showing directly');
           modal.style.display = 'flex';
           // Abteilungen für das Formular laden
           if (typeof loadDepartmentsForEmployeeSelect === 'function') {
@@ -2439,10 +2441,10 @@
       }
 
       function showDocumentModal() {
-        console.log('Document upload modal requested');
+        console.info('Document upload modal requested');
         const modal = document.getElementById('document-modal');
         if (modal) {
-          console.log('Modal found, showing it');
+          console.info('Modal found, showing it');
           modal.style.display = 'flex';
           // Mitarbeiter-Select füllen
           loadEmployeesForSelect();
@@ -2470,7 +2472,7 @@
         modals.forEach((modalId) => {
           const modal = document.getElementById(modalId);
           if (event.target == modal) {
-            console.log(`Clicked outside of ${modalId}, closing it`);
+            console.info(`Clicked outside of ${modalId}, closing it`);
             modal.style.display = 'none';
           }
         });
@@ -2478,12 +2480,12 @@
 
       // Placeholder functions for "view all" links
       function showAllEmployees() {
-        console.log('Show all employees');
+        console.info('Show all employees');
       }
 
       // Load employees table
       async function loadEmployeesTable() {
-        console.log('Loading employees table...');
+        console.info('Loading employees table...');
         const token = localStorage.getItem('token');
 
         try {
@@ -2505,7 +2507,7 @@
           }
 
           const responseData = await response.json();
-          console.log('Loaded employees response:', responseData); // Debug
+          console.info('Loaded employees response:', responseData); // Debug
 
           // Handle v2 API response structure
           let employees;
@@ -2517,7 +2519,7 @@
             employees = responseData;
           }
 
-          console.log('Processed employees:', employees); // Debug
+          console.info('Processed employees:', employees); // Debug
           const tableBody = document.getElementById('employees-table-body');
 
           if (!tableBody) {
@@ -2555,7 +2557,7 @@
 
             // Debug-Ausgabe für ersten Mitarbeiter
             if (employee.id === 19) {
-              console.log('Employee 19 debug:', {
+              console.info('Employee 19 debug:', {
                 availability_status: availabilityStatus,
                 availability_start: availabilityStart,
                 availability_end: availabilityEnd,
@@ -2572,7 +2574,7 @@
 
               // Debug für Employee 19
               if (employee.id === 19) {
-                console.log('Date comparison:', {
+                console.info('Date comparison:', {
                   startDate: startDate.toISOString(),
                   endDate: endDate.toISOString(),
                   todayIsAfterStart: today >= startDate,
@@ -2661,12 +2663,12 @@
         window.editEmployeeAsync = editEmployeeAsync;
         window.updateEmployee = updateEmployee;
         window.deleteEmployee = deleteEmployee;
-        window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
+        window.loadDocumentsTable = loadDocumentsTable || (() => console.info('loadDocumentsTable not implemented'));
         // loadPayslipsTable removed - now using documents-payroll.html
         // loadEmployeesForPayslipSelect removed - now using documents-payroll.html
         // Define loadDepartmentsTable function
         window.loadDepartmentsTable = function () {
-          console.log('loadDepartmentsTable called - redirecting to departments page');
+          console.info('loadDepartmentsTable called - redirecting to departments page');
           // Since we're using a separate departments page, just reload if needed
           if (window.location.pathname.includes('departments')) {
             window.location.reload();
@@ -2676,11 +2678,11 @@
         window.loadTeamsTable =
           window.loadTeamsTable ||
           function () {
-            console.log('loadTeamsTable called but not yet implemented');
+            console.info('loadTeamsTable called but not yet implemented');
             // TODO: Implement team loading functionality
           };
-        window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
-        window.loadDashboardStats = window.loadDashboardStats || (() => console.log('loadDashboardStats not implemented'));
+        window.loadRecentEmployees = window.loadRecentEmployees || (() => console.info('loadRecentEmployees not implemented'));
+        window.loadDashboardStats = window.loadDashboardStats || (() => console.info('loadDashboardStats not implemented'));
       });
 
       // Edit employee - Placeholder function, actual implementation below
@@ -2728,7 +2730,7 @@
       }
 
       function showAllDocuments() {
-        console.log('Show all documents');
+        console.info('Show all documents');
       }
 
       function showAllDepartments() {
@@ -2736,7 +2738,7 @@
       }
 
       function showAllTeams() {
-        console.log('Show all teams');
+        console.info('Show all teams');
       }
 
       // Dokument herunterladen
@@ -2884,7 +2886,6 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: var(--spacing-lg);
       }
 
       .modal-title {

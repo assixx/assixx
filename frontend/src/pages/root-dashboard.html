@@ -242,7 +242,7 @@
 
       /* Buttons - Glassmorphismus */
       .btn {
-        padding: 10px 24px;
+        /*padding: 10px 24px;*/
         border: none;
         border-radius: var(--radius-sm);
         font-size: 14px;
@@ -672,7 +672,7 @@
             localStorage.setItem('userRole', userRole);
           }
 
-          console.log('[Root Dashboard] Token analysis:', {
+          console.info('[Root Dashboard] Token analysis:', {
             tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
             finalActiveRole: activeRole,
@@ -688,10 +688,10 @@
       // Only root users can access root dashboard when in root mode
       if (userRole === 'root' && activeRole === 'root') {
         // User is correctly on root dashboard
-        console.log('[Root Dashboard] User has root access');
+        console.info('[Root Dashboard] User has root access');
       } else if (userRole === 'root' && activeRole !== 'root') {
         // Root user has switched to another role - redirect
-        console.log('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
+        console.info('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
         if (activeRole === 'admin') {
           window.location.replace('/admin-dashboard');
         } else if (activeRole === 'employee') {
@@ -699,7 +699,7 @@
         }
       } else if (userRole !== 'root') {
         // Non-root user trying to access root dashboard - redirect to login
-        console.log('[Root Dashboard] Non-root user detected - redirecting to login');
+        console.info('[Root Dashboard] Non-root user detected - redirecting to login');
         window.location.replace('/login');
       }
 

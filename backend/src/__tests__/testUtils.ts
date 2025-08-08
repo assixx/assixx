@@ -51,7 +51,7 @@ export async function createTestUser(userData: {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const result = await query(
-    `INSERT INTO users (email, password, tenant_id, is_admin, is_active, created_at, updated_at) 
+    `INSERT INTO users (email, password, tenant_id, is_admin, is_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, true, NOW(), NOW())`,
     [email, hashedPassword, tenant_id, is_admin],
   );
@@ -107,7 +107,7 @@ export async function createTestTenant(
   name: string = "Test Tenant",
 ): Promise<number> {
   const result = await query(
-    `INSERT INTO tenants (name, status, created_at, updated_at) 
+    `INSERT INTO tenants (name, status, created_at, updated_at)
      VALUES (?, 'active', NOW(), NOW())`,
     [name],
   );
@@ -168,7 +168,7 @@ export function createMockResponse(): MockResponse {
 export async function setupTestDatabase(): Promise<void> {
   // This would contain minimal schema setup for tests
   // In practice, you'd use migrations or a schema file
-  console.log("Test database setup complete");
+  console.info("Test database setup complete");
 }
 
 /**
@@ -176,5 +176,5 @@ export async function setupTestDatabase(): Promise<void> {
  */
 export async function teardownTestDatabase(): Promise<void> {
   // Clean up all test data
-  console.log("Test database teardown complete");
+  console.info("Test database teardown complete");
 }

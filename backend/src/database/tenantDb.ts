@@ -37,7 +37,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
       queueLimit: 0,
     };
 
-    console.log(
+    console.info(
       `Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`,
     );
 
@@ -51,7 +51,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     // Im Cache speichern
     connectionCache[tenantId] = pool;
 
-    console.log(`Datenbankverbindung für Tenant ${tenantId} erstellt`);
+    console.info(`Datenbankverbindung für Tenant ${tenantId} erstellt`);
     return pool;
   } catch (error) {
     console.error(
@@ -73,7 +73,7 @@ export async function initializeTenantDatabase(
 ): Promise<void> {
   // Im Entwicklungsmodus verwenden wir die Haupt-Datenbank
   if (process.env.NODE_ENV === "development") {
-    console.log(
+    console.info(
       `Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`,
     );
     return;
@@ -113,7 +113,7 @@ export async function initializeTenantDatabase(
       }
     }
 
-    console.log(`Datenbank für Tenant ${tenantId} initialisiert`);
+    console.info(`Datenbank für Tenant ${tenantId} initialisiert`);
   } catch (error) {
     console.error(
       `Fehler beim Initialisieren der Tenant-DB ${tenantId}:`,
@@ -133,7 +133,7 @@ export async function closeAllConnections(): Promise<void> {
   for (const [tenantId, pool] of Object.entries(connectionCache)) {
     try {
       await pool.end();
-      console.log(`Verbindung für Tenant ${tenantId} geschlossen`);
+      console.info(`Verbindung für Tenant ${tenantId} geschlossen`);
     } catch (error) {
       console.error(
         `Fehler beim Schließen der Verbindung für ${tenantId}:`,

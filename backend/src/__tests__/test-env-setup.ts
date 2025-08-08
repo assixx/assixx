@@ -47,7 +47,7 @@ export const TEST_CONFIG = {
   isCI: !!process.env.CI,
 };
 
-console.log("Test environment configured:", {
+console.info("Test environment configured:", {
   NODE_ENV: process.env.NODE_ENV,
   DB_HOST: process.env.DB_HOST,
   DB_NAME: process.env.DB_NAME,

@@ -59,7 +59,7 @@ export class SessionSecurity {
    */
   static async logSecurityEvent(event: SecurityEvent): Promise<void> {
     // In Produktion: In Datenbank speichern
-    // Für jetzt: Nur console.log
+    // Für jetzt: Nur console.info
 
     if (event.eventType === "suspicious_activity") {
       console.warn("[SECURITY-ALERT]", event);

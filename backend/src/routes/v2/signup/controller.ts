@@ -24,7 +24,7 @@ export class SignupController {
    * Register a new tenant
    */
   async signup(req: Request, res: Response): Promise<void> {
-    console.log("[SignupController] METHOD START");
+    console.info("[SignupController] METHOD START");
     logger.info("[SignupController] Received signup request:", {
       body: req.body,
       headers: {
@@ -32,7 +32,7 @@ export class SignupController {
         origin: req.get("Origin"),
       },
     });
-    console.log("[SignupController] Logger called, checking if logger works");
+    console.info("[SignupController] Logger called, checking if logger works");
 
     // Validate request
     const errors = validationResult(req);
@@ -52,13 +52,13 @@ export class SignupController {
     }
 
     try {
-      console.log("[SignupController] Entering try block");
+      console.info("[SignupController] Entering try block");
       const signupData = req.body as SignupRequest;
-      console.log("[SignupController] SignupData prepared:", signupData);
+      console.info("[SignupController] SignupData prepared:", signupData);
       logger.info("[SignupController] Calling signupService.registerTenant");
-      console.log("[SignupController] About to call service");
+      console.info("[SignupController] About to call service");
       const result = await signupService.registerTenant(signupData);
-      console.log("[SignupController] Service returned:", result);
+      console.info("[SignupController] Service returned:", result);
       logger.info("[SignupController] Registration successful:", result);
 
       // Log tenant registration
@@ -92,9 +92,9 @@ export class SignupController {
         },
       });
     } catch (error) {
-      console.log("[SignupController] CATCH BLOCK ENTERED");
-      console.log("[SignupController] Error type:", error?.constructor?.name);
-      console.log(
+      console.info("[SignupController] CATCH BLOCK ENTERED");
+      console.info("[SignupController] Error type:", error?.constructor?.name);
+      console.info(
         "[SignupController] Error message:",
         error instanceof Error ? error.message : error,
       );

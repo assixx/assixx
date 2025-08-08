@@ -850,9 +850,9 @@ export class TenantDeletionService {
     try {
       // Get next queued item
       const [queueItem] = await connection.query(
-        `SELECT * FROM tenant_deletion_queue 
-         WHERE status = 'queued' 
-         ORDER BY created_at ASC 
+        `SELECT * FROM tenant_deletion_queue
+         WHERE status = 'queued'
+         ORDER BY created_at ASC
          LIMIT 1`,
       );
 
@@ -910,8 +910,8 @@ export class TenantDeletionService {
 
           // Log success
           await connection.query(
-            `INSERT INTO tenant_deletion_log 
-             (queue_id, step_name, table_name, records_deleted, duration_ms, status) 
+            `INSERT INTO tenant_deletion_log
+             (queue_id, step_name, table_name, records_deleted, duration_ms, status)
              VALUES (?, ?, ?, ?, ?, ?)`,
             [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, "success"],
           );
@@ -922,8 +922,8 @@ export class TenantDeletionService {
 
           // Log failure
           await connection.query(
-            `INSERT INTO tenant_deletion_log 
-             (queue_id, step_name, table_name, duration_ms, status, error_message) 
+            `INSERT INTO tenant_deletion_log
+             (queue_id, step_name, table_name, duration_ms, status, error_message)
              VALUES (?, ?, ?, ?, ?, ?)`,
             [queueId, step.name, step.name, Date.now() - startTime, "failed", error.message],
           );
@@ -969,7 +969,7 @@ export class TenantDeletionService {
    */
   async getDeletionStatus(tenantId: number): Promise<any> {
     const [status] = await db.query(
-      `SELECT 
+      `SELECT
         q.*,
         t.deletion_status,
         t.deletion_requested_at,
@@ -1453,10 +1453,10 @@ class DeletionWorker {
   private async checkAndProcessQueue() {
     // Prüfe ob Grace Period abgelaufen
     const [nextItem] = await db.query(
-      `SELECT * FROM tenant_deletion_queue 
-       WHERE status = 'queued' 
+      `SELECT * FROM tenant_deletion_queue
+       WHERE status = 'queued'
        AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
-       ORDER BY created_at ASC 
+       ORDER BY created_at ASC
        LIMIT 1`,
     );
 
@@ -1836,8 +1836,8 @@ async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
   const userInfo = await db.query("SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?", [tenantId]);
 
   await db.query(
-    `INSERT INTO deletion_audit_trail 
-     (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata, created_at) 
+    `INSERT INTO deletion_audit_trail
+     (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
     [
       tenantId,
@@ -2053,7 +2053,7 @@ docker-compose exec deletion-worker node -e "
     database: process.env.DB_NAME
   });
   conn.connect(err => {
-    console.log(err ? 'DB Error: ' + err : 'DB Connected!');
+    console.info(err ? 'DB Error: ' + err : 'DB Connected!');
     process.exit(0);
   });
 "
@@ -2256,8 +2256,8 @@ class DeletionWorker {
     logger.warn(`🚨 EMERGENCY STOP requested for queue ${queueId}`);
 
     await execute(
-      `UPDATE tenant_deletion_queue 
-       SET status = 'emergency_stopped', 
+      `UPDATE tenant_deletion_queue
+       SET status = 'emergency_stopped',
            error_message = 'Emergency stop requested by administrator'
        WHERE id = ?`,
       [queueId],
@@ -2282,8 +2282,8 @@ router.post("/deletion-queue/:id/emergency-stop", auth, requireRole("root"), asy
 
     // Log who triggered emergency stop
     await execute(
-      `INSERT INTO tenant_deletion_log 
-       (queue_id, step_name, status, error_message) 
+      `INSERT INTO tenant_deletion_log
+       (queue_id, step_name, status, error_message)
        VALUES (?, 'EMERGENCY_STOP', 'triggered', ?)`,
       [queueId, `Emergency stop by user ${req.user.id}`],
     );

@@ -452,9 +452,9 @@
       // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
       window.DashboardUI = {
         openModal: function (modalId) {
-          console.log('DashboardUI.openModal called for:', modalId);
+          console.info('DashboardUI.openModal called for:', modalId);
           const modal = document.getElementById(modalId);
-          console.log('Modal element found:', !!modal);
+          console.info('Modal element found:', !!modal);
           if (modal) {
             // Entferne zuerst die inline styles
             modal.style.display = '';
@@ -462,7 +462,7 @@
             modal.style.visibility = '';
             // Dann füge active Klasse hinzu
             modal.classList.add('active');
-            console.log('Modal classes after open:', modal.className);
+            console.info('Modal classes after open:', modal.className);
           }
         },
         closeModal: function (modalId) {
@@ -558,7 +558,7 @@
                 const currentRoleIndicator = document.getElementById('role-indicator');
 
                 if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
-                  console.log('[Calendar] Restoring user-info elements');
+                  console.info('[Calendar] Restoring user-info elements');
                   userInfoDiv.innerHTML = '';
 
                   // Avatar wiederherstellen

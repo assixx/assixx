@@ -119,7 +119,7 @@ export class SessionManager {
         ">
           <h3 style="color: #ff9800; margin-top: 0;">⚠️ Sitzung läuft bald ab</h3>
           <p style="color: #ccc;">
-            Ihre Sitzung läuft in 5 Minuten aufgrund von Inaktivität ab. 
+            Ihre Sitzung läuft in 5 Minuten aufgrund von Inaktivität ab.
             Klicken Sie auf "Aktiv bleiben" um angemeldet zu bleiben.
           </p>
           <div style="display: flex; gap: 12px; margin-top: 20px;">
@@ -149,7 +149,7 @@ export class SessionManager {
   }
 
   private handleSessionTimeout(): void {
-    console.log('Session timeout due to inactivity');
+    console.info('Session timeout due to inactivity');
 
     // Clear the interval
     if (this.checkInterval) {
@@ -170,7 +170,7 @@ export class SessionManager {
 
     // Reset activity
     this.updateActivity();
-    console.log('Session extended');
+    console.info('Session extended');
   }
 
   public logout(isTimeout: boolean = false): void {

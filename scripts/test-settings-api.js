@@ -38,7 +38,7 @@ const colors = {
 function printResult(testName, passed, message = "") {
   const symbol = passed ? "✅" : "❌";
   const color = passed ? colors.green : colors.red;
-  console.log(
+  console.info(
     `${symbol} ${color}${testName}${colors.reset}${message ? ` - ${message}` : ""}`,
   );
 }
@@ -74,7 +74,7 @@ async function login(credentials) {
 
 // Test functions
 async function testSystemSettingsAccess() {
-  console.log("\n🧪 Testing System Settings Access...");
+  console.info("\n🧪 Testing System Settings Access...");
 
   // Test 1: Admin should be denied access to system settings (only root can access)
   try {
@@ -110,7 +110,7 @@ async function testSystemSettingsAccess() {
 }
 
 async function testTenantSettings() {
-  console.log("\n🧪 Testing Tenant Settings...");
+  console.info("\n🧪 Testing Tenant Settings...");
 
   // Test 1: Admin can view tenant settings
   try {
@@ -155,7 +155,7 @@ async function testTenantSettings() {
 }
 
 async function testUserSettings() {
-  console.log("\n🧪 Testing User Settings...");
+  console.info("\n🧪 Testing User Settings...");
 
   // Test 1: Admin can create their own setting
   try {
@@ -186,7 +186,7 @@ async function testUserSettings() {
 }
 
 async function testCategories() {
-  console.log("\n🧪 Testing Categories Endpoint...");
+  console.info("\n🧪 Testing Categories Endpoint...");
 
   try {
     const api = createAxiosInstance(adminToken);
@@ -207,10 +207,10 @@ async function testCategories() {
 
 // Main test runner
 async function runTests() {
-  console.log("🚀 Starting Settings API v2 Tests...\n");
+  console.info("🚀 Starting Settings API v2 Tests...\n");
 
   // Login first
-  console.log("🔐 Logging in test users...");
+  console.info("🔐 Logging in test users...");
   adminToken = await login(ADMIN_USER);
   rootToken = await login(ROOT_USER);
 
@@ -221,7 +221,7 @@ async function runTests() {
     process.exit(1);
   }
 
-  console.log("✅ Login successful");
+  console.info("✅ Login successful");
 
   // Run tests
   await testSystemSettingsAccess();
@@ -229,7 +229,7 @@ async function runTests() {
   await testUserSettings();
   await testCategories();
 
-  console.log("\n✨ All tests completed!\n");
+  console.info("\n✨ All tests completed!\n");
 }
 
 // Run the tests

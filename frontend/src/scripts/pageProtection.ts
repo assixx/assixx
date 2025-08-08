@@ -106,7 +106,7 @@ export function checkPageAccess(): void {
   }
 
   // Access allowed
-  console.log(`Access granted to ${pageName} for role ${tokenData.role}`);
+  console.info(`Access granted to ${pageName} for role ${tokenData.role}`);
 }
 
 /**

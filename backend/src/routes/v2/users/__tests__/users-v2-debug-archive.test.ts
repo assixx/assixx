@@ -70,32 +70,32 @@ describe("DEBUG: Users v2 Archive API", () => {
       last_name: "Archive",
     });
     userId = user.id;
-    console.log("Created user with ID:", userId, "Type:", typeof userId);
+    console.info("Created user with ID:", userId, "Type:", typeof userId);
   });
 
   it("should check archive endpoint validation", async () => {
-    console.log("Testing archive endpoint with userId:", userId);
+    console.info("Testing archive endpoint with userId:", userId);
 
     const response = await request(app)
       .post(`/api/v2/users/${userId}/archive`)
       .set("Authorization", `Bearer ${adminToken}`);
 
-    console.log("Archive response status:", response.status);
-    console.log(
+    console.info("Archive response status:", response.status);
+    console.info(
       "Archive response body:",
       JSON.stringify(response.body, null, 2),
     );
 
     // Check if this is a validation error
     if (response.status === 400) {
-      console.log("Validation error details:", response.body.error);
+      console.info("Validation error details:", response.body.error);
 
       // Try with string ID
       const responseWithString = await request(app)
         .post(`/api/v2/users/${userId.toString()}/archive`)
         .set("Authorization", `Bearer ${adminToken}`);
 
-      console.log("Response with string ID:", responseWithString.status);
+      console.info("Response with string ID:", responseWithString.status);
     }
 
     expect(response.status).not.toBe(500);
@@ -107,8 +107,8 @@ describe("DEBUG: Users v2 Archive API", () => {
       .get(`/api/v2/users/${userId}`)
       .set("Authorization", `Bearer ${adminToken}`);
 
-    console.log("Get user response status:", getResponse.status);
-    console.log("Get user response body:", getResponse.body);
+    console.info("Get user response status:", getResponse.status);
+    console.info("Get user response body:", getResponse.body);
   });
 
   it("should check if route is registered", async () => {
@@ -117,7 +117,7 @@ describe("DEBUG: Users v2 Archive API", () => {
       `/api/v2/users/${userId}/archive`,
     );
 
-    console.log("OPTIONS response status:", optionsResponse.status);
-    console.log("OPTIONS response headers:", optionsResponse.headers);
+    console.info("OPTIONS response status:", optionsResponse.status);
+    console.info("OPTIONS response headers:", optionsResponse.headers);
   });
 });

@@ -237,9 +237,9 @@ Response data length: 0
 
 **Debug Process:**
 
-1. **Jest console.log not showing:** Standard console.log statements don't appear in Jest output
+1. **Jest console.info not showing:** Standard console.info statements don't appear in Jest output
    - **Solution:** Import console functions directly: `import { log } from "console";`
-   - Use `log()` instead of `console.log()` in tests
+   - Use `log()` instead of `console.info()` in tests
 2. **Test timeout issues:** Tests timing out after 2 minutes when using standard debugging
    - **Solution:** Use `--runInBand --forceExit` flags
    - Example: `npx jest --testNamePattern="test name" --runInBand --forceExit`
@@ -321,13 +321,13 @@ Die Chat v2 Tests schlugen mit 500-Fehlern fehl, ohne dass die eigentlichen Fehl
 
 ### Ursache
 
-- `console.log()` und `console.error()` Ausgaben wurden in Jest Tests nicht angezeigt
+- `console.info()` und `console.error()` Ausgaben wurden in Jest Tests nicht angezeigt
 - Jest modifiziert das globale `console` Objekt und unterdrückt dadurch die Ausgaben
 
 ### Lösung: Import von Console-Funktionen
 
 ```typescript
-// Statt console.log/console.error verwenden:
+// Statt console.info/console.error verwenden:
 import { log, error as logError } from "console";
 ```
 
@@ -386,7 +386,7 @@ Create conversation error: {
 
 ### Erfolgreich abgeschlossene Todos
 
-- ☒ Console.log Fix mit `import { log } from 'console'` implementiert
+- ☒ console.info Fix mit `import { log } from 'console'` implementiert
 - ☒ 500 Error bei createConversation lokalisiert (ist eigentlich in getConversations)
 
 ### Verbleibende Aufgaben

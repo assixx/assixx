@@ -387,9 +387,9 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       // Debug logging
-      console.log("[DEBUG] /api/users/profile - req.user:", req.user);
-      console.log("[DEBUG] /api/users/profile - req.user.id:", req.user?.id);
-      console.log(
+      console.info("[DEBUG] /api/users/profile - req.user:", req.user);
+      console.info("[DEBUG] /api/users/profile - req.user.id:", req.user?.id);
+      console.info(
         "[DEBUG] /api/users/profile - typeof req.user.id:",
         typeof req.user?.id,
       );
@@ -404,7 +404,7 @@ router.get(
       const userId = parseInt(req.user.id.toString(), 10);
       const tenantId = req.user.tenant_id;
 
-      console.log("[DEBUG] Parsed userId:", userId, "tenantId:", tenantId);
+      console.info("[DEBUG] Parsed userId:", userId, "tenantId:", tenantId);
 
       const user = await User.findById(userId, tenantId);
       if (!user) {

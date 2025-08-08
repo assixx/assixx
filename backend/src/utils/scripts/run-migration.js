@@ -24,11 +24,11 @@ async function runMigration() {
     );
     const migration = fs.readFileSync(migrationPath, "utf8");
 
-    console.log("Running migration: 003-add-plans-system.sql");
+    console.info("Running migration: 003-add-plans-system.sql");
 
     await connection.query(migration);
 
-    console.log("✅ Migration completed successfully!");
+    console.info("✅ Migration completed successfully!");
   } catch (error) {
     console.error("❌ Migration failed:", error.message);
     throw error;

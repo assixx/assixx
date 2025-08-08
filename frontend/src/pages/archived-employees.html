@@ -169,7 +169,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         token = localStorage.getItem('token');
         if (!token) {
-          console.log('No token found, redirecting to login');
+          console.info('No token found, redirecting to login');
           window.location.href = '/';
           return;
         }
@@ -191,7 +191,7 @@
 
           if (response.ok) {
             const employees = await response.json();
-            console.log(`Loaded ${employees.length} archived employees`);
+            console.info(`Loaded ${employees.length} archived employees`);
 
             // Tabelle aktualisieren
             const tableBody = document.getElementById('archived-employees-table');

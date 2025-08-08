@@ -9,6 +9,7 @@ Bei der Verwendung von curl mit JSON-Daten auf Windows/WSL gibt es häufig Probl
 ### Methode 1: Mit JSON-Datei (EMPFOHLEN)
 
 1. Erstelle eine JSON-Datei:
+
 ```bash
 cat > /tmp/signup-test.json << 'EOF'
 {
@@ -26,6 +27,7 @@ EOF
 ```
 
 2. Sende die Anfrage:
+
 ```bash
 curl -X POST http://localhost:3000/api/v2/signup \
   -H "Content-Type: application/json" \
@@ -91,17 +93,20 @@ curl -X GET http://localhost:3000/api/v2/users \
 ## Weitere v2 Endpoints
 
 ### Check Subdomain Availability
+
 ```bash
 curl -X GET http://localhost:3000/api/v2/signup/check-subdomain/testcompany123
 ```
 
 ### Get User Info (authentifiziert)
+
 ```bash
 curl -X GET http://localhost:3000/api/v2/auth/user \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Logout (authentifiziert)
+
 ```bash
 curl -X POST http://localhost:3000/api/v2/auth/logout \
   -H "Authorization: Bearer $TOKEN"
@@ -110,7 +115,9 @@ curl -X POST http://localhost:3000/api/v2/auth/logout \
 ## Debugging-Tipps
 
 ### Verbose Output
+
 Verwende `-v` für detaillierte Ausgabe:
+
 ```bash
 curl -v -X POST http://localhost:3000/api/v2/signup \
   -H "Content-Type: application/json" \
@@ -118,7 +125,9 @@ curl -v -X POST http://localhost:3000/api/v2/signup \
 ```
 
 ### Pretty-Print JSON Response
+
 Verwende `jq` für formatierte JSON-Ausgabe:
+
 ```bash
 curl -X POST http://localhost:3000/api/v2/signup \
   -H "Content-Type: application/json" \
@@ -126,6 +135,7 @@ curl -X POST http://localhost:3000/api/v2/signup \
 ```
 
 ### Response Headers anzeigen
+
 ```bash
 curl -i -X POST http://localhost:3000/api/v2/signup \
   -H "Content-Type: application/json" \
@@ -135,14 +145,17 @@ curl -i -X POST http://localhost:3000/api/v2/signup \
 ## Häufige Fehler
 
 ### JSON Parsing Error
+
 **Problem:** `SyntaxError: Bad escaped character in JSON`
 **Lösung:** Verwende eine JSON-Datei statt direkte JSON-Eingabe auf Windows/WSL
 
 ### 401 Unauthorized
+
 **Problem:** Fehlender oder ungültiger Token
 **Lösung:** Stelle sicher, dass der Authorization-Header korrekt gesetzt ist: `Bearer <token>`
 
 ### 500 Internal Server Error
+
 **Problem:** Serverfehler
 **Lösung:** Prüfe die Docker-Logs: `docker logs assixx-backend --tail 100`
 

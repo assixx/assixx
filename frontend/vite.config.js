@@ -138,7 +138,7 @@ export default defineConfig({
         const featureFlagsDest = resolve(distDir, 'feature-flags.js');
         if (existsSync(featureFlagsSource)) {
           copyFileSync(featureFlagsSource, featureFlagsDest);
-          console.log('✅ Copied feature-flags.js to dist');
+          console.info('✅ Copied feature-flags.js to dist');
         }
 
         // Copy FullCalendar JS files

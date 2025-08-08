@@ -15,9 +15,9 @@ async function fixTenantAdmins() {
     const [missingAdmins] = await connection.query(`
       SELECT u.id, u.tenant_id, u.username, u.email, u.role
       FROM users u
-      WHERE u.role = 'admin' 
+      WHERE u.role = 'admin'
       AND NOT EXISTS (
-        SELECT 1 FROM tenant_admins ta 
+        SELECT 1 FROM tenant_admins ta
         WHERE ta.user_id = u.id AND ta.tenant_id = u.tenant_id
       )
     `);
@@ -27,9 +27,9 @@ async function fixTenantAdmins() {
     );
 
     if (missingAdmins.length > 0) {
-      console.log("\nMissing admins:");
+      console.info("\nMissing admins:");
       missingAdmins.forEach((admin) => {
-        console.log(
+        console.info(
           `- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`,
         );
       });
@@ -37,18 +37,18 @@ async function fixTenantAdmins() {
       // 2. Insert missing admins into tenant_admins
       for (const admin of missingAdmins) {
         await connection.query(
-          `INSERT INTO tenant_admins (tenant_id, user_id, is_primary) 
+          `INSERT INTO tenant_admins (tenant_id, user_id, is_primary)
            VALUES (?, ?, FALSE)`,
           [admin.tenant_id, admin.id],
         );
         logger.info(`Added admin ${admin.username} to tenant_admins`);
       }
 
-      console.log(
+      console.info(
         `\n✅ Added ${missingAdmins.length} admins to tenant_admins table`,
       );
     } else {
-      console.log("\n✅ All admins are already in tenant_admins table");
+      console.info("\n✅ All admins are already in tenant_admins table");
     }
 
     // 3. Show current state
@@ -60,7 +60,7 @@ async function fixTenantAdmins() {
       ORDER BY ta.tenant_id, ta.is_primary DESC
     `);
 
-    console.log("\nCurrent tenant_admins state:");
+    console.info("\nCurrent tenant_admins state:");
     console.table(
       allTenantAdmins.map((ta) => ({
         tenant: ta.subdomain,

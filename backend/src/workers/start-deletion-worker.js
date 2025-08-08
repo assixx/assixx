@@ -13,7 +13,7 @@ require("dotenv").config();
 // Import and start the worker
 const { DeletionWorker } = require("./deletionWorker");
 
-console.log("Starting Tenant Deletion Worker...");
+console.info("Starting Tenant Deletion Worker...");
 
 const worker = new DeletionWorker();
 worker.start().catch((error) => {

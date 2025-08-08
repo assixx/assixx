@@ -82,9 +82,9 @@ async function verifyAccessToken(token: string): Promise<JWTPayload | null> {
     return decoded;
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      console.log("[AUTH v2] Token expired");
+      console.info("[AUTH v2] Token expired");
     } else if (error instanceof jwt.JsonWebTokenError) {
-      console.log("[AUTH v2] Invalid token");
+      console.info("[AUTH v2] Invalid token");
     }
     return null;
   }
@@ -99,11 +99,11 @@ async function getUserDetails(
 ): Promise<UserDetails | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
-      `SELECT 
-        u.id, 
-        u.username, 
-        u.email, 
-        u.role, 
+      `SELECT
+        u.id,
+        u.username,
+        u.email,
+        u.role,
         u.tenant_id,
         u.first_name,
         u.last_name,

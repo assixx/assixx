@@ -175,7 +175,7 @@ export class AuditTrailService {
     const order = sortOrder === "asc" ? "ASC" : "DESC";
 
     // Debug logging
-    console.log("[Audit Trail Service] Query params:", {
+    console.info("[Audit Trail Service] Query params:", {
       whereClause,
       params,
       limit,
@@ -184,7 +184,7 @@ export class AuditTrailService {
     });
 
     const [rows] = await query<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail 
+      `SELECT * FROM audit_trail
        WHERE ${whereClause}
        ORDER BY ${orderBy} ${order}
        LIMIT ? OFFSET ?`,
@@ -240,8 +240,8 @@ export class AuditTrailService {
 
     // Get counts by action
     const [actionRows] = await execute<RowDataPacket[]>(
-      `SELECT action, COUNT(*) as count 
-       FROM audit_trail 
+      `SELECT action, COUNT(*) as count
+       FROM audit_trail
        WHERE ${whereClause}
        GROUP BY action`,
       params,
@@ -249,8 +249,8 @@ export class AuditTrailService {
 
     // Get counts by resource type
     const [resourceRows] = await execute<RowDataPacket[]>(
-      `SELECT resource_type, COUNT(*) as count 
-       FROM audit_trail 
+      `SELECT resource_type, COUNT(*) as count
+       FROM audit_trail
        WHERE ${whereClause}
        GROUP BY resource_type`,
       params,
@@ -258,8 +258,8 @@ export class AuditTrailService {
 
     // Get top users by activity
     const [userRows] = await execute<RowDataPacket[]>(
-      `SELECT user_id, user_name, COUNT(*) as count 
-       FROM audit_trail 
+      `SELECT user_id, user_name, COUNT(*) as count
+       FROM audit_trail
        WHERE ${whereClause}
        GROUP BY user_id, user_name
        ORDER BY count DESC
@@ -269,8 +269,8 @@ export class AuditTrailService {
 
     // Get counts by status
     const [statusRows] = await execute<RowDataPacket[]>(
-      `SELECT status, COUNT(*) as count 
-       FROM audit_trail 
+      `SELECT status, COUNT(*) as count
+       FROM audit_trail
        WHERE ${whereClause}
        GROUP BY status`,
       params,
@@ -360,7 +360,7 @@ export class AuditTrailService {
 
     // Get entries
     const [rows] = await execute<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail 
+      `SELECT * FROM audit_trail
        WHERE ${whereClause}
        ORDER BY created_at DESC`,
       params,

@@ -7,7 +7,7 @@
 import { createPool } from "mysql2/promise";
 
 export default async function globalSetup() {
-  console.log("\n🧹 Pre-test cleanup: Removing old test data...");
+  console.info("\n🧹 Pre-test cleanup: Removing old test data...");
 
   const db = createPool({
     host: process.env.DB_HOST ?? "localhost",
@@ -26,7 +26,7 @@ export default async function globalSetup() {
     );
 
     if (before[0].count > 0) {
-      console.log(
+      console.info(
         `⚠️  Found ${before[0].count} leftover test tenants. Cleaning up...`,
       );
 
@@ -67,9 +67,9 @@ export default async function globalSetup() {
         `DELETE FROM tenants WHERE subdomain LIKE '__AUTOTEST__%' OR company_name LIKE '__AUTOTEST__%'`,
       );
 
-      console.log("✅ Pre-test cleanup complete");
+      console.info("✅ Pre-test cleanup complete");
     } else {
-      console.log("✅ No leftover test data found");
+      console.info("✅ No leftover test data found");
     }
   } catch (error) {
     console.error("❌ Pre-test cleanup failed:", error);

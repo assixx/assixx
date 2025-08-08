@@ -278,7 +278,7 @@ class KvpController {
                 cat.name as category_name,
                 cat.icon as category_icon,
                 cat.color as category_color,
-                CASE 
+                CASE
                   WHEN s.shared_by IS NOT NULL THEN CONCAT(su.first_name, ' ', su.last_name)
                   ELSE NULL
                 END as shared_by_name
@@ -329,10 +329,10 @@ class KvpController {
 
       // Create suggestion
       const [result] = await executeQuery<ResultSetHeader>(
-        `INSERT INTO kvp_suggestions 
-         (tenant_id, title, description, category_id, department_id, 
-          org_level, org_id, submitted_by, status, priority, 
-          expected_benefit, estimated_cost) 
+        `INSERT INTO kvp_suggestions
+         (tenant_id, title, description, category_id, department_id,
+          org_level, org_id, submitted_by, status, priority,
+          expected_benefit, estimated_cost)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
@@ -369,8 +369,8 @@ class KvpController {
 
       // Log the creation
       await executeQuery<ResultSetHeader>(
-        `INSERT INTO activity_logs 
-         (user_id, action, entity_type, entity_id, details, ip_address, user_agent) 
+        `INSERT INTO activity_logs
+         (user_id, action, entity_type, entity_id, details, ip_address, user_agent)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
@@ -626,7 +626,7 @@ class KvpController {
 
       // Update to company-wide visibility
       await executeQuery<ResultSetHeader>(
-        `UPDATE kvp_suggestions 
+        `UPDATE kvp_suggestions
          SET org_level = 'company',
              org_id = ?,
              shared_by = ?,
@@ -646,8 +646,8 @@ class KvpController {
 
       // Log the sharing action
       await executeQuery<ResultSetHeader>(
-        `INSERT INTO activity_logs 
-         (user_id, action, entity_type, entity_id, details, ip_address, user_agent) 
+        `INSERT INTO activity_logs
+         (user_id, action, entity_type, entity_id, details, ip_address, user_agent)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           req.user.id,
@@ -727,7 +727,7 @@ class KvpController {
 
       // Revert to department level
       await executeQuery<ResultSetHeader>(
-        `UPDATE kvp_suggestions 
+        `UPDATE kvp_suggestions
          SET org_level = 'department',
              org_id = department_id,
              shared_by = NULL,
@@ -1077,10 +1077,10 @@ class KvpController {
     res: Response,
   ): Promise<void> {
     try {
-      console.log("=== KVP Upload Attachment Start ===");
-      console.log("User:", req.user);
-      console.log("Suggestion ID:", req.params.id);
-      console.log(
+      console.info("=== KVP Upload Attachment Start ===");
+      console.info("User:", req.user);
+      console.info("Suggestion ID:", req.params.id);
+      console.info(
         "Files received:",
         Array.isArray(req.files) ? req.files.length : 0,
       );
@@ -1100,11 +1100,11 @@ class KvpController {
 
       const files = req.files as Express.Multer.File[];
 
-      console.log("Parsed suggestion ID:", suggestionId);
-      console.log("Files array:", files);
+      console.info("Parsed suggestion ID:", suggestionId);
+      console.info("Files array:", files);
 
       if (!files || files.length === 0) {
-        console.log("No files in request");
+        console.info("No files in request");
         res.status(400).json({ error: "Keine Dateien hochgeladen" });
         return;
       }
@@ -1118,7 +1118,7 @@ class KvpController {
         req.user.tenant_id,
       );
 
-      console.log("Has permission:", hasPermission);
+      console.info("Has permission:", hasPermission);
 
       if (!hasPermission) {
         res.status(403).json({ error: "Keine Berechtigung" });
@@ -1129,7 +1129,7 @@ class KvpController {
 
       // Save each file reference in database
       for (const file of files) {
-        console.log("Processing file:", {
+        console.info("Processing file:", {
           filename: file.filename,
           originalname: file.originalname,
           mimetype: file.mimetype,
@@ -1138,8 +1138,8 @@ class KvpController {
         });
 
         const [result] = await executeQuery<ResultSetHeader>(
-          `INSERT INTO kvp_attachments 
-           (suggestion_id, file_name, file_path, file_type, file_size, uploaded_by) 
+          `INSERT INTO kvp_attachments
+           (suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [
             suggestionId,
@@ -1192,7 +1192,7 @@ class KvpController {
 
       // Get attachment details
       const [attachments] = await executeQuery<RowDataPacket[]>(
-        `SELECT ka.*, ks.tenant_id 
+        `SELECT ka.*, ks.tenant_id
          FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
          WHERE ka.id = ?`,

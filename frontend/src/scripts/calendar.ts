@@ -201,7 +201,7 @@ function selectOrgId(id: number, name: string): void {
 
 // Initialize when document is ready
 function initializeApp() {
-  console.log('Calendar: Starting initialization...');
+  console.info('Calendar: Starting initialization...');
 
   // Register modal templates
   registerModalTemplates();
@@ -217,7 +217,7 @@ function initializeApp() {
 
         // Show/hide "New Event" button based on permissions
         const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
-        console.log('Calendar: newEventBtn found:', !!newEventBtn);
+        console.info('Calendar: newEventBtn found:', !!newEventBtn);
         if (newEventBtn) {
           newEventBtn.style.display = isAdmin ? 'block' : 'none';
         }
@@ -237,13 +237,13 @@ function initializeApp() {
         void loadUpcomingEvents();
 
         // Setup event listeners
-        console.log('Calendar: Setting up event listeners...');
+        console.info('Calendar: Setting up event listeners...');
         setupEventListeners();
 
         // Setup color picker
         setupColorPicker();
 
-        console.log('Calendar: Initialization complete');
+        console.info('Calendar: Initialization complete');
       })
       .catch((error) => {
         console.error('Error loading user data:', error);
@@ -267,11 +267,11 @@ if (document.readyState === 'loading') {
  * Register all modal templates
  */
 function registerModalTemplates(): void {
-  console.log('Calendar: registerModalTemplates() called');
+  console.info('Calendar: registerModalTemplates() called');
 
   // Event Form Modal Template
   const eventFormTemplate = getEventFormModalTemplate();
-  console.log('Calendar: eventFormTemplate length:', eventFormTemplate.length);
+  console.info('Calendar: eventFormTemplate length:', eventFormTemplate.length);
   modalManager.registerTemplate('eventFormModal', eventFormTemplate);
 
   // Event Detail Modal Template
@@ -283,7 +283,7 @@ function registerModalTemplates(): void {
   // Event Response Modal Template
   modalManager.registerTemplate('eventResponseModal', getEventResponseModalTemplate());
 
-  console.log('Calendar: All modal templates registered');
+  console.info('Calendar: All modal templates registered');
 }
 
 /**
@@ -293,14 +293,14 @@ let calendarInitialized = false;
 
 function initializeCalendar(): void {
   if (calendarInitialized) {
-    console.log('Calendar: Already initialized, skipping...');
+    console.info('Calendar: Already initialized, skipping...');
     return;
   }
 
-  console.log('Calendar: Initializing FullCalendar...');
+  console.info('Calendar: Initializing FullCalendar...');
 
   const calendarEl = document.getElementById('calendar') as HTMLElement;
-  console.log('Calendar: Calendar element found:', !!calendarEl);
+  console.info('Calendar: Calendar element found:', !!calendarEl);
 
   if (!calendarEl) {
     console.error('Calendar element not found');
@@ -308,9 +308,9 @@ function initializeCalendar(): void {
   }
 
   // Check if FullCalendar is loaded
-  console.log('Calendar: FullCalendar loaded:', typeof window.FullCalendar !== 'undefined');
+  console.info('Calendar: FullCalendar loaded:', typeof window.FullCalendar !== 'undefined');
   if (typeof window.FullCalendar === 'undefined') {
-    console.log('Calendar: FullCalendar not yet loaded, waiting...');
+    console.info('Calendar: FullCalendar not yet loaded, waiting...');
     // Try again after a short delay
     setTimeout(() => initializeCalendar(), 500);
     return;
@@ -344,15 +344,15 @@ function initializeCalendar(): void {
       navLinks: true,
       selectable: isAdmin, // Only admins can select dates to create events
       select(info: FullCalendarSelectInfo) {
-        console.log('Calendar: Date selected:', info);
+        console.info('Calendar: Date selected:', info);
         if (isAdmin) {
-          console.log('Calendar: User is admin, opening event form');
+          console.info('Calendar: User is admin, opening event form');
           // Bei Klick auf einzelnen Tag: allDay = false
           // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
           const allDay = info.allDay && info.view.type === 'dayGridMonth';
           openEventForm(null, info.start, info.end, allDay);
         } else {
-          console.log('Calendar: User is not admin, ignoring selection');
+          console.info('Calendar: User is not admin, ignoring selection');
         }
       },
       events(
@@ -452,23 +452,23 @@ function setupEventListeners(): void {
 
   // New event button
   const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
-  console.log('Calendar: Looking for newEventBtn:', newEventBtn);
+  console.info('Calendar: Looking for newEventBtn:', newEventBtn);
   if (newEventBtn) {
-    console.log('Calendar: Adding click listener to newEventBtn');
+    console.info('Calendar: Adding click listener to newEventBtn');
     // Remove any existing listeners
     const newButton = newEventBtn.cloneNode(true) as HTMLButtonElement;
     newEventBtn.parentNode?.replaceChild(newButton, newEventBtn);
 
     newButton.addEventListener('click', (e) => {
-      console.log('Calendar: New Event button clicked');
+      console.info('Calendar: New Event button clicked');
       e.preventDefault();
       e.stopPropagation();
 
       // Debug check
-      console.log('Calendar: About to call openEventForm...');
+      console.info('Calendar: About to call openEventForm...');
       try {
         openEventForm();
-        console.log('Calendar: openEventForm() call completed');
+        console.info('Calendar: openEventForm() call completed');
       } catch (error) {
         console.error('Calendar: Error calling openEventForm:', error);
       }
@@ -936,7 +936,7 @@ async function viewEvent(eventId: number): Promise<void> {
         ${escapeHtml(event.title)}
       </h3>
       ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ''}
-      
+
       <div class="event-details-grid">
         <div class="detail-item">
           <i class="fas fa-calendar"></i>
@@ -1109,16 +1109,16 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
  * Open event form for creating/editing
  */
 function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date, allDay?: boolean): void {
-  console.log('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
+  console.info('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
 
   // Check if modalManager exists
-  console.log('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
-  console.log('Calendar: modalManager.show exists:', typeof modalManager?.show === 'function');
+  console.info('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
+  console.info('Calendar: modalManager.show exists:', typeof modalManager?.show === 'function');
 
   // Try to show the modal using modalManager
-  console.log('Calendar: Calling modalManager.show...');
+  console.info('Calendar: Calling modalManager.show...');
   const modal = modalManager.show('eventFormModal');
-  console.log('Calendar: modalManager.show returned:', !!modal);
+  console.info('Calendar: modalManager.show returned:', !!modal);
 
   if (!modal) {
     console.error('Calendar: Failed to show eventFormModal!');
@@ -1287,7 +1287,7 @@ function updateOrgIdDropdown(level: string): void {
  * Save event
  */
 async function saveEvent(): Promise<void> {
-  console.log('saveEvent called');
+  console.info('saveEvent called');
 
   const form = document.getElementById('eventForm') as HTMLFormElement;
   if (!form) {
@@ -1406,7 +1406,7 @@ async function saveEvent(): Promise<void> {
     recurrence_rule: recurrenceRule ?? null,
   };
 
-  console.log('Saving event data:', eventData); // Debug log
+  console.info('Saving event data:', eventData); // Debug log
 
   try {
     const eventId = eventIdInput.value;
@@ -1563,7 +1563,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 /**
  * Delete event
  */
-async function deleteEvent(eventId: number): Promise<void> {
+function deleteEvent(eventId: number): void {
   // Create confirmation modal dynamically
   const modalHtml = `
     <div class="modal-overlay" id="confirmationModal">
@@ -1875,7 +1875,7 @@ function setupModalEventListeners(): void {
     newButton.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('Save button clicked');
+      console.info('Save button clicked');
       void saveEvent();
     });
   }
@@ -1900,7 +1900,7 @@ function setupModalEventListeners(): void {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
 
-    newCheckbox.addEventListener('change', function () {
+    newCheckbox.addEventListener('change', function (this: HTMLInputElement) {
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
@@ -1915,7 +1915,7 @@ function setupModalEventListeners(): void {
   const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLInputElement;
   if (eventOrgLevel) {
     // This is already handled by the dropdown delegation
-    console.log('Organization level input found');
+    console.info('Organization level input found');
   }
 }
 
@@ -2096,7 +2096,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
           <div class="attendee-option">
             <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
             <label for="attendee-${user.id}">
-              ${escapeHtml(user.first_name ?? '')} ${escapeHtml(user.last_name ?? '')} 
+              ${escapeHtml(user.first_name ?? '')} ${escapeHtml(user.last_name ?? '')}
               (${escapeHtml(user.username)})
             </label>
           </div>
@@ -2146,7 +2146,7 @@ function updateSelectedAttendees(): void {
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  console.log('Calendar: Exporting functions to window...');
+  console.info('Calendar: Exporting functions to window...');
   window.viewEvent = viewEvent;
   window.editEvent = (eventId: number) => openEventForm(eventId);
   window.deleteEvent = deleteEvent;
@@ -2174,7 +2174,7 @@ if (typeof window !== 'undefined') {
   window.closeConfirmationModal = closeConfirmationModal;
   window.confirmDeleteEvent = confirmDeleteEvent;
 
-  console.log('Calendar: window.openEventForm available:', typeof window.openEventForm);
+  console.info('Calendar: window.openEventForm available:', typeof window.openEventForm);
 }
 
 /**
@@ -2199,13 +2199,13 @@ function getEventFormModalTemplate(): string {
               <label for="eventTitle">
                 <i class="fas fa-heading"></i> Titel <span class="required">*</span>
               </label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="eventTitle" 
+              <input
+                type="text"
+                class="form-control"
+                id="eventTitle"
                 name="title"
                 placeholder="Titel des Termins eingeben"
-                required 
+                required
               />
             </div>
 
@@ -2213,9 +2213,9 @@ function getEventFormModalTemplate(): string {
               <label for="eventDescription">
                 <i class="fas fa-align-left"></i> Beschreibung
               </label>
-              <textarea 
-                class="form-control" 
-                id="eventDescription" 
+              <textarea
+                class="form-control"
+                id="eventDescription"
                 name="description"
                 rows="4"
                 placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
@@ -2231,24 +2231,24 @@ function getEventFormModalTemplate(): string {
                 <label for="eventStartDate">
                   <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
                 </label>
-                <input 
-                  type="date" 
-                  class="form-control" 
-                  id="eventStartDate" 
+                <input
+                  type="date"
+                  class="form-control"
+                  id="eventStartDate"
                   name="start_date"
-                  required 
+                  required
                 />
               </div>
               <div class="form-group col-md-6">
                 <label for="eventStartTime">
                   <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
                 </label>
-                <input 
-                  type="time" 
-                  class="form-control time-input" 
-                  id="eventStartTime" 
+                <input
+                  type="time"
+                  class="form-control time-input"
+                  id="eventStartTime"
                   name="start_time"
-                  required 
+                  required
                 />
               </div>
             </div>
@@ -2258,34 +2258,34 @@ function getEventFormModalTemplate(): string {
                 <label for="eventEndDate">
                   <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
                 </label>
-                <input 
-                  type="date" 
-                  class="form-control" 
-                  id="eventEndDate" 
+                <input
+                  type="date"
+                  class="form-control"
+                  id="eventEndDate"
                   name="end_date"
-                  required 
+                  required
                 />
               </div>
               <div class="form-group col-md-6">
                 <label for="eventEndTime">
                   <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
                 </label>
-                <input 
-                  type="time" 
-                  class="form-control time-input" 
-                  id="eventEndTime" 
+                <input
+                  type="time"
+                  class="form-control time-input"
+                  id="eventEndTime"
                   name="end_time"
-                  required 
+                  required
                 />
               </div>
             </div>
 
             <div class="form-group">
               <div class="custom-control custom-checkbox">
-                <input 
-                  type="checkbox" 
-                  class="custom-control-input" 
-                  id="eventAllDay" 
+                <input
+                  type="checkbox"
+                  class="custom-control-input"
+                  id="eventAllDay"
                   name="all_day"
                 />
                 <label class="custom-control-label" for="eventAllDay">
@@ -2299,10 +2299,10 @@ function getEventFormModalTemplate(): string {
               <label for="eventLocation">
                 <i class="fas fa-map-marker-alt"></i> Ort
               </label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="eventLocation" 
+              <input
+                type="text"
+                class="form-control"
+                id="eventLocation"
                 name="location"
                 placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
               />
@@ -2442,7 +2442,7 @@ function getEventFormModalTemplate(): string {
                 </div>
               </div>
               <input type="hidden" id="eventRecurrenceEndType" value="never" />
-              
+
               <div class="mt-2" id="recurrenceEndDetails" style="display: none;">
                 <input type="number" class="form-control" id="eventRecurrenceCount" placeholder="Anzahl der Wiederholungen" min="1" style="display: none;" />
                 <input type="date" class="form-control" id="eventRecurrenceUntil" style="display: none;" />
@@ -2535,10 +2535,10 @@ function getAttendeesModalTemplate(): string {
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <input 
-              type="text" 
-              class="form-control" 
-              id="attendeeSearch" 
+            <input
+              type="text"
+              class="form-control"
+              id="attendeeSearch"
               placeholder="Mitarbeiter suchen..."
             />
           </div>

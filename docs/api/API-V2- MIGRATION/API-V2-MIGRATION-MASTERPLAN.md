@@ -13,8 +13,9 @@ Die API v2 Implementation ist zu **100% abgeschlossen** (27/27 APIs). Dieser Pla
 **27 APIs vollständig implementiert:**
 
 #### Phase 1 APIs (13/13):
+
 1. Auth API v2 ✅
-2. Users API v2 ✅  
+2. Users API v2 ✅
 3. Calendar API v2 ✅
 4. Chat API v2 ✅
 5. Departments API v2 ✅
@@ -28,6 +29,7 @@ Die API v2 Implementation ist zu **100% abgeschlossen** (27/27 APIs). Dieser Pla
 13. Notifications API v2 ✅
 
 #### Phase 2 APIs (14/14):
+
 1. Settings API v2 ✅
 2. Machines API v2 ✅
 3. Logs API v2 ✅
@@ -45,31 +47,31 @@ Die API v2 Implementation ist zu **100% abgeschlossen** (27/27 APIs). Dieser Pla
 
 ### 🔄 Mapping: v1 → v2 APIs
 
-| v1 Route | v2 Route | Status | Breaking Changes |
-|----------|----------|---------|------------------|
-| `/api/auth/*` | `/api/v2/auth/*` | ✅ Ready | Bearer Token statt Cookies |
-| `/api/users/*` | `/api/v2/users/*` | ✅ Ready | camelCase Fields |
-| `/api/calendar/*` | `/api/v2/calendar/*` | ✅ Ready | Neue Response Struktur |
-| `/api/chat/*` | `/api/v2/chat/*` | ✅ Ready | WebSocket Upgrade |
-| `/api/departments/*` | `/api/v2/departments/*` | ✅ Ready | Hierarchie Support |
-| `/api/teams/*` | `/api/v2/teams/*` | ✅ Ready | Erweiterte Stats |
-| `/api/documents/*` | `/api/v2/documents/*` | ✅ Ready | Tag System |
-| `/api/blackboard/*` | `/api/v2/blackboard/*` | ✅ Ready | Priority Levels |
-| `/api/role-switch/*` | `/api/v2/role-switch/*` | ✅ Ready | Audit Logging |
-| `/api/kvp/*` | `/api/v2/kvp/*` | ✅ Ready | ROI Tracking |
-| `/api/shifts/*` | `/api/v2/shifts/*` | ✅ Ready | Template System |
-| `/api/surveys/*` | `/api/v2/surveys/*` | ✅ Ready | Anonyme Responses |
-| `/api/admin/*` | `/api/v2/root/*` + `/api/v2/admin-permissions/*` | ✅ Ready | Aufgeteilt |
-| `/api/plans/*` | `/api/v2/plans/*` | ✅ Ready | Erweiterte Pricing |
-| `/api/machines/*` | `/api/v2/machines/*` | ✅ Ready | Wartungshistorie |
-| `/api/logs/*` | `/api/v2/logs/*` | ✅ Ready | Filterung verbessert |
-| `/api/features/*` | `/api/v2/features/*` | ✅ Ready | Usage Tracking |
-| `/api/areas/*` | `/api/v2/areas/*` | ✅ Ready | Location Management |
-| `/api/department-groups/*` | `/api/v2/department-groups/*` | ✅ Ready | Neue API |
-| `/api/signup/*` | `/api/v2/signup/*` | ✅ Ready | Erweiterte Validierung |
-| `/api/availability/*` | MERGED → `/api/v2/shifts/*` | ✅ Merged | In Shifts integriert |
-| `/api/employee/*` | DEPRECATED | ❌ | Nur Views, kein Mehrwert |
-| `/api/unsubscribe/*` | DEPRECATED | ❌ | Simple Update Operation |
+| v1 Route                   | v2 Route                                         | Status    | Breaking Changes           |
+| -------------------------- | ------------------------------------------------ | --------- | -------------------------- |
+| `/api/auth/*`              | `/api/v2/auth/*`                                 | ✅ Ready  | Bearer Token statt Cookies |
+| `/api/users/*`             | `/api/v2/users/*`                                | ✅ Ready  | camelCase Fields           |
+| `/api/calendar/*`          | `/api/v2/calendar/*`                             | ✅ Ready  | Neue Response Struktur     |
+| `/api/chat/*`              | `/api/v2/chat/*`                                 | ✅ Ready  | WebSocket Upgrade          |
+| `/api/departments/*`       | `/api/v2/departments/*`                          | ✅ Ready  | Hierarchie Support         |
+| `/api/teams/*`             | `/api/v2/teams/*`                                | ✅ Ready  | Erweiterte Stats           |
+| `/api/documents/*`         | `/api/v2/documents/*`                            | ✅ Ready  | Tag System                 |
+| `/api/blackboard/*`        | `/api/v2/blackboard/*`                           | ✅ Ready  | Priority Levels            |
+| `/api/role-switch/*`       | `/api/v2/role-switch/*`                          | ✅ Ready  | Audit Logging              |
+| `/api/kvp/*`               | `/api/v2/kvp/*`                                  | ✅ Ready  | ROI Tracking               |
+| `/api/shifts/*`            | `/api/v2/shifts/*`                               | ✅ Ready  | Template System            |
+| `/api/surveys/*`           | `/api/v2/surveys/*`                              | ✅ Ready  | Anonyme Responses          |
+| `/api/admin/*`             | `/api/v2/root/*` + `/api/v2/admin-permissions/*` | ✅ Ready  | Aufgeteilt                 |
+| `/api/plans/*`             | `/api/v2/plans/*`                                | ✅ Ready  | Erweiterte Pricing         |
+| `/api/machines/*`          | `/api/v2/machines/*`                             | ✅ Ready  | Wartungshistorie           |
+| `/api/logs/*`              | `/api/v2/logs/*`                                 | ✅ Ready  | Filterung verbessert       |
+| `/api/features/*`          | `/api/v2/features/*`                             | ✅ Ready  | Usage Tracking             |
+| `/api/areas/*`             | `/api/v2/areas/*`                                | ✅ Ready  | Location Management        |
+| `/api/department-groups/*` | `/api/v2/department-groups/*`                    | ✅ Ready  | Neue API                   |
+| `/api/signup/*`            | `/api/v2/signup/*`                               | ✅ Ready  | Erweiterte Validierung     |
+| `/api/availability/*`      | MERGED → `/api/v2/shifts/*`                      | ✅ Merged | In Shifts integriert       |
+| `/api/employee/*`          | DEPRECATED                                       | ❌        | Nur Views, kein Mehrwert   |
+| `/api/unsubscribe/*`       | DEPRECATED                                       | ❌        | Simple Update Operation    |
 
 ## 🎯 Migration Strategy
 
@@ -99,53 +101,53 @@ curl -X POST http://localhost:3000/api/v2/auth/login \
 ```typescript
 // frontend/src/utils/api-client.ts
 class ApiClient {
-  private version: 'v1' | 'v2' = 'v1'; // START MIT v1!
-  
+  private version: "v1" | "v2" = "v1"; // START MIT v1!
+
   async fetch(endpoint: string, options?: RequestInit) {
     // Feature Flag Check
-    const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
+    const featureKey = `USE_API_V2_${endpoint.split("/")[1]?.toUpperCase()}`;
     if (window.FEATURE_FLAGS?.[featureKey]) {
-      this.version = 'v2';
+      this.version = "v2";
     }
-    
-    const baseUrl = this.version === 'v2' ? '/api/v2' : '/api';
+
+    const baseUrl = this.version === "v2" ? "/api/v2" : "/api";
     const url = `${baseUrl}${endpoint}`;
-    
+
     // v1 nutzt Cookies, v2 nutzt Bearer Token
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options?.headers,
     };
-    
-    if (this.version === 'v2') {
-      const token = localStorage.getItem('accessToken');
+
+    if (this.version === "v2") {
+      const token = localStorage.getItem("accessToken");
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
     }
-    
+
     const response = await fetch(url, {
       ...options,
       headers,
-      credentials: this.version === 'v1' ? 'include' : 'omit',
+      credentials: this.version === "v1" ? "include" : "omit",
     });
-    
+
     // Error Handling mit Fallback
-    if (!response.ok && this.version === 'v2') {
-      console.error('v2 API failed, falling back to v1');
-      this.version = 'v1';
+    if (!response.ok && this.version === "v2") {
+      console.error("v2 API failed, falling back to v1");
+      this.version = "v1";
       return this.fetch(endpoint, options); // Retry mit v1
     }
-    
+
     const data = await response.json();
-    
-    if (this.version === 'v2') {
+
+    if (this.version === "v2") {
       if (!data.success) {
-        throw new Error(data.error?.message || 'API Error');
+        throw new Error(data.error?.message || "API Error");
       }
       return data.data;
     }
-    
+
     return data;
   }
 }
@@ -163,16 +165,16 @@ export const apiClient = new ApiClient();
 ```javascript
 // frontend/public/feature-flags.js (wird NICHT eingecheckt!)
 window.FEATURE_FLAGS = {
-  USE_API_V2_AUTH: false,      // Phase 1: Als erstes aktivieren
-  USE_API_V2_USERS: false,     // Phase 1: Nach Auth
+  USE_API_V2_AUTH: false, // Phase 1: Als erstes aktivieren
+  USE_API_V2_USERS: false, // Phase 1: Nach Auth
   USE_API_V2_DOCUMENTS: false, // Phase 1: Nach Users
-  USE_API_V2_BLACKBOARD: false,// Phase 1: Nach Documents
-  
-  USE_API_V2_CALENDAR: false,  // Phase 2
-  USE_API_V2_CHAT: false,      // Phase 2
-  USE_API_V2_SHIFTS: false,    // Phase 2
-  USE_API_V2_KVP: false,       // Phase 2
-  
+  USE_API_V2_BLACKBOARD: false, // Phase 1: Nach Documents
+
+  USE_API_V2_CALENDAR: false, // Phase 2
+  USE_API_V2_CHAT: false, // Phase 2
+  USE_API_V2_SHIFTS: false, // Phase 2
+  USE_API_V2_KVP: false, // Phase 2
+
   // Weitere APIs...
 };
 ```
@@ -203,6 +205,7 @@ class ResponseAdapter {
 #### Migration Reihenfolge (NEUE STRATEGIE!)
 
 **PHASE 1: Signup (Tag 1)**
+
 ```bash
 # ZUERST Signup testen - neue Tenants müssen funktionieren!
 # 1. signup.html anpassen
@@ -211,52 +214,54 @@ class ResponseAdapter {
 ```
 
 **PHASE 2: Auth & Infrastructure (Tag 2-3)**
+
 ```typescript
 // REIHENFOLGE WICHTIG:
 // 1. api.service.ts - Zentrale API Logic
-// 2. common.ts - Shared Functions  
+// 2. common.ts - Shared Functions
 // 3. auth.ts - Login/Logout
 // 4. login.html - Login Page
 
 // auth.ts Beispiel:
-import { apiClient } from './api-service'; // NEUE zentrale API
+import { apiClient } from "./api-service"; // NEUE zentrale API
 
 export async function login(email: string, password: string) {
   // Feature Flag Check entfernt - wir migrieren ALLES
-  const response = await apiClient.post('/auth/login', {
+  const response = await apiClient.post("/auth/login", {
     email,
-    password
+    password,
   });
-  
+
   // v2 Response - Tokens speichern
-  localStorage.setItem('accessToken', response.accessToken);
-  localStorage.setItem('refreshToken', response.refreshToken);
-  localStorage.setItem('user', JSON.stringify(response.user));
-  
+  localStorage.setItem("accessToken", response.accessToken);
+  localStorage.setItem("refreshToken", response.refreshToken);
+  localStorage.setItem("user", JSON.stringify(response.user));
+
   return response;
 }
 
 // SCHRITT 3: Logout anpassen
 export async function logout() {
   try {
-    await apiClient.fetch('/auth/logout', { method: 'POST' });
-    
+    await apiClient.fetch("/auth/logout", { method: "POST" });
+
     if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
     }
-    
-    window.location.href = '/login';
+
+    window.location.href = "/login";
   } catch (error) {
-    console.error('Logout failed:', error);
+    console.error("Logout failed:", error);
     // Trotzdem ausloggen
-    window.location.href = '/login';
+    window.location.href = "/login";
   }
 }
 ```
 
 **PHASE 3: Post-Login UI (Tag 4)**
+
 ```typescript
 // Diese MÜSSEN nach Auth migriert werden:
 // 1. header-user-info.ts - User Info anzeigen
@@ -270,6 +275,7 @@ export async function logout() {
 ```
 
 **PHASE 4: Dashboards (Tag 5-6)**
+
 ```typescript
 // Reihenfolge:
 // 1. index.html - Haupt-Landing
@@ -284,6 +290,7 @@ export async function logout() {
 ```
 
 **PHASE 5: Core Features (Tag 7-10)**
+
 ```typescript
 // Priorität nach Nutzung:
 // 1. Documents (upload/download)
@@ -334,29 +341,29 @@ MANUAL TEST CHECKLIST für $API_NAME:
 ```typescript
 // frontend/src/utils/migration-monitor.ts
 class MigrationMonitor {
-  static logApiCall(endpoint: string, version: 'v1' | 'v2', success: boolean, responseTime: number) {
-    const stats = JSON.parse(localStorage.getItem('migrationStats') || '{}');
-    
+  static logApiCall(endpoint: string, version: "v1" | "v2", success: boolean, responseTime: number) {
+    const stats = JSON.parse(localStorage.getItem("migrationStats") || "{}");
+
     if (!stats[endpoint]) {
       stats[endpoint] = { v1: { calls: 0, errors: 0, avgTime: 0 }, v2: { calls: 0, errors: 0, avgTime: 0 } };
     }
-    
+
     const versionStats = stats[endpoint][version];
     versionStats.calls++;
     if (!success) versionStats.errors++;
     versionStats.avgTime = (versionStats.avgTime * (versionStats.calls - 1) + responseTime) / versionStats.calls;
-    
-    localStorage.setItem('migrationStats', JSON.stringify(stats));
-    
+
+    localStorage.setItem("migrationStats", JSON.stringify(stats));
+
     // Alert bei hoher Fehlerrate
     const errorRate = versionStats.errors / versionStats.calls;
     if (errorRate > 0.05 && versionStats.calls > 10) {
       console.error(`HIGH ERROR RATE for ${endpoint} ${version}: ${(errorRate * 100).toFixed(1)}%`);
     }
   }
-  
+
   static getReport() {
-    const stats = JSON.parse(localStorage.getItem('migrationStats') || '{}');
+    const stats = JSON.parse(localStorage.getItem("migrationStats") || "{}");
     console.table(stats);
     return stats;
   }
@@ -371,26 +378,26 @@ class MigrationMonitor {
 // frontend/src/config/rollout.js
 const ROLLOUT_CONFIG = {
   // Start mit einzelnen Test-Usern
-  testUsers: ['admin@test.com', 'developer@test.com'],
-  
+  testUsers: ["admin@test.com", "developer@test.com"],
+
   // Dann Abteilungen
   departments: {
-    'IT': true,      // IT zuerst
-    'HR': false,     // HR später
-    'Production': false  // Production zuletzt
+    IT: true, // IT zuerst
+    HR: false, // HR später
+    Production: false, // Production zuletzt
   },
-  
+
   // Rollout Funktion
   shouldUseV2(userEmail, department) {
     // Test User? -> v2
     if (this.testUsers.includes(userEmail)) return true;
-    
+
     // Department aktiviert? -> v2
     if (this.departments[department]) return true;
-    
+
     // Sonst -> v1
     return false;
-  }
+  },
 };
 ```
 
@@ -404,10 +411,10 @@ function emergencyRollback() {
     acc[key] = false;
     return acc;
   }, {});
-  
+
   // 2. Tokens löschen
   localStorage.clear();
-  
+
   // 3. Seite neu laden
   window.location.reload();
 }
@@ -419,22 +426,24 @@ window.emergencyRollback = emergencyRollback;
 ## 📋 Breaking Changes & Migration Guide
 
 ### 1. Authentication
+
 ```javascript
 // v1
-fetch('/api/auth/login', {
-  credentials: 'include',
+fetch("/api/auth/login", {
+  credentials: "include",
   // Cookie-based auth
 });
 
 // v2
-fetch('/api/v2/auth/login', {
+fetch("/api/v2/auth/login", {
   headers: {
-    'Authorization': `Bearer ${token}`
-  }
+    Authorization: `Bearer ${token}`,
+  },
 });
 ```
 
 ### 2. Response Format
+
 ```javascript
 // v1
 {
@@ -457,6 +466,7 @@ fetch('/api/v2/auth/login', {
 ```
 
 ### 3. Field Naming
+
 ```javascript
 // v1 (snake_case)
 {
@@ -474,6 +484,7 @@ fetch('/api/v2/auth/login', {
 ```
 
 ### 4. Error Handling
+
 ```javascript
 // v1
 if (response.status !== 200) {
@@ -490,22 +501,25 @@ if (!data.success) {
 ## 🛡️ Risk Management & Rollback Strategy
 
 ### Rollback Triggers
+
 1. **Error Rate > 5%** → Immediate Rollback
 2. **Response Time > 2x v1** → Performance Review
 3. **Critical Bug in Production** → Feature Flag Disable
 4. **User Complaints > 10** → Evaluation Meeting
 
 ### Rollback Plan
+
 ```javascript
 // Quick Rollback via Feature Flags
 const EMERGENCY_ROLLBACK = {
   USE_API_V2: false,
   REDIRECT_TO_V1: true,
-  SHOW_MAINTENANCE_MESSAGE: true
+  SHOW_MAINTENANCE_MESSAGE: true,
 };
 ```
 
 ### Backup Strategy
+
 1. **Database Snapshots** vor jeder Migration Phase
 2. **v1 API Code** in separatem Branch behalten
 3. **Config Backups** für schnelles Rollback
@@ -514,12 +528,14 @@ const EMERGENCY_ROLLBACK = {
 ## 📊 Success Metrics
 
 ### Technical Metrics
+
 - **API Response Time:** < 200ms (p95)
 - **Error Rate:** < 0.1%
 - **Uptime:** 99.9%
 - **Test Coverage:** > 80%
 
 ### Business Metrics
+
 - **User Satisfaction:** > 90%
 - **Support Tickets:** < 5 per day
 - **Feature Adoption:** > 80% in 4 weeks
@@ -527,16 +543,17 @@ const EMERGENCY_ROLLBACK = {
 
 ## 🗓️ Migration Phasen
 
-| Phase | Fokus | APIs | Status |
-|-------|-------|------|---------|
-| **Phase 1** | Authentication & Core | Auth, Users, Documents, Blackboard | 🔄 Start hier |
-| **Phase 2** | Business Features | Calendar, Chat, Shifts, KVP | 📅 Nach Phase 1 |
-| **Phase 3** | Admin & Reports | Admin, Reports, Audit Trail | 📋 Nach Phase 2 |
-| **Phase 4** | Cleanup & Optimization | Alle APIs final | 🎯 Abschluss |
+| Phase       | Fokus                  | APIs                               | Status          |
+| ----------- | ---------------------- | ---------------------------------- | --------------- |
+| **Phase 1** | Authentication & Core  | Auth, Users, Documents, Blackboard | 🔄 Start hier   |
+| **Phase 2** | Business Features      | Calendar, Chat, Shifts, KVP        | 📅 Nach Phase 1 |
+| **Phase 3** | Admin & Reports        | Admin, Reports, Audit Trail        | 📋 Nach Phase 2 |
+| **Phase 4** | Cleanup & Optimization | Alle APIs final                    | 🎯 Abschluss    |
 
 ## 🔧 Technical Requirements
 
 ### Frontend Changes Needed
+
 1. **API Client Library** - Zentrale API Verwaltung
 2. **Token Management** - JWT Storage & Refresh
 3. **Error Handling** - Standardisierte Error Messages
@@ -544,6 +561,7 @@ const EMERGENCY_ROLLBACK = {
 5. **Type Definitions** - TypeScript Interfaces für v2
 
 ### Backend Preparations
+
 1. **Rate Limiting** - DDoS Protection
 2. **Caching Layer** - Redis Integration
 3. **Monitoring** - Prometheus/Grafana
@@ -561,11 +579,13 @@ const EMERGENCY_ROLLBACK = {
 ## 📞 Support & Communication
 
 ### Internal Communication
+
 - **Slack Channel:** #api-v2-migration
 - **Daily Standup:** 09:00 Uhr
 - **Weekly Review:** Freitags 15:00 Uhr
 
 ### User Communication
+
 - **Email Campaign:** 2 Wochen vor Rollout
 - **In-App Notifications:** 1 Woche vor Rollout
 - **Help Center Articles:** Already prepared
@@ -618,6 +638,7 @@ cd frontend && npm run dev
 ### Häufige Probleme & Lösungen
 
 **Problem 1: "401 Unauthorized" nach Login**
+
 ```javascript
 // Lösung: Token wird nicht mitgesendet
 // Prüfe in Network Tab: Authorization Header vorhanden?
@@ -625,6 +646,7 @@ cd frontend && npm run dev
 ```
 
 **Problem 2: "CORS Error"**
+
 ```javascript
 // Lösung: credentials Policy prüfen
 // v1: credentials: 'include' (Cookies)
@@ -632,6 +654,7 @@ cd frontend && npm run dev
 ```
 
 **Problem 3: "Cannot read property 'data' of undefined"**
+
 ```javascript
 // Lösung: Response Format prüfen
 // v1: response = { users: [...] }

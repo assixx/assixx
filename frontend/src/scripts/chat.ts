@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+import { ApiClient } from '../utils/api-client';
 
 import { getAuthToken } from './auth';
 import type UnifiedNavigation from './components/unified-navigation';
@@ -87,10 +88,12 @@ class ChatClient {
   private typingTimer: NodeJS.Timeout | null;
   private emojiCategories: EmojiCategories;
   private isCreatingConversation: boolean = false;
+  private apiClient: ApiClient;
   constructor() {
     this.ws = null;
     this.token = getAuthToken();
     this.currentUser = JSON.parse(localStorage.getItem('user') ?? '{}');
+    this.apiClient = ApiClient.getInstance();
 
     // Import UnifiedNavigation type
     // Fallback für currentUserId wenn user object nicht komplett ist
@@ -955,22 +958,43 @@ class ChatClient {
 
   async loadConversations(): Promise<void> {
     try {
-      const response = await fetch('/api/chat/conversations', {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
+      // Use apiClient which will handle v1/v2 based on feature flag
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-      if (response.ok) {
-        const conversations = await response.json();
-        // Stelle sicher, dass jede Konversation ein participants Array hat
-        this.conversations = conversations.map((conv: Conversation) => ({
+      if (useV2) {
+        // v2 API returns { data: [...], pagination } directly
+        const response = await this.apiClient.request<{
+          data: Conversation[];
+          pagination?: unknown;
+        }>('/chat/conversations', {
+          method: 'GET',
+        });
+
+        // Auch ein leeres Array ist valide - keine Conversations vorhanden
+        this.conversations = (response.data ?? []).map((conv: Conversation) => ({
           ...conv,
           participants: conv.participants ?? [],
         }));
         this.renderConversationList();
       } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // v1 API - legacy code
+        const response = await fetch('/api/chat/conversations', {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response.ok) {
+          const conversations = await response.json();
+          // Stelle sicher, dass jede Konversation ein participants Array hat
+          this.conversations = conversations.map((conv: Conversation) => ({
+            ...conv,
+            participants: conv.participants ?? [],
+          }));
+          this.renderConversationList();
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading conversations:', error);
@@ -980,16 +1004,32 @@ class ChatClient {
 
   async loadAvailableUsers(): Promise<void> {
     try {
-      const response = await fetch('/api/chat/users', {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-      if (response.ok) {
-        this.availableUsers = await response.json();
+      if (useV2) {
+        // v2 API returns { users: [...], total } directly
+        const response = await this.apiClient.request<{
+          users: ChatUser[];
+          total: number;
+        }>('/chat/users', {
+          method: 'GET',
+        });
+
+        // Auch eine leere User-Liste ist valide
+        this.availableUsers = response.users ?? [];
       } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // v1 API - legacy code
+        const response = await fetch('/api/chat/users', {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response.ok) {
+          this.availableUsers = await response.json();
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading available users:', error);
@@ -1106,6 +1146,16 @@ class ChatClient {
         // Connection keepalive response
         break;
 
+      case 'error':
+        // Handle error messages from WebSocket
+        console.error('❌ WebSocket Error:', message.data);
+        if (message.data && typeof message.data === 'object' && 'message' in message.data) {
+          this.showNotification(message.data.message ?? 'Fehler beim Senden der Nachricht', 'error');
+        } else {
+          this.showNotification('Fehler bei der Kommunikation mit dem Server', 'error');
+        }
+        break;
+
       default:
         console.info('📨 Unknown message type:', message.type);
     }
@@ -1191,6 +1241,11 @@ class ChatClient {
     // Play notification sound if from another user
     if (message.sender_id !== this.currentUserId) {
       this.playNotificationSound();
+
+      // Update the unread messages badge in the sidebar
+      if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
+        void window.unifiedNav.updateUnreadMessages();
+      }
     }
   }
 
@@ -1329,13 +1384,24 @@ class ChatClient {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      await fetch(`/api/chat/conversations/${conversationId}/read`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
+
+      if (useV2) {
+        // v2 API returns { markedCount: number } directly (apiClient unwraps success wrapper)
+        await this.apiClient.request<{ markedCount: number }>(`/chat/conversations/${conversationId}/read`, {
+          method: 'POST',
+          body: JSON.stringify({}), // Empty body to trigger Content-Type header
+        });
+      } else {
+        // v1 API - legacy code
+        await fetch(`/api/chat/conversations/${conversationId}/read`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
 
       // Update the navigation badge
       if (window.unifiedNav) {
@@ -1348,17 +1414,33 @@ class ChatClient {
 
   async loadMessages(conversationId: number): Promise<void> {
     try {
-      const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-      if (response.ok) {
-        const messages: Message[] = await response.json();
-        this.displayMessages(messages);
+      if (useV2) {
+        // v2 API returns { data: [...], pagination } directly
+        const response = await this.apiClient.request<{
+          data: Message[];
+          pagination?: unknown;
+        }>(`/chat/conversations/${conversationId}/messages`, {
+          method: 'GET',
+        });
+
+        // Auch eine leere Nachrichtenliste ist valide
+        this.displayMessages(response.data ?? []);
       } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // v1 API - legacy code
+        const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response.ok) {
+          const messages: Message[] = await response.json();
+          this.displayMessages(messages);
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading messages:', error);
@@ -1377,8 +1459,26 @@ class ChatClient {
     let lastMessageDate: string | null = null;
 
     messages.forEach((message) => {
+      // Handle both camelCase and snake_case for created_at/createdAt
+      const createdAt =
+        message.created_at ??
+        ('createdAt' in message ? (message as Message & { createdAt: string }).createdAt : undefined);
+
       // Check if we need to add a date separator
-      const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
+      if (!createdAt) {
+        console.warn('Message without created date:', message);
+        this.displayMessage(message);
+        return;
+      }
+
+      const messageDate = new Date(createdAt).toLocaleDateString('de-DE');
+
+      // Check if date is valid
+      if (messageDate === 'Invalid Date') {
+        console.warn('Invalid date for message:', createdAt, message);
+        this.displayMessage(message);
+        return;
+      }
 
       if (lastMessageDate !== messageDate) {
         this.addDateSeparator(messageDate, messagesContainer);
@@ -1403,8 +1503,17 @@ class ChatClient {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
 
+    // Handle both camelCase and snake_case for created_at/createdAt
+    const createdAt =
+      message.created_at ??
+      ('createdAt' in message ? (message as Message & { createdAt: string }).createdAt : undefined);
+    if (!createdAt) {
+      console.warn('Message without created date:', message);
+      return;
+    }
+
     // Check if we need to add a date separator
-    const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
+    const messageDate = new Date(createdAt).toLocaleDateString('de-DE');
     const messages = messagesContainer.querySelectorAll('.message');
     const lastMessage = messages[messages.length - 1];
 
@@ -1436,13 +1545,17 @@ class ChatClient {
       }
     }
 
-    const isOwnMessage = message.sender_id === this.currentUserId;
+    // Handle both snake_case and camelCase for sender_id/senderId
+    const senderId =
+      message.sender_id ?? ('senderId' in message ? (message as Message & { senderId: number }).senderId : undefined);
+    const isOwnMessage = senderId === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
     messageDiv.setAttribute('data-message-id', message.id.toString());
     messageDiv.setAttribute('data-date', messageDate);
 
-    const time = new Date(message.created_at).toLocaleTimeString('de-DE', {
+    // Use same createdAt variable that handles both formats
+    const time = new Date(createdAt).toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -1493,7 +1606,23 @@ class ChatClient {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const messageDate = new Date(dateString.split('.').reverse().join('-'));
+    // Handle both German format (dd.mm.yyyy) and ISO date strings
+    let messageDate: Date;
+    if (dateString.includes('.')) {
+      // German format: dd.mm.yyyy
+      const [day, month, year] = dateString.split('.');
+      messageDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    } else {
+      // Assume ISO format or other parseable format
+      messageDate = new Date(dateString);
+    }
+
+    // Check if date is valid
+    if (isNaN(messageDate.getTime())) {
+      console.error('Invalid date for separator:', dateString);
+      return;
+    }
+
     let displayDate = dateString;
 
     // Check if it's today
@@ -1503,6 +1632,14 @@ class ChatClient {
     // Check if it's yesterday
     else if (messageDate.toDateString() === yesterday.toDateString()) {
       displayDate = 'Gestern';
+    }
+    // Format as German date
+    else {
+      displayDate = messageDate.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     }
 
     const separator = document.createElement('div');
@@ -1582,14 +1719,14 @@ class ChatClient {
   }
 
   async sendMessage(content?: string): Promise<void> {
-    console.log('sendMessage called');
+    console.info('sendMessage called');
     const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement | null;
     const messageContent = content ?? messageInput?.value.trim();
 
-    console.log('Message content:', messageContent);
-    console.log('Current conversation ID:', this.currentConversationId);
-    console.log('Is connected:', this.isConnected);
-    console.log('WebSocket state:', this.ws?.readyState);
+    console.info('Message content:', messageContent);
+    console.info('Current conversation ID:', this.currentConversationId);
+    console.info('Is connected:', this.isConnected);
+    console.info('WebSocket state:', this.ws?.readyState);
 
     if (!messageContent || !this.currentConversationId) {
       console.warn('No message content or conversation ID');
@@ -1650,17 +1787,35 @@ class ChatClient {
           formData.append('conversationId', this.currentConversationId.toString());
         }
 
-        const response = await fetch('/api/chat/attachments', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
-          body: formData,
-        });
+        const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-        if (response.ok) {
-          const result = await response.json();
-          attachmentIds.push(result.id);
+        if (useV2) {
+          // v2 API returns { success, data }
+          const response = await this.apiClient.request<{ success: boolean; data: { id: number } }>(
+            '/chat/attachments',
+            {
+              method: 'POST',
+              body: formData,
+            },
+          );
+
+          if (response.success && response.data) {
+            attachmentIds.push(response.data.id);
+          }
+        } else {
+          // v1 API - legacy code
+          const response = await fetch('/api/chat/attachments', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+            body: formData,
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            attachmentIds.push(result.id);
+          }
         }
       } catch (error) {
         console.error('❌ Error uploading file:', error);
@@ -1836,6 +1991,11 @@ class ChatClient {
 
       if (conversation.id === this.currentConversationId) {
         item.classList.add('active');
+      }
+
+      // Add unread class if conversation has unread messages
+      if (conversation.unread_count && conversation.unread_count > 0) {
+        item.classList.add('unread');
       }
 
       const displayName = conversation.is_group
@@ -2096,7 +2256,7 @@ class ChatClient {
         if (!target) return;
         const type = target.dataset.type;
 
-        console.log('Tab clicked:', type);
+        console.info('Tab clicked:', type);
 
         // Update active tab
         document.querySelectorAll('.chat-type-tab').forEach((t) => t.classList.remove('active'));
@@ -2120,20 +2280,23 @@ class ChatClient {
 
   private async loadDepartments(): Promise<void> {
     try {
-      const response = await fetch('/api/departments', {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-      if (response.ok) {
-        const departments = await response.json();
+      if (useV2) {
+        // v2 API returns data array directly
+        const departments = await this.apiClient.request<{ id: number; name: string }[]>('/departments', {
+          method: 'GET',
+        });
+
         const dropdown = document.getElementById('departmentDropdown');
 
         if (dropdown) {
           dropdown.innerHTML = '';
 
-          departments.forEach((dept: { id: number; name: string }) => {
+          // Handle both array response and empty departments
+          const deptList = Array.isArray(departments) ? departments : [];
+
+          deptList.forEach((dept: { id: number; name: string }) => {
             const option = document.createElement('div');
             option.className = 'dropdown-option';
             option.onclick = () => {
@@ -2149,13 +2312,47 @@ class ChatClient {
             dropdown.appendChild(option);
           });
         }
+      } else {
+        // v1 API - legacy code
+        const response = await fetch('/api/departments', {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response.ok) {
+          const departments = await response.json();
+          const dropdown = document.getElementById('departmentDropdown');
+
+          if (dropdown) {
+            dropdown.innerHTML = '';
+
+            departments.forEach((dept: { id: number; name: string }) => {
+              const option = document.createElement('div');
+              option.className = 'dropdown-option';
+              option.onclick = () => {
+                if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
+                  window.selectChatDropdownOption('department', dept.id, dept.name);
+                }
+              };
+              option.innerHTML = `
+                <div class="option-info">
+                  <div class="option-name">${this.escapeHtml(dept.name)}</div>
+                </div>
+              `;
+              dropdown.appendChild(option);
+            });
+          }
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('Error loading departments:', error);
     }
   }
 
-  async loadEmployeesForDepartment(departmentId: string): Promise<void> {
+  loadEmployeesForDepartment(departmentId: string): void {
     try {
       // Filter employees by department
       const employees = this.availableUsers.filter(
@@ -2234,7 +2431,7 @@ class ChatClient {
   async createConversation(): Promise<void> {
     // Prevent duplicate calls
     if (this.isCreatingConversation) {
-      console.log('Already creating conversation, ignoring duplicate call');
+      console.info('Already creating conversation, ignoring duplicate call');
       return;
     }
 
@@ -2265,9 +2462,9 @@ class ChatClient {
       const isGroup = false;
       const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement | null;
       const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
-      const requestBody: { participant_ids: number[]; is_group: boolean; name?: string } = {
-        participant_ids: [selectedUserId],
-        is_group: isGroup,
+      const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
+        participantIds: [selectedUserId],
+        isGroup,
       };
 
       // Only add name for group chats
@@ -2275,29 +2472,53 @@ class ChatClient {
         requestBody.name = groupName;
       }
 
-      const response = await fetch('/api/chat/conversations', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-      if (response.ok) {
-        const result = await response.json();
+      if (useV2) {
+        // v2 API returns { conversation: { id, ... } } directly (apiClient unwraps success wrapper)
+        const response = await this.apiClient.request<{ conversation: { id: number } }>('/chat/conversations', {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
+        });
 
-        this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
-        this.closeModal('newConversationModal');
+        if (response.conversation?.id) {
+          this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
+          this.closeModal('newConversationModal');
 
-        // Reload conversations
-        await this.loadInitialData();
+          // Reload conversations
+          await this.loadInitialData();
 
-        // Select new conversation
-        void this.selectConversation(result.id);
+          // Select new conversation
+          void this.selectConversation(response.conversation.id);
+        } else {
+          throw new Error('Failed to create conversation');
+        }
       } else {
-        const error = await response.json();
-        throw new Error(error.error ?? `HTTP error! status: ${response.status}`);
+        // v1 API - legacy code
+        const response = await fetch('/api/chat/conversations', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+
+          this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
+          this.closeModal('newConversationModal');
+
+          // Reload conversations
+          await this.loadInitialData();
+
+          // Select new conversation
+          void this.selectConversation(result.id);
+        } else {
+          const error = await response.json();
+          throw new Error(error.error ?? `HTTP error! status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error creating conversation:', error);
@@ -2310,37 +2531,53 @@ class ChatClient {
   async deleteCurrentConversation(): Promise<void> {
     if (!this.currentConversationId) return;
 
-    if (!confirm('Möchten Sie diese Unterhaltung wirklich löschen?')) {
+    // Use custom confirm dialog instead of native confirm
+    const userConfirmed = await this.showConfirmDialog('Möchten Sie diese Unterhaltung wirklich löschen?');
+    if (!userConfirmed) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/chat/conversations/${this.currentConversationId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-      if (response.ok) {
-        this.showNotification('Unterhaltung gelöscht', 'success');
+      if (useV2) {
+        // v2 API returns { message: "..." } directly (apiClient unwraps success wrapper)
+        const response = await this.apiClient.request<{ message: string }>(
+          `/chat/conversations/${this.currentConversationId}`,
+          {
+            method: 'DELETE',
+          },
+        );
 
-        // Remove from list
-        this.conversations = this.conversations.filter((c) => c.id !== this.currentConversationId);
+        if (response.message) {
+          this.showNotification('Unterhaltung gelöscht', 'success');
 
-        this.currentConversationId = null;
-        this.renderConversationList();
-
-        // Clear chat
-        const messagesContainer = document.getElementById('messagesContainer');
-        if (messagesContainer) {
-          messagesContainer.innerHTML = '';
+          // Reload the page to refresh everything
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        } else {
+          throw new Error('Failed to delete conversation');
         }
-
-        // Show conversation list on mobile
-        this.showConversationsList();
       } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // v1 API - legacy code
+        const response = await fetch(`/api/chat/conversations/${this.currentConversationId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        if (response.ok) {
+          this.showNotification('Unterhaltung gelöscht', 'success');
+
+          // Reload the page to refresh everything
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error deleting conversation:', error);
@@ -2378,7 +2615,7 @@ class ChatClient {
     const sendBtn = document.getElementById('sendButton');
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
-        console.log('Send button clicked');
+        console.info('Send button clicked');
         void this.sendMessage();
       });
     } else {
@@ -2485,7 +2722,7 @@ class ChatClient {
       const deleteBtn = document.getElementById('deleteConversationBtn');
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-          console.log('Delete button clicked');
+          console.info('Delete button clicked');
           void this.deleteCurrentConversation();
         });
       }
@@ -2735,6 +2972,58 @@ class ChatClient {
   }
 
   // Utility methods
+  showConfirmDialog(message: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.style.cssText =
+        'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+
+      const dialog = document.createElement('div');
+      dialog.className = 'confirm-dialog';
+      dialog.style.cssText = 'background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;';
+
+      dialog.innerHTML = `
+        <p style="margin: 0 0 20px; color: #333;">${this.escapeHtml(message)}</p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button id="confirmCancel" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">Abbrechen</button>
+          <button id="confirmOk" style="padding: 8px 16px; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">Löschen</button>
+        </div>
+      `;
+
+      modal.appendChild(dialog);
+      document.body.appendChild(modal);
+
+      const cleanup = () => {
+        document.body.removeChild(modal);
+      };
+
+      const cancelBtn = dialog.querySelector('#confirmCancel');
+      const okBtn = dialog.querySelector('#confirmOk');
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          cleanup();
+          resolve(false);
+        });
+      }
+
+      if (okBtn) {
+        okBtn.addEventListener('click', () => {
+          cleanup();
+          resolve(true);
+        });
+      }
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          cleanup();
+          resolve(false);
+        }
+      });
+    });
+  }
+
   escapeHtml(text: string | null | undefined): string {
     if (!text) return '';
 

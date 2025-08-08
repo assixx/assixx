@@ -122,10 +122,10 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
   try {
     const authToken = token ?? getAuthToken();
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS;
-    console.log('[loadDepartmentsForEmployeeSelect] Feature flag USE_API_V2_DEPARTMENTS:', useV2);
-    console.log('[loadDepartmentsForEmployeeSelect] window.FEATURE_FLAGS:', window.FEATURE_FLAGS);
+    console.info('[loadDepartmentsForEmployeeSelect] Feature flag USE_API_V2_DEPARTMENTS:', useV2);
+    console.info('[loadDepartmentsForEmployeeSelect] window.FEATURE_FLAGS:', window.FEATURE_FLAGS);
     const apiPath = useV2 ? '/api/v2/departments' : '/api/departments';
-    console.log('[loadDepartmentsForEmployeeSelect] Using API path:', apiPath);
+    console.info('[loadDepartmentsForEmployeeSelect] Using API path:', apiPath);
 
     const response = await fetch(apiPath, {
       headers: {
@@ -138,9 +138,9 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
     }
 
     const responseData = await response.json();
-    console.log('[loadDepartmentsForEmployeeSelect] Response data:', responseData);
+    console.info('[loadDepartmentsForEmployeeSelect] Response data:', responseData);
     const departments = useV2 ? responseData.data : responseData;
-    console.log('[loadDepartmentsForEmployeeSelect] Departments:', departments);
+    console.info('[loadDepartmentsForEmployeeSelect] Departments:', departments);
     const dropdownOptions = document.getElementById('employee-department-dropdown');
 
     if (!dropdownOptions) {
@@ -155,9 +155,9 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       </div>
     `;
 
-    console.log('[loadDepartmentsForEmployeeSelect] Adding departments to dropdown:', departments.length);
+    console.info('[loadDepartmentsForEmployeeSelect] Adding departments to dropdown:', departments.length);
     departments.forEach((dept: Department) => {
-      console.log('[loadDepartmentsForEmployeeSelect] Adding department:', dept);
+      console.info('[loadDepartmentsForEmployeeSelect] Adding department:', dept);
       const optionDiv = document.createElement('div');
       optionDiv.className = 'dropdown-option';
       optionDiv.setAttribute('data-value', dept.id.toString());
@@ -166,7 +166,7 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       optionDiv.setAttribute('onclick', `selectDropdownOption('employee-department', '${dept.id}', '${dept.name}')`);
       dropdownOptions.appendChild(optionDiv);
     });
-    console.log('[loadDepartmentsForEmployeeSelect] Dropdown content:', dropdownOptions.innerHTML);
+    console.info('[loadDepartmentsForEmployeeSelect] Dropdown content:', dropdownOptions.innerHTML);
   } catch (error) {
     console.error('Error loading departments for select:', error);
     showError('Fehler beim Laden der Abteilungen');
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Temporär deaktiviert: Auch ohne Token weitermachen (für Testzwecke)
   // if (!token) {
-  //     console.log('No token found, redirecting to login');
+  //     console.info('No token found, redirecting to login');
   //     window.location.href = '/';
   //     return;
   // }
@@ -301,10 +301,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initial loads - add slight delay to ensure DOM is ready
-  console.log('[Admin Dashboard] Setting up initial loads...');
+  console.info('[Admin Dashboard] Setting up initial loads...');
   setTimeout(() => {
     try {
-      console.log('[Admin Dashboard] Starting initial loads...');
+      console.info('[Admin Dashboard] Starting initial loads...');
       void loadDashboardStats();
       void loadRecentEmployees();
       void loadRecentDocuments();
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
       void loadTeams();
       void loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
       void loadBlackboardPreview(); // Laden der Blackboard-Einträge
-      console.log('[Admin Dashboard] Calling loadBlackboardWidget...');
+      console.info('[Admin Dashboard] Calling loadBlackboardWidget...');
       void loadBlackboardWidget(); // Laden des Blackboard-Widgets
     } catch (error) {
       console.error('[Admin Dashboard] Error in initial loads:', error);
@@ -323,10 +323,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const section = urlParams.get('section');
   if (section) {
-    console.log('[Admin Dashboard] Section parameter found:', section);
+    console.info('[Admin Dashboard] Section parameter found:', section);
     showSection(section);
   } else {
-    console.log('[Admin Dashboard] No section parameter, showing dashboard');
+    console.info('[Admin Dashboard] No section parameter, showing dashboard');
     // Default to dashboard if no section specified
     showSection('dashboard');
   }
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // If any v2 API is enabled, use individual loading instead
       if (useV2Users || useV2Documents || useV2Departments || useV2Teams) {
-        console.log('[loadDashboardStats] Using v2 APIs - calling loadDashboardStatsIndividually()');
+        console.info('[loadDashboardStats] Using v2 APIs - calling loadDashboardStatsIndividually()');
         return loadDashboardStatsIndividually();
       }
 
@@ -651,14 +651,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load Blackboard Widget - zeigt die neuesten Einträge mit Anhängen
   async function loadBlackboardWidget(): Promise<void> {
-    console.log('[BlackboardWidget] Starting to load widget...');
+    console.info('[BlackboardWidget] Starting to load widget...');
     try {
       const token = getAuthToken();
       if (!token) {
         console.error('[BlackboardWidget] No auth token found');
         return;
       }
-      console.log('[BlackboardWidget] Token found, fetching entries...');
+      console.info('[BlackboardWidget] Token found, fetching entries...');
 
       const useV2Blackboard = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
       let entries: BlackboardEntry[] = [];
@@ -666,14 +666,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (useV2Blackboard) {
         // Use apiClient for v2
         entries = (await apiClient.get<BlackboardEntry[]>('/blackboard/dashboard?limit=3')) ?? [];
-        console.log('[BlackboardWidget] V2 API Response - entries:', entries);
+        console.info('[BlackboardWidget] V2 API Response - entries:', entries);
       } else {
         // Use v1 API
         const response = await fetch('/api/blackboard/dashboard?limit=3', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log('[BlackboardWidget] Response status:', response.status);
+        console.info('[BlackboardWidget] Response status:', response.status);
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -690,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('[BlackboardWidget] Container element not found: blackboard-widget-container');
         return;
       }
-      console.log('[BlackboardWidget] Container element found:', containerElement);
+      console.info('[BlackboardWidget] Container element found:', containerElement);
 
       // Create the widget structure
       containerElement.innerHTML = `
@@ -715,15 +715,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const widgetContent = document.getElementById('blackboard-widget-content');
       if (!widgetContent) return;
-      console.log('[BlackboardWidget] API Response - entries array:', entries);
-      console.log('[BlackboardWidget] Number of entries:', entries.length);
-      console.log('[BlackboardWidget] First entry (if any):', entries[0]);
+      console.info('[BlackboardWidget] API Response - entries array:', entries);
+      console.info('[BlackboardWidget] Number of entries:', entries.length);
+      console.info('[BlackboardWidget] First entry (if any):', entries[0]);
 
       // Clear loading placeholder
       widgetContent.innerHTML = '';
 
       if (entries.length === 0) {
-        console.log('[BlackboardWidget] No entries found, showing empty state');
+        console.info('[BlackboardWidget] No entries found, showing empty state');
         // Empty state
         widgetContent.innerHTML = `
           <div class="blackboard-empty-state">
@@ -738,11 +738,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const miniNotesContainer = document.createElement('div');
       miniNotesContainer.className = 'mini-notes-container';
 
-      console.log('[BlackboardWidget] Creating mini-notes for entries...');
+      console.info('[BlackboardWidget] Creating mini-notes for entries...');
 
       // Render entries as mini-notes
       entries.forEach((entry: BlackboardEntry, index: number) => {
-        console.log(`[BlackboardWidget] Processing entry ${index + 1}:`, entry);
+        console.info(`[BlackboardWidget] Processing entry ${index + 1}:`, entry);
 
         const noteDiv = document.createElement('div');
         const colorClass = entry.color ?? 'white';
@@ -763,8 +763,8 @@ document.addEventListener('DOMContentLoaded', () => {
             attachmentHtml = `
               <div class="mini-note-attachment" style="position: relative; height: 220px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
                 <div style="transform: scale(0.15); transform-origin: top left; width: ${100 / 0.15}%; height: ${100 / 0.15}%;">
-                  <object data="${attachmentPath}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" 
-                          type="application/pdf" 
+                  <object data="${attachmentPath}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+                          type="application/pdf"
                           style="width: 100%; height: 100%; pointer-events: none;">
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
                       <i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545; margin-bottom: 5px;"></i>
@@ -778,8 +778,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Image preview
             attachmentHtml = `
               <div class="mini-note-attachment">
-                <img src="${attachmentPath}" 
-                     alt="${attachment.original_name}" 
+                <img src="${attachmentPath}"
+                     alt="${attachment.original_name}"
                      style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
                      loading="lazy"
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -820,13 +820,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       widgetContent.appendChild(miniNotesContainer);
-      console.log('[BlackboardWidget] Mini-notes container appended to widget content');
+      console.info('[BlackboardWidget] Mini-notes container appended to widget content');
 
       // Add widget loaded class
       const widget = containerElement.querySelector('.blackboard-widget');
       if (widget) {
         widget.classList.add('loaded');
-        console.log('[BlackboardWidget] Widget marked as loaded');
+        console.info('[BlackboardWidget] Widget marked as loaded');
       }
     } catch (error) {
       console.error('[BlackboardWidget] Error loading widget:', error);
@@ -1412,6 +1412,6 @@ if (typeof window !== 'undefined') {
 // Export loadBlackboardWidget to window for debugging
 if (typeof window !== 'undefined') {
   (window as Window & { debugLoadBlackboardWidget?: () => void }).debugLoadBlackboardWidget = () => {
-    console.log('[Debug] Manual loadBlackboardWidget call');
+    console.info('[Debug] Manual loadBlackboardWidget call');
   };
 }

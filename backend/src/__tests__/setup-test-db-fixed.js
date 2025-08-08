@@ -13,8 +13,8 @@ const projectRoot = process.cwd().endsWith("backend")
   : process.cwd();
 
 async function setupTestDatabase() {
-  console.log("Setting up test database...");
-  console.log("DB Config:", {
+  console.info("Setting up test database...");
+  console.info("DB Config:", {
     host: process.env.DB_HOST || "localhost",
     port: process.env.DB_PORT || "3306",
     user: process.env.DB_USER || "assixx_user",
@@ -31,25 +31,25 @@ async function setupTestDatabase() {
   });
 
   try {
-    console.log("Connected to MySQL successfully");
+    console.info("Connected to MySQL successfully");
 
     // Disable foreign key checks
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-    console.log("Foreign key checks disabled");
+    console.info("Foreign key checks disabled");
 
     // Drop all existing tables to start fresh
     const [tables] = await connection.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
+      SELECT table_name
+      FROM information_schema.tables
       WHERE table_schema = DATABASE()
     `);
 
-    console.log(`Found ${tables.length} existing tables`);
+    console.info(`Found ${tables.length} existing tables`);
     for (const table of tables) {
-      console.log(`Dropping table: ${table.TABLE_NAME}`);
+      console.info(`Dropping table: ${table.TABLE_NAME}`);
       await connection.query(`DROP TABLE IF EXISTS \`${table.TABLE_NAME}\``);
     }
-    console.log("All tables dropped");
+    console.info("All tables dropped");
 
     // Create minimal schema for tests
     const createTablesSQL = `
@@ -283,9 +283,9 @@ async function setupTestDatabase() {
     `;
 
     // Execute table creation
-    console.log("Creating test tables...");
+    console.info("Creating test tables...");
     await connection.query(createTablesSQL);
-    console.log("All tables created successfully");
+    console.info("All tables created successfully");
 
     // Create additional tables that might be needed
     const additionalTablesSQL = `
@@ -300,7 +300,7 @@ async function setupTestDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       UNIQUE KEY unique_document_user_read (document_id, user_id)
     );
-    
+
     -- Document permissions table
     CREATE TABLE IF NOT EXISTS document_permissions (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -316,7 +316,7 @@ async function setupTestDatabase() {
       FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
       FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
     );
-    
+
     -- Activity logs table
     CREATE TABLE IF NOT EXISTS activity_logs (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -342,7 +342,7 @@ async function setupTestDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (entry_id) REFERENCES blackboard_entries(id) ON DELETE CASCADE
     );
-    
+
     -- Blackboard tags table
     CREATE TABLE IF NOT EXISTS blackboard_tags (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -353,7 +353,7 @@ async function setupTestDatabase() {
       FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
       UNIQUE KEY unique_tag_name_tenant (name, tenant_id)
     );
-    
+
     -- Blackboard entry tags junction table
     CREATE TABLE IF NOT EXISTS blackboard_entry_tags (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -363,7 +363,7 @@ async function setupTestDatabase() {
       FOREIGN KEY (tag_id) REFERENCES blackboard_tags(id) ON DELETE CASCADE,
       UNIQUE KEY unique_entry_tag (entry_id, tag_id)
     );
-    
+
     -- User availability table
     CREATE TABLE IF NOT EXISTS user_availability (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -373,7 +373,7 @@ async function setupTestDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
-    
+
     -- Conversations table (for chat)
     CREATE TABLE IF NOT EXISTS conversations (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -383,7 +383,7 @@ async function setupTestDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
     );
-    
+
     -- Conversation participants
     CREATE TABLE IF NOT EXISTS conversation_participants (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -394,7 +394,7 @@ async function setupTestDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       UNIQUE KEY unique_participant (conversation_id, user_id)
     );
-    
+
     -- Login attempts table (for rate limiting and tracking)
     CREATE TABLE IF NOT EXISTS login_attempts (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -404,7 +404,7 @@ async function setupTestDatabase() {
       attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_username_attempts (username, attempted_at)
     );
-    
+
     -- Password reset tokens table
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -419,7 +419,7 @@ async function setupTestDatabase() {
     );
     `;
 
-    console.log("Creating additional tables...");
+    console.info("Creating additional tables...");
     await connection.query(additionalTablesSQL);
 
     // Create trigger to sync name and company_name
@@ -438,25 +438,25 @@ async function setupTestDatabase() {
     `;
 
     try {
-      console.log("Creating sync trigger for tenant names...");
+      console.info("Creating sync trigger for tenant names...");
       await connection.query("DROP TRIGGER IF EXISTS sync_tenant_names");
       await connection.query(createTriggerSQL);
     } catch (err) {
-      console.log(
+      console.info(
         "Trigger creation skipped (might not be supported in test env)",
       );
     }
 
     // Re-enable foreign key checks
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-    console.log("Foreign key checks re-enabled");
+    console.info("Foreign key checks re-enabled");
 
     // Verify tables were created
     const [createdTables] = await connection.query(`
-      SELECT COUNT(*) as count FROM information_schema.tables 
+      SELECT COUNT(*) as count FROM information_schema.tables
       WHERE table_schema = DATABASE()
     `);
-    console.log(
+    console.info(
       `Test database setup completed! Created ${createdTables[0].count} tables`,
     );
   } catch (error) {

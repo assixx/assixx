@@ -117,8 +117,8 @@ async function loadUserProfile(): Promise<void> {
         extProfile.avatar ??
         extProfile.picture;
 
-      console.log('Profile picture URL:', pictureUrl);
-      console.log('Full profile data:', profile);
+      console.info('Profile picture URL:', pictureUrl);
+      console.info('Full profile data:', profile);
 
       // Use camelCase for v2 API
       const firstName = extProfile.firstName ?? profile.first_name;
@@ -195,7 +195,7 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
     // Show remove button when picture exists
     if (removeBtn) {
       removeBtn.style.display = 'inline-block';
-      console.log('Remove button shown for picture:', url);
+      console.info('Remove button shown for picture:', url);
     }
   } else {
     // Show initials instead of icon
@@ -203,7 +203,7 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
     // Hide remove button when no picture
     if (removeBtn) {
       removeBtn.style.display = 'none';
-      console.log('Remove button hidden - no picture');
+      console.info('Remove button hidden - no picture');
     }
   }
 }
@@ -375,8 +375,8 @@ async function handlePasswordChange(event: Event): Promise<void> {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        currentPassword: currentPassword,
-        newPassword: newPassword,
+        currentPassword,
+        newPassword,
       }),
     });
 
@@ -420,7 +420,7 @@ async function uploadProfilePicture(file: File): Promise<void> {
         // API v2 returns the user object with profilePictureUrl field
         const pictureUrl =
           result.data?.profilePictureUrl ?? result.data?.profilePicture ?? result.data?.profile_picture;
-        console.log('Upload response:', result);
+        console.info('Upload response:', result);
         const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
         const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
         updateProfilePicture(pictureUrl, firstName, lastName);

@@ -62,45 +62,45 @@ describe("Debug Employee Login", () => {
       last_name: "Root2",
     });
 
-    console.log("Created users:");
-    console.log("Admin:", adminUser);
-    console.log("Employee:", employeeUser);
-    console.log("Root:", rootUser);
+    console.info("Created users:");
+    console.info("Admin:", adminUser);
+    console.info("Employee:", employeeUser);
+    console.info("Root:", rootUser);
 
     // Try to login each user
-    console.log("\n--- Testing Admin Login ---");
+    console.info("\n--- Testing Admin Login ---");
     const adminLoginRes = await request(app).post("/api/v2/auth/login").send({
       email: adminUser.email,
       password: "TestPass123",
     });
-    console.log("Admin login status:", adminLoginRes.status);
-    console.log("Admin login body:", adminLoginRes.body);
+    console.info("Admin login status:", adminLoginRes.status);
+    console.info("Admin login body:", adminLoginRes.body);
 
-    console.log("\n--- Testing Employee Login ---");
+    console.info("\n--- Testing Employee Login ---");
     const employeeLoginRes = await request(app)
       .post("/api/v2/auth/login")
       .send({
         email: employeeUser.email,
         password: "TestPass123",
       });
-    console.log("Employee login status:", employeeLoginRes.status);
-    console.log("Employee login body:", employeeLoginRes.body);
+    console.info("Employee login status:", employeeLoginRes.status);
+    console.info("Employee login body:", employeeLoginRes.body);
 
-    console.log("\n--- Testing Root Login ---");
+    console.info("\n--- Testing Root Login ---");
     const rootLoginRes = await request(app).post("/api/v2/auth/login").send({
       email: rootUser.email,
       password: "TestPass123",
     });
-    console.log("Root login status:", rootLoginRes.status);
-    console.log("Root login body:", rootLoginRes.body);
+    console.info("Root login status:", rootLoginRes.status);
+    console.info("Root login body:", rootLoginRes.body);
 
     // Check database directly
-    console.log("\n--- Checking Database Directly ---");
+    console.info("\n--- Checking Database Directly ---");
     const [users] = await testDb.execute(
       "SELECT id, username, email, role, status FROM users WHERE tenant_id = ?",
       [tenantId],
     );
-    console.log("Users in database:", users);
+    console.info("Users in database:", users);
 
     // All should succeed
     expect(adminLoginRes.status).toBe(200);

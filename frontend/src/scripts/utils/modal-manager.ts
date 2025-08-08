@@ -25,50 +25,50 @@ class ModalManager {
    * Register a modal template
    */
   registerTemplate(id: string, template: string): void {
-    console.log(`[ModalManager] Registering template for modalId: ${id}`);
+    console.info(`[ModalManager] Registering template for modalId: ${id}`);
     this.templates.set(id, template);
-    console.log(`[ModalManager] Template registered. Total templates: ${this.templates.size}`);
+    console.info(`[ModalManager] Template registered. Total templates: ${this.templates.size}`);
   }
 
   /**
    * Show a modal
    */
   show(modalId: string, config?: Partial<ModalConfig>): HTMLElement | null {
-    console.log(`[ModalManager] show() called for modalId: ${modalId}`);
+    console.info(`[ModalManager] show() called for modalId: ${modalId}`);
 
     // Check if modal already exists in activeModals
     let modal = this.activeModals.get(modalId);
-    console.log(`[ModalManager] Existing modal in map: ${!!modal}`);
+    console.info(`[ModalManager] Existing modal in map: ${!!modal}`);
 
     // Also check if it's in the DOM
     const modalInDom = document.getElementById(modalId);
-    console.log(`[ModalManager] Modal in DOM: ${!!modalInDom}`);
+    console.info(`[ModalManager] Modal in DOM: ${!!modalInDom}`);
 
     // If modal exists in map but not in DOM, remove from map
     if (modal && !modalInDom) {
-      console.log(`[ModalManager] Modal was removed from DOM, clearing from map`);
+      console.info(`[ModalManager] Modal was removed from DOM, clearing from map`);
       this.activeModals.delete(modalId);
       modal = undefined;
     }
 
     if (!modal) {
       // Create modal from template or config
-      console.log(`[ModalManager] Creating new modal...`);
+      console.info(`[ModalManager] Creating new modal...`);
       const createdModal = this.createModal(modalId, config);
       modal = createdModal ?? undefined;
       if (!modal) {
         console.error(`[ModalManager] Failed to create modal!`);
         return null;
       }
-      console.log(`[ModalManager] Modal created successfully`);
-      console.log(`[ModalManager] Modal element:`, modal);
-      console.log(`[ModalManager] Modal parentElement before append:`, modal.parentElement);
+      console.info(`[ModalManager] Modal created successfully`);
+      console.info(`[ModalManager] Modal element:`, modal);
+      console.info(`[ModalManager] Modal parentElement before append:`, modal.parentElement);
     }
 
     // Add to DOM if not already there or not in document.body
     if (!modal.parentElement || modal.parentElement !== document.body) {
-      console.log(`[ModalManager] Adding modal to DOM...`);
-      console.log(`[ModalManager] Current parent:`, modal.parentElement);
+      console.info(`[ModalManager] Adding modal to DOM...`);
+      console.info(`[ModalManager] Current parent:`, modal.parentElement);
 
       // Remove from current parent if it has one
       if (modal.parentElement) {
@@ -76,18 +76,18 @@ class ModalManager {
       }
 
       document.body.appendChild(modal);
-      console.log(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
-      console.log(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
-      console.log(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
+      console.info(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
+      console.info(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
+      console.info(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
     } else {
-      console.log(`[ModalManager] Modal already in document.body`);
+      console.info(`[ModalManager] Modal already in document.body`);
     }
 
     // Remove active class first to reset animation
     modal.classList.remove('active');
 
     // Show modal with animation
-    console.log(`[ModalManager] Showing modal with animation...`);
+    console.info(`[ModalManager] Showing modal with animation...`);
 
     // Ensure the modal is visible by removing any inline styles that might interfere
     modal.style.removeProperty('display');
@@ -101,15 +101,15 @@ class ModalManager {
     window.requestAnimationFrame(() => {
       if (!modal) return;
       modal.classList.add('active');
-      console.log(`[ModalManager] Modal classes after show: ${modal.className}`);
+      console.info(`[ModalManager] Modal classes after show: ${modal.className}`);
 
       // Double-check visibility after a frame
       window.requestAnimationFrame(() => {
         if (!modal) return;
         const styles = window.getComputedStyle(modal);
-        console.log(`[ModalManager] Modal computed style visibility:`, styles.visibility);
-        console.log(`[ModalManager] Modal computed style opacity:`, styles.opacity);
-        console.log(`[ModalManager] Modal computed style display:`, styles.display);
+        console.info(`[ModalManager] Modal computed style visibility:`, styles.visibility);
+        console.info(`[ModalManager] Modal computed style opacity:`, styles.opacity);
+        console.info(`[ModalManager] Modal computed style display:`, styles.display);
 
         // If still not visible, force it (also check for empty string)
         if (
@@ -133,7 +133,7 @@ class ModalManager {
 
     // Call onOpen callback
     if (config?.onOpen) {
-      console.log(`[ModalManager] Calling onOpen callback...`);
+      console.info(`[ModalManager] Calling onOpen callback...`);
       config.onOpen();
     }
 
@@ -172,24 +172,24 @@ class ModalManager {
    * Create a modal element
    */
   private createModal(modalId: string, config?: Partial<ModalConfig>): HTMLElement | null {
-    console.log(`[ModalManager] createModal() called for modalId: ${modalId}`);
-    console.log(`[ModalManager] Available templates:`, Array.from(this.templates.keys()));
+    console.info(`[ModalManager] createModal() called for modalId: ${modalId}`);
+    console.info(`[ModalManager] Available templates:`, Array.from(this.templates.keys()));
 
     // Try to get template first
     const template = this.templates.get(modalId);
-    console.log(`[ModalManager] Template found: ${!!template}`);
+    console.info(`[ModalManager] Template found: ${!!template}`);
 
     if (template) {
-      console.log(`[ModalManager] Creating modal from template...`);
+      console.info(`[ModalManager] Creating modal from template...`);
       const div = document.createElement('div');
       div.innerHTML = template;
       const modal = div.firstElementChild as HTMLElement;
-      console.log(`[ModalManager] Modal element created:`, modal?.tagName, modal?.id);
+      console.info(`[ModalManager] Modal element created:`, modal?.tagName, modal?.id);
       return modal;
     }
 
     // Create modal from config
-    console.log(`[ModalManager] No template found, creating from config...`);
+    console.info(`[ModalManager] No template found, creating from config...`);
     if (!config) {
       console.error(`[ModalManager] No config provided!`);
       return null;

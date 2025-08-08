@@ -72,67 +72,67 @@ const API_PREFIX = "/api";
 
 // API v2 Routes (mounted first for priority)
 // Public v2 routes (no auth required)
-console.log("[DEBUG] Mounting v2 signup routes at /api/v2/signup");
+console.info("[DEBUG] Mounting v2 signup routes at /api/v2/signup");
 router.use("/api/v2/signup", signupV2Routes);
-console.log("[DEBUG] Mounting v2 auth routes at /api/v2/auth");
+console.info("[DEBUG] Mounting v2 auth routes at /api/v2/auth");
 router.use("/api/v2/auth", authV2Routes);
-console.log("[DEBUG] Mounting v2 users routes at /api/v2/users");
+console.info("[DEBUG] Mounting v2 users routes at /api/v2/users");
 router.use("/api/v2/users", usersV2Routes);
-console.log("[DEBUG] Mounting v2 calendar routes at /api/v2/calendar");
+console.info("[DEBUG] Mounting v2 calendar routes at /api/v2/calendar");
 router.use("/api/v2/calendar", calendarV2Routes);
-console.log("[DEBUG] Mounting v2 chat routes at /api/v2/chat");
+console.info("[DEBUG] Mounting v2 chat routes at /api/v2/chat");
 router.use("/api/v2/chat", chatV2Routes);
-console.log("[DEBUG] Mounting v2 departments routes at /api/v2/departments");
+console.info("[DEBUG] Mounting v2 departments routes at /api/v2/departments");
 router.use("/api/v2/departments", departmentsV2Routes);
-console.log("[DEBUG] Mounting v2 documents routes at /api/v2/documents");
+console.info("[DEBUG] Mounting v2 documents routes at /api/v2/documents");
 router.use("/api/v2/documents", documentsV2Routes);
-console.log("[DEBUG] Mounting v2 teams routes at /api/v2/teams");
+console.info("[DEBUG] Mounting v2 teams routes at /api/v2/teams");
 router.use("/api/v2/teams", teamsV2Routes);
-console.log("[DEBUG] Mounting v2 blackboard routes at /api/v2/blackboard");
+console.info("[DEBUG] Mounting v2 blackboard routes at /api/v2/blackboard");
 router.use("/api/v2/blackboard", blackboardV2Routes);
-console.log("[DEBUG] Mounting v2 role-switch routes at /api/v2/role-switch");
+console.info("[DEBUG] Mounting v2 role-switch routes at /api/v2/role-switch");
 router.use("/api/v2/role-switch", roleSwitchV2Routes);
-console.log("[DEBUG] Mounting v2 kvp routes at /api/v2/kvp");
+console.info("[DEBUG] Mounting v2 kvp routes at /api/v2/kvp");
 router.use("/api/v2/kvp", kvpV2Routes);
-console.log("[DEBUG] Mounting v2 logs routes at /api/v2/logs");
+console.info("[DEBUG] Mounting v2 logs routes at /api/v2/logs");
 router.use("/api/v2/logs", logsV2Routes);
-console.log("[DEBUG] Mounting v2 machines routes at /api/v2/machines");
+console.info("[DEBUG] Mounting v2 machines routes at /api/v2/machines");
 router.use("/api/v2/machines", machinesV2Routes);
-console.log("[DEBUG] Mounting v2 shifts routes at /api/v2/shifts");
+console.info("[DEBUG] Mounting v2 shifts routes at /api/v2/shifts");
 router.use("/api/v2/shifts", shiftsV2Routes);
-console.log("[DEBUG] Mounting v2 surveys routes at /api/v2/surveys");
+console.info("[DEBUG] Mounting v2 surveys routes at /api/v2/surveys");
 router.use("/api/v2/surveys", surveysV2Routes);
-console.log(
+console.info(
   "[DEBUG] Mounting v2 notifications routes at /api/v2/notifications",
 );
 router.use("/api/v2/notifications", notificationsV2Routes);
-console.log("[DEBUG] Mounting v2 plans routes at /api/v2/plans");
+console.info("[DEBUG] Mounting v2 plans routes at /api/v2/plans");
 router.use("/api/v2/plans", plansV2Routes);
-console.log("[DEBUG] Mounting v2 reports routes at /api/v2/reports");
+console.info("[DEBUG] Mounting v2 reports routes at /api/v2/reports");
 router.use("/api/v2/reports", reportsV2Routes);
-console.log("[DEBUG] Mounting v2 settings routes at /api/v2/settings");
+console.info("[DEBUG] Mounting v2 settings routes at /api/v2/settings");
 router.use("/api/v2/settings", settingsV2Routes);
-console.log("[DEBUG] Mounting v2 features routes at /api/v2/features");
+console.info("[DEBUG] Mounting v2 features routes at /api/v2/features");
 router.use("/api/v2/features", featuresV2Routes);
-console.log("[DEBUG] Mounting v2 audit-trail routes at /api/v2/audit-trail");
+console.info("[DEBUG] Mounting v2 audit-trail routes at /api/v2/audit-trail");
 router.use("/api/v2/audit-trail", auditTrailV2Routes);
-console.log("[DEBUG] Mounting v2 areas routes at /api/v2/areas");
+console.info("[DEBUG] Mounting v2 areas routes at /api/v2/areas");
 router.use("/api/v2/areas", areasV2Routes);
-console.log("[DEBUG] Mounting v2 root routes at /api/v2/root");
+console.info("[DEBUG] Mounting v2 root routes at /api/v2/root");
 router.use("/api/v2/root", rootV2Routes);
-console.log(
+console.info(
   "[DEBUG] Mounting v2 admin-permissions routes at /api/v2/admin-permissions",
 );
 router.use("/api/v2/admin-permissions", adminPermissionsV2Routes);
-console.log(
+console.info(
   "[DEBUG] Mounting v2 department-groups routes at /api/v2/department-groups",
 );
 router.use("/api/v2/department-groups", departmentGroupsV2Routes);
-console.log("[DEBUG] Mounting v2 roles routes at /api/v2/roles");
+console.info("[DEBUG] Mounting v2 roles routes at /api/v2/roles");
 router.use("/api/v2/roles", rolesV2Routes);
 
 // Public routes (no prefix needed)
-console.log("[DEBUG] Mounting auth routes at /api/auth");
+console.info("[DEBUG] Mounting auth routes at /api/auth");
 router.use("/api/auth", authRoutes);
 router.use("/api", signupRoutes); // Signup routes at /api/signup
 router.use("/unsubscribe", unsubscribeRoutes); // Unsubscribe routes at /unsubscribe

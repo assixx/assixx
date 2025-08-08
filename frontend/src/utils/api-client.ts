@@ -91,7 +91,7 @@ export class ApiClient {
     }
 
     try {
-      console.log(`[API ${version}] ${options.method ?? 'GET'} ${url}`);
+      console.info(`[API ${version}] ${options.method ?? 'GET'} ${url}`);
 
       const response = await fetch(url, {
         ...options,
@@ -101,7 +101,7 @@ export class ApiClient {
 
       // Handle token refresh for v2
       if (version === 'v2' && response.status === 401 && this.refreshToken && config.useAuth !== false) {
-        console.log('[API v2] Token expired, attempting refresh...');
+        console.info('[API v2] Token expired, attempting refresh...');
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {
           // Retry request with new token
@@ -121,7 +121,7 @@ export class ApiClient {
 
       // If v2 fails and we're not explicitly using v2, try v1 as fallback
       if (version === 'v2' && !config.version && this.version !== 'v1') {
-        console.log('[API] v2 failed, falling back to v1...');
+        console.info('[API] v2 failed, falling back to v1...');
         return this.request<T>(endpoint, options, { ...config, version: 'v1' });
       }
 
@@ -165,7 +165,7 @@ export class ApiClient {
         errorMessage.toLowerCase().includes('invalid token') ||
         errorDetails?.toLowerCase().includes('expired')
       ) {
-        console.log('[API] Token expired, redirecting to login with session expired message');
+        console.info('[API] Token expired, redirecting to login with session expired message');
         this.clearTokens();
         // Redirect to login with session expired parameter
         window.location.href = '/login?session=expired';
@@ -267,11 +267,11 @@ export class ApiClient {
   }
 
   // Convenience methods
-  async get<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
+  get<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET' }, config);
   }
 
-  async post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
@@ -282,7 +282,7 @@ export class ApiClient {
     );
   }
 
-  async put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
@@ -293,7 +293,7 @@ export class ApiClient {
     );
   }
 
-  async patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
@@ -304,11 +304,11 @@ export class ApiClient {
     );
   }
 
-  async delete<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
+  delete<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' }, config);
   }
 
-  async upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
+  upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {

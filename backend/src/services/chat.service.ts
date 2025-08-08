@@ -136,13 +136,13 @@ class ChatService {
   ): Promise<ChatUser[]> {
     try {
       // Log input parameters
-      console.log(
+      console.info(
         "ChatService.getUsers - tenantId:",
         tenantId,
         "type:",
         typeof tenantId,
       );
-      console.log(
+      console.info(
         "ChatService.getUsers - userId:",
         userId,
         "type:",
@@ -179,7 +179,7 @@ class ChatService {
       if (userRole === "root" || userRole === "admin") {
         // Root und Admins können alle User sehen
         query = `
-          SELECT 
+          SELECT
             u.id,
             u.username,
             u.first_name,
@@ -198,7 +198,7 @@ class ChatService {
             NULL as location
           FROM users u
           LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ? 
+          WHERE u.tenant_id = ?
             AND u.id != ?
           ORDER BY u.role DESC, d.name, u.last_name, u.first_name
         `;
@@ -206,7 +206,7 @@ class ChatService {
       } else {
         // Employees können nur User in ihrer Abteilung + alle Admins sehen
         query = `
-          SELECT 
+          SELECT
             u.id,
             u.username,
             u.first_name,
@@ -225,7 +225,7 @@ class ChatService {
             NULL as location
           FROM users u
           LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ? 
+          WHERE u.tenant_id = ?
             AND u.id != ?
             AND (u.department_id = ? OR u.role IN ('admin', 'root'))
           ORDER BY u.role DESC, u.last_name, u.first_name
@@ -233,14 +233,14 @@ class ChatService {
         params = [numericTenantId, numericUserId, userDepartmentId];
       }
 
-      console.log(
+      console.info(
         "ChatService.getUsers - Executing query with params:",
         params,
       );
 
       const [users] = await db.promise().query<ChatUser[]>(query, params);
 
-      console.log("ChatService.getUsers - Found users:", users.length);
+      console.info("ChatService.getUsers - Found users:", users.length);
       return users;
     } catch (error) {
       console.error("ChatService.getUsers - Error:", error);
@@ -256,11 +256,11 @@ class ChatService {
     userId: string | number,
   ): Promise<Conversation[]> {
     try {
-      console.log("ChatService.getConversations called with:", {
+      console.info("ChatService.getConversations called with:", {
         tenantId,
         userId,
       });
-      console.log("DB pool status:", db ? "exists" : "not initialized");
+      console.info("DB pool status:", db ? "exists" : "not initialized");
 
       // Ensure parameters are numbers
       const numericTenantId = parseInt(tenantId.toString());
@@ -273,17 +273,17 @@ class ChatService {
       }
 
       const query = `
-      SELECT 
+      SELECT
         c.id,
         c.name,
         c.is_group,
         c.created_at,
         c.updated_at,
-        CASE 
+        CASE
           WHEN c.is_group = 1 THEN c.name
           ELSE CONCAT(
-            COALESCE(u.first_name, ''), 
-            ' ', 
+            COALESCE(u.first_name, ''),
+            ' ',
             COALESCE(u.last_name, '')
           )
         END AS display_name,
@@ -296,8 +296,8 @@ class ChatService {
         COALESCE(unread.count, 0) AS unread_count
       FROM conversations c
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-      LEFT JOIN conversation_participants cp2 ON c.id = cp2.conversation_id 
-        AND cp2.user_id != ? 
+      LEFT JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
+        AND cp2.user_id != ?
         AND c.is_group = 0
       LEFT JOIN users u ON cp2.user_id = u.id
       LEFT JOIN (
@@ -311,13 +311,13 @@ class ChatService {
       LEFT JOIN (
         SELECT m.conversation_id, COUNT(*) AS count
         FROM messages m
-        WHERE m.tenant_id = ? 
+        WHERE m.tenant_id = ?
           AND m.sender_id != ?
           AND m.deleted_at IS NULL
         GROUP BY m.conversation_id
       ) unread ON c.id = unread.conversation_id
       WHERE cp.user_id = ? AND c.tenant_id = ?
-      GROUP BY c.id, c.name, c.is_group, c.created_at, c.updated_at, u.first_name, u.last_name, 
+      GROUP BY c.id, c.name, c.is_group, c.created_at, c.updated_at, u.first_name, u.last_name,
                m.id, m.content, m.created_at, m.sender_id, sender.username, unread.count
       ORDER BY COALESCE(m.created_at, c.created_at) DESC
     `;
@@ -433,18 +433,18 @@ class ChatService {
       // Prüfe ob bereits eine 1:1 Konversation existiert
       if (!isGroup && participantIds.length === 1) {
         const [existing] = await connection.query<RowDataPacket[]>(
-          `SELECT c.id 
+          `SELECT c.id
            FROM conversations c
            INNER JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
            INNER JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
-           WHERE c.tenant_id = ? 
+           WHERE c.tenant_id = ?
              AND c.is_group = 0
              AND cp1.user_id = ?
              AND cp2.user_id = ?
              AND c.id IN (
-               SELECT conversation_id 
-               FROM conversation_participants 
-               GROUP BY conversation_id 
+               SELECT conversation_id
+               FROM conversation_participants
+               GROUP BY conversation_id
                HAVING COUNT(*) = 2
              )`,
           [tenantId, userId, participantIds[0]],
@@ -511,14 +511,14 @@ class ChatService {
 
     // Hole Konversationsdetails
     const [conversationData] = await db.promise().query<ConversationDetails[]>(
-      `SELECT c.*, 
-        CASE 
+      `SELECT c.*,
+        CASE
           WHEN c.is_group = 1 THEN c.name
           ELSE CONCAT(u.first_name, ' ', u.last_name)
         END AS display_name,
         u.profile_picture as profile_image_url
       FROM conversations c
-      LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id 
+      LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
         AND cp.user_id != ? AND c.is_group = 0
       LEFT JOIN users u ON cp.user_id = u.id
       WHERE c.id = ? AND c.tenant_id = ?`,
@@ -527,7 +527,7 @@ class ChatService {
 
     // Hole Nachrichten
     const [messages] = await db.promise().query<Message[]>(
-      `SELECT 
+      `SELECT
         m.*,
         u.username,
         u.first_name,
@@ -604,7 +604,7 @@ class ChatService {
         `SELECT COUNT(*) as count
          FROM messages m
          JOIN users u ON m.sender_id = u.id
-         WHERE m.conversation_id = ? 
+         WHERE m.conversation_id = ?
          AND u.role IN ('admin', 'root')
          AND m.tenant_id = ?`,
         [conversationId, tenantId],
@@ -693,7 +693,7 @@ class ChatService {
          FROM messages m
          INNER JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
          LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
-         WHERE cp.user_id = ? 
+         WHERE cp.user_id = ?
            AND m.tenant_id = ?
            AND m.sender_id != ?
            AND m.deleted_at IS NULL
@@ -718,10 +718,10 @@ class ChatService {
     try {
       // First, get all unread messages in this conversation for this user
       const [messages] = await db.promise().query<RowDataPacket[]>(
-        `SELECT m.id 
+        `SELECT m.id
          FROM messages m
          LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
-         WHERE m.conversation_id = ? 
+         WHERE m.conversation_id = ?
            AND m.sender_id != ?
            AND (ms.id IS NULL OR ms.is_read = 0)`,
         [userId, conversationId, userId],
@@ -770,12 +770,12 @@ class ChatService {
 
       // Check if conversation exists and if user is participant
       const [conversation] = await connection.query<RowDataPacket[]>(
-        `SELECT c.is_group, 
+        `SELECT c.is_group,
                 COUNT(DISTINCT cp.user_id) as participant_count
          FROM conversations c
          JOIN conversation_participants cp ON c.id = cp.conversation_id
          WHERE c.id = ? AND EXISTS (
-           SELECT 1 FROM conversation_participants 
+           SELECT 1 FROM conversation_participants
            WHERE conversation_id = ? AND user_id = ?
          )
          GROUP BY c.id`,

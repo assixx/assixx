@@ -107,7 +107,7 @@ export class FeatureFlagManager {
       this.enableAllV2Apis();
     }
 
-    console.log('[FeatureFlags] Loaded flags:', this.flags);
+    console.info('[FeatureFlags] Loaded flags:', this.flags);
   }
 
   /**
@@ -123,7 +123,7 @@ export class FeatureFlagManager {
   enable(flag: keyof FeatureFlags) {
     this.flags[flag] = true;
     this.saveFlags();
-    console.log(`[FeatureFlags] Enabled: ${flag}`);
+    console.info(`[FeatureFlags] Enabled: ${flag}`);
   }
 
   /**
@@ -132,7 +132,7 @@ export class FeatureFlagManager {
   disable(flag: keyof FeatureFlags) {
     this.flags[flag] = false;
     this.saveFlags();
-    console.log(`[FeatureFlags] Disabled: ${flag}`);
+    console.info(`[FeatureFlags] Disabled: ${flag}`);
   }
 
   /**
@@ -141,7 +141,7 @@ export class FeatureFlagManager {
   toggle(flag: keyof FeatureFlags) {
     this.flags[flag] = !this.flags[flag];
     this.saveFlags();
-    console.log(`[FeatureFlags] Toggled: ${flag} = ${this.flags[flag]}`);
+    console.info(`[FeatureFlags] Toggled: ${flag} = ${this.flags[flag]}`);
   }
 
   /**
@@ -154,7 +154,7 @@ export class FeatureFlagManager {
       }
     });
     this.saveFlags();
-    console.log('[FeatureFlags] Enabled all v2 APIs');
+    console.info('[FeatureFlags] Enabled all v2 APIs');
   }
 
   /**
@@ -167,7 +167,7 @@ export class FeatureFlagManager {
       }
     });
     this.saveFlags();
-    console.log('[FeatureFlags] Disabled all v2 APIs');
+    console.info('[FeatureFlags] Disabled all v2 APIs');
   }
 
   /**
@@ -196,7 +196,7 @@ export class FeatureFlagManager {
   reset() {
     this.flags = { ...DEFAULT_FEATURE_FLAGS };
     this.saveFlags();
-    console.log('[FeatureFlags] Reset to defaults');
+    console.info('[FeatureFlags] Reset to defaults');
   }
 
   /**
@@ -215,7 +215,7 @@ export class FeatureFlagManager {
             }
           });
           this.saveFlags();
-          console.log('[FeatureFlags] Loaded from server');
+          console.info('[FeatureFlags] Loaded from server');
         }
       }
     } catch (error) {
@@ -260,9 +260,9 @@ if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     }
   };
 
-  console.log('[FeatureFlags] Debug utilities available:');
-  console.log('- featureFlags.getFlags() - Show all flags');
-  console.log('- enableV2("auth") - Enable specific API');
-  console.log('- enableV2() - Enable all v2 APIs');
-  console.log('- disableV2() - Disable all v2 APIs');
+  console.info('[FeatureFlags] Debug utilities available:');
+  console.info('- featureFlags.getFlags() - Show all flags');
+  console.info('- enableV2("auth") - Enable specific API');
+  console.info('- enableV2() - Enable all v2 APIs');
+  console.info('- disableV2() - Disable all v2 APIs');
 }

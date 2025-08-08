@@ -14,7 +14,7 @@ const projectRoot = process.cwd().endsWith("backend")
   : process.cwd();
 
 async function setupTestDatabase() {
-  console.log("Setting up test database...");
+  console.info("Setting up test database...");
 
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST || "localhost",
@@ -39,7 +39,7 @@ async function setupTestDatabase() {
     if (schemaFiles.length > 0) {
       // Use the most recent schema export
       const currentSchemaPath = path.join(databaseDir, schemaFiles[0]);
-      console.log(`Using current schema: ${schemaFiles[0]}`);
+      console.info(`Using current schema: ${schemaFiles[0]}`);
       let schema = fs.readFileSync(currentSchemaPath, "utf8");
 
       // Remove problematic view definitions that are incomplete
@@ -87,7 +87,7 @@ async function setupTestDatabase() {
       // Now create the views from the proper view definitions
       const viewsPath = path.join(databaseDir, "schema/03-views/views.sql");
       if (fs.existsSync(viewsPath)) {
-        console.log("Creating database views...");
+        console.info("Creating database views...");
         const viewsSQL = fs.readFileSync(viewsPath, "utf8");
         const viewStatements = viewsSQL
           .split(";")
@@ -112,7 +112,7 @@ async function setupTestDatabase() {
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
     } else {
       // Fallback to migrations if no schema export exists
-      console.log("No current schema found, falling back to migrations...");
+      console.info("No current schema found, falling back to migrations...");
       const migrationsDir = path.join(databaseDir, "migrations");
       const migrationFiles = fs
         .readdirSync(migrationsDir)
@@ -120,7 +120,7 @@ async function setupTestDatabase() {
         .sort();
 
       for (const file of migrationFiles) {
-        console.log(`Executing migration: ${file}`);
+        console.info(`Executing migration: ${file}`);
         const migrationPath = path.join(migrationsDir, file);
         const migration = fs.readFileSync(migrationPath, "utf8");
 
@@ -132,7 +132,7 @@ async function setupTestDatabase() {
       }
     }
 
-    console.log("Test database setup completed successfully!");
+    console.info("Test database setup completed successfully!");
   } catch (error) {
     console.error("Error setting up test database:", error);
     process.exit(1);

@@ -77,10 +77,10 @@
 
   // Admins laden
   async function loadAdmins() {
-    console.log('loadAdmins called');
+    console.info('loadAdmins called');
     try {
       const token = localStorage.getItem('token');
-      console.log('Token available:', !!token);
+      console.info('Token available:', !!token);
       const response = await fetch('/api/root/admins', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -88,17 +88,17 @@
         },
       });
 
-      console.log('Response status:', response.status);
+      console.info('Response status:', response.status);
 
       if (response.ok) {
         admins = await response.json();
-        console.log('Loaded admins:', admins);
+        console.info('Loaded admins:', admins);
 
         // Load permissions for each admin
         for (const admin of admins) {
           try {
             const perms = await loadAdminPermissions(parseInt(admin.id.toString()));
-            console.log(`Permissions for admin ${admin.id}:`, perms);
+            console.info(`Permissions for admin ${admin.id}:`, perms);
             admin.departments = perms.departments;
             admin.hasAllAccess = perms.hasAllAccess;
           } catch (error) {
@@ -110,7 +110,7 @@
 
         // Log each admin's is_active status
         admins.forEach((admin) => {
-          console.log(`Admin ${admin.username} (ID: ${admin.id}) - is_active: ${admin.is_active}`);
+          console.info(`Admin ${admin.username} (ID: ${admin.id}) - is_active: ${admin.is_active}`);
         });
         renderAdminTable();
       } else {
@@ -136,7 +136,7 @@
 
       if (response.ok) {
         tenants = await response.json();
-        console.log('Loaded tenants:', tenants);
+        console.info('Loaded tenants:', tenants);
         updateTenantDropdown();
       } else {
         console.error('Error loading tenants - status:', response.status);
@@ -163,7 +163,7 @@
 
   // Helper function to display departments badge
   function getDepartmentsBadge(admin: Admin): string {
-    console.log(`Getting badge for admin ${admin.id}:`, {
+    console.info(`Getting badge for admin ${admin.id}:`, {
       hasAllAccess: admin.hasAllAccess,
       departments: admin.departments,
       departmentCount: admin.departments ? admin.departments.length : 0,
@@ -175,8 +175,8 @@
       const departmentNames = admin.departments.map((d) => d.name).join(', ');
       const singularPlural = admin.departments.length === 1 ? 'Abteilung' : 'Abteilungen';
       return `
-      <span class="status-badge department-badge" 
-            style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative; white-space: nowrap;" 
+      <span class="status-badge department-badge"
+            style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative; white-space: nowrap;"
             data-departments="${departmentNames.replace(/"/g, '&quot;')}">
         ${admin.departments.length} ${singularPlural}
         <span class="department-tooltip" style="
@@ -213,7 +213,7 @@
   function updateTenantDropdown() {
     const select = document.getElementById('adminTenant') as HTMLSelectElement;
     if (!select) {
-      console.log('Tenant dropdown not found - skipping update');
+      console.info('Tenant dropdown not found - skipping update');
       return;
     }
 
@@ -235,7 +235,7 @@
 
   // Admin-Tabelle rendern
   function renderAdminTable() {
-    console.log('renderAdminTable called');
+    console.info('renderAdminTable called');
     const container = document.getElementById('adminTableContent');
 
     if (!container) {
@@ -243,7 +243,7 @@
       return;
     }
 
-    console.log('Container found:', container);
+    console.info('Container found:', container);
 
     if (admins.length === 0) {
       container.innerHTML = `
@@ -306,16 +306,16 @@
 
     container.innerHTML = tableHTML;
 
-    console.log('Adding event listeners to buttons...');
+    console.info('Adding event listeners to buttons...');
 
     // Add event listeners to buttons
     const editButtons = container.querySelectorAll('.action-btn.edit');
-    console.log('Found edit buttons:', editButtons.length);
+    console.info('Found edit buttons:', editButtons.length);
     editButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        console.log('Edit button clicked!');
+        console.info('Edit button clicked!');
         const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0');
-        console.log('Admin ID:', adminId);
+        console.info('Admin ID:', adminId);
         if (adminId) {
           void editAdminHandler(adminId);
         }
@@ -323,12 +323,12 @@
     });
 
     const deleteButtons = container.querySelectorAll('.action-btn.delete');
-    console.log('Found delete buttons:', deleteButtons.length);
+    console.info('Found delete buttons:', deleteButtons.length);
     deleteButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        console.log('Delete button clicked!');
+        console.info('Delete button clicked!');
         const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0');
-        console.log('Admin ID:', adminId);
+        console.info('Admin ID:', adminId);
         if (adminId) {
           void deleteAdminHandler(adminId);
         }
@@ -336,14 +336,14 @@
     });
 
     const permissionButtons = container.querySelectorAll('.action-btn.permissions');
-    console.log('Found permission buttons:', permissionButtons.length);
+    console.info('Found permission buttons:', permissionButtons.length);
     permissionButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        console.log('🔵 Permission button clicked!');
+        console.info('🔵 Permission button clicked!');
         const target = e.target as HTMLElement;
         const button = target.closest('.action-btn.permissions') as HTMLElement;
         const adminId = parseInt(button?.getAttribute('data-admin-id') ?? '0');
-        console.log('Admin ID from button:', adminId);
+        console.info('Admin ID from button:', adminId);
         if (adminId) {
           e.preventDefault();
           e.stopPropagation();
@@ -410,7 +410,7 @@
 
     const isActiveCheckbox = document.getElementById('adminIsActive') as HTMLInputElement;
     const isActive = admin.is_active !== false;
-    console.log('Setting checkbox for edit - admin.is_active:', admin.is_active, 'checkbox will be:', isActive);
+    console.info('Setting checkbox for edit - admin.is_active:', admin.is_active, 'checkbox will be:', isActive);
     isActiveCheckbox.checked = isActive;
 
     // Hide password fields when editing (optional password change)
@@ -420,9 +420,9 @@
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'none';
 
     // Load current department assignments
-    console.log('🔵 Loading department assignments for admin:', adminId);
-    console.log('Admin departments:', admin.departments);
-    console.log('Admin hasAllAccess:', admin.hasAllAccess);
+    console.info('🔵 Loading department assignments for admin:', adminId);
+    console.info('Admin departments:', admin.departments);
+    console.info('Admin hasAllAccess:', admin.hasAllAccess);
 
     // Reset all permission type radio buttons
     document.querySelectorAll('input[name="permissionType"]').forEach((radio) => {
@@ -440,7 +440,7 @@
       const allRadio = document.querySelector('input[name="permissionType"][value="all"]') as HTMLInputElement;
       if (allRadio) {
         allRadio.checked = true;
-        console.log('✅ Set permission type to: all');
+        console.info('✅ Set permission type to: all');
       }
     } else if (admin.departments && admin.departments.length > 0) {
       const specificRadio = document.querySelector(
@@ -448,7 +448,7 @@
       ) as HTMLInputElement;
       if (specificRadio) {
         specificRadio.checked = true;
-        console.log('✅ Set permission type to: specific');
+        console.info('✅ Set permission type to: specific');
 
         // Show department container and load departments
         if (deptContainer) {
@@ -466,7 +466,7 @@
               const option = Array.from(deptSelect.options).find((opt) => opt.value === dept.id.toString());
               if (option) {
                 option.selected = true;
-                console.log('✅ Selected department:', dept.name);
+                console.info('✅ Selected department:', dept.name);
               }
             });
           }
@@ -476,7 +476,7 @@
       const noneRadio = document.querySelector('input[name="permissionType"][value="none"]') as HTMLInputElement;
       if (noneRadio) {
         noneRadio.checked = true;
-        console.log('✅ Set permission type to: none');
+        console.info('✅ Set permission type to: none');
       }
     }
 
@@ -492,8 +492,8 @@
   }
 
   async function deleteAdminHandler(adminId: number) {
-    console.log('deleteAdminHandler called with ID:', adminId);
-    console.log('Current admins array:', admins);
+    console.info('deleteAdminHandler called with ID:', adminId);
+    console.info('Current admins array:', admins);
     // Convert to string for comparison since API returns string IDs
     const admin = admins.find((a) => String(a.id) === String(adminId));
 
@@ -506,10 +506,10 @@
       return;
     }
 
-    console.log('Found admin:', admin);
+    console.info('Found admin:', admin);
 
     if (!confirm(`Möchten Sie den Administrator "${admin.username}" wirklich löschen?`)) {
-      console.log('Delete cancelled by user');
+      console.info('Delete cancelled by user');
       return;
     }
 
@@ -582,7 +582,7 @@
 
   // Permissions Modal schließen
   (window as unknown as ManageAdminsWindow).closePermissionsModal = function () {
-    console.log('🔵 closePermissionsModal called');
+    console.info('🔵 closePermissionsModal called');
     const modal = document.getElementById('permissionsModal');
     if (modal) {
       modal.classList.remove('active');
@@ -643,7 +643,7 @@
 
       if (response.ok) {
         const result = await response.json();
-        console.log(`Raw API response for admin ${adminId}:`, result);
+        console.info(`Raw API response for admin ${adminId}:`, result);
 
         // Handle the wrapped response structure
         if (result.success && result.data) {
@@ -728,7 +728,7 @@
 
   // Show permissions modal
   async function showPermissionsModal(adminId: number) {
-    console.log('🔵 showPermissionsModal called for admin ID:', adminId);
+    console.info('🔵 showPermissionsModal called for admin ID:', adminId);
     currentPermissionAdminId = adminId;
     const admin = admins.find((a) => parseInt(a.id.toString()) === adminId);
 
@@ -737,7 +737,7 @@
       return;
     }
 
-    console.log('Found admin:', admin);
+    console.info('Found admin:', admin);
 
     // Set admin info
     const nameEl = document.getElementById('permAdminName');
@@ -774,7 +774,7 @@
     const modal = document.getElementById('permissionsModal');
     if (modal) {
       modal.classList.add('active');
-      console.log('✅ Permissions modal opened with departments tab active');
+      console.info('✅ Permissions modal opened with departments tab active');
     } else {
       console.error('❌ Permissions modal element not found!');
     }
@@ -782,17 +782,17 @@
 
   // Load data for permissions modal
   async function loadPermissionsModalData(adminId: number) {
-    console.log('🔵 loadPermissionsModalData called for admin:', adminId);
+    console.info('🔵 loadPermissionsModalData called for admin:', adminId);
     try {
       // Load all departments
       const departments = await loadDepartments();
-      console.log('Available departments:', departments);
+      console.info('Available departments:', departments);
 
       const groups = await loadDepartmentGroups();
 
       // Load current permissions
       const currentPerms = await loadAdminPermissions(adminId);
-      console.log('Current permissions:', currentPerms);
+      console.info('Current permissions:', currentPerms);
 
       // Render departments
       const deptList = document.getElementById('permissionDepartmentList');
@@ -801,11 +801,11 @@
           .map((dept) => {
             const hasPermission = currentPerms.departments.some((d) => d.id === dept.id);
             return `
-          <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; /* transition: background 0.2s; */" 
-                 onmouseover="this.style.background='rgba(255,255,255,0.02)'" 
+          <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; /* transition: background 0.2s; */"
+                 onmouseover="this.style.background='rgba(255,255,255,0.02)'"
                  onmouseout="this.style.background='transparent'">
-            <input type="checkbox" name="deptPermission" value="${dept.id}" 
-                   ${hasPermission ? 'checked' : ''} 
+            <input type="checkbox" name="deptPermission" value="${dept.id}"
+                   ${hasPermission ? 'checked' : ''}
                    style="margin-right: 8px;" />
             <span>${dept.name}</span>
             ${dept.description ? `<small style="margin-left: 8px; color: var(--text-secondary);">${dept.description}</small>` : ''}
@@ -834,8 +834,8 @@
 
   // Save permissions handler
   (window as unknown as ManageAdminsWindow).savePermissionsHandler = async function () {
-    console.log('🔵 savePermissionsHandler called');
-    console.log('currentPermissionAdminId:', currentPermissionAdminId);
+    console.info('🔵 savePermissionsHandler called');
+    console.info('currentPermissionAdminId:', currentPermissionAdminId);
 
     if (!currentPermissionAdminId) {
       console.error('❌ No currentPermissionAdminId set');
@@ -844,21 +844,21 @@
 
     try {
       const token = localStorage.getItem('token');
-      console.log('🔵 Saving permissions for admin:', currentPermissionAdminId);
+      console.info('🔵 Saving permissions for admin:', currentPermissionAdminId);
 
       // Get selected departments
       const selectedDepts = Array.from(
         document.querySelectorAll('#permissionDepartmentList input[name="deptPermission"]:checked'),
       ).map((cb) => parseInt((cb as HTMLInputElement).value));
 
-      console.log('Selected departments:', selectedDepts);
+      console.info('Selected departments:', selectedDepts);
 
       // Get selected groups
       const selectedGroups = Array.from(
         document.querySelectorAll('#permissionGroupList input[name="groupSelect"]:checked'),
       ).map((cb) => parseInt((cb as HTMLInputElement).value));
 
-      console.log('Selected groups:', selectedGroups);
+      console.info('Selected groups:', selectedGroups);
 
       // Get permission levels
       const permissions = {
@@ -867,7 +867,7 @@
         can_delete: (document.getElementById('permCanDelete') as HTMLInputElement).checked,
       };
 
-      console.log('Permissions:', permissions);
+      console.info('Permissions:', permissions);
 
       // Update department permissions
       const requestBody = {
@@ -876,9 +876,9 @@
         permissions,
       };
 
-      console.log('Request body:', requestBody);
-      console.log('Token exists:', !!token);
-      console.log('Making request to:', '/api/admin-permissions');
+      console.info('Request body:', requestBody);
+      console.info('Token exists:', !!token);
+      console.info('Making request to:', '/api/admin-permissions');
 
       const deptResponse = await fetch('/api/admin-permissions', {
         method: 'POST',
@@ -889,14 +889,14 @@
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Department response status:', deptResponse.status);
+      console.info('Department response status:', deptResponse.status);
 
       if (!deptResponse.ok) {
         const errorData = await deptResponse.json();
         console.error('❌ Department response error:', errorData);
       } else {
         const responseData = await deptResponse.json();
-        console.log('✅ Department permissions saved successfully:', responseData);
+        console.info('✅ Department permissions saved successfully:', responseData);
       }
 
       // Update group permissions if any selected
@@ -914,7 +914,7 @@
           }),
         });
 
-        console.log('Group response status:', groupResponse.status);
+        console.info('Group response status:', groupResponse.status);
 
         if (!groupResponse.ok) {
           const errorData = await groupResponse.json();
@@ -923,7 +923,7 @@
       }
 
       if (deptResponse.ok) {
-        console.log('✅ Permissions saved successfully, reloading page...');
+        console.info('✅ Permissions saved successfully, reloading page...');
         showSuccess('Berechtigungen erfolgreich aktualisiert');
         const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
         if (closeModal) closeModal();
@@ -984,14 +984,14 @@
       // Include is_active only when updating
       if (currentAdminId) {
         const checkbox = document.getElementById('adminIsActive') as HTMLInputElement;
-        console.log('Checkbox element:', checkbox);
-        console.log('Checkbox checked state:', checkbox.checked);
+        console.info('Checkbox element:', checkbox);
+        console.info('Checkbox checked state:', checkbox.checked);
         formData.is_active = checkbox.checked;
       }
 
-      console.log('Sending form data:', formData);
-      console.log('Current admin ID:', currentAdminId);
-      console.log('is_active value being sent:', formData.is_active);
+      console.info('Sending form data:', formData);
+      console.info('Current admin ID:', currentAdminId);
+      console.info('is_active value being sent:', formData.is_active);
 
       try {
         const token = localStorage.getItem('token');
@@ -1020,7 +1020,7 @@
           // Set permissions for both new and existing admins
           const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)
             ?.value;
-          console.log('🔵 Permission type selected:', permissionType);
+          console.info('🔵 Permission type selected:', permissionType);
 
           if (adminId && permissionType) {
             // Always update permissions based on form selection
@@ -1041,8 +1041,8 @@
               }
 
               // Set permissions
-              console.log('🔵 Setting department permissions for admin:', adminId);
-              console.log('Department IDs:', departmentIds);
+              console.info('🔵 Setting department permissions for admin:', adminId);
+              console.info('Department IDs:', departmentIds);
 
               const permResponse = await fetch('/api/admin-permissions', {
                 method: 'POST',
@@ -1058,7 +1058,7 @@
               });
 
               if (permResponse.ok) {
-                console.log('✅ Department permissions updated successfully');
+                console.info('✅ Department permissions updated successfully');
               } else {
                 console.error('❌ Failed to update department permissions');
               }
@@ -1079,7 +1079,7 @@
               }
             } else {
               // Permission type is 'none' - remove all permissions
-              console.log('🔵 Removing all department permissions for admin:', adminId);
+              console.info('🔵 Removing all department permissions for admin:', adminId);
 
               const permResponse = await fetch('/api/admin-permissions', {
                 method: 'POST',
@@ -1095,7 +1095,7 @@
               });
 
               if (permResponse.ok) {
-                console.log('✅ All department permissions removed');
+                console.info('✅ All department permissions removed');
               } else {
                 console.error('❌ Failed to remove department permissions');
               }

@@ -49,14 +49,14 @@ function downloadDocument(docId?: string | number): void {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Debug logging
-  console.log('[Employee Dashboard] Starting initialization...');
+  console.info('[Employee Dashboard] Starting initialization...');
 
   // Check if admin is viewing as employee
   const userRole = localStorage.getItem('userRole');
   const activeRole = localStorage.getItem('activeRole');
   const token = localStorage.getItem('token');
 
-  console.log('[Employee Dashboard] Role Check:', {
+  console.info('[Employee Dashboard] Role Check:', {
     userRole,
     activeRole,
     token: token ? 'exists' : 'missing',
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const isAdminAsEmployee = userRole === 'admin' && activeRole === 'employee';
 
-  console.log('[Employee Dashboard] Is Admin as Employee:', isAdminAsEmployee);
+  console.info('[Employee Dashboard] Is Admin as Employee:', isAdminAsEmployee);
 
   // Show role indicator for admins
   if (isAdminAsEmployee) {

@@ -336,7 +336,7 @@ router.get(
         req.user.tenant_id,
       );
 
-      console.log(`Retrieved ${employees.length} employees:`, employees);
+      console.info(`Retrieved ${employees.length} employees:`, employees);
       logger.info(`Retrieved ${employees.length} employees`);
 
       res.json(employees);

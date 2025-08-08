@@ -233,9 +233,9 @@ const createTenantRateLimiter = (
               --spacing-xl: 32px;
               --radius-md: 12px;
             }
-            
+
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            
+
             body {
               font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               background: #000000;
@@ -247,7 +247,7 @@ const createTenantRateLimiter = (
               position: relative;
               overflow-x: hidden;
             }
-            
+
             body::before {
               content: '';
               position: absolute;
@@ -259,7 +259,7 @@ const createTenantRateLimiter = (
               opacity: 0.9;
               z-index: -1;
             }
-            
+
             body::after {
               content: '';
               position: absolute;
@@ -270,7 +270,7 @@ const createTenantRateLimiter = (
               background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
               z-index: -1;
             }
-            
+
             .rate-limit-card {
               width: 100%;
               max-width: 450px;
@@ -284,38 +284,38 @@ const createTenantRateLimiter = (
               text-align: center;
               animation: fadeInUp 0.6s ease-out;
             }
-            
+
             @keyframes fadeInUp {
               from { opacity: 0; transform: translateY(30px); }
               to { opacity: 1; transform: translateY(0); }
             }
-            
+
             .icon {
               font-size: 64px;
               margin-bottom: var(--spacing-lg);
               display: inline-block;
               animation: pulse 2s infinite;
             }
-            
+
             @keyframes pulse {
               0%, 100% { transform: scale(1); opacity: 1; }
               50% { transform: scale(1.1); opacity: 0.8; }
             }
-            
+
             h1 {
               color: var(--text-primary);
               font-size: 28px;
               font-weight: 700;
               margin-bottom: var(--spacing-md);
             }
-            
+
             .message {
               color: var(--text-secondary);
               font-size: 16px;
               line-height: 1.6;
               margin-bottom: var(--spacing-xl);
             }
-            
+
             .retry-info {
               background: rgba(33, 150, 243, 0.1);
               border: 1px solid rgba(33, 150, 243, 0.2);
@@ -323,19 +323,19 @@ const createTenantRateLimiter = (
               padding: var(--spacing-lg);
               margin-bottom: var(--spacing-xl);
             }
-            
+
             .retry-label {
               color: var(--text-secondary);
               font-size: 14px;
               margin-bottom: 12px;
             }
-            
+
             .retry-time {
               font-size: 32px;
               color: var(--primary-color);
               font-weight: 700;
             }
-            
+
             .btn-primary {
               display: inline-block;
               padding: var(--spacing-md) var(--spacing-xl);
@@ -348,12 +348,12 @@ const createTenantRateLimiter = (
               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
               box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
             }
-            
+
             .btn-primary:hover {
               transform: translateY(-2px);
               box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
             }
-            
+
             .btn-primary:active {
               transform: translateY(0);
             }
@@ -364,7 +364,7 @@ const createTenantRateLimiter = (
             <div class="icon">⏱️</div>
             <h1>Zu viele Anfragen</h1>
             <p class="message">
-              Sie haben die maximale Anzahl an Anfragen überschritten. 
+              Sie haben die maximale Anzahl an Anfragen überschritten.
               Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.
             </p>
             <div class="retry-info">
@@ -591,7 +591,7 @@ export const auditLogger =
       };
 
       // Log to console (in production, send to SIEM)
-      console.log("AUDIT:", JSON.stringify(auditEntry));
+      console.info("AUDIT:", JSON.stringify(auditEntry));
 
       // TODO: Save to database or send to SIEM system
 

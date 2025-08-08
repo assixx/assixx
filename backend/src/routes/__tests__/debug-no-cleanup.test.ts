@@ -19,7 +19,7 @@ describe("DEBUG NO CLEANUP: User Creation and Login", () => {
 
   afterAll(async () => {
     // NO CLEANUP - we want to check the database manually
-    console.log("SKIPPING CLEANUP - Check database manually!");
+    console.info("SKIPPING CLEANUP - Check database manually!");
     await testDb.end();
   });
 
@@ -30,7 +30,7 @@ describe("DEBUG NO CLEANUP: User Creation and Login", () => {
       "debugnocleanup",
       "Debug No Cleanup Company",
     );
-    console.log("Created tenant ID:", tenantId);
+    console.info("Created tenant ID:", tenantId);
 
     // Create test user
     const userResult = await createTestUser(testDb, {
@@ -42,36 +42,36 @@ describe("DEBUG NO CLEANUP: User Creation and Login", () => {
       first_name: "No",
       last_name: "Cleanup",
     });
-    console.log("\n=== USER CREATED ===");
-    console.log("Returned data:", userResult);
-    console.log("Use this email for login:", userResult.email);
-    console.log("Original email was:", "nocleanup@test.com");
+    console.info("\n=== USER CREATED ===");
+    console.info("Returned data:", userResult);
+    console.info("Use this email for login:", userResult.email);
+    console.info("Original email was:", "nocleanup@test.com");
 
     // Check in database
     const [users] = await testDb.execute(
       "SELECT id, username, email, tenant_id, status, role FROM users WHERE id = ?",
       [userResult.id],
     );
-    console.log("\n=== DATABASE CHECK ===");
-    console.log("User in DB:", users);
+    console.info("\n=== DATABASE CHECK ===");
+    console.info("User in DB:", users);
 
     // Try v2 login with generated email
-    console.log("\n=== LOGIN ATTEMPT 1 - With generated email ===");
+    console.info("\n=== LOGIN ATTEMPT 1 - With generated email ===");
     const loginRes1 = await request(app).post("/api/v2/auth/login").send({
       email: userResult.email,
       password: "NoCleanup123!",
     });
-    console.log("Status:", loginRes1.status);
-    console.log("Response:", loginRes1.body);
+    console.info("Status:", loginRes1.status);
+    console.info("Response:", loginRes1.body);
 
     // Try v2 login with original email
-    console.log("\n=== LOGIN ATTEMPT 2 - With original email ===");
+    console.info("\n=== LOGIN ATTEMPT 2 - With original email ===");
     const loginRes2 = await request(app).post("/api/v2/auth/login").send({
       email: "nocleanup@test.com",
       password: "NoCleanup123!",
     });
-    console.log("Status:", loginRes2.status);
-    console.log("Response:", loginRes2.body);
+    console.info("Status:", loginRes2.status);
+    console.info("Response:", loginRes2.body);
 
     // Test should pass if login with generated email works
     expect(loginRes1.status).toBe(200);

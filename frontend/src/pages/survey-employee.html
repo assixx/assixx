@@ -812,12 +812,12 @@
         pendingContainer.innerHTML = '';
         completedContainer.innerHTML = '';
 
-        console.log('Displaying surveys:', surveys.length);
+        console.info('Displaying surveys:', surveys.length);
 
         for (const survey of surveys) {
           // Check if user has already responded
           const responseCheck = await checkUserResponse(survey.id);
-          console.log(`Survey ${survey.id} - Response check:`, responseCheck);
+          console.info(`Survey ${survey.id} - Response check:`, responseCheck);
 
           if (responseCheck.responded) {
             completedContainer.appendChild(createSurveyCard(survey, true));
@@ -857,7 +857,7 @@
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`Response check for survey ${surveyId}:`, data);
+            console.info(`Response check for survey ${surveyId}:`, data);
             return data;
           } else {
             console.error(`Failed to check response for survey ${surveyId}:`, response.status);
@@ -904,7 +904,7 @@
                     `
                         : '<div></div>'
                     }
-                    <button class="survey-action ${completed ? 'completed' : ''}" 
+                    <button class="survey-action ${completed ? 'completed' : ''}"
                             onclick="${completed ? 'viewResponse' : 'startSurvey'}(${survey.id})">
                         ${completed ? '<i class="fas fa-check"></i> Abgeschlossen' : '<i class="fas fa-arrow-right"></i> Teilnehmen'}
                     </button>
@@ -962,11 +962,11 @@
         const container = document.getElementById('questionsContainer');
         container.innerHTML = '';
 
-        console.log('Current Survey:', currentSurvey); // Debug
-        console.log('Questions:', currentSurvey.questions); // Debug
+        console.info('Current Survey:', currentSurvey); // Debug
+        console.info('Questions:', currentSurvey.questions); // Debug
 
         currentSurvey.questions.forEach((question, index) => {
-          console.log('Question:', question); // Debug
+          console.info('Question:', question); // Debug
           const questionEl = createQuestionElement(question, index);
           container.appendChild(questionEl);
         });
@@ -1000,8 +1000,8 @@
       function createAnswerInput(question) {
         switch (question.question_type) {
           case 'text':
-            return `<textarea class="form-control" 
-                                    data-question-id="${question.id}" 
+            return `<textarea class="form-control"
+                                    data-question-id="${question.id}"
                                     ${question.is_required ? 'required' : ''}
                                     onchange="updateAnswer(${question.id}, this.value, 'text')"></textarea>`;
 
@@ -1013,9 +1013,9 @@
                 const optionId = typeof option === 'string' ? index : option.id;
                 return `
                         <div class="choice-option">
-                            <input type="radio" 
-                                   id="q${question.id}_opt${optionId}" 
-                                   name="question_${question.id}" 
+                            <input type="radio"
+                                   id="q${question.id}_opt${optionId}"
+                                   name="question_${question.id}"
                                    value="${optionId}"
                                    ${question.is_required ? 'required' : ''}
                                    onchange="updateAnswer(${question.id}, ${optionId}, 'single')">
@@ -1033,8 +1033,8 @@
                 const optionId = typeof option === 'string' ? index : option.id;
                 return `
                         <div class="choice-option">
-                            <input type="checkbox" 
-                                   id="q${question.id}_opt${optionId}" 
+                            <input type="checkbox"
+                                   id="q${question.id}_opt${optionId}"
                                    value="${optionId}"
                                    onchange="updateMultipleChoice(${question.id}, ${optionId}, this.checked)">
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
@@ -1049,7 +1049,7 @@
                             ${[1, 2, 3, 4, 5]
                               .map(
                                 (value) => `
-                                <div class="rating-option" 
+                                <div class="rating-option"
                                      id="rating_${question.id}_${value}"
                                      onclick="selectRating(${question.id}, ${value})">
                                     ${value}
@@ -1063,18 +1063,18 @@
           case 'yes_no':
             return `
                         <div class="choice-option">
-                            <input type="radio" 
-                                   id="q${question.id}_yes" 
-                                   name="question_${question.id}" 
+                            <input type="radio"
+                                   id="q${question.id}_yes"
+                                   name="question_${question.id}"
                                    value="yes"
                                    ${question.is_required ? 'required' : ''}
                                    onchange="updateAnswer(${question.id}, 'Ja', 'text')">
                             <label for="q${question.id}_yes">Ja</label>
                         </div>
                         <div class="choice-option">
-                            <input type="radio" 
-                                   id="q${question.id}_no" 
-                                   name="question_${question.id}" 
+                            <input type="radio"
+                                   id="q${question.id}_no"
+                                   name="question_${question.id}"
                                    value="no"
                                    ${question.is_required ? 'required' : ''}
                                    onchange="updateAnswer(${question.id}, 'Nein', 'text')">
@@ -1083,14 +1083,14 @@
                     `;
 
           case 'number':
-            return `<input type="number" 
-                                   class="form-control" 
+            return `<input type="number"
+                                   class="form-control"
                                    ${question.is_required ? 'required' : ''}
                                    onchange="updateAnswer(${question.id}, this.value, 'number')">`;
 
           case 'date':
-            return `<input type="date" 
-                                   class="form-control" 
+            return `<input type="date"
+                                   class="form-control"
                                    ${question.is_required ? 'required' : ''}
                                    onchange="updateAnswer(${question.id}, this.value, 'date')">`;
 
@@ -1186,7 +1186,7 @@
           }
         }
 
-        console.log('Submitting survey answers:', {
+        console.info('Submitting survey answers:', {
           surveyId: currentSurvey.id,
           answersCount: answersArray.length,
           answers: answersArray,
@@ -1211,7 +1211,7 @@
               closeModal();
               // Force reload with a small delay to ensure database is updated
               setTimeout(() => {
-                console.log('Reloading surveys after submission...');
+                console.info('Reloading surveys after submission...');
                 loadSurveys();
               }, 500);
             }, 2000);
@@ -1266,7 +1266,7 @@
 
       // Show response modal
       function showResponseModal(survey, response) {
-        console.log('Showing response modal with:', { survey, response });
+        console.info('Showing response modal with:', { survey, response });
 
         // Create modal HTML - use same class structure as survey modal
         const modalHtml = `
@@ -1290,7 +1290,7 @@
                   ${survey.questions
                     .map((question, index) => {
                       const answer = response.answers.find((a) => a.question_id === question.id);
-                      console.log('Question:', question, 'Answer:', answer);
+                      console.info('Question:', question, 'Answer:', answer);
                       return `
                       <div class="response-question">
                         <h4>${index + 1}. ${question.question_text}</h4>

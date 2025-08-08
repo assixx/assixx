@@ -24,19 +24,19 @@ describe("DEBUG Calendar v2 Test User Creation", () => {
   });
 
   it("should debug user creation and login", async () => {
-    console.log("\n=== DEBUG TEST START ===");
+    console.info("\n=== DEBUG TEST START ===");
 
     // Step 1: Create tenant
-    console.log("1. Creating test tenant...");
+    console.info("1. Creating test tenant...");
     tenantId = await createTestTenant(
       testDb,
       "debugcalv2",
       "Debug Calendar v2 Company",
     );
-    console.log("   Tenant created with ID:", tenantId);
+    console.info("   Tenant created with ID:", tenantId);
 
     // Step 2: Create test user
-    console.log("\n2. Creating test user...");
+    console.info("\n2. Creating test user...");
     const userResult = await createTestUser(testDb, {
       username: "debug.calv2@test.com",
       email: "debug.calv2@test.com",
@@ -46,49 +46,49 @@ describe("DEBUG Calendar v2 Test User Creation", () => {
       first_name: "Debug",
       last_name: "User",
     });
-    console.log("   User created:", userResult);
+    console.info("   User created:", userResult);
 
     // Step 3: Check user in database
-    console.log("\n3. Checking user in database...");
+    console.info("\n3. Checking user in database...");
     const [dbUsers] = await testDb.execute(
       "SELECT id, username, email, tenant_id, status, role FROM users WHERE id = ?",
       [userResult.id],
     );
-    console.log("   Database result:", dbUsers);
+    console.info("   Database result:", dbUsers);
 
     // Step 4: Try v2 login with returned email
-    console.log("\n4. Trying v2 login with returned email...");
-    console.log("   Using email:", userResult.email);
-    console.log("   Using password: DebugPass123!");
+    console.info("\n4. Trying v2 login with returned email...");
+    console.info("   Using email:", userResult.email);
+    console.info("   Using password: DebugPass123!");
 
     const loginRes = await request(app).post("/api/v2/auth/login").send({
       email: userResult.email,
       password: "DebugPass123!",
     });
 
-    console.log("   Login response status:", loginRes.status);
-    console.log("   Login response body:", loginRes.body);
+    console.info("   Login response status:", loginRes.status);
+    console.info("   Login response body:", loginRes.body);
 
     // Step 5: Try with original email (without prefix)
-    console.log("\n5. Trying v2 login with original email (no prefix)...");
-    console.log("   Using email: debug.calv2@test.com");
+    console.info("\n5. Trying v2 login with original email (no prefix)...");
+    console.info("   Using email: debug.calv2@test.com");
 
     const loginRes2 = await request(app).post("/api/v2/auth/login").send({
       email: "debug.calv2@test.com",
       password: "DebugPass123!",
     });
 
-    console.log("   Login response status:", loginRes2.status);
-    console.log("   Login response body:", loginRes2.body);
+    console.info("   Login response status:", loginRes2.status);
+    console.info("   Login response body:", loginRes2.body);
 
     // Step 6: Check all test users in DB
-    console.log("\n6. Checking all test users in database...");
+    console.info("\n6. Checking all test users in database...");
     const [allTestUsers] = await testDb.execute(
       "SELECT id, username, email FROM users WHERE email LIKE '%debug.calv2%' OR email LIKE '%__AUTOTEST__%'",
     );
-    console.log("   All test users:", allTestUsers);
+    console.info("   All test users:", allTestUsers);
 
-    console.log("\n=== DEBUG TEST END ===\n");
+    console.info("\n=== DEBUG TEST END ===\n");
 
     // Test that login works with the correct email
     expect(loginRes.status).toBe(200);

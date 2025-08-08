@@ -26,13 +26,14 @@ export interface ChatUser {
   id: number;
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  profilePicture: string | null;
-  departmentId: number | null;
-  departmentName: string | null;
-  isOnline: boolean;
-  lastSeen: Date | null;
+  first_name: string;
+  last_name: string;
+  profile_picture: string | null;
+  department_id: number | null;
+  department: string | null;
+  role: string;
+  status: string;
+  last_seen: Date | null;
 }
 
 export interface Conversation {
@@ -47,11 +48,12 @@ export interface Conversation {
 }
 
 export interface ConversationParticipant {
+  id: number;
   userId: number;
   username: string;
-  firstName: string;
-  lastName: string;
-  profilePicture: string | null;
+  first_name: string;
+  last_name: string;
+  profile_picture_url: string | null;
   joinedAt: Date;
   isActive: boolean;
 }
@@ -245,18 +247,19 @@ export class ChatService {
         });
       }
 
-      // Transform to v2 format
+      // Transform to v2 format - using snake_case to match frontend expectations
       return filteredUsers.map((user) => ({
         id: user.id,
         username: user.username,
         email: user.email,
-        firstName: user.first_name ?? "",
-        lastName: user.last_name ?? "",
-        profilePicture: user.profile_picture,
-        departmentId: user.department_id,
-        departmentName: user.department_name,
-        isOnline: false, // TODO: Implement online status
-        lastSeen: null, // TODO: Implement last seen
+        first_name: user.first_name ?? "",
+        last_name: user.last_name ?? "",
+        profile_picture: user.profile_picture,
+        department_id: user.department_id,
+        department: user.department_name,
+        role: user.role, // Include role for frontend filtering
+        status: "offline", // TODO: Implement online status
+        last_seen: null, // TODO: Implement last seen
       }));
     } catch {
       throw new ServiceError(
@@ -320,19 +323,29 @@ export class ChatService {
       const [countResult] = await execute<RowDataPacket[]>(countQuery, params);
       const totalItems = countResult[0]?.total ?? 0;
 
-      // Get conversations - test with hardcoded values first
+      // Get conversations with last message info
       const query = `
         SELECT DISTINCT
           c.id,
           c.name,
           c.is_group,
           c.created_at,
-          c.updated_at
+          c.updated_at,
+          (SELECT m.content 
+           FROM messages m 
+           WHERE m.conversation_id = c.id 
+           ORDER BY m.created_at DESC 
+           LIMIT 1) as last_message_content,
+          (SELECT m.created_at 
+           FROM messages m 
+           WHERE m.conversation_id = c.id 
+           ORDER BY m.created_at DESC 
+           LIMIT 1) as last_message_time
         FROM conversations c
         INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
         WHERE c.tenant_id = ${tenantId}
         AND cp.user_id = ${userId}
-        ORDER BY c.created_at DESC
+        ORDER BY c.updated_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
 
@@ -344,6 +357,7 @@ export class ChatService {
       // Get participants for each conversation
       const conversationIds = conversations.map((c) => c.id);
       let participants: RowDataPacket[] = [];
+      let unreadCounts: Map<number, number> = new Map();
 
       if (conversationIds.length > 0) {
         const participantsQuery = `
@@ -366,6 +380,31 @@ export class ChatService {
           conversationIds,
         );
         participants = participantRows;
+
+        // Get unread counts for each conversation
+        const unreadQuery = `
+          SELECT 
+            m.conversation_id,
+            COUNT(*) as unread_count
+          FROM messages m
+          LEFT JOIN conversation_participants cp 
+            ON cp.conversation_id = m.conversation_id 
+            AND cp.user_id = ${userId}
+          WHERE m.conversation_id IN (${conversationIds.map(() => "?").join(",")})
+            AND m.sender_id != ${userId}
+            AND m.id > COALESCE(cp.last_read_message_id, 0)
+          GROUP BY m.conversation_id
+        `;
+
+        const [unreadRows] = await execute<RowDataPacket[]>(
+          unreadQuery,
+          conversationIds,
+        );
+
+        // Map unread counts
+        for (const row of unreadRows) {
+          unreadCounts.set(row.conversation_id, Number(row.unread_count));
+        }
       }
 
       // Calculate pagination
@@ -377,14 +416,27 @@ export class ChatService {
           const convParticipants = participants
             .filter((p) => p.conversation_id === conv.id)
             .map((p) => ({
+              id: p.user_id, // Add id field for frontend
               userId: p.user_id,
               username: p.username,
-              firstName: p.first_name ?? "",
-              lastName: p.last_name ?? "",
-              profilePicture: p.profile_picture,
+              first_name: p.first_name ?? "", // Use snake_case to match frontend
+              last_name: p.last_name ?? "", // Use snake_case to match frontend
+              profile_picture_url: p.profile_picture, // Use snake_case to match frontend
               joinedAt: new Date(p.joined_at),
               isActive: true,
             }));
+
+          // Build last message object if available
+          let lastMessage = null;
+          if (conv.last_message_content) {
+            lastMessage = {
+              content: conv.last_message_content,
+              created_at: conv.last_message_time, // Use snake_case for frontend
+            };
+          }
+
+          // Get the unread count for this conversation
+          const unreadCount = unreadCounts.get(conv.id) ?? 0;
 
           return {
             id: conv.id,
@@ -392,9 +444,13 @@ export class ChatService {
             isGroup: conv.is_group === 1,
             createdAt: new Date(conv.created_at),
             updatedAt: new Date(conv.updated_at),
-            lastMessage: null, // Simplified - no last message in this query
-            unreadCount: 0, // Simplified - no unread count in this query
+            lastMessage, // Now includes actual last message
+            unreadCount, // Real unread count from database
             participants: convParticipants,
+            // Also add snake_case versions for frontend compatibility
+            last_message: lastMessage,
+            is_group: conv.is_group === 1,
+            unread_count: unreadCount, // Real unread count from database
           };
         },
       );
@@ -434,6 +490,13 @@ export class ChatService {
         creatorId,
         data,
       });
+
+      // Critical debug: Log actual tenant_id being used
+      logError(
+        "[CRITICAL DEBUG] Creating conversation with tenantId:",
+        tenantId,
+      );
+
       // Check if it's a 1:1 conversation and if it already exists
       const isGroup = data.isGroup ?? data.participantIds.length > 1;
 
@@ -495,17 +558,17 @@ export class ChatService {
 
       // Add creator as participant
       await execute(
-        `INSERT INTO conversation_participants (conversation_id, user_id, is_admin, joined_at)
-         VALUES (?, ?, 1, NOW())`,
-        [conversationId, creatorId],
+        `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
+         VALUES (?, ?, ?, 1, NOW())`,
+        [tenantId, conversationId, creatorId],
       );
 
       // Add other participants
       for (const participantId of data.participantIds) {
         await execute(
-          `INSERT INTO conversation_participants (conversation_id, user_id, is_admin, joined_at)
-           VALUES (?, ?, 0, NOW())`,
-          [conversationId, participantId],
+          `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
+           VALUES (?, ?, ?, 0, NOW())`,
+          [tenantId, conversationId, participantId],
         );
       }
 
@@ -561,8 +624,8 @@ export class ChatService {
       // First check if user is participant of the conversation
       const [participant] = await execute<RowDataPacket[]>(
         `SELECT 1 FROM conversation_participants 
-         WHERE conversation_id = ? AND user_id = ?`,
-        [conversationId, userId],
+         WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
+        [conversationId, userId, tenantId],
       );
 
       if (!participant.length) {
@@ -623,21 +686,21 @@ export class ChatService {
           u.first_name as sender_first_name,
           u.last_name as sender_last_name,
           u.profile_picture as sender_profile_picture,
-          (
-            SELECT COUNT(*) > 0 
-            FROM message_read_receipts r 
-            WHERE r.message_id = m.id AND r.user_id = ${userId}
-          ) as is_read,
-          (
-            SELECT r.read_at 
-            FROM message_read_receipts r 
-            WHERE r.message_id = m.id AND r.user_id = ${userId}
-            LIMIT 1
-          ) as read_at
+          CASE 
+            WHEN m.sender_id = ${userId} THEN 1
+            WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN 1
+            ELSE 0
+          END as is_read,
+          CASE 
+            WHEN m.id <= COALESCE(cp.last_read_message_id, 0) 
+            THEN cp.last_read_at 
+            ELSE NULL 
+          END as read_at
         FROM messages m
         INNER JOIN users u ON m.sender_id = u.id
+        LEFT JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
         WHERE m.conversation_id = ${conversationId} AND m.tenant_id = ${tenantId}
-        ORDER BY m.created_at DESC
+        ORDER BY m.created_at ASC
         LIMIT ${limit} OFFSET ${offset}
       `;
 
@@ -703,8 +766,8 @@ export class ChatService {
       // First check if sender is participant of the conversation
       const [participant] = await execute<RowDataPacket[]>(
         `SELECT 1 FROM conversation_participants 
-         WHERE conversation_id = ? AND user_id = ?`,
-        [conversationId, senderId],
+         WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
+        [conversationId, senderId, tenantId],
       );
 
       if (!participant.length) {
@@ -790,23 +853,25 @@ export class ChatService {
   ): Promise<UnreadCountSummary> {
     try {
       // Get unread messages grouped by conversation
+      // Using conversation_participants.last_read_message_id instead of message_read_receipts
       const query = `
         SELECT 
           c.id as conversationId,
           c.name as conversationName,
-          COUNT(m.id) as unreadCount,
+          COUNT(CASE 
+            WHEN m.id > COALESCE(cp.last_read_message_id, 0) 
+            AND m.sender_id != ${userId}
+            THEN 1 
+          END) as unreadCount,
           MAX(m.created_at) as lastMessageTime
         FROM conversations c
         INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-        INNER JOIN messages m ON m.conversation_id = c.id
+        LEFT JOIN messages m ON m.conversation_id = c.id
         WHERE c.tenant_id = ${tenantId}
         AND cp.user_id = ${userId}
-        AND m.sender_id != ${userId}
-        AND NOT EXISTS (
-          SELECT 1 FROM message_read_receipts r
-          WHERE r.message_id = m.id AND r.user_id = ${userId}
-        )
+        AND cp.tenant_id = ${tenantId}
         GROUP BY c.id, c.name
+        HAVING unreadCount > 0
         ORDER BY lastMessageTime DESC
       `;
 
@@ -862,31 +927,37 @@ export class ChatService {
         );
       }
 
-      log("[Chat Service] User is participant, getting unread messages");
+      log("[Chat Service] User is participant, updating last read message");
 
-      // Get unread messages with tenant_id - using string interpolation
-      const [unreadMessages] = await execute<RowDataPacket[]>(
-        `SELECT m.id, m.tenant_id FROM messages m
-         WHERE m.conversation_id = ${conversationId}
-         AND m.sender_id != ${userId}
-         AND NOT EXISTS (
-           SELECT 1 FROM message_read_receipts r
-           WHERE r.message_id = m.id AND r.user_id = ${userId}
-         )`,
+      // Get the latest message id in the conversation
+      const [latestMessage] = await execute<RowDataPacket[]>(
+        `SELECT MAX(id) as lastMessageId 
+         FROM messages 
+         WHERE conversation_id = ${conversationId}`,
       );
 
-      // Mark messages as read
-      if (unreadMessages.length > 0) {
-        const values = unreadMessages
-          .map((msg) => `(${msg.tenant_id}, ${msg.id}, ${userId}, NOW())`)
-          .join(",");
-        await execute(
-          `INSERT INTO message_read_receipts (tenant_id, message_id, user_id, read_at)
-           VALUES ${values}`,
-        );
-      }
+      const lastMessageId = latestMessage[0]?.lastMessageId ?? 0;
 
-      return { markedCount: unreadMessages.length };
+      // Update last_read_message_id in conversation_participants
+      await execute(
+        `UPDATE conversation_participants 
+         SET last_read_message_id = ?, last_read_at = NOW()
+         WHERE conversation_id = ? AND user_id = ?`,
+        [lastMessageId, conversationId, userId],
+      );
+
+      // Count how many messages were marked as read
+      const [unreadCount] = await execute<RowDataPacket[]>(
+        `SELECT COUNT(*) as count 
+         FROM messages m
+         JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id
+         WHERE m.conversation_id = ${conversationId}
+         AND m.sender_id != ${userId}
+         AND m.id > COALESCE(cp.last_read_message_id, 0)
+         AND cp.user_id = ${userId}`,
+      );
+
+      return { markedCount: unreadCount[0]?.count ?? 0 };
     } catch (error) {
       logError("[Chat Service] markConversationAsRead error:", error);
       throw error instanceof ServiceError
@@ -945,12 +1016,6 @@ export class ChatService {
       }
 
       // Delete in correct order to avoid FK constraints
-      await execute(
-        `DELETE FROM message_read_receipts WHERE message_id IN 
-         (SELECT id FROM messages WHERE conversation_id = ?)`,
-        [conversationId],
-      );
-
       await execute(`DELETE FROM messages WHERE conversation_id = ?`, [
         conversationId,
       ]);
@@ -1025,11 +1090,12 @@ export class ChatService {
       );
 
       const convParticipants = participants.map((p) => ({
+        id: p.user_id, // Add id field for frontend
         userId: p.user_id,
         username: p.username,
-        firstName: p.first_name ?? "",
-        lastName: p.last_name ?? "",
-        profilePicture: p.profile_picture,
+        first_name: p.first_name ?? "", // Use snake_case to match frontend
+        last_name: p.last_name ?? "", // Use snake_case to match frontend
+        profile_picture_url: p.profile_picture, // Use snake_case to match frontend
         joinedAt: new Date(p.joined_at),
         isActive: true,
       }));

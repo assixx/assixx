@@ -589,7 +589,7 @@
       .btn:hover::after {
         transform: rotate(45deg) translate(-30%, -30%);
       }
-      
+
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -826,7 +826,7 @@
           // Redirect if not employee (but allow admins and root viewing as employee)
           const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
           const isRootAsEmployee = payload.role === 'root' && payload.activeRole === 'employee';
-          console.log('[Employee Dashboard Auth] Role check:', {
+          console.info('[Employee Dashboard Auth] Role check:', {
             role: payload.role,
             activeRole: payload.activeRole,
             isRoleSwitched: payload.isRoleSwitched,
@@ -835,10 +835,10 @@
           });
 
           if (payload.role !== 'employee' && !isAdminAsEmployee && !isRootAsEmployee) {
-            console.log('[Employee Dashboard Auth] Redirecting - not authorized');
+            console.info('[Employee Dashboard Auth] Redirecting - not authorized');
             window.location.href = payload.role === 'admin' ? '/admin-dashboard' : payload.role === 'root' ? '/root-dashboard' : '/login';
           } else {
-            console.log('[Employee Dashboard Auth] Access granted');
+            console.info('[Employee Dashboard Auth] Access granted');
           }
         } catch (e) {
           localStorage.removeItem('token');
@@ -1025,7 +1025,7 @@
             localStorage.setItem('userRole', userRole);
           }
 
-          console.log('[Employee Dashboard] Token analysis:', {
+          console.info('[Employee Dashboard] Token analysis:', {
             tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
             finalActiveRole: activeRole,
@@ -1041,18 +1041,18 @@
       // All users can access employee dashboard when in employee mode
       if (activeRole === 'employee') {
         // User is correctly on employee dashboard
-        console.log('[Employee Dashboard] User in employee mode');
+        console.info('[Employee Dashboard] User in employee mode');
       } else if (userRole === 'root' && activeRole === 'root') {
         // Root user in root mode - redirect to root dashboard
-        console.log('[Employee Dashboard] Root user in root mode - redirecting');
+        console.info('[Employee Dashboard] Root user in root mode - redirecting');
         window.location.replace('/root-dashboard');
       } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
         // Admin/Root user in admin mode - redirect to admin dashboard
-        console.log('[Employee Dashboard] User in admin mode - redirecting');
+        console.info('[Employee Dashboard] User in admin mode - redirecting');
         window.location.replace('/admin-dashboard');
       } else if (!userRole) {
         // No user role - redirect to login
-        console.log('[Employee Dashboard] No user role - redirecting to login');
+        console.info('[Employee Dashboard] No user role - redirecting to login');
         window.location.replace('/login');
       }
 

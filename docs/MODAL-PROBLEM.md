@@ -2,8 +2,8 @@
 
 ## Problembeschreibung
 
-**Datum:** 10.01.2025  
-**Betroffene Komponente:** Calendar Modal System  
+**Datum:** 10.01.2025
+**Betroffene Komponente:** Calendar Modal System
 **Symptom:** Modals wurden erstellt, aber blieben unsichtbar
 
 ### Fehlerbeschreibung
@@ -89,8 +89,8 @@ Verbesserter DOM-Check und Attachment:
 ```typescript
 // Add to DOM if not already there or not in document.body
 if (!modal.parentElement || modal.parentElement !== document.body) {
-  console.log(`[ModalManager] Adding modal to DOM...`);
-  console.log(`[ModalManager] Current parent:`, modal.parentElement);
+  console.info(`[ModalManager] Adding modal to DOM...`);
+  console.info(`[ModalManager] Current parent:`, modal.parentElement);
 
   // Remove from current parent if it has one
   if (modal.parentElement) {
@@ -98,11 +98,11 @@ if (!modal.parentElement || modal.parentElement !== document.body) {
   }
 
   document.body.appendChild(modal);
-  console.log(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
-  console.log(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
-  console.log(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
+  console.info(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
+  console.info(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
+  console.info(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
 } else {
-  console.log(`[ModalManager] Modal already in document.body`);
+  console.info(`[ModalManager] Modal already in document.body`);
 }
 ```
 
@@ -115,9 +115,9 @@ Zusätzlicher Fallback für Sichtbarkeit:
 ```typescript
 requestAnimationFrame(() => {
   const styles = window.getComputedStyle(modal!);
-  console.log(`[ModalManager] Modal computed style visibility:`, styles.visibility);
-  console.log(`[ModalManager] Modal computed style opacity:`, styles.opacity);
-  console.log(`[ModalManager] Modal computed style display:`, styles.display);
+  console.info(`[ModalManager] Modal computed style visibility:`, styles.visibility);
+  console.info(`[ModalManager] Modal computed style opacity:`, styles.opacity);
+  console.info(`[ModalManager] Modal computed style display:`, styles.display);
 
   // If still not visible, force it (also check for empty string)
   if (

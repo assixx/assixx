@@ -108,7 +108,7 @@ class CalendarController {
 
         // Temporarily return paginated response format with empty events
         // TODO: Implement proper calendar event fetching with tenantId and userId
-        console.log("Calendar events requested with filters:", filters);
+        console.info("Calendar events requested with filters:", filters);
         res.json({
           events: [],
           pagination: {

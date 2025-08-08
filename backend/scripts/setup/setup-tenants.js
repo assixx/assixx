@@ -15,7 +15,7 @@ async function setupTenants() {
       multipleStatements: true,
     });
 
-    console.log("Verbunden mit Datenbank:", process.env.DB_NAME);
+    console.info("Verbunden mit Datenbank:", process.env.DB_NAME);
 
     // Lese SQL-Datei
     const sqlPath = path.join(
@@ -27,10 +27,10 @@ async function setupTenants() {
     const sql = await fs.readFile(sqlPath, "utf8");
 
     // Führe SQL aus
-    console.log("Erstelle Tenant-Tabellen...");
+    console.info("Erstelle Tenant-Tabellen...");
     await connection.query(sql);
 
-    console.log("Tenant-Tabellen erfolgreich erstellt!");
+    console.info("Tenant-Tabellen erfolgreich erstellt!");
   } catch (error) {
     console.error("Fehler beim Erstellen der Tenant-Tabellen:", error);
     throw error;
@@ -44,7 +44,7 @@ async function setupTenants() {
 // Script ausführen
 setupTenants()
   .then(() => {
-    console.log("Tenant-Setup abgeschlossen!");
+    console.info("Tenant-Setup abgeschlossen!");
     process.exit(0);
   })
   .catch((error) => {

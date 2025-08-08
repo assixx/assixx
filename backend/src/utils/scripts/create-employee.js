@@ -10,7 +10,7 @@ require("dotenv").config();
 
 async function createEmployee() {
   try {
-    console.log("Verbindung zur Datenbank wird hergestellt...");
+    console.info("Verbindung zur Datenbank wird hergestellt...");
 
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST,
@@ -19,7 +19,7 @@ async function createEmployee() {
       database: process.env.DB_NAME,
     });
 
-    console.log("Verbindung erfolgreich hergestellt!");
+    console.info("Verbindung erfolgreich hergestellt!");
 
     // Erstelle einen Testmitarbeiter
     const password = await bcrypt.hash("password123", 10);
@@ -49,13 +49,13 @@ async function createEmployee() {
 
     try {
       const [result] = await connection.query(query, values);
-      console.log(
+      console.info(
         `Mitarbeiter erfolgreich erstellt mit ID: ${result.insertId}`,
       );
     } catch (error) {
       // Wenn der Mitarbeiter bereits existiert, aktualisieren wir ihn stattdessen
       if (error.code === "ER_DUP_ENTRY") {
-        console.log(
+        console.info(
           "Mitarbeiter existiert bereits. Aktualisiere stattdessen...",
         );
 
@@ -73,7 +73,7 @@ async function createEmployee() {
           updateQuery,
           updateValues,
         );
-        console.log(
+        console.info(
           `Mitarbeiter erfolgreich aktualisiert. Betroffene Zeilen: ${updateResult.affectedRows}`,
         );
       } else {
@@ -82,7 +82,7 @@ async function createEmployee() {
     }
 
     await connection.end();
-    console.log("Datenbankverbindung geschlossen");
+    console.info("Datenbankverbindung geschlossen");
   } catch (error) {
     console.error("Fehler:", error);
   }

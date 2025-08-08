@@ -297,7 +297,7 @@ class KvpPage {
         return `
         <div class="glass-card kvp-card" data-id="${suggestion.id}">
           <div class="status-badge ${statusClass}">${this.getStatusText(suggestion.status)}</div>
-          
+
           <div class="suggestion-header">
             <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>
             <div class="suggestion-meta">
@@ -314,17 +314,17 @@ class KvpPage {
               ${suggestion.shared_by_name ? `<span> - Geteilt von ${suggestion.shared_by_name}</span>` : ''}
             </div>
           </div>
-          
+
           <div class="suggestion-description">
             ${this.escapeHtml(suggestion.description)}
           </div>
-          
+
           <div class="suggestion-footer">
             <div class="category-tag" style="background: ${suggestion.category_color ? `${suggestion.category_color}20` : '#66666620'}; color: ${suggestion.category_color ?? '#666'}; border: 1px solid ${suggestion.category_color ?? '#666'};">
               ${suggestion.category_icon || '💡'}
               ${suggestion.category_name || 'Sonstiges'}
             </div>
-            
+
             <div class="action-buttons">
               ${this.renderActionButtons(suggestion)}
             </div>
@@ -662,15 +662,15 @@ class KvpPage {
 
       // Upload photos if any
       const selectedPhotos = (window as unknown as KvpWindow).selectedPhotos;
-      console.log('Check selectedPhotos:', selectedPhotos);
-      console.log('Window.selectedPhotos type:', typeof (window as unknown as KvpWindow).selectedPhotos);
-      console.log('Photos count:', selectedPhotos ? selectedPhotos.length : 0);
+      console.info('Check selectedPhotos:', selectedPhotos);
+      console.info('Window.selectedPhotos type:', typeof (window as unknown as KvpWindow).selectedPhotos);
+      console.info('Photos count:', selectedPhotos ? selectedPhotos.length : 0);
 
       if (selectedPhotos && selectedPhotos.length > 0) {
-        console.log('Uploading photos for suggestion:', suggestionId);
+        console.info('Uploading photos for suggestion:', suggestionId);
         await this.uploadPhotos(suggestionId, selectedPhotos);
       } else {
-        console.log('No photos to upload');
+        console.info('No photos to upload');
       }
 
       // Success
@@ -691,16 +691,16 @@ class KvpPage {
   }
 
   private async uploadPhotos(suggestionId: number, photos: File[]): Promise<void> {
-    console.log('Uploading photos:', photos.length, 'photos for suggestion', suggestionId);
+    console.info('Uploading photos:', photos.length, 'photos for suggestion', suggestionId);
 
     const formData = new FormData();
     photos.forEach((photo, index) => {
-      console.log(`Adding photo ${index}:`, photo.name, photo.size, photo.type);
+      console.info(`Adding photo ${index}:`, photo.name, photo.size, photo.type);
       formData.append('photos', photo);
     });
 
     try {
-      console.log('Sending photo upload request to:', `${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`);
+      console.info('Sending photo upload request to:', `${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`);
       const response = await fetch(`${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`, {
         method: 'POST',
         headers: {
@@ -709,9 +709,9 @@ class KvpPage {
         body: formData,
       });
 
-      console.log('Upload response status:', response.status);
+      console.info('Upload response status:', response.status);
       const responseData = await response.json();
-      console.log('Upload response data:', responseData);
+      console.info('Upload response data:', responseData);
 
       if (!response.ok) {
         console.error('Fehler beim Hochladen der Fotos:', responseData);

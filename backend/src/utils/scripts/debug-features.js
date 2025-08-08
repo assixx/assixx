@@ -2,19 +2,19 @@ const db = require("./database");
 
 async function debugFeatures() {
   try {
-    console.log("=== DEBUG FEATURES ===");
+    console.info("=== DEBUG FEATURES ===");
 
     // Check features table
     const [features] = await db.query("SELECT * FROM features");
-    console.log(`\nFeatures count: ${features.length}`);
+    console.info(`\nFeatures count: ${features.length}`);
     if (features.length > 0) {
-      console.log("\nFirst 3 features:");
+      console.info("\nFirst 3 features:");
       features.slice(0, 3).forEach((f) => {
-        console.log(`- ${f.code}: ${f.name} (${f.category})`);
+        console.info(`- ${f.code}: ${f.name} (${f.category})`);
       });
     } else {
-      console.log("NO FEATURES FOUND IN DATABASE!");
-      console.log("\nInserting default features...");
+      console.info("NO FEATURES FOUND IN DATABASE!");
+      console.info("\nInserting default features...");
 
       // Insert default features
       const defaultFeatures = [
@@ -96,7 +96,7 @@ async function debugFeatures() {
             feature.is_active,
           ],
         );
-        console.log(`Inserted: ${feature.code}`);
+        console.info(`Inserted: ${feature.code}`);
       }
     }
 
@@ -104,11 +104,11 @@ async function debugFeatures() {
     const [tenants] = await db.query(
       "SELECT id, subdomain, company_name FROM tenants",
     );
-    console.log(`\n\nTenants count: ${tenants.length}`);
+    console.info(`\n\nTenants count: ${tenants.length}`);
     if (tenants.length > 0) {
-      console.log("\nTenants:");
+      console.info("\nTenants:");
       tenants.forEach((t) => {
-        console.log(`- ID ${t.id}: ${t.company_name} (${t.subdomain})`);
+        console.info(`- ID ${t.id}: ${t.company_name} (${t.subdomain})`);
       });
     }
 
@@ -120,11 +120,11 @@ async function debugFeatures() {
       JOIN features f ON tf.feature_id = f.id
       LIMIT 10
     `);
-    console.log(`\n\nTenant features count: ${tenantFeatures.length}`);
+    console.info(`\n\nTenant features count: ${tenantFeatures.length}`);
     if (tenantFeatures.length > 0) {
-      console.log("\nActive features by tenant:");
+      console.info("\nActive features by tenant:");
       tenantFeatures.forEach((tf) => {
-        console.log(`- ${tf.company_name}: ${tf.feature_name} (${tf.status})`);
+        console.info(`- ${tf.company_name}: ${tf.feature_name} (${tf.status})`);
       });
     }
   } catch (error) {

@@ -190,7 +190,7 @@ if (loginRequest) {
           "    const response = pm.response.json();",
           "    if (response.token) {",
           "        pm.collectionVariables.set('authToken', response.token);",
-          "        console.log('Auth token saved!');",
+          "        console.info('Auth token saved!');",
           "    }",
           "}",
         ],
@@ -206,16 +206,16 @@ const outputPath = path.join(
 );
 fs.writeFileSync(outputPath, JSON.stringify(postmanCollection, null, 2));
 
-console.log(`✅ Postman Collection generated: ${outputPath}`);
-console.log(`📊 Stats:`);
-console.log(
+console.info(`✅ Postman Collection generated: ${outputPath}`);
+console.info(`📊 Stats:`);
+console.info(
   `   - Total Endpoints: ${Object.values(folders).reduce((sum, f) => sum + f.item.length, 0)}`,
 );
-console.log(
+console.info(
   `   - API Groups: ${Object.values(folders).filter((f) => f.item.length > 0).length}`,
 );
-console.log(`\n🚀 Import in Postman:`);
-console.log(`   1. Open Postman`);
-console.log(`   2. Click 'Import' button`);
-console.log(`   3. Select file: ${outputPath}`);
-console.log(`   4. Set environment variable 'baseUrl' to your API URL`);
+console.info(`\n🚀 Import in Postman:`);
+console.info(`   1. Open Postman`);
+console.info(`   2. Click 'Import' button`);
+console.info(`   3. Select file: ${outputPath}`);
+console.info(`   4. Set environment variable 'baseUrl' to your API URL`);

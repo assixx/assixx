@@ -227,7 +227,7 @@ if (USE_MOCK_DB) {
   pool = mockDb;
 } else {
   // Echte Datenbankverbindung
-  console.log("[DEBUG] Database config:", {
+  console.info("[DEBUG] Database config:", {
     host: process.env.DB_HOST ?? "localhost",
     user: process.env.DB_USER ?? "assixx_user",
     database:
@@ -274,13 +274,13 @@ if (USE_MOCK_DB) {
 
   try {
     pool = mysql.createPool(config);
-    console.log("[DEBUG] Database pool created successfully");
+    console.info("[DEBUG] Database pool created successfully");
 
     // Test the connection immediately
     pool
       .getConnection()
       .then((conn) => {
-        console.log("[DEBUG] Database connection test successful");
+        console.info("[DEBUG] Database connection test successful");
         conn.release();
       })
       .catch((err) => {

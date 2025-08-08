@@ -42,7 +42,7 @@ results.forEach((file) => {
   }
 });
 
-console.log(`Found ${filesToFix.size} files with promise handling issues`);
+console.info(`Found ${filesToFix.size} files with promise handling issues`);
 
 // Fix each file
 for (const [filePath, errors] of filesToFix) {
@@ -210,7 +210,7 @@ for (const [filePath, errors] of filesToFix) {
 
     // Write the fixed content back
     fs.writeFileSync(filePath, lines.join("\n"));
-    console.log(
+    console.info(
       `Fixed ${errors.length} issues in ${path.relative(process.cwd(), filePath)}`,
     );
   } catch (e) {
@@ -218,8 +218,8 @@ for (const [filePath, errors] of filesToFix) {
   }
 }
 
-console.log(`\nTotal fixes applied: ${fixedCount}`);
-console.log("Running ESLint to check remaining issues...");
+console.info(`\nTotal fixes applied: ${fixedCount}`);
+console.info("Running ESLint to check remaining issues...");
 
 // Run ESLint again to see how many issues remain
 const remainingErrors = execSync(
@@ -227,4 +227,4 @@ const remainingErrors = execSync(
   { encoding: "utf8" },
 ).trim();
 
-console.log(`Remaining promise handling errors: ${remainingErrors}`);
+console.info(`Remaining promise handling errors: ${remainingErrors}`);

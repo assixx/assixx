@@ -673,7 +673,7 @@
       };
 
       window.toggleDepartmentStatus = async function (id, currentStatus) {
-        console.log(`Toggling department ${id} status from ${currentStatus}`);
+        console.info(`Toggling department ${id} status from ${currentStatus}`);
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
         try {

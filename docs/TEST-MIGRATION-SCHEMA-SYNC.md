@@ -78,9 +78,9 @@ f536003: "Revert fix: Support different DB schemas"
 
 **Fazit**: Künstlich Routes in "Units" zu zerlegen ist Selbstbetrug!
 
-### Jest console.log Problem:
+### Jest console.info Problem:
 
-- console.log wird in Tests unterdrückt
+- console.info wird in Tests unterdrückt
 - Lösung: Error throwing für Debugging
 - Dokumentiert in DEBUGGING-WORKFLOW-LESSONS.md (Zeile 130-180)
 
@@ -200,8 +200,8 @@ describe("Document Upload - Integration Test", () => {
     testTenantId = (tenantResult as any).insertId;
 
     const [userResult] = await pool.execute(
-      `INSERT INTO users (username, email, password_hash, role, tenant_id, first_name, last_name, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
+      `INSERT INTO users (username, email, password_hash, role, tenant_id, first_name, last_name, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`,
       [
         "testuser@test.com",

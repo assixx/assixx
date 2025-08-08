@@ -234,13 +234,15 @@ async function createAuthTables(db: Pool): Promise<void> {
 
   // Skip password_reset_tokens table creation if it doesn't exist in production
   // This table was removed due to foreign key issues
-  console.log(
+  console.info(
     "Skipping password_reset_tokens table creation (removed from production)",
   );
 
   // Skip oauth_tokens table creation if it doesn't exist in production
   // This table was removed due to foreign key issues
-  console.log("Skipping oauth_tokens table creation (removed from production)");
+  console.info(
+    "Skipping oauth_tokens table creation (removed from production)",
+  );
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS activity_logs (
@@ -839,12 +841,12 @@ async function createDocumentTables(db: Pool): Promise<void> {
  */
 export async function cleanupTestData(): Promise<void> {
   if (!testDb) {
-    console.log("WARNING: testDb is null, cannot cleanup test data");
+    console.info("WARNING: testDb is null, cannot cleanup test data");
     return;
   }
 
   try {
-    console.log(`Cleaning up test data with prefix: ${TEST_DATA_PREFIX}`);
+    console.info(`Cleaning up test data with prefix: ${TEST_DATA_PREFIX}`);
 
     // WICHTIG: Foreign Keys bleiben aktiviert - Daten in richtiger Reihenfolge löschen!
 
@@ -943,7 +945,7 @@ export async function cleanupTestData(): Promise<void> {
     );
 
     // Delete user-specific data with PREFIX
-    console.log("Deleting user sessions and oauth tokens...");
+    console.info("Deleting user sessions and oauth tokens...");
     await testDb.execute(
       `DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%')`,
     );
@@ -956,12 +958,12 @@ export async function cleanupTestData(): Promise<void> {
 
     // Delete core entities with PREFIX
     const userDeleteQuery = `DELETE FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%'`;
-    console.log("Executing user cleanup query:", userDeleteQuery);
+    console.info("Executing user cleanup query:", userDeleteQuery);
     const [userDeleteResult] = (await testDb.execute(userDeleteQuery)) as [
       { affectedRows: number },
       unknown,
     ];
-    console.log(`Deleted ${userDeleteResult.affectedRows} test users`);
+    console.info(`Deleted ${userDeleteResult.affectedRows} test users`);
     await testDb.execute(
       `DELETE FROM teams WHERE tenant_id IN ${testTenantQuery}`,
     );
@@ -990,7 +992,7 @@ export async function cleanupTestData(): Promise<void> {
     // Clear tracker
     testDataTracker.clear();
 
-    console.log("Test data cleanup completed");
+    console.info("Test data cleanup completed");
 
     // WICHTIG: Verbindung NICHT schließen - Tests können sie weiterverwenden
     // await testDb.end();
@@ -1033,7 +1035,7 @@ export async function createTestTenant(
       [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, "active"],
     );
     const tenantId = (result as ResultSetHeader).insertId;
-    console.log(
+    console.info(
       `Created test tenant with ID: ${tenantId}, subdomain: ${uniqueSubdomain}`,
     );
 
@@ -1062,7 +1064,7 @@ export async function createTestTenant(
         [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, "active"],
       );
       const tenantId = (result as ResultSetHeader).insertId;
-      console.log(
+      console.info(
         `Created test tenant (name field) with ID: ${tenantId}, subdomain: ${uniqueSubdomain}`,
       );
 
@@ -1135,14 +1137,14 @@ export async function createTestUser(
   // Generate unique employee number using cryptographically secure random without bias
   const employeeNumber = String(100000 + getSecureRandomNumber(900000));
 
-  console.log(
+  console.info(
     `Creating test user with tenant_id: ${userData.tenant_id}, department_id: ${userData.department_id}`,
   );
 
   try {
     const [result] = await db.execute(
-      `INSERT INTO users 
-      (username, email, password, role, tenant_id, department_id, first_name, last_name, status, employee_number) 
+      `INSERT INTO users
+      (username, email, password, role, tenant_id, department_id, first_name, last_name, status, employee_number)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         uniqueUsername,
@@ -1169,7 +1171,7 @@ export async function createTestUser(
     if (error.message?.includes("Unknown column 'employee_number'")) {
       // Fallback for environments where the column does not exist
       const [result] = await db.execute(
-        `INSERT INTO users 
+        `INSERT INTO users
         (username, email, password, role, tenant_id, department_id, first_name, last_name, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [

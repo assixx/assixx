@@ -944,7 +944,7 @@
 
           if (response.ok) {
             const data = await response.json();
-            console.log('[Root Profile] API Response:', data);
+            console.info('[Root Profile] API Response:', data);
 
             // Handle different response formats
             const user = data.data || data.user || data;
@@ -971,8 +971,8 @@
                 const lastInitial = lastName.charAt(0).toUpperCase() || '';
                 const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
 
-                console.log('[Root Profile] User data:', user);
-                console.log('[Root Profile] Setting initials:', { firstName, lastName, initials });
+                console.info('[Root Profile] User data:', user);
+                console.info('[Root Profile] Setting initials:', { firstName, lastName, initials });
                 container.classList.add('avatar-initials');
                 container.innerHTML = initials;
               }
@@ -1234,7 +1234,7 @@
           if (!response.ok) throw new Error('Failed to load approvals');
 
           const data = await response.json();
-          console.log('Deletion approvals response:', data);
+          console.info('Deletion approvals response:', data);
 
           let approvals = [];
           if (data && data.success && Array.isArray(data.data)) {
@@ -1243,7 +1243,7 @@
             approvals = data;
           }
 
-          console.log('Processed approvals:', approvals);
+          console.info('Processed approvals:', approvals);
 
           const approvalSection = document.getElementById('approvalSection');
           const approvalList = document.getElementById('approvalList');

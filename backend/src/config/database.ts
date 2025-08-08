@@ -222,7 +222,7 @@ if (USE_MOCK_DB) {
   pool = mockDb;
 } else {
   // Echte Datenbankverbindung
-  console.log("[DEBUG] Database config:", {
+  console.info("[DEBUG] Database config:", {
     host: process.env.DB_HOST ?? "localhost",
     user: process.env.DB_USER ?? "assixx_user",
     database:
@@ -269,7 +269,7 @@ if (USE_MOCK_DB) {
 
   try {
     pool = mysql.createPool(config);
-    console.log("[DEBUG] Database pool created successfully");
+    console.info("[DEBUG] Database pool created successfully");
 
     // Skip connection test in test environment
     if (process.env.NODE_ENV !== "test") {
@@ -277,7 +277,7 @@ if (USE_MOCK_DB) {
       pool
         .getConnection()
         .then((conn) => {
-          console.log("[DEBUG] Database connection test successful");
+          console.info("[DEBUG] Database connection test successful");
           conn.release();
         })
         .catch((err) => {
@@ -334,7 +334,7 @@ export async function closePool(): Promise<void> {
       // Give connections time to finish
       await new Promise((resolve) => setTimeout(resolve, 100));
       await pool.end();
-      console.log("[DEBUG] Database pool closed");
+      console.info("[DEBUG] Database pool closed");
     } catch (error) {
       console.error("[DEBUG] Error closing pool:", error);
     }

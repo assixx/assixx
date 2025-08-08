@@ -5,7 +5,7 @@ async function setupDatabase() {
   let connection;
 
   try {
-    console.log("Setting up database...");
+    console.info("Setting up database...");
 
     // First connect without database to create it if needed
     const config = {
@@ -17,7 +17,7 @@ async function setupDatabase() {
       config.password = process.env.DB_PASSWORD;
     }
 
-    console.log(`Connecting to MySQL with user: ${config.user}`);
+    console.info(`Connecting to MySQL with user: ${config.user}`);
     connection = await mysql.createConnection(config);
 
     // Check if database exists
@@ -27,11 +27,11 @@ async function setupDatabase() {
     );
 
     if (!databaseExists) {
-      console.log(`Creating database ${process.env.DB_NAME}...`);
+      console.info(`Creating database ${process.env.DB_NAME}...`);
       await connection.query(`CREATE DATABASE ${process.env.DB_NAME}`);
-      console.log("Database created successfully!");
+      console.info("Database created successfully!");
     } else {
-      console.log(`Database ${process.env.DB_NAME} already exists.`);
+      console.info(`Database ${process.env.DB_NAME} already exists.`);
     }
 
     // Connect to the database
@@ -40,7 +40,7 @@ async function setupDatabase() {
     // Check and create tables
     await createTablesIfNotExist(connection);
 
-    console.log("Database setup completed successfully!");
+    console.info("Database setup completed successfully!");
   } catch (error) {
     console.error("Error setting up database:", error);
   } finally {
@@ -115,11 +115,11 @@ async function createTablesIfNotExist(connection) {
     try {
       const [rows] = await connection.query(`SHOW TABLES LIKE '${table.name}'`);
       if (rows.length === 0) {
-        console.log(`Creating table ${table.name}...`);
+        console.info(`Creating table ${table.name}...`);
         await connection.query(table.createSQL);
-        console.log(`Table ${table.name} created successfully!`);
+        console.info(`Table ${table.name} created successfully!`);
       } else {
-        console.log(`Table ${table.name} already exists.`);
+        console.info(`Table ${table.name} already exists.`);
       }
     } catch (error) {
       console.error(`Error creating table ${table.name}:`, error);
@@ -132,26 +132,26 @@ async function createTablesIfNotExist(connection) {
       'SELECT * FROM users WHERE role = "root" LIMIT 1',
     );
     if (users.length === 0) {
-      console.log("Creating default root admin user...");
+      console.info("Creating default root admin user...");
       // Generate a bcrypt hash for password "admin123"
       const bcrypt = require("bcrypt");
       const hashedPassword = await bcrypt.hash("admin123", 10);
 
       await connection.query(
         `
-        INSERT INTO users 
-        (username, password, first_name, last_name, email, role) 
-        VALUES 
+        INSERT INTO users
+        (username, password, first_name, last_name, email, role)
+        VALUES
         ('admin', ?, 'System', 'Administrator', 'admin@example.com', 'root')
       `,
         [hashedPassword],
       );
 
-      console.log(
+      console.info(
         "Default admin user created with username: admin and password: admin123",
       );
     } else {
-      console.log("Root admin user already exists.");
+      console.info("Root admin user already exists.");
     }
   } catch (error) {
     console.error("Error creating default admin user:", error);

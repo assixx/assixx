@@ -10,7 +10,7 @@ const fs = require("fs").promises;
 const path = require("path");
 
 async function setupNewTenant(tenantId, companyName) {
-  console.log(`Einrichtung für neue Firma: ${companyName} (${tenantId})`);
+  console.info(`Einrichtung für neue Firma: ${companyName} (${tenantId})`);
 
   try {
     // 1. Tenant-Konfiguration erstellen
@@ -44,11 +44,11 @@ async function setupNewTenant(tenantId, companyName) {
     );
 
     await fs.writeFile(configPath, updatedConfig);
-    console.log("✓ Tenant-Konfiguration erstellt");
+    console.info("✓ Tenant-Konfiguration erstellt");
 
     // 3. Datenbank initialisieren
     await initializeTenantDatabase(tenantId);
-    console.log("✓ Datenbank initialisiert");
+    console.info("✓ Datenbank initialisiert");
 
     // 4. Assets-Verzeichnis erstellen
     const assetsDir = path.join(__dirname, "../public/assets");
@@ -60,9 +60,9 @@ async function setupNewTenant(tenantId, companyName) {
 
     try {
       await fs.copyFile(defaultLogo, tenantLogo);
-      console.log("✓ Logo-Platzhalter erstellt");
+      console.info("✓ Logo-Platzhalter erstellt");
     } catch {
-      console.log("⚠ Kein Standard-Logo gefunden, überspringe...");
+      console.info("⚠ Kein Standard-Logo gefunden, überspringe...");
     }
 
     // 6. Nginx-Konfiguration generieren
@@ -71,7 +71,7 @@ async function setupNewTenant(tenantId, companyName) {
 server {
     listen 80;
     server_name ${tenantId}.assixx.de;
-    
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -86,9 +86,9 @@ server {
     const nginxPath = path.join(__dirname, `../nginx/${tenantId}.conf`);
     await fs.mkdir(path.dirname(nginxPath), { recursive: true });
     await fs.writeFile(nginxPath, nginxConfig);
-    console.log("✓ Nginx-Konfiguration erstellt");
+    console.info("✓ Nginx-Konfiguration erstellt");
 
-    console.log(`
+    console.info(`
 Einrichtung für ${companyName} abgeschlossen!
 
 Nächste Schritte:
@@ -110,8 +110,8 @@ Subdomain: https://${tenantId}.assixx.de
 const args = process.argv.slice(2);
 
 if (args.length < 2) {
-  console.log("Verwendung: node setup-tenant.js <tenant-id> <firmenname>");
-  console.log('Beispiel: node setup-tenant.js bosch "Robert Bosch GmbH"');
+  console.info("Verwendung: node setup-tenant.js <tenant-id> <firmenname>");
+  console.info('Beispiel: node setup-tenant.js bosch "Robert Bosch GmbH"');
   process.exit(1);
 }
 

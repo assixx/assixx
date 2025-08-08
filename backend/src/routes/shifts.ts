@@ -550,14 +550,14 @@ router.get(
       try {
         // Build query based on user role
         let query = `
-        SELECT 
+        SELECT
           sa.id,
           sa.shift_id,
           sa.user_id as employee_id,
           s.date,
           s.start_time,
           s.end_time,
-          CASE 
+          CASE
             WHEN TIME(s.start_time) = '06:00:00' THEN 'early'
             WHEN TIME(s.start_time) = '14:00:00' THEN 'late'
             WHEN TIME(s.start_time) = '22:00:00' THEN 'night'
@@ -663,7 +663,7 @@ router.get(
         }
 
         if (!departmentId) {
-          console.log(
+          console.info(
             "[SHIFTS NOTES] No department_id available, returning empty notes",
           );
           res.json(
@@ -684,7 +684,7 @@ router.get(
         LIMIT 1
       `;
 
-        console.log("[SHIFTS NOTES] Querying notes:", {
+        console.info("[SHIFTS NOTES] Querying notes:", {
           tenantId,
           departmentId,
           weekStart,
@@ -694,21 +694,21 @@ router.get(
           departmentId,
           weekStart,
         ]);
-        console.log("[SHIFTS NOTES] Query result rows:", rows);
+        console.info("[SHIFTS NOTES] Query result rows:", rows);
 
         let notes = "";
         if (rows && rows.length > 0 && rows[0].notes) {
           // Convert Buffer to string if necessary
           if (Buffer.isBuffer(rows[0].notes)) {
             notes = rows[0].notes.toString("utf8");
-            console.log("[SHIFTS NOTES] Converted buffer to string:", notes);
+            console.info("[SHIFTS NOTES] Converted buffer to string:", notes);
           } else if (
             typeof rows[0].notes === "object" &&
             rows[0].notes.type === "Buffer"
           ) {
             // Handle the case where it's a plain object with Buffer data
             notes = Buffer.from(rows[0].notes.data).toString("utf8");
-            console.log(
+            console.info(
               "[SHIFTS NOTES] Converted buffer object to string:",
               notes,
             );
@@ -717,11 +717,11 @@ router.get(
           }
         }
 
-        console.log(
+        console.info(
           "[SHIFTS NOTES] Found notes:",
           notes ? `Yes: "${notes}"` : "No",
         );
-        console.log("[SHIFTS NOTES] Returning notes:", notes);
+        console.info("[SHIFTS NOTES] Returning notes:", notes);
 
         res.json(
           successResponse({
@@ -885,7 +885,7 @@ router.post(
           ) {
             // Ensure notes is a string
             const notesString = notes ?? "";
-            console.log("[SHIFTS SAVE] Saving weekly notes:", {
+            console.info("[SHIFTS SAVE] Saving weekly notes:", {
               tenantId,
               departmentId: assignments[0].department_id,
               weekStart: week_start,
@@ -1435,7 +1435,7 @@ router.post(
         return;
       }
 
-      console.log("[SHIFTS NOTES] Saving notes:", {
+      console.info("[SHIFTS NOTES] Saving notes:", {
         tenantId,
         departmentId,
         weekDate,
@@ -1446,7 +1446,7 @@ router.post(
       const query = `
         INSERT INTO weekly_shift_notes (tenant_id, department_id, date, notes, created_by)
         VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
           notes = VALUES(notes),
           updated_at = NOW()
       `;
@@ -1499,7 +1499,7 @@ router.post(
         const query = `
         INSERT INTO shift_notes (tenant_id, date, notes, created_by)
         VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
           notes = VALUES(notes),
           updated_at = NOW()
       `;

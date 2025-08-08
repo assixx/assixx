@@ -1,6 +1,6 @@
 # 📋 Tenant Deletion - Support Team Guide
 
-Version: 1.0  
+Version: 1.0
 Last Updated: 13.06.2025
 
 ## 📑 Inhaltsverzeichnis
@@ -238,7 +238,7 @@ SELECT * FROM shared_resources WHERE tenant_id = {TENANT_ID};
 docker-compose logs deletion-worker | grep ERROR
 
 # Datenbankverbindung testen
-docker-compose exec deletion-worker node -e "console.log('DB Test')"
+docker-compose exec deletion-worker node -e "console.info('DB Test')"
 ```
 
 **Lösung:**

@@ -81,27 +81,27 @@ export async function authenticateUser(
   usernameOrEmail: string,
   password: string,
 ): Promise<AuthUserResult> {
-  console.log("[DEBUG] authenticateUser called with:", usernameOrEmail);
+  console.info("[DEBUG] authenticateUser called with:", usernameOrEmail);
   try {
     // Try to find user by username first
-    console.log("[DEBUG] Looking up user by username...");
+    console.info("[DEBUG] Looking up user by username...");
     let user = await UserModel.findByUsername(usernameOrEmail);
 
     // If not found by username, try by email
     if (!user) {
-      console.log("[DEBUG] Not found by username, trying email...");
+      console.info("[DEBUG] Not found by username, trying email...");
       user = await UserModel.findByEmail(usernameOrEmail);
       if (user) {
-        console.log("[DEBUG] User found by email:", user.email);
+        console.info("[DEBUG] User found by email:", user.email);
       }
     }
 
     if (!user) {
-      console.log("[DEBUG] User not found");
+      console.info("[DEBUG] User not found");
       return { user: null, error: "USER_NOT_FOUND" };
     }
 
-    console.log(
+    console.info(
       "[DEBUG] User found:",
       user.username,
       "tenant_id:",
@@ -110,11 +110,11 @@ export async function authenticateUser(
       user.is_active,
     );
     const isValid = await bcrypt.compare(password, user.password);
-    console.log("[DEBUG] Password comparison result:", isValid);
+    console.info("[DEBUG] Password comparison result:", isValid);
     if (isValid) {
       // Check if user is active
       if (user.is_active === false) {
-        console.log("[DEBUG] User is inactive, denying access");
+        console.info("[DEBUG] User is inactive, denying access");
         return { user: null, error: "USER_INACTIVE" };
       }
       return { user: dbUserToDatabaseUser(user) };
@@ -188,10 +188,10 @@ export async function authenticateToken(
   }
 
   // Debug logging
-  console.log("Auth check - Path:", req.path);
-  console.log("Auth check - Headers:", req.headers);
-  console.log("Auth check - Cookies:", req.cookies);
-  console.log("Auth check - Token found:", !!token);
+  console.info("Auth check - Path:", req.path);
+  console.info("Auth check - Headers:", req.headers);
+  console.info("Auth check - Cookies:", req.cookies);
+  console.info("Auth check - Token found:", !!token);
 
   if (!token) {
     // Check if client expects HTML (browser page request) or JSON (API request)

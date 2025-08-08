@@ -1,17 +1,26 @@
 # Assixx TODO-Liste
 
-## 🚀 AKTUELLER STATUS (07.08.2025)
+## 🚀 AKTUELLER STATUS (08.08.2025)
 
 **Gerade erledigt:**
-- ✅ dashboard-scripts.ts vollständig auf API v2 migriert
-- ✅ Phase 5 (Dashboards) abgeschlossen!
-- ✅ Feature Flag USE_API_V2_USERS bereits aktiviert
-- ✅ 15/64 Frontend-Dateien migriert (23.4%)
+
+- ✅ **CHAT v2 API VOLLSTÄNDIG MIGRIERT UND PRODUKTIV!** 🎉
+  - ✅ Frontend komplett auf v2 API umgestellt
+  - ✅ WebSocket mit Multi-Tenant-Isolation gefixt (tenant_id → tenantId)
+  - ✅ Alle camelCase/snake_case Issues behoben
+  - ✅ Unread Messages Badge in Sidebar implementiert
+  - ✅ Unread Conversation Highlighting + Badge
+  - ✅ Last Message Preview funktioniert
+  - ✅ Message Ordering korrekt (ASC statt DESC)
+- ✅ Feature Flag USE_API_V2_CHAT = true (ENABLED)
+- ✅ 30/64 Frontend-Dateien migriert (46.9%)
 
 **Nächste Schritte:**
-- Phase 6: User Profile & Settings beginnen
-- profile.html als nächstes
-- Weitere 49 Frontend-Dateien (15/64 = 23.4% fertig)
+
+- notification.service.ts migrieren (letzte Datei in Phase 7)
+- Phase 8: Planning & Organization beginnen
+- calendar.ts, shifts.ts als nächstes
+- Weitere 34 Frontend-Dateien (30/64 = 46.9% fertig)
 
 ## 🎉 API v2 MIGRATION ABGESCHLOSSEN! (03.08.2025 - 01:00 Uhr) 🎉
 

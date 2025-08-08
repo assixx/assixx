@@ -60,7 +60,7 @@ describe("Document Upload - Integration Test", () => {
     }
 
     const [userResult] = await pool.execute(
-      `INSERT INTO users (username, email, password, role, tenant_id, first_name, last_name, status, employee_number) 
+      `INSERT INTO users (username, email, password, role, tenant_id, first_name, last_name, status, employee_number)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "testuser@test.com",
@@ -76,7 +76,7 @@ describe("Document Upload - Integration Test", () => {
     );
     testUserId = (userResult as any).insertId;
 
-    console.log(
+    console.info(
       "Created test user with ID:",
       testUserId,
       "Tenant ID:",

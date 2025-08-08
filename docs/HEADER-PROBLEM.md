@@ -35,7 +35,7 @@ window.addEventListener("DOMContentLoaded", function () {
       mutations.forEach(function (mutation) {
         if (mutation.type === "childList" && mutation.target.id === "user-info") {
           if (userInfoDiv.children.length === 0) {
-            console.log("[Blackboard] Restoring user-info elements");
+            console.info("[Blackboard] Restoring user-info elements");
             userInfoDiv.innerHTML = "";
             if (userAvatar) userInfoDiv.appendChild(userAvatar);
             if (userName) userInfoDiv.appendChild(userName);
@@ -68,7 +68,7 @@ window.addEventListener("DOMContentLoaded", function () {
 // Check if user-info has been overwritten
 const userInfoDiv = document.getElementById("user-info");
 if (userInfoDiv && userInfoDiv.children.length === 0) {
-  console.log("[Blackboard] Restoring user-info structure...");
+  console.info("[Blackboard] Restoring user-info structure...");
   userInfoDiv.innerHTML = `
     <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
     <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
@@ -158,7 +158,7 @@ window.addEventListener("DOMContentLoaded", function () {
           const currentRoleIndicator = document.getElementById("role-indicator");
 
           if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
-            console.log("[Calendar] Restoring user-info elements");
+            console.info("[Calendar] Restoring user-info elements");
             userInfoDiv.innerHTML = "";
 
             // Alle 3 Elemente wiederherstellen

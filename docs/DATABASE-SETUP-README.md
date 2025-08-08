@@ -1,6 +1,6 @@
 # 🚀 ASSIXX - Database Setup Guide
 
-**SaaS Platform für Industrieunternehmen**  
+**SaaS Platform für Industrieunternehmen**
 _Komplette Anleitung für neue Entwickler_
 
 ---
@@ -1118,7 +1118,7 @@ const userId = req.user.id; // Bereits Number aus Auth
 1. **Immer Datentypen prüfen:**
 
    ```javascript
-   console.log("Type:", typeof value, "Value:", value);
+   console.info("Type:", typeof value, "Value:", value);
    ```
 
 2. **Explizite Boolean-Checks:**
@@ -1154,5 +1154,5 @@ const userId = req.user.id; // Bereits Number aus Auth
 
 **🎉 Herzlichen Glückwunsch! Assixx ist jetzt einsatzbereit!**
 
-_Generiert am: 2025-05-29_  
+_Generiert am: 2025-05-29_
 _Version: 2025-05-29_

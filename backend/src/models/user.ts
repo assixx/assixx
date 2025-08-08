@@ -166,12 +166,12 @@ export class User {
 
     const query = `
       INSERT INTO users (
-        username, email, password, role, company, notes, 
+        username, email, password, role, company, notes,
         first_name, last_name, age, employee_id, employee_number, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
         status, is_archived, is_active, tenant_id
-      ) 
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
@@ -235,14 +235,14 @@ export class User {
   }
 
   static async findByUsername(username: string): Promise<DbUser | undefined> {
-    console.log("[DEBUG] findByUsername called for:", username);
+    console.info("[DEBUG] findByUsername called for:", username);
     try {
-      console.log("[DEBUG] About to execute query");
+      console.info("[DEBUG] About to execute query");
       const [rows] = await executeQuery<DbUser[]>(
         "SELECT * FROM users WHERE username = ?",
         [username],
       );
-      console.log("[DEBUG] Query completed, rows found:", rows.length);
+      console.info("[DEBUG] Query completed, rows found:", rows.length);
 
       if (rows[0]) {
         // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
@@ -266,7 +266,7 @@ export class User {
   ): Promise<DbUser | undefined> {
     try {
       // Validate inputs with detailed logging
-      console.log(
+      console.info(
         `[DEBUG] User.findById called with: id=${id} (type: ${typeof id}), tenant_id=${tenant_id} (type: ${typeof tenant_id})`,
       );
 
@@ -313,12 +313,12 @@ export class User {
   ): Promise<DbUser[]> {
     try {
       let query = `
-        SELECT u.id, u.username, u.email, u.role, u.company, 
-        u.first_name, u.last_name, u.created_at, u.department_id, 
+        SELECT u.id, u.username, u.email, u.role, u.company,
+        u.first_name, u.last_name, u.created_at, u.department_id,
         u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
-        d.name as department_name 
+        d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.role = ? AND u.tenant_id = ?
@@ -484,7 +484,7 @@ export class User {
   static async search(filters: UserFilter): Promise<DbUser[]> {
     try {
       let query = `
-        SELECT u.id, u.username, u.email, u.role, u.company, 
+        SELECT u.id, u.username, u.email, u.role, u.company,
         u.first_name, u.last_name, u.employee_id, u.created_at,
         u.department_id, u.position, u.phone, u.landline, u.employee_number, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
@@ -524,9 +524,9 @@ export class User {
 
       if (filters.search) {
         query += ` AND (
-          u.username LIKE ? OR 
-          u.email LIKE ? OR 
-          u.first_name LIKE ? OR 
+          u.username LIKE ? OR
+          u.email LIKE ? OR
+          u.first_name LIKE ? OR
           u.last_name LIKE ? OR
           u.employee_id LIKE ?
         )`;
@@ -636,9 +636,9 @@ export class User {
 
       if (filters.search) {
         query += ` AND (
-          u.username LIKE ? OR 
-          u.email LIKE ? OR 
-          u.first_name LIKE ? OR 
+          u.username LIKE ? OR
+          u.email LIKE ? OR
+          u.first_name LIKE ? OR
           u.last_name LIKE ? OR
           u.employee_id LIKE ?
         )`;
@@ -679,10 +679,10 @@ export class User {
   ): Promise<DbUser[]> {
     try {
       let query = `
-        SELECT u.id, u.username, u.email, u.role, u.company, 
-        u.first_name, u.last_name, u.created_at, u.department_id, 
+        SELECT u.id, u.username, u.email, u.role, u.company,
+        u.first_name, u.last_name, u.created_at, u.department_id,
         u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status,
-        d.name as department_name 
+        d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.is_archived = true AND u.tenant_id = ?
@@ -710,8 +710,8 @@ export class User {
   static async hasDocuments(userId: number): Promise<boolean> {
     try {
       const query = `
-        SELECT COUNT(*) as document_count 
-        FROM documents 
+        SELECT COUNT(*) as document_count
+        FROM documents
         WHERE user_id = ?
       `;
 
@@ -730,8 +730,8 @@ export class User {
   static async getDocumentCount(userId: number): Promise<number> {
     try {
       const query = `
-        SELECT COUNT(*) as document_count 
-        FROM documents 
+        SELECT COUNT(*) as document_count
+        FROM documents
         WHERE user_id = ?
       `;
 
@@ -760,7 +760,7 @@ export class User {
   }> {
     try {
       const query = `
-        SELECT 
+        SELECT
           u.role,
           u.department_id,
           ut.team_id,
@@ -931,9 +931,9 @@ export class User {
   // Find all users with optional filters
   static async findAll(filters: UserFilter): Promise<DbUser[]> {
     try {
-      let query = `SELECT u.*, d.name as department 
-                   FROM users u 
-                   LEFT JOIN departments d ON u.department_id = d.id 
+      let query = `SELECT u.*, d.name as department
+                   FROM users u
+                   LEFT JOIN departments d ON u.department_id = d.id
                    WHERE u.tenant_id = ?`;
       const params: unknown[] = [filters.tenant_id];
 
@@ -962,9 +962,9 @@ export class User {
   static async findAllByTenant(tenantId: number): Promise<DbUser[]> {
     try {
       const [rows] = await executeQuery<DbUser[]>(
-        `SELECT u.*, d.name as department 
-         FROM users u 
-         LEFT JOIN departments d ON u.department_id = d.id 
+        `SELECT u.*, d.name as department
+         FROM users u
+         LEFT JOIN departments d ON u.department_id = d.id
          WHERE u.tenant_id = ?`,
         [tenantId],
       );
@@ -1036,7 +1036,7 @@ export class User {
   ): Promise<boolean> {
     try {
       const [result] = await executeQuery<ResultSetHeader>(
-        `UPDATE users 
+        `UPDATE users
          SET availability_status = ?,
              availability_start = ?,
              availability_end = ?,

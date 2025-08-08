@@ -280,7 +280,7 @@ app.use(
     }
 
     if (fs.existsSync(jsPath)) {
-      console.log(`[DEBUG] Serving compiled JS instead of TS: ${jsPath}`);
+      console.info(`[DEBUG] Serving compiled JS instead of TS: ${jsPath}`);
       res.type("application/javascript").sendFile(jsPath);
       return;
     }
@@ -316,7 +316,7 @@ app.use(
     }
 
     if (fs.existsSync(actualTsPath)) {
-      console.log(`[DEBUG] Serving TypeScript file: ${actualTsPath}`);
+      console.info(`[DEBUG] Serving TypeScript file: ${actualTsPath}`);
 
       // Read the TypeScript file
       const tsContent = fs.readFileSync(actualTsPath, "utf8");
@@ -462,7 +462,7 @@ app.use("/api/upload", uploadLimiter);
 // Debug middleware to log all requests
 app.use((req: Request, _res: Response, next: NextFunction): void => {
   // Use separate arguments to avoid format string issues
-  console.log(
+  console.info(
     "[DEBUG]",
     req.method,
     req.originalUrl,
@@ -506,14 +506,14 @@ app.get("/api/status", (_req: Request, res: Response): void => {
 
 // Test POST endpoint
 app.post("/api/test", (req: Request, res: Response): void => {
-  console.log("[DEBUG] /api/test POST received");
+  console.info("[DEBUG] /api/test POST received");
   res.json({ message: "POST test successful", body: req.body });
 });
 
 // Import auth controller directly for legacy endpoint
 // Legacy login endpoints (for backward compatibility) - MUST BE BEFORE OTHER ROUTES
 app.get("/login", (_req: Request, res: Response): void => {
-  console.log("[DEBUG] GET /login - serving login page");
+  console.info("[DEBUG] GET /login - serving login page");
   // Fix path for Docker environment
   const projectRoot = process.cwd(); // In Docker this is /app
   const loginPath = path.join(
@@ -529,9 +529,9 @@ app.get("/login", (_req: Request, res: Response): void => {
 app.post(
   "/login",
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-    console.log("[DEBUG] POST /login endpoint hit");
-    console.log("[DEBUG] Original URL:", req.originalUrl);
-    console.log("[DEBUG] Request body:", req.body);
+    console.info("[DEBUG] POST /login endpoint hit");
+    console.info("[DEBUG] Original URL:", req.originalUrl);
+    console.info("[DEBUG] Request body:", req.body);
 
     try {
       // Call auth controller directly
@@ -552,7 +552,7 @@ app.post(
 // TEMPORARY: Enable Swagger in all modes for API documentation
 // eslint-disable-next-line no-constant-condition, no-constant-binary-expression
 if (true || process.env.NODE_ENV === "development") {
-  console.log("[DEBUG] Mounting Swagger UI at /api-docs");
+  console.info("[DEBUG] Mounting Swagger UI at /api-docs");
 
   // Serve OpenAPI JSON spec
   app.get("/api-docs/swagger.json", (_req: Request, res: Response): void => {
@@ -585,7 +585,7 @@ if (true || process.env.NODE_ENV === "development") {
   );
 
   // Serve Swagger UI for v2
-  console.log("[DEBUG] Mounting Swagger UI v2 at /api-docs/v2");
+  console.info("[DEBUG] Mounting Swagger UI v2 at /api-docs/v2");
   app.use(
     "/api-docs/v2",
     swaggerUi.serve,
@@ -607,23 +607,23 @@ if (true || process.env.NODE_ENV === "development") {
 }
 
 // CSRF Protection - applied to all routes except specified exceptions
-console.log("[DEBUG] Applying CSRF protection");
+console.info("[DEBUG] Applying CSRF protection");
 app.use(validateCSRFToken);
 
 // Tenant Status Middleware - check tenant deletion status
-console.log("[DEBUG] Applying tenant status middleware");
+console.info("[DEBUG] Applying tenant status middleware");
 app.use("/api", checkTenantStatus);
 
 // Legacy routes
-console.log("[DEBUG] Mounting legacy routes");
+console.info("[DEBUG] Mounting legacy routes");
 app.use(legacyRoutes);
 
 // Role switch routes
-console.log("[DEBUG] Mounting role-switch routes at /api/role-switch");
+console.info("[DEBUG] Mounting role-switch routes at /api/role-switch");
 app.use("/api/role-switch", roleSwitchRoutes);
 
 // API Routes - Use centralized routing
-console.log("[DEBUG] Mounting main routes at /");
+console.info("[DEBUG] Mounting main routes at /");
 app.use(routes);
 
 // Root and dashboard redirects
@@ -672,7 +672,7 @@ app.use(
 
 // 404 handler
 app.use((req: Request, res: Response): void => {
-  console.log(`[DEBUG] 404 hit: ${req.method} ${req.originalUrl}`);
+  console.info(`[DEBUG] 404 hit: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     message: "Route not found",
     path: req.originalUrl,

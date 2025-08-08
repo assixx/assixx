@@ -9,7 +9,7 @@ const rl = readline.createInterface({
 
 async function connectToMySQL(user, password) {
   try {
-    console.log(`Attempting to connect to MySQL with user: ${user}`);
+    console.info(`Attempting to connect to MySQL with user: ${user}`);
 
     const connection = await mysql.createConnection({
       host: "localhost",
@@ -17,39 +17,39 @@ async function connectToMySQL(user, password) {
       password,
     });
 
-    console.log("✅ Connection successful!");
+    console.info("✅ Connection successful!");
 
     // List databases
     const [dbs] = await connection.query("SHOW DATABASES");
-    console.log("Databases available:");
-    dbs.forEach((db) => console.log(` - ${db.Database}`));
+    console.info("Databases available:");
+    dbs.forEach((db) => console.info(` - ${db.Database}`));
 
     // Optionally connect to a specific database if it exists
     const assixxExists = dbs.some((db) => db.Database === "main");
     if (assixxExists) {
-      console.log("\nConnecting to assixx database...");
+      console.info("\nConnecting to assixx database...");
       await connection.query("USE assixx");
 
       // Show tables
       const [tables] = await connection.query("SHOW TABLES");
-      console.log("Tables in assixx database:");
+      console.info("Tables in assixx database:");
       if (tables.length === 0) {
-        console.log(" - No tables found");
+        console.info(" - No tables found");
       } else {
         tables.forEach((table) => {
           const tableName = Object.values(table)[0];
-          console.log(` - ${tableName}`);
+          console.info(` - ${tableName}`);
         });
       }
     } else {
-      console.log(
+      console.info(
         "\nThe assixx database does not exist. Would you like to create it?",
       );
-      console.log(
+      console.info(
         "To create it, run these commands in the MySQL command line:",
       );
-      console.log("  CREATE DATABASE assixx;");
-      console.log("  USE assixx;");
+      console.info("  CREATE DATABASE assixx;");
+      console.info("  USE assixx;");
     }
 
     await connection.end();
@@ -77,7 +77,7 @@ function updateEnvFile(user, password) {
     envContent = envContent.replace(/USE_MOCK_DB=.*$/m, "USE_MOCK_DB=false");
 
     fs.writeFileSync(envPath, envContent);
-    console.log(
+    console.info(
       "✅ .env file updated successfully with your MySQL credentials.",
     );
   } catch (error) {
@@ -115,9 +115,9 @@ function promptUser() {
   });
 }
 
-console.log("MySQL Connection Test");
-console.log("====================");
-console.log(
+console.info("MySQL Connection Test");
+console.info("====================");
+console.info(
   "This script will help you test your MySQL connection and update your .env file.",
 );
 promptUser();

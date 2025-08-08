@@ -33,6 +33,7 @@ echo 'window.FEATURE_FLAGS = { USE_API_V2_AUTH: true };' > frontend/public/featu
 ### 🔴 Phase 2: Authentication Core
 
 1. **api.service.ts** - Zentraler API Client
+
    ```
    WARUM: Basis für ALLE anderen API Calls
    ZEITAUFWAND: 1-2 Stunden
@@ -40,6 +41,7 @@ echo 'window.FEATURE_FLAGS = { USE_API_V2_AUTH: true };' > frontend/public/featu
    ```
 
 2. **common.ts** - Shared Utilities
+
    ```
    WARUM: Wird von fast allen Files verwendet
    ZEITAUFWAND: 1-2 Stunden
@@ -47,6 +49,7 @@ echo 'window.FEATURE_FLAGS = { USE_API_V2_AUTH: true };' > frontend/public/featu
    ```
 
 3. **auth.ts** - Login/Logout/Token Management
+
    ```
    WARUM: Ohne Auth kommt niemand rein
    ZEITAUFWAND: 2-3 Stunden
@@ -63,7 +66,7 @@ echo 'window.FEATURE_FLAGS = { USE_API_V2_AUTH: true };' > frontend/public/featu
 ### 🟡 Phase 2: Feature APIs (Nach Phase 1 stabil)
 
 4. **documents.ts** - File Management
-5. **blackboard.ts** - Announcements  
+5. **blackboard.ts** - Announcements
 6. **calendar.ts** - Event Management
 7. **chat.ts** - Messaging System
 8. **shifts.ts** - Shift Planning
@@ -85,7 +88,7 @@ Create `frontend/src/utils/api-client.ts`:
 
 ```typescript
 interface ApiConfig {
-  version: 'v1' | 'v2';
+  version: "v1" | "v2";
   useAuth?: boolean;
   contentType?: string;
 }
@@ -112,7 +115,7 @@ export class ApiClient {
   private static instance: ApiClient;
   private token: string | null = null;
   private refreshToken: string | null = null;
-  private version: 'v1' | 'v2' = 'v2';
+  private version: "v1" | "v2" = "v2";
 
   private constructor() {
     this.loadTokens();
@@ -126,49 +129,45 @@ export class ApiClient {
   }
 
   private loadTokens() {
-    this.token = localStorage.getItem('accessToken');
-    this.refreshToken = localStorage.getItem('refreshToken');
+    this.token = localStorage.getItem("accessToken");
+    this.refreshToken = localStorage.getItem("refreshToken");
   }
 
-  setVersion(version: 'v1' | 'v2') {
+  setVersion(version: "v1" | "v2") {
     this.version = version;
   }
 
-  async request<T = any>(
-    endpoint: string,
-    options: RequestInit = {},
-    config: ApiConfig = {}
-  ): Promise<T> {
+  async request<T = any>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
     const version = config.version || this.version;
-    const baseUrl = version === 'v2' ? '/api/v2' : '/api';
+    const baseUrl = version === "v2" ? "/api/v2" : "/api";
     const url = `${baseUrl}${endpoint}`;
 
     const headers: HeadersInit = {
-      'Content-Type': config.contentType || 'application/json',
+      "Content-Type": config.contentType || "application/json",
       ...options.headers,
     };
 
     // Add auth header for v2
-    if (version === 'v2' && config.useAuth !== false && this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (version === "v2" && config.useAuth !== false && this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
     }
 
     try {
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: version === 'v1' ? 'include' : 'omit',
+        credentials: version === "v1" ? "include" : "omit",
       });
 
       // Handle token refresh for v2
-      if (version === 'v2' && response.status === 401 && this.refreshToken) {
+      if (version === "v2" && response.status === 401 && this.refreshToken) {
         await this.refreshAccessToken();
         // Retry request with new token
-        headers['Authorization'] = `Bearer ${this.token}`;
+        headers["Authorization"] = `Bearer ${this.token}`;
         const retryResponse = await fetch(url, {
           ...options,
           headers,
-          credentials: 'omit',
+          credentials: "omit",
         });
         return this.handleResponse<T>(retryResponse, version);
       }
@@ -179,52 +178,45 @@ export class ApiClient {
     }
   }
 
-  private async handleResponse<T>(
-    response: Response,
-    version: 'v1' | 'v2'
-  ): Promise<T> {
-    const contentType = response.headers.get('content-type');
-    
-    if (contentType?.includes('application/json')) {
+  private async handleResponse<T>(response: Response, version: "v1" | "v2"): Promise<T> {
+    const contentType = response.headers.get("content-type");
+
+    if (contentType?.includes("application/json")) {
       const data = await response.json();
-      
-      if (version === 'v2') {
+
+      if (version === "v2") {
         const apiResponse = data as ApiResponse<T>;
         if (!apiResponse.success) {
           throw new ApiError(
-            apiResponse.error?.message || 'Unknown error',
-            apiResponse.error?.code || 'UNKNOWN_ERROR',
-            response.status
+            apiResponse.error?.message || "Unknown error",
+            apiResponse.error?.code || "UNKNOWN_ERROR",
+            response.status,
           );
         }
         return apiResponse.data as T;
       }
-      
+
       // v1 response
       if (!response.ok) {
-        throw new ApiError(
-          data.message || 'Request failed',
-          data.error || 'API_ERROR',
-          response.status
-        );
+        throw new ApiError(data.message || "Request failed", data.error || "API_ERROR", response.status);
       }
       return data as T;
     }
 
     // Non-JSON response (e.g., file download)
     if (!response.ok) {
-      throw new ApiError('Request failed', 'API_ERROR', response.status);
+      throw new ApiError("Request failed", "API_ERROR", response.status);
     }
-    
+
     return response as unknown as T;
   }
 
   private async refreshAccessToken(): Promise<void> {
     try {
-      const response = await fetch('/api/v2/auth/refresh', {
-        method: 'POST',
+      const response = await fetch("/api/v2/auth/refresh", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           refreshToken: this.refreshToken,
@@ -232,91 +224,75 @@ export class ApiClient {
       });
 
       if (!response.ok) {
-        throw new Error('Token refresh failed');
+        throw new Error("Token refresh failed");
       }
 
       const data = await response.json();
       this.token = data.data.accessToken;
       this.refreshToken = data.data.refreshToken;
-      
-      localStorage.setItem('accessToken', this.token);
-      localStorage.setItem('refreshToken', this.refreshToken);
+
+      localStorage.setItem("accessToken", this.token);
+      localStorage.setItem("refreshToken", this.refreshToken);
     } catch (error) {
       // Refresh failed, redirect to login
       this.clearTokens();
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
   }
 
   clearTokens() {
     this.token = null;
     this.refreshToken = null;
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   }
 
   private handleError(error: any): Error {
     if (error instanceof ApiError) {
       return error;
     }
-    return new ApiError(
-      error.message || 'Network error',
-      'NETWORK_ERROR',
-      0
-    );
+    return new ApiError(error.message || "Network error", "NETWORK_ERROR", 0);
   }
 
   // Convenience methods
   async get<T = any>(endpoint: string, config?: ApiConfig): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' }, config);
+    return this.request<T>(endpoint, { method: "GET" }, config);
   }
 
-  async post<T = any>(
-    endpoint: string,
-    data?: any,
-    config?: ApiConfig
-  ): Promise<T> {
+  async post<T = any>(endpoint: string, data?: any, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
-        method: 'POST',
+        method: "POST",
         body: data ? JSON.stringify(data) : undefined,
       },
-      config
+      config,
     );
   }
 
-  async put<T = any>(
-    endpoint: string,
-    data?: any,
-    config?: ApiConfig
-  ): Promise<T> {
+  async put<T = any>(endpoint: string, data?: any, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
-        method: 'PUT',
+        method: "PUT",
         body: data ? JSON.stringify(data) : undefined,
       },
-      config
+      config,
     );
   }
 
   async delete<T = any>(endpoint: string, config?: ApiConfig): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' }, config);
+    return this.request<T>(endpoint, { method: "DELETE" }, config);
   }
 
-  async upload<T = any>(
-    endpoint: string,
-    formData: FormData,
-    config?: ApiConfig
-  ): Promise<T> {
+  async upload<T = any>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
-        method: 'POST',
+        method: "POST",
         body: formData,
       },
-      { ...config, contentType: undefined } // Let browser set content-type
+      { ...config, contentType: undefined }, // Let browser set content-type
     );
   }
 }
@@ -326,10 +302,10 @@ export class ApiError extends Error {
     message: string,
     public code: string,
     public status: number,
-    public details?: any
+    public details?: any,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
@@ -346,39 +322,39 @@ Create `frontend/src/utils/response-adapter.ts`:
 export class ResponseAdapter {
   static toV2Format(v1Data: any): any {
     if (Array.isArray(v1Data)) {
-      return v1Data.map(item => this.toV2Format(item));
+      return v1Data.map((item) => this.toV2Format(item));
     }
-    
-    if (v1Data !== null && typeof v1Data === 'object') {
+
+    if (v1Data !== null && typeof v1Data === "object") {
       const converted: any = {};
-      
+
       for (const [key, value] of Object.entries(v1Data)) {
         const camelKey = this.snakeToCamel(key);
         converted[camelKey] = this.toV2Format(value);
       }
-      
+
       return converted;
     }
-    
+
     return v1Data;
   }
 
   static toV1Format(v2Data: any): any {
     if (Array.isArray(v2Data)) {
-      return v2Data.map(item => this.toV1Format(item));
+      return v2Data.map((item) => this.toV1Format(item));
     }
-    
-    if (v2Data !== null && typeof v2Data === 'object') {
+
+    if (v2Data !== null && typeof v2Data === "object") {
       const converted: any = {};
-      
+
       for (const [key, value] of Object.entries(v2Data)) {
         const snakeKey = this.camelToSnake(key);
         converted[snakeKey] = this.toV1Format(value);
       }
-      
+
       return converted;
     }
-    
+
     return v2Data;
   }
 
@@ -387,7 +363,7 @@ export class ResponseAdapter {
   }
 
   private static camelToSnake(str: string): string {
-    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
   }
 }
 ```
@@ -425,7 +401,7 @@ export function isV2Enabled(feature: keyof typeof FEATURE_FLAGS): boolean {
 export async function loadFeatureFlags() {
   try {
     // Try to load from server
-    const response = await fetch('/api/v2/features/my-features');
+    const response = await fetch("/api/v2/features/my-features");
     if (response.ok) {
       const data = await response.json();
       // Update flags based on server response
@@ -438,7 +414,7 @@ export async function loadFeatureFlags() {
     }
   } catch (error) {
     // Fallback to localStorage
-    const savedFlags = localStorage.getItem('featureFlags');
+    const savedFlags = localStorage.getItem("featureFlags");
     if (savedFlags) {
       Object.assign(FEATURE_FLAGS, JSON.parse(savedFlags));
     }
@@ -447,7 +423,7 @@ export async function loadFeatureFlags() {
 
 // Save flags to localStorage for offline access
 export function saveFeatureFlags() {
-  localStorage.setItem('featureFlags', JSON.stringify(FEATURE_FLAGS));
+  localStorage.setItem("featureFlags", JSON.stringify(FEATURE_FLAGS));
 }
 ```
 
@@ -459,50 +435,50 @@ export function saveFeatureFlags() {
 // frontend/src/utils/auth.ts
 
 // SCHRITT 1: Import hinzufügen (ganz oben)
-import { apiClient } from './api-client';
+import { apiClient } from "./api-client";
 
 // SCHRITT 2: Login Function ersetzen
 export async function login(email: string, password: string) {
   try {
-    const response = await apiClient.post('/auth/login', {
+    const response = await apiClient.post("/auth/login", {
       email,
-      password
+      password,
     });
-    
+
     // WICHTIG: v2 Response Format ist anders!
     if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
       // v2: Tokens speichern
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("user", JSON.stringify(response.user));
     }
-    
+
     return response;
   } catch (error) {
-    console.error('Login failed:', error);
+    console.error("Login failed:", error);
     // WICHTIG: Fehlermeldung anzeigen
-    alert('Login fehlgeschlagen: ' + error.message);
+    alert("Login fehlgeschlagen: " + error.message);
     throw error;
   }
 }
 
-// SCHRITT 3: Logout Function ersetzen  
+// SCHRITT 3: Logout Function ersetzen
 export async function logout() {
   try {
-    await apiClient.post('/auth/logout');
-    
+    await apiClient.post("/auth/logout");
+
     // Tokens löschen bei v2
     if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
     }
-    
-    window.location.href = '/login';
+
+    window.location.href = "/login";
   } catch (error) {
     // Bei Logout-Fehler trotzdem ausloggen
-    console.error('Logout error:', error);
-    window.location.href = '/login';
+    console.error("Logout error:", error);
+    window.location.href = "/login";
   }
 }
 
@@ -510,7 +486,7 @@ export async function logout() {
 export function isAuthenticated() {
   if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
     // v2: Token prüfen
-    return !!localStorage.getItem('accessToken');
+    return !!localStorage.getItem("accessToken");
   } else {
     // v1: Cookie wird vom Browser gehandelt
     return true; // Muss server-seitig geprüft werden
@@ -520,11 +496,11 @@ export function isAuthenticated() {
 // SCHRITT 5: Get Current User
 export function getCurrentUser() {
   if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
   } else {
     // v1: Muss vom Server geholt werden
-    return apiClient.get('/auth/me');
+    return apiClient.get("/auth/me");
   }
 }
 ```
@@ -535,11 +511,11 @@ export function getCurrentUser() {
 // Browser Console Tests:
 
 // 1. Login Test
-await login('admin@test.com', 'password');
+await login("admin@test.com", "password");
 // Prüfen: localStorage.getItem('accessToken') // sollte Token zeigen
 
-// 2. API Call Test  
-await apiClient.get('/users/me');
+// 2. API Call Test
+await apiClient.get("/users/me");
 // Prüfen: Network Tab -> Authorization Header vorhanden?
 
 // 3. Logout Test
@@ -555,23 +531,23 @@ await logout();
 ```typescript
 // Before (v1)
 async function loadAnnouncements() {
-  const response = await fetch('/api/blackboard', {
-    credentials: 'include'
+  const response = await fetch("/api/blackboard", {
+    credentials: "include",
   });
   const announcements = await response.json();
   displayAnnouncements(announcements);
 }
 
 // After (v2)
-import { apiClient } from '../utils/api-client';
-import { isV2Enabled } from '../utils/feature-flags';
-import { ResponseAdapter } from '../utils/response-adapter';
+import { apiClient } from "../utils/api-client";
+import { isV2Enabled } from "../utils/feature-flags";
+import { ResponseAdapter } from "../utils/response-adapter";
 
 interface Announcement {
   id: number;
   title: string;
   content: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   tags: string[];
   attachments: any[];
   createdAt: string;
@@ -581,54 +557,51 @@ interface Announcement {
 async function loadAnnouncements() {
   try {
     let announcements: Announcement[];
-    
-    if (isV2Enabled('USE_API_V2_BLACKBOARD')) {
+
+    if (isV2Enabled("USE_API_V2_BLACKBOARD")) {
       // v2 API with typing
-      announcements = await apiClient.get<Announcement[]>('/blackboard');
+      announcements = await apiClient.get<Announcement[]>("/blackboard");
     } else {
       // v1 API with adaptation
-      const response = await fetch('/api/blackboard', {
-        credentials: 'include'
+      const response = await fetch("/api/blackboard", {
+        credentials: "include",
       });
       const v1Data = await response.json();
       announcements = ResponseAdapter.toV2Format(v1Data);
     }
-    
+
     displayAnnouncements(announcements);
   } catch (error) {
-    console.error('Failed to load announcements:', error);
-    showErrorMessage('Ankündigungen konnten nicht geladen werden');
+    console.error("Failed to load announcements:", error);
+    showErrorMessage("Ankündigungen konnten nicht geladen werden");
   }
 }
 
 async function createAnnouncement(data: Partial<Announcement>) {
   try {
-    if (isV2Enabled('USE_API_V2_BLACKBOARD')) {
-      const announcement = await apiClient.post<Announcement>(
-        '/blackboard',
-        data
-      );
-      showSuccessMessage('Ankündigung erstellt');
+    if (isV2Enabled("USE_API_V2_BLACKBOARD")) {
+      const announcement = await apiClient.post<Announcement>("/blackboard", data);
+      showSuccessMessage("Ankündigung erstellt");
       return announcement;
     } else {
       // v1 API
       const v1Data = ResponseAdapter.toV1Format(data);
-      const response = await fetch('/api/blackboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(v1Data)
+      const response = await fetch("/api/blackboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(v1Data),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to create announcement');
+        throw new Error("Failed to create announcement");
       }
-      
+
       const result = await response.json();
       return ResponseAdapter.toV2Format(result);
     }
   } catch (error) {
-    console.error('Failed to create announcement:', error);
+    console.error("Failed to create announcement:", error);
     throw error;
   }
 }
@@ -644,17 +617,17 @@ export class MigrationHelper {
 
   static async checkMigrationStatus() {
     try {
-      const response = await fetch('/api/v2/features/my-features');
+      const response = await fetch("/api/v2/features/my-features");
       if (response.ok) {
         const data = await response.json();
         data.data?.forEach((feature: any) => {
-          if (feature.code.startsWith('API_V2_')) {
+          if (feature.code.startsWith("API_V2_")) {
             this.migrationStatus[feature.code] = feature.isActive;
           }
         });
       }
     } catch (error) {
-      console.warn('Could not check migration status:', error);
+      console.warn("Could not check migration status:", error);
     }
   }
 
@@ -662,11 +635,7 @@ export class MigrationHelper {
     return this.migrationStatus[`API_V2_${apiName.toUpperCase()}`] || false;
   }
 
-  static async migrateApiCall<T>(
-    v1Call: () => Promise<T>,
-    v2Call: () => Promise<T>,
-    apiName: string
-  ): Promise<T> {
+  static async migrateApiCall<T>(v1Call: () => Promise<T>, v2Call: () => Promise<T>, apiName: string): Promise<T> {
     if (this.isApiMigrated(apiName)) {
       try {
         return await v2Call();
@@ -683,15 +652,17 @@ export class MigrationHelper {
 ## 📋 Migration Checklist per File
 
 ### auth.ts
+
 - [ ] Import API client
 - [ ] Update login endpoint
-- [ ] Update logout endpoint  
+- [ ] Update logout endpoint
 - [ ] Add token management
 - [ ] Update refresh logic
 - [ ] Add error handling
 - [ ] Test with feature flag
 
 ### common.ts
+
 - [ ] Replace base fetch calls
 - [ ] Add API version detection
 - [ ] Update error handling
@@ -699,6 +670,7 @@ export class MigrationHelper {
 - [ ] Update type definitions
 
 ### admin-dashboard.ts
+
 - [ ] Update stats endpoints
 - [ ] Adapt response format
 - [ ] Update chart data mapping
@@ -706,6 +678,7 @@ export class MigrationHelper {
 - [ ] Update filters
 
 ### blackboard.ts
+
 - [ ] Update CRUD endpoints
 - [ ] Add priority support
 - [ ] Implement tag filtering
@@ -713,6 +686,7 @@ export class MigrationHelper {
 - [ ] Add confirmation tracking
 
 ### calendar.ts
+
 - [ ] Update event endpoints
 - [ ] Add recurrence support
 - [ ] Update RSVP handling
@@ -720,6 +694,7 @@ export class MigrationHelper {
 - [ ] Add visibility scopes
 
 ### chat.ts
+
 - [ ] Update message endpoints
 - [ ] Implement WebSocket v2
 - [ ] Update file attachments
@@ -727,6 +702,7 @@ export class MigrationHelper {
 - [ ] Update typing indicators
 
 ### documents.ts
+
 - [ ] Update upload endpoint
 - [ ] Add tag support
 - [ ] Update download logic
@@ -734,6 +710,7 @@ export class MigrationHelper {
 - [ ] Add quota tracking
 
 ### shifts.ts
+
 - [ ] Update shift endpoints
 - [ ] Add template support
 - [ ] Update swap requests
@@ -743,63 +720,65 @@ export class MigrationHelper {
 ## 🧪 Testing Strategy
 
 ### Unit Tests
+
 ```typescript
 // frontend/src/__tests__/api-client.test.ts
-describe('ApiClient', () => {
-  it('should handle v2 responses correctly', async () => {
+describe("ApiClient", () => {
+  it("should handle v2 responses correctly", async () => {
     // Mock fetch
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         success: true,
-        data: { id: 1, name: 'Test' }
-      })
+        data: { id: 1, name: "Test" },
+      }),
     });
 
-    const result = await apiClient.get('/test');
-    expect(result).toEqual({ id: 1, name: 'Test' });
+    const result = await apiClient.get("/test");
+    expect(result).toEqual({ id: 1, name: "Test" });
   });
 
-  it('should handle v2 errors correctly', async () => {
+  it("should handle v2 errors correctly", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         success: false,
         error: {
-          code: 'NOT_FOUND',
-          message: 'Resource not found'
-        }
-      })
+          code: "NOT_FOUND",
+          message: "Resource not found",
+        },
+      }),
     });
 
-    await expect(apiClient.get('/test')).rejects.toThrow(ApiError);
+    await expect(apiClient.get("/test")).rejects.toThrow(ApiError);
   });
 });
 ```
 
 ### Integration Tests
+
 ```typescript
 // frontend/src/__tests__/auth.integration.test.ts
-describe('Auth Integration', () => {
+describe("Auth Integration", () => {
   beforeEach(() => {
     // Reset feature flags
     FEATURE_FLAGS.USE_API_V2_AUTH = true;
   });
 
-  it('should login with v2 API', async () => {
+  it("should login with v2 API", async () => {
     const mockResponse = {
-      accessToken: 'token123',
-      refreshToken: 'refresh123',
-      user: { id: 1, email: 'test@example.com' }
+      accessToken: "token123",
+      refreshToken: "refresh123",
+      user: { id: 1, email: "test@example.com" },
     };
 
     // Mock API call
-    jest.spyOn(apiClient, 'post').mockResolvedValue(mockResponse);
+    jest.spyOn(apiClient, "post").mockResolvedValue(mockResponse);
 
-    const result = await login('test@example.com', 'password');
-    
+    const result = await login("test@example.com", "password");
+
     expect(result).toEqual(mockResponse);
-    expect(localStorage.getItem('accessToken')).toBe('token123');
+    expect(localStorage.getItem("accessToken")).toBe("token123");
   });
 });
 ```
@@ -807,19 +786,19 @@ describe('Auth Integration', () => {
 ## 🚀 Deployment Considerations
 
 ### Environment Variables
+
 ```javascript
 // frontend/src/config/environment.ts
 export const config = {
-  API_VERSION: process.env.REACT_APP_API_VERSION || 'v2',
-  API_BASE_URL: process.env.REACT_APP_API_BASE_URL || '/api',
-  ENABLE_V2_MIGRATION: process.env.REACT_APP_ENABLE_V2_MIGRATION === 'true',
-  MIGRATION_ROLLOUT_PERCENTAGE: parseInt(
-    process.env.REACT_APP_MIGRATION_ROLLOUT_PERCENTAGE || '0'
-  ),
+  API_VERSION: process.env.REACT_APP_API_VERSION || "v2",
+  API_BASE_URL: process.env.REACT_APP_API_BASE_URL || "/api",
+  ENABLE_V2_MIGRATION: process.env.REACT_APP_ENABLE_V2_MIGRATION === "true",
+  MIGRATION_ROLLOUT_PERCENTAGE: parseInt(process.env.REACT_APP_MIGRATION_ROLLOUT_PERCENTAGE || "0"),
 };
 ```
 
 ### Build Configuration
+
 ```json
 // package.json
 {
@@ -840,10 +819,10 @@ export const config = {
 ```javascript
 // PROBLEM: Token wird nicht mitgesendet
 // LÖSUNG 1: Prüfe Feature Flag
-console.log(window.FEATURE_FLAGS); // USE_API_V2_AUTH sollte true sein
+console.info(window.FEATURE_FLAGS); // USE_API_V2_AUTH sollte true sein
 
 // LÖSUNG 2: Prüfe Token
-console.log(localStorage.getItem('accessToken')); // Sollte Token zeigen
+console.info(localStorage.getItem("accessToken")); // Sollte Token zeigen
 
 // LÖSUNG 3: Prüfe API Client
 // In Network Tab: Authorization Header sollte da sein
@@ -857,14 +836,14 @@ console.log(localStorage.getItem('accessToken')); // Sollte Token zeigen
 // v2: { success: true, data: { users: [...] } }
 
 // LÖSUNG: API Client nutzen (macht das automatisch!)
-const users = await apiClient.get('/users'); // Funktioniert für beide
+const users = await apiClient.get("/users"); // Funktioniert für beide
 ```
 
 #### 3. ❌ "CORS blocked"
 
 ```javascript
 // PROBLEM: Falsche credentials Policy
-// LÖSUNG: 
+// LÖSUNG:
 // v1 braucht: credentials: 'include' (für Cookies)
 // v2 braucht: credentials: 'omit' (nutzt Bearer Token)
 // API Client handelt das automatisch!
@@ -885,13 +864,15 @@ window.FEATURE_FLAGS.USE_API_V2_DOCUMENTS = true;
 ```javascript
 // PROBLEM: Refresh Endpoint falsch
 // LÖSUNG: Manuell testen
-fetch('/api/v2/auth/refresh', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+fetch("/api/v2/auth/refresh", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    refreshToken: localStorage.getItem('refreshToken')
-  })
-}).then(r => r.json()).then(console.log);
+    refreshToken: localStorage.getItem("refreshToken"),
+  }),
+})
+  .then((r) => r.json())
+  .then(console.info);
 ```
 
 ## 🛠️ Debug Utilities
@@ -902,39 +883,39 @@ fetch('/api/v2/auth/refresh', {
 window.debugMigration = {
   // Zeige aktuelle Config
   showConfig() {
-    console.log('Feature Flags:', window.FEATURE_FLAGS);
-    console.log('Access Token:', localStorage.getItem('accessToken'));
-    console.log('User:', localStorage.getItem('user'));
+    console.info("Feature Flags:", window.FEATURE_FLAGS);
+    console.info("Access Token:", localStorage.getItem("accessToken"));
+    console.info("User:", localStorage.getItem("user"));
   },
-  
+
   // Test API Call
   async testApi(endpoint) {
     try {
       const result = await apiClient.get(endpoint);
-      console.log('Success:', result);
+      console.info("Success:", result);
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   },
-  
+
   // Force v1
   forceV1() {
-    Object.keys(window.FEATURE_FLAGS).forEach(key => {
+    Object.keys(window.FEATURE_FLAGS).forEach((key) => {
       window.FEATURE_FLAGS[key] = false;
     });
     location.reload();
   },
-  
+
   // Force v2
   forceV2() {
-    Object.keys(window.FEATURE_FLAGS).forEach(key => {
+    Object.keys(window.FEATURE_FLAGS).forEach((key) => {
       window.FEATURE_FLAGS[key] = true;
     });
     location.reload();
-  }
+  },
 };
 
-console.log('Debug utilities loaded! Try: debugMigration.showConfig()');
+console.info("Debug utilities loaded! Try: debugMigration.showConfig()");
 ```
 
 ## 📞 Support & Hilfe
@@ -949,7 +930,7 @@ console.log('Debug utilities loaded! Try: debugMigration.showConfig()');
 
 ---
 
-**Document Version:** 2.0  
-**Last Updated:** 03.08.2025  
-**Author:** Frontend Migration Team  
+**Document Version:** 2.0
+**Last Updated:** 03.08.2025
+**Author:** Frontend Migration Team
 **Status:** READY FOR IMPLEMENTATION

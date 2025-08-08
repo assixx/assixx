@@ -4,35 +4,39 @@
 
 ### 🎯 Blackboard API v2 Frontend Migration
 
-**Zeit:** 2 Stunden  
+**Zeit:** 2 Stunden
 **Status:** ✅ ABGESCHLOSSEN
 
 #### Erfolge:
+
 - ✅ blackboard.ts vollständig migriert (20+ API Calls)
 - ✅ Feature Flag USE_API_V2_BLACKBOARD aktiviert
 - ✅ Backend Routes bereits vorhanden (nur Routing-Fix benötigt)
 - ✅ blackboard-modal-update.html gelöscht (redundant)
 
 #### Kritischer Bug behoben:
+
 ```typescript
 // Problem: v2 API nutzt andere Endpunkt-Struktur
 // Alt (falsch):
-'/api/v2/blackboard'
+"/api/v2/blackboard";
 
 // Neu (korrekt):
-'/api/v2/blackboard/entries'
-'/api/v2/blackboard/entries/{id}'
-'/api/v2/blackboard/entries/{id}/attachments'
+"/api/v2/blackboard/entries";
+"/api/v2/blackboard/entries/{id}";
+"/api/v2/blackboard/entries/{id}/attachments";
 ```
 
 #### Technische Details:
+
 - ApiClient Integration implementiert
 - Custom Modal statt browser confirm()
-- console.log → console.info (ESLint)
+- console.info → console.info (ESLint)
 - Async arrow functions → Promise.resolve()
 - TypeScript strict typing (kein `any`)
 
 #### Fortschritt:
+
 - **27/64 Files migriert (42.2%)**
 - Phase 7 Communication teilweise abgeschlossen
 - Nächste Aufgaben: chat.ts, notification.service.ts
@@ -361,7 +365,7 @@
 ### 🔧 Wichtige Lessons Learned
 
 1. **Test-DB Schema muss EXAKT mit Produktion übereinstimmen**
-2. **Nach docker-compose restart: `pnpm build:ts` nötig**
+2. **Nach docker-compose restart: `pnpm build` nötig**
 3. **Volume Mounts für alle Test-Files essentiell**
 4. **Multi-Tenant Isolation bei JEDER Query prüfen**
 
@@ -432,7 +436,7 @@
 
 **JWT Token Debugging Session:**
 
-- console.log in Jest war unterdrückt
+- console.info in Jest war unterdrückt
 - Debug-Logs in Datei geschrieben
 - JWT enthält korrekte Felder: isRoleSwitched, activeRole
 - Auth Middleware setzt diese nun korrekt auf req.user
@@ -1682,7 +1686,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 2. **Technische Herausforderungen gelöst:** ✅
    - TypeScript union type Error → Import aus utils/db.js
    - Transaction Hanging → Alle Transactions entfernt
-   - Console.log nicht sichtbar → import { log, error } from "console"
+   - console.info nicht sichtbar → import { log, error } from "console"
    - MySQL Parameter Binding Error → String Interpolation
    - NaN in Pagination → Number.isNaN() Checks
    - Content-Type Headers → Zu allen POST Requests

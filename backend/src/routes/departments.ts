@@ -27,7 +27,7 @@ router.use(authenticateToken);
 // Middleware for role-based access control
 router.use((req: Request, res: Response, next: NextFunction): void => {
   const authReq = req as AuthenticatedRequest;
-  console.log(
+  console.info(
     `Departments route - User: ${authReq.user?.username}, Role: ${authReq.user?.role}, Method: ${req.method}`,
   );
 

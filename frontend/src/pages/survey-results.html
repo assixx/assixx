@@ -96,6 +96,7 @@
 
       .stat-card {
         /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
+        /* Additional card styles can be added here if needed */
       }
 
       .stat-value {
@@ -334,7 +335,7 @@
       let statistics = null;
 
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('Survey Results page loaded');
+        console.info('Survey Results page loaded');
 
         // URL-Parameter auslesen
         const urlParams = new URLSearchParams(window.location.search);
@@ -419,7 +420,7 @@
                         <span><i class="fas fa-user-shield"></i> ${surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true ? 'Anonym' : 'Nicht anonym'}</span>
                     </div>
                 </div>
-                
+
                 <div class="export-actions">
                     <button class="btn btn-primary" onclick="exportToExcel()">
                         <i class="fas fa-file-excel"></i> Excel Export
@@ -431,7 +432,7 @@
                         <i class="fas fa-print"></i> Drucken
                     </button>
                 </div>
-                
+
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3 class="stat-value">${statistics.total_responses || 0}</h3>
@@ -450,7 +451,7 @@
                         <p class="stat-label">Status</p>
                     </div>
                 </div>
-                
+
                 <div id="questions-results">
                     ${renderQuestionResults()}
                 </div>
@@ -587,7 +588,7 @@
                               !isAnonymous && response.user_id
                                 ? `
                                 <p class="response-meta">
-                                    <i class="fas fa-user"></i> ${escapeHtml(response.first_name || '')} ${escapeHtml(response.last_name || '')} 
+                                    <i class="fas fa-user"></i> ${escapeHtml(response.first_name || '')} ${escapeHtml(response.last_name || '')}
                                 </p>
                             `
                                 : ''

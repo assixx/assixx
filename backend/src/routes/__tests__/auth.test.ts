@@ -37,7 +37,7 @@ describe("Authentication API Endpoints", () => {
     // Test database connection
     try {
       await testDb.execute("SELECT 1");
-      console.log("Database connection successful");
+      console.info("Database connection successful");
     } catch (error) {
       console.error("Database connection failed:", error);
     }
@@ -173,7 +173,7 @@ describe("Authentication API Endpoints", () => {
 
   describe("POST /api/auth/login", () => {
     it("should successfully login with valid credentials", async () => {
-      console.log("Attempting login with username:", testUser1.username);
+      console.info("Attempting login with username:", testUser1.username);
       const response = await request(app).post("/api/auth/login").send({
         username: testUser1.username, // This will now include the prefix
         password: "TestPass123!",
@@ -395,7 +395,7 @@ describe("Authentication API Endpoints", () => {
         .send({}); // Send empty body
 
       if (response.status !== 200) {
-        console.log("Logout response:", response.status, response.body);
+        console.info("Logout response:", response.status, response.body);
       }
 
       expect(response.status).toBe(200);
@@ -475,8 +475,12 @@ describe("Authentication API Endpoints", () => {
 
       // Debug info
       if (response.status !== 200) {
-        console.log("GET /api/auth/me failed:", response.status, response.body);
-        console.log("Token used:", authToken1);
+        console.info(
+          "GET /api/auth/me failed:",
+          response.status,
+          response.body,
+        );
+        console.info("Token used:", authToken1);
       }
 
       expect(response.status).toBe(200);

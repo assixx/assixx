@@ -353,7 +353,7 @@ let currentDocument: Document | null = null;
 /**
  * View document in modal
  */
-async function viewDocument(documentId: number): Promise<void> {
+function viewDocument(documentId: number): void {
   try {
     // Find the document in our data
     const doc = allDocuments.find((d) => d.id === documentId);
@@ -500,7 +500,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
   }
 
   try {
-    console.log('Downloading document:', documentId);
+    console.info('Downloading document:', documentId);
 
     // Check if we have a token
     const token = localStorage.getItem('token');

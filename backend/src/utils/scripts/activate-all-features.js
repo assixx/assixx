@@ -29,7 +29,7 @@ async function activateAllFeatures(tenantId) {
       "SELECT id, code, name FROM features WHERE is_active = true",
     );
 
-    console.log(`Found ${features.length} features to activate`);
+    console.info(`Found ${features.length} features to activate`);
 
     // Activate each feature for the tenant
     for (const feature of features) {
@@ -42,27 +42,27 @@ async function activateAllFeatures(tenantId) {
       if (existing.length > 0) {
         // Update existing
         await connection.execute(
-          `UPDATE tenant_features 
-           SET is_active = TRUE, 
+          `UPDATE tenant_features
+           SET is_active = TRUE,
                expires_at = NULL,
                updated_at = NOW()
            WHERE tenant_id = ? AND feature_id = ?`,
           [tenantId, feature.id],
         );
-        console.log(`✓ Updated feature: ${feature.name} (${feature.code})`);
+        console.info(`✓ Updated feature: ${feature.name} (${feature.code})`);
       } else {
         // Insert new
         await connection.execute(
-          `INSERT INTO tenant_features 
+          `INSERT INTO tenant_features
            (tenant_id, feature_id, is_active, activated_at, expires_at)
            VALUES (?, ?, TRUE, NOW(), NULL)`,
           [tenantId, feature.id],
         );
-        console.log(`✓ Activated feature: ${feature.name} (${feature.code})`);
+        console.info(`✓ Activated feature: ${feature.name} (${feature.code})`);
       }
     }
 
-    console.log("\n✅ All features activated successfully!");
+    console.info("\n✅ All features activated successfully!");
   } catch (error) {
     console.error("Error:", error);
   } finally {

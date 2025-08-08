@@ -569,6 +569,7 @@
 
       .loading-spinner svg {
         /* animation: spin 1.5s linear infinite; */
+        /* Reserved for spinner animation styles */
       }
 
       /* Recipient Type Selector Styles */
@@ -874,7 +875,7 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('Document upload page loaded');
+        console.info('Document upload page loaded');
 
         // Datei-Upload-Bereich einrichten
         setupFileUpload();
@@ -1188,7 +1189,7 @@
             const data = await response.json();
             // Handle v2 API response format: {success: true, data: [...], pagination: {...}}
             const employees = data.data || [];
-            console.log(`Loaded ${employees.length} employees`);
+            console.info(`Loaded ${employees.length} employees`);
 
             // Dropdown leeren
             userDropdown.innerHTML = '';
@@ -1340,7 +1341,7 @@
             const result = await response.json();
 
             if (response.ok) {
-              console.log('Upload successful:', result);
+              console.info('Upload successful:', result);
               form.reset();
 
               // Dropdowns zurücksetzen

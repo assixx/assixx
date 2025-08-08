@@ -134,17 +134,17 @@ router.get(
   "/available",
   typed.public(async (_req, res) => {
     try {
-      console.log("[DEBUG] Plans route - starting");
+      console.info("[DEBUG] Plans route - starting");
 
       // Direct database query to bypass the issue
       const { execute } = await import("../database");
       const query = `
-      SELECT * FROM plans 
-      WHERE is_active = true 
+      SELECT * FROM plans
+      WHERE is_active = true
       ORDER BY sort_order ASC
     `;
       const [plans] = await execute<RowDataPacket[]>(query);
-      console.log("[DEBUG] Plans fetched directly:", plans);
+      console.info("[DEBUG] Plans fetched directly:", plans);
 
       // Add feature information to each plan
       const plansWithFeatures = await Promise.all(

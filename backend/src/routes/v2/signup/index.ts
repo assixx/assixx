@@ -135,13 +135,13 @@ router.post(
   authLimiter, // Rate limiting for registration
   validate(signupValidation),
   async (req: Request, res: Response) => {
-    console.log("[SIGNUP ROUTE] Request received");
-    console.log("[SIGNUP ROUTE] Body:", req.body);
-    console.log("[SIGNUP ROUTE] About to call controller");
+    console.info("[SIGNUP ROUTE] Request received");
+    console.info("[SIGNUP ROUTE] Body:", req.body);
+    console.info("[SIGNUP ROUTE] About to call controller");
     try {
-      console.log("[SIGNUP ROUTE] Inside try block");
+      console.info("[SIGNUP ROUTE] Inside try block");
       await signupController.signup(req, res);
-      console.log("[SIGNUP ROUTE] Controller call completed");
+      console.info("[SIGNUP ROUTE] Controller call completed");
     } catch (error) {
       console.error("[SIGNUP ROUTE] Error caught in route handler:", error);
       res.status(500).json({

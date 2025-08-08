@@ -8,17 +8,17 @@
 // ❌ SCHLECHT - Kann zu unerwarteten Bugs führen
 if (userName) {
   // Was wenn userName = "" oder 0?
-  console.log(userName);
+  console.info(userName);
 }
 
 // ✅ GUT - Explizit und klar
 if (userName !== undefined && userName !== null && userName !== "") {
-  console.log(userName);
+  console.info(userName);
 }
 
 // ✅ ODER mit der Regel:
 if (userName != null && userName.length > 0) {
-  console.log(userName);
+  console.info(userName);
 }
 ```
 
@@ -61,13 +61,13 @@ void deleteUser(123); // Explizit ignorieren
 // ❌ SCHLECHT - TypeScript weiß dass dies immer true ist
 const user: User = getUser();
 if (user) { // User kann nie null sein laut Type!
-  console.log(user.name);
+  console.info(user.name);
 }
 
 // ✅ GUT
 const user: User | null = getUser();
 if (user) { // Jetzt macht die Prüfung Sinn
-  console.log(user.name);
+  console.info(user.name);
 }
 ```
 

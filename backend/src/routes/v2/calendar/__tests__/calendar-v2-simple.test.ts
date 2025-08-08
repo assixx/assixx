@@ -21,25 +21,25 @@ describe("Calendar v2 API - Simple Debug Test", () => {
   let adminUser: any;
 
   beforeAll(async () => {
-    console.log("1. Creating test database...");
+    console.info("1. Creating test database...");
     testDb = await createTestDatabase();
 
-    console.log("2. Setting JWT secret...");
+    console.info("2. Setting JWT secret...");
     process.env.JWT_SECRET = "test-secret-key-for-calendar-debug";
 
-    console.log("3. Creating test tenant...");
+    console.info("3. Creating test tenant...");
     tenantId = await createTestTenant(
       testDb,
       "caldebugtest",
       "Calendar Debug Test Company",
     );
-    console.log("   Tenant created with ID:", tenantId);
+    console.info("   Tenant created with ID:", tenantId);
 
-    console.log("4. Creating test department...");
+    console.info("4. Creating test department...");
     deptId = await createTestDepartment(testDb, tenantId, "Test Department");
-    console.log("   Department created with ID:", deptId);
+    console.info("   Department created with ID:", deptId);
 
-    console.log("5. Creating admin user...");
+    console.info("5. Creating admin user...");
     adminUser = await createTestUser(testDb, {
       username: "admin.caldebug@test.com",
       email: "admin.caldebug@test.com",
@@ -50,27 +50,30 @@ describe("Calendar v2 API - Simple Debug Test", () => {
       last_name: "Debug",
       department_id: deptId,
     });
-    console.log("   Admin user created:", adminUser);
+    console.info("   Admin user created:", adminUser);
   });
 
   afterAll(async () => {
-    console.log("Cleaning up test data...");
+    console.info("Cleaning up test data...");
     await cleanupTestData();
     await testDb.end();
   });
 
   it("should login admin user", async () => {
-    console.log("Attempting login with credentials:");
-    console.log("  Email:", adminUser.email);
-    console.log("  Password: AdminPass123!");
+    console.info("Attempting login with credentials:");
+    console.info("  Email:", adminUser.email);
+    console.info("  Password: AdminPass123!");
 
     const response = await request(app).post("/api/v2/auth/login").send({
       email: adminUser.email,
       password: "AdminPass123!",
     });
 
-    console.log("Login response status:", response.status);
-    console.log("Login response body:", JSON.stringify(response.body, null, 2));
+    console.info("Login response status:", response.status);
+    console.info(
+      "Login response body:",
+      JSON.stringify(response.body, null, 2),
+    );
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -85,15 +88,15 @@ describe("Calendar v2 API - Simple Debug Test", () => {
     });
 
     const token = loginRes.body.data?.accessToken;
-    console.log("Got token:", token ? "Yes" : "No");
+    console.info("Got token:", token ? "Yes" : "No");
 
     if (token) {
       const calendarRes = await request(app)
         .get("/api/v2/calendar/events")
         .set("Authorization", `Bearer ${token}`);
 
-      console.log("Calendar response status:", calendarRes.status);
-      console.log(
+      console.info("Calendar response status:", calendarRes.status);
+      console.info(
         "Calendar response body:",
         JSON.stringify(calendarRes.body, null, 2),
       );

@@ -14,8 +14,8 @@
     <!-- Quick redirect check before page renders -->
     <script>
       // FIRST: Check if session expired or timeout - clear storage before any redirect
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('session') === 'expired' || urlParams.get('timeout') === 'true') {
+      const urlParamsInitial = new URLSearchParams(window.location.search);
+      if (urlParamsInitial.get('session') === 'expired' || urlParamsInitial.get('timeout') === 'true') {
         // Clear all auth data immediately to prevent redirect loop
         localStorage.removeItem('token');
         localStorage.removeItem('accessToken');
@@ -261,7 +261,7 @@
             requestBody = { username, password, fingerprint };
           }
 
-          console.log(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
+          console.info(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
 
           const response = await fetch(apiUrl, {
             method: 'POST',
@@ -501,13 +501,14 @@
       }
 
       .btn-block {
-        width: 75%;
-        padding: var(--spacing-md);
+        width: 60%;
+        padding: var(--spacing-2sm);
         font-size: 16px;
         font-family: 'Inter', sans-serif;
         font-weight: 500;
         margin: 0 auto;
         display: block;
+        margin-top: 25px;
       }
 
       .login-footer {
@@ -678,9 +679,9 @@
       }
 
       /* Logo Animation */
-      .login-logo {
-        /* animation: subtle-pulse 3s ease-in-out infinite; */
-      }
+      /* .login-logo {
+        animation: subtle-pulse 3s ease-in-out infinite;
+      } */
 
       @keyframes subtle-pulse {
         0%,

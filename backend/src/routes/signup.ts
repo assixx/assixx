@@ -96,7 +96,7 @@ router.post(
   authLimiter,
   ...security.auth(signupValidation),
   typed.body<SignupBody>(async (req, res) => {
-    console.log("[SIGNUP DEBUG] Request received!");
+    console.info("[SIGNUP DEBUG] Request received!");
     try {
       logger.info(
         "[DEBUG] Signup request received at " + new Date().toISOString(),

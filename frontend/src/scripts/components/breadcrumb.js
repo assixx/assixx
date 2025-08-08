@@ -512,7 +512,7 @@ export function initBreadcrumb(customItems = null, customConfig = {}) {
   container.appendChild(breadcrumbElement);
 
   // Event für debugging
-  console.log('Breadcrumb initialisiert:', items);
+  console.info('Breadcrumb initialisiert:', items);
 }
 
 // Auto-Init wenn DOM geladen

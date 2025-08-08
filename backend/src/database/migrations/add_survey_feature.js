@@ -16,7 +16,7 @@ async function runMigration() {
       multipleStatements: true,
     });
 
-    console.log("📊 Starting survey feature migration...");
+    console.info("📊 Starting survey feature migration...");
 
     // SQL-Datei lesen
     const sqlPath = path.join(__dirname, "survey_schema.sql");
@@ -25,7 +25,7 @@ async function runMigration() {
     // Migration ausführen
     await connection.query(sql);
 
-    console.log("✅ Survey tables created successfully");
+    console.info("✅ Survey tables created successfully");
 
     // Prüfen ob Feature bereits existiert
     const [features] = await connection.query(
@@ -37,7 +37,7 @@ async function runMigration() {
       // Feature hinzufügen
       await connection.query(
         `
-        INSERT INTO features (code, name, description, category, base_price, is_active) 
+        INSERT INTO features (code, name, description, category, base_price, is_active)
         VALUES (?, ?, ?, ?, ?, ?)
       `,
         [
@@ -49,9 +49,9 @@ async function runMigration() {
           1,
         ],
       );
-      console.log("✅ Survey feature added to features table");
+      console.info("✅ Survey feature added to features table");
     } else {
-      console.log("ℹ️ Survey feature already exists in features table");
+      console.info("ℹ️ Survey feature already exists in features table");
     }
 
     // Beispiel-Template erstellen
@@ -123,10 +123,10 @@ async function runMigration() {
         ],
       );
 
-      console.log("✅ Sample survey template created");
+      console.info("✅ Sample survey template created");
     }
 
-    console.log("🎉 Survey feature migration completed successfully!");
+    console.info("🎉 Survey feature migration completed successfully!");
   } catch (error) {
     console.error("❌ Migration failed:", error);
     process.exit(1);

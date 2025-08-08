@@ -127,16 +127,16 @@ import { authenticateToken } from "../auth-refactored";
 - Mock-Strategie statt echte Test-DB für Unit Tests
 - Integration Tests separat mit echter DB
 
-### Jest console.log Debugging (22.07.2025)
+### Jest console.info Debugging (22.07.2025)
 
-**Problem:** console.log zeigt nichts in Jest Tests
+**Problem:** console.info zeigt nichts in Jest Tests
 **Symptom:** Keine Ausgabe trotz `--silent=false` oder `--verbose`
 
 **Lösung mit Error Throwing:**
 
 ```javascript
-// STATT console.log (wird oft unterdrückt):
-console.log("Response:", response.status, response.body);
+// STATT console.info (wird oft unterdrückt):
+console.info("Response:", response.status, response.body);
 
 // BESSER - Error werfen (wird IMMER angezeigt):
 if (response.status !== 201) {
@@ -158,7 +158,7 @@ if (response.status !== 201) {
    expect(response.body).toBe("DEBUG: " + JSON.stringify(response.body));
    ```
 
-3. **console.error statt console.log**:
+3. **console.error statt console.info**:
 
    ```javascript
    console.error("DEBUG:", data); // Wird manchmal angezeigt
@@ -177,7 +177,7 @@ if (response.status !== 201) {
 
 **Lessons Learned:**
 
-- Jest unterdrückt console.log standardmäßig
+- Jest unterdrückt console.info standardmäßig
 - Errors werden IMMER in der Ausgabe gezeigt
 - Bei kritischem Debugging: Error werfen statt loggen
 - Verschiedene Jest-Versionen verhalten sich unterschiedlich

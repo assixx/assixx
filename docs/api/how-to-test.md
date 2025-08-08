@@ -8,7 +8,7 @@ This guide documents the CORRECT way to write tests for the Assixx API v2. These
 
 ### 1. **Use Real Database Integration Tests**
 
-❌ **DON'T** mock services or use jest.mock()  
+❌ **DON'T** mock services or use jest.mock()
 ✅ **DO** use real database with test utilities
 
 ```typescript
@@ -36,11 +36,11 @@ backend/src/routes/v2/
 
 ### 3. **Console Logging in Jest Tests**
 
-Standard console.log doesn't work in Jest. Use direct imports:
+Standard console.info doesn't work in Jest. Use direct imports:
 
 ```typescript
 // WRONG - Won't show in test output
-console.log("Debug message");
+console.info("Debug message");
 console.error("Error message");
 
 // CORRECT - Import console functions directly
@@ -405,10 +405,10 @@ docker exec assixx-mysql sh -c 'mysql -u user -ppass db -e "SELECT * FROM table"
 
 ```typescript
 // Add strategic logging points:
-console.log("[Controller] Method entry:", { params, body });
-console.log("[Service] Before DB call:", query);
-console.log("[Service] After DB call:", result);
-console.log("[Controller] Sending response:", responseData);
+console.info("[Controller] Method entry:", { params, body });
+console.info("[Service] Before DB call:", query);
+console.info("[Service] After DB call:", result);
+console.info("[Controller] Sending response:", responseData);
 ```
 
 ### 12. **Version and Dependency Conflicts**
@@ -446,6 +446,6 @@ npm test -- --testNamePattern=X   # Single test
 
 ---
 
-**Last Updated:** 2025-07-31  
-**Created by:** Claude AI  
+**Last Updated:** 2025-07-31
+**Created by:** Claude AI
 **Based on:** Real debugging experience from Plans API v2 implementation

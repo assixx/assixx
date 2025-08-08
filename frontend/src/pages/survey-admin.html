@@ -975,14 +975,14 @@
 
           if (permissionsResponse.ok) {
             const permissionsData = await permissionsResponse.json();
-            console.log('Admin permissions response:', permissionsData);
+            console.info('Admin permissions response:', permissionsData);
 
             // Handle the wrapped response structure
             const permData = permissionsData.data || permissionsData;
 
             if (permData.hasAllAccess) {
               // Admin has all access - load all departments
-              console.log('Admin has all access, loading all departments');
+              console.info('Admin has all access, loading all departments');
               const allDeptsResponse = await fetch('/api/departments', {
                 headers: {
                   Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -993,7 +993,7 @@
               }
             } else if (permData.departments && permData.departments.length > 0) {
               // Admin has specific departments
-              console.log('Admin has specific departments:', permData.departments);
+              console.info('Admin has specific departments:', permData.departments);
               departments = permData.departments;
             }
           }
@@ -1001,7 +1001,7 @@
           // If no departments found from permissions, try loading all departments
           // (This handles cases where permissions endpoint fails or returns empty)
           if (departments.length === 0) {
-            console.log('No departments from permissions, trying to load all departments');
+            console.info('No departments from permissions, trying to load all departments');
             const allDeptsResponse = await fetch('/api/departments', {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -1009,7 +1009,7 @@
             });
             if (allDeptsResponse.ok) {
               const allDepartments = await allDeptsResponse.json();
-              console.log('All departments loaded:', allDepartments);
+              console.info('All departments loaded:', allDepartments);
               departments = allDepartments;
             }
           }
@@ -1032,7 +1032,7 @@
 
         // Debug: log first department to see structure
         if (departments.length > 0) {
-          console.log('First department structure:', departments[0]);
+          console.info('First department structure:', departments[0]);
         }
 
         departments.forEach((dept) => {

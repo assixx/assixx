@@ -134,6 +134,11 @@ export class ChatController {
       const tenantId = user.tenant_id;
       const userId = user.id;
 
+      // Critical debug logging
+      logError("[CRITICAL DEBUG] Controller: user object:", user);
+      logError("[CRITICAL DEBUG] Controller: tenantId from user:", tenantId);
+      logError("[CRITICAL DEBUG] Controller: userId from user:", userId);
+
       const body = req.body as {
         participantIds?: number[];
         name?: string;

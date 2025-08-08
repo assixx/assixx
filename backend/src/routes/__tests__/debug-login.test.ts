@@ -24,7 +24,7 @@ describe("Debug Login Test", () => {
       "Debug Test Company",
     );
 
-    console.log("Created tenant with ID:", tenantId);
+    console.info("Created tenant with ID:", tenantId);
   });
 
   afterAll(async () => {
@@ -44,7 +44,7 @@ describe("Debug Login Test", () => {
       last_name: "Admin",
     });
 
-    console.log("Created admin user:", adminUser);
+    console.info("Created admin user:", adminUser);
 
     // Try to login
     const loginRes = await request(app).post("/api/v2/auth/login").send({
@@ -52,8 +52,11 @@ describe("Debug Login Test", () => {
       password: "TestPass123",
     });
 
-    console.log("Login response status:", loginRes.status);
-    console.log("Login response body:", JSON.stringify(loginRes.body, null, 2));
+    console.info("Login response status:", loginRes.status);
+    console.info(
+      "Login response body:",
+      JSON.stringify(loginRes.body, null, 2),
+    );
 
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.success).toBe(true);
@@ -73,7 +76,7 @@ describe("Debug Login Test", () => {
       last_name: "Employee",
     });
 
-    console.log("Created employee user:", employeeUser);
+    console.info("Created employee user:", employeeUser);
 
     // Try to login
     const loginRes = await request(app).post("/api/v2/auth/login").send({
@@ -81,8 +84,11 @@ describe("Debug Login Test", () => {
       password: "TestPass123",
     });
 
-    console.log("Login response status:", loginRes.status);
-    console.log("Login response body:", JSON.stringify(loginRes.body, null, 2));
+    console.info("Login response status:", loginRes.status);
+    console.info(
+      "Login response body:",
+      JSON.stringify(loginRes.body, null, 2),
+    );
 
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.success).toBe(true);
