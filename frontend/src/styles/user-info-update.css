@@ -126,11 +126,11 @@
 #user-name,
 .user-name,
 .header .header-actions #user-info #user-name {
-  font-size: 0.9rem !important;
-  font-weight: 800 !important;
-  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  color: rgb(255, 255, 255) !important;
   margin: 0 !important;
-  letter-spacing: 0.1px !important;
+  letter-spacing: 0.3px !important;
 }
 
 /* Logout button styles moved to dashboard-theme.css to prevent conflicts */
