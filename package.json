@@ -4,7 +4,6 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "pnpm": {
-    "onlyBuiltDependencies": [],
     "overrides": {
       "tmp": "^0.2.4"
     }
