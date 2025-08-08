@@ -36,13 +36,18 @@ export interface ChatUser {
   last_seen: Date | null;
 }
 
+export interface ConversationLastMessage {
+  content: string;
+  created_at: Date;
+}
+
 export interface Conversation {
   id: number;
   name: string | null;
   isGroup: boolean;
   createdAt: Date;
   updatedAt: Date;
-  lastMessage: Message | null;
+  lastMessage: ConversationLastMessage | null;
   unreadCount: number;
   participants: ConversationParticipant[];
 }

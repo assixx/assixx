@@ -1150,7 +1150,10 @@ class ChatClient {
         // Handle error messages from WebSocket
         console.error('❌ WebSocket Error:', message.data);
         if (message.data && typeof message.data === 'object' && 'message' in message.data) {
-          this.showNotification(message.data.message ?? 'Fehler beim Senden der Nachricht', 'error');
+          const errorMessage = typeof message.data.message === 'string' 
+            ? message.data.message 
+            : 'Fehler beim Senden der Nachricht';
+          this.showNotification(errorMessage, 'error');
         } else {
           this.showNotification('Fehler bei der Kommunikation mit dem Server', 'error');
         }
