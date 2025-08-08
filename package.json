@@ -4,7 +4,10 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "pnpm": {
-    "onlyBuiltDependencies": []
+    "onlyBuiltDependencies": [],
+    "overrides": {
+      "tmp": "^0.2.4"
+    }
   },
   "scripts": {
     "start": "node dist/backend/src/server.js",
