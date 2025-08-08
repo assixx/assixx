@@ -61,8 +61,8 @@
 - [x] BUG FIX: Modal Display Issue (doppelte class Attribute korrigiert) ✅
 
 #### Communication
-- [ ] blackboard.ts
-- [ ] blackboard-modal-update.html
+- [x] blackboard.ts ✅ ABGESCHLOSSEN (08.08.2025) - 20+ API Calls migriert
+- [x] blackboard-modal-update.html ✅ GELÖSCHT (nicht verwendet)
 - [ ] chat.ts
 - [ ] chat.html
 - [ ] notification.service.ts
@@ -115,7 +115,7 @@
 
 ---
 
-## ✅ Fortschritt: 26/64 Files (40.6% abgeschlossen)
+## ✅ Fortschritt: 27/64 Files (42.2% abgeschlossen)
 
 ### ⚠️ WICHTIGE NOTIZEN:
 - **Chat unread-count**: Die Navigation ist bereits für v2 vorbereitet, aber das Feature Flag muss deaktiviert bleiben bis die komplette Chat-Seite migriert ist

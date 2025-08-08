@@ -1179,9 +1179,9 @@ body {
 
 #logoutModal .logout-modal {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  background: hsla(0, 0%, 3.5%, 0.86);
-  border: var(--border-width) solid #2e2e2e;
+  backdrop-filter: blur(20px) saturate(500%);
+  background: #1a1a1ac4;
+  border: var(--border-width) solid hsla(0,0%,100%,.1);
   border-radius: var(--radius-md);
   box-shadow:
     -28px 20px 30px rgba(255, 255, 255, 0.18),

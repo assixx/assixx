@@ -463,8 +463,9 @@ document.addEventListener('DOMContentLoaded', () => {
       let documents: Document[] = [];
 
       if (useV2Documents) {
-        // Use apiClient for v2
-        documents = (await apiClient.get<Document[]>('/documents')) ?? [];
+        // Use apiClient for v2 - response has nested structure
+        const response = await apiClient.get<{ documents: Document[] }>('/documents');
+        documents = response?.documents ?? [];
       } else {
         // Use v1 API
         const documentsRes = await fetch('/api/admin/documents', {
@@ -546,8 +547,9 @@ document.addEventListener('DOMContentLoaded', () => {
       let entries: BlackboardEntry[] = [];
 
       if (useV2Blackboard) {
-        // Use apiClient for v2
-        entries = (await apiClient.get<BlackboardEntry[]>('/blackboard?limit=3&sortBy=created_at&sortDir=DESC')) ?? [];
+        // Use apiClient for v2 - correct endpoint is /blackboard/entries
+        entries =
+          (await apiClient.get<BlackboardEntry[]>('/blackboard/entries?limit=3&sortBy=created_at&sortDir=DESC')) ?? [];
       } else {
         // Use v1 API
         const response = await fetch('/api/blackboard/entries?limit=3&sortBy=created_at&sortOrder=DESC', {
@@ -1052,8 +1054,9 @@ document.addEventListener('DOMContentLoaded', () => {
       let documents: Document[] = [];
 
       if (useV2Documents) {
-        // Use apiClient for v2
-        documents = (await apiClient.get<Document[]>('/documents?limit=5')) ?? [];
+        // Use apiClient for v2 - response has nested structure
+        const response = await apiClient.get<{ documents: Document[] }>('/documents?limit=5');
+        documents = response?.documents ?? [];
       } else {
         // Use v1 API
         const response = await fetch('/api/documents?limit=5', {

@@ -6,6 +6,51 @@
 
 ---
 
+## 📅 08.08.2025 (Donnerstag) - Phase 7 Communication (Blackboard)
+
+### 🎯 Tagesaufgabe
+- Phase 7 Communication: blackboard.ts Migration
+- Backend v2 Routing für Blackboard fixen
+- Feature Flag aktivieren und testen
+
+### ✅ Erfolge
+- ✅ blackboard.ts vollständig auf API v2 migriert
+- ✅ Backend v2 Routes existieren bereits (waren nur nicht richtig gemountet)
+- ✅ Feature Flag USE_API_V2_BLACKBOARD aktiviert
+- ✅ Kritischer Bug behoben: API-Endpunkte korrigiert
+- ✅ blackboard-modal-update.html gelöscht (war redundant)
+- ✅ 27/64 Frontend-Dateien migriert (42.2%)
+
+### 🔧 Technische Details
+
+**Kritischer Bug Fix:**
+- Problem: Frontend rief `/api/v2/blackboard` auf, aber v2 API erwartet `/api/v2/blackboard/entries`
+- Lösung: Alle Endpunkte angepasst:
+  ```typescript
+  // Alt (falsch)
+  const endpoint = `/blackboard`;
+  
+  // Neu (korrekt für v2)
+  const endpoint = useV2 ? '/blackboard/entries' : '/blackboard';
+  ```
+
+**Migration Details:**
+- 20+ API Calls von v1 zu v2 migriert
+- Confirm-Dialoge durch Custom Modal ersetzt
+- console.log durch console.info ersetzt (ESLint)
+- Async Arrow Functions durch Promise.resolve() ersetzt
+- TypeScript strict typing durchgesetzt (kein `any`)
+
+### 📊 Metriken
+- Zeit: ~2 Stunden
+- Files: 1 migriert, 1 gelöscht
+- API Calls: 20+ migriert
+- Fortschritt: 42.2% (27/64 Files)
+- Feature Flags aktiviert: USE_API_V2_BLACKBOARD
+- Nächste Tasks: chat.ts, notification.service.ts
+
+---
+
 ## 📅 07.08.2025 (Mittwoch) - Phase 5, 6 & 7 Documents
 
 ### 🎯 Tagesaufgabe

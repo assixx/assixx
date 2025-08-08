@@ -1059,8 +1059,10 @@ class UnifiedNavigation {
 
       // Re-attach event listeners after inserting HTML
       setTimeout(() => {
-        console.info('[UnifiedNav] Re-attaching event listeners for navigation-container');
-        this.attachEventListeners();
+        // Only re-attach if not already attached
+        if (!this.isEventListenerAttached) {
+          this.attachEventListeners();
+        }
         void this.updateUnreadMessages();
         void this.updatePendingSurveys();
         void this.updateUnreadDocuments();
@@ -1441,9 +1443,21 @@ class UnifiedNavigation {
 
   // Removed unused method getUserInitials
 
+  // Store the click handlers as bound methods so we can remove them
+  private documentClickHandler?: (e: MouseEvent) => void;
+  private dropdownClickHandler?: (e: Event) => void;
+  private isEventListenerAttached = false;
+
   private attachEventListeners(): void {
-    // Navigation Link Clicks
-    document.addEventListener('click', (e: MouseEvent) => {
+    // Remove existing listener if present
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler);
+      this.isEventListenerAttached = false;
+    }
+
+    // Create and store the new handler
+    this.documentClickHandler = (e: MouseEvent) => {
+
       const navLink = (e.target as HTMLElement).closest('.sidebar-link:not([onclick])') as HTMLElement;
       if (navLink) {
         this.handleNavigationClick(navLink, e);
@@ -1472,6 +1486,7 @@ class UnifiedNavigation {
       // Logout Button Click - Check both button and its children
       const target = e.target as HTMLElement;
       const logoutBtn = target.closest('#logout-btn');
+
       if (logoutBtn) {
         e.preventDefault();
         e.stopPropagation(); // Stop event from bubbling
@@ -1481,7 +1496,24 @@ class UnifiedNavigation {
           window.location.href = '/login';
         });
       }
-    });
+    };
+
+    // Add the new listener
+    document.addEventListener('click', this.documentClickHandler);
+    this.isEventListenerAttached = true;
+
+    // Add direct listener as fallback for logout button
+    const logoutBtnCheck = document.getElementById('logout-btn');
+    if (logoutBtnCheck) {
+      logoutBtnCheck.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleLogout().catch((error) => {
+          console.error('Logout error from direct listener:', error);
+          window.location.href = '/login';
+        });
+      };
+    }
 
     // Sidebar Toggle
     this.attachSidebarToggle();
@@ -1655,12 +1687,22 @@ class UnifiedNavigation {
   }
 
   private async handleLogout(): Promise<void> {
-    // Modal is already created in the navigation template, no need to check
-
     // Show logout confirmation modal instead of direct logout
     const modal = document.getElementById('logoutModal');
+
     if (modal) {
+      // Ensure modal is visible with proper z-index and positioning
       modal.style.display = 'block';
+      modal.style.position = 'fixed';
+      modal.style.zIndex = '999999';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100%';
+      modal.style.height = '100%';
+      modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+
+      // Also add active class if needed for CSS animations
+      modal.classList.add('active');
 
       // Setup modal event handlers
       const confirmBtn = document.getElementById('confirmLogout');
@@ -1669,6 +1711,7 @@ class UnifiedNavigation {
 
       const closeModal = () => {
         modal.style.display = 'none';
+        modal.classList.remove('active');
       };
 
       const performLogout = async () => {
@@ -1781,13 +1824,22 @@ class UnifiedNavigation {
         });
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
+        // Remove existing handler if present
+        if (this.dropdownClickHandler) {
+          document.removeEventListener('click', this.dropdownClickHandler);
+        }
+
+        // Create and store new handler
+        this.dropdownClickHandler = (e: Event) => {
           // Don't close if clicking on the dropdown itself
           if (!dropdownDisplay.contains(e.target as Node) && !dropdownOptions.contains(e.target as Node)) {
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
           }
-        });
+        };
+
+        // Add the new listener
+        document.addEventListener('click', this.dropdownClickHandler);
       }
     }
 
@@ -2103,7 +2155,10 @@ class UnifiedNavigation {
 
       // Re-attach event listeners after DOM update
       setTimeout(() => {
-        this.attachEventListeners();
+        // Only re-attach if not already attached
+        if (!this.isEventListenerAttached) {
+          this.attachEventListeners();
+        }
         this.updateActiveNavigation();
         void this.updateUnreadMessages();
         void this.updatePendingSurveys();
