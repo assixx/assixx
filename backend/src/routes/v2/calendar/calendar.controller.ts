@@ -108,11 +108,13 @@ export async function listEvents(
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
+    const userTeamId = user.team_id ?? null;
 
     const result = await calendarService.listEvents(
       tenantId,
       userId,
       userDepartmentId,
+      userTeamId,
       req.query as Record<string, unknown>,
     );
 
@@ -268,12 +270,18 @@ export async function createEvent(
     }
     const tenantId = user.tenant_id;
     const userId = user.id;
+    const userRole = user.role;
+    const userDepartmentId = user.department_id ?? null;
+    const userTeamId = user.team_id ?? null;
 
     const eventData = req.body as CalendarEventData;
     const event = await calendarService.createEvent(
       eventData,
       tenantId,
       userId,
+      userRole,
+      userDepartmentId,
+      userTeamId,
     );
 
     // Log calendar event creation
@@ -290,7 +298,8 @@ export async function createEvent(
         end_time: eventData.endTime,
         location: eventData.location,
         org_level: eventData.orgLevel,
-        org_id: eventData.orgId,
+        department_id: eventData.departmentId,
+        team_id: eventData.teamId,
         all_day: eventData.allDay,
         created_by: user.email,
       },

@@ -864,11 +864,6 @@ body {
   margin-left: 24px;
 }
 
-/* General modal body - but not for logout modal */
-.modal-body:not(#logoutModal .logout-modal .modal-body) {
-  padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
-}
-
 /* General modal footer - but not for logout modal */
 .modal-footer:not(#logoutModal .logout-modal .modal-footer) {
   justify-content: center;

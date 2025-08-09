@@ -92,6 +92,40 @@
   padding: 0.5em 1em;
 }
 
+/* Override FullCalendar toolbar layout */
+.fc .fc-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border: 0px solid #ddd;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border: 0px solid #ddd;
+}
+
+.fc-direction-ltr .fc-button-group > .fc-button:not(:last-child) {
+  border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
+  border-radius: 12px 0px 0 12px !important;
+}
+.fc-direction-ltr .fc-button-group > .fc-button:not(:first-child) {
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
+  margin-left: -1px;
+  border-radius: 0 12px 12px 0 !important;
+}
+
+.fc-direction-ltr .fc-toolbar > * > :not(:first-child) {
+  margin-left: 0.75em;
+  border-radius: 12px;
+}
+
 .fc-toolbar-title {
   font-size: 1.5em !important;
   font-weight: 500;
@@ -140,6 +174,31 @@
 .fc-event:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+/* Event colors by organization level */
+.fc-event[data-org-level="company"],
+.fc-event-company {
+  background-color: #3498db !important; /* Blue for company (Firma) */
+  border-color: #3498db !important;
+}
+
+.fc-event[data-org-level="department"],
+.fc-event-department {
+  background-color: #e67e22 !important; /* Orange for department (Abteilung) */
+  border-color: #e67e22 !important;
+}
+
+.fc-event[data-org-level="team"],
+.fc-event-team {
+  background-color: #2ecc71 !important; /* Green for team */
+  border-color: #2ecc71 !important;
+}
+
+.fc-event[data-org-level="personal"],
+.fc-event-personal {
+  background-color: #9b59b6 !important; /* Purple for personal (Persönlich) */
+  border-color: #9b59b6 !important;
 }
 
 .fc-event-title {
@@ -1258,6 +1317,20 @@ select.big-input:disabled {
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.875rem;
   font-style: italic;
+}
+
+.text-info {
+  color: rgba(52, 152, 219, 0.9);
+  font-size: 0.875rem;
+  background: rgba(52, 152, 219, 0.1);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid rgba(52, 152, 219, 0.5);
+  margin: 8px 0;
+}
+
+.text-info i {
+  margin-right: 8px;
 }
 
 /* Attendee modal styles */

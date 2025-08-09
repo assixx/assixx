@@ -39,7 +39,9 @@ interface CalendarEventBody {
   end_time: string;
   all_day?: boolean;
   org_level?: string;
-  org_id?: number | string;
+  org_id?: number | string; // Deprecated, use department_id and team_id
+  department_id?: number | string;
+  team_id?: number | string;
   reminder_time?: number;
   color?: string;
   recurrence_rule?: string;
@@ -498,8 +500,11 @@ router.put(
           | "team"
           | "personal"
           | undefined,
-        org_id: req.body.org_id
-          ? parseInt(String(req.body.org_id), 10)
+        department_id: req.body.department_id
+          ? parseInt(String(req.body.department_id), 10)
+          : undefined,
+        team_id: req.body.team_id
+          ? parseInt(String(req.body.team_id), 10)
           : undefined,
         reminder_time: req.body.reminder_time,
         color: req.body.color,

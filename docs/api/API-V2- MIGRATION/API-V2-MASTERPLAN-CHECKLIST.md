@@ -78,7 +78,7 @@
 
 - [x] blackboard.ts ✅ ABGESCHLOSSEN (08.08.2025) - 20+ API Calls migriert
 - [x] blackboard-modal-update.html ✅ GELÖSCHT (nicht verwendet)
-- [x] chat.ts ✅ ABGESCHLOSSEN UND PRODUKTIV (08.08.2025) 
+- [x] chat.ts ✅ ABGESCHLOSSEN UND PRODUKTIV (08.08.2025)
   - 10+ API Calls migriert
   - WebSocket Multi-Tenant-Isolation gefixt
   - Unread Messages Feature komplett implementiert
@@ -86,11 +86,11 @@
 - [x] chat.html ✅ VERIFIZIERT (keine direkten API Calls)
   - Unread Conversation Styling hinzugefügt
   - Badge mit Pulse-Animation implementiert
-- [ ] notification.service.ts
+- [x] notification.service.ts  keine api calls hier
 
 #### Planning & Organization
 
-- [ ] calendar.ts
+- [ ] calendar.ts alles migriert, wir testen gerade!!
 - [ ] shifts.ts
 - [ ] shifts.html
 

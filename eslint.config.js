@@ -81,6 +81,89 @@ export default [
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/prefer-nullish-coalescing": "error",
       "@typescript-eslint/prefer-optional-chain": "error",
+      // Naming convention rules for camelCase enforcement
+      "@typescript-eslint/naming-convention": [
+        "warn",
+        // Default: prefer camelCase
+        {
+          selector: "default",
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+          trailingUnderscore: "allow",
+        },
+        // Variables: camelCase, UPPER_CASE for constants, PascalCase for components/Models, snake_case with underscore prefix
+        {
+          selector: "variable",
+          format: ["camelCase", "UPPER_CASE", "PascalCase", "snake_case"],
+          leadingUnderscore: "allow",
+        },
+        // Destructured variables from APIs can have any format
+        {
+          selector: "variable",
+          modifiers: ["destructured"],
+          format: null,
+        },
+        // Import default (for Model classes like UserModel, Department, etc.)
+        {
+          selector: "import",
+          format: ["camelCase", "PascalCase"],
+        },
+        // Function parameters: Allow snake_case for DB fields (tenant_id, user_id, etc.)
+        {
+          selector: "parameter",
+          format: ["camelCase", "snake_case"],
+          leadingUnderscore: "allow",
+        },
+        // Common database field parameters - ignore format completely
+        {
+          selector: "parameter",
+          filter:
+            "^(tenant_id|user_id|created_at|updated_at|department_id|team_id|machine_id|shift_plan_id|org_id|is_pinned)$",
+          format: null,
+        },
+        // Variables for database fields - allow snake_case
+        {
+          selector: "variable",
+          filter:
+            "^(tenant_id|user_id|created_at|updated_at|department_id|team_id|duration_hours|org_id|shift_plan_id|is_pinned)$",
+          format: null,
+        },
+        // Properties: Allow both camelCase and snake_case (for API responses)
+        {
+          selector: "property",
+          format: ["camelCase", "snake_case", "PascalCase", "UPPER_CASE"],
+        },
+        // Object literal properties: Allow any format (for API payloads)
+        {
+          selector: "objectLiteralProperty",
+          format: null,
+        },
+        // Type properties: Allow any format (for API type definitions)
+        {
+          selector: "typeProperty",
+          format: null,
+        },
+        // Types and interfaces: PascalCase
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+        // Enum members: UPPER_CASE
+        {
+          selector: "enumMember",
+          format: ["UPPER_CASE"],
+        },
+        // Functions: camelCase or PascalCase (for React components)
+        {
+          selector: "function",
+          format: ["camelCase", "PascalCase"],
+        },
+        // Class methods: camelCase
+        {
+          selector: "method",
+          format: ["camelCase"],
+        },
+      ],
       // Import order rules
       "import-x/order": [
         "error",
@@ -181,6 +264,89 @@ export default [
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/prefer-nullish-coalescing": "error",
       "@typescript-eslint/prefer-optional-chain": "error",
+      // Naming convention rules for camelCase enforcement
+      "@typescript-eslint/naming-convention": [
+        "warn",
+        // Default: prefer camelCase
+        {
+          selector: "default",
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+          trailingUnderscore: "allow",
+        },
+        // Variables: camelCase, UPPER_CASE for constants, PascalCase for components/Models, snake_case with underscore prefix
+        {
+          selector: "variable",
+          format: ["camelCase", "UPPER_CASE", "PascalCase", "snake_case"],
+          leadingUnderscore: "allow",
+        },
+        // Destructured variables from APIs can have any format
+        {
+          selector: "variable",
+          modifiers: ["destructured"],
+          format: null,
+        },
+        // Import default (for Model classes like UserModel, Department, etc.)
+        {
+          selector: "import",
+          format: ["camelCase", "PascalCase"],
+        },
+        // Function parameters: Allow snake_case for DB fields (tenant_id, user_id, etc.)
+        {
+          selector: "parameter",
+          format: ["camelCase", "snake_case"],
+          leadingUnderscore: "allow",
+        },
+        // Common database field parameters - ignore format completely
+        {
+          selector: "parameter",
+          filter:
+            "^(tenant_id|user_id|created_at|updated_at|department_id|team_id|machine_id|shift_plan_id|org_id|is_pinned)$",
+          format: null,
+        },
+        // Variables for database fields - allow snake_case
+        {
+          selector: "variable",
+          filter:
+            "^(tenant_id|user_id|created_at|updated_at|department_id|team_id|duration_hours|org_id|shift_plan_id|is_pinned)$",
+          format: null,
+        },
+        // Properties: Allow both camelCase and snake_case (for API responses)
+        {
+          selector: "property",
+          format: ["camelCase", "snake_case", "PascalCase", "UPPER_CASE"],
+        },
+        // Object literal properties: Allow any format (for API payloads)
+        {
+          selector: "objectLiteralProperty",
+          format: null,
+        },
+        // Type properties: Allow any format (for API type definitions)
+        {
+          selector: "typeProperty",
+          format: null,
+        },
+        // Types and interfaces: PascalCase
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+        // Enum members: UPPER_CASE
+        {
+          selector: "enumMember",
+          format: ["UPPER_CASE"],
+        },
+        // Functions: camelCase or PascalCase (for React components)
+        {
+          selector: "function",
+          format: ["camelCase", "PascalCase"],
+        },
+        // Class methods: camelCase
+        {
+          selector: "method",
+          format: ["camelCase"],
+        },
+      ],
       // Import order rules
       "import-x/order": [
         "error",

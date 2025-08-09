@@ -103,6 +103,22 @@ class ModalManager {
       modal.classList.add('active');
       console.info(`[ModalManager] Modal classes after show: ${modal.className}`);
 
+      // Add event listeners for close buttons
+      const closeButtons = modal.querySelectorAll('[data-action="close"], .modal-close');
+      closeButtons.forEach((button) => {
+        const closeHandler = (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.info(`[ModalManager] Close button clicked for modal: ${modalId}`);
+          this.hide(modalId);
+        };
+
+        // Remove old listener if exists (to prevent duplicates)
+        button.removeEventListener('click', closeHandler);
+        // Add new listener
+        button.addEventListener('click', closeHandler);
+      });
+
       // Double-check visibility after a frame
       window.requestAnimationFrame(() => {
         if (!modal) return;

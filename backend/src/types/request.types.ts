@@ -21,6 +21,7 @@ export interface AuthUser {
   first_name?: string;
   last_name?: string;
   department_id?: number | null;
+  team_id?: number | null;
   position?: string | null;
   activeRole?: string; // For role switching functionality
   isRoleSwitched?: boolean; // Flag to indicate if role is switched

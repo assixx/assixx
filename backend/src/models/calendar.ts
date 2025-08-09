@@ -48,8 +48,11 @@ interface DbCalendarEvent extends RowDataPacket {
   start_time?: Date;
   end_time?: Date;
   org_level?: "company" | "department" | "team" | "personal";
-  org_id?: number;
+  department_id?: number | null;
+  team_id?: number | null;
   created_by?: number;
+  created_by_role?: "admin" | "lead" | "user";
+  allow_attendees?: boolean | number;
   reminder_time?: number | null;
 }
 
@@ -74,6 +77,8 @@ interface EventQueryOptions {
   limit?: number;
   sortBy?: string;
   sortDir?: "ASC" | "DESC";
+  userDepartmentId?: number | null;
+  userTeamId?: number | null;
 }
 
 interface EventCreateData {
@@ -85,8 +90,11 @@ interface EventCreateData {
   end_time: string | Date;
   all_day?: boolean;
   org_level: "company" | "department" | "team" | "personal";
-  org_id?: number;
+  department_id?: number | null;
+  team_id?: number | null;
   created_by: number;
+  created_by_role?: string;
+  allow_attendees?: boolean;
   reminder_time?: number | null;
   color?: string;
   recurrence_rule?: string | null;
@@ -101,7 +109,8 @@ interface EventUpdateData {
   end_time?: string | Date;
   all_day?: boolean;
   org_level?: "company" | "department" | "team" | "personal";
-  org_id?: number;
+  department_id?: number | null;
+  team_id?: number | null;
   status?: "active" | "cancelled";
   reminder_time?: number | string | null;
   color?: string;
@@ -139,6 +148,8 @@ export class Calendar {
         limit = 50,
         sortBy = "start_date",
         sortDir = "ASC",
+        userDepartmentId,
+        userTeamId,
       } = options;
 
       // Map status from API to database
@@ -160,23 +171,38 @@ export class Calendar {
 
       const queryParams: unknown[] = [userId, tenant_id, dbStatus];
 
-      // Apply org level filter (map to type)
+      // Apply org level filter based on new structure
       if (filter !== "all") {
-        if (filter === "company") {
-          query += " AND e.type IN ('meeting', 'training')";
-        } else if (filter === "personal") {
-          query += " AND e.type NOT IN ('meeting', 'training')";
+        switch (filter) {
+          case "company":
+            query += " AND e.org_level = 'company'";
+            break;
+          case "department":
+            query += " AND e.org_level = 'department' AND e.department_id = ?";
+            queryParams.push(userDepartmentId);
+            break;
+          case "team":
+            query += " AND e.org_level = 'team' AND e.team_id = ?";
+            queryParams.push(userTeamId);
+            break;
+          case "personal":
+            query +=
+              " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
+            queryParams.push(userId, userId);
+            break;
         }
       }
 
-      // Apply access control for non-admin users
-      if (role !== "admin" && role !== "root") {
+      // Apply access control for non-admin users (for "all" filter)
+      if (filter === "all" && role !== "admin" && role !== "root") {
         query += ` AND (
-          e.type IN ('meeting', 'training') OR 
+          e.org_level = 'company' OR 
+          (e.org_level = 'department' AND e.department_id = ?) OR
+          (e.org_level = 'team' AND e.team_id = ?) OR
           e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
-        queryParams.push(userId, userId);
+        queryParams.push(userDepartmentId, userTeamId, userId, userId);
       }
 
       // Apply date range filter
@@ -248,12 +274,26 @@ export class Calendar {
 
       const countParams: unknown[] = [tenant_id, dbStatus];
 
-      // Apply org level filter for count (map to type)
+      // Apply org level filter for count
       if (filter !== "all") {
-        if (filter === "company") {
-          countQuery += " AND e.type IN ('meeting', 'training')";
-        } else if (filter === "personal") {
-          countQuery += " AND e.type NOT IN ('meeting', 'training')";
+        switch (filter) {
+          case "company":
+            countQuery += " AND e.org_level = 'company'";
+            break;
+          case "department":
+            countQuery +=
+              " AND e.org_level = 'department' AND e.department_id = ?";
+            countParams.push(userDepartmentId);
+            break;
+          case "team":
+            countQuery += " AND e.org_level = 'team' AND e.team_id = ?";
+            countParams.push(userTeamId);
+            break;
+          case "personal":
+            countQuery +=
+              " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
+            countParams.push(userId, userId);
+            break;
         }
       }
 
@@ -387,7 +427,29 @@ export class Calendar {
 
       // Check access control for non-admin users
       if (role !== "admin" && role !== "root") {
-        // Check if user is an attendee
+        // Company events are visible to all employees
+        if (event.org_level === "company") {
+          // All users in the tenant can see company events
+          return event;
+        }
+
+        // Department events are visible to department members
+        if (event.org_level === "department" && event.department_id) {
+          const userInfo = await User.getUserDepartmentAndTeam(userId);
+          if (userInfo.departmentId === event.department_id) {
+            return event;
+          }
+        }
+
+        // Team events are visible to team members
+        if (event.org_level === "team" && event.team_id) {
+          const userInfo = await User.getUserDepartmentAndTeam(userId);
+          if (userInfo.teamId === event.team_id) {
+            return event;
+          }
+        }
+
+        // Personal events and other types - check if user is creator or attendee
         const [attendeeRows] = await executeQuery<RowDataPacket[]>(
           "SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
           [id, userId],
@@ -429,8 +491,11 @@ export class Calendar {
         end_time,
         all_day,
         org_level,
-        org_id,
+        department_id,
+        team_id,
         created_by,
+        created_by_role,
+        allow_attendees,
         reminder_time,
         color,
         recurrence_rule,
@@ -451,8 +516,8 @@ export class Calendar {
       const query = `
         INSERT INTO calendar_events 
         (tenant_id, user_id, title, description, location, start_date, end_date, all_day, 
-         org_level, org_id, type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         org_level, department_id, team_id, created_by_role, allow_attendees, type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -465,7 +530,10 @@ export class Calendar {
         formatDateForMysql(end_time),
         all_day ? 1 : 0,
         org_level,
-        org_id ?? null,
+        department_id ?? null,
+        team_id ?? null,
+        created_by_role ?? "user",
+        allow_attendees ? 1 : 0,
         "other", // type
         "confirmed", // status
         0, // is_private
@@ -516,6 +584,8 @@ export class Calendar {
         end_time,
         all_day,
         org_level,
+        department_id,
+        team_id,
         status,
         reminder_time,
         color,
@@ -560,9 +630,14 @@ export class Calendar {
         queryParams.push(org_level);
       }
 
-      if (eventData.org_id !== undefined) {
-        query += ", org_id = ?";
-        queryParams.push(eventData.org_id);
+      if (department_id !== undefined) {
+        query += ", department_id = ?";
+        queryParams.push(department_id);
+      }
+
+      if (team_id !== undefined) {
+        query += ", team_id = ?";
+        queryParams.push(team_id);
       }
 
       if (status !== undefined) {
@@ -645,6 +720,7 @@ export class Calendar {
       | "accepted"
       | "declined"
       | "tentative" = "pending",
+    tenantIdParam?: number,
   ): Promise<boolean> {
     try {
       // Check if already an attendee
@@ -660,10 +736,22 @@ export class Calendar {
           [responseStatus, eventId, userId],
         );
       } else {
-        // Add new attendee
+        // Get tenant_id from event if not provided
+        let finalTenantId = tenantIdParam;
+        if (!finalTenantId) {
+          const [event] = await executeQuery<DbCalendarEvent[]>(
+            "SELECT tenant_id FROM calendar_events WHERE id = ?",
+            [eventId],
+          );
+          if (event.length > 0) {
+            finalTenantId = event[0].tenant_id;
+          }
+        }
+
+        // Add new attendee with tenant_id
         await executeQuery(
-          "INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at) VALUES (?, ?, ?, NOW())",
-          [eventId, userId, responseStatus],
+          "INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at, tenant_id) VALUES (?, ?, ?, NOW(), ?)",
+          [eventId, userId, responseStatus, finalTenantId],
         );
       }
 
@@ -764,7 +852,11 @@ export class Calendar {
   ): Promise<DbCalendarEvent[]> {
     try {
       // Get user info for access control
-      const { role } = await User.getUserDepartmentAndTeam(userId);
+      const {
+        role,
+        departmentId: userDepartmentId,
+        teamId: userTeamId,
+      } = await User.getUserDepartmentAndTeam(userId);
 
       // Calculate date range
       const today = new Date();
@@ -789,14 +881,16 @@ export class Calendar {
 
       const queryParams: unknown[] = [userId, tenant_id, todayStr, endDateStr];
 
-      // Apply access control for non-admin users
+      // Apply access control for non-admin users (dashboard shows all accessible events)
       if (role !== "admin" && role !== "root") {
         query += ` AND (
-          e.type IN ('meeting', 'training') OR 
+          e.org_level = 'company' OR 
+          (e.org_level = 'department' AND e.department_id = ?) OR
+          (e.org_level = 'team' AND e.team_id = ?) OR
           e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
-        queryParams.push(userId, userId);
+        queryParams.push(userDepartmentId, userTeamId, userId, userId);
       }
 
       // Sort by start time, limited to the next few events
@@ -978,7 +1072,8 @@ export class Calendar {
             end_time: newEndDate.toISOString(),
             all_day: Boolean(parentEvent.all_day),
             org_level: parentEvent.org_level ?? "personal",
-            org_id: parentEvent.org_id ?? 0,
+            department_id: parentEvent.department_id ?? null,
+            team_id: parentEvent.team_id ?? null,
             created_by: parentEvent.created_by ?? parentEvent.user_id,
             reminder_time: parentEvent.reminder_time,
             color: parentEvent.color,

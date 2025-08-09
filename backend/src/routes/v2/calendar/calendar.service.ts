@@ -33,7 +33,8 @@ export interface CalendarEventData {
   endTime: string;
   allDay?: boolean;
   orgLevel: "company" | "department" | "team" | "personal";
-  orgId?: number;
+  departmentId?: number; // Explizit für department/team Events
+  teamId?: number; // Explizit für team Events
   reminderMinutes?: number;
   color?: string;
   recurrenceRule?: string;
@@ -48,7 +49,8 @@ export interface CalendarEventUpdateData {
   endTime?: string;
   allDay?: boolean;
   orgLevel?: "company" | "department" | "team" | "personal";
-  orgId?: number;
+  departmentId?: number;
+  teamId?: number;
   reminderMinutes?: number | null;
   color?: string;
   recurrenceRule?: string | null;
@@ -57,17 +59,19 @@ export interface CalendarEventUpdateData {
 
 export class CalendarService {
   /**
-   * Get paginated list of calendar events
+   * Get paginated list of calendar events with filter optimization
    */
   async listEvents(
     tenantId: number,
     userId: number,
-    _userDepartmentId: number | null,
+    userDepartmentId: number | null,
+    userTeamId: number | null,
     filters: CalendarFilters,
   ) {
     const page = Math.max(1, parseInt(filters.page ?? "1", 10));
+    // Performance-Limit: max 200 Events
     const limit = Math.min(
-      100,
+      200,
       Math.max(1, parseInt(filters.limit ?? "50", 10)),
     );
     // offset is calculated in the model
@@ -94,6 +98,8 @@ export class CalendarService {
       limit,
       sortBy,
       sortDir,
+      userDepartmentId,
+      userTeamId,
     };
 
     try {
@@ -174,12 +180,15 @@ export class CalendarService {
   }
 
   /**
-   * Create new calendar event
+   * Create new calendar event with permission checks
    */
   async createEvent(
     eventData: CalendarEventData,
     tenantId: number,
     userId: number,
+    userRole: string,
+    userDepartmentId?: number | null,
+    userTeamId?: number | null,
   ) {
     // Validate required fields
     if (!eventData.title) {
@@ -228,23 +237,83 @@ export class CalendarService {
       );
     }
 
-    // Validate org_level and org_id
-    if (
-      eventData.orgLevel !== "personal" &&
-      eventData.orgLevel !== "company" &&
-      !eventData.orgId
-    ) {
-      throw new ServiceError(
-        "BAD_REQUEST",
-        `org_id is required for ${eventData.orgLevel} events`,
-        400,
-        [
-          {
-            field: "orgId",
-            message: `Required for ${eventData.orgLevel} events`,
-          },
-        ],
-      );
+    // PERMISSION CHECKS basierend auf org_level
+    switch (eventData.orgLevel) {
+      case "company":
+        if (userRole !== "admin") {
+          throw new ServiceError(
+            "FORBIDDEN",
+            "Only admins can create company events",
+            403,
+          );
+        }
+        break;
+
+      case "department":
+        if (!eventData.departmentId) {
+          throw new ServiceError(
+            "BAD_REQUEST",
+            "departmentId is required for department events",
+            400,
+            [
+              {
+                field: "departmentId",
+                message: "Required for department events",
+              },
+            ],
+          );
+        }
+        if (userRole !== "admin" && userRole !== "lead") {
+          throw new ServiceError(
+            "FORBIDDEN",
+            "Only admins and leads can create department events",
+            403,
+          );
+        }
+        if (
+          userDepartmentId !== eventData.departmentId &&
+          userRole !== "admin"
+        ) {
+          throw new ServiceError(
+            "FORBIDDEN",
+            "Cannot create events for other departments",
+            403,
+          );
+        }
+        break;
+
+      case "team":
+        if (!eventData.teamId || !eventData.departmentId) {
+          throw new ServiceError(
+            "BAD_REQUEST",
+            "Both teamId and departmentId are required for team events",
+            400,
+            [
+              { field: "teamId", message: "Required for team events" },
+              { field: "departmentId", message: "Required for team events" },
+            ],
+          );
+        }
+        if (userTeamId !== eventData.teamId && userRole !== "admin") {
+          throw new ServiceError(
+            "FORBIDDEN",
+            "Cannot create events for other teams",
+            403,
+          );
+        }
+        break;
+
+      case "personal":
+        // Jeder kann persönliche Events erstellen
+        break;
+
+      default:
+        throw new ServiceError(
+          "BAD_REQUEST",
+          "Invalid organization level",
+          400,
+          [{ field: "orgLevel", message: "Invalid organization level" }],
+        );
     }
 
     const createData: EventCreateData = {
@@ -256,8 +325,14 @@ export class CalendarService {
       end_time: eventData.endTime,
       all_day: eventData.allDay ?? false,
       org_level: eventData.orgLevel,
-      org_id: eventData.orgId,
+      department_id: eventData.departmentId ?? null,
+      team_id: eventData.teamId ?? null,
       created_by: userId,
+      created_by_role: userRole,
+      allow_attendees:
+        eventData.attendeeIds && eventData.attendeeIds.length > 0
+          ? true
+          : false,
       reminder_time: eventData.reminderMinutes,
       color: eventData.color,
       recurrence_rule: eventData.recurrenceRule,
@@ -270,13 +345,14 @@ export class CalendarService {
         throw new ServiceError("SERVER_ERROR", "Failed to create event", 500);
       }
 
-      // Add attendees if provided
+      // Add attendees if provided (für alle Event-Typen möglich)
       if (eventData.attendeeIds && eventData.attendeeIds.length > 0) {
         for (const attendeeId of eventData.attendeeIds) {
           await CalendarModel.addEventAttendee(
             createdEvent.id,
             attendeeId,
             "pending",
+            tenantId, // Pass tenant_id for multi-tenant isolation
           );
         }
       }
@@ -359,7 +435,8 @@ export class CalendarService {
       end_time: updateData.endTime,
       all_day: updateData.allDay,
       org_level: updateData.orgLevel,
-      org_id: updateData.orgId,
+      department_id: updateData.departmentId,
+      team_id: updateData.teamId,
       reminder_time: updateData.reminderMinutes,
       color: updateData.color,
       recurrence_rule: updateData.recurrenceRule,
