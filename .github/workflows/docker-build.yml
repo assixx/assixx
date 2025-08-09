@@ -79,27 +79,48 @@ jobs:
           cp docker/.env.docker.example docker/.env
           cd docker && docker compose -f docker-compose.test.yml up -d
 
-          # Wait for MySQL to accept connections
-          echo "Waiting for MySQL to accept connections..."
-          for i in {1..90}; do
-            if docker exec assixx-mysql mysql -h localhost -u root -pStrongP@ssw0rd!123 -e "SELECT 1" > /dev/null 2>&1; then
-              echo "MySQL is accepting connections!"
+          # Wait for MySQL to be HEALTHY (not just accepting connections)
+          echo "Waiting for MySQL to be HEALTHY..."
+          MAX_WAIT=120
+          COUNTER=0
+          
+          while [ $COUNTER -lt $MAX_WAIT ]; do
+            HEALTH_STATUS=$(docker inspect --format "{{.State.Health.Status}}" assixx-mysql 2>/dev/null || echo "unknown")
+            
+            if [ "$HEALTH_STATUS" = "healthy" ]; then
+              echo "✓ MySQL is healthy after $COUNTER seconds!"
               break
             fi
             
-            if [ $i -eq 1 ]; then
-              echo "MySQL container status:"
-              docker ps -a | grep mysql || true
+            # Show status every 10 seconds
+            if [ $((COUNTER % 10)) -eq 0 ]; then
+              echo "MySQL health status: $HEALTH_STATUS (waited ${COUNTER}s)"
+              
+              # Show container status
+              if [ $COUNTER -eq 0 ]; then
+                echo "Container status:"
+                docker ps -a | grep mysql || true
+              fi
+              
+              # Show logs after 30 seconds if still not healthy
+              if [ $COUNTER -ge 30 ] && [ "$HEALTH_STATUS" != "healthy" ]; then
+                echo "Recent MySQL logs:"
+                docker logs assixx-mysql --tail 5 2>&1 || true
+              fi
             fi
             
-            if [ $((i % 20)) -eq 0 ]; then
-              echo "MySQL logs (last 10 lines):"
-              docker logs assixx-mysql --tail 10 2>&1 || true
-            fi
-            
-            echo "Waiting for MySQL to initialize... ($i/90)"
-            sleep 2
+            COUNTER=$((COUNTER + 1))
+            sleep 1
           done
+          
+          # Final check
+          if [ "$HEALTH_STATUS" != "healthy" ]; then
+            echo "ERROR: MySQL failed to become healthy after ${MAX_WAIT} seconds"
+            echo "Final MySQL status: $HEALTH_STATUS"
+            echo "Full MySQL logs:"
+            docker logs assixx-mysql 2>&1 || true
+            exit 1
+          fi
 
           # Wait for backend to be healthy (max 90 seconds)
           echo "Waiting for backend service to be healthy..."
@@ -131,6 +152,25 @@ jobs:
           curl -f http://localhost:3000/health || exit 1
 
           docker compose -f docker-compose.test.yml down
+
+      - name: Debug MySQL on failure
+        if: failure()
+        run: |
+          echo "=== Debugging MySQL failure ==="
+          echo "MySQL Container Status:"
+          docker ps -a | grep mysql || true
+          echo ""
+          echo "MySQL Health Status:"
+          docker inspect --format "{{.State.Health.Status}}" assixx-mysql 2>/dev/null || echo "Container not found"
+          echo ""
+          echo "MySQL Logs (last 50 lines):"
+          docker logs assixx-mysql --tail 50 2>&1 || true
+          echo ""
+          echo "MySQL Container Inspect:"
+          docker inspect assixx-mysql 2>&1 || true
+          echo ""
+          echo "Docker Compose Status:"
+          cd docker && docker compose -f docker-compose.test.yml ps || true
 
   security-scan-trivy:
     runs-on: ubuntu-latest
