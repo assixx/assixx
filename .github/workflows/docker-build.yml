@@ -79,14 +79,25 @@ jobs:
           cp docker/.env.docker.example docker/.env
           cd docker && docker compose -f docker-compose.test.yml up -d
 
-          # Wait specifically for MySQL to be ready first
-          echo "Waiting for MySQL to be ready..."
-          for i in {1..60}; do
-            if docker compose -f docker-compose.test.yml ps | grep "assixx-mysql" | grep -q "(healthy)"; then
-              echo "MySQL is healthy!"
+          # Wait for MySQL to accept connections
+          echo "Waiting for MySQL to accept connections..."
+          for i in {1..90}; do
+            if docker exec assixx-mysql mysql -h localhost -u root -pStrongP@ssw0rd!123 -e "SELECT 1" > /dev/null 2>&1; then
+              echo "MySQL is accepting connections!"
               break
             fi
-            echo "Waiting for MySQL... ($i/60)"
+            
+            if [ $i -eq 1 ]; then
+              echo "MySQL container status:"
+              docker ps -a | grep mysql || true
+            fi
+            
+            if [ $((i % 20)) -eq 0 ]; then
+              echo "MySQL logs (last 10 lines):"
+              docker logs assixx-mysql --tail 10 2>&1 || true
+            fi
+            
+            echo "Waiting for MySQL to initialize... ($i/90)"
             sleep 2
           done
 

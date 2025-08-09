@@ -1,5 +1,5 @@
 services:
-  # MySQL Database
+  # MySQL Database with simpler healthcheck
   mysql:
     image: mysql:8.0
     container_name: assixx-mysql
@@ -17,16 +17,7 @@ services:
       - ../database/docker-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - assixx-network
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "mysql -h localhost -u root -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' || exit 1",
-        ]
-      interval: 10s
-      timeout: 30s
-      retries: 60
-      start_period: 180s
+    # No healthcheck - let workflow handle waiting
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:
@@ -64,8 +55,7 @@ services:
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql  # Simple dependency, no health check
     networks:
       - assixx-network
     healthcheck:
@@ -77,39 +67,35 @@ services:
     # Development command mit nodemon
     command: ["pnpm", "run", "dev"]
 
-  # Optional: Redis für Sessions/Cache
+  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: assixx-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
     networks:
       - assixx-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
+      timeout: 3s
       retries: 5
 
-  # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
+  # phpMyAdmin
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: assixx-phpmyadmin
     restart: unless-stopped
-    ports:
-      - "8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: assixx_user
+      PMA_USER: ${MYSQL_USER:-assixx_user}
       PMA_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
-      UPLOAD_LIMIT: 50M
-    networks:
-      - assixx-network
+    ports:
+      - "8080:80"
     depends_on:
       - mysql
+    networks:
+      - assixx-network
 
 networks:
   assixx-network:
@@ -117,6 +103,4 @@ networks:
 
 volumes:
   mysql_data:
-    # Kein external: true für Tests
   redis_data:
-    # Kein external: true für Tests
