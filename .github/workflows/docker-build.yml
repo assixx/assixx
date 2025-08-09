@@ -79,6 +79,17 @@ jobs:
           cp docker/.env.docker.example docker/.env
           cd docker && docker compose -f docker-compose.test.yml up -d
 
+          # Wait specifically for MySQL to be ready first
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..60}; do
+            if docker compose -f docker-compose.test.yml ps | grep "assixx-mysql" | grep -q "(healthy)"; then
+              echo "MySQL is healthy!"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/60)"
+            sleep 2
+          done
+
           # Wait for backend to be healthy (max 90 seconds)
           echo "Waiting for backend service to be healthy..."
           for i in {1..90}; do
