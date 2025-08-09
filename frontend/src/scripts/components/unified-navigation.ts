@@ -260,6 +260,7 @@ class UnifiedNavigation {
       void this.updatePendingSurveys();
       void this.updateUnreadDocuments();
       void this.updateNewKvpSuggestions();
+      void this.updateUnreadCalendarEvents();
     }, 1000);
 
     // Update badges every 30 seconds
@@ -268,6 +269,7 @@ class UnifiedNavigation {
       void this.updatePendingSurveys();
       void this.updateUnreadDocuments();
       void this.updateNewKvpSuggestions();
+      void this.updateUnreadCalendarEvents();
     }, 600000);
 
     // Listen for BroadcastChannel messages to update navigation
@@ -672,6 +674,7 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
           url: '/calendar',
+          badge: 'unread-calendar-events',
         },
         {
           id: 'lean-management',
@@ -815,6 +818,7 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
           url: '/calendar',
+          badge: 'unread-calendar-events',
         },
         {
           id: 'lean-management',
@@ -1067,6 +1071,7 @@ class UnifiedNavigation {
         void this.updatePendingSurveys();
         void this.updateUnreadDocuments();
         void this.updateNewKvpSuggestions();
+        void this.updateUnreadCalendarEvents();
       }, 100);
 
       return;
@@ -1342,6 +1347,8 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'lean-management-parent') {
       badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
+    } else if (item.badge === 'unread-calendar-events') {
+      badgeHtml = `<span class="nav-badge" id="calendar-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
     }
 
     // If has submenu, create a dropdown
@@ -2163,6 +2170,7 @@ class UnifiedNavigation {
         void this.updatePendingSurveys();
         void this.updateUnreadDocuments();
         void this.updateNewKvpSuggestions();
+        void this.updateUnreadCalendarEvents();
 
         // Restore sidebar state
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -2217,6 +2225,38 @@ class UnifiedNavigation {
       }
     } catch (error) {
       console.error('Error updating unread messages:', error);
+    }
+  }
+
+  // Update Calendar unread events count (Events mit ausstehender Statusanfrage)
+  public async updateUnreadCalendarEvents(): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+
+      const data = await apiClient.get<{
+        totalUnread: number;
+        eventsRequiringResponse: Array<{
+          id: number;
+          title: string;
+          startTime: string;
+          requiresResponse: boolean;
+        }>;
+      }>('/calendar/unread-events');
+
+      const badge = document.getElementById('calendar-unread-badge');
+      if (badge) {
+        // Nur Events mit Statusanfrage zählen
+        const count = data.totalUnread ?? 0;
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count.toString();
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch (error) {
+      console.error('Error updating unread calendar events:', error);
     }
   }
 

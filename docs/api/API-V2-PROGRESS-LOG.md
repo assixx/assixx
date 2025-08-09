@@ -1,5 +1,76 @@
 # API v2 Implementation Progress Log
 
+## 28.01.2025 - Phase 8: Calendar Frontend Migration
+
+### 🎯 Calendar API v2 Frontend Migration
+
+**Zeit:** 5 Stunden
+**Status:** ✅ ABGESCHLOSSEN
+
+#### Erfolge:
+
+- ✅ calendar.ts vollständig migriert (15+ API Calls)
+- ✅ Feature Flag USE_API_V2_CALENDAR aktiviert
+- ✅ Badge-System für ungelesene Events implementiert
+- ✅ Statusanfrage-Feature (requires_response) entwickelt
+- ✅ Modal "Neue Termine mit Statusanfrage" erstellt
+- ✅ Privacy-Bug gefixt (Admins sehen keine privaten Events mehr)
+- ✅ Automatische Farbzuweisung basierend auf Event-Ebene
+
+#### Neue Features implementiert:
+
+1. **Badge-System für ungelesene Events:**
+   - Backend-Endpoint `/api/v2/calendar/unread-events`
+   - Datenbank-Migration für `requires_response` Feld
+   - Badge in Sidebar mit Auto-Update alle 30 Sekunden
+   - Modal öffnet sich automatisch bei ungelesenen Events
+
+2. **Statusanfrage-Feature:**
+   - Checkbox "Teilnehmer müssen Zusage/Absage geben"
+   - Nur Events mit `requires_response = true` erscheinen im Badge
+   - Direkte Zusage/Absage-Buttons im Modal
+   - Seite lädt automatisch neu nach Antwort
+
+#### Kritische Bug-Fixes:
+
+1. **Privacy-Bug:**
+   ```typescript
+   // Problem: Admins konnten alle privaten Events sehen
+   // Alt (Zeile 197 in calendar.ts):
+   if (filter === "all" && role !== "admin" && role !== "root")
+   
+   // Neu (Privacy für alle):
+   if (filter === "all")
+   ```
+
+2. **Field-Mapping Issues:**
+   ```typescript
+   // v2 API: camelCase
+   { firstName, lastName, startTime, endTime }
+   
+   // v1 API: snake_case  
+   { first_name, last_name, start_time, end_time }
+   
+   // Lösung: Bidirektionales Mapping
+   const firstName = user.first_name ?? user.firstName ?? '';
+   ```
+
+#### Technische Details:
+
+- ApiClient Integration vollständig
+- TypeScript strict typing durchgesetzt
+- Farb-Picker deprecated (automatische Farben)
+- Modal-Management optimiert
+- WebSocket-Updates für Badge-Count
+
+#### Fortschritt:
+
+- **31/64 Files migriert (48.4%)**
+- Phase 8 Planning & Organization: 1/3 abgeschlossen
+- Nächste Aufgaben: shifts.ts, shifts.html
+
+---
+
 ## 08.08.2025 - Phase 7: Blackboard Frontend Migration
 
 ### 🎯 Blackboard API v2 Frontend Migration

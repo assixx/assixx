@@ -39,6 +39,7 @@ export interface CalendarEventData {
   color?: string;
   recurrenceRule?: string;
   attendeeIds?: number[];
+  requiresResponse?: boolean;
 }
 
 export interface CalendarEventUpdateData {
@@ -336,6 +337,7 @@ export class CalendarService {
       reminder_time: eventData.reminderMinutes,
       color: eventData.color,
       recurrence_rule: eventData.recurrenceRule,
+      requires_response: eventData.requiresResponse ?? false,
     };
 
     try {
@@ -610,6 +612,60 @@ export class CalendarService {
     ].join("\n");
 
     return csv;
+  }
+
+  /**
+   * Get unread events (events requiring response)
+   */
+  async getUnreadEvents(tenantId: number, userId: number) {
+    try {
+      // Get all events where user is an attendee with pending response
+      const query = `
+        SELECT 
+          e.id,
+          e.title,
+          e.start_date as startTime,
+          e.requires_response,
+          a.response_status
+        FROM calendar_events e
+        JOIN calendar_attendees a ON e.id = a.event_id
+        WHERE 
+          e.tenant_id = ? 
+          AND a.user_id = ?
+          AND a.response_status = 'pending'
+          AND e.requires_response = 1
+          AND e.status = 'confirmed'
+          AND e.start_date >= NOW()
+        ORDER BY e.start_date ASC
+        LIMIT 50
+      `;
+
+      // Import the query function
+      const { query: executeQuery } = await import("../../../utils/db.js");
+      const [result] = await executeQuery(query, [tenantId, userId]);
+
+      // Type guard to ensure result is an array
+      const events = Array.isArray(result) ? result : [];
+
+      // Count total unread events
+      const totalUnread = events.length;
+
+      return {
+        totalUnread,
+        eventsRequiringResponse: events.map((event) => ({
+          id: event.id as number,
+          title: event.title as string,
+          startTime: event.startTime as string,
+          requiresResponse: true,
+        })),
+      };
+    } catch (error) {
+      console.error("Error getting unread events:", error);
+      return {
+        totalUnread: 0,
+        eventsRequiringResponse: [],
+      };
+    }
   }
 
   /**

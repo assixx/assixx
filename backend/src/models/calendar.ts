@@ -99,6 +99,7 @@ interface EventCreateData {
   color?: string;
   recurrence_rule?: string | null;
   parent_event_id?: number | null;
+  requires_response?: boolean;
 }
 
 interface EventUpdateData {
@@ -193,8 +194,9 @@ export class Calendar {
         }
       }
 
-      // Apply access control for non-admin users (for "all" filter)
-      if (filter === "all" && role !== "admin" && role !== "root") {
+      // Apply access control for ALL users (including admins) for privacy
+      // Admins should not see private events between other users
+      if (filter === "all") {
         query += ` AND (
           e.org_level = 'company' OR 
           (e.org_level = 'department' AND e.department_id = ?) OR
@@ -516,8 +518,9 @@ export class Calendar {
       const query = `
         INSERT INTO calendar_events 
         (tenant_id, user_id, title, description, location, start_date, end_date, all_day, 
-         org_level, department_id, team_id, created_by_role, allow_attendees, type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         org_level, department_id, team_id, created_by_role, allow_attendees, requires_response, 
+         type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -534,6 +537,7 @@ export class Calendar {
         team_id ?? null,
         created_by_role ?? "user",
         allow_attendees ? 1 : 0,
+        eventData.requires_response ? 1 : 0, // requires_response
         "other", // type
         "confirmed", // status
         0, // is_private

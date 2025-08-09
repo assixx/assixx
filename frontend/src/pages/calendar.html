@@ -43,6 +43,7 @@
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: var(--shadow-sm);
+        margin-top: auto;
         /* animation: fadeInUp 0.6s ease-out; */
       }
 
@@ -54,6 +55,7 @@
         box-shadow: var(--shadow-sm);
         border-radius: var(--radius-md);
         padding: var(--spacing-lg);
+        margin-bottom: auto;
       }
 
       /* Calendar Events - Glassmorphismus */
@@ -414,14 +416,19 @@
           </div>
 
           <!-- Calendar Container -->
-          <div class="card calendar-card mb-4">
+          <div class="card calendar-card mb-4" id="calendarContainer">
             <div class="card-header">
               <div class="flex flex-between align-center">
                 <h3 class="card-title">Kalender</h3>
-                <button id="newCalendarEventBtn" class="btn btn-primary u-m-0" style="display: inline-flex">
-                  <i class="fas fa-plus me-2"></i>
-                  Neuer Eintrag
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center">
+                  <button id="fullscreenBtn" class="zoom-btn" title="Vollbild">
+                    <i class="fas fa-expand"></i>
+                  </button>
+                  <button id="newCalendarEventBtn" class="btn btn-primary u-m-0" style="display: inline-flex">
+                    <i class="fas fa-plus me-2"></i>
+                    Neuer Eintrag
+                  </button>
+                </div>
               </div>
             </div>
             <div class="card-body p-0">

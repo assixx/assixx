@@ -10,6 +10,7 @@
 import { Response, NextFunction } from "express";
 
 import type { CalendarEvent } from "../../../models/calendar.js";
+import CalendarModel from "../../../models/calendar.js";
 import { RootLog } from "../../../models/rootLog.js";
 import { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
@@ -748,5 +749,135 @@ export async function exportEvents(
         .status(500)
         .json(errorResponse("SERVER_ERROR", "Internal server error"));
     }
+  }
+}
+
+/**
+ * @swagger
+ * /api/v2/calendar/dashboard:
+ *   get:
+ *     summary: Get upcoming events for dashboard
+ *     tags: [Calendar v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 365
+ *           default: 7
+ *         description: Number of days to look ahead
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 5
+ *         description: Maximum number of events to return
+ *     responses:
+ *       200:
+ *         description: Upcoming events
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CalendarEvent'
+ */
+export async function getDashboardEvents(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { user } = req;
+    if (!user) {
+      res
+        .status(401)
+        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
+      return;
+    }
+    const tenantId = user.tenant_id;
+    const userId = user.id;
+
+    const days = parseInt((req.query.days as string) ?? "7", 10);
+    const limit = parseInt((req.query.limit as string) ?? "5", 10);
+
+    const events = await CalendarModel.getDashboardEvents(
+      tenantId,
+      userId,
+      days,
+      limit,
+    );
+
+    res.json(successResponse(events));
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * @swagger
+ * /api/v2/calendar/unread-events:
+ *   get:
+ *     summary: Get unread calendar events (events requiring response)
+ *     tags: [Calendar v2]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of unread events
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUnread:
+ *                   type: number
+ *                   description: Total count of events requiring response
+ *                 eventsRequiringResponse:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: number
+ *                       title:
+ *                         type: string
+ *                       startTime:
+ *                         type: string
+ *                       requiresResponse:
+ *                         type: boolean
+ */
+export async function getUnreadEvents(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { user } = req;
+    if (!user) {
+      res
+        .status(401)
+        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
+      return;
+    }
+    const tenantId = user.tenant_id;
+    const userId = user.id;
+
+    // Get events where user is invited and hasn't responded yet
+    const result = await calendarService.getUnreadEvents(tenantId, userId);
+
+    res.json(successResponse(result));
+  } catch (err) {
+    next(err);
   }
 }

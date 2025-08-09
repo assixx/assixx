@@ -100,6 +100,10 @@
   justify-content: center;
 }
 
+.fc .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky > * {
+  top: auto;
+}
+
 .fc-theme-standard .fc-scrollgrid {
   border: 0px solid #ddd;
 }
@@ -172,7 +176,6 @@
 }
 
 .fc-event:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
@@ -396,7 +399,6 @@
 }
 
 .color-option:hover {
-  transform: scale(1.1);
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.3);
 }
 
@@ -493,7 +495,6 @@
 .modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--primary-color);
-  transform: scale(1.1);
 }
 
 .modal-close i {
@@ -653,7 +654,6 @@
 .attendee-item:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.12);
-  transform: translateX(5px);
 }
 
 .attendee-status {
@@ -752,15 +752,89 @@
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  justify-content: flex-end;
 }
 
 .modal-actions .btn {
-  flex: 1;
+  min-width: 120px;
+  justify-content: center;
 }
 
-/* Animate content appearance */
-#eventDetailContent.fade-in {
-  /* animation: fadeIn 0.3s ease-out; */
+.modal-actions .btn-primary,
+.modal-actions .btn-danger {
+  flex: 0 1 auto;
+}
+
+/* Zoom/Fullscreen Button Styles */
+.zoom-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Fullscreen Mode Styles */
+.calendar-fullscreen-mode #calendarContainer {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 9999 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  background: linear-gradient(
+    5deg,
+    transparent,
+    rgba(0, 142, 255, 0.1) 100%,
+    #01000482 0,
+    rgba(0, 0, 4, 0.6) 100%,
+    #000
+  ) !important;
+  /*background: linear-gradient(0deg,#0088bd29,rgba(0, 142, 255, 0.16) 100%,#010004 0,rgba(0, 0, 4, 0) 100%,#000) !important;*/
+}
+
+.calendar-fullscreen-mode #calendarContainer .card-header {
+  display: none !important;
+}
+
+.calendar-fullscreen-mode #calendarContainer .card-body {
+  height: 100vh !important;
+  overflow-y: auto;
+}
+
+.calendar-fullscreen-mode #calendar {
+  height: calc(100vh - 40px) !important;
+}
+
+/* Override FullCalendar default styles in fullscreen mode */
+.calendar-fullscreen-mode .fc td,
+.calendar-fullscreen-mode .fc th {
+  padding: 25px;
+  vertical-align: top;
+}
+
+/* Hide other elements in fullscreen mode */
+.calendar-fullscreen-mode .sidebar,
+.calendar-fullscreen-mode .header,
+.calendar-fullscreen-mode .stats-container,
+.calendar-fullscreen-mode .card:not(.calendar-card) {
+  display: none !important;
 }
 
 /* @keyframes fadeIn {
@@ -1021,21 +1095,45 @@ textarea.form-control {
 .status-pending {
   background-color: var(--text-secondary);
   color: white;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  display: inline-block;
+  font-size: 0.7rem;
+  margin-top: 5px;
+  padding: 2px 8px;
 }
 
 .status-accepted {
   background-color: var(--success-color);
   color: white;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  display: inline-block;
+  font-size: 0.7rem;
+  margin-top: 5px;
+  padding: 2px 8px;
 }
 
 .status-declined {
   background-color: var(--error-color);
   color: white;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  display: inline-block;
+  font-size: 0.7rem;
+  margin-top: 5px;
+  padding: 2px 8px;
 }
 
 .status-tentative {
   background-color: var(--warning-color);
   color: white;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  display: inline-block;
+  font-size: 0.7rem;
+  margin-top: 5px;
+  padding: 2px 8px;
 }
 
 .remove-attendee {
@@ -1071,7 +1169,6 @@ textarea.form-control {
 }
 
 .response-btn:hover {
-  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
@@ -1228,7 +1325,6 @@ select.big-input:disabled {
 
 .primary-button:hover {
   background-color: var(--primary-dark);
-  transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -1252,12 +1348,11 @@ select.big-input:disabled {
   font-size: 0.875rem !important;
   font-weight: 500 !important;
   cursor: pointer !important;
-  margin: 1px 0 !important;
+  margin: 1px 2px !important;
 }
 
 .fc-event:hover {
   opacity: 0.8 !important;
-  transform: scale(1.02) !important;
 }
 
 /* Event styling by organization level - fallback colors only */
@@ -1388,7 +1483,6 @@ select.big-input:disabled {
 }
 
 .color-option:hover {
-  transform: scale(1.1);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
@@ -1426,4 +1520,95 @@ select.big-input:disabled {
   .fc-toolbar-chunk {
     margin-bottom: 10px;
   }
+}
+
+/* Unread Events Modal Styles */
+.unread-events-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.unread-event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.unread-event-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.unread-event-item .event-info h4 {
+  margin: 0 0 5px 0;
+  color: var(--text-primary);
+}
+
+.unread-event-item .event-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.unread-event-item .event-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.unread-event-item .event-actions .btn {
+  padding: 5px 12px;
+  font-size: 0.85rem;
+}
+
+/* Form Switch for requires response */
+.form-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-switch .form-check-input {
+  width: 44px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-switch .form-check-input::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s ease;
+}
+
+.form-switch .form-check-input:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translateX(20px);
+}
+
+.form-switch .form-check-label {
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
 }

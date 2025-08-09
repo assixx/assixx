@@ -126,54 +126,65 @@ interface CalendarEvent {
   description?: string;
   start_time: string;
   end_time: string;
+  startTime?: string; // v2 API field
+  endTime?: string; // v2 API field
   all_day: boolean | number | string;
+  allDay?: boolean | number | string; // v2 API field
   location?: string;
   org_level: 'personal' | 'company' | 'department' | 'team';
+  orgLevel?: 'personal' | 'company' | 'department' | 'team'; // v2 API field
   org_id?: number;
+  orgId?: number; // v2 API field
   color?: string;
   reminder_time?: number;
+  reminderTime?: number; // v2 API field
+  reminderMinutes?: number; // v2 API field
   created_by: number;
+  createdBy?: number; // v2 API field
   created_at: string;
+  createdAt?: string; // v2 API field
   updated_at: string;
+  updatedAt?: string; // v2 API field
   // Additional fields from joins
   creator_name?: string;
+  creatorName?: string; // v2 API field
   department_name?: string;
+  departmentName?: string; // v2 API field
   team_name?: string;
+  teamName?: string; // v2 API field
   // User-specific fields
   user_response?: 'accepted' | 'declined' | 'tentative' | 'pending';
+  userResponse?: 'accepted' | 'declined' | 'tentative' | 'pending'; // v2 API field
   attendees?: EventAttendee[];
 }
 
 interface EventAttendee {
   id: number;
   event_id: number;
-  user_id: number;
-  response: 'accepted' | 'declined' | 'tentative' | 'pending';
+  user_id?: number;
+  userId?: number; // v2 API uses camelCase
+  response?: 'accepted' | 'declined' | 'tentative' | 'pending';
+  responseStatus?: 'accepted' | 'declined' | 'tentative' | 'pending'; // v2 API field
   responded_at?: string;
+  respondedAt?: string; // v2 API uses camelCase
   // User info
   username?: string;
   first_name?: string;
+  firstName?: string; // v2 API uses camelCase
   last_name?: string;
+  lastName?: string; // v2 API uses camelCase
   email?: string;
+  profilePicture?: string; // v2 API additional field
 }
 
-// Interface for creating new calendar events
-interface CreateCalendarEventData {
+interface UnreadEvent {
+  id: number;
   title: string;
-  description: string;
-  start_time: string;
-  end_time: string;
-  all_day: boolean;
-  location: string;
-  org_level: string;
-  color: string;
-  department_id?: number;
-  team_id?: number;
-  reminder_time?: number;
-  attendee_ids?: number[];
-  recurrence_rule?: string;
-  org_id?: number;
+  startTime: string;
+  requiresResponse: boolean;
 }
+
+// Interface for creating new calendar events - not used anymore, using inline types instead
 
 interface Department {
   id: number;
@@ -183,7 +194,8 @@ interface Department {
 interface Team {
   id: number;
   name: string;
-  department_id: number;
+  department_id?: number; // v1 API
+  departmentId?: number; // v2 API
 }
 
 interface UserData extends User {
@@ -195,8 +207,8 @@ interface UserData extends User {
 
 // Global variables
 let calendar: FullCalendarApi; // FullCalendar instance
-// Load filter from localStorage or default to 'all'
-let currentFilter: string = localStorage.getItem('calendarFilter') ?? 'all';
+// Always default to 'all' filter on page load
+let currentFilter: string = 'all';
 let currentSearch: string = '';
 let departments: Department[] = [];
 let teams: Team[] = [];
@@ -204,6 +216,7 @@ let employees: User[] = [];
 let isAdmin: boolean = false;
 let currentUserId: number | null = null;
 let selectedAttendees: number[] = [];
+let eventToDelete: number | null = null; // Track which event to delete
 let calendarView: string = 'dayGridMonth'; // Default view
 
 /**
@@ -250,6 +263,8 @@ function initializeApp() {
         // Initialize calendar - wrapped to prevent redirect on calendar errors
         try {
           initializeCalendar();
+          // Setup fullscreen controls
+          setupFullscreenControls();
         } catch (calendarError) {
           console.error('Calendar initialization error:', calendarError);
           showError('Kalender konnte nicht geladen werden.');
@@ -262,8 +277,10 @@ function initializeApp() {
         console.info('Calendar: Setting up event listeners...');
         setupEventListeners();
 
-        // Setup color picker
-        setupColorPicker();
+        // Color picker removed - color is auto-determined by org_level
+
+        // Check for unread events and show modal if necessary
+        void checkUnreadEvents();
 
         console.info('Calendar: Initialization complete');
       })
@@ -305,7 +322,174 @@ function registerModalTemplates(): void {
   // Event Response Modal Template
   modalManager.registerTemplate('eventResponseModal', getEventResponseModalTemplate());
 
+  // Confirmation Modal Template (for delete)
+  modalManager.registerTemplate('confirmationModal', getConfirmationModalTemplate());
+
+  // Unread Events Modal Template
+  modalManager.registerTemplate('unreadEventsModal', getUnreadEventsModalTemplate());
+
   console.info('Calendar: All modal templates registered');
+}
+
+/**
+ * Get Unread Events Modal Template
+ */
+function getUnreadEventsModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="unreadEventsModal">
+      <div class="modal-container modal-lg">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-bell"></i> Neue Termine mit Statusanfrage
+          </h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="unreadEventsList" class="unread-events-list">
+            <!-- Events will be loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Check for unread events and show modal if necessary
+ */
+async function checkUnreadEvents(): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch unread events');
+      return;
+    }
+
+    const data = await response.json();
+    const result = useV2 ? data.data : data;
+    const totalUnread = result.totalUnread ?? 0;
+
+    // If there are unread events, show the modal
+    if (totalUnread > 0) {
+      // Check if badge was clicked or if we should auto-show
+      const badge = document.getElementById('calendar-unread-badge');
+      if (badge && badge.style.display !== 'none') {
+        // Auto-show modal when page loads with unread events
+        setTimeout(() => {
+          void showUnreadEventsModal();
+        }, 1000);
+      }
+    }
+
+    // Update badge in navigation
+    if (window.unifiedNav) {
+      void window.unifiedNav.updateUnreadCalendarEvents();
+    }
+  } catch (error) {
+    console.error('Error checking unread events:', error);
+  }
+}
+
+/**
+ * Show event details (wrapper for viewEvent)
+ */
+async function showEventDetails(eventId: number): Promise<void> {
+  // Close the unread events modal first
+  modalManager.hide('unreadEventsModal');
+
+  // Show the event details
+  await viewEvent(eventId);
+}
+
+/**
+ * Show unread events modal
+ */
+async function showUnreadEventsModal(): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch unread events');
+      return;
+    }
+
+    const data = await response.json();
+    const result = useV2 ? data.data : data;
+    const events = result.eventsRequiringResponse ?? [];
+
+    // Show modal
+    const modal = modalManager.show('unreadEventsModal');
+    if (!modal) return;
+
+    // Populate events list
+    const listContainer = document.getElementById('unreadEventsList');
+    if (!listContainer) return;
+
+    if (events.length === 0) {
+      listContainer.innerHTML = `
+        <div class="text-center p-4">
+          <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+          <p class="mt-3">Keine Termine mit ausstehender Statusanfrage</p>
+        </div>
+      `;
+    } else {
+      listContainer.innerHTML = events
+        .map(
+          (event: UnreadEvent) => `
+        <div class="unread-event-item" data-event-id="${event.id}">
+          <div class="event-info">
+            <h4>${escapeHtml(event.title)}</h4>
+            <p class="text-muted">
+              <i class="fas fa-clock"></i> ${new Date(event.startTime).toLocaleString('de-DE')}
+            </p>
+          </div>
+          <div class="event-actions">
+            <button class="btn btn-success btn-sm" onclick="window.respondToEvent(${event.id}, 'accepted')">
+              <i class="fas fa-check"></i> Zusagen
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="window.respondToEvent(${event.id}, 'declined')">
+              <i class="fas fa-times"></i> Absagen
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="window.showEventDetails(${event.id})">
+              <i class="fas fa-info-circle"></i> Details
+            </button>
+          </div>
+        </div>
+      `,
+        )
+        .join('');
+    }
+  } catch (error) {
+    console.error('Error loading unread events:', error);
+  }
 }
 
 /**
@@ -632,15 +816,7 @@ function setupEventListeners(): void {
     });
   }
 
-  // Color selection
-  document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
-    button.addEventListener('click', function (this: HTMLElement) {
-      // Remove active class from all color options
-      document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
-      // Add active class to clicked option
-      this.classList.add('active');
-    });
-  });
+  // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
   const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
@@ -825,7 +1001,30 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
       return [];
     }
 
-    return events.map(formatEventForCalendar);
+    // Map v2 API response fields if needed
+    if (useV2) {
+      events = events.map((event) => ({
+        ...event,
+        start_time: event.startTime ?? event.start_time,
+        end_time: event.endTime ?? event.end_time,
+        all_day: event.allDay ?? event.all_day,
+        org_level: event.orgLevel ?? event.org_level,
+        org_id: event.orgId ?? event.org_id,
+        created_by: event.createdBy ?? event.created_by,
+        created_at: event.createdAt ?? event.created_at,
+        updated_at: event.updatedAt ?? event.updated_at,
+        reminder_time: event.reminderMinutes ?? event.reminderTime ?? event.reminder_time,
+        creator_name: event.creatorName ?? event.creator_name,
+        department_name: event.departmentName ?? event.department_name,
+        team_name: event.teamName ?? event.team_name,
+        user_response: event.userResponse ?? event.user_response,
+      })) as CalendarEvent[];
+    }
+
+    console.info('[CALENDAR] Formatted events for display:', events);
+    const formattedEvents = events.map(formatEventForCalendar).filter((e) => e !== null);
+    console.info('[CALENDAR] Events to render:', formattedEvents);
+    return formattedEvents;
   } catch (error) {
     console.error('Error loading events:', error);
     showError('Fehler beim Laden der Termine.');
@@ -860,11 +1059,20 @@ function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput {
     }
   }
 
+  // Ensure we have valid dates
+  const startTime = event.start_time ?? event.startTime;
+  const endTime = event.end_time ?? event.endTime;
+
+  if (!startTime || !endTime) {
+    console.error('[CALENDAR] Event missing time fields:', event);
+    return null as unknown as FullCalendarEventInput; // Will be filtered out
+  }
+
   return {
-    id: event.id.toString(),
-    title: event.title,
-    start: event.start_time,
-    end: event.end_time,
+    id: event.id ? event.id.toString() : '',
+    title: event.title ?? 'Unbenannter Termin',
+    start: startTime,
+    end: endTime,
     allDay: event.all_day === 1 || event.all_day === '1' || event.all_day === true,
     backgroundColor: color,
     borderColor: color,
@@ -1042,6 +1250,21 @@ async function viewEvent(eventId: number): Promise<void> {
       throw new Error('No token found');
     }
 
+    // Ensure currentUserId and isAdmin are set
+    if (!currentUserId) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          currentUserId = user.id;
+          isAdmin = user.role === 'admin' || user.role === 'root';
+          console.info('[CALENDAR] Set from localStorage - currentUserId:', currentUserId, 'isAdmin:', isAdmin);
+        } catch (e) {
+          console.error('Error parsing user from localStorage:', e);
+        }
+      }
+    }
+
     // Determine API endpoint based on feature flag
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
     const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
@@ -1062,7 +1285,31 @@ async function viewEvent(eventId: number): Promise<void> {
     }
 
     const data = await response.json();
-    const event: CalendarEvent = data.data ?? data;
+    // v2 API returns data.data.event, v1 API returns data directly
+    const eventData = useV2 ? (data.data?.event ?? data.data ?? data) : (data.data ?? data);
+
+    // Map v2 API camelCase to snake_case for consistency
+    let event: CalendarEvent;
+    if (useV2) {
+      event = {
+        ...eventData,
+        start_time: eventData.startTime ?? eventData.start_time,
+        end_time: eventData.endTime ?? eventData.end_time,
+        all_day: eventData.allDay ?? eventData.all_day,
+        org_level: eventData.orgLevel ?? eventData.org_level,
+        org_id: eventData.orgId ?? eventData.org_id,
+        created_by: eventData.createdBy ?? eventData.created_by,
+        created_at: eventData.createdAt ?? eventData.created_at,
+        updated_at: eventData.updatedAt ?? eventData.updated_at,
+        reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+        creator_name: eventData.creatorName ?? eventData.creator_name,
+        department_name: eventData.departmentName ?? eventData.department_name,
+        team_name: eventData.teamName ?? eventData.team_name,
+        user_response: eventData.userResponse ?? eventData.user_response,
+      };
+    } else {
+      event = eventData;
+    }
 
     // Format dates
     const startDate = new Date(event.start_time);
@@ -1106,7 +1353,7 @@ async function viewEvent(eventId: number): Promise<void> {
     let modalContent = `
       <h3>
         <i class="fas fa-${event.all_day ? 'calendar-day' : 'clock'}"></i>
-        ${escapeHtml(event.title)}
+        ${escapeHtml(event.title ?? 'Unbenannter Termin')}
       </h3>
       ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ''}
 
@@ -1147,13 +1394,19 @@ async function viewEvent(eventId: number): Promise<void> {
       `;
 
       event.attendees.forEach((attendee) => {
-        const name =
-          (`${attendee.first_name ?? ''} ${attendee.last_name ?? ''}`.trim() || attendee.username) ?? 'Unknown';
-        const statusIcon = getAttendeeStatusIcon(attendee.response);
+        // Handle both v1 and v2 API field names
+        const firstName = attendee.firstName ?? attendee.first_name ?? '';
+        const lastName = attendee.lastName ?? attendee.last_name ?? '';
+        const username = attendee.username ?? '';
+        // userId variable removed - not used
+        const responseStatus = attendee.responseStatus ?? attendee.response ?? 'pending';
+
+        const name = `${firstName} ${lastName}`.trim() || username || 'Unknown';
+        const statusIcon = getAttendeeStatusIcon(responseStatus);
         modalContent += `
           <div class="attendee-item">
             <span>${escapeHtml(name)}</span>
-            <span class="attendee-status status-${attendee.response}" title="${getResponseText(attendee.response)}">
+            <span class="attendee-status status-${responseStatus}" title="${getResponseText(responseStatus)}">
               ${statusIcon}
             </span>
           </div>
@@ -1164,9 +1417,17 @@ async function viewEvent(eventId: number): Promise<void> {
     }
 
     // Add user response buttons
-    if (event.attendees?.some((a) => a.user_id === currentUserId)) {
-      const currentAttendee = event.attendees.find((a) => a.user_id === currentUserId);
-      const currentResponse = currentAttendee?.response ?? 'pending';
+    if (
+      event.attendees?.some((a) => {
+        const userId = a.userId ?? a.user_id;
+        return userId === currentUserId;
+      })
+    ) {
+      const currentAttendee = event.attendees.find((a) => {
+        const userId = a.userId ?? a.user_id;
+        return userId === currentUserId;
+      });
+      const currentResponse = currentAttendee?.responseStatus ?? currentAttendee?.response ?? 'pending';
 
       modalContent += `
         <div class="response-buttons">
@@ -1186,13 +1447,36 @@ async function viewEvent(eventId: number): Promise<void> {
       `;
     }
 
-    // Add action buttons if user is creator or admin
-    if (event.created_by === currentUserId || isAdmin) {
+    // Debug output to check values
+    console.info(
+      '[CALENDAR] viewEvent - created_by:',
+      event.created_by,
+      'currentUserId:',
+      currentUserId,
+      'isAdmin:',
+      isAdmin,
+    );
+
+    // Add action buttons based on permissions
+    // Only creator can edit, but creator or admin can delete
+    if (event.created_by === currentUserId) {
       modalContent += `
         <div class="modal-actions">
           <button class="btn btn-primary" onclick="editEvent(${event.id})">
             <i class="fas fa-edit"></i> Bearbeiten
           </button>
+          <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
+            <i class="fas fa-trash"></i> Löschen
+          </button>
+          <button class="btn btn-secondary" data-action="close">
+            <i class="fas fa-times"></i> Schließen
+          </button>
+        </div>
+      `;
+    } else if (isAdmin) {
+      // Admin can delete but not edit
+      modalContent += `
+        <div class="modal-actions">
           <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
             <i class="fas fa-trash"></i> Löschen
           </button>
@@ -1253,10 +1537,10 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
     if (!token) return;
 
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}/respond` : `/api/calendar/${eventId}/respond`;
+    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}/attendees/response` : `/api/calendar/${eventId}/respond`;
 
     const apiResponse = await fetch(apiUrl, {
-      method: 'POST',
+      method: useV2 ? 'PUT' : 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -1266,11 +1550,27 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
 
     if (apiResponse.ok) {
       showSuccess('Ihre Antwort wurde gespeichert.');
+
+      // Close both possible modals
       modalManager.hide('eventDetailsModal');
+      modalManager.hide('unreadEventsModal');
 
       // Refresh calendar and upcoming events
       calendar.refetchEvents();
       void loadUpcomingEvents();
+
+      // Update unread events count
+      void checkUnreadEvents();
+
+      // Update badge in navigation
+      if (window.unifiedNav) {
+        void window.unifiedNav.updateUnreadCalendarEvents();
+      }
+
+      // Reload the page to refresh everything
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } else {
       const error = await apiResponse.json();
       showError(error.message ?? 'Fehler beim Speichern der Antwort');
@@ -1317,14 +1617,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   const form = document.getElementById('eventForm') as HTMLFormElement;
   if (form) form.reset();
 
-  // Reset color selection
-  document.querySelectorAll('.color-option').forEach((option) => {
-    option.classList.remove('selected');
-  });
-  document.querySelector('.color-option[data-color="#3498db"]')?.classList.add('selected');
-
-  // Setup color picker for this modal instance
-  setupModalColorPicker();
+  // No color selection needed anymore - color is determined by org_level
 
   // Setup event listeners for modal buttons
   setupModalEventListeners();
@@ -1588,7 +1881,11 @@ function loadTeamsForDepartment(departmentId: number): void {
   teamDropdown.innerHTML = '';
 
   // Filter teams by department
-  const departmentTeams = teams.filter((team) => team.department_id === departmentId);
+  // Handle both v1 (snake_case) and v2 (camelCase)
+  const departmentTeams = teams.filter((team) => {
+    const teamDeptId = team.department_id ?? team.departmentId;
+    return teamDeptId === departmentId;
+  });
 
   departmentTeams.forEach((team) => {
     const option = document.createElement('div');
@@ -1640,7 +1937,6 @@ async function saveEvent(): Promise<void> {
   const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement;
   const departmentIdInput = document.getElementById('eventDepartmentId') as HTMLInputElement;
   const teamIdInput = document.getElementById('eventTeamId') as HTMLInputElement;
-  const colorInput = document.getElementById('eventColor') as HTMLInputElement;
   const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement;
   const eventIdInput = document.getElementById('eventId') as HTMLInputElement;
 
@@ -1665,9 +1961,23 @@ async function saveEvent(): Promise<void> {
     return;
   }
 
-  // Get selected color
-  const selectedColor = document.querySelector('.color-option.selected') as HTMLElement;
-  const color = selectedColor?.dataset.color ?? (colorInput?.value || '#3498db');
+  // Set color automatically based on org_level
+  let color = '#3498db'; // Default blue
+  const orgLevel = orgLevelInput?.value ?? 'personal';
+  switch (orgLevel) {
+    case 'company':
+      color = '#3498db'; // Blue for company
+      break;
+    case 'department':
+      color = '#e67e22'; // Orange for department
+      break;
+    case 'team':
+      color = '#2ecc71'; // Green for team
+      break;
+    case 'personal':
+      color = '#9b59b6'; // Purple for personal
+      break;
+  }
 
   // Parse dates and times
   const startDate = startDateInput.value;
@@ -1739,27 +2049,57 @@ async function saveEvent(): Promise<void> {
     }
   }
 
-  const eventData: CreateCalendarEventData = {
-    title: titleInput.value,
-    description: descriptionInput.value,
-    start_time: startDateTime,
-    end_time: endDateTime,
-    all_day: allDay,
-    location: locationInput.value,
-    org_level: orgLevelInput.value ?? 'personal',
-    color,
-  };
+  // Get requires response checkbox
+  const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement;
+  const requiresResponse = requiresResponseInput ? requiresResponseInput.checked : false;
 
-  // Only add optional fields if they have values
-  if (departmentId) eventData.department_id = departmentId;
-  if (teamId) eventData.team_id = teamId;
-  if (reminderTime !== undefined) eventData.reminder_time = reminderTime;
-  if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
-  if (recurrenceRule) eventData.recurrence_rule = recurrenceRule;
-
-  // For API v1 compatibility, add org_id based on org_level
   const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  if (!useV2) {
+
+  // Build event data based on API version
+  let eventData: Record<string, unknown>;
+
+  if (useV2) {
+    // v2 API uses camelCase
+    eventData = {
+      title: titleInput.value,
+      description: descriptionInput.value,
+      startTime: startDateTime, // camelCase for v2
+      endTime: endDateTime, // camelCase for v2
+      allDay: allDay, // camelCase for v2
+      location: locationInput.value,
+      orgLevel: orgLevelInput.value ?? 'personal', // camelCase for v2
+      color,
+      requiresResponse: requiresResponse, // New field for status requests
+    };
+
+    // Only add optional fields if they have values (camelCase)
+    if (departmentId) eventData.departmentId = departmentId;
+    if (teamId) eventData.teamId = teamId;
+    if (reminderTime !== undefined) eventData.reminderMinutes = reminderTime; // v2 uses reminderMinutes
+    if (selectedAttendees.length > 0) eventData.attendeeIds = selectedAttendees;
+    if (recurrenceRule) eventData.recurrenceRule = recurrenceRule;
+  } else {
+    // v1 API uses snake_case
+    eventData = {
+      title: titleInput.value,
+      description: descriptionInput.value,
+      start_time: startDateTime,
+      end_time: endDateTime,
+      all_day: allDay,
+      location: locationInput.value,
+      org_level: orgLevelInput.value ?? 'personal',
+      color,
+      requires_response: requiresResponse, // New field for status requests
+    };
+
+    // Only add optional fields if they have values (snake_case)
+    if (departmentId) eventData.department_id = departmentId;
+    if (teamId) eventData.team_id = teamId;
+    if (reminderTime !== undefined) eventData.reminder_time = reminderTime;
+    if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
+    if (recurrenceRule) eventData.recurrence_rule = recurrenceRule;
+
+    // For API v1 compatibility, add org_id based on org_level
     if (orgLevelInput.value === 'department' && departmentId) {
       eventData.org_id = departmentId;
     } else if (orgLevelInput.value === 'team' && teamId) {
@@ -1828,7 +2168,54 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
     if (response.ok) {
       const data = await response.json();
-      const event: CalendarEvent = data.data ?? data;
+      // v2 API returns data.data.event, v1 API returns data directly
+      const eventData = useV2 ? (data.data?.event ?? data.data ?? data) : (data.data ?? data);
+
+      // Check if user is the creator
+      if (!currentUserId) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            currentUserId = user.id;
+          } catch (e) {
+            console.error('Error parsing user from localStorage:', e);
+          }
+        }
+      }
+
+      const createdBy = eventData.createdBy ?? eventData.created_by;
+      if (createdBy !== currentUserId) {
+        modalManager.hide('eventDetailModal');
+        modalManager.hide('eventFormModal');
+        showError(
+          'Sie haben keine Berechtigung, diesen Termin zu bearbeiten. Nur der Ersteller kann Termine bearbeiten. Bitte wenden Sie sich an den Ersteller des Termins.',
+        );
+        return;
+      }
+
+      // Map v2 API camelCase to snake_case for consistency
+      let event: CalendarEvent;
+      if (useV2) {
+        event = {
+          ...eventData,
+          start_time: eventData.startTime ?? eventData.start_time,
+          end_time: eventData.endTime ?? eventData.end_time,
+          all_day: eventData.allDay ?? eventData.all_day,
+          org_level: eventData.orgLevel ?? eventData.org_level,
+          org_id: eventData.orgId ?? eventData.org_id,
+          created_by: eventData.createdBy ?? eventData.created_by,
+          created_at: eventData.createdAt ?? eventData.created_at,
+          updated_at: eventData.updatedAt ?? eventData.updated_at,
+          reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+          creator_name: eventData.creatorName ?? eventData.creator_name,
+          department_name: eventData.departmentName ?? eventData.department_name,
+          team_name: eventData.teamName ?? eventData.team_name,
+          user_response: eventData.userResponse ?? eventData.user_response,
+        };
+      } else {
+        event = eventData;
+      }
 
       // Fill form with event data
       const form = document.getElementById('eventForm') as HTMLFormElement;
@@ -1836,7 +2223,11 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
       // Set event ID
       const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement;
-      if (eventIdInput) eventIdInput.value = event.id.toString();
+      if (eventIdInput && event.id) {
+        eventIdInput.value = event.id.toString();
+      } else {
+        console.error('[CALENDAR] loadEventForEdit - event.id is missing:', event);
+      }
 
       // Set basic fields
       const titleInput = form.elements.namedItem('title') as HTMLInputElement;
@@ -1902,14 +2293,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
         selectOrgId(event.org_id, orgName);
       }
 
-      // Select color
-      document.querySelectorAll('.color-option').forEach((option) => {
-        option.classList.remove('active');
-      });
-      const colorOption = document.querySelector(`.color-option[data-color="${event.color}"]`) as HTMLElement;
-      if (colorOption) {
-        colorOption.classList.add('active');
-      }
+      // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
       const reminderSelect = document.getElementById('eventReminderTime') as HTMLSelectElement;
@@ -1917,9 +2301,19 @@ async function loadEventForEdit(eventId: number): Promise<void> {
         reminderSelect.value = event.reminder_time.toString();
       }
 
+      // Set requires response checkbox
+      const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement;
+      if (requiresResponseInput) {
+        // Check both camelCase and snake_case fields
+        const requiresResponse = eventData.requiresResponse ?? eventData.requires_response ?? false;
+        requiresResponseInput.checked = requiresResponse;
+      }
+
       // Load attendees only for personal events
       if (event.org_level === 'personal' && event.attendees) {
-        selectedAttendees = event.attendees.map((a) => a.user_id);
+        selectedAttendees = event.attendees
+          .map((a) => a.user_id ?? a.userId)
+          .filter((id): id is number => id !== undefined);
         updateSelectedAttendees();
       } else {
         selectedAttendees = [];
@@ -1939,52 +2333,41 @@ async function loadEventForEdit(eventId: number): Promise<void> {
  * Delete event
  */
 function deleteEvent(eventId: number): void {
-  // Create confirmation modal dynamically
-  const modalHtml = `
-    <div class="modal-overlay" id="confirmationModal">
-      <div class="modal-container modal-sm">
-        <div class="modal-header">
-          <h2>Bestätigung</h2>
-          <button type="button" class="modal-close" onclick="window.closeConfirmationModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="window.closeConfirmationModal()">Abbrechen</button>
-          <button type="button" class="btn btn-danger" onclick="window.confirmDeleteEvent(${eventId})">Löschen</button>
-        </div>
-      </div>
-    </div>
-  `;
+  console.info('[CALENDAR] deleteEvent called with ID:', eventId);
 
-  // Add modal to body if it doesn't exist
-  if (!document.getElementById('confirmationModal')) {
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-  }
+  // Store the event ID for later use
+  eventToDelete = eventId;
 
-  // Show modal
-  modalManager.show('confirmationModal');
-}
+  // Show confirmation modal using modalManager
+  modalManager.show('confirmationModal', {
+    onOpen: () => {
+      console.info('[CALENDAR] Confirmation modal opened, eventToDelete:', eventToDelete);
 
-/**
- * Close confirmation modal and remove from DOM
- */
-function closeConfirmationModal(): void {
-  const modal = document.getElementById('confirmationModal');
-  if (modal) {
-    modalManager.hide('confirmationModal');
-    // Remove modal from DOM after animation
-    setTimeout(() => {
-      modal.remove();
-    }, 300);
-  }
+      // Add click handler to the delete button when modal opens
+      const confirmBtn = document.getElementById('confirmDeleteBtn');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          console.info('[CALENDAR] Confirm delete button clicked, eventToDelete:', eventToDelete);
+          void confirmDeleteEvent();
+        };
+      }
+    },
+  });
 }
 
 /**
  * Confirm and execute event deletion
  */
-async function confirmDeleteEvent(eventId: number): Promise<void> {
+async function confirmDeleteEvent(): Promise<void> {
+  console.info('[CALENDAR] confirmDeleteEvent called, eventToDelete:', eventToDelete);
+
+  if (!eventToDelete) {
+    console.error('[CALENDAR] No event ID to delete');
+    modalManager.hide('confirmationModal');
+    return;
+  }
+
+  const eventId = eventToDelete;
   const token = getAuthToken();
   if (!token) return;
 
@@ -2004,8 +2387,9 @@ async function confirmDeleteEvent(eventId: number): Promise<void> {
     if (response.ok) {
       console.info('[CALENDAR] Delete successful');
       showSuccess('Termin erfolgreich gelöscht!');
-      closeConfirmationModal();
-      modalManager.hide('eventDetailsModal');
+      modalManager.hide('confirmationModal');
+      modalManager.hide('eventDetailModal');
+      eventToDelete = null; // Reset the stored ID
 
       // Refresh calendar
       calendar.refetchEvents();
@@ -2034,7 +2418,10 @@ function searchAttendees(query: string): void {
 
   // Filter employees based on query
   const filteredEmployees = employees.filter((emp) => {
-    const fullName = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.toLowerCase();
+    // Handle both snake_case (v1) and camelCase (v2) field names
+    const firstName = emp.first_name ?? '';
+    const lastName = emp.last_name ?? '';
+    const fullName = `${firstName} ${lastName}`.toLowerCase();
     const username = (emp.username ?? '').toLowerCase();
     const email = (emp.email ?? '').toLowerCase();
     return (
@@ -2051,7 +2438,10 @@ function searchAttendees(query: string): void {
 
     const item = document.createElement('div');
     item.className = 'search-result-item';
-    const name = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.username;
+    // Handle both snake_case (v1) and camelCase (v2) field names
+    const firstName = emp.first_name ?? '';
+    const lastName = emp.last_name ?? '';
+    const name = `${firstName} ${lastName}`.trim() || emp.username || emp.email;
     item.innerHTML = `
       <span>${escapeHtml(name)}</span>
       <button class="btn btn-sm btn-primary" onclick="addAttendee(${emp.id}, '${escapeHtml(name)}')">
@@ -2107,8 +2497,9 @@ async function fetchUserData(): Promise<UserData> {
     throw new Error('No authentication token found');
   }
 
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  const profileUrl = useV2 ? '/api/v2/auth/profile' : '/api/user/profile';
+  // Use AUTH feature flag for auth endpoints, not CALENDAR flag
+  const useV2Auth = featureFlags.isEnabled('USE_API_V2_AUTH');
+  const profileUrl = useV2Auth ? '/api/v2/users/me' : '/api/user/profile';
 
   const response = await fetch(profileUrl, {
     headers: {
@@ -2132,8 +2523,8 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
   try {
     // Load departments
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const deptUrl = useV2 ? '/api/v2/departments' : '/api/departments';
+    const useV2Departments = featureFlags.isEnabled('USE_API_V2_DEPARTMENTS');
+    const deptUrl = useV2Departments ? '/api/v2/departments' : '/api/departments';
     const deptResponse = await fetch(deptUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -2142,11 +2533,12 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
     if (deptResponse.ok) {
       const deptData = await deptResponse.json();
-      departments = useV2 && deptData.data ? deptData.data : deptData;
+      departments = useV2Departments && deptData.data ? deptData.data : deptData;
     }
 
     // Load teams
-    const teamUrl = useV2 ? '/api/v2/teams' : '/api/teams';
+    const useV2Teams = featureFlags.isEnabled('USE_API_V2_TEAMS');
+    const teamUrl = useV2Teams ? '/api/v2/teams' : '/api/teams';
     const teamResponse = await fetch(teamUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -2155,11 +2547,12 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
     if (teamResponse.ok) {
       const teamData = await teamResponse.json();
-      teams = useV2 && teamData.data ? teamData.data : teamData;
+      teams = useV2Teams && teamData.data ? teamData.data : teamData;
     }
 
     // Load employees for attendees
-    const empUrl = useV2 ? '/api/v2/users' : '/api/users';
+    const useV2Users = featureFlags.isEnabled('USE_API_V2_USERS');
+    const empUrl = useV2Users ? '/api/v2/users' : '/api/users';
     const empResponse = await fetch(empUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -2168,14 +2561,14 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
     if (empResponse.ok) {
       const empData = await empResponse.json();
-      const allEmployees = useV2 && empData.data ? empData.data : empData;
+      const allEmployees = useV2Users && empData.data ? empData.data : empData;
       // Get current user ID to exclude from employees list
       const userStr = localStorage.getItem('user');
       let currentUserId = 0;
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          currentUserId = user.id || 0;
+          currentUserId = user.id ?? 0;
         } catch (e) {
           console.error('Error parsing user from localStorage:', e);
         }
@@ -2190,7 +2583,9 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 /**
  * Utility function to escape HTML
  */
-function escapeHtml(text: string): string {
+function escapeHtml(text: string | null | undefined): string {
+  if (!text) return '';
+  const str = String(text);
   const map: { [key: string]: string } = {
     '&': '&amp;',
     '<': '&lt;',
@@ -2198,13 +2593,14 @@ function escapeHtml(text: string): string {
     '"': '&quot;',
     "'": '&#039;',
   };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
+  return str.replace(/[&<>"']/g, (m) => map[m]);
 }
 
 // Extend window for calendar functions
 declare global {
   interface Window {
     viewEvent: typeof viewEvent;
+    showEventDetails: typeof showEventDetails;
     editEvent: (eventId: number) => void;
     deleteEvent: typeof deleteEvent;
     respondToEvent: typeof respondToEvent;
@@ -2224,44 +2620,8 @@ declare global {
     toggleRecurrenceEndDropdown: typeof toggleRecurrenceEndDropdown;
     selectRecurrenceEnd: typeof selectRecurrenceEnd;
     closeAllDropdowns: typeof closeAllDropdowns;
-    closeConfirmationModal: typeof closeConfirmationModal;
     confirmDeleteEvent: typeof confirmDeleteEvent;
   }
-}
-
-/**
- * Setup color picker functionality
- */
-function setupColorPicker(): void {
-  // This function is now empty as we use setupModalColorPicker when modal opens
-}
-
-/**
- * Setup color picker for modal instance
- */
-function setupModalColorPicker(): void {
-  const colorOptions = document.querySelectorAll('.color-option');
-  const colorInput = document.getElementById('eventColor') as HTMLInputElement;
-
-  colorOptions.forEach((option) => {
-    // Remove existing listeners by cloning
-    const newOption = option.cloneNode(true) as HTMLElement;
-    option.parentNode?.replaceChild(newOption, option);
-
-    newOption.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Remove selected class from all
-      document.querySelectorAll('.color-option').forEach((opt) => opt.classList.remove('selected'));
-      // Add selected class to clicked
-      newOption.classList.add('selected');
-      // Update hidden input
-      if (colorInput) {
-        colorInput.value = newOption.dataset.color ?? '#3498db';
-      }
-    });
-  });
 }
 
 /**
@@ -2540,8 +2900,8 @@ async function loadEmployeesForAttendees(): Promise<void> {
     }
 
     // For admins, load user list as before
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? '/api/v2/users' : '/api/users';
+    const useV2Users = featureFlags.isEnabled('USE_API_V2_USERS');
+    const apiUrl = useV2Users ? '/api/v2/users' : '/api/users';
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -2551,7 +2911,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
     if (response.ok) {
       const data = await response.json();
-      const users = useV2 && data.data ? data.data : data;
+      const users = useV2Users && data.data ? data.data : data;
       const attendeesList = document.getElementById('attendeesList');
 
       // Get current user ID to exclude from list
@@ -2560,26 +2920,33 @@ async function loadEmployeesForAttendees(): Promise<void> {
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          currentUserId = user.id || 0;
+          currentUserId = user.id ?? 0;
         } catch (e) {
           console.error('Error parsing user from localStorage:', e);
         }
       }
 
+      // Store employees for later use in updateSelectedAttendees
+      employees = users.filter((user: User) => user.id !== currentUserId);
+
       if (attendeesList) {
-        attendeesList.innerHTML = users
-          .filter((user: User) => user.id !== currentUserId) // Exclude current user
-          .map(
-            (user: User) => `
+        attendeesList.innerHTML = employees
+          .map((user: User) => {
+            // Handle both snake_case (v1) and camelCase (v2) field names
+            const firstName = user.first_name ?? '';
+            const lastName = user.last_name ?? '';
+            const displayName = `${firstName} ${lastName}`.trim() || user.username || user.email;
+
+            return `
           <div class="attendee-option">
             <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
             <label for="attendee-${user.id}">
-              ${escapeHtml(user.first_name ?? '')} ${escapeHtml(user.last_name ?? '')}
-              (${escapeHtml(user.username)})
+              ${escapeHtml(displayName)}
+              (${escapeHtml(user.email ?? user.username)})
             </label>
           </div>
-        `,
-          )
+        `;
+          })
           .join('');
       }
 
@@ -2641,10 +3008,15 @@ function updateSelectedAttendees(): void {
     .map((userId) => {
       const employee = employees.find((emp) => emp.id === userId);
       if (employee) {
+        // Handle both snake_case (v1) and camelCase (v2) field names
+        const firstName = employee.first_name ?? '';
+        const lastName = employee.last_name ?? '';
+        const displayName = `${firstName} ${lastName}`.trim() || employee.username || employee.email;
+
         return `
         <div class="attendee-item">
           <span class="attendee-name">
-            ${escapeHtml(employee.first_name ?? '')} ${escapeHtml(employee.last_name ?? '')}
+            ${escapeHtml(displayName)}
           </span>
           <button type="button" class="remove-attendee" onclick="removeAttendee(${userId})">
             <i class="fas fa-times"></i>
@@ -2664,6 +3036,7 @@ function updateSelectedAttendees(): void {
 if (typeof window !== 'undefined') {
   console.info('Calendar: Exporting functions to window...');
   window.viewEvent = viewEvent;
+  window.showEventDetails = showEventDetails;
   window.editEvent = (eventId: number) => openEventForm(eventId);
   window.deleteEvent = deleteEvent;
   window.respondToEvent = respondToEvent;
@@ -2687,7 +3060,6 @@ if (typeof window !== 'undefined') {
   window.closeAllDropdowns = closeAllDropdowns;
 
   // Confirmation modal functions
-  window.closeConfirmationModal = closeConfirmationModal;
   window.confirmDeleteEvent = confirmDeleteEvent;
 
   console.info('Calendar: window.openEventForm available:', typeof window.openEventForm);
@@ -2892,23 +3264,6 @@ function getEventFormModalTemplate(): string {
               <input type="hidden" id="eventTeamId" name="team_id" />
             </div>
 
-            <!-- Farbe -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-palette"></i> Farbe
-              </label>
-              <div class="color-picker">
-                <div class="color-option selected" data-color="#3498db" style="background-color: #3498db" title="Blau"></div>
-                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71" title="Grün"></div>
-                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22" title="Orange"></div>
-                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c" title="Rot"></div>
-                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6" title="Lila"></div>
-                <div class="color-option" data-color="#f39c12" style="background-color: #f39c12" title="Gelb"></div>
-                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c" title="Türkis"></div>
-              </div>
-              <input type="hidden" id="eventColor" value="#3498db" />
-            </div>
-
             <!-- Teilnehmer -->
             <div class="form-group" id="attendeesGroup" style="display: block;">
               <label>
@@ -2920,6 +3275,27 @@ function getEventFormModalTemplate(): string {
               <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
                 <i class="fas fa-plus"></i> Teilnehmer hinzufügen
               </button>
+            </div>
+
+            <!-- Statusanfrage -->
+            <div class="form-group" id="requiresResponseGroup">
+              <label>
+                <i class="fas fa-question-circle"></i> Statusanfrage
+              </label>
+              <div class="form-check form-switch">
+                <input 
+                  type="checkbox" 
+                  class="form-check-input" 
+                  id="eventRequiresResponse" 
+                  name="requires_response"
+                />
+                <label class="form-check-label" for="eventRequiresResponse">
+                  Teilnehmer müssen Zusage/Absage geben
+                </label>
+              </div>
+              <small class="form-text text-muted">
+                <i class="fas fa-info-circle"></i> Bei Aktivierung werden Teilnehmer aufgefordert, ihre Teilnahme zu bestätigen
+              </small>
             </div>
 
             <!-- Wiederkehrend -->
@@ -3129,4 +3505,129 @@ function getEventResponseModalTemplate(): string {
       </div>
     </div>
   `;
+}
+
+/**
+ * Get confirmation modal template
+ */
+function getConfirmationModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="confirmationModal">
+      <div class="modal-container modal-sm">
+        <div class="modal-header">
+          <h2>Bestätigung</h2>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="fas fa-trash"></i> Löschen
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Setup fullscreen controls for the calendar
+ */
+function setupFullscreenControls(): void {
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const calendarContainer = document.getElementById('calendarContainer');
+
+  if (!fullscreenBtn || !calendarContainer) {
+    console.warn('Calendar: Fullscreen elements not found');
+    return;
+  }
+
+  // Enter fullscreen
+  fullscreenBtn.addEventListener('click', () => {
+    void (async () => {
+      try {
+        // Check if already in fullscreen
+        const isFullscreen = document.fullscreenElement !== null;
+
+        if (!isFullscreen) {
+          // Enter fullscreen mode
+          document.body.classList.add('calendar-fullscreen-mode');
+
+          // Request fullscreen
+          if (calendarContainer.requestFullscreen) {
+            await calendarContainer.requestFullscreen();
+          } else if (
+            (calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> })
+              .webkitRequestFullscreen
+          ) {
+            const elem = calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
+            if (elem.webkitRequestFullscreen) {
+              void elem.webkitRequestFullscreen();
+            }
+          } else if (
+            (calendarContainer as HTMLElement & { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen
+          ) {
+            const elem = calendarContainer as HTMLElement & { msRequestFullscreen?: () => Promise<void> };
+            if (elem.msRequestFullscreen) {
+              void elem.msRequestFullscreen();
+            }
+          }
+
+          // Update button icon
+          const icon = fullscreenBtn.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-compress';
+          }
+          fullscreenBtn.title = 'Vollbild beenden';
+        } else {
+          // Exit fullscreen mode
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if ((document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+            const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
+            if (doc.webkitExitFullscreen) {
+              await doc.webkitExitFullscreen();
+            }
+          } else if ((document as Document & { msExitFullscreen?: () => Promise<void> }).msExitFullscreen) {
+            const doc = document as Document & { msExitFullscreen?: () => Promise<void> };
+            if (doc.msExitFullscreen) {
+              await doc.msExitFullscreen();
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Calendar: Fullscreen error:', error);
+        showError('Vollbild-Modus konnte nicht aktiviert werden');
+      }
+    })();
+  });
+
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', () => {
+    const isFullscreen = document.fullscreenElement !== null;
+    const icon = fullscreenBtn.querySelector('i');
+
+    if (isFullscreen) {
+      document.body.classList.add('calendar-fullscreen-mode');
+      if (icon) {
+        icon.className = 'fas fa-compress';
+      }
+      fullscreenBtn.title = 'Vollbild beenden';
+    } else {
+      document.body.classList.remove('calendar-fullscreen-mode');
+      if (icon) {
+        icon.className = 'fas fa-expand';
+      }
+      fullscreenBtn.title = 'Vollbild';
+    }
+
+    // Refresh calendar layout after fullscreen change
+    if (typeof calendar !== 'undefined' && calendar) {
+      setTimeout(() => {
+        calendar.render();
+      }, 100);
+    }
+  });
 }

@@ -90,7 +90,7 @@
 
 #### Planning & Organization
 
-- [ ] calendar.ts alles migriert, wir testen gerade!!
+- [x] calendar.ts ✅ Erfolgreich migriert (28.01.2025) - inkl. Badge-System & Statusanfragen
 - [ ] shifts.ts
 - [ ] shifts.html
 

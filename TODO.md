@@ -1,26 +1,25 @@
 # Assixx TODO-Liste
 
-## 🚀 AKTUELLER STATUS (08.08.2025)
+## 🚀 AKTUELLER STATUS (28.01.2025)
 
 **Gerade erledigt:**
 
-- ✅ **CHAT v2 API VOLLSTÄNDIG MIGRIERT UND PRODUKTIV!** 🎉
+- ✅ **CALENDAR v2 API VOLLSTÄNDIG MIGRIERT UND PRODUKTIV!** 🎉
   - ✅ Frontend komplett auf v2 API umgestellt
-  - ✅ WebSocket mit Multi-Tenant-Isolation gefixt (tenant_id → tenantId)
-  - ✅ Alle camelCase/snake_case Issues behoben
-  - ✅ Unread Messages Badge in Sidebar implementiert
-  - ✅ Unread Conversation Highlighting + Badge
-  - ✅ Last Message Preview funktioniert
-  - ✅ Message Ordering korrekt (ASC statt DESC)
-- ✅ Feature Flag USE_API_V2_CHAT = true (ENABLED)
-- ✅ 30/64 Frontend-Dateien migriert (46.9%)
+  - ✅ Alle camelCase/snake_case Field-Mappings implementiert
+  - ✅ Badge-System für ungelesene Events implementiert
+  - ✅ Statusanfrage-Feature (requires_response) hinzugefügt
+  - ✅ Modal für "Neue Termine mit Statusanfrage"
+  - ✅ Automatische Farbzuweisung basierend auf Event-Ebene
+  - ✅ Privacy-Fix: Admins sehen keine privaten Events anderer mehr
+  - ✅ Feature Flag USE_API_V2_CALENDAR = true (ENABLED)
+- ✅ 31/64 Frontend-Dateien migriert (48.4%)
 
 **Nächste Schritte:**
 
-- notification.service.ts migrieren (letzte Datei in Phase 7)
-- Phase 8: Planning & Organization beginnen
-- calendar.ts, shifts.ts als nächstes
-- Weitere 34 Frontend-Dateien (30/64 = 46.9% fertig)
+- shifts.ts migrieren (nächste Planning & Organization Datei)
+- shifts.html Templates anpassen
+- Weitere 33 Frontend-Dateien (31/64 = 48.4% fertig)
 
 ## 🎉 API v2 MIGRATION ABGESCHLOSSEN! (03.08.2025 - 01:00 Uhr) 🎉
 

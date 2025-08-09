@@ -114,7 +114,12 @@ export class FeatureFlagManager {
    * Check if a specific feature flag is enabled
    */
   isEnabled(flag: keyof FeatureFlags): boolean {
-    return this.flags.USE_API_V2_GLOBAL ?? this.flags[flag] ?? false;
+    // If global flag is explicitly true, return true
+    if (this.flags.USE_API_V2_GLOBAL === true) {
+      return true;
+    }
+    // Otherwise check the specific flag
+    return this.flags[flag] === true;
   }
 
   /**

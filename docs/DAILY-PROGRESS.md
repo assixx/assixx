@@ -6,6 +6,62 @@
 
 ---
 
+## 📅 28.01.2025 (Dienstag) - Phase 8 Planning & Organization (Calendar KOMPLETT!)
+
+### 🎯 Tagesaufgabe
+
+- Phase 8 Planning & Organization: calendar.ts Migration
+- Badge-System für ungelesene Events implementieren
+- Statusanfrage-Feature (requires_response) entwickeln
+- Privacy-Bug fixen (Admins sehen private Events)
+
+### ✅ Erfolge
+
+**Calendar v2 Migration:**
+- ✅ calendar.ts vollständig auf API v2 migriert
+- ✅ Alle Field-Mappings (camelCase/snake_case) implementiert
+- ✅ Badge-System für ungelesene Events mit Statusanfrage
+- ✅ Modal "Neue Termine mit Statusanfrage" entwickelt
+- ✅ Checkbox "Teilnehmer müssen Zusage/Absage geben" hinzugefügt
+- ✅ Automatische Farbzuweisung basierend auf Event-Ebene
+- ✅ Farb-Picker aus Modal entfernt (deprecated)
+- ✅ Privacy-Fix: Admins sehen keine privaten Events anderer mehr
+- ✅ Feature Flag USE_API_V2_CALENDAR = true (PRODUKTIV!)
+- ✅ 31/64 Frontend-Dateien migriert (48.4%)
+
+### 🔧 Technische Details
+
+**Badge-System Implementation:**
+- Backend-Endpoint `/api/v2/calendar/unread-events` erstellt
+- Datenbank-Migration für `requires_response` Feld
+- Frontend Badge in `unified-navigation.ts` integriert
+- Auto-Update alle 30 Sekunden
+- Modal öffnet sich automatisch bei ungelesenen Events
+
+**Privacy-Fix Details:**
+- Problem: Admins konnten alle privaten Events sehen
+- Lösung: Visibility-Rules gelten jetzt für ALLE User
+- Zeile 197 in `backend/src/models/calendar.ts` angepasst
+- Admins sehen nur noch Events, an denen sie beteiligt sind
+
+**Field-Mapping Fixes:**
+- v2 API: camelCase (firstName, lastName, startTime, endTime)
+- v1 API: snake_case (first_name, last_name, start_time, end_time)
+- Bidirektionales Mapping implementiert für Kompatibilität
+
+### 📊 Metriken
+
+- Zeit: ~5 Stunden
+- Files: 3 migriert/geändert (calendar.ts, unified-navigation.ts, calendar.service.ts)
+- API Calls: 15+ migriert
+- Neue Features: 2 (Badge-System, Statusanfragen)
+- Bug Fixes: 2 (Privacy-Bug, Field-Mapping)
+- Fortschritt: 48.4% (31/64 Files)
+- Feature Flags aktiviert: USE_API_V2_CALENDAR
+- Nächste Tasks: shifts.ts, shifts.html
+
+---
+
 ## 📅 08.08.2025 (Donnerstag) - Phase 7 Communication (Blackboard + Chat KOMPLETT!)
 
 ### 🎯 Tagesaufgabe

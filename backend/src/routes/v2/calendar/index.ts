@@ -131,6 +131,11 @@ const exportValidation = createValidation([
     .withMessage("Valid format is required (ics or csv)"),
 ]);
 
+const dashboardValidation = createValidation([
+  query("days").optional().isInt({ min: 1, max: 365 }),
+  query("limit").optional().isInt({ min: 1, max: 50 }),
+]);
+
 // Routes
 router.get(
   "/events",
@@ -180,6 +185,19 @@ router.get(
   apiLimiter,
   exportValidation,
   typed.auth(calendarController.exportEvents),
+);
+
+router.get(
+  "/dashboard",
+  apiLimiter,
+  dashboardValidation,
+  typed.auth(calendarController.getDashboardEvents),
+);
+
+router.get(
+  "/unread-events",
+  apiLimiter,
+  typed.auth(calendarController.getUnreadEvents),
 );
 
 export default router;
