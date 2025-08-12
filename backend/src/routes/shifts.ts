@@ -802,7 +802,7 @@ router.get(
           ) {
             // Handle the case where it's a plain object with Buffer data
             notes = Buffer.from(
-              (rows[0].notes as { data: unknown }).data as BufferConstructor,
+              (rows[0].notes as { data: number[] }).data,
             ).toString("utf8");
             console.info(
               "[SHIFTS NOTES] Converted buffer object to string:",
