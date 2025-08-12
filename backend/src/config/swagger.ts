@@ -7,13 +7,20 @@ import { join } from "path";
 
 import swaggerJsdoc from "swagger-jsdoc";
 
+// Type definition for package.json structure
+interface PackageJson {
+  version: string;
+  name?: string;
+  description?: string;
+}
+
 // Get project root directory
 const projectRoot = process.cwd();
 
 // Read package.json to get version
 const packageJson = JSON.parse(
   readFileSync(join(projectRoot, "package.json"), "utf-8"),
-);
+) as PackageJson;
 
 const options: swaggerJsdoc.Options = {
   definition: {

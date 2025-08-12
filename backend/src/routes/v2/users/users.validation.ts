@@ -86,8 +86,10 @@ export const usersValidation = {
     body("address").optional().isString().trim(),
     body("employeeNumber")
       .optional()
-      .matches(/^[A-Z0-9]{10,20}$/)
-      .withMessage("Invalid employee number format"),
+      .matches(/^[A-Za-z0-9-]{1,10}$/)
+      .withMessage(
+        "Employee number: max 10 characters (letters, numbers, hyphen)",
+      ),
   ],
 
   // Update user validation
@@ -128,8 +130,10 @@ export const usersValidation = {
       .withMessage("isActive must be boolean"),
     body("employeeNumber")
       .optional()
-      .matches(/^[A-Z0-9]{10,20}$/)
-      .withMessage("Invalid employee number format"),
+      .matches(/^[A-Za-z0-9-]{1,10}$/)
+      .withMessage(
+        "Employee number: max 10 characters (letters, numbers, hyphen)",
+      ),
   ],
 
   // Update profile validation (limited fields for self-update)

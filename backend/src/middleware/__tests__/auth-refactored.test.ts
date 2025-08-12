@@ -57,7 +57,7 @@ describe("Authentication Middleware - Integration Test", () => {
         role: "admin",
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET || "schneeseekleerehfeedrehzehwehtee",
+      process.env.JWT_SECRET ?? "schneeseekleerehfeedrehzehwehtee",
       { expiresIn: "1h" },
     );
   });
@@ -162,7 +162,7 @@ describe("Authentication Middleware - Integration Test", () => {
           role: "admin",
           tenant_id: testTenantId,
         },
-        process.env.JWT_SECRET || "schneeseekleerehfeedrehzehwehtee",
+        process.env.JWT_SECRET ?? "schneeseekleerehfeedrehzehwehtee",
         { expiresIn: "0s" },
       );
 
@@ -225,7 +225,7 @@ describe("Authentication Middleware - Integration Test", () => {
           role: "admin",
           tenant_id: testTenantId,
         },
-        process.env.JWT_SECRET || "schneeseekleerehfeedrehzehwehtee",
+        process.env.JWT_SECRET ?? "schneeseekleerehfeedrehzehwehtee",
         { expiresIn: "1h" },
       );
 

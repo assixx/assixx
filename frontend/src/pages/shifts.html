@@ -47,11 +47,6 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
-      .header {
-        /* Header styles sind bereits in dashboard-theme.css definiert */
-      }
-
       /* Main content area - wie calendar? */
       .main-content {
         padding: var(--spacing-lg);
@@ -132,7 +127,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -151,9 +146,6 @@
       .dropdown-display.active {
         border-color: rgba(0, 142, 255, 0.5);
         box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
-      }
-
-      .dropdown-display svg {
       }
 
       .dropdown-display.active svg {
@@ -254,7 +246,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         color: var(--text-primary);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         display: grid;
         grid-template-columns: 120px repeat(6, 1fr);
         gap: 2px;
@@ -282,7 +274,7 @@
       .shift-label {
         background: rgba(255, 255, 255, 0.03);
         color: var(--text-primary);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -301,7 +293,7 @@
         backdrop-filter: blur(10px);
         border: var(--glass-border);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-top: 2px;
         min-height: 120px;
         display: flex;
@@ -364,7 +356,7 @@
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         font-size: 13px;
         resize: vertical;
         min-height: 300px;
@@ -423,7 +415,7 @@
       }
 
       .employee-assignment {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -544,7 +536,7 @@
       }
 
       .employee-item {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: var(--radius-md);
         margin-bottom: var(--spacing-md);
@@ -793,6 +785,21 @@
                   </div>
                 </div>
                 <input type="hidden" id="departmentSelect" />
+              </div>
+              <div class="info-item">
+                <div class="info-label">Team</div>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="teamDisplay" onclick="toggleDropdown('team')">
+                    <span>Team wählen...</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="teamDropdown">
+                    <!-- Options will be populated dynamically -->
+                  </div>
+                </div>
+                <input type="hidden" id="teamSelect" />
               </div>
               <div class="info-item">
                 <div class="info-label">Maschine</div>

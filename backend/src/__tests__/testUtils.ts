@@ -78,7 +78,7 @@ export function generateAuthToken(user: TestUser): string {
 
   return jwt.sign(
     payload,
-    process.env.JWT_SECRET || "test-secret-key-for-testing",
+    process.env.JWT_SECRET ?? "test-secret-key-for-testing",
     {
       expiresIn: "24h",
     },
@@ -103,9 +103,7 @@ export async function cleanupTestData(tenantId: number): Promise<void> {
 /**
  * Create a test tenant
  */
-export async function createTestTenant(
-  name: string = "Test Tenant",
-): Promise<number> {
+export async function createTestTenant(name = "Test Tenant"): Promise<number> {
   const result = await query(
     `INSERT INTO tenants (name, status, created_at, updated_at)
      VALUES (?, 'active', NOW(), NOW())`,
@@ -119,8 +117,8 @@ export async function createTestTenant(
  */
 export async function waitFor(
   condition: () => Promise<boolean>,
-  timeout: number = 5000,
-  interval: number = 100,
+  timeout = 5000,
+  interval = 100,
 ): Promise<void> {
   const startTime = Date.now();
 
@@ -165,7 +163,7 @@ export function createMockResponse(): MockResponse {
 /**
  * Setup test database with minimal schema
  */
-export async function setupTestDatabase(): Promise<void> {
+export function setupTestDatabase(): void {
   // This would contain minimal schema setup for tests
   // In practice, you'd use migrations or a schema file
   console.info("Test database setup complete");
@@ -174,7 +172,7 @@ export async function setupTestDatabase(): Promise<void> {
 /**
  * Tear down test database
  */
-export async function teardownTestDatabase(): Promise<void> {
+export function teardownTestDatabase(): void {
   // Clean up all test data
   console.info("Test database teardown complete");
 }

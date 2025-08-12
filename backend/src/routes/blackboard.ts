@@ -26,7 +26,7 @@ import blackboardModel, {
   EntryCreateData,
   EntryUpdateData,
 } from "../models/blackboard";
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { successResponse, errorResponse } from "../types/response.types";
 import { getErrorMessage, getErrorStack } from "../utils/errorHandler";
 import { logger } from "../utils/logger";
@@ -55,7 +55,7 @@ const storage = multer.diskStorage({
       try {
         await fs.mkdir(uploadDir, { recursive: true });
         cb(null, uploadDir);
-      } catch (error) {
+      } catch (error: unknown) {
         cb(new Error(getErrorMessage(error)), uploadDir);
       }
     })();
@@ -63,7 +63,7 @@ const storage = multer.diskStorage({
   filename: (_req, file, cb) => {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, uniqueSuffix + ext);
   },
 });
@@ -148,34 +148,39 @@ async function canManageEntry(
     // Admins have permission always
     if (isAdmin) {
       (req as BlackboardRequest).entry = entry;
-      return next();
+      next();
+      return;
     }
 
     // Authors only if they're not admins
     if (isAuthor) {
       (req as BlackboardRequest).entry = entry;
-      return next();
+      next();
+      return;
     }
 
     // Neither admin nor author
     res
       .status(403)
       .json({ message: "You do not have permission to manage this entry" });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in canManageEntry middleware:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
 
 // Helper function to check if user can create entry for specified org level
-async function canCreateForOrgLevel(
+function canCreateForOrgLevel(
   req: Request,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): void {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { org_level, org_id } = req.body;
+    const { org_level, org_id } = req.body as {
+      org_level: string;
+      org_id: number;
+    };
     const role = authReq.user.role;
     // Note: department_id exists on user, but teamId doesn't
     const departmentId = authReq.user.department_id;
@@ -183,7 +188,8 @@ async function canCreateForOrgLevel(
 
     // Admins can create entries for any org level
     if (role === "admin" || role === "root") {
-      return next();
+      next();
+      return;
     }
 
     // Check permissions based on org level
@@ -196,7 +202,7 @@ async function canCreateForOrgLevel(
 
     if (org_level === "department") {
       // Check if user is department head
-      if (role !== "department_head" || departmentId !== Number(org_id)) {
+      if (role !== "department_head" || departmentId !== org_id) {
         res.status(403).json({
           message:
             "You can only create department entries for your own department",
@@ -207,7 +213,7 @@ async function canCreateForOrgLevel(
 
     if (org_level === "team") {
       // Check if user is team leader
-      if (role !== "team_leader" || teamId !== Number(org_id)) {
+      if (role !== "team_leader" || teamId !== org_id) {
         res.status(403).json({
           message: "You can only create team entries for your own team",
         });
@@ -216,7 +222,7 @@ async function canCreateForOrgLevel(
     }
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in canCreateForOrgLevel middleware:", error);
     res.status(500).json({ message: "Internal server error" });
   }
@@ -354,7 +360,7 @@ router.get(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard:", error);
       res
         .status(500)
@@ -375,7 +381,11 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
-      const limit = parseInt(String(req.query.limit ?? "3"), 10);
+      const limitParam = req.query.limit;
+      const limit = parseInt(
+        typeof limitParam === "string" ? limitParam : "3",
+        10,
+      );
 
       const entries = await blackboardModel.getDashboardEntries(
         tenantId,
@@ -383,7 +393,7 @@ router.get(
         limit,
       );
       res.json(entries);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard/dashboard:", error);
       res.status(500).json({ message: "Error retrieving dashboard entries" });
     }
@@ -425,7 +435,7 @@ router.get(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard/entries:", error);
       res
         .status(500)
@@ -459,7 +469,7 @@ router.get(
       }
 
       res.json(entry);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard/:id:", error);
       res.status(500).json({ message: "Error retrieving blackboard entry" });
     }
@@ -610,7 +620,10 @@ router.post(
         org_level: req.body.org_level as "company" | "department" | "team",
         org_id: org_id ?? null,
         author_id: req.user.id,
-        expires_at: req.body.expires_at ? new Date(req.body.expires_at) : null,
+        expires_at:
+          req.body.expires_at != null && req.body.expires_at !== ""
+            ? new Date(req.body.expires_at)
+            : null,
         priority: priority as "low" | "medium" | "high" | "urgent",
         color: req.body.color ?? "blue",
         tags: req.body.tags ?? [],
@@ -645,7 +658,7 @@ router.post(
           logger.info(
             `User ${req.user.id} created entry ${entry?.id} with direct attachment ${attachmentId}`,
           );
-        } catch (attachError) {
+        } catch (attachError: unknown) {
           // If attachment fails, still return the created entry
           logger.error(
             `Failed to add attachment to entry ${entry?.id}:`,
@@ -659,11 +672,11 @@ router.post(
         .json(
           successResponse(entry, "Blackboard-Eintrag erfolgreich erstellt"),
         );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in POST /api/blackboard:", error);
       console.error("Error details:", getErrorMessage(error));
       const stack = getErrorStack(error);
-      if (stack) {
+      if (stack != null && stack !== "") {
         console.error("Error stack:", stack);
       }
       res
@@ -702,9 +715,10 @@ router.put(
           | undefined,
         color: req.body.color,
         tags: req.body.tags,
-        expires_at: req.body.expires_at
-          ? new Date(req.body.expires_at)
-          : undefined,
+        expires_at:
+          req.body.expires_at != null && req.body.expires_at !== ""
+            ? new Date(req.body.expires_at)
+            : undefined,
         requires_confirmation: req.body.requires_confirmation,
         status: req.body.status as "active" | "archived" | undefined,
       };
@@ -722,7 +736,7 @@ router.put(
           "Blackboard-Eintrag erfolgreich aktualisiert",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in PUT /api/blackboard/:id:", error);
       res
         .status(500)
@@ -762,7 +776,7 @@ router.delete(
       }
 
       res.json(successResponse(null, "Eintrag erfolgreich gelöscht"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DELETE /api/blackboard/:id:", error);
       res
         .status(500)
@@ -804,7 +818,7 @@ router.post(
       }
 
       res.json(successResponse(null, "Eintrag erfolgreich bestätigt"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in POST /api/blackboard/:id/confirm:", error);
       res
         .status(500)
@@ -835,7 +849,7 @@ router.get(
       );
 
       res.json(successResponse(confirmations));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard/:id/confirmations:", error);
       res
         .status(500)
@@ -862,7 +876,7 @@ router.post(
       const entryId = parseInt(req.params.id, 10);
       const files = req.files as Express.Multer.File[];
 
-      if (!files || files.length === 0) {
+      if (files.length === 0) {
         res.status(400).json(errorResponse("Keine Dateien hochgeladen", 400));
         return;
       }
@@ -900,7 +914,7 @@ router.post(
           "Anhänge erfolgreich hochgeladen",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in POST /api/blackboard/:id/attachments:", error);
       res
         .status(500)
@@ -925,7 +939,7 @@ router.get(
       const entryId = parseInt(req.params.id, 10);
       const attachments = await blackboardModel.getEntryAttachments(entryId);
       res.json(successResponse(attachments));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard/:id/attachments:", error);
       res
         .status(500)
@@ -1007,7 +1021,7 @@ router.get(
       }
 
       res.sendFile(resolvedPath);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in GET /api/blackboard/attachments/:id:", error);
       res
         .status(500)
@@ -1089,7 +1103,7 @@ router.get(
       }
 
       res.sendFile(resolvedPath);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(
         "Error in GET /api/blackboard/attachments/:id/preview:",
         error,
@@ -1154,7 +1168,7 @@ router.delete(
         // Try to delete physical file
         try {
           await fs.unlink(attachment.file_path);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Could not delete file ${attachment.file_path}:`, error);
         }
 
@@ -1166,7 +1180,7 @@ router.delete(
           .status(500)
           .json(errorResponse("Fehler beim Löschen des Anhangs", 500));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DELETE /api/blackboard/attachments/:id:", error);
       res
         .status(500)

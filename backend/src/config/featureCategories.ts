@@ -154,7 +154,7 @@ export function getFeatureCategory(
   featureCode: string,
 ): FeatureCategoryInfo | null {
   for (const [categoryKey, category] of Object.entries(featureCategories)) {
-    if (category.features[featureCode]) {
+    if (featureCode in category.features) {
       return {
         categoryKey,
         categoryName: category.name,
@@ -194,5 +194,5 @@ export function getFeaturesByCategory(): Record<string, CategoryWithFeatures> {
  */
 export function getFeatureCodesForCategory(categoryKey: string): string[] {
   const category = featureCategories[categoryKey];
-  return category ? Object.keys(category.features) : [];
+  return Object.keys(category.features);
 }

@@ -91,7 +91,7 @@ describe("Document Upload - Integration Test", () => {
         role: "admin",
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET || "schneeseekleerehfeedrehzehwehtee",
+      process.env.JWT_SECRET ?? "schneeseekleerehfeedrehzehwehtee",
       { expiresIn: "1h" },
     );
   });

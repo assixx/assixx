@@ -30,9 +30,7 @@ interface ExtendedUserProfile extends UserProfile {
   companyName?: string;
 }
 
-interface PositionMap {
-  [key: string]: string;
-}
+type PositionMap = Record<string, string>;
 
 // Position display mapping
 const positionMap: PositionMap = {
@@ -61,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Set initial placeholder
-    const display = document.getElementById('profile-picture-display') as HTMLElement;
+    const display = document.getElementById('profile-picture-display');
     if (display && !display.innerHTML.trim()) {
       display.innerHTML = '...';
     }
@@ -157,7 +155,7 @@ function populateProfileForm(profile: UserProfile): void {
  * Update profile picture display
  */
 function updateProfilePicture(url?: string, firstName?: string, lastName?: string): void {
-  const display = document.getElementById('profile-picture-display') as HTMLElement;
+  const display = document.getElementById('profile-picture-display');
   const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement;
 
   if (!display) {
@@ -315,7 +313,9 @@ async function handleProfileUpdate(event: Event): Promise<void> {
       await apiClient.put('/users/me/profile', v2UpdateData);
       showMessage('Profil erfolgreich aktualisiert', 'success');
       // Reload to update header info
-      setTimeout(() => window.location.reload(), 1500);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } else {
       // Use API v1 with fetch
       const token = getAuthToken();
@@ -331,7 +331,9 @@ async function handleProfileUpdate(event: Event): Promise<void> {
       if (response.ok) {
         showMessage('Profil erfolgreich aktualisiert', 'success');
         // Reload to update header info
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         const error = await response.json();
         showMessage(error.message ?? 'Fehler beim Aktualisieren des Profils', 'error');
@@ -519,7 +521,8 @@ async function removeProfilePicture(): Promise<void> {
  * Show message to user
  */
 function showMessage(message: string, type: 'success' | 'error'): void {
-  const container = document.getElementById('message-container') as HTMLElement;
+  const container = document.getElementById('message-container');
+  if (!container) return;
   container.innerHTML = `
     <div class="alert alert-${type}">
       <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
@@ -536,7 +539,7 @@ function showMessage(message: string, type: 'success' | 'error'): void {
 /**
  * Show success overlay animation
  */
-function showSuccessOverlay(text: string = 'Erfolgreich!'): void {
+function showSuccessOverlay(text = 'Erfolgreich!'): void {
   const overlay = document.createElement('div');
   overlay.className = 'success-overlay';
   overlay.innerHTML = `

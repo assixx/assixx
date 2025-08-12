@@ -43,7 +43,7 @@ class UserService {
     try {
       // Use the search method which supports filtering
       return await User.search(filters);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in UserService.getAll:", error);
       throw error;
     }
@@ -60,7 +60,7 @@ class UserService {
     try {
       const user = await User.findById(id, tenantId);
       return user ?? null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in UserService.getById:", error);
       throw error;
     }
@@ -74,7 +74,7 @@ class UserService {
     data: EmployeeCreateData,
   ): Promise<EmployeeData> {
     try {
-      if (!data.tenant_id) {
+      if (data.tenant_id == null || data.tenant_id === 0) {
         throw new Error("Tenant ID is required for user creation");
       }
       const id = await User.create(data);
@@ -83,7 +83,7 @@ class UserService {
         throw new Error("Failed to retrieve created user");
       }
       return created;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in UserService.create:", error);
       throw error;
     }
@@ -105,7 +105,7 @@ class UserService {
         return updated ?? null;
       }
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in UserService.update:", error);
       throw error;
     }
@@ -117,7 +117,7 @@ class UserService {
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {
       return await User.delete(id);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in UserService.delete:", error);
       throw error;
     }

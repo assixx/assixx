@@ -129,18 +129,18 @@ async function uploadDocument(e: Event): Promise<void> {
   }
 
   // Success and error elements
-  const successElem = document.getElementById('upload-success') as HTMLElement;
-  const errorElem = document.getElementById('upload-error') as HTMLElement;
+  const successElem = document.getElementById('upload-success');
+  const errorElem = document.getElementById('upload-error');
 
   // Hide previous messages
   if (successElem) successElem.style.display = 'none';
   if (errorElem) errorElem.style.display = 'none';
 
   // Show loading state
-  const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+  const submitButton = form.querySelector('button[type="submit"]');
   const originalText = submitButton?.textContent ?? 'Hochladen';
   if (submitButton) {
-    submitButton.disabled = true;
+    (submitButton as HTMLButtonElement).disabled = true;
     submitButton.textContent = 'Wird hochgeladen...';
   }
 
@@ -200,7 +200,7 @@ async function uploadDocument(e: Event): Promise<void> {
   } finally {
     // Reset button state
     if (submitButton) {
-      submitButton.disabled = false;
+      (submitButton as HTMLButtonElement).disabled = false;
       submitButton.textContent = originalText;
     }
   }

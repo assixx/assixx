@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -47,10 +47,10 @@ export const getSystemSettings = async (
       req.user.role,
     );
     res.json(successResponse({ settings }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -77,10 +77,10 @@ export const getSystemSetting = async (
       req.user.role,
     );
     res.json(successResponse(setting));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -122,10 +122,10 @@ export const upsertSystemSetting = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -157,10 +157,10 @@ export const deleteSystemSetting = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -195,10 +195,10 @@ export const getTenantSettings = async (
     );
 
     res.json(successResponse({ settings }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -226,10 +226,10 @@ export const getTenantSetting = async (
     );
 
     res.json(successResponse(setting));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -271,10 +271,10 @@ export const upsertTenantSetting = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -306,10 +306,10 @@ export const deleteTenantSetting = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -344,10 +344,10 @@ export const getUserSettings = async (
     );
 
     res.json(successResponse({ settings }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -375,10 +375,10 @@ export const getUserSetting = async (
     );
 
     res.json(successResponse(setting));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -417,10 +417,10 @@ export const upsertUserSetting = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -445,10 +445,10 @@ export const deleteUserSetting = async (
     await settingsService.deleteUserSetting(req.params.key, req.user.id);
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -480,10 +480,10 @@ export const getAdminUserSettings = async (
     );
 
     res.json(successResponse({ settings }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -558,10 +558,10 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
     );
 
     res.json(successResponse({ results }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res

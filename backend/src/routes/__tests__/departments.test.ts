@@ -81,7 +81,7 @@ describe("Department Management API Endpoints", () => {
         first_name: "Employee",
         last_name: "One",
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to create employee user:", err);
       throw err;
     }
@@ -235,7 +235,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT * FROM departments WHERE id = ?",
         [response.body.data.departmentId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0]).toMatchObject({
         name: validDepartmentData.name,
         description: validDepartmentData.description,
@@ -260,7 +260,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT * FROM departments WHERE id = ?",
         [response.body.data.departmentId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0].parent_id).toBe(dept1Id);
     });
 
@@ -280,7 +280,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT * FROM departments WHERE id = ?",
         [response.body.data.departmentId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0].manager_id).toBe(adminUser1.id);
     });
 
@@ -378,7 +378,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT * FROM departments WHERE id = ?",
         [response.body.data.departmentId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0]).toMatchObject({
         description: null,
         parent_id: null,
@@ -420,7 +420,7 @@ describe("Department Management API Endpoints", () => {
         "INSERT INTO departments (name, tenant_id, parent_id) VALUES (?, ?, ?)",
         ["Sub Engineering", tenant1Id, dept1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const subDeptId = (result as any).insertId;
 
       const response = await request(app)
@@ -468,7 +468,7 @@ describe("Department Management API Endpoints", () => {
         "INSERT INTO departments (name, description, tenant_id) VALUES (?, ?, ?)",
         ["Update Test Dept", "Original description", tenant1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       updateDeptId = (result as any).insertId;
     });
 
@@ -492,7 +492,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT * FROM departments WHERE id = ?",
         [updateDeptId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0]).toMatchObject(updateData);
     });
 
@@ -510,7 +510,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT parent_id FROM departments WHERE id = ?",
         [updateDeptId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0].parent_id).toBe(dept1Id);
     });
 
@@ -532,7 +532,7 @@ describe("Department Management API Endpoints", () => {
         "INSERT INTO departments (name, tenant_id, parent_id) VALUES (?, ?, ?)",
         ["Child Dept", tenant1Id, updateDeptId],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const childDeptId = (result as any).insertId;
 
       // Try to set child as parent of parent
@@ -584,7 +584,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT status FROM departments WHERE id = ?",
         [updateDeptId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0].status).toBe("inactive");
     });
   });
@@ -597,7 +597,7 @@ describe("Department Management API Endpoints", () => {
         "INSERT INTO departments (name, tenant_id) VALUES (?, ?)",
         ["Delete Test Dept", tenant1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       deleteDeptId = (result as any).insertId;
     });
 
@@ -614,7 +614,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT status, deleted_at FROM departments WHERE id = ?",
         [deleteDeptId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments[0].status).toBe("inactive");
       expect(departments[0].deleted_at).toBeTruthy();
     });
@@ -640,7 +640,7 @@ describe("Department Management API Endpoints", () => {
         "INSERT INTO departments (name, tenant_id, parent_id) VALUES (?, ?, ?)",
         ["Sub Department", tenant1Id, deleteDeptId],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const subDeptId = (result as any).insertId;
 
       const response = await request(app)
@@ -654,7 +654,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT status FROM departments WHERE id IN (?, ?)",
         [deleteDeptId, subDeptId],
       );
-      const departments = asTestRows<any>(cascadeRows);
+      const departments = asTestRows<unknown>(cascadeRows);
       expect(departments.every((d) => d.status === "inactive")).toBe(true);
     });
 
@@ -692,7 +692,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT * FROM departments WHERE id = ?",
         [deleteDeptId],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments.length).toBe(0);
     });
   });
@@ -737,7 +737,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT department_id FROM users WHERE id = ?",
         [newEmployee.id],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].department_id).toBe(dept2Id);
     });
 
@@ -753,7 +753,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT department_id FROM users WHERE id = ?",
         [employeeUser1.id],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].department_id).toBeNull();
     });
 
@@ -786,7 +786,7 @@ describe("Department Management API Endpoints", () => {
         "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
         ["Engineering Team A", dept1Id, tenant1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       teamId = (result as any).insertId;
     });
 
@@ -879,7 +879,7 @@ describe("Department Management API Endpoints", () => {
           "INSERT INTO departments (name, tenant_id) VALUES (?, ?)",
           [`Bulk Dept ${i}`, tenant1Id],
         );
-        const result = asTestRows<any>(rows);
+        const result = asTestRows<unknown>(rows);
         deptIds.push((result as any).insertId);
       }
 
@@ -899,7 +899,7 @@ describe("Department Management API Endpoints", () => {
         "SELECT status FROM departments WHERE id IN (?)",
         [deptIds],
       );
-      const departments = asTestRows<any>(rows);
+      const departments = asTestRows<unknown>(rows);
       expect(departments.every((d) => d.status === "inactive")).toBe(true);
     });
 

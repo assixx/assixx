@@ -55,7 +55,7 @@ services:
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
-      - mysql  # Simple dependency, no health check
+      - mysql # Simple dependency, no health check
     networks:
       - assixx-network
     healthcheck:

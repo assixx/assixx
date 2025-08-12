@@ -67,7 +67,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 
 // Feature flag manager class
 export class FeatureFlagManager {
-  private static instance: FeatureFlagManager;
+  private static instance: FeatureFlagManager | undefined;
   private flags: FeatureFlags;
 
   private constructor() {
@@ -76,9 +76,7 @@ export class FeatureFlagManager {
   }
 
   static getInstance(): FeatureFlagManager {
-    if (!FeatureFlagManager.instance) {
-      FeatureFlagManager.instance = new FeatureFlagManager();
-    }
+    FeatureFlagManager.instance ??= new FeatureFlagManager();
     return FeatureFlagManager.instance;
   }
 
@@ -87,15 +85,15 @@ export class FeatureFlagManager {
    */
   private loadFlags() {
     // 1. Load from window object (set by feature-flags.js)
-    if (window.FEATURE_FLAGS) {
+    if (window.FEATURE_FLAGS != null) {
       Object.assign(this.flags, window.FEATURE_FLAGS);
     }
 
     // 2. Load from localStorage (for persistence)
     const savedFlags = localStorage.getItem('featureFlags');
-    if (savedFlags) {
+    if (savedFlags != null && savedFlags !== '') {
       try {
-        const parsedFlags = JSON.parse(savedFlags);
+        const parsedFlags = JSON.parse(savedFlags) as FeatureFlags;
         Object.assign(this.flags, parsedFlags);
       } catch (error) {
         console.error('[FeatureFlags] Failed to parse saved flags:', error);
@@ -115,17 +113,17 @@ export class FeatureFlagManager {
    */
   isEnabled(flag: keyof FeatureFlags): boolean {
     // If global flag is explicitly true, return true
-    if (this.flags.USE_API_V2_GLOBAL === true) {
+    if (this.flags.USE_API_V2_GLOBAL) {
       return true;
     }
     // Otherwise check the specific flag
-    return this.flags[flag] === true;
+    return this.flags[flag];
   }
 
   /**
    * Enable a specific feature flag
    */
-  enable(flag: keyof FeatureFlags) {
+  enable(flag: keyof FeatureFlags): void {
     this.flags[flag] = true;
     this.saveFlags();
     console.info(`[FeatureFlags] Enabled: ${flag}`);
@@ -134,7 +132,7 @@ export class FeatureFlagManager {
   /**
    * Disable a specific feature flag
    */
-  disable(flag: keyof FeatureFlags) {
+  disable(flag: keyof FeatureFlags): void {
     this.flags[flag] = false;
     this.saveFlags();
     console.info(`[FeatureFlags] Disabled: ${flag}`);
@@ -143,16 +141,16 @@ export class FeatureFlagManager {
   /**
    * Toggle a specific feature flag
    */
-  toggle(flag: keyof FeatureFlags) {
+  toggle(flag: keyof FeatureFlags): void {
     this.flags[flag] = !this.flags[flag];
     this.saveFlags();
-    console.info(`[FeatureFlags] Toggled: ${flag} = ${this.flags[flag]}`);
+    console.info(`[FeatureFlags] Toggled: ${flag} = ${String(this.flags[flag])}`);
   }
 
   /**
    * Enable all v2 APIs
    */
-  enableAllV2Apis() {
+  enableAllV2Apis(): void {
     Object.keys(this.flags).forEach((key) => {
       if (key.startsWith('USE_API_V2_')) {
         (this.flags as unknown as Record<string, boolean>)[key] = true;
@@ -165,7 +163,7 @@ export class FeatureFlagManager {
   /**
    * Disable all v2 APIs
    */
-  disableAllV2Apis() {
+  disableAllV2Apis(): void {
     Object.keys(this.flags).forEach((key) => {
       if (key.startsWith('USE_API_V2_')) {
         (this.flags as unknown as Record<string, boolean>)[key] = false;
@@ -198,7 +196,7 @@ export class FeatureFlagManager {
   /**
    * Reset all flags to defaults
    */
-  reset() {
+  reset(): void {
     this.flags = { ...DEFAULT_FEATURE_FLAGS };
     this.saveFlags();
     console.info('[FeatureFlags] Reset to defaults');
@@ -207,12 +205,12 @@ export class FeatureFlagManager {
   /**
    * Load feature flags from server
    */
-  async loadFromServer() {
+  async loadFromServer(): Promise<void> {
     try {
       const response = await fetch('/api/v2/features/my-features');
       if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
+        const data = (await response.json()) as { success: boolean; data?: { code: string; isActive: boolean }[] };
+        if (data.success && data.data != null) {
           data.data.forEach((feature: { code: string; isActive: boolean }) => {
             const flagKey = `USE_API_V2_${feature.code.toUpperCase().replace(/-/g, '_')}`;
             if (flagKey in this.flags) {
@@ -251,14 +249,14 @@ declare global {
 if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
   window.featureFlags = featureFlags;
   window.enableV2 = (api?: string) => {
-    if (api) {
+    if (api != null && api !== '') {
       featureFlags.enable(`USE_API_V2_${api.toUpperCase()}` as keyof FeatureFlags);
     } else {
       featureFlags.enableAllV2Apis();
     }
   };
   window.disableV2 = (api?: string) => {
-    if (api) {
+    if (api != null && api !== '') {
       featureFlags.disable(`USE_API_V2_${api.toUpperCase()}` as keyof FeatureFlags);
     } else {
       featureFlags.disableAllV2Apis();

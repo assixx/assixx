@@ -98,7 +98,7 @@ const storage = multer.diskStorage({
   filename(_req, file, cb) {
     const sanitized = sanitizeFilename(file.originalname);
     const extension = path.extname(sanitized);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
     cb(null, `doc-${uniqueSuffix}${extension}`);
   },
 });
@@ -245,7 +245,7 @@ router.post(
         message: "Mitarbeiter erfolgreich erstellt",
         employeeId,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`,
       );
@@ -340,7 +340,7 @@ router.get(
       logger.info(`Retrieved ${employees.length} employees`);
 
       res.json(employees);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error retrieving employees from DB:`, error);
       logger.error(`Error retrieving employees: ${getErrorMessage(error)}`);
       res.status(500).json({
@@ -423,7 +423,7 @@ router.get(
       }
 
       res.json(employee);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`,
       );
@@ -556,7 +556,11 @@ router.put(
         return;
       }
 
-      if (req.body.role && req.body.role !== employee.role) {
+      if (
+        req.body.role != null &&
+        req.body.role !== "" &&
+        req.body.role !== employee.role
+      ) {
         res.status(403).json({
           message: "Die Rolle eines Mitarbeiters kann nicht geändert werden",
         });
@@ -584,7 +588,7 @@ router.put(
           success: false,
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
       );
@@ -756,15 +760,15 @@ router.post(
         message: "Dokument erfolgreich hochgeladen",
         documentId,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
       );
 
-      if (req.file?.path) {
+      if (req.file?.path != null && req.file.path !== "") {
         try {
           await safeDeleteFile(req.file.path);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
           );
@@ -855,7 +859,7 @@ router.get(
         if (typeof Department.countByTenant === "function") {
           departmentCount = await Department.countByTenant(req.user.tenant_id);
         }
-      } catch (e) {
+      } catch (e: unknown) {
         logger.warn(`Could not count departments: ${getErrorMessage(e)}`);
       }
 
@@ -864,7 +868,7 @@ router.get(
         if (typeof Department.countTeamsByTenant === "function") {
           teamCount = await Department.countTeamsByTenant(req.user.tenant_id);
         }
-      } catch (e) {
+      } catch (e: unknown) {
         logger.warn(`Could not count teams: ${getErrorMessage(e)}`);
       }
 
@@ -872,7 +876,7 @@ router.get(
         if (typeof Document.countByTenant === "function") {
           documentCount = await Document.countByTenant(req.user.tenant_id);
         }
-      } catch (e) {
+      } catch (e: unknown) {
         logger.warn(`Could not count documents: ${getErrorMessage(e)}`);
       }
 
@@ -883,7 +887,7 @@ router.get(
         documentCount,
         adminName: req.user.username,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching dashboard stats: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: "Fehler beim Abrufen der Dashboard-Daten",
@@ -907,7 +911,7 @@ router.get(
     try {
       const documents = await Document.findAll(req.user.tenant_id.toString());
       res.json(documents);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrieving documents: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: "Fehler beim Abrufen der Dokumente",

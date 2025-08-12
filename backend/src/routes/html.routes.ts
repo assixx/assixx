@@ -33,8 +33,12 @@ const servePage =
 // Public pages
 // Root '/' is handled by redirectToDashboard middleware in app.ts
 router.get("/index", rateLimiter.public, servePage("index"));
-router.get("/pages/index", rateLimiter.public, (_req: Request, res: Response) =>
-  res.redirect("/index"),
+router.get(
+  "/pages/index",
+  rateLimiter.public,
+  (_req: Request, res: Response) => {
+    res.redirect("/index");
+  },
 ); // Redirect old URL
 router.get("/login", rateLimiter.auth, servePage("login"));
 router.get("/signup", rateLimiter.auth, servePage("signup"));
@@ -228,6 +232,13 @@ router.get(
   authenticateToken,
   authorizeRole("admin"),
   servePage("departments"),
+);
+router.get(
+  "/manage-employees",
+  rateLimiter.admin,
+  authenticateToken,
+  authorizeRole("admin"),
+  servePage("manage-employees"),
 );
 router.get(
   "/admin-profile",

@@ -4,7 +4,7 @@
 
 import { Response, NextFunction } from "express";
 
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 
 /**
  * Validates that a user has access to a specific tenant's data
@@ -16,7 +16,7 @@ export function validateMultitenantAccess(
   next: NextFunction,
 ): void {
   // For now, just ensure the user has a tenant ID
-  if (!req.tenantId) {
+  if (req.tenantId == null || req.tenantId === 0) {
     res.status(403).json({
       error: "Access denied: Invalid tenant context",
     });

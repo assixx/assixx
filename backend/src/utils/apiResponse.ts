@@ -31,10 +31,10 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: Array<{
+    details?: {
       field: string;
       message: string;
-    }>;
+    }[];
   };
   meta?: {
     timestamp: string;
@@ -72,10 +72,10 @@ export function successResponse<T>(
 export function errorResponse(
   code: string,
   message: string,
-  details?: Array<{
+  details?: {
     field: string;
     message: string;
-  }>,
+  }[],
 ): ApiErrorResponse {
   return {
     success: false,

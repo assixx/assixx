@@ -7,6 +7,7 @@ import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
 
 import shiftService from "../services/shift.service";
+import type { AuthenticatedRequest } from "../types/request.types";
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -84,7 +85,7 @@ class ShiftController {
    * Holt alle Shift Einträge
    * GET /api/shift
    */
-  async getAll(req: ShiftQueryRequest, res: Response): Promise<void> {
+  getAll(req: ShiftQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -92,9 +93,10 @@ class ShiftController {
       }
 
       const filters = {
-        department_id: req.query.department_id
-          ? parseInt(req.query.department_id, 10)
-          : undefined,
+        department_id:
+          req.query.department_id != null && req.query.department_id !== ""
+            ? parseInt(req.query.department_id, 10)
+            : undefined,
         team_id: undefined as number | undefined, // Not in query but expected by ShiftFilters
         start_date: req.query.start_date,
         end_date: req.query.end_date,
@@ -106,9 +108,9 @@ class ShiftController {
         plan_id: undefined as number | undefined,
         template_id: undefined as number | undefined,
       };
-      const result = await shiftService.getAll(req.tenantDb, filters);
+      const result = shiftService.getAll(req.tenantDb, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in ShiftController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -121,7 +123,7 @@ class ShiftController {
    * Holt einen Shift Eintrag per ID
    * GET /api/shift/:id
    */
-  async getById(req: ShiftGetRequest, res: Response): Promise<void> {
+  getById(req: ShiftGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -134,13 +136,13 @@ class ShiftController {
         return;
       }
 
-      const result = await shiftService.getById(req.tenantDb, id);
+      const result = shiftService.getById(req.tenantDb, id);
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in ShiftController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -153,7 +155,7 @@ class ShiftController {
    * Erstellt einen neuen Shift Eintrag
    * POST /api/shift
    */
-  async create(req: ShiftCreateRequest, res: Response): Promise<void> {
+  create(req: ShiftCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -162,20 +164,20 @@ class ShiftController {
 
       const shift_plan_id = req.body.shift_plan_id ?? req.body.plan_id;
 
-      if (!shift_plan_id) {
+      if (shift_plan_id == null || shift_plan_id === 0) {
         res.status(400).json({ error: "Shift plan ID is required" });
         return;
       }
 
       const createData = {
         ...req.body,
-        tenant_id: req.user.tenant_id,
+        tenant_id: (req as unknown as AuthenticatedRequest).user.tenant_id,
         shift_plan_id,
         date: req.body.date ?? req.body.shift_date,
       };
-      const result = await shiftService.create(req.tenantDb, createData);
+      const result = shiftService.create(req.tenantDb, createData);
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in ShiftController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -188,7 +190,7 @@ class ShiftController {
    * Aktualisiert einen Shift Eintrag
    * PUT /api/shift/:id
    */
-  async update(req: ShiftUpdateRequest, res: Response): Promise<void> {
+  update(req: ShiftUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -201,9 +203,9 @@ class ShiftController {
         return;
       }
 
-      const result = await shiftService.update(req.tenantDb, id, req.body);
+      const result = shiftService.update(req.tenantDb, id, req.body);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in ShiftController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -216,7 +218,7 @@ class ShiftController {
    * Löscht einen Shift Eintrag
    * DELETE /api/shift/:id
    */
-  async delete(req: ShiftGetRequest, res: Response): Promise<void> {
+  delete(req: ShiftGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -229,9 +231,9 @@ class ShiftController {
         return;
       }
 
-      await shiftService.delete(req.tenantDb, id);
+      shiftService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in ShiftController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

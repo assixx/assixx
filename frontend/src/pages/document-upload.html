@@ -181,7 +181,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -342,7 +342,7 @@
         -webkit-backdrop-filter: blur(5px);
         border: 1px solid rgba(33, 150, 243, 0.1);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         margin-top: var(--spacing-xs);
         margin-bottom: var(--spacing-md);
         color: rgba(255, 255, 255, 0.7);
@@ -410,7 +410,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
@@ -567,13 +567,9 @@
         margin-right: 8px;
       }
 
-      .loading-spinner svg {
-        /* animation: spin 1.5s linear infinite; */
-        /* Reserved for spinner animation styles */
-      }
-
       /* Recipient Type Selector Styles */
       .recipient-type-selector {
+        /* Grid layout for recipient type buttons */
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;

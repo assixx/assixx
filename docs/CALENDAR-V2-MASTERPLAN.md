@@ -7,11 +7,13 @@ Komplette Überarbeitung des Calendar-Systems mit verbesserter Filter-Logik, Mul
 ## 📊 Aktuelle DB-Analyse
 
 ### Existierende Tabellen
+
 1. **calendar_events** ✅ (Gut strukturiert)
 2. **calendar_attendees** ⚠️ (Fehlt tenant_id!)
 3. **calendar_recurring_patterns** ✅
 
 ### calendar_events Struktur (NEU - VERBESSERT)
+
 ```sql
 - id (PK)
 - tenant_id ✅ (Multi-Tenant)
@@ -32,28 +34,29 @@ Komplette Überarbeitung des Calendar-Systems mit verbesserter Filter-Logik, Mul
 ## 🔧 ERFORDERLICHE DB-ÄNDERUNGEN
 
 ### 1. calendar_events - org_id Split (NEU!) 🚨
+
 ```sql
 -- Neue Migration: 017-calendar-split-org-id.sql
-ALTER TABLE calendar_events 
+ALTER TABLE calendar_events
   ADD COLUMN department_id INT NULL AFTER org_level,
   ADD COLUMN team_id INT NULL AFTER department_id,
   ADD COLUMN allow_attendees BOOLEAN DEFAULT TRUE,
   ADD COLUMN created_by_role ENUM('admin','lead','user') DEFAULT 'user';
 
 -- Migrate existing data
-UPDATE calendar_events 
-SET department_id = org_id 
+UPDATE calendar_events
+SET department_id = org_id
 WHERE org_level = 'department';
 
-UPDATE calendar_events 
-SET team_id = org_id 
+UPDATE calendar_events
+SET team_id = org_id
 WHERE org_level = 'team';
 
 -- Add constraints
 ALTER TABLE calendar_events
-  ADD CONSTRAINT chk_department_required 
+  ADD CONSTRAINT chk_department_required
     CHECK ((org_level != 'department' AND org_level != 'team') OR department_id IS NOT NULL),
-  ADD CONSTRAINT chk_team_required 
+  ADD CONSTRAINT chk_team_required
     CHECK (org_level != 'team' OR team_id IS NOT NULL);
 
 -- Drop old ambiguous column (nach Verifikation!)
@@ -65,6 +68,7 @@ ALTER TABLE calendar_events
 **Migration Script bereit:** `/database/migrations/016-calendar-tenant-isolation.sql`
 
 #### Ausführung:
+
 ```bash
 # 1. Backup erstellen (PFLICHT!)
 bash scripts/quick-backup.sh "before_calendar_migration_$(date +%Y%m%d_%H%M%S)"
@@ -78,6 +82,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ```
 
 #### Was macht die Migration:
+
 1. ✅ Prüft ob tenant_id bereits existiert (Safety)
 2. ✅ Fügt tenant_id Spalte hinzu
 3. ✅ Füllt tenant_id aus calendar_events Tabelle
@@ -89,6 +94,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ## 🎨 NEUE FILTER-LOGIK
 
 ### Filter-Buttons (UI)
+
 ```html
 <div class="tab-navigation mb-2" id="levelFilter">
   <button class="tab-btn active" data-value="all" id="filterAll">Gesamt</button>
@@ -102,6 +108,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ### Filter-Definitionen
 
 #### 1. **GESAMT** (Alle sichtbaren Events) - OPTIMIERT
+
 ```sql
 -- Mit Performance-Optimierung und Pagination
 SELECT DISTINCT e.* FROM calendar_events e
@@ -114,7 +121,7 @@ AND (
   e.org_level = 'company'
   -- Abteilungs-Events (nur eigene Abteilung)
   OR (e.org_level = 'department' AND e.department_id = :userDepartmentId)
-  -- Team-Events (nur eigenes Team)  
+  -- Team-Events (nur eigenes Team)
   OR (e.org_level = 'team' AND e.team_id = :userTeamId)
   -- Persönliche Events (erstellt oder eingeladen)
   OR e.user_id = :userId
@@ -125,15 +132,17 @@ LIMIT 500  -- Performance-Schutz
 ```
 
 **Index-Strategie für Performance:**
+
 ```sql
-CREATE INDEX idx_calendar_filter_optimized 
+CREATE INDEX idx_calendar_filter_optimized
 ON calendar_events(tenant_id, start_date, end_date, org_level);
 
-CREATE INDEX idx_calendar_user_events 
+CREATE INDEX idx_calendar_user_events
 ON calendar_events(tenant_id, user_id, start_date);
 ```
 
 #### 2. **FIRMA** (Company-wide Events)
+
 ```sql
 SELECT * FROM calendar_events
 WHERE tenant_id = :tenantId
@@ -141,8 +150,9 @@ AND org_level = 'company'
 ```
 
 #### 3. **ABTEILUNG** (Department Events)
+
 ```sql
-SELECT e.*, COUNT(a.id) as attendee_count 
+SELECT e.*, COUNT(a.id) as attendee_count
 FROM calendar_events e
 LEFT JOIN calendar_attendees a ON e.id = a.event_id
 WHERE e.tenant_id = :tenantId
@@ -156,6 +166,7 @@ LIMIT 200
 ```
 
 #### 4. **TEAM** (Team Events)
+
 ```sql
 SELECT e.*, COUNT(a.id) as attendee_count
 FROM calendar_events e
@@ -172,6 +183,7 @@ LIMIT 200
 ```
 
 #### 5. **MEINE** (Personal Events)
+
 ```sql
 SELECT DISTINCT e.* FROM calendar_events e
 LEFT JOIN calendar_attendees a ON e.id = a.event_id
@@ -186,6 +198,7 @@ AND e.org_level = 'personal'
 ## 📝 EVENT-ERSTELLUNG MODAL ANPASSUNGEN
 
 ### Neues Formular-Layout
+
 ```html
 <!-- Event Level Auswahl -->
 <div class="form-group">
@@ -216,31 +229,32 @@ AND e.org_level = 'personal'
 ```
 
 ### JavaScript Logic für Modal
+
 ```javascript
 // Bei org_level Änderung
-document.getElementById('eventOrgLevel').addEventListener('change', (e) => {
+document.getElementById("eventOrgLevel").addEventListener("change", (e) => {
   const level = e.target.value;
-  const orgIdGroup = document.getElementById('orgIdGroup');
-  const attendeesGroup = document.getElementById('attendeesGroup');
-  
-  switch(level) {
-    case 'company':
-      orgIdGroup.style.display = 'none';
-      attendeesGroup.style.display = 'none';
+  const orgIdGroup = document.getElementById("orgIdGroup");
+  const attendeesGroup = document.getElementById("attendeesGroup");
+
+  switch (level) {
+    case "company":
+      orgIdGroup.style.display = "none";
+      attendeesGroup.style.display = "none";
       break;
-    case 'department':
-      orgIdGroup.style.display = 'block';
+    case "department":
+      orgIdGroup.style.display = "block";
       loadDepartments(); // Lade Abteilungen
-      attendeesGroup.style.display = 'none';
+      attendeesGroup.style.display = "none";
       break;
-    case 'team':
-      orgIdGroup.style.display = 'block';
+    case "team":
+      orgIdGroup.style.display = "block";
       loadTeams(); // Lade Teams
-      attendeesGroup.style.display = 'block';
+      attendeesGroup.style.display = "block";
       break;
-    case 'personal':
-      orgIdGroup.style.display = 'none';
-      attendeesGroup.style.display = 'block';
+    case "personal":
+      orgIdGroup.style.display = "none";
+      attendeesGroup.style.display = "block";
       break;
   }
 });
@@ -249,6 +263,7 @@ document.getElementById('eventOrgLevel').addEventListener('change', (e) => {
 ## 🔌 API v2 Anpassungen
 
 ### GET /api/v2/calendar/events
+
 ```typescript
 // Query Parameters mit Validierung
 interface CalendarQuery {
@@ -262,11 +277,11 @@ interface CalendarQuery {
 // Service Methode mit Permission Checks
 async getEvents(query: CalendarQuery, user: AuthUser) {
   const { filter = 'all', limit = 200, page = 1 } = query;
-  
+
   // Performance-Schutz
   const safeLimit = Math.min(limit, 500);
   const offset = (page - 1) * safeLimit;
-  
+
   switch(filter) {
     case 'company':
       return this.getCompanyEvents(user.tenantId, safeLimit, offset);
@@ -285,6 +300,7 @@ async getEvents(query: CalendarQuery, user: AuthUser) {
 ```
 
 ### POST /api/v2/calendar/events - MIT BERECHTIGUNGEN
+
 ```typescript
 interface CreateEventDto {
   title: string;
@@ -308,7 +324,7 @@ async createEvent(dto: CreateEventDto, user: AuthUser) {
         throw new ForbiddenException('Only admins can create company events');
       }
       break;
-      
+
     case 'department':
       if (!dto.departmentId) throw new BadRequestException('departmentId required');
       if (user.role !== 'admin' && user.role !== 'lead') {
@@ -318,7 +334,7 @@ async createEvent(dto: CreateEventDto, user: AuthUser) {
         throw new ForbiddenException('Cannot create events for other departments');
       }
       break;
-      
+
     case 'team':
       if (!dto.teamId || !dto.departmentId) {
         throw new BadRequestException('teamId and departmentId required');
@@ -327,12 +343,12 @@ async createEvent(dto: CreateEventDto, user: AuthUser) {
         throw new ForbiddenException('Cannot create events for other teams');
       }
       break;
-      
+
     case 'personal':
       // Jeder kann persönliche Events erstellen
       break;
   }
-  
+
   // Event erstellen mit expliziten Feldern
   const event = {
     ...dto,
@@ -343,7 +359,7 @@ async createEvent(dto: CreateEventDto, user: AuthUser) {
     createdByRole: user.role,
     allowAttendees: dto.attendeeIds && dto.attendeeIds.length > 0
   };
-  
+
   return this.repository.create(event);
 }
 ```
@@ -351,9 +367,10 @@ async createEvent(dto: CreateEventDto, user: AuthUser) {
 ## 🎯 Frontend Integration (calendar.ts)
 
 ### Filter-Implementation mit State-Persistenz
+
 ```typescript
 // Filter-State in localStorage speichern
-let currentFilter = localStorage.getItem('calendarFilter') || 'all';
+let currentFilter = localStorage.getItem("calendarFilter") || "all";
 
 // Update loadCalendarEvents function mit Pagination
 async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
@@ -361,44 +378,42 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     start: fetchInfo.startStr,
     end: fetchInfo.endStr,
     filter: currentFilter,
-    limit: '200',  // Performance-Limit
-    page: '1'
+    limit: "200", // Performance-Limit
+    page: "1",
   });
-  
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  const apiUrl = useV2 
-    ? `/api/v2/calendar/events?${params}` 
-    : `/api/calendar?${params}`;
-    
+
+  const useV2 = featureFlags.isEnabled("USE_API_V2_CALENDAR");
+  const apiUrl = useV2 ? `/api/v2/calendar/events?${params}` : `/api/calendar?${params}`;
+
   try {
     const response = await fetch(apiUrl, {
-      headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
     });
-    
+
     if (!response.ok) {
       // Error handling für Berechtigungsfehler
       if (response.status === 403) {
-        console.error('Permission denied for filter:', currentFilter);
+        console.error("Permission denied for filter:", currentFilter);
         // Fallback zu personal wenn keine Berechtigung
-        currentFilter = 'personal';
-        localStorage.setItem('calendarFilter', currentFilter);
+        currentFilter = "personal";
+        localStorage.setItem("calendarFilter", currentFilter);
         return loadCalendarEvents(fetchInfo); // Retry mit personal
       }
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
-    console.error('Calendar load failed:', error);
+    console.error("Calendar load failed:", error);
     return [];
   }
 }
 
 // Filter-Button Handler mit State-Save
-filterButtons.forEach(btn => {
-  document.getElementById(btn.id)?.addEventListener('click', () => {
+filterButtons.forEach((btn) => {
+  document.getElementById(btn.id)?.addEventListener("click", () => {
     currentFilter = btn.value;
-    localStorage.setItem('calendarFilter', currentFilter);
+    localStorage.setItem("calendarFilter", currentFilter);
     calendar.refetchEvents();
   });
 });
@@ -407,6 +422,7 @@ filterButtons.forEach(btn => {
 ## 🔒 SICHERHEIT & MULTI-TENANT
 
 ### Wichtige Checks
+
 1. **IMMER tenant_id prüfen** bei allen Queries
 2. **Org-Level Berechtigungen:**
    - Company: Nur Admins können erstellen
@@ -415,12 +431,13 @@ filterButtons.forEach(btn => {
    - Personal: Alle User
 
 ### Backend Validation
+
 ```typescript
 // In calendar.service.ts
 private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
   // Tenant Check
   if (event.tenantId !== user.tenantId) return false;
-  
+
   // Org Level Check
   switch(event.orgLevel) {
     case 'company':
@@ -430,7 +447,7 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
     case 'team':
       return event.orgId === user.teamId;
     case 'personal':
-      return event.userId === user.id || 
+      return event.userId === user.id ||
              this.isAttendee(event.id, user.id);
   }
 }
@@ -439,12 +456,14 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 ## 📋 IMPLEMENTATION CHECKLISTE
 
 ### Phase 1: Database
+
 - [ ] Backup der DB erstellen
 - [ ] Migration 017-calendar-split-org-id.sql erstellen und ausführen (org_id Split)
 - [ ] Migration 016-calendar-tenant-isolation.sql ausführen (tenant_id)
 - [ ] Performance-Indexes erstellen
 
 ### Phase 2: Backend API v2
+
 - [ ] calendar.service.ts Filter-Methoden mit Pagination implementieren
 - [ ] Permission-Checks für Event-Erstellung (Admin/Lead/User)
 - [ ] NULL-Handling für department_id/team_id
@@ -453,6 +472,7 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 - [ ] Performance-Monitoring für Queries >100ms
 
 ### Phase 3: Frontend
+
 - [ ] Filter-Buttons in calendar.html anpassen
 - [ ] localStorage für Filter-State implementieren
 - [ ] Error-Handling für 403 Forbidden
@@ -462,6 +482,7 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 - [ ] Pagination-UI für >200 Events
 
 ### Phase 4: Testing
+
 - [ ] Filter testen (alle 5 Varianten)
 - [ ] Multi-Tenant Isolation testen
 - [ ] Event-Erstellung für alle Level
@@ -470,40 +491,42 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 ## 🎨 UI/UX Verbesserungen
 
 ### Event-Farben nach Level
+
 ```css
 /* Company Events - Blau */
 .fc-event[data-org-level="company"] {
-  background-color: #2196F3;
-  border-color: #1976D2;
+  background-color: #2196f3;
+  border-color: #1976d2;
 }
 
 /* Department Events - Grün */
 .fc-event[data-org-level="department"] {
-  background-color: #4CAF50;
-  border-color: #388E3C;
+  background-color: #4caf50;
+  border-color: #388e3c;
 }
 
 /* Team Events - Orange */
 .fc-event[data-org-level="team"] {
-  background-color: #FF9800;
-  border-color: #F57C00;
+  background-color: #ff9800;
+  border-color: #f57c00;
 }
 
 /* Personal Events - Lila */
 .fc-event[data-org-level="personal"] {
-  background-color: #9C27B0;
-  border-color: #7B1FA2;
+  background-color: #9c27b0;
+  border-color: #7b1fa2;
 }
 ```
 
 ### Event-Icons
+
 ```javascript
 // Icons je nach Level
 const eventIcons = {
-  company: '🏢',
-  department: '🏬',
-  team: '👥',
-  personal: '👤'
+  company: "🏢",
+  department: "🏬",
+  team: "👥",
+  personal: "👤",
 };
 ```
 
@@ -524,6 +547,6 @@ const eventIcons = {
 
 ---
 
-*Erstellt: 08.08.2025*
-*Version: 1.0*
-*Status: Ready for Implementation*
+_Erstellt: 08.08.2025_
+_Version: 1.0_
+_Status: Ready for Implementation_

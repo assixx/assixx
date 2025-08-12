@@ -53,11 +53,7 @@ interface SelectedContext {
   teamLeaderId: number | null;
 }
 
-interface WeeklyShifts {
-  [key: string]: {
-    [key: string]: number[];
-  };
-}
+type WeeklyShifts = Record<string, Record<string, number[]>>;
 
 interface ShiftsWindow extends Window {
   selectOption: (type: string, value: string, text: string) => void;
@@ -68,14 +64,15 @@ class ShiftPlanningSystem {
   private selectedEmployee: Employee | null;
   private employees: Employee[];
   private weeklyShifts: WeeklyShifts;
-  private shiftDetails: {
-    [key: string]: {
+  private shiftDetails: Record<
+    string,
+    {
       employee_id: number;
       first_name: string;
       last_name: string;
       username: string;
-    };
-  };
+    }
+  >;
   private isAdmin: boolean;
   private userRole: string;
   private currentUserId: number | null;
@@ -266,21 +263,21 @@ class ShiftPlanningSystem {
     // Employee selection (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      const employeeItem = target.closest('.employee-item') as HTMLElement;
+      const employeeItem = target.closest('.employee-item');
       if (employeeItem && !this.isDragging) {
-        this.selectEmployee(employeeItem);
+        this.selectEmployee(employeeItem as HTMLElement);
       }
     });
 
     // Shift cell assignment (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+      const shiftCell = target.closest('.shift-cell');
       if (shiftCell && this.isAdmin && !this.isDragging) {
-        this.assignEmployeeToShift(shiftCell);
+        this.assignEmployeeToShift(shiftCell as HTMLElement);
       } else if (shiftCell && !this.isAdmin && !this.isDragging) {
         // Show shift details modal for employees
-        this.showShiftDetailsModal(shiftCell);
+        this.showShiftDetailsModal(shiftCell as HTMLElement);
       }
     });
 
@@ -295,7 +292,9 @@ class ShiftPlanningSystem {
 
     // Admin actions
     document.getElementById('saveScheduleBtn')?.addEventListener('click', () => void this.saveSchedule());
-    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => void this.resetSchedule());
+    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => {
+      this.resetSchedule();
+    });
 
     // Remove logout functionality - handled by unified navigation
   }
@@ -310,10 +309,10 @@ class ShiftPlanningSystem {
     // Drag start on employee items
     document.addEventListener('dragstart', (e) => {
       const target = e.target as HTMLElement;
-      const employeeItem = target.closest('.employee-item') as HTMLElement;
+      const employeeItem = target.closest('.employee-item');
 
       if (employeeItem) {
-        console.info('[SHIFTS DEBUG] Drag start on employee:', employeeItem.dataset.employeeId);
+        console.info('[SHIFTS DEBUG] Drag start on employee:', (employeeItem as HTMLElement).dataset.employeeId);
 
         // Check if employee is available for dragging
         if (employeeItem.getAttribute('draggable') === 'false') {
@@ -325,7 +324,7 @@ class ShiftPlanningSystem {
         this.isDragging = true;
         employeeItem.classList.add('dragging');
 
-        const employeeId = employeeItem.dataset.employeeId;
+        const employeeId = (employeeItem as HTMLElement).dataset.employeeId;
         if (employeeId && e.dataTransfer) {
           console.info('[SHIFTS DEBUG] Setting drag data:', employeeId);
           e.dataTransfer.effectAllowed = 'copy';
@@ -337,7 +336,7 @@ class ShiftPlanningSystem {
     // Drag end
     document.addEventListener('dragend', (e) => {
       const target = e.target as HTMLElement;
-      const employeeItem = target.closest('.employee-item') as HTMLElement;
+      const employeeItem = target.closest('.employee-item');
 
       if (employeeItem) {
         this.isDragging = false;
@@ -348,7 +347,7 @@ class ShiftPlanningSystem {
     // Drag over shift cells
     document.addEventListener('dragover', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+      const shiftCell = target.closest('.shift-cell');
 
       if (shiftCell) {
         e.preventDefault();
@@ -362,7 +361,7 @@ class ShiftPlanningSystem {
     // Drag leave
     document.addEventListener('dragleave', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+      const shiftCell = target.closest('.shift-cell');
 
       if (shiftCell) {
         shiftCell.classList.remove('drag-over');
@@ -372,7 +371,7 @@ class ShiftPlanningSystem {
     // Drop on shift cells
     document.addEventListener('drop', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+      const shiftCell = target.closest('.shift-cell');
 
       console.info('[SHIFTS DEBUG] Drop event on:', target);
 
@@ -384,7 +383,7 @@ class ShiftPlanningSystem {
         console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
 
         if (employeeId) {
-          this.assignShift(shiftCell, parseInt(employeeId));
+          this.assignShift(shiftCell as HTMLElement, parseInt(employeeId));
         } else {
           console.error('[SHIFTS ERROR] No employee ID in drop data');
         }
@@ -411,8 +410,8 @@ class ShiftPlanningSystem {
   }
 
   setupNotesEvents(): void {
-    const notesToggle = document.getElementById('notesToggle') as HTMLElement;
-    const notesPanel = document.getElementById('notesPanel') as HTMLElement;
+    const notesToggle = document.getElementById('notesToggle');
+    const notesPanel = document.getElementById('notesPanel');
     const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
 
     notesToggle?.addEventListener('click', () => {
@@ -585,14 +584,14 @@ class ShiftPlanningSystem {
     const departmentNotice = document.getElementById('departmentNotice');
     const mainPlanningArea = document.getElementById('mainPlanningArea');
     const adminActions = document.getElementById('adminActions');
-    const weekNavigation = document.querySelector('.week-navigation') as HTMLElement;
+    const weekNavigation = document.querySelector('.week-navigation');
 
     if (this.selectedContext.departmentId || !this.isAdmin) {
       // Department selected (or employee with auto-selected dept) - show planning area
       if (departmentNotice) departmentNotice.style.display = 'none';
       if (mainPlanningArea) mainPlanningArea.style.display = '';
       if (adminActions && this.isAdmin) adminActions.style.display = 'block';
-      if (weekNavigation) weekNavigation.style.display = 'flex';
+      if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'flex';
 
       // Load data for the selected department
       void this.loadCurrentWeekData().then(() => {
@@ -607,7 +606,7 @@ class ShiftPlanningSystem {
       if (departmentNotice) departmentNotice.style.display = 'block';
       if (mainPlanningArea) mainPlanningArea.style.display = 'none';
       if (adminActions) adminActions.style.display = 'none';
-      if (weekNavigation) weekNavigation.style.display = 'none';
+      if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'none';
     }
   }
 
@@ -797,7 +796,7 @@ class ShiftPlanningSystem {
     });
 
     // Count shifts for each employee
-    const shiftCounts: { [key: number]: number } = {};
+    const shiftCounts: Record<number, number> = {};
 
     Object.values(this.weeklyShifts).forEach((dayShifts) => {
       Object.values(dayShifts).forEach((employeeIds) => {
@@ -897,7 +896,7 @@ class ShiftPlanningSystem {
     for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
       if (shiftType !== shift && employeeIds.includes(employeeId)) {
         // Employee already has another shift on this day
-        const shiftNames: { [key: string]: string } = {
+        const shiftNames: Record<string, string> = {
           early: 'Frühschicht',
           late: 'Spätschicht',
           night: 'Nachtschicht',
@@ -998,14 +997,14 @@ class ShiftPlanningSystem {
   }
 
   processShiftData(
-    shifts: Array<{
+    shifts: {
       date: string;
       shift_type: string;
       employee_id: number;
       first_name: string;
       last_name: string;
       username: string;
-    }>,
+    }[],
   ): void {
     this.weeklyShifts = {};
     this.shiftDetails = {}; // Store full shift details including names
@@ -1253,9 +1252,9 @@ class ShiftPlanningSystem {
       removeBtn.innerHTML = '<i class="fas fa-times"></i>';
       removeBtn.onclick = (e) => {
         e.stopPropagation();
-        const cell = card.closest('.shift-cell') as HTMLElement;
+        const cell = card.closest('.shift-cell');
         if (cell) {
-          this.assignShift(cell, employee.id);
+          this.assignShift(cell as HTMLElement, employee.id);
         }
       };
       card.appendChild(removeBtn);
@@ -1293,7 +1292,7 @@ class ShiftPlanningSystem {
       const notes = notesTextarea?.value ?? '';
 
       // Prepare shift assignments
-      const assignments: Array<{
+      const assignments: {
         employee_id: number;
         shift_date: string;
         shift_type: string;
@@ -1302,7 +1301,7 @@ class ShiftPlanningSystem {
         department_id?: number;
         machine_id?: number;
         team_leader_id?: number;
-      }> = [];
+      }[] = [];
 
       Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
         Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
@@ -1475,15 +1474,23 @@ class ShiftPlanningSystem {
 
     if (this.isAdmin) {
       // Admin view - show everything (but respect department selection)
-      adminControls.forEach((el) => el.classList.remove('hidden'));
-      employeeInfo.forEach((el) => el.classList.add('hidden'));
+      adminControls.forEach((el) => {
+        el.classList.remove('hidden');
+      });
+      employeeInfo.forEach((el) => {
+        el.classList.add('hidden');
+      });
       // adminActions visibility is controlled by togglePlanningAreaVisibility
       if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'block';
       if (notesTextarea) notesTextarea.removeAttribute('readonly');
     } else {
       // Employee view - hide admin controls and sidebar
-      adminControls.forEach((el) => el.classList.add('hidden'));
-      employeeInfo.forEach((el) => el.classList.remove('hidden'));
+      adminControls.forEach((el) => {
+        el.classList.add('hidden');
+      });
+      employeeInfo.forEach((el) => {
+        el.classList.remove('hidden');
+      });
       if (adminActions) adminActions.style.display = 'none';
       if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'none';
 
@@ -1539,7 +1546,7 @@ class ShiftPlanningSystem {
   }
 
   private escapeHtml(text: string): string {
-    const map: { [key: string]: string } = {
+    const map: Record<string, string> = {
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
@@ -1561,13 +1568,13 @@ class ShiftPlanningSystem {
     const dateStr = shiftDate.toLocaleDateString('de-DE');
 
     // Get shift time based on type
-    const shiftTimes: { [key: string]: string } = {
+    const shiftTimes: Record<string, string> = {
       early: '06:00 - 14:00',
       late: '14:00 - 22:00',
       night: '22:00 - 06:00',
     };
 
-    const shiftNames: { [key: string]: string } = {
+    const shiftNames: Record<string, string> = {
       early: 'Frühschicht',
       late: 'Spätschicht',
       night: 'Nachtschicht',

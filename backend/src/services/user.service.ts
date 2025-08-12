@@ -86,7 +86,10 @@ class UserService {
             : user;
 
         // Ensure tenant_id is present (required field)
-        if (!userWithoutPassword.tenant_id) {
+        if (
+          userWithoutPassword.tenant_id == null ||
+          userWithoutPassword.tenant_id === 0
+        ) {
           logger.error(`User ${userId} has no tenant_id`);
           return null;
         }
@@ -95,7 +98,7 @@ class UserService {
       }
 
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting user by ID:", error);
       throw error;
     }
@@ -110,7 +113,7 @@ class UserService {
 
       if (user) {
         // Ensure tenant_id is present (required field)
-        if (!user.tenant_id) {
+        if (user.tenant_id == null || user.tenant_id === 0) {
           logger.error(`User ${username} has no tenant_id`);
           return null;
         }
@@ -119,7 +122,7 @@ class UserService {
       }
 
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting user by username:", error);
       throw error;
     }
@@ -133,16 +136,16 @@ class UserService {
       const { page = 1, limit = 10, role, tenantId } = options;
       // const offset = (page - 1) * limit; // Not used by User.findAll
 
-      if (!tenantId) {
+      if (tenantId == null || tenantId === 0) {
         throw new Error("Tenant ID is required");
       }
 
-      const users = (await User.findAll({
+      const users = await User.findAll({
         limit,
         // offset, // offset is not part of UserFilter
         role,
         tenant_id: tenantId,
-      })) as DbUser[];
+      });
 
       // Map to response format
       const total = users.length; // Would need proper count from DB
@@ -166,7 +169,7 @@ class UserService {
         limit,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting users:", error);
       throw error;
     }
@@ -191,7 +194,7 @@ class UserService {
 
       await User.update(userId, cleanUpdateData, tenantId);
       return await this.getUserById(userId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error updating user:", error);
       throw error;
     }
@@ -210,7 +213,7 @@ class UserService {
 
       await User.update(userId, { password: hashedPassword }, tenantId);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error updating password:", error);
       throw error;
     }
@@ -223,7 +226,7 @@ class UserService {
     try {
       await User.delete(userId);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error deleting user:", error);
       throw error;
     }
@@ -235,12 +238,12 @@ class UserService {
   async archiveUser(
     userId: number,
     tenantId: number,
-    archived: boolean = true,
+    archived = true,
   ): Promise<boolean> {
     try {
       await User.update(userId, { is_archived: archived }, tenantId);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error archiving user:", error);
       throw error;
     }

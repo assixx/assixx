@@ -152,7 +152,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_suggestions WHERE id = ?",
         [response.body.data.suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0]).toMatchObject({
         title: validSuggestionData.title,
         description: validSuggestionData.description,
@@ -181,7 +181,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_suggestions WHERE id = ?",
         [response.body.data.suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].submitted_by).toBe(employeeUser1.id); // Still tracked internally
       expect(suggestions[0].is_anonymous).toBe(1);
     });
@@ -204,7 +204,7 @@ describe("KVP API Endpoints", () => {
         "SELECT department_id, visibility FROM kvp_suggestions WHERE id = ?",
         [response.body.data.suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].department_id).toBe(dept1Id);
       expect(suggestions[0].visibility).toBe("department");
     });
@@ -239,7 +239,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_attachments WHERE suggestion_id = ?",
         [response.body.data.suggestionId],
       );
-      const attachments = asTestRows<any>(rows);
+      const attachments = asTestRows<unknown>(rows);
       expect(attachments.length).toBe(2);
     });
 
@@ -300,7 +300,7 @@ describe("KVP API Endpoints", () => {
         "SELECT status FROM kvp_suggestions WHERE id = ?",
         [response.body.data.suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].status).toBe("submitted");
     });
 
@@ -317,7 +317,7 @@ describe("KVP API Endpoints", () => {
         "SELECT points FROM kvp_user_points WHERE user_id = ? AND tenant_id = ?",
         [employeeUser1.id, tenant1Id],
       );
-      const points = asTestRows<any>(rows);
+      const points = asTestRows<unknown>(rows);
       expect(points[0]?.points).toBeGreaterThan(0);
     });
 
@@ -336,7 +336,7 @@ describe("KVP API Endpoints", () => {
         "SELECT tenant_id FROM kvp_suggestions WHERE id = ?",
         [response.body.data.suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].tenant_id).toBe(tenant1Id);
     });
   });
@@ -363,7 +363,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result1 = asTestRows<any>(rows);
+      const result1 = asTestRows<unknown>(rows);
       publicSuggestionId = (result1 as any).insertId;
 
       const [rows] = await testDb.execute(
@@ -381,7 +381,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result2 = asTestRows<any>(rows);
+      const result2 = asTestRows<unknown>(rows);
       dept1SuggestionId = (result2 as any).insertId;
 
       const [rows] = await testDb.execute(
@@ -399,7 +399,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result3 = asTestRows<any>(rows);
+      const result3 = asTestRows<unknown>(rows);
       dept2SuggestionId = (result3 as any).insertId;
 
       const [rows] = await testDb.execute(
@@ -417,7 +417,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result4 = asTestRows<any>(rows);
+      const result4 = asTestRows<unknown>(rows);
       anonymousSuggestionId = (result4 as any).insertId;
     });
 
@@ -603,7 +603,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       suggestionId = (result as any).insertId;
     });
 
@@ -691,7 +691,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const anonId = (result as any).insertId;
 
       const response = await request(app)
@@ -728,7 +728,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const deptSuggestionId = (result as any).insertId;
 
       // Employee1 (dept1) should not see dept2 suggestion
@@ -765,7 +765,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       suggestionId = (result as any).insertId;
     });
 
@@ -789,7 +789,7 @@ describe("KVP API Endpoints", () => {
         "SELECT title, description, expected_benefit FROM kvp_suggestions WHERE id = ?",
         [suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0]).toMatchObject(updateData);
     });
 
@@ -870,7 +870,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       suggestionId = (result as any).insertId;
     });
 
@@ -891,7 +891,7 @@ describe("KVP API Endpoints", () => {
         "SELECT status FROM kvp_suggestions WHERE id = ?",
         [suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].status).toBe("in_review");
 
       // Verify status history
@@ -899,7 +899,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_status_history WHERE suggestion_id = ?",
         [suggestionId],
       );
-      const history = asTestRows<any>(rows);
+      const history = asTestRows<unknown>(rows);
       expect(history[0]).toMatchObject({
         old_status: "submitted",
         new_status: "in_review",
@@ -943,7 +943,7 @@ describe("KVP API Endpoints", () => {
         "SELECT SUM(points) as total FROM kvp_user_points WHERE user_id = ? AND tenant_id = ?",
         [employeeUser1.id, tenant1Id],
       );
-      const points = asTestRows<any>(rows);
+      const points = asTestRows<unknown>(rows);
       expect(points[0].total).toBeGreaterThanOrEqual(100);
     });
 
@@ -963,7 +963,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM notifications WHERE user_id = ? AND type = 'kvp_status_change'",
         [employeeUser1.id],
       );
-      const notifications = asTestRows<any>(rows);
+      const notifications = asTestRows<unknown>(rows);
       expect(notifications.length).toBeGreaterThan(0);
     });
 
@@ -994,7 +994,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       suggestionId = (result as any).insertId;
     });
 
@@ -1016,7 +1016,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_comments WHERE id = ?",
         [response.body.data.commentId],
       );
-      const comments = asTestRows<any>(rows);
+      const comments = asTestRows<unknown>(rows);
       expect(comments[0]).toMatchObject({
         suggestion_id: suggestionId,
         user_id: adminUser1.id,
@@ -1041,7 +1041,7 @@ describe("KVP API Endpoints", () => {
         "SELECT is_internal FROM kvp_comments WHERE id = ?",
         [response.body.data.commentId],
       );
-      const comments = asTestRows<any>(rows);
+      const comments = asTestRows<unknown>(rows);
       expect(comments[0].is_internal).toBe(1);
     });
 
@@ -1076,7 +1076,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM notifications WHERE type = 'kvp_new_comment' AND user_id IN (?, ?)",
         [employeeUser1.id, employeeUser2.id],
       );
-      const notifications = asTestRows<any>(rows);
+      const notifications = asTestRows<unknown>(rows);
       expect(notifications.length).toBeGreaterThan(0);
     });
 
@@ -1109,7 +1109,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const deptSuggestionId = (result as any).insertId;
 
       // Employee1 (dept1) should not be able to comment on dept2 suggestion
@@ -1139,7 +1139,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       suggestionId = (result as any).insertId;
     });
 
@@ -1157,7 +1157,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_votes WHERE suggestion_id = ? AND user_id = ?",
         [suggestionId, employeeUser1.id],
       );
-      const votes = asTestRows<any>(rows);
+      const votes = asTestRows<unknown>(rows);
       expect(votes[0].vote_type).toBe("up");
     });
 
@@ -1173,7 +1173,7 @@ describe("KVP API Endpoints", () => {
         "SELECT vote_type FROM kvp_votes WHERE suggestion_id = ? AND user_id = ?",
         [suggestionId, employeeUser1.id],
       );
-      const votes = asTestRows<any>(rows);
+      const votes = asTestRows<unknown>(rows);
       expect(votes[0].vote_type).toBe("down");
     });
 
@@ -1196,14 +1196,14 @@ describe("KVP API Endpoints", () => {
         "SELECT COUNT(*) as count FROM kvp_votes WHERE suggestion_id = ? AND user_id = ?",
         [suggestionId, employeeUser1.id],
       );
-      const votes = asTestRows<any>(rows);
+      const votes = asTestRows<unknown>(rows);
       expect(votes[0].count).toBe(1); // Should update, not create new
 
       const [rows] = await testDb.execute(
         "SELECT vote_type FROM kvp_votes WHERE suggestion_id = ? AND user_id = ?",
         [suggestionId, employeeUser1.id],
       );
-      const voteType = asTestRows<any>(rows);
+      const voteType = asTestRows<unknown>(rows);
       expect(voteType[0].vote_type).toBe("down");
     });
 
@@ -1226,7 +1226,7 @@ describe("KVP API Endpoints", () => {
         "SELECT COUNT(*) as count FROM kvp_votes WHERE suggestion_id = ? AND user_id = ?",
         [suggestionId, employeeUser1.id],
       );
-      const votes = asTestRows<any>(rows);
+      const votes = asTestRows<unknown>(rows);
       expect(votes[0].count).toBe(0);
     });
 
@@ -1257,7 +1257,7 @@ describe("KVP API Endpoints", () => {
         "SELECT vote_count FROM kvp_suggestions WHERE id = ?",
         [suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].vote_count).toBe(2);
     });
   });
@@ -1279,7 +1279,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       suggestionId = (result as any).insertId;
     });
 
@@ -1296,7 +1296,7 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_suggestions WHERE id = ?",
         [suggestionId],
       );
-      const suggestions = asTestRows<any>(rows);
+      const suggestions = asTestRows<unknown>(rows);
       expect(suggestions.length).toBe(0);
     });
 
@@ -1320,14 +1320,14 @@ describe("KVP API Endpoints", () => {
         "SELECT * FROM kvp_comments WHERE suggestion_id = ?",
         [suggestionId],
       );
-      const comments = asTestRows<any>(rows);
+      const comments = asTestRows<unknown>(rows);
       expect(comments.length).toBe(0);
 
       const [rows] = await testDb.execute(
         "SELECT * FROM kvp_votes WHERE suggestion_id = ?",
         [suggestionId],
       );
-      const votes = asTestRows<any>(rows);
+      const votes = asTestRows<unknown>(rows);
       expect(votes.length).toBe(0);
     });
 

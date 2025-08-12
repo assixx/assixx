@@ -89,36 +89,36 @@ describe("UsersService Logic Tests", () => {
   describe("Business Logic Validation", () => {
     it("should validate pagination parameters", () => {
       // Test page number validation
-      const validPage = Math.max(1, parseInt("5", 10) || 1);
+      const validPage = Math.max(1, parseInt("5", 10) ?? 1);
       expect(validPage).toBe(5);
 
-      const invalidPage = Math.max(1, parseInt("invalid", 10) || 1);
+      const invalidPage = Math.max(1, parseInt("invalid", 10) ?? 1);
       expect(invalidPage).toBe(1);
 
-      const negativePage = Math.max(1, parseInt("-5", 10) || 1);
+      const negativePage = Math.max(1, parseInt("-5", 10) ?? 1);
       expect(negativePage).toBe(1);
 
-      const zeroPage = Math.max(1, parseInt("0", 10) || 1);
+      const zeroPage = Math.max(1, parseInt("0", 10) ?? 1);
       expect(zeroPage).toBe(1);
     });
 
     it("should validate limit parameters", () => {
       // Test limit validation
-      const validLimit = Math.min(100, Math.max(1, parseInt("50", 10) || 20));
+      const validLimit = Math.min(100, Math.max(1, parseInt("50", 10) ?? 20));
       expect(validLimit).toBe(50);
 
       const tooHighLimit = Math.min(
         100,
-        Math.max(1, parseInt("200", 10) || 20),
+        Math.max(1, parseInt("200", 10) ?? 20),
       );
       expect(tooHighLimit).toBe(100);
 
-      const tooLowLimit = Math.min(100, Math.max(1, parseInt("0", 10) || 20));
+      const tooLowLimit = Math.min(100, Math.max(1, parseInt("0", 10) ?? 20));
       expect(tooLowLimit).toBe(20);
 
       const invalidLimit = Math.min(
         100,
-        Math.max(1, parseInt("invalid", 10) || 20),
+        Math.max(1, parseInt("invalid", 10) ?? 20),
       );
       expect(invalidLimit).toBe(20);
     });

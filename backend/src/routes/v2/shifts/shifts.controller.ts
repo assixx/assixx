@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import {
   successResponse,
   errorResponse,
@@ -120,7 +120,7 @@ export async function listShifts(req: AuthenticatedRequest, res: Response) {
         totalItems: shifts.length,
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     res
       .status(500)
       .json(
@@ -137,7 +137,7 @@ export async function getShiftById(req: AuthenticatedRequest, res: Response) {
     const id = parseInt(req.params.id);
     const shift = await shiftsService.getShiftById(id, req.user.tenant_id);
     res.json(successResponse(shift));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "SHIFT_NOT_FOUND") {
       res.status(404).json(errorResponse("NOT_FOUND", error.message));
     } else {
@@ -163,7 +163,7 @@ export async function createShift(req: AuthenticatedRequest, res: Response) {
       req.get("user-agent"),
     );
     res.status(201).json(successResponse(shift));
-  } catch (error) {
+  } catch (error: unknown) {
     res
       .status(500)
       .json(
@@ -187,7 +187,7 @@ export async function updateShift(req: AuthenticatedRequest, res: Response) {
       req.get("user-agent"),
     );
     res.json(successResponse(shift));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "SHIFT_NOT_FOUND") {
       res.status(404).json(errorResponse("NOT_FOUND", error.message));
     } else {
@@ -214,7 +214,7 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response) {
       req.get("user-agent"),
     );
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "SHIFT_NOT_FOUND") {
       res.status(404).json(errorResponse("NOT_FOUND", error.message));
     } else {
@@ -236,7 +236,7 @@ export async function listTemplates(req: AuthenticatedRequest, res: Response) {
   try {
     const templates = await shiftsService.listTemplates(req.user.tenant_id);
     res.json(successResponse(templates));
-  } catch (error) {
+  } catch (error: unknown) {
     res
       .status(500)
       .json(
@@ -259,7 +259,7 @@ export async function getTemplateById(
       req.user.tenant_id,
     );
     res.json(successResponse(template));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "TEMPLATE_NOT_FOUND") {
       res.status(404).json(errorResponse("NOT_FOUND", error.message));
     } else {
@@ -285,7 +285,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       req.get("user-agent"),
     );
     res.status(201).json(successResponse(template));
-  } catch (error) {
+  } catch (error: unknown) {
     res
       .status(500)
       .json(
@@ -309,7 +309,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       req.get("user-agent"),
     );
     res.json(successResponse(template));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "TEMPLATE_NOT_FOUND") {
       res.status(404).json(errorResponse("NOT_FOUND", error.message));
     } else {
@@ -338,7 +338,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
       req.get("user-agent"),
     );
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "TEMPLATE_NOT_FOUND") {
       res.status(404).json(errorResponse("NOT_FOUND", error.message));
     } else {
@@ -375,7 +375,7 @@ export async function listSwapRequests(
       filters,
     );
     res.json(successResponse(requests));
-  } catch (error) {
+  } catch (error: unknown) {
     res
       .status(500)
       .json(
@@ -402,7 +402,7 @@ export async function createSwapRequest(
       req.get("user-agent"),
     );
     res.status(201).json(successResponse(request));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "FORBIDDEN") {
       res.status(403).json(errorResponse("FORBIDDEN", error.message));
     } else if (
@@ -442,7 +442,7 @@ export async function updateSwapRequestStatus(
       req.get("user-agent"),
     );
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (
       error instanceof ServiceError &&
       error.code === "SWAP_REQUEST_NOT_FOUND"
@@ -493,7 +493,7 @@ export async function getOvertimeReport(
       req.user.tenant_id,
     );
     res.json(successResponse(report));
-  } catch (error) {
+  } catch (error: unknown) {
     res
       .status(500)
       .json(
@@ -538,7 +538,7 @@ export async function exportShifts(req: AuthenticatedRequest, res: Response) {
       `attachment; filename="shifts_${filters.startDate}_${filters.endDate}.csv"`,
     );
     res.send(csvData);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError && error.code === "NOT_IMPLEMENTED") {
       res.status(501).json(errorResponse("NOT_IMPLEMENTED", error.message));
     } else {

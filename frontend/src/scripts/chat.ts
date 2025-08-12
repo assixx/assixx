@@ -67,9 +67,7 @@ interface WebSocketMessage {
   data: unknown;
 }
 
-interface EmojiCategories {
-  [key: string]: string[];
-}
+type EmojiCategories = Record<string, string[]>;
 
 class ChatClient {
   private ws: WebSocket | null;
@@ -87,7 +85,7 @@ class ChatClient {
   private messageQueue: Message[];
   private typingTimer: NodeJS.Timeout | null;
   private emojiCategories: EmojiCategories;
-  private isCreatingConversation: boolean = false;
+  private isCreatingConversation = false;
   private apiClient: ApiClient;
   constructor() {
     this.ws = null;
@@ -1752,7 +1750,7 @@ class ChatClient {
       created_at: new Date().toISOString(),
       is_read: false,
       type: 'text',
-      sender: this.currentUser as ChatUser,
+      sender: this.currentUser,
     };
 
     if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -2209,7 +2207,9 @@ class ChatClient {
 
   private resetModalState(): void {
     // Reset tabs
-    document.querySelectorAll('.chat-type-tab').forEach((tab) => tab.classList.remove('active'));
+    document.querySelectorAll('.chat-type-tab').forEach((tab) => {
+      tab.classList.remove('active');
+    });
     document.getElementById('employeeTab')?.classList.add('active');
 
     // Reset selections
@@ -2261,7 +2261,9 @@ class ChatClient {
         console.info('Tab clicked:', type);
 
         // Update active tab
-        document.querySelectorAll('.chat-type-tab').forEach((t) => t.classList.remove('active'));
+        document.querySelectorAll('.chat-type-tab').forEach((t) => {
+          t.classList.remove('active');
+        });
         target.classList.add('active');
 
         // Show corresponding section
@@ -2441,8 +2443,8 @@ class ChatClient {
 
     try {
       // Get selected recipient based on active tab
-      const activeTab = document.querySelector('.chat-type-tab.active') as HTMLElement | null;
-      const tabType = activeTab?.dataset.type;
+      const activeTab = document.querySelector('.chat-type-tab.active');
+      const tabType = (activeTab as HTMLElement)?.dataset.type;
 
       let selectedUserId: number | null = null;
 
@@ -2666,7 +2668,9 @@ class ChatClient {
           this.showEmojiCategory(categoryName);
 
           // Update active state
-          document.querySelectorAll('.emoji-category').forEach((cat) => cat.classList.remove('active'));
+          document.querySelectorAll('.emoji-category').forEach((cat) => {
+            cat.classList.remove('active');
+          });
           target.classList.add('active');
         }
       });
@@ -2974,7 +2978,7 @@ class ChatClient {
   }
 
   // Utility methods
-  showConfirmDialog(message: string): Promise<boolean> {
+  async showConfirmDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => {
       const modal = document.createElement('div');
       modal.className = 'modal-overlay';
@@ -3029,7 +3033,7 @@ class ChatClient {
   escapeHtml(text: string | null | undefined): string {
     if (!text) return '';
 
-    const map: { [key: string]: string } = {
+    const map: Record<string, string> = {
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',

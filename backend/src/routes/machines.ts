@@ -39,7 +39,7 @@ interface Machine {
  * Get all machines
  * GET /api/machines
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get("/", authenticateToken, (req, res): void => {
   try {
     // const authReq = req as AuthenticatedRequest;
     // For now, return dummy machine data
@@ -57,9 +57,21 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
     const departmentId = req.query.department_id;
     let filteredMachines = machines;
 
-    if (departmentId) {
+    if (
+      departmentId !== null &&
+      departmentId !== undefined &&
+      departmentId !== ""
+    ) {
       filteredMachines = machines.filter(
-        (machine) => machine.department_id == parseInt(String(departmentId)),
+        (machine) =>
+          machine.department_id ==
+          parseInt(
+            typeof departmentId === "string"
+              ? departmentId
+              : typeof departmentId === "number"
+                ? String(departmentId)
+                : "0",
+          ),
       );
     }
 
@@ -67,7 +79,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
       success: true,
       machines: filteredMachines,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching machines:", getErrorMessage(error));
     res.status(500).json({
       success: false,
@@ -80,7 +92,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * Get machine by ID
  * GET /api/machines/:id
  */
-router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
+router.get("/:id", authenticateToken, (req, res): void => {
   try {
     // const authReq = req as AuthenticatedRequest;
     const machineId = parseInt(req.params.id);
@@ -100,7 +112,7 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
       success: true,
       machine,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching machine:", getErrorMessage(error));
     res.status(500).json({
       success: false,
@@ -113,7 +125,7 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
  * Create new machine (Admin only)
  * POST /api/machines
  */
-router.post("/", authenticateToken, async (req, res): Promise<void> => {
+router.post("/", authenticateToken, (req, res): void => {
   try {
     const authReq = req as AuthenticatedRequest;
     // Check admin permission
@@ -125,9 +137,19 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    const { name, department_id, description, location } = req.body;
+    const { name, department_id, description, location } = req.body as {
+      name?: string;
+      department_id?: number;
+      description?: string;
+      location?: string;
+    };
 
-    if (!name || !department_id) {
+    if (
+      name == null ||
+      name === "" ||
+      department_id == null ||
+      department_id === 0
+    ) {
       res.status(400).json({
         success: false,
         message: "Name und Abteilung sind erforderlich",
@@ -138,8 +160,8 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
     // For now, return dummy created machine
     const machine: Machine = {
       id: Date.now(),
-      name,
-      department_id,
+      name: name,
+      department_id: department_id,
       description: description ?? undefined,
       location: location ?? undefined,
       status: "active",
@@ -151,7 +173,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       message: "Maschine erfolgreich erstellt",
       machine,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error creating machine:", getErrorMessage(error));
     res.status(500).json({
       success: false,

@@ -64,16 +64,12 @@ export interface Permission {
   conditions?: Record<string, unknown>;
 }
 
-export interface RolePermissions {
-  [role: string]: Permission[];
-}
+export type RolePermissions = Record<string, Permission[]>;
 
 // Security Headers Configuration
 export interface SecurityHeadersConfig {
   contentSecurityPolicy?: {
-    directives: {
-      [directive: string]: string[];
-    };
+    directives: Record<string, string[]>;
   };
   hsts?: {
     maxAge: number;
@@ -83,9 +79,7 @@ export interface SecurityHeadersConfig {
   noSniff?: boolean;
   xssFilter?: boolean;
   referrerPolicy?: string;
-  permissionsPolicy?: {
-    [feature: string]: string[];
-  };
+  permissionsPolicy?: Record<string, string[]>;
 }
 
 // Input Validation Types
@@ -95,9 +89,7 @@ export interface ValidationRule {
   message?: string;
 }
 
-export interface ValidationSchema {
-  [endpoint: string]: ValidationRule[];
-}
+export type ValidationSchema = Record<string, ValidationRule[]>;
 
 // API Key Types
 export interface ApiKey {

@@ -98,7 +98,7 @@ const debugWrapper = (handler: RequestHandler): RequestHandler => {
     console.log("[LOGS DEBUG] User:", req.user);
     try {
       await handler(req, res, next);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[LOGS DEBUG] Error in handler:", error);
       throw error;
     }

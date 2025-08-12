@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import {
   successResponse,
   errorResponse,
@@ -56,8 +56,8 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
 
     const filters = {
       status: status as "draft" | "active" | "closed" | undefined,
-      page: parseInt(page as string, 10) || 1,
-      limit: parseInt(limit as string, 10) || 20,
+      page: parseInt(page as string, 10) ?? 1,
+      limit: parseInt(limit as string, 10) ?? 20,
     };
 
     const surveys = await surveysService.listSurveys(
@@ -76,7 +76,7 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
         totalPages: Math.ceil(surveys.length / filters.limit),
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in listSurveys:", error);
     if (error instanceof ServiceError) {
       res
@@ -123,7 +123,7 @@ export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(survey));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in getSurveyById:", error);
     if (error instanceof ServiceError) {
       res
@@ -171,7 +171,7 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
     );
 
     res.status(201).json(successResponse(survey));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in createSurvey:", error);
     if (error instanceof ServiceError) {
       res
@@ -227,7 +227,7 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(survey));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in updateSurvey:", error);
     if (error instanceof ServiceError) {
       res
@@ -276,7 +276,7 @@ export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in deleteSurvey:", error);
     if (error instanceof ServiceError) {
       res
@@ -305,7 +305,7 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
     );
     res.json(successResponse(templates));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in getTemplates:", error);
     if (error instanceof ServiceError) {
       res
@@ -356,7 +356,7 @@ export async function createFromTemplate(
     );
 
     res.status(201).json(successResponse(survey));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in createFromTemplate:", error);
     if (error instanceof ServiceError) {
       res
@@ -403,7 +403,7 @@ export async function getStatistics(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(statistics));
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in getStatistics:", error);
     if (error instanceof ServiceError) {
       res

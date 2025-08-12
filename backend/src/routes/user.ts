@@ -13,8 +13,8 @@ const router: Router = express.Router();
 
 import { authenticateToken } from "../middleware/auth-refactored";
 import { rateLimiter } from "../middleware/rateLimiter";
-import { User } from "../models/user";
-import { AuthenticatedRequest } from "../types/request.types";
+import User from "../models/user";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { query as executeQuery } from "../utils/db";
 import { getErrorMessage } from "../utils/errorHandler";
 import {
@@ -53,19 +53,17 @@ interface UserUpdateFields {
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    void (async () => {
-      const uploadDir = getUploadDirectory("profile_pictures");
-      // Create directory if it doesn't exist
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    })();
+    const uploadDir = getUploadDirectory("profile_pictures");
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
     const sanitized = sanitizeFilename(file.originalname);
     const extension = path.extname(sanitized);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
     cb(null, `profile-${uniqueSuffix}${extension}`);
   },
 });
@@ -135,41 +133,41 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
 
     // Get department information if available
     let departmentInfo = null;
-    if (user.department_id) {
+    if (user.department_id != null && user.department_id !== 0) {
       // Verwende db statt req.tenantDb
       const [departments] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM departments WHERE id = ?",
         [user.department_id],
       );
 
-      if (departments && departments.length > 0) {
+      if (departments.length > 0) {
         departmentInfo = departments[0];
       }
     }
 
     // Get team information if available
     let teamInfo = null;
-    if (user.team_id) {
+    if (user.team_id != null && user.team_id !== 0) {
       // Verwende db statt req.tenantDb
       const [teams] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM teams WHERE id = ?",
         [user.team_id],
       );
 
-      if (teams && teams.length > 0) {
+      if (teams.length > 0) {
         teamInfo = teams[0];
       }
     }
 
     // Get tenant information
     let tenantInfo = null;
-    if (user.tenant_id) {
+    if (user.tenant_id != null && user.tenant_id !== 0) {
       const [tenants] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM tenants WHERE id = ?",
         [user.tenant_id],
       );
 
-      if (tenants && tenants.length > 0) {
+      if (tenants.length > 0) {
         tenantInfo = tenants[0];
       }
     }
@@ -179,14 +177,14 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
 
     res.json({
       ...userWithoutPassword,
-      department: departmentInfo ? departmentInfo.name : null,
+      department: departmentInfo ? (departmentInfo.name as string) : null,
       departmentId: user.department_id,
-      team: teamInfo ? teamInfo.name : null,
-      teamId: user.team_id,
-      company_name: tenantInfo ? tenantInfo.company_name : null,
-      subdomain: tenantInfo ? tenantInfo.subdomain : null,
+      team: teamInfo ? (teamInfo.name as string) : null,
+      teamId: user.team_id as number | null,
+      company_name: tenantInfo ? (tenantInfo.company_name as string) : null,
+      subdomain: tenantInfo ? (tenantInfo.subdomain as string) : null,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching user profile:", getErrorMessage(error));
     res.status(500).json({ message: "Server error" });
   }
@@ -227,7 +225,7 @@ router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
     } else {
       res.status(400).json({ message: "Failed to update profile" });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error updating user profile:", getErrorMessage(error));
     res.status(500).json({ message: "Server error" });
   }
@@ -247,7 +245,7 @@ router.get(
       const authReq = req as AuthenticatedRequest;
       const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
-      if (!user?.profile_picture) {
+      if (user?.profile_picture == null || user.profile_picture === "") {
         res.status(404).json({ message: "Profile picture not found" });
         return;
       }
@@ -265,7 +263,7 @@ router.get(
 
       const validatedPath = validatePath(relativePath, baseDir);
 
-      if (!validatedPath) {
+      if (validatedPath == null || validatedPath === "") {
         res.status(400).json({ message: "Invalid file path" });
         return;
       }
@@ -275,7 +273,7 @@ router.get(
       } else {
         res.status(404).json({ message: "Profile picture file not found" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching profile picture:", getErrorMessage(error));
       res.status(500).json({ message: "Internal server error" });
     }
@@ -308,16 +306,20 @@ router.post(
       const user = await User.findById(userId, authReq.user.tenant_id);
 
       // Delete old profile picture if it exists
-      if (user?.profile_picture_url) {
+      if (
+        user?.profile_picture_url != null &&
+        user.profile_picture_url !== ""
+      ) {
         const oldFilePath = path.join(
           process.cwd(),
-          user.profile_picture_url.startsWith("/")
+          typeof user.profile_picture_url === "string" &&
+            user.profile_picture_url.startsWith("/")
             ? user.profile_picture_url.substring(1)
-            : user.profile_picture_url,
+            : String(user.profile_picture_url),
         );
         try {
           await safeDeleteFile(oldFilePath);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           console.warn(
             "Could not delete old profile picture:",
             getErrorMessage(unlinkError),
@@ -346,15 +348,18 @@ router.post(
           .status(500)
           .json({ message: "Fehler beim Speichern des Profilbildes" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error uploading profile picture:", getErrorMessage(error));
 
       // Clean up uploaded file on error
       const authenticatedReq = req as AuthenticatedRequest;
-      if (authenticatedReq.file?.path) {
+      if (
+        authenticatedReq.file?.path != null &&
+        authenticatedReq.file.path !== ""
+      ) {
         try {
           await safeDeleteFile(authenticatedReq.file.path);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           console.error(
             "Error deleting temporary file:",
             getErrorMessage(unlinkError),
@@ -364,7 +369,7 @@ router.post(
 
       res.status(500).json({
         message:
-          getErrorMessage(error) || "Fehler beim Hochladen des Profilbildes",
+          getErrorMessage(error) ?? "Fehler beim Hochladen des Profilbildes",
       });
     }
   },
@@ -391,16 +396,17 @@ router.delete(
       }
 
       // Delete profile picture file if it exists
-      if (user.profile_picture_url) {
+      if (user.profile_picture_url != null && user.profile_picture_url !== "") {
         const filePath = path.join(
           process.cwd(),
-          user.profile_picture_url.startsWith("/")
+          typeof user.profile_picture_url === "string" &&
+            user.profile_picture_url.startsWith("/")
             ? user.profile_picture_url.substring(1)
-            : user.profile_picture_url,
+            : String(user.profile_picture_url),
         );
         try {
           await safeDeleteFile(filePath);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           console.warn(
             "Could not delete profile picture file:",
             getErrorMessage(unlinkError),
@@ -424,7 +430,7 @@ router.delete(
           .status(500)
           .json({ message: "Fehler beim Löschen des Profilbildes" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting profile picture:", getErrorMessage(error));
       res.status(500).json({
         message: "Fehler beim Löschen des Profilbildes",

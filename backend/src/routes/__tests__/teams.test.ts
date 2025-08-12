@@ -292,7 +292,7 @@ describe("Team Management API Endpoints", () => {
       const [rows] = await testDb.execute("SELECT * FROM teams WHERE id = ?", [
         response.body.data.teamId,
       ]);
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0]).toMatchObject({
         name: validTeamData.name,
         description: validTeamData.description,
@@ -318,7 +318,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT department_id FROM teams WHERE id = ?",
         [response.body.data.teamId],
       );
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0].department_id).toBeNull();
     });
 
@@ -338,7 +338,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT team_lead_id FROM teams WHERE id = ?",
         [response.body.data.teamId],
       );
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0].team_lead_id).toBe(employeeUser1.id);
     });
 
@@ -435,7 +435,7 @@ describe("Team Management API Endpoints", () => {
       const [rows] = await testDb.execute("SELECT * FROM teams WHERE id = ?", [
         response.body.data.teamId,
       ]);
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0]).toMatchObject({
         description: null,
         department_id: null,
@@ -551,7 +551,7 @@ describe("Team Management API Endpoints", () => {
         "INSERT INTO teams (name, description, department_id, tenant_id) VALUES (?, ?, ?, ?)",
         ["Update Test Team", "Original description", dept1Id, tenant1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       updateTeamId = (result as any).insertId;
     });
 
@@ -574,7 +574,7 @@ describe("Team Management API Endpoints", () => {
       const [rows] = await testDb.execute("SELECT * FROM teams WHERE id = ?", [
         updateTeamId,
       ]);
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0]).toMatchObject(updateData);
     });
 
@@ -592,7 +592,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT team_lead_id FROM teams WHERE id = ?",
         [updateTeamId],
       );
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0].team_lead_id).toBe(employeeUser2.id);
     });
 
@@ -661,7 +661,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT status FROM teams WHERE id = ?",
         [updateTeamId],
       );
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0].status).toBe("inactive");
     });
 
@@ -704,7 +704,7 @@ describe("Team Management API Endpoints", () => {
         "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
         ["Delete Test Team", dept1Id, tenant1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       deleteTeamId = (result as any).insertId;
     });
 
@@ -721,7 +721,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT status, deleted_at FROM teams WHERE id = ?",
         [deleteTeamId],
       );
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams[0].status).toBe("inactive");
       expect(teams[0].deleted_at).toBeTruthy();
     });
@@ -765,7 +765,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT team_id FROM users WHERE id = ?",
         [member.id],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].team_id).toBe(team2Id);
     });
 
@@ -802,7 +802,7 @@ describe("Team Management API Endpoints", () => {
       const [rows] = await testDb.execute("SELECT * FROM teams WHERE id = ?", [
         deleteTeamId,
       ]);
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams.length).toBe(0);
     });
   });
@@ -816,7 +816,7 @@ describe("Team Management API Endpoints", () => {
         "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
         ["Member Test Team", dept1Id, tenant1Id],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       memberTeamId = (result as any).insertId;
 
       // Create user without team
@@ -861,7 +861,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT team_id FROM users WHERE id = ?",
         [newMemberId],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].team_id).toBe(memberTeamId);
     });
 
@@ -934,7 +934,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT team_id FROM users WHERE id = ?",
         [employeeUser1.id],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].team_id).toBeNull();
     });
 
@@ -1108,7 +1108,7 @@ describe("Team Management API Endpoints", () => {
           "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
           [`Bulk Team ${i}`, dept1Id, tenant1Id],
         );
-        const result = asTestRows<any>(rows);
+        const result = asTestRows<unknown>(rows);
         teamIds.push((result as any).insertId);
       }
 
@@ -1128,7 +1128,7 @@ describe("Team Management API Endpoints", () => {
         "SELECT status FROM teams WHERE id IN (?)",
         [teamIds],
       );
-      const teams = asTestRows<any>(rows);
+      const teams = asTestRows<unknown>(rows);
       expect(teams.every((t) => t.status === "inactive")).toBe(true);
     });
 
@@ -1140,7 +1140,7 @@ describe("Team Management API Endpoints", () => {
           "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
           [`Lead Team ${i}`, dept1Id, tenant1Id],
         );
-        const result = asTestRows<any>(rows);
+        const result = asTestRows<unknown>(rows);
         teamIds.push((result as any).insertId);
       }
 

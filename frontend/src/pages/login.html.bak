@@ -377,7 +377,7 @@
 
       .btn-block {
         width: 50%;
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         font-size: 16px;
         font-family: 'Ubuntu', sans-serif;
         font-weight: 500;
@@ -455,7 +455,7 @@
 
       /* Alert Styles */
       .alert {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-md);
         border-radius: var(--radius-md);
         backdrop-filter: blur(20px);

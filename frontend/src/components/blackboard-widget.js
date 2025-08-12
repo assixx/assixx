@@ -268,7 +268,7 @@ class BlackboardWidget {
     } catch (error) {
       console.error('Error confirming entry:', error);
 
-      alert('Fehler bei der Lesebestätigung.');
+      showError('Fehler bei der Lesebestätigung.');
     }
   }
 

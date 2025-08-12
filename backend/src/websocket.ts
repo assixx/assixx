@@ -131,7 +131,7 @@ export class ChatWebSocketServer {
 
       // Online-Status an andere Benutzer senden
       await this.broadcastUserStatus(userId, tenantId, "online");
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("WebSocket Authentifizierung fehlgeschlagen:", error);
       ws.close(1008, "Authentifizierung fehlgeschlagen");
     }
@@ -172,7 +172,7 @@ export class ChatWebSocketServer {
         default:
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Verarbeiten der WebSocket Nachricht:", error);
       this.sendMessage(ws, {
         type: "error",
@@ -299,7 +299,7 @@ export class ChatWebSocketServer {
         type: "message_sent",
         data: { messageId, timestamp: new Date().toISOString() },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Senden der Nachricht:", error);
       this.sendMessage(ws, {
         type: "error",
@@ -345,7 +345,7 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Typing-Event:", error);
     }
   }
@@ -396,7 +396,7 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Markieren als gelesen:", error);
     }
   }
@@ -440,7 +440,7 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Beitreten zur Unterhaltung:", error);
     }
   }
@@ -493,7 +493,7 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Senden des User-Status:", error);
     }
   }
@@ -566,9 +566,9 @@ export class ChatWebSocketServer {
           content: message.content,
           sender_id: message.sender_id,
           sender_name: sender
-            ? [sender.first_name ?? "", sender.last_name ?? ""]
+            ? ([sender.first_name ?? "", sender.last_name ?? ""]
                 .filter((n: string) => n)
-                .join(" ") || "Unbekannter Benutzer"
+                .join(" ") ?? "Unbekannter Benutzer")
             : "Unbekannter Benutzer",
           first_name: sender?.first_name ?? "",
           last_name: sender?.last_name ?? "",
@@ -595,7 +595,7 @@ export class ChatWebSocketServer {
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Verarbeiten geplanter Nachrichten:", error);
     }
   }
@@ -684,7 +684,7 @@ export class ChatWebSocketServer {
             'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
             [message.message_id],
           );
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(
             `Fehler beim Zustellen der Nachricht ${message.message_id}:`,
             error,
@@ -714,7 +714,7 @@ export class ChatWebSocketServer {
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         "Fehler beim Verarbeiten der Message Delivery Queue:",
         error,

@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { ValidationChain } from "express-validator";
 
-import { AuthenticatedRequest, AuthUser } from "./request.types";
+import type { AuthenticatedRequest, AuthUser } from "./request.types";
 import { RateLimiterType, RateLimiterMiddleware } from "./security.types";
 
 // Generic middleware that adds properties to request
@@ -17,10 +17,12 @@ export type MiddlewareWithRequest<T extends Request = Request> = (
 ) => Promise<void> | void;
 
 // Authentication middleware that ensures user is authenticated
-export type AuthenticationMiddleware = MiddlewareWithRequest<Request> & {
-  (req: Request, res: Response, next: NextFunction): void;
-  (req: AuthenticatedRequest, res: Response, next: NextFunction): void;
-};
+export type AuthenticationMiddleware = MiddlewareWithRequest &
+  ((
+    req: Request | AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) => void);
 
 // Role-based authorization middleware
 export type AuthorizationMiddleware = (
@@ -92,7 +94,7 @@ export function createMiddleware<T extends Request = Request>(
 export function createAuthenticatedMiddleware(
   handler: MiddlewareWithRequest<AuthenticatedRequest>,
 ): RequestHandler {
-  return ((req: Request, res: Response, next: NextFunction) => {
+  return (async (req: Request, res: Response, next: NextFunction) => {
     if (!isAuthenticated(req)) {
       return res.status(401).json({ error: "Unauthorized" });
     }

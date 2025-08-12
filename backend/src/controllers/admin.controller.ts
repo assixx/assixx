@@ -3,14 +3,15 @@
  * Handles admin log-related operations
  */
 
-import { Request, Response } from "express";
+import { Response } from "express";
 import { Pool } from "mysql2/promise";
 
 import type { RootLogCreateData as AdminLogCreateData } from "../models/rootLog";
 import adminService from "../services/admin.service";
+import { AuthenticatedRequest } from "../types/request.types";
 
 // Extended Request interface with tenant database
-interface TenantRequest extends Request {
+interface TenantRequest extends AuthenticatedRequest {
   tenantDb?: Pool;
 }
 
@@ -65,25 +66,34 @@ class AdminLogController {
    */
   async getAll(req: AdminLogQueryRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb == null) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       // Parse query parameters to appropriate types
       const filters = {
-        user_id: req.query.user_id ? parseInt(req.query.user_id) : undefined,
+        user_id:
+          req.query.user_id != null && req.query.user_id.length > 0
+            ? parseInt(req.query.user_id)
+            : undefined,
         action: req.query.action,
         entity_type: req.query.entity_type,
         start_date: req.query.start_date,
         end_date: req.query.end_date,
-        limit: req.query.limit ? parseInt(req.query.limit) : undefined,
-        offset: req.query.offset ? parseInt(req.query.offset) : undefined,
+        limit:
+          req.query.limit != null && req.query.limit.length > 0
+            ? parseInt(req.query.limit)
+            : undefined,
+        offset:
+          req.query.offset != null && req.query.offset.length > 0
+            ? parseInt(req.query.offset)
+            : undefined,
       };
 
       const result = await adminService.getAll(req.tenantDb, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in AdminLogController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -98,7 +108,7 @@ class AdminLogController {
    */
   async getById(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb == null) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -110,12 +120,12 @@ class AdminLogController {
       }
 
       const result = await adminService.getById(req.tenantDb, id);
-      if (!result) {
+      if (result == null) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in AdminLogController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -130,26 +140,27 @@ class AdminLogController {
    */
   async create(req: AdminLogCreateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb == null) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       const logData: AdminLogCreateData = {
-        user_id: req.user?.id ?? 0,
+        user_id: req.user.id,
         tenant_id: req.tenantId ?? 0,
-        action: req.body.action ?? "unknown",
+        action: req.body.action,
         ip_address: req.ip,
         entity_type: req.body.entity_type ?? undefined,
         entity_id: req.body.entity_id ?? undefined,
-        new_values: req.body.details
-          ? { details: req.body.details }
-          : undefined,
+        new_values:
+          req.body.details != null && req.body.details.length > 0
+            ? { details: req.body.details }
+            : undefined,
         user_agent: req.get("user-agent") ?? undefined,
       };
       const result = await adminService.create(req.tenantDb, logData);
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in AdminLogController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -164,7 +175,7 @@ class AdminLogController {
    */
   async update(req: AdminLogUpdateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb == null) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -177,7 +188,7 @@ class AdminLogController {
 
       const result = await adminService.update(req.tenantDb, id, req.body);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in AdminLogController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -192,7 +203,7 @@ class AdminLogController {
    */
   async delete(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb == null) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -205,7 +216,7 @@ class AdminLogController {
 
       await adminService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in AdminLogController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

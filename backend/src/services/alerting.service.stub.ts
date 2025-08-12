@@ -18,12 +18,12 @@ interface TeamsAlert {
   severity: "info" | "warning" | "critical";
   title: string;
   message: string;
-  facts?: Array<{ name: string; value: string }>;
-  actions?: Array<{
+  facts?: { name: string; value: string }[];
+  actions?: {
     type: string;
     name: string;
     target: string;
-  }>;
+  }[];
 }
 
 interface PagerDutyIncident {
@@ -96,12 +96,12 @@ export class AlertingService {
         severity: "critical",
         title,
         message,
-        fields: Object.entries(details).reduce(
+        fields: Object.entries(details).reduce<Record<string, string>>(
           (acc, [key, value]) => {
             acc[key] = String(value);
             return acc;
           },
-          {} as Record<string, string>,
+          {},
         ),
       }),
       this.sendTeamsAlert({
@@ -152,7 +152,7 @@ export class AlertingService {
           errorMessage ?? null,
         ],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to log alert to database:", error);
     }
   }

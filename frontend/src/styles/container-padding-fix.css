@@ -69,6 +69,6 @@
   }
 
   .main-content > .container:first-child {
-    padding: var(--spacing-md);
+    padding: var(--spacing-2sm);
   }
 }

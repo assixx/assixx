@@ -7,7 +7,7 @@ import { log, error as logError } from "console";
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -87,7 +87,7 @@ export const auditTrailController = {
           "Audit entries retrieved successfully",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -138,7 +138,7 @@ export const auditTrailController = {
       }
 
       res.json(successResponse(entry, "Audit entry retrieved successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -185,7 +185,7 @@ export const auditTrailController = {
       res.json(
         successResponse(stats, "Audit statistics retrieved successfully"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -244,7 +244,7 @@ export const auditTrailController = {
       res.json(
         successResponse(report, "Compliance report generated successfully"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -283,7 +283,7 @@ export const auditTrailController = {
         return;
       }
 
-      const format = (req.query.format as string) || "json";
+      const format = (req.query.format as string) ?? "json";
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
         dateFrom: req.query.dateFrom as string,
@@ -327,7 +327,7 @@ export const auditTrailController = {
           ),
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -420,7 +420,7 @@ export const auditTrailController = {
           `Deleted ${deletedCount} audit entries`,
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)

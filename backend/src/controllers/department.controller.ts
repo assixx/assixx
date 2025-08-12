@@ -85,14 +85,14 @@ class DepartmentController {
    */
   async getAll(req: DepartmentQueryRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       // Get tenant ID from request
       const tenantId = req.tenantId ?? req.user?.tenant_id;
-      if (!tenantId) {
+      if (tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
@@ -100,15 +100,26 @@ class DepartmentController {
       // Parse query parameters to appropriate types
       const filters = {
         search: req.query.search,
-        parent_id: req.query.parent_id
-          ? parseInt(req.query.parent_id)
-          : undefined,
-        manager_id: req.query.manager_id
-          ? parseInt(req.query.manager_id)
-          : undefined,
-        active: req.query.active ? req.query.active === "true" : undefined,
-        page: req.query.page ? parseInt(req.query.page) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit) : undefined,
+        parent_id:
+          req.query.parent_id !== undefined && req.query.parent_id !== ""
+            ? parseInt(req.query.parent_id)
+            : undefined,
+        manager_id:
+          req.query.manager_id !== undefined && req.query.manager_id !== ""
+            ? parseInt(req.query.manager_id)
+            : undefined,
+        active:
+          req.query.active !== undefined && req.query.active !== ""
+            ? req.query.active === "true"
+            : undefined,
+        page:
+          req.query.page !== undefined && req.query.page !== ""
+            ? parseInt(req.query.page)
+            : undefined,
+        limit:
+          req.query.limit !== undefined && req.query.limit !== ""
+            ? parseInt(req.query.limit)
+            : undefined,
         sortBy: req.query.sortBy,
         sortDir: req.query.sortDir,
       };
@@ -119,7 +130,7 @@ class DepartmentController {
         filters,
       );
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -134,7 +145,7 @@ class DepartmentController {
    */
   async getById(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -147,7 +158,7 @@ class DepartmentController {
 
       // Get tenant ID from request
       const tenantId = req.tenantId ?? req.user?.tenant_id;
-      if (!tenantId) {
+      if (tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
@@ -157,12 +168,12 @@ class DepartmentController {
         id,
         tenantId,
       );
-      if (!result) {
+      if (result === null || result === undefined) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -177,7 +188,7 @@ class DepartmentController {
    */
   async create(req: DepartmentCreateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -196,7 +207,7 @@ class DepartmentController {
         departmentData,
       );
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -211,7 +222,7 @@ class DepartmentController {
    */
   async update(req: DepartmentUpdateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -233,7 +244,7 @@ class DepartmentController {
       };
       // Get tenant ID from request
       const tenantId = req.tenantId ?? req.user?.tenant_id;
-      if (!tenantId) {
+      if (tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
@@ -245,7 +256,7 @@ class DepartmentController {
         updateData,
       );
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -260,7 +271,7 @@ class DepartmentController {
    */
   async delete(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -273,7 +284,7 @@ class DepartmentController {
 
       await departmentService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

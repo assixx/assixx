@@ -22,16 +22,10 @@ const logDir = path.join(process.cwd(), "logs");
 // }
 
 // Custom metadata interface
-interface LogMetadata {
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | null
-    | undefined
-    | object
-    | Array<unknown>;
-}
+type LogMetadata = Record<
+  string,
+  string | number | boolean | null | undefined | object | unknown[]
+>;
 
 // Custom format for better readability
 const customFormat = winston.format.printf(
@@ -41,7 +35,7 @@ const customFormat = winston.format.printf(
     timestamp,
     ...metadata
   }: winston.Logform.TransformableInfo) => {
-    let msg = `${timestamp} [${level.toUpperCase()}]: ${message}`;
+    let msg = `${String(timestamp)} [${level.toUpperCase()}]: ${String(message)}`;
     if (Object.keys(metadata).length > 0) {
       msg += ` ${JSON.stringify(metadata)}`;
     }

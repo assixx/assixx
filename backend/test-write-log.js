@@ -6,4 +6,4 @@ This is a test to see if we can write logs
 `;
 
 fs.appendFileSync("/tmp/role-switch-debug.log", testLog);
-console.log("Log written to /tmp/role-switch-debug.log");
+console.info("Log written to /tmp/role-switch-debug.log");

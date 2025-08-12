@@ -18,7 +18,11 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysql -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' || exit 1",
+        ]
       interval: 10s
       timeout: 30s
       retries: 30

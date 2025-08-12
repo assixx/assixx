@@ -83,7 +83,7 @@ export async function getOverviewReport(filters: {
       kvp: kvpMetrics,
       surveys: surveyMetrics,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     logError("[Reports Service] Error in getOverviewReport:", error);
     throw error;
   }
@@ -220,11 +220,11 @@ export async function getDepartmentReport(filters: {
       departmentId: dept.department_id,
       departmentName: dept.department_name,
       metrics: {
-        employees: parseInt(String(dept.employees)) || 0,
-        teams: parseInt(String(dept.teams)) || 0,
-        kvpSuggestions: parseInt(String(dept.kvp_suggestions)) || 0,
-        shiftCoverage: parseFloat(String(dept.shift_coverage)) || 0,
-        avgOvertime: parseFloat(String(dept.avg_overtime)) || 0,
+        employees: parseInt(String(dept.employees)) ?? 0,
+        teams: parseInt(String(dept.teams)) ?? 0,
+        kvpSuggestions: parseInt(String(dept.kvp_suggestions)) ?? 0,
+        shiftCoverage: parseFloat(String(dept.shift_coverage)) ?? 0,
+        avgOvertime: parseFloat(String(dept.avg_overtime)) ?? 0,
       },
     }),
   );
@@ -268,7 +268,7 @@ export async function getShiftReport(filters: ReportFilters) {
       0 as total_overtime_hours,
       0 as total_overtime_cost
     FROM shifts s
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${String(conditions.join(" AND "))}
   `,
     params,
   );
@@ -319,15 +319,15 @@ export async function getShiftReport(filters: ReportFilters) {
       from: dateFrom,
       to: dateTo,
     },
-    totalShifts: parseInt(String(summary.total_shifts)) || 0,
+    totalShifts: parseInt(String(summary.total_shifts)) ?? 0,
     coverage: {
-      scheduled: parseInt(String(summary.total_required)) || 0,
-      filled: parseInt(String(summary.total_filled)) || 0,
-      rate: parseFloat(String(summary.coverage_rate)) || 0,
+      scheduled: parseInt(String(summary.total_required)) ?? 0,
+      filled: parseInt(String(summary.total_filled)) ?? 0,
+      rate: parseFloat(String(summary.coverage_rate)) ?? 0,
     },
     overtime: {
-      totalHours: parseFloat(String(summary.total_overtime_hours)) || 0,
-      totalCost: parseFloat(String(summary.total_overtime_cost)) || 0,
+      totalHours: parseFloat(String(summary.total_overtime_hours)) ?? 0,
+      totalCost: parseFloat(String(summary.total_overtime_cost)) ?? 0,
       byDepartment: (overtimeByDept as Array<Record<string, unknown>>).map(
         (row) => dbToApi(row),
       ),
@@ -338,7 +338,7 @@ export async function getShiftReport(filters: ReportFilters) {
       ),
       understaffedShifts:
         parseInt(String(summary.total_shifts)) -
-        (parseInt(String(summary.total_filled ?? "0")) || 0),
+        (parseInt(String(summary.total_filled ?? "0")) ?? 0),
     },
   };
 }
@@ -379,7 +379,7 @@ export async function getKvpReport(filters: {
       SUM(CASE WHEN status = 'implemented' THEN estimated_cost ELSE 0 END) as total_cost,
       SUM(CASE WHEN status = 'implemented' THEN actual_savings ELSE 0 END) as total_savings
     FROM kvp_suggestions k
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${String(conditions.join(" AND "))}
   `,
       params,
     );
@@ -439,10 +439,10 @@ export async function getKvpReport(filters: {
         to: dateTo,
       },
       summary: {
-        totalSuggestions: parseInt(String(summary.total_suggestions)) || 0,
-        implemented: parseInt(String(summary.implemented)) || 0,
-        totalCost: parseFloat(String(summary.total_cost)) || 0,
-        totalSavings: parseFloat(String(summary.total_savings)) || 0,
+        totalSuggestions: parseInt(String(summary.total_suggestions)) ?? 0,
+        implemented: parseInt(String(summary.implemented)) ?? 0,
+        totalCost: parseFloat(String(summary.total_cost)) ?? 0,
+        totalSavings: parseFloat(String(summary.total_savings)) ?? 0,
         roi: roi,
       },
       byCategory: (byCategory as Array<Record<string, unknown>>).map((row) =>
@@ -452,7 +452,7 @@ export async function getKvpReport(filters: {
         (row) => dbToApi(row),
       ),
     };
-  } catch (error) {
+  } catch (error: unknown) {
     logError("[Reports Service] Error in getKvpReport:", error);
     throw error;
   }
@@ -576,7 +576,7 @@ interface CustomReportParams {
 }
 
 export async function generateCustomReport(params: CustomReportParams) {
-  const reportId = `RPT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const reportId = `RPT-${String(Date.now())}-${String(Math.random().toString(36).substr(2, 9))}`;
   const data: Record<string, unknown> = {};
 
   // Generate data for each requested metric
@@ -770,9 +770,9 @@ async function getEmployeeMetrics(
 
   const metrics = (resultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    total: parseInt(String(metrics.total)) || 0,
-    active: parseInt(String(metrics.active)) || 0,
-    newThisMonth: parseInt(String(metrics.new_this_month)) || 0,
+    total: parseInt(String(metrics.total)) ?? 0,
+    active: parseInt(String(metrics.active)) ?? 0,
+    newThisMonth: parseInt(String(metrics.new_this_month)) ?? 0,
   };
 }
 
@@ -800,8 +800,8 @@ async function getDepartmentMetrics(
 
   const metrics = (deptResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    total: parseInt(String(metrics.total)) || 0,
-    avgEmployeesPerDept: parseFloat(String(metrics.avg_employees)) || 0,
+    total: parseInt(String(metrics.total)) ?? 0,
+    avgEmployeesPerDept: parseFloat(String(metrics.avg_employees)) ?? 0,
   };
 }
 
@@ -825,9 +825,9 @@ async function getShiftMetrics(
 
   const metrics = (shiftResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    totalScheduled: parseInt(String(metrics.total_scheduled)) || 0,
-    overtimeHours: parseFloat(String(metrics.overtime_hours)) || 0,
-    coverageRate: parseFloat(String(metrics.coverage_rate)) || 0,
+    totalScheduled: parseInt(String(metrics.total_scheduled)) ?? 0,
+    overtimeHours: parseFloat(String(metrics.overtime_hours)) ?? 0,
+    coverageRate: parseFloat(String(metrics.coverage_rate)) ?? 0,
   };
 }
 
@@ -853,10 +853,10 @@ async function getKvpMetrics(
 
   const metrics = (kvpResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    totalSuggestions: parseInt(String(metrics.total_suggestions)) || 0,
-    implemented: parseInt(String(metrics.implemented)) || 0,
-    totalSavings: parseFloat(String(metrics.total_savings)) || 0,
-    avgROI: parseFloat(String(metrics.avg_roi)) || 0,
+    totalSuggestions: parseInt(String(metrics.total_suggestions)) ?? 0,
+    implemented: parseInt(String(metrics.implemented)) ?? 0,
+    totalSavings: parseFloat(String(metrics.total_savings)) ?? 0,
+    avgROI: parseFloat(String(metrics.avg_roi)) ?? 0,
   };
 }
 
@@ -890,8 +890,8 @@ async function getSurveyMetrics(
 
   const metrics = (surveyResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    active: parseInt(String(metrics.active_surveys)) || 0,
-    avgResponseRate: parseFloat(String(metrics.avg_response_rate)) || 0,
+    active: parseInt(String(metrics.active_surveys)) ?? 0,
+    avgResponseRate: parseFloat(String(metrics.avg_response_rate)) ?? 0,
   };
 }
 
@@ -949,7 +949,7 @@ function convertToCSV(data: Record<string, unknown>): Buffer {
   // In production, use a proper CSV library
   const lines = [];
   lines.push("Assixx Report Export");
-  lines.push(`Generated: ${new Date().toISOString()}`);
+  lines.push(`Generated: ${String(new Date().toISOString())}`);
   lines.push("");
 
   // Flatten the data structure and convert to CSV

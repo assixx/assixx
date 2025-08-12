@@ -5,8 +5,8 @@
 
 import { Response } from "express";
 
-import { RootLog } from "../../../models/rootLog.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   successResponse,
   errorResponse,
@@ -72,7 +72,7 @@ export async function getCategories(req: AuthenticatedRequest, res: Response) {
   try {
     const categories = await kvpService.getCategories(req.user.tenant_id);
     res.json(successResponse(categories));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -121,7 +121,7 @@ export async function listSuggestions(
         totalItems: result.pagination.totalItems,
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -152,7 +152,7 @@ export async function getSuggestionById(
     );
 
     res.json(successResponse(suggestion));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -216,7 +216,7 @@ export async function createSuggestion(
     });
 
     res.status(201).json(successResponse(suggestion));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -298,7 +298,7 @@ export async function updateSuggestion(
     });
 
     res.json(successResponse(suggestion));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -344,7 +344,7 @@ export async function deleteSuggestion(
       action: "delete",
       entity_type: "kvp_suggestion",
       entity_id: suggestionId,
-      details: `Gelöscht: ${(deletedSuggestion as KVPSuggestion | null)?.title}`,
+      details: `Gelöscht: ${String((deletedSuggestion as KVPSuggestion | null)?.title)}`,
       old_values: {
         title: (deletedSuggestion as KVPSuggestion | null)?.title,
         description: (deletedSuggestion as KVPSuggestion | null)?.description,
@@ -358,7 +358,7 @@ export async function deleteSuggestion(
     });
 
     res.json(successResponse({ message: "Suggestion deleted successfully" }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -386,7 +386,7 @@ export async function getComments(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(comments));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -438,7 +438,7 @@ export async function addComment(req: AuthenticatedRequest, res: Response) {
     });
 
     res.status(201).json(successResponse(comment));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -466,7 +466,7 @@ export async function getAttachments(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(attachments));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -524,7 +524,7 @@ export async function uploadAttachments(
       action: "upload_attachment",
       entity_type: "kvp_suggestion",
       entity_id: suggestionId,
-      details: `Anhänge hochgeladen: ${files.map((f) => f.filename).join(", ")}`,
+      details: `Anhänge hochgeladen: ${String(files.map((f) => f.filename).join(", "))}`,
       new_values: {
         files_count: files.length,
         file_names: files.map((f) => f.filename).join(", "),
@@ -537,7 +537,7 @@ export async function uploadAttachments(
     });
 
     res.status(201).json(successResponse(attachments));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -570,7 +570,7 @@ export async function downloadAttachment(
     // Send the file
     const attachmentData = attachment as { filePath: string; fileName: string };
     res.download(attachmentData.filePath, attachmentData.fileName);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -624,7 +624,7 @@ export async function awardPoints(req: AuthenticatedRequest, res: Response) {
     });
 
     res.status(201).json(successResponse(points));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -664,7 +664,7 @@ export async function getUserPoints(
 
     const points = await kvpService.getUserPoints(req.user.tenant_id, userId);
     res.json(successResponse(points));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -688,7 +688,7 @@ export async function getDashboardStats(
   try {
     const stats = await kvpService.getDashboardStats(req.user.tenant_id);
     res.json(successResponse(stats));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res

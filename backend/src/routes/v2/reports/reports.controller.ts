@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -31,7 +31,7 @@ export const getOverviewReport = async (
     });
 
     res.json(successResponse(report, "Overview report retrieved successfully"));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -67,7 +67,7 @@ export const getEmployeeReport = async (
     });
 
     res.json(successResponse(report, "Employee report retrieved successfully"));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -103,7 +103,7 @@ export const getDepartmentReport = async (
     res.json(
       successResponse(report, "Department report retrieved successfully"),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -139,7 +139,7 @@ export const getShiftReport = async (
     });
 
     res.json(successResponse(report, "Shift report retrieved successfully"));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -174,7 +174,7 @@ export const getKvpReport = async (
     });
 
     res.json(successResponse(report, "KVP report retrieved successfully"));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -212,7 +212,7 @@ export const getAttendanceReport = async (
     res.json(
       successResponse(report, "Attendance report retrieved successfully"),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -249,7 +249,7 @@ export const getComplianceReport = async (
     res.json(
       successResponse(report, "Compliance report retrieved successfully"),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -304,7 +304,7 @@ export const generateCustomReport = async (
     res
       .status(201)
       .json(successResponse(report, "Custom report generated successfully"));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res
@@ -366,13 +366,13 @@ export const exportReport = async (
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="assixx-${type}-report-${new Date().toISOString().split("T")[0]}.${extensions[format as keyof typeof extensions]}"`,
+      `attachment; filename="assixx-${type}-report-${String(new Date().toISOString().split("T")[0])}.${extensions[format as keyof typeof extensions]}"`,
     );
 
     // For now, return mock data
     // In production, this would generate actual files
     res.send(exportData);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && "code" in error) {
       const serviceError = error as ServiceError;
       res

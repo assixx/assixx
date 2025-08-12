@@ -129,7 +129,7 @@ export class KVPService {
     try {
       const categories = await KVPModel.getCategories();
       return categories.map((category) => dbToApi(category));
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to get categories", error);
     }
   }
@@ -188,7 +188,7 @@ export class KVPService {
           totalItems: filteredSuggestions.length,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to list suggestions",
@@ -260,7 +260,7 @@ export class KVPService {
       }
 
       return dbToApi(suggestion);
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to create suggestion",
@@ -339,7 +339,7 @@ export class KVPService {
         userRole,
       );
       return updated;
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to update suggestion",
@@ -378,7 +378,7 @@ export class KVPService {
       if (!result) {
         throw new ServiceError("SERVER_ERROR", "Failed to delete suggestion");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to delete suggestion",
@@ -402,7 +402,7 @@ export class KVPService {
     try {
       const comments = await KVPModel.getComments(suggestionId, userRole);
       return comments.map((comment) => dbToApi(comment));
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to get comments", error);
     }
   }
@@ -435,7 +435,7 @@ export class KVPService {
         isInternal: data.isInternal ?? false,
         createdAt: new Date(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to add comment", error);
     }
   }
@@ -455,7 +455,7 @@ export class KVPService {
     try {
       const attachments = await KVPModel.getAttachments(suggestionId);
       return attachments.map((attachment) => dbToApi(attachment));
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get attachments",
@@ -487,7 +487,7 @@ export class KVPService {
       });
 
       return dbToApi(result as unknown as Record<string, unknown>);
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to add attachment", error);
     }
   }
@@ -548,7 +548,7 @@ export class KVPService {
         awardedBy,
         createdAt: new Date(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to award points", error);
     }
   }
@@ -560,7 +560,7 @@ export class KVPService {
     try {
       const points = await KVPModel.getUserPoints(tenantId, userId);
       return dbToApi(points);
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get user points",
@@ -576,7 +576,7 @@ export class KVPService {
     try {
       const stats = await KVPModel.getDashboardStats(tenantId);
       return dbToApi(stats);
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get dashboard stats",

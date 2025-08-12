@@ -889,7 +889,7 @@
 
 .form-control {
   width: 100%;
-  padding: var(--spacing-md);
+  padding: var(--spacing-2sm);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(5px);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -982,7 +982,7 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md);
+  padding: var(--spacing-2sm);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -1571,6 +1571,7 @@ select.big-input:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
 }
 
 .form-switch .form-check-input {

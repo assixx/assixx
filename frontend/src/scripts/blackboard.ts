@@ -90,13 +90,13 @@ interface UserData extends User {
 }
 
 // Global variables
-let currentPage: number = 1;
-let currentFilter: string = 'all';
-let currentSearch: string = '';
-let currentSort: string = 'created_at|DESC';
+let currentPage = 1;
+let currentFilter = 'all';
+let currentSearch = '';
+let currentSort = 'created_at|DESC';
 let departments: Department[] = [];
 let teams: Team[] = [];
-let isAdmin: boolean = false;
+let isAdmin = false;
 let currentUserId: number | null = null;
 let selectedFiles: File[] = [];
 let directAttachmentFile: File | null = null;
@@ -169,7 +169,7 @@ function closeModal(modalId: string): void {
 
 // Initialize when document is ready
 // Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
-let entriesLoadingEnabled: boolean = false;
+let entriesLoadingEnabled = false;
 
 // Function to initialize blackboard
 function initializeBlackboard() {
@@ -328,7 +328,7 @@ function setupCloseButtons(): void {
   document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       // Finde das übergeordnete Modal (both modal-overlay and modal classes)
-      const modal = this.closest('.modal-overlay, .modal') as HTMLElement | null;
+      const modal = this.closest('.modal-overlay, .modal');
       if (modal) {
         closeModal(modal.id);
       } else {
@@ -356,7 +356,9 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all pills
-      document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
+      document.querySelectorAll('.filter-pill').forEach((pill) => {
+        pill.classList.remove('active');
+      });
       // Add active class to clicked pill
       this.classList.add('active');
 
@@ -459,7 +461,9 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all color options
-      document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
+      document.querySelectorAll('.color-option').forEach((option) => {
+        option.classList.remove('active');
+      });
       // Add active class to clicked option
       this.classList.add('active');
     });
@@ -672,13 +676,13 @@ async function loadEntries(): Promise<void> {
         response = {
           ok: true,
           status: 200,
-          json: () => Promise.resolve(data),
+          json: async () => Promise.resolve(data),
         };
       } catch (error) {
         response = {
           ok: false,
           status: (error as { status?: number }).status ?? 500,
-          json: () => Promise.resolve(error),
+          json: async () => Promise.resolve(error),
         };
       }
     } else {
@@ -915,7 +919,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   let attachmentSize = 'medium';
 
   if (isDirectAttachment) {
-    const sizeMatch = entry.content.match(/\[Attachment:(small|medium|large)\]/);
+    const sizeMatch = /\[Attachment:(small|medium|large)\]/.exec(entry.content);
     if (sizeMatch) {
       attachmentSize = sizeMatch[1];
     }
@@ -1037,15 +1041,15 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
 
   // Show actions on hover
   if (canEdit) {
-    const card = container.querySelector(`.${cardClass}`) as HTMLElement | null;
+    const card = container.querySelector(`.${cardClass}`);
     if (card) {
       card.addEventListener('mouseenter', () => {
-        const actions = card.querySelector('.entry-actions') as HTMLElement | null;
-        if (actions) actions.style.opacity = '1';
+        const actions = card.querySelector('.entry-actions');
+        if (actions) (actions as HTMLElement).style.opacity = '1';
       });
       card.addEventListener('mouseleave', () => {
-        const actions = card.querySelector('.entry-actions') as HTMLElement | null;
-        if (actions) actions.style.opacity = '0';
+        const actions = card.querySelector('.entry-actions');
+        if (actions) (actions as HTMLElement).style.opacity = '0';
       });
     }
   }
@@ -1082,7 +1086,9 @@ function updatePagination(pagination: PaginationInfo): void {
     const prevBtn = document.createElement('button');
     prevBtn.className = 'btn btn-sm btn-secondary';
     prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prevBtn.onclick = () => changePage(currentPage - 1);
+    prevBtn.onclick = () => {
+      changePage(currentPage - 1);
+    };
     paginationContainer.appendChild(prevBtn);
   }
 
@@ -1092,7 +1098,9 @@ function updatePagination(pagination: PaginationInfo): void {
       const pageBtn = document.createElement('button');
       pageBtn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
       pageBtn.textContent = i.toString();
-      pageBtn.onclick = () => changePage(i);
+      pageBtn.onclick = () => {
+        changePage(i);
+      };
       paginationContainer.appendChild(pageBtn);
     } else if (i === currentPage - 3 || i === currentPage + 3) {
       const dots = document.createElement('span');
@@ -1107,7 +1115,9 @@ function updatePagination(pagination: PaginationInfo): void {
     const nextBtn = document.createElement('button');
     nextBtn.className = 'btn btn-sm btn-secondary';
     nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    nextBtn.onclick = () => changePage(currentPage + 1);
+    nextBtn.onclick = () => {
+      changePage(currentPage + 1);
+    };
     paginationContainer.appendChild(nextBtn);
   }
 }
@@ -1213,8 +1223,8 @@ async function saveEntry(): Promise<void> {
   if (!token) return;
 
   // Get selected color
-  const selectedColor = document.querySelector('.color-option.active') as HTMLElement | null;
-  const color = selectedColor?.dataset.color ?? '#f8f9fa';
+  const selectedColor = document.querySelector('.color-option.active');
+  const color = (selectedColor as HTMLElement)?.dataset.color ?? '#f8f9fa';
 
   const entryData = {
     title: formData.get('title') as string,
@@ -1249,9 +1259,9 @@ async function saveEntry(): Promise<void> {
           },
           { version: 'v2' },
         );
-        response = { ok: true, json: () => Promise.resolve(data) };
+        response = { ok: true, json: async () => Promise.resolve(data) };
       } catch (error) {
-        response = { ok: false, json: () => Promise.resolve(error as unknown) };
+        response = { ok: false, json: async () => Promise.resolve(error) };
       }
     } else {
       const url = entryId ? `/api/blackboard/${entryId}` : '/api/blackboard';
@@ -1342,7 +1352,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
     document.querySelectorAll('.color-option').forEach((option) => {
       option.classList.remove('active');
     });
-    const colorOption = document.querySelector(`.color-option[data-color="${entry.color}"]`) as HTMLElement | null;
+    const colorOption = document.querySelector(`.color-option[data-color="${entry.color}"]`);
     if (colorOption) {
       colorOption.classList.add('active');
     }
@@ -1382,9 +1392,9 @@ async function uploadAttachments(entryId: number): Promise<void> {
           },
           { version: 'v2', contentType: '' },
         );
-        response = { ok: true, json: () => Promise.resolve({}) };
+        response = { ok: true, json: async () => Promise.resolve({}) };
       } catch (error) {
-        response = { ok: false, json: () => Promise.resolve(error as unknown) };
+        response = { ok: false, json: async () => Promise.resolve(error) };
       }
     } else {
       response = await fetch(`/api${endpoint}`, {
@@ -1505,9 +1515,9 @@ async function performDelete(entryId: number): Promise<void> {
     if (useV2) {
       try {
         await apiClient.request(endpoint, { method: 'DELETE' }, { version: 'v2' });
-        response = { ok: true, json: () => Promise.resolve({}) };
+        response = { ok: true, json: async () => Promise.resolve({}) };
       } catch (error) {
-        response = { ok: false, json: () => Promise.resolve(error as unknown) };
+        response = { ok: false, json: async () => Promise.resolve(error) };
       }
     } else {
       response = await fetch(`/api${endpoint}`, {
@@ -1802,16 +1812,14 @@ async function viewEntry(entryId: number): Promise<void> {
 
         // Test direct element access
         console.info('[Blackboard] Testing direct access...');
-        const testAttachment = document.querySelector(
-          `#attachment-list-${entryId} .entry-attachment-item`,
-        ) as HTMLElement | null;
+        const testAttachment = document.querySelector(`#attachment-list-${entryId} .entry-attachment-item`);
         if (testAttachment) {
           console.info('[Blackboard] Test attachment found:', testAttachment);
           console.info('[Blackboard] Can you see and click this element?', {
-            offsetWidth: testAttachment.offsetWidth,
-            offsetHeight: testAttachment.offsetHeight,
-            offsetTop: testAttachment.offsetTop,
-            offsetLeft: testAttachment.offsetLeft,
+            offsetWidth: (testAttachment as HTMLElement).offsetWidth,
+            offsetHeight: (testAttachment as HTMLElement).offsetHeight,
+            offsetTop: (testAttachment as HTMLElement).offsetTop,
+            offsetLeft: (testAttachment as HTMLElement).offsetLeft,
           });
         }
       }, 300); // Increased timeout to ensure modal is fully rendered
@@ -1959,7 +1967,13 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       // Clean up blob URL when modal is closed
       const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
       closeButtons.forEach((btn) => {
-        btn.addEventListener('click', () => URL.revokeObjectURL(blobUrl), { once: true });
+        btn.addEventListener(
+          'click',
+          () => {
+            URL.revokeObjectURL(blobUrl);
+          },
+          { once: true },
+        );
       });
     } else if (mimeType === 'application/pdf') {
       // For PDFs, use object tag instead of iframe to avoid CSP issues
@@ -1999,7 +2013,9 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
               a.href = url;
               a.target = '_blank';
               a.click();
-              setTimeout(() => URL.revokeObjectURL(url), 100);
+              setTimeout(() => {
+                URL.revokeObjectURL(url);
+              }, 100);
             } catch (error) {
               console.error('Error opening PDF in new tab:', error);
               showError('Fehler beim Öffnen der PDF');
@@ -2011,7 +2027,13 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       // Clean up blob URL when modal is closed
       const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
       closeButtons.forEach((btn) => {
-        btn.addEventListener('click', () => URL.revokeObjectURL(blobUrl), { once: true });
+        btn.addEventListener(
+          'click',
+          () => {
+            URL.revokeObjectURL(blobUrl);
+          },
+          { once: true },
+        );
       });
     } else {
       // Unsupported file type - create elements safely
@@ -2206,7 +2228,9 @@ function setupDirectAttachHandlers(): void {
   document.querySelectorAll('.size-option').forEach((btn) => {
     btn.addEventListener('click', function (this: HTMLElement) {
       console.info('[DirectAttach] Size button clicked:', this.getAttribute('data-size'));
-      document.querySelectorAll('.size-option').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.size-option').forEach((b) => {
+        b.classList.remove('active');
+      });
       this.classList.add('active');
     });
   });
@@ -2304,7 +2328,7 @@ async function saveDirectAttachment(): Promise<void> {
   const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
   const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement | null;
   const prioritySelect = document.getElementById('directAttachPriority') as HTMLSelectElement | null;
-  const sizeOption = document.querySelector('.size-option.active') as HTMLElement | null;
+  const sizeOption = document.querySelector('.size-option.active');
 
   console.info('[DirectAttach] Elements found:', {
     globalFile: directAttachmentFile?.name ?? 'none',

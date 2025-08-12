@@ -20,13 +20,13 @@ async function loadHeaderUserInfo(): Promise<void> {
     const payload = parseJwt(token);
     if (!payload) return;
 
-    const userNameElement = document.getElementById('user-name') as HTMLElement;
+    const userNameElement = document.getElementById('user-name');
     if (userNameElement) {
       userNameElement.textContent = payload.username ?? 'User';
     }
 
     // Update role badge based on user role
-    const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+    const roleIndicator = document.getElementById('role-indicator');
     if (roleIndicator && payload.role) {
       roleIndicator.textContent = payload.role === 'admin' ? 'Admin' : payload.role === 'root' ? 'Root' : 'Mitarbeiter';
       roleIndicator.className = `role-badge ${payload.role}`;
@@ -87,7 +87,7 @@ async function loadDepartmentBadge(): Promise<void> {
   try {
     const data = await apiClient.get<{
       hasAllAccess?: boolean;
-      departments?: Array<{ name: string }>;
+      departments?: { name: string }[];
     }>('/admin-permissions/my');
 
     // Look for department badge element in user info card

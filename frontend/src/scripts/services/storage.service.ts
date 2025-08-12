@@ -8,7 +8,7 @@ import type { StorageItem } from '../../types/utils.types';
 export class StorageService {
   private prefix: string;
 
-  constructor(prefix: string = 'assixx_') {
+  constructor(prefix = 'assixx_') {
     this.prefix = prefix;
   }
 

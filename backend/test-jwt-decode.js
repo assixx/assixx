@@ -18,11 +18,11 @@ const token = jwt.sign(
   testPayload,
   process.env.JWT_SECRET || "schneeseekleerehfeedrehzehwehtee",
 );
-console.log("Generated token:", token);
+console.info("Generated token:", token);
 
 const decoded = jwt.decode(token);
-console.log("\nDecoded token:", JSON.stringify(decoded, null, 2));
+console.info("\nDecoded token:", JSON.stringify(decoded, null, 2));
 
 // Check specific fields
-console.log("\nisRoleSwitched field:", decoded.isRoleSwitched);
-console.log("Type of isRoleSwitched:", typeof decoded.isRoleSwitched);
+console.info("\nisRoleSwitched field:", decoded.isRoleSwitched);
+console.info("Type of isRoleSwitched:", typeof decoded.isRoleSwitched);

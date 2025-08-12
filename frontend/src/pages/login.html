@@ -183,7 +183,7 @@
               localStorage.removeItem('user');
               document.documentElement.style.visibility = 'visible';
             }
-          } catch (error) {
+          } catch {
             // On error, show login page
             document.documentElement.style.visibility = 'visible';
           }
@@ -225,19 +225,19 @@
         setTimeout(() => errorDiv.remove(), 10000);
       }
 
-      function showHelp() {
-        alert(
-          'Hilfe:\n\nFür neue Kunden: Klicken Sie auf "Zugangsdaten beantragen"\n\nFür bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
+      window.showHelp = function () {
+        showInfo(
+          'Hilfe: Für neue Kunden: Klicken Sie auf "Zugangsdaten beantragen". Für bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
         );
-      }
+      };
 
-      function showPasswordReset() {
-        alert('Passwort zurücksetzen - Feature kommt bald');
-      }
+      window.showPasswordReset = function () {
+        showInfo('Passwort zurücksetzen - Feature kommt bald');
+      };
 
-      function requestAccess() {
+      window.requestAccess = function () {
         window.location.href = '/';
-      }
+      };
 
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -341,7 +341,7 @@
                 window.location.href = '/employee-dashboard';
                 break;
               default:
-                alert('Unknown role');
+                showError('Unknown role');
             }
           } else {
             // Show specific error message from backend
@@ -352,7 +352,7 @@
           }
         } catch (error) {
           console.error('Login error:', error);
-          alert('An error occurred during login');
+          showError('An error occurred during login');
         }
       });
     </script>
@@ -591,7 +591,7 @@
 
       /* Alert Styles */
       .alert {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-md);
         border-radius: var(--radius-md);
         backdrop-filter: blur(20px);

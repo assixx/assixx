@@ -170,8 +170,10 @@ class ChatService {
         throw new Error("Current user not found");
       }
 
-      const userRole = currentUserInfo[0].role;
-      const userDepartmentId = currentUserInfo[0].department_id;
+      const userRole = currentUserInfo[0].role as string;
+      const userDepartmentId = currentUserInfo[0].department_id as
+        | number
+        | null;
 
       let query: string;
       let params: number[] = [];
@@ -205,32 +207,62 @@ class ChatService {
         params = [numericTenantId, numericUserId];
       } else {
         // Employees können nur User in ihrer Abteilung + alle Admins sehen
-        query = `
-          SELECT
-            u.id,
-            u.username,
-            u.first_name,
-            u.last_name,
-            u.email,
-            u.role,
-            u.department_id,
-            d.name as department,
-            NULL as employee_number,
-            NULL as position,
-            u.profile_picture as profile_image_url,
-            0 AS is_online,
-            NULL as shift_type,
-            NULL as start_time,
-            NULL as end_time,
-            NULL as location
-          FROM users u
-          LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ?
-            AND u.id != ?
-            AND (u.department_id = ? OR u.role IN ('admin', 'root'))
-          ORDER BY u.role DESC, u.last_name, u.first_name
-        `;
-        params = [numericTenantId, numericUserId, userDepartmentId];
+        // If user has no department, they can only see admins
+        if (userDepartmentId == null) {
+          query = `
+            SELECT
+              u.id,
+              u.username,
+              u.first_name,
+              u.last_name,
+              u.email,
+              u.role,
+              u.department_id,
+              d.name as department,
+              NULL as employee_number,
+              NULL as position,
+              u.profile_picture as profile_image_url,
+              0 AS is_online,
+              NULL as shift_type,
+              NULL as start_time,
+              NULL as end_time,
+              NULL as location
+            FROM users u
+            LEFT JOIN departments d ON u.department_id = d.id
+            WHERE u.tenant_id = ?
+              AND u.id != ?
+              AND u.role IN ('admin', 'root')
+            ORDER BY u.role DESC, u.last_name, u.first_name
+          `;
+          params = [numericTenantId, numericUserId];
+        } else {
+          query = `
+            SELECT
+              u.id,
+              u.username,
+              u.first_name,
+              u.last_name,
+              u.email,
+              u.role,
+              u.department_id,
+              d.name as department,
+              NULL as employee_number,
+              NULL as position,
+              u.profile_picture as profile_image_url,
+              0 AS is_online,
+              NULL as shift_type,
+              NULL as start_time,
+              NULL as end_time,
+              NULL as location
+            FROM users u
+            LEFT JOIN departments d ON u.department_id = d.id
+            WHERE u.tenant_id = ?
+              AND u.id != ?
+              AND (u.department_id = ? OR u.role IN ('admin', 'root'))
+            ORDER BY u.role DESC, u.last_name, u.first_name
+          `;
+          params = [numericTenantId, numericUserId, userDepartmentId];
+        }
       }
 
       console.info(
@@ -242,7 +274,7 @@ class ChatService {
 
       console.info("ChatService.getUsers - Found users:", users.length);
       return users;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("ChatService.getUsers - Error:", error);
       throw error;
     }
@@ -260,7 +292,10 @@ class ChatService {
         tenantId,
         userId,
       });
-      console.info("DB pool status:", db ? "exists" : "not initialized");
+      console.info(
+        "DB pool status:",
+        db != null ? "exists" : "not initialized",
+      );
 
       // Ensure parameters are numbers
       const numericTenantId = parseInt(tenantId.toString());
@@ -337,24 +372,27 @@ class ChatService {
           );
 
           // Transform last_message fields into proper object
-          const lastMessage = conv.last_message_id
-            ? {
-                id: conv.last_message_id,
-                content: conv.last_message_content,
-                created_at: conv.last_message_created_at,
-                sender_id: conv.last_message_sender_id,
-                conversation_id: conv.id,
-                is_read: false,
-                sender: {
-                  id: conv.last_message_sender_id,
-                  username: conv.last_message_sender_username,
-                },
-              }
-            : null;
+          const lastMessage =
+            conv.last_message_id != null
+              ? {
+                  id: conv.last_message_id as number,
+                  content: conv.last_message_content as string,
+                  created_at: conv.last_message_created_at as Date,
+                  sender_id: conv.last_message_sender_id as number,
+                  conversation_id: conv.id,
+                  is_read: false,
+                  sender: {
+                    id: conv.last_message_sender_id as number,
+                    username: conv.last_message_sender_username as string,
+                  },
+                }
+              : null;
 
           // Create new conversation object that extends RowDataPacket
           const transformedConv: Conversation = Object.assign(
-            Object.create(Object.getPrototypeOf(conv)),
+            Object.create(
+              Object.getPrototypeOf(conv) as object,
+            ) as Conversation,
             {
               id: conv.id,
               name: conv.name,
@@ -373,7 +411,7 @@ class ChatService {
       );
 
       return conversationsWithParticipants;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in ChatService.getConversations:", error);
       if (error instanceof Error) {
         console.error("Query error details:", error.message);
@@ -390,7 +428,7 @@ class ChatService {
     tenantId: string | number,
     userId: number,
     participantIds: number[],
-    isGroup: boolean = false,
+    isGroup = false,
     name: string | null = null,
   ): Promise<ConversationCreationResult> {
     const connection = await db.promise().getConnection();
@@ -408,7 +446,7 @@ class ChatService {
         throw new Error("Current user not found");
       }
 
-      const userRole = currentUserInfo[0].role;
+      const userRole = currentUserInfo[0].role as string;
 
       // Prüfe Berechtigung für Employees
       if (userRole === "employee" && !isGroup) {
@@ -452,7 +490,7 @@ class ChatService {
 
         if (existing.length > 0) {
           await connection.commit();
-          return { id: existing[0].id, existing: true };
+          return { id: existing[0].id as number, existing: true };
         }
       }
 
@@ -480,7 +518,7 @@ class ChatService {
 
       await connection.commit();
       return { id: conversationId, existing: false };
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
       throw error;
     } finally {
@@ -495,8 +533,8 @@ class ChatService {
     tenantId: string | number,
     conversationId: number,
     userId: number,
-    limit: number = 50,
-    offset: number = 0,
+    limit = 50,
+    offset = 0,
   ): Promise<MessagesResponse> {
     // Prüfe Berechtigung
     const [participant] = await db
@@ -544,7 +582,7 @@ class ChatService {
 
     // Hole Teilnehmer für Gruppenkonversationen
     let participants: Participant[] = [];
-    if (conversationData[0]?.is_group) {
+    if (conversationData[0]?.is_group === true) {
       const [participantData] = await db.promise().query<Participant[]>(
         `SELECT u.id, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url
          FROM conversation_participants cp
@@ -595,7 +633,7 @@ class ChatService {
       throw new Error("Sender not found");
     }
 
-    const senderRole = senderInfo[0].role;
+    const senderRole = senderInfo[0].role as string;
 
     // Für Employees: Prüfe ob sie überhaupt in dieser Konversation schreiben dürfen
     if (senderRole === "employee") {
@@ -702,7 +740,7 @@ class ChatService {
       );
 
       return result[0].count;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in getUnreadCount:", error);
       return 0;
     }
@@ -736,7 +774,7 @@ class ChatService {
           [message.id, userId],
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error marking conversation as read:", error);
       throw error;
     }
@@ -782,12 +820,12 @@ class ChatService {
         [conversationId, conversationId, userId],
       );
 
-      if (!conversation[0]) {
+      if (conversation[0] == null) {
         throw new Error("Conversation not found or access denied");
       }
 
-      const isGroup = conversation[0].is_group;
-      const participantCount = conversation[0].participant_count;
+      const isGroup = conversation[0].is_group as boolean;
+      const participantCount = conversation[0].participant_count as number;
 
       if (!isGroup || participantCount <= 2) {
         // For 1:1 chats or groups with only 2 participants left, delete everything
@@ -834,7 +872,7 @@ class ChatService {
 
       await connection.commit();
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
       throw error;
     } finally {
@@ -903,7 +941,7 @@ class ChatService {
           [
             conversationId,
             addedBy,
-            `${userInfo[0].username} wurde zur Unterhaltung hinzugefügt`,
+            `${String(userInfo[0].username)} wurde zur Unterhaltung hinzugefügt`,
           ],
         );
     }
@@ -950,7 +988,7 @@ class ChatService {
           [
             conversationId,
             removedBy,
-            `${userInfo[0].username} hat die Unterhaltung verlassen`,
+            `${String(userInfo[0].username)} hat die Unterhaltung verlassen`,
           ],
         );
     }

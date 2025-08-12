@@ -48,7 +48,7 @@ export class ConnectionWrapper {
   }
 
   release(): void {
-    return this.conn.release();
+    this.conn.release();
   }
 }
 

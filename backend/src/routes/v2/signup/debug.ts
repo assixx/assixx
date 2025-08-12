@@ -55,7 +55,7 @@ router.get("/debug", async (_req: Request, res: Response) => {
         subdomainAvailable: isAvailable,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("[SIGNUP DEBUG] Error:", error);
     res.status(500).json({
       success: false,

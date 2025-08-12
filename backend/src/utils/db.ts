@@ -96,7 +96,7 @@ export async function transaction<T>(
     const result = await callback(connection);
     await connection.commit();
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     await connection.rollback();
     throw error;
   } finally {

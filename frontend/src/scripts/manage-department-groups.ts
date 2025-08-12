@@ -92,7 +92,7 @@
   }
 
   // Render group items recursively
-  function renderGroupItems(items: DepartmentGroup[], level: number = 0): string {
+  function renderGroupItems(items: DepartmentGroup[], level = 0): string {
     return items
       .map(
         (group) => `
@@ -256,7 +256,7 @@
 
     select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
 
-    function addOptions(items: DepartmentGroup[], level: number = 0) {
+    function addOptions(items: DepartmentGroup[], level = 0) {
       items.forEach((group) => {
         if (group.id !== excludeId) {
           const option = document.createElement('option');

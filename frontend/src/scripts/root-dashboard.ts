@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Elemente aus dem DOM holen
   const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm;
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
-  const dashboardContent = document.getElementById('dashboard-data') as HTMLElement;
+  const dashboardContent = document.getElementById('dashboard-data');
 
   // Event-Listener hinzufügen
   if (createAdminForm) {
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadHeaderUserInfo(): Promise<void> {
     try {
       const token = getAuthToken();
-      const userNameElement = document.getElementById('user-name') as HTMLElement;
+      const userNameElement = document.getElementById('user-name');
       const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
 
       if (!token || !userNameElement) return;
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to get readable action labels
   function getActionLabel(action: string): string {
-    const actionLabels: { [key: string]: string } = {
+    const actionLabels: Record<string, string> = {
       login: 'Anmeldung',
       logout: 'Abmeldung',
       create: 'Erstellt',
@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to get readable userRole labels
   function getuserRoleLabel(userRole: string): string {
-    const userRoleLabels: { [key: string]: string } = {
+    const userRoleLabels: Record<string, string> = {
       root: 'Root',
       admin: 'Admin',
       employee: 'Mitarbeiter',

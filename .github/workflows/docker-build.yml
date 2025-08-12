@@ -83,7 +83,7 @@ jobs:
           echo "Waiting for MySQL to be HEALTHY..."
           MAX_WAIT=120
           COUNTER=0
-          
+
           while [ $COUNTER -lt $MAX_WAIT ]; do
             HEALTH_STATUS=$(docker inspect --format "{{.State.Health.Status}}" assixx-mysql 2>/dev/null || echo "unknown")
             
@@ -112,7 +112,7 @@ jobs:
             COUNTER=$((COUNTER + 1))
             sleep 1
           done
-          
+
           # Final check
           if [ "$HEALTH_STATUS" != "healthy" ]; then
             echo "ERROR: MySQL failed to become healthy after ${MAX_WAIT} seconds"

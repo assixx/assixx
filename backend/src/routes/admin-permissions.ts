@@ -62,7 +62,7 @@ router.get(
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json({
           success: false,
           error: "Admin nicht gefunden",
@@ -70,7 +70,7 @@ router.get(
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = adminRows[0].tenant_id as number;
 
       const result = await adminPermissionService.getAdminDepartments(
         adminId,
@@ -78,7 +78,7 @@ router.get(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting admin departments:", error);
       res
         .status(500)
@@ -115,7 +115,7 @@ router.get(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting my departments:", error);
       res
         .status(500)
@@ -145,7 +145,7 @@ router.post(
       };
     };
 
-    if (!adminId) {
+    if (adminId == null || adminId === 0) {
       res.status(400).json({
         success: false,
         error: "Admin-ID ist erforderlich",
@@ -168,7 +168,7 @@ router.post(
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json({
           success: false,
           error: "Admin nicht gefunden",
@@ -176,7 +176,7 @@ router.post(
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = adminRows[0].tenant_id as number;
       logger.info("[DEBUG] Target tenant ID:", targetTenantId);
 
       const success = await adminPermissionService.setPermissions(
@@ -197,7 +197,7 @@ router.post(
           .status(500)
           .json(errorResponse("Fehler beim Setzen der Berechtigungen", 500));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error setting admin permissions:", error);
       res
         .status(500)
@@ -225,7 +225,7 @@ router.post(
       };
     };
 
-    if (!adminId) {
+    if (adminId == null || adminId === 0) {
       res.status(400).json({
         success: false,
         error: "Admin-ID ist erforderlich",
@@ -256,7 +256,7 @@ router.post(
           error: "Fehler beim Setzen der Gruppenberechtigungen",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error setting admin group permissions: ${getErrorMessage(error)}`,
       );
@@ -310,7 +310,7 @@ router.delete(
           error: "Berechtigung nicht gefunden",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error removing admin permission: ${getErrorMessage(error)}`,
       );
@@ -362,7 +362,7 @@ router.delete(
           error: "Gruppenberechtigung nicht gefunden",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error removing admin group permission: ${getErrorMessage(error)}`,
       );
@@ -453,7 +453,7 @@ router.post(
             );
             if (success) successCount++;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           errors.push(`Admin ${adminId}: ${getErrorMessage(error)}`);
         }
       }
@@ -461,9 +461,12 @@ router.post(
       res.json({
         success: true,
         message: `${successCount} von ${adminIds?.length ?? 0} Admins erfolgreich bearbeitet`,
-        errors: errors.length > 0 ? errors : undefined,
+        errors:
+          errors.length > 0
+            ? errors !== null && errors !== undefined
+            : undefined,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error in bulk permission operation: ${getErrorMessage(error)}`,
       );

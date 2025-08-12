@@ -27,7 +27,10 @@ import {
 import Document from "../models/document";
 import Feature from "../models/feature";
 import User from "../models/user";
-import { AuthenticatedRequest, PaginatedRequest } from "../types/request.types";
+import type {
+  AuthenticatedRequest,
+  PaginatedRequest,
+} from "../types/request.types";
 import { successResponse, errorResponse } from "../types/response.types";
 import emailService from "../utils/emailService";
 import { getErrorMessage } from "../utils/errorHandler";
@@ -86,15 +89,19 @@ const storage = multer.diskStorage({
     const uploadDir = getUploadDirectory("documents");
     // Create directory if it doesn't exist
     fs.mkdir(uploadDir, { recursive: true })
-      .then(() => cb(null, uploadDir))
-      .catch((err) => cb(err, uploadDir));
+      .then(() => {
+        cb(null, uploadDir);
+      })
+      .catch((err: unknown) => {
+        cb(err as Error, uploadDir);
+      });
   },
   filename(_req, file, cb) {
     // Sanitize the original filename and add timestamp
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const base = path.basename(sanitized, ext);
-    const secureFilename = `${Date.now()}-${base}${ext}`;
+    const secureFilename = `${String(Date.now())}-${base}${ext}`;
     cb(null, secureFilename);
   },
 });
@@ -238,7 +245,7 @@ router.post(
       }
 
       const { originalname } = uploadReq.file;
-      const filePath = uploadReq.file.path || "";
+      const filePath = uploadReq.file.path ?? "";
       const {
         userId,
         teamId,
@@ -265,19 +272,19 @@ router.post(
 
       switch (recipientType) {
         case "user":
-          if (!userId) {
+          if (userId == null || userId === "") {
             throw new Error("Kein Benutzer ausgewählt");
           }
           recipientData.user_id = parseInt(userId, 10);
           break;
         case "team":
-          if (!teamId) {
+          if (teamId == null || teamId === "") {
             throw new Error("Kein Team ausgewählt");
           }
           recipientData.team_id = parseInt(teamId, 10);
           break;
         case "department":
-          if (!departmentId) {
+          if (departmentId == null || departmentId === "") {
             throw new Error("Keine Abteilung ausgewählt");
           }
           recipientData.department_id = parseInt(departmentId, 10);
@@ -293,14 +300,18 @@ router.post(
       let fileContent: Buffer;
 
       // Check if we're using memory storage (in tests)
-      if (uploadReq.file.buffer) {
+      if (uploadReq.file.buffer != null) {
         // Memory storage provides the buffer directly
         fileContent = uploadReq.file.buffer;
-      } else if (filePath) {
+      } else if (
+        filePath !== null &&
+        filePath !== undefined &&
+        filePath !== ""
+      ) {
         // Disk storage - read from filesystem
         const uploadDir = getUploadDirectory("documents");
         const validatedPath = validatePath(path.basename(filePath), uploadDir);
-        if (!validatedPath) {
+        if (validatedPath == null || validatedPath === "") {
           // Safely delete the uploaded file
           await safeDeleteFile(filePath);
           res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
@@ -329,18 +340,22 @@ router.post(
         fileContent,
         category: category ?? "other",
         description: description ?? "",
-        year: year ? parseInt(year, 10) : undefined,
+        year: year != null && year !== "" ? parseInt(year, 10) : undefined,
         month: month ?? undefined,
         tenant_id: uploadReq.user.tenant_id,
         createdBy: adminId,
       });
 
       // Delete temporary file (only if using disk storage)
-      if (!uploadReq.file.buffer && filePath) {
+      if (
+        uploadReq.file.buffer == null &&
+        filePath != null &&
+        filePath !== ""
+      ) {
         try {
           // Use safeDeleteFile to prevent path injection attacks
           await safeDeleteFile(filePath);
-        } catch (unlinkErr) {
+        } catch (unlinkErr: unknown) {
           // Only warn if it's not a "file not found" error
           if ((unlinkErr as { code?: string }).code !== "ENOENT") {
             logger.warn(
@@ -371,12 +386,12 @@ router.post(
           switch (recipientType) {
             case "user":
               // Send to individual user
-              if (userId) {
+              if (userId !== null && userId !== undefined && userId !== "") {
                 const user = await User.findById(
                   parseInt(userId, 10),
                   uploadReq.user.tenant_id,
                 );
-                if (user?.email) {
+                if (user?.email != null && user.email !== "") {
                   await emailService.sendNewDocumentNotification(
                     user,
                     documentInfo,
@@ -410,7 +425,7 @@ router.post(
               break;
           }
         }
-      } catch (emailError) {
+      } catch (emailError: unknown) {
         logger.warn(
           `Could not send email notification: ${getErrorMessage(emailError)}`,
         );
@@ -423,15 +438,19 @@ router.post(
           fileName: originalname,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error uploading document: ${getErrorMessage(error)}`);
       logger.error(`Error details:`, error);
 
       // Clean up file if it was uploaded to disk
-      if (uploadReq.file?.path && !uploadReq.file.buffer) {
+      if (
+        uploadReq.file?.path != null &&
+        uploadReq.file?.path !== "" &&
+        uploadReq.file.buffer == null
+      ) {
         try {
           await safeDeleteFile(uploadReq.file.path);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
           );
@@ -560,8 +579,9 @@ router.get(
 
       const filters = {
         category,
-        userId: userId ? parseInt(userId, 10) : undefined,
-        year: year ? parseInt(year, 10) : undefined,
+        userId:
+          userId != null && userId !== "" ? parseInt(userId, 10) : undefined,
+        year: year != null && year !== "" ? parseInt(year, 10) : undefined,
         month,
         archived: archived === "true",
         tenant_id: queryReq.user.tenant_id,
@@ -589,7 +609,7 @@ router.get(
           },
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrieving documents: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -722,7 +742,7 @@ router.get(
       logger.info(
         `Document ${req.params.documentId} previewed by user ${req.user.id}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error previewing document: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -789,7 +809,7 @@ router.get(
       logger.info(
         `Document ${req.params.documentId} downloaded by user ${req.user.id}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error downloading document: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -817,7 +837,7 @@ router.put(
         `Document ${req.params.documentId} archived by admin ${req.user.id}`,
       );
       res.json(successResponse({ message: "Dokument erfolgreich archiviert" }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error archiving document: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -845,7 +865,7 @@ router.delete(
         `Document ${req.params.documentId} deleted by admin ${req.user.id}`,
       );
       res.json(successResponse({ message: "Dokument erfolgreich gelöscht" }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error deleting document: ${getErrorMessage(error)}`);
       res
         .status(500)

@@ -196,7 +196,7 @@ async function initializeSchema(db: Pool): Promise<void> {
     await createChatTables(db);
     await createSurveyTables(db);
     await createDocumentTables(db);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error initializing test database schema:", error);
     throw error;
   }
@@ -997,7 +997,7 @@ export async function cleanupTestData(): Promise<void> {
     // WICHTIG: Verbindung NICHT schließen - Tests können sie weiterverwenden
     // await testDb.end();
     // testDb = null;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error cleaning up test data:", error);
   }
 }
@@ -1258,7 +1258,7 @@ export async function getAuthToken(
       username,
     });
     throw new Error(
-      `Failed to get auth token for ${username}: ${response.body.message ?? JSON.stringify(response.body)}`,
+      `Failed to get auth token for ${username}: ${String(response.body.message ?? JSON.stringify(response.body))}`,
     );
   }
 

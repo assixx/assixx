@@ -11,7 +11,7 @@ import { executeQuery } from "../database";
 import { createLog } from "../routes/logs.js";
 import authService from "../services/auth.service";
 import userService from "../services/user.service";
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { successResponse, errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
 
@@ -50,7 +50,7 @@ class AuthController {
   /**
    * Check if user is authenticated
    */
-  async checkAuth(req: AuthenticatedRequest, res: Response): Promise<void> {
+  checkAuth(req: AuthenticatedRequest, res: Response): void {
     try {
       // If middleware passes, user is authenticated
       res.json(
@@ -63,7 +63,7 @@ class AuthController {
           },
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in auth check:", error);
       res.status(500).json(errorResponse("Serverfehler", 500));
     }
@@ -82,7 +82,7 @@ class AuthController {
         req.user.tenant_id,
       );
 
-      if (!user) {
+      if (user === null) {
         res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
@@ -95,16 +95,30 @@ class AuthController {
           [req.user.tenant_id],
         );
 
-        if (tenantRows[0]) {
+        if (tenantRows.length > 0) {
           // Check company_name first, fall back to name if empty
-          // Use explicit checks to handle empty strings
-          if (tenantRows[0].company_name && tenantRows[0].company_name !== "") {
-            tenantName = tenantRows[0].company_name;
-          } else if (tenantRows[0].name) {
-            tenantName = tenantRows[0].name;
+          // Use nullish coalescing and proper string checks
+          const companyName = tenantRows[0].company_name as
+            | string
+            | null
+            | undefined;
+          const name = tenantRows[0].name as string | null | undefined;
+
+          if (
+            companyName !== null &&
+            companyName !== undefined &&
+            companyName.trim() !== ""
+          ) {
+            tenantName = companyName;
+          } else if (
+            name !== null &&
+            name !== undefined &&
+            name.trim() !== ""
+          ) {
+            tenantName = name;
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn("Failed to get tenant name:", error);
       }
 
@@ -114,7 +128,7 @@ class AuthController {
           tenantName,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in get user profile:", error);
       res.status(500).json(errorResponse("Serverfehler", 500));
     }
@@ -128,10 +142,18 @@ class AuthController {
     try {
       const { username, password, fingerprint } = req.body;
       console.info("[DEBUG] Login attempt for username:", username);
-      console.info("[DEBUG] Browser fingerprint provided:", !!fingerprint);
+      console.info(
+        "[DEBUG] Browser fingerprint provided:",
+        fingerprint !== undefined,
+      );
 
       // Validate input
-      if (!username || !password) {
+      if (
+        username === undefined ||
+        username === "" ||
+        password === undefined ||
+        password === ""
+      ) {
         console.info("[DEBUG] Missing username or password");
         res
           .status(400)
@@ -142,9 +164,11 @@ class AuthController {
       }
 
       // Get tenant subdomain from header if provided
-      const tenantSubdomain = req.headers["x-tenant-subdomain"] as
-        | string
-        | undefined;
+      const tenantSubdomainHeader = req.headers["x-tenant-subdomain"];
+      const tenantSubdomain =
+        typeof tenantSubdomainHeader === "string"
+          ? tenantSubdomainHeader
+          : undefined;
 
       // Authenticate user with fingerprint and tenant validation
       console.info("[DEBUG] Calling authService.authenticateUser");
@@ -156,7 +180,10 @@ class AuthController {
         fingerprint,
         tenantSubdomain,
       );
-      console.info("[DEBUG] Auth result:", result ? "Success" : "Failed");
+      console.info(
+        "[DEBUG] Auth result:",
+        result.success ? "Success" : "Failed",
+      );
       console.info("[DEBUG] Auth result details:", JSON.stringify(result));
 
       if (!result.success) {
@@ -166,7 +193,7 @@ class AuthController {
             "INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())",
             [username, req.ip ?? "unknown", false],
           );
-        } catch (trackError) {
+        } catch (trackError: unknown) {
           logger.error("Failed to track login attempt:", trackError);
         }
 
@@ -177,7 +204,7 @@ class AuthController {
       }
 
       // Set token as httpOnly cookie for HTML pages
-      if (!result.token) {
+      if (result.token === "") {
         res
           .status(500)
           .json(errorResponse("Token-Generierung fehlgeschlagen", 500));
@@ -191,7 +218,7 @@ class AuthController {
       });
 
       // Log successful login
-      if (result.user) {
+      if (result.user !== null) {
         await createLog(
           result.user.id,
           result.user.tenant_id,
@@ -209,7 +236,7 @@ class AuthController {
             "INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())",
             [username, req.ip ?? "unknown", true],
           );
-        } catch (trackError) {
+        } catch (trackError: unknown) {
           logger.error("Failed to track successful login attempt:", trackError);
         }
       }
@@ -226,7 +253,7 @@ class AuthController {
           "Login erfolgreich",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Login error:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -272,7 +299,7 @@ class AuthController {
         .json(
           successResponse({ user: result.user }, "Registrierung erfolgreich"),
         );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Registration error:", error);
       res
         .status(500)
@@ -299,24 +326,24 @@ class AuthController {
 
       // Invalidate session in database if session validation is enabled
       const token = req.headers.authorization?.split(" ")[1];
-      if (token) {
+      if (token !== undefined && token.trim() !== "") {
         try {
           const jwt = await import("jsonwebtoken");
           const jwtSecret = process.env.JWT_SECRET;
-          if (!jwtSecret) {
+          if (jwtSecret === undefined || jwtSecret === "") {
             throw new Error("JWT_SECRET not configured");
           }
           const decoded = jwt.default.verify(token, jwtSecret) as JwtPayload & {
             sessionId?: string;
             id?: number;
           };
-          if (decoded.sessionId) {
+          if (decoded.sessionId !== undefined && decoded.sessionId !== "") {
             await executeQuery(
               "UPDATE user_sessions SET expires_at = NOW() WHERE session_id = ? AND user_id = ?",
               [decoded.sessionId, req.user.id],
             );
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn("Failed to invalidate session:", error);
         }
       }
@@ -342,13 +369,13 @@ class AuthController {
       const userId = req.user.id;
       const user = await userService.getUserById(userId, req.user.tenant_id);
 
-      if (!user) {
+      if (user === null) {
         res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
       // Check if user is active
-      if (!user.is_active) {
+      if (user.is_active === false) {
         res.status(403).json(errorResponse("Benutzerkonto ist inaktiv", 403));
         return;
       }
@@ -368,7 +395,7 @@ class AuthController {
           },
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[AUTH] Validation error:", error);
       res.status(500).json(errorResponse("Interner Serverfehler", 500));
     }
@@ -382,10 +409,14 @@ class AuthController {
     res: Response,
   ): Promise<void> {
     try {
-      const { fingerprint } = req.body as { fingerprint?: string };
+      const requestBody = req.body as { fingerprint?: unknown };
+      const fingerprint =
+        typeof requestBody.fingerprint === "string"
+          ? requestBody.fingerprint
+          : undefined;
       const user = req.user;
 
-      if (!fingerprint || !user) {
+      if (fingerprint === undefined || fingerprint === "") {
         res.json({ valid: true }); // Skip validation if no fingerprint
         return;
       }
@@ -398,7 +429,7 @@ class AuthController {
       }
       const userWithSession = user as UserWithSession;
       const sessionId = userWithSession.sessionId;
-      if (!sessionId) {
+      if (sessionId === undefined || sessionId === "") {
         res.json({ valid: true }); // Skip if no session ID
         return;
       }
@@ -417,8 +448,16 @@ class AuthController {
         return;
       }
 
-      const storedFingerprint = sessions[0].fingerprint;
-      if (storedFingerprint && storedFingerprint !== fingerprint) {
+      const storedFingerprint = sessions[0].fingerprint as
+        | string
+        | null
+        | undefined;
+      if (
+        storedFingerprint !== null &&
+        storedFingerprint !== undefined &&
+        storedFingerprint !== "" &&
+        storedFingerprint !== fingerprint
+      ) {
         logger.warn(
           `[SECURITY] Browser fingerprint mismatch for user ${user.id}`,
         );
@@ -430,7 +469,7 @@ class AuthController {
       }
 
       res.json({ valid: true });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[AUTH] Fingerprint validation error:", error);
       res.status(500).json({
         error: "Internal server error",
@@ -442,9 +481,11 @@ class AuthController {
   /**
    * Initiate password reset
    */
-  async forgotPassword(req: Request, res: Response): Promise<void> {
+  forgotPassword(req: Request, res: Response): void {
     try {
-      const { email } = req.body;
+      const requestBody = req.body as { email?: unknown };
+      const email =
+        typeof requestBody.email === "string" ? requestBody.email : "undefined";
 
       // TODO: Implement password reset logic
       // For now, just return success for tests
@@ -452,7 +493,7 @@ class AuthController {
       res
         .status(200)
         .json(successResponse(null, "Password reset E-Mail wurde gesendet"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Forgot password error:", error);
       res
         .status(500)
@@ -463,7 +504,7 @@ class AuthController {
   /**
    * Reset password with token
    */
-  async resetPassword(_req: Request, res: Response): Promise<void> {
+  resetPassword(_req: Request, res: Response): void {
     try {
       // const { token, newPassword } = req.body;
 
@@ -474,7 +515,7 @@ class AuthController {
         .json(
           successResponse(null, "Passwort wurde erfolgreich zurückgesetzt"),
         );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Reset password error:", error);
       res
         .status(500)
@@ -487,9 +528,10 @@ class AuthController {
    */
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
-      const { refreshToken } = req.body as { refreshToken: string };
+      const requestBody = req.body as { refreshToken?: unknown };
+      const refreshToken = requestBody.refreshToken;
 
-      if (!refreshToken) {
+      if (typeof refreshToken !== "string" || refreshToken.trim() === "") {
         res
           .status(400)
           .json(errorResponse("Refresh token ist erforderlich", 400));
@@ -499,7 +541,7 @@ class AuthController {
       // Attempt to refresh the access token
       const result = await authService.refreshAccessToken(refreshToken);
 
-      if (!result) {
+      if (result === null) {
         res
           .status(401)
           .json(
@@ -519,7 +561,7 @@ class AuthController {
           "Token erfolgreich erneuert",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Refresh token error:", error);
       res
         .status(500)

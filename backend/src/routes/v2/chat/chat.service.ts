@@ -239,7 +239,7 @@ export class ChatService {
 
       // Apply search filter if provided
       let filteredUsers = users;
-      if (search) {
+      if (search !== null && search !== undefined && search !== "") {
         const searchLower = search.toLowerCase();
         filteredUsers = users.filter((user) => {
           const fullName =
@@ -377,7 +377,7 @@ export class ChatService {
             u.profile_picture
           FROM conversation_participants cp
           INNER JOIN users u ON cp.user_id = u.id
-          WHERE cp.conversation_id IN (${conversationIds.map(() => "?").join(",")})
+          WHERE cp.conversation_id IN (${String(conversationIds.map(() => "?").join(","))})
         `;
 
         const [participantRows] = await execute<RowDataPacket[]>(
@@ -395,7 +395,7 @@ export class ChatService {
           LEFT JOIN conversation_participants cp 
             ON cp.conversation_id = m.conversation_id 
             AND cp.user_id = ${userId}
-          WHERE m.conversation_id IN (${conversationIds.map(() => "?").join(",")})
+          WHERE m.conversation_id IN (${String(conversationIds.map(() => "?").join(","))})
             AND m.sender_id != ${userId}
             AND m.id > COALESCE(cp.last_read_message_id, 0)
           GROUP BY m.conversation_id
@@ -471,7 +471,7 @@ export class ChatService {
           hasPrev: page > 1,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Service] getConversations error:", error);
       throw new ServiceError(
         "CONVERSATIONS_ERROR",
@@ -594,7 +594,7 @@ export class ChatService {
       }
 
       return { conversation };
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Service] createConversation error:", error);
       throw error instanceof ServiceError
         ? error
@@ -747,7 +747,7 @@ export class ChatService {
           hasPrev: page > 1,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw error instanceof ServiceError
         ? error
         : new ServiceError(
@@ -842,7 +842,7 @@ export class ChatService {
       };
 
       return { message };
-    } catch (error) {
+    } catch (error: unknown) {
       throw error instanceof ServiceError
         ? error
         : new ServiceError("SEND_MESSAGE_ERROR", "Failed to send message", 500);
@@ -898,7 +898,7 @@ export class ChatService {
         totalUnread,
         conversations,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Service] getUnreadCount error:", error);
       throw new ServiceError(
         "UNREAD_COUNT_ERROR",
@@ -963,7 +963,7 @@ export class ChatService {
       );
 
       return { markedCount: unreadCount[0]?.count ?? 0 };
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Service] markConversationAsRead error:", error);
       throw error instanceof ServiceError
         ? error
@@ -1031,7 +1031,7 @@ export class ChatService {
       );
 
       await execute(`DELETE FROM conversations WHERE id = ?`, [conversationId]);
-    } catch (error) {
+    } catch (error: unknown) {
       throw error instanceof ServiceError
         ? error
         : new ServiceError(
@@ -1115,7 +1115,7 @@ export class ChatService {
         unreadCount: 0,
         participants: convParticipants,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Service] getConversation error:", error);
       throw new ServiceError(
         "CONVERSATION_ERROR",

@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchForm = document.getElementById('employee-search-form') as HTMLFormElement;
   const searchInput = document.getElementById('employee-search-input') as HTMLInputElement;
   const departmentFilter = document.getElementById('department-filter') as HTMLSelectElement;
-  const paginationContainer = document.getElementById('pagination-container') as HTMLElement;
+  const paginationContainer = document.getElementById('pagination-container');
 
   // Event-Listener hinzufügen
   if (searchForm) {
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Laden der Mitarbeiter mit Filtern
-  async function loadEmployees(page: number = 1): Promise<void> {
+  async function loadEmployees(page = 1): Promise<void> {
     const token = getAuthToken();
     if (!token) return;
 

@@ -62,12 +62,12 @@ interface ShiftBody {
 interface WeeklyShiftBody {
   week_start: string;
   week_end: string;
-  assignments: Array<{
+  assignments: {
     employee_id: number;
     shift_date: string;
-    shift_type: "early" | "late" | "night" | string;
+    shift_type: string;
     department_id?: number;
-  }>;
+  }[];
   notes?: string;
 }
 
@@ -234,7 +234,7 @@ router.get(
       const tenantId = req.user.tenant_id ?? 1;
       const templates = await Shift.getShiftTemplates(tenantId);
       res.json(successResponse({ templates }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shift templates:", error);
       res
         .status(500)
@@ -284,7 +284,7 @@ router.post(
       res
         .status(201)
         .json(successResponse(template, "Schichtvorlage erfolgreich erstellt"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating shift template:", error);
       res
         .status(500)
@@ -402,21 +402,75 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const options: ShiftPlanFilters = {
-        department_id: req.query.department_id
-          ? parseInt(String(req.query.department_id), 10)
-          : undefined,
-        team_id: req.query.team_id
-          ? parseInt(String(req.query.team_id), 10)
-          : undefined,
-        start_date: req.query.start_date
-          ? String(req.query.start_date)
-          : undefined,
-        end_date: req.query.end_date ? String(req.query.end_date) : undefined,
-        status: req.query.status
-          ? (String(req.query.status) as "draft" | "published" | "archived")
-          : undefined,
-        page: parseInt(String(req.query.page ?? "1"), 10),
-        limit: parseInt(String(req.query.limit ?? "20"), 10),
+        department_id:
+          req.query.department_id != null && req.query.department_id !== ""
+            ? parseInt(
+                typeof req.query.department_id === "string"
+                  ? req.query.department_id
+                  : typeof req.query.department_id === "number"
+                    ? String(req.query.department_id)
+                    : "0",
+                10,
+              )
+            : undefined,
+        team_id:
+          req.query.team_id != null && req.query.team_id !== ""
+            ? parseInt(
+                typeof req.query.team_id === "string"
+                  ? req.query.team_id
+                  : typeof req.query.team_id === "number"
+                    ? String(req.query.team_id)
+                    : "0",
+                10,
+              )
+            : undefined,
+        start_date:
+          req.query.start_date != null && req.query.start_date !== ""
+            ? typeof req.query.start_date === "string"
+              ? req.query.start_date
+              : typeof req.query.start_date === "object"
+                ? JSON.stringify(req.query.start_date)
+                : String(req.query.start_date)
+            : undefined,
+        end_date:
+          req.query.end_date != null && req.query.end_date !== ""
+            ? typeof req.query.end_date === "string"
+              ? req.query.end_date
+              : typeof req.query.end_date === "object"
+                ? JSON.stringify(req.query.end_date)
+                : String(req.query.end_date)
+            : undefined,
+        status:
+          req.query.status != null && req.query.status !== ""
+            ? ((typeof req.query.status === "string"
+                ? req.query.status
+                : typeof req.query.status === "object"
+                  ? JSON.stringify(req.query.status)
+                  : String(req.query.status)) as
+                | "draft"
+                | "published"
+                | "archived")
+            : undefined,
+        page: parseInt(
+          typeof req.query.page === "string"
+            ? req.query.page
+            : req.query.page != null
+              ? typeof req.query.page === "number"
+                ? String(req.query.page)
+                : "1"
+              : "1",
+          10,
+        ),
+        limit: parseInt(
+          typeof req.query.limit === "string"
+            ? req.query.limit
+            : req.query.limit != null
+              ? typeof req.query.limit === "number"
+                ? String(req.query.limit)
+                : "20"
+              : "20",
+          10,
+        ),
       };
 
       // Use the actual model function
@@ -424,7 +478,7 @@ router.get(
       const userId = req.user.id;
       const result = await Shift.getShiftPlans(tenantId, userId, options);
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shift plans:", error);
       res
         .status(500)
@@ -467,13 +521,13 @@ router.post(
       res
         .status(201)
         .json(successResponse(plan, "Schichtplan erfolgreich erstellt"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating shift plan:", error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Erstellen des Schichtplans",
+            getErrorMessage(error) ?? "Fehler beim Erstellen des Schichtplans",
             500,
           ),
         );
@@ -497,17 +551,17 @@ router.get(
       const planId = parseInt(req.params.planId);
       const shifts = await Shift.getShiftsByPlan(
         planId,
-        req.user.tenant_id || 1,
+        req.user.tenant_id ?? 1,
         req.user.id,
       );
       res.json(successResponse({ shifts }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shifts for plan:", error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Laden der Schichten",
+            getErrorMessage(error) ?? "Fehler beim Laden der Schichten",
             500,
           ),
         );
@@ -538,8 +592,20 @@ router.get(
       const { start, end } = req.query;
 
       // Parse dates from query strings
-      const startDate = new Date(String(start));
-      const endDate = new Date(String(end));
+      const startDate = new Date(
+        typeof start === "string"
+          ? start
+          : typeof start === "object"
+            ? JSON.stringify(start)
+            : String(start),
+      );
+      const endDate = new Date(
+        typeof end === "string"
+          ? end
+          : typeof end === "object"
+            ? JSON.stringify(end)
+            : String(end),
+      );
 
       // Format dates for SQL query
       const startStr = startDate.toISOString().split("T")[0];
@@ -549,7 +615,7 @@ router.get(
 
       try {
         // Build query based on user role
-        let query = `
+        let sqlQuery = `
         SELECT
           sa.id,
           sa.shift_id,
@@ -587,22 +653,29 @@ router.get(
             [req.user.id, tenantId],
           );
 
-          if (userRows.length > 0 && userRows[0].department_id) {
-            query += " AND s.department_id = ?";
+          if (
+            userRows.length > 0 &&
+            userRows[0].department_id != null &&
+            userRows[0].department_id !== 0
+          ) {
+            sqlQuery += " AND s.department_id = ?";
             queryParams.push(userRows[0].department_id);
           }
         }
 
-        query += " ORDER BY s.date, s.start_time";
+        sqlQuery += " ORDER BY s.date, s.start_time";
 
-        const [rows] = await executeQuery<RowDataPacket[]>(query, queryParams);
+        const [rows] = await executeQuery<RowDataPacket[]>(
+          sqlQuery,
+          queryParams,
+        );
 
         res.json(
           successResponse({
             shifts: rows ?? [],
           }),
         );
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching shifts:", error);
         // Return empty array on error
         res.json(
@@ -611,7 +684,7 @@ router.get(
           }),
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shifts:", error);
       res
         .status(500)
@@ -640,7 +713,13 @@ router.get(
       const { week, department_id } = req.query;
 
       // Parse week date
-      const weekDate = new Date(String(week));
+      const weekDate = new Date(
+        typeof week === "string"
+          ? week
+          : typeof week === "object"
+            ? JSON.stringify(week)
+            : String(week),
+      );
       const weekStart = weekDate.toISOString().split("T")[0];
 
       const tenantId = req.user.tenant_id ?? 1;
@@ -654,15 +733,30 @@ router.get(
             "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
             [req.user.id, tenantId],
           );
-          if (userRows.length > 0 && userRows[0].department_id) {
-            departmentId = userRows[0].department_id;
+          if (
+            userRows.length > 0 &&
+            userRows[0].department_id != null &&
+            userRows[0].department_id !== 0
+          ) {
+            departmentId = userRows[0].department_id as number;
           }
-        } else if (department_id) {
+        } else if (
+          department_id !== null &&
+          department_id !== undefined &&
+          department_id !== ""
+        ) {
           // For admins, use the provided department_id
-          departmentId = parseInt(String(department_id), 10);
+          departmentId = parseInt(
+            typeof department_id === "string"
+              ? department_id
+              : typeof department_id === "number"
+                ? String(department_id)
+                : "0",
+            10,
+          );
         }
 
-        if (!departmentId) {
+        if (departmentId == null || departmentId === 0) {
           console.info(
             "[SHIFTS NOTES] No department_id available, returning empty notes",
           );
@@ -675,7 +769,7 @@ router.get(
         }
 
         // Query shift notes for the week and department
-        const query = `
+        const sqlQuery = `
         SELECT notes
         FROM weekly_shift_notes
         WHERE tenant_id = ?
@@ -689,7 +783,7 @@ router.get(
           departmentId,
           weekStart,
         });
-        const [rows] = await executeQuery<RowDataPacket[]>(query, [
+        const [rows] = await executeQuery<RowDataPacket[]>(sqlQuery, [
           tenantId,
           departmentId,
           weekStart,
@@ -697,23 +791,25 @@ router.get(
         console.info("[SHIFTS NOTES] Query result rows:", rows);
 
         let notes = "";
-        if (rows && rows.length > 0 && rows[0].notes) {
+        if (rows != null && rows.length > 0 && rows[0].notes != null) {
           // Convert Buffer to string if necessary
           if (Buffer.isBuffer(rows[0].notes)) {
             notes = rows[0].notes.toString("utf8");
             console.info("[SHIFTS NOTES] Converted buffer to string:", notes);
           } else if (
             typeof rows[0].notes === "object" &&
-            rows[0].notes.type === "Buffer"
+            (rows[0].notes as { type?: string }).type === "Buffer"
           ) {
             // Handle the case where it's a plain object with Buffer data
-            notes = Buffer.from(rows[0].notes.data).toString("utf8");
+            notes = Buffer.from(
+              (rows[0].notes as { data: unknown }).data as BufferConstructor,
+            ).toString("utf8");
             console.info(
               "[SHIFTS NOTES] Converted buffer object to string:",
               notes,
             );
           } else {
-            notes = rows[0].notes;
+            notes = rows[0].notes as string;
           }
         }
 
@@ -728,7 +824,7 @@ router.get(
             notes: notes ?? "",
           }),
         );
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching shift notes:", error);
         // Return empty notes on error
         res.json(
@@ -737,7 +833,7 @@ router.get(
           }),
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shift notes:", error);
       res.status(500).json(errorResponse("Fehler beim Laden der Notizen", 500));
     }
@@ -786,9 +882,18 @@ router.post(
         req.body as WeeklyShiftBody;
 
       // Check if this is a weekly shift plan save
-      if (week_start && week_end && assignments) {
+      if (
+        week_start != null &&
+        week_start !== "" &&
+        week_end != null &&
+        week_end !== "" &&
+        assignments != null &&
+        assignments.length > 0
+      ) {
         // Validate that all assignments have department_id
-        const invalidAssignments = assignments.filter((a) => !a.department_id);
+        const invalidAssignments = assignments.filter(
+          (a) => a.department_id == null || a.department_id === 0,
+        );
         if (invalidAssignments.length > 0) {
           res
             .status(400)
@@ -842,7 +947,7 @@ router.post(
             };
             const shiftTime = shiftTimes[
               assignment.shift_type as keyof typeof shiftTimes
-            ] || { start: "08:00:00", end: "16:00:00" };
+            ] ?? { start: "08:00:00", end: "16:00:00" };
 
             // Convert date and time to datetime
             const startDateTime = `${assignment.shift_date} ${shiftTime.start}`;
@@ -881,7 +986,8 @@ router.post(
           if (
             notes !== undefined &&
             assignments.length > 0 &&
-            assignments[0].department_id
+            assignments[0].department_id != null &&
+            assignments[0].department_id !== 0
           ) {
             // Ensure notes is a string
             const notesString = notes ?? "";
@@ -912,7 +1018,7 @@ router.post(
           res.json(
             successResponse(null, "Schichtplan erfolgreich gespeichert"),
           );
-        } catch (error) {
+        } catch (error: unknown) {
           // Rollback on error
           await connection.rollback();
           throw error;
@@ -939,13 +1045,13 @@ router.post(
           .status(201)
           .json(successResponse(shift, "Schicht erfolgreich erstellt"));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating shift:", error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Erstellen der Schicht",
+            getErrorMessage(error) ?? "Fehler beim Erstellen der Schicht",
             500,
           ),
         );
@@ -991,13 +1097,13 @@ router.post(
           .json(
             successResponse(assignment, "Mitarbeiter erfolgreich zugewiesen"),
           );
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error assigning employee to shift:", error);
         res
           .status(500)
           .json(
             errorResponse(
-              getErrorMessage(error) || "Fehler beim Zuweisen des Mitarbeiters",
+              getErrorMessage(error) ?? "Fehler beim Zuweisen des Mitarbeiters",
               500,
             ),
           );
@@ -1030,7 +1136,10 @@ router.get(
       const { start_date, end_date, user_id } = req.query;
 
       // Use provided user_id or current user's id
-      const targetUserId = user_id ? parseInt(user_id as string) : req.user.id;
+      const targetUserId =
+        user_id != null && user_id !== ""
+          ? parseInt(user_id as string)
+          : req.user.id;
 
       // Check if user can view this availability
       if (targetUserId !== req.user.id) {
@@ -1049,14 +1158,22 @@ router.get(
       }
 
       const availability = await Shift.getEmployeeAvailability(
-        req.user.tenant_id || 1,
+        req.user.tenant_id ?? 1,
         targetUserId,
-        String(start_date),
-        String(end_date),
+        typeof start_date === "string"
+          ? start_date
+          : typeof start_date === "object"
+            ? JSON.stringify(start_date)
+            : String(start_date),
+        typeof end_date === "string"
+          ? end_date
+          : typeof end_date === "object"
+            ? JSON.stringify(end_date)
+            : String(end_date),
       );
 
       res.json(successResponse({ availability }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching employee availability:", error);
       res
         .status(500)
@@ -1108,13 +1225,13 @@ router.post(
       res.json(
         successResponse(availability, "Verfügbarkeit erfolgreich gesetzt"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error setting employee availability:", error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Setzen der Verfügbarkeit",
+            getErrorMessage(error) ?? "Fehler beim Setzen der Verfügbarkeit",
             500,
           ),
         );
@@ -1139,24 +1256,38 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const options: ShiftExchangeFilters = {
-        status: req.query.status
-          ? (String(req.query.status) as
-              | "pending"
-              | "approved"
-              | "rejected"
-              | "cancelled")
-          : "pending",
-        limit: parseInt(String(req.query.limit ?? "50"), 10),
+        status:
+          req.query.status != null && req.query.status !== ""
+            ? ((typeof req.query.status === "string"
+                ? req.query.status
+                : typeof req.query.status === "object"
+                  ? JSON.stringify(req.query.status)
+                  : String(req.query.status)) as
+                | "pending"
+                | "approved"
+                | "rejected"
+                | "cancelled")
+            : "pending",
+        limit: parseInt(
+          typeof req.query.limit === "string"
+            ? req.query.limit
+            : req.query.limit != null
+              ? typeof req.query.limit === "number"
+                ? String(req.query.limit)
+                : "50"
+              : "50",
+          10,
+        ),
       };
 
       const requests = await Shift.getShiftExchangeRequests(
-        req.user.tenant_id || 1,
+        req.user.tenant_id ?? 1,
         req.user.id,
         options,
       );
 
       res.json(successResponse({ requests }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shift exchange requests:", error);
       res
         .status(500)
@@ -1188,13 +1319,13 @@ router.post(
       res
         .status(201)
         .json(successResponse(request, "Tauschantrag erfolgreich erstellt"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating shift exchange request:", error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Erstellen des Tauschantrags",
+            getErrorMessage(error) ?? "Fehler beim Erstellen des Tauschantrags",
             500,
           ),
         );
@@ -1225,14 +1356,22 @@ router.get(
       const { start_date, end_date } = req.query;
 
       const shifts = await Shift.getEmployeeShifts(
-        req.user.tenant_id || 1,
+        req.user.tenant_id ?? 1,
         req.user.id,
-        String(start_date),
-        String(end_date),
+        typeof start_date === "string"
+          ? start_date
+          : typeof start_date === "object"
+            ? JSON.stringify(start_date)
+            : String(start_date),
+        typeof end_date === "string"
+          ? end_date
+          : typeof end_date === "object"
+            ? JSON.stringify(end_date)
+            : String(end_date),
       );
 
       res.json(successResponse({ shifts }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching employee shifts:", error);
       res
         .status(500)
@@ -1294,7 +1433,7 @@ router.get(
           },
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching shift dashboard:", error);
       res
         .status(500)
@@ -1330,7 +1469,7 @@ router.get(
       const tenantId = req.user.tenant_id ?? 1;
 
       // Get shifts with assignments for the week
-      const query = `
+      const sqlQuery = `
       SELECT s.*, sa.user_id, sa.status as assignment_status,
              u.first_name, u.last_name, u.username,
              CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as employee_name
@@ -1341,7 +1480,7 @@ router.get(
       ORDER BY s.date ASC, s.start_time ASC
     `;
 
-      const [shifts] = await executeQuery<RowDataPacket[]>(query, [
+      const [shifts] = await executeQuery<RowDataPacket[]>(sqlQuery, [
         tenantId,
         start_date,
         end_date,
@@ -1352,7 +1491,7 @@ router.get(
           shifts,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching weekly shifts:", error);
       res
         .status(500)
@@ -1373,13 +1512,13 @@ router.get(
       query("year").notEmpty().withMessage("Year is required"),
     ]),
   ),
-  typed.auth(async (_req, res) => {
+  typed.auth((_req, res) => {
     try {
       // const { week, year } = req.query; // TODO: Use these when implementing weekly notes
 
       // For now, return empty notes
       res.json(successResponse({ notes: "" }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching weekly notes:", error);
       res
         .status(500)
@@ -1419,15 +1558,19 @@ router.post(
           "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
           [req.user.id, tenantId],
         );
-        if (userRows.length > 0 && userRows[0].department_id) {
-          departmentId = userRows[0].department_id;
+        if (
+          userRows.length > 0 &&
+          userRows[0].department_id != null &&
+          userRows[0].department_id !== 0
+        ) {
+          departmentId = userRows[0].department_id as number;
         }
-      } else if (department_id) {
+      } else if (department_id != null && department_id !== 0) {
         // For admins, use the provided department_id
         departmentId = parseInt(String(department_id), 10);
       }
 
-      if (!departmentId) {
+      if (departmentId == null || departmentId === 0) {
         console.error(
           "[SHIFTS NOTES] No department_id available for saving notes",
         );
@@ -1439,11 +1582,11 @@ router.post(
         tenantId,
         departmentId,
         weekDate,
-        notes: notes ? "Yes" : "No",
+        notes: notes != null && notes !== "" ? "Yes" : "No",
       });
 
       // Insert or update notes
-      const query = `
+      const sqlQuery = `
         INSERT INTO weekly_shift_notes (tenant_id, department_id, date, notes, created_by)
         VALUES (?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
@@ -1451,7 +1594,7 @@ router.post(
           updated_at = NOW()
       `;
 
-      await executeQuery(query, [
+      await executeQuery(sqlQuery, [
         tenantId,
         departmentId,
         weekDate,
@@ -1460,7 +1603,7 @@ router.post(
       ]);
 
       res.json(successResponse(null, "Notizen gespeichert"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving weekly notes:", error);
       res
         .status(500)
@@ -1496,7 +1639,7 @@ router.post(
         const tenantId = req.user.tenant_id ?? 1;
 
         // Insert or update notes
-        const query = `
+        const notesQuery = `
         INSERT INTO shift_notes (tenant_id, date, notes, created_by)
         VALUES (?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
@@ -1504,7 +1647,7 @@ router.post(
           updated_at = NOW()
       `;
 
-        await executeQuery(query, [
+        await executeQuery(notesQuery, [
           tenantId,
           weekStart,
           notes ?? "",
@@ -1512,7 +1655,7 @@ router.post(
         ]);
 
         res.json(successResponse(null, "Notizen gespeichert"));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error saving weekly notes:", error);
         res
           .status(500)

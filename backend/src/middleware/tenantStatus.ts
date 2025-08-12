@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from "express";
 import { RowDataPacket } from "mysql2";
 
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { query } from "../utils/db";
 import { logger } from "../utils/logger";
 
@@ -63,7 +63,7 @@ export async function checkTenantStatus(
 
     const tenant = tenantRows[0];
 
-    if (!tenant) {
+    if (tenant == null) {
       logger.error(`Tenant ${tenantId} not found in status check`);
       res.status(404).json({
         error: "Tenant not found",
@@ -118,11 +118,11 @@ export async function checkTenantStatus(
 
       default:
         logger.error(
-          `Unknown tenant deletion status: ${tenant.deletion_status}`,
+          `Unknown tenant deletion status: ${String(tenant.deletion_status)}`,
         );
         next();
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Error in tenant status middleware:", error);
     // Don't block access on middleware errors
     next();
@@ -138,7 +138,7 @@ export function requireActiveTenant(
   next: NextFunction,
 ): void {
   void checkTenantStatus(req, res, (err?: unknown) => {
-    if (err) {
+    if (err !== null && err !== undefined && err !== "") {
       next(err);
       return;
     }
@@ -156,7 +156,7 @@ export function requireActiveTenant(
     )
       .then(([rows]) => {
         const tenant = rows[0];
-        if (tenant && tenant.deletion_status !== "active") {
+        if (tenant != null && tenant.deletion_status !== "active") {
           res.status(403).json({
             error: "This action requires an active tenant",
             code: "TENANT_NOT_ACTIVE",
@@ -187,7 +187,7 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
 
     const tenant = tenantRows[0];
 
-    if (!tenant) {
+    if (tenant == null) {
       return null;
     }
 
@@ -215,7 +215,7 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
     }
 
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Error getting tenant deletion info:", error);
     return null;
   }

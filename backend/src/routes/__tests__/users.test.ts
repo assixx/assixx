@@ -250,7 +250,7 @@ describe("User Management API Endpoints", () => {
       const [rows] = await testDb.execute("SELECT * FROM users WHERE id = ?", [
         response.body.data.userId,
       ]);
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0]).toMatchObject({
         username: "newuser",
         email: "newuser@usertest1.de",
@@ -274,7 +274,7 @@ describe("User Management API Endpoints", () => {
         "SELECT password FROM users WHERE username = ?",
         ["hashtest"],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
 
       // Password should be hashed
       expect(users[0].password).not.toBe("NewPass123!");
@@ -359,8 +359,8 @@ describe("User Management API Endpoints", () => {
           .set("Authorization", `Bearer ${adminToken1}`)
           .send({
             ...newUserData,
-            username: `weak${Date.now()}`,
-            email: `weak${Date.now()}@test.de`,
+            username: `weak${String(Date.now())}`,
+            email: `weak${String(Date.now())}@test.de`,
             password,
           });
 
@@ -416,7 +416,7 @@ describe("User Management API Endpoints", () => {
         "SELECT tenant_id FROM users WHERE username = ?",
         ["autotenantuser"],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].tenant_id).toBe(tenant1Id);
     });
   });
@@ -509,7 +509,7 @@ describe("User Management API Endpoints", () => {
         "SELECT first_name, last_name, department_id FROM users WHERE id = ?",
         [employeeUser1.id],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0]).toMatchObject(updateData);
     });
 
@@ -613,8 +613,8 @@ describe("User Management API Endpoints", () => {
 
     beforeEach(async () => {
       const user = await createTestUser(testDb, {
-        username: `delete${Date.now()}`,
-        email: `delete${Date.now()}@test.de`,
+        username: `delete${String(Date.now())}`,
+        email: `delete${String(Date.now())}@test.de`,
         password: "DeleteMe123!",
         role: "employee",
         tenant_id: tenant1Id,
@@ -637,7 +637,7 @@ describe("User Management API Endpoints", () => {
         "SELECT status, deleted_at FROM users WHERE id = ?",
         [deleteUserId],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].status).toBe("inactive");
       expect(users[0].deleted_at).toBeTruthy();
     });
@@ -686,7 +686,7 @@ describe("User Management API Endpoints", () => {
       const [rows] = await testDb.execute("SELECT * FROM users WHERE id = ?", [
         deleteUserId,
       ]);
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users[0].email).toMatch(/deleted_\d+@deleted\.local/);
       expect(users[0].first_name).toBe("Deleted");
       expect(users[0].last_name).toBe("User");
@@ -724,7 +724,7 @@ describe("User Management API Endpoints", () => {
         "SELECT status FROM users WHERE id IN (?)",
         [userIds],
       );
-      const users = asTestRows<any>(rows);
+      const users = asTestRows<unknown>(rows);
       expect(users.every((u) => u.status === "active")).toBe(true);
     });
 

@@ -13,7 +13,7 @@ const router: Router = express.Router();
 
 import { authenticateToken } from "../auth";
 import Department from "../models/department";
-import Team from "../models/team";
+import Team, { type TeamCreateData, type TeamUpdateData } from "../models/team";
 import User from "../models/user";
 import { getErrorMessage } from "../utils/errorHandler";
 import { logger } from "../utils/logger";
@@ -216,15 +216,23 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
 router.post("/", async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { name, department_id, leader_id } = req.body;
+    const { name, department_id, leader_id } = req.body as {
+      name?: string;
+      department_id?: number;
+      leader_id?: number;
+    };
 
-    if (!name) {
+    if (name == null || name === "") {
       res.status(400).json({ message: "Teamname ist erforderlich" });
       return;
     }
 
     // If a department is specified, check if it exists
-    if (department_id) {
+    if (
+      department_id !== null &&
+      department_id !== undefined &&
+      department_id !== ""
+    ) {
       const department = await Department.findById(
         department_id,
         authReq.user.tenant_id,
@@ -238,7 +246,7 @@ router.post("/", async (req, res): Promise<void> => {
     }
 
     // If a team leader is specified, check if they exist
-    if (leader_id) {
+    if (leader_id !== null && leader_id !== undefined && leader_id !== "") {
       const leader = await User.findById(leader_id, authReq.user.tenant_id);
       if (!leader) {
         res
@@ -248,10 +256,13 @@ router.post("/", async (req, res): Promise<void> => {
       }
     }
 
-    const teamId = await Team.create({
-      ...req.body,
+    const teamCreateData: TeamCreateData = {
+      name,
+      department_id: department_id ?? undefined,
+      team_lead_id: leader_id ?? undefined,
       tenant_id: authReq.user.tenant_id,
-    });
+    };
+    const teamId = await Team.create(teamCreateData);
 
     logger.info(
       `Team created with ID ${teamId} by user ${authReq.user.username}`,
@@ -261,7 +272,7 @@ router.post("/", async (req, res): Promise<void> => {
       message: "Team erfolgreich erstellt",
       teamId,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Error creating team: ${getErrorMessage(error)}`);
     res.status(500).json({
       message: "Fehler beim Erstellen des Teams",
@@ -307,7 +318,7 @@ router.get("/", async (req, res): Promise<void> => {
     const authReq = req as AuthenticatedRequest;
     const teams = await Team.findAll(authReq.user.tenant_id);
     res.json(teams);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Error fetching teams: ${getErrorMessage(error)}`);
     res.status(500).json({
       message: "Fehler beim Abrufen der Teams",
@@ -374,7 +385,7 @@ router.get("/:id", async (req, res): Promise<void> => {
     }
 
     res.json(team);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Error fetching team ${req.params.id}: ${getErrorMessage(error)}`,
     );
@@ -493,24 +504,32 @@ router.get("/:id", async (req, res): Promise<void> => {
 router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { name, department_id, leader_id } = req.body;
+    const { name, department_id, leader_id } = req.body as {
+      name?: string;
+      department_id?: number;
+      leader_id?: number;
+    };
     const teamId = parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
 
-    if (!team) {
+    if (team == null) {
       res.status(404).json({ message: "Team nicht gefunden" });
       return;
     }
 
-    if (name !== undefined && !name) {
+    if (name !== undefined && (name == null || name === "")) {
       res.status(400).json({ message: "Teamname ist erforderlich" });
       return;
     }
 
     // If a department is specified, check if it exists
-    if (department_id) {
+    if (
+      department_id !== null &&
+      department_id !== undefined &&
+      department_id !== ""
+    ) {
       const department = await Department.findById(
         department_id,
         authReq.user.tenant_id,
@@ -524,7 +543,7 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
     }
 
     // If a team leader is specified, check if they exist
-    if (leader_id) {
+    if (leader_id !== null && leader_id !== undefined && leader_id !== "") {
       const leader = await User.findById(leader_id, authReq.user.tenant_id);
       if (!leader) {
         res
@@ -534,7 +553,12 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
       }
     }
 
-    const success = await Team.update(teamId, req.body);
+    const teamUpdateData: TeamUpdateData = {
+      name,
+      department_id,
+      team_lead_id: leader_id ?? undefined,
+    };
+    const success = await Team.update(teamId, teamUpdateData);
 
     if (success) {
       logger.info(`Team ${teamId} updated by user ${authReq.user.username}`);
@@ -543,7 +567,7 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
       logger.warn(`Failed to update team ${teamId}`);
       res.status(500).json({ message: "Fehler beim Aktualisieren des Teams" });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Error updating team ${req.params.id}: ${getErrorMessage(error)}`,
     );
@@ -637,7 +661,7 @@ router.delete("/:id", authenticateToken, async (req, res): Promise<void> => {
       logger.warn(`Failed to delete team ${teamId}`);
       res.status(500).json({ message: "Fehler beim Löschen des Teams" });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Error deleting team ${req.params.id}: ${getErrorMessage(error)}`,
     );
@@ -733,7 +757,7 @@ router.get("/:id/members", async (req, res): Promise<void> => {
 
     const members = await Team.getTeamMembers(teamId);
     res.json(members);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Error fetching members for team ${req.params.id}: ${getErrorMessage(error)}`,
     );
@@ -835,9 +859,9 @@ router.post(
     try {
       const authReq = req as AuthenticatedRequest;
       const teamId = parseInt(req.params.id, 10);
-      const { userId } = req.body;
+      const { userId } = req.body as { userId?: number };
 
-      if (!userId) {
+      if (userId == null || userId === 0) {
         res.status(400).json({ message: "Benutzer-ID ist erforderlich" });
         return;
       }
@@ -845,7 +869,7 @@ router.post(
       // Check if team exists
       const team = await Team.findById(teamId);
 
-      if (!team) {
+      if (team == null) {
         res.status(404).json({ message: "Team nicht gefunden" });
         return;
       }
@@ -859,23 +883,23 @@ router.post(
       }
 
       const success = await Team.addUserToTeam(
-        parseInt(userId, 10),
+        userId,
         teamId,
         authReq.user.tenant_id,
       );
 
       if (success) {
         logger.info(
-          `User ${userId} added to team ${teamId} by user ${authReq.user.username}`,
+          `User ${String(userId)} added to team ${teamId} by user ${authReq.user.username}`,
         );
         res.json({ message: "Benutzer erfolgreich zum Team hinzugefügt" });
       } else {
-        logger.warn(`Failed to add user ${userId} to team ${teamId}`);
+        logger.warn(`Failed to add user ${String(userId)} to team ${teamId}`);
         res
           .status(500)
           .json({ message: "Fehler beim Hinzufügen des Benutzers zum Team" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error adding user to team ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -992,7 +1016,7 @@ router.delete(
           .status(404)
           .json({ message: "Benutzer ist kein Mitglied dieses Teams" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error removing user from team ${req.params.id}: ${getErrorMessage(error)}`,
       );

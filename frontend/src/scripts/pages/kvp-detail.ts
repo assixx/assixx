@@ -68,7 +68,7 @@ interface Attachment {
 
 class KvpDetailPage {
   private currentUser: User | null = null;
-  private suggestionId: number = 0;
+  private suggestionId = 0;
   private suggestion: KvpSuggestion | null = null;
 
   constructor() {
@@ -648,7 +648,7 @@ class KvpDetailPage {
         rejection_reason?: string;
       }
 
-      let updateData: UpdateData = {
+      const updateData: UpdateData = {
         status: newStatus,
       };
 

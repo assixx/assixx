@@ -116,10 +116,10 @@ export interface SurveyStatistics {
   completedResponses: number;
   responseRate: number;
   averageCompletionTime?: number;
-  questionStats?: Array<{
+  questionStats?: {
     questionId: number;
     questionText: string;
     responseCount: number;
     answers?: Record<string, unknown>;
-  }>;
+  }[];
 }

@@ -6,7 +6,7 @@
 import { Response } from "express";
 import { validationResult, ValidationError } from "express-validator";
 
-import { AuthenticatedRequest } from "../../../types/request.types";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { logger } from "../../../utils/logger";
 import { ServiceError } from "../../../utils/ServiceError";
@@ -73,7 +73,7 @@ export const machinesController = {
       );
 
       res.json(successResponse(machines));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] List error:", error);
       if (error instanceof ServiceError) {
         res
@@ -119,7 +119,7 @@ export const machinesController = {
         req.tenantId,
       );
       res.json(successResponse(machine));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Get error:", error);
       if (error instanceof ServiceError) {
         res
@@ -169,7 +169,7 @@ export const machinesController = {
       );
 
       res.status(201).json(successResponse(machine));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Create error:", error);
       if (error instanceof ServiceError) {
         res
@@ -234,7 +234,7 @@ export const machinesController = {
       );
 
       res.json(successResponse(machine));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Update error:", error);
       if (error instanceof ServiceError) {
         res
@@ -284,7 +284,7 @@ export const machinesController = {
       );
 
       res.json(successResponse({ message: "Machine deleted successfully" }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Delete error:", error);
       if (error instanceof ServiceError) {
         res
@@ -325,7 +325,7 @@ export const machinesController = {
         req.tenantId,
       );
       res.json(successResponse(history));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Get maintenance history error:", error);
       if (error instanceof ServiceError) {
         res
@@ -383,7 +383,7 @@ export const machinesController = {
       );
 
       res.status(201).json(successResponse(record));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Add maintenance record error:", error);
       if (error instanceof ServiceError) {
         res
@@ -438,7 +438,7 @@ export const machinesController = {
         days,
       );
       res.json(successResponse(machines));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Get upcoming maintenance error:", error);
       if (error instanceof ServiceError) {
         res
@@ -472,7 +472,7 @@ export const machinesController = {
 
       const stats = await machinesService.getStatistics(req.tenantId);
       res.json(successResponse(stats));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Get statistics error:", error);
       if (error instanceof ServiceError) {
         res
@@ -497,7 +497,7 @@ export const machinesController = {
     try {
       const categories = await machinesService.getCategories();
       res.json(successResponse(categories));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Machines v2] Get categories error:", error);
       if (error instanceof ServiceError) {
         res

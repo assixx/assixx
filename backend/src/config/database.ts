@@ -49,9 +49,12 @@ if (USE_MOCK_DB) {
     >(sql: string, params?: unknown[]): Promise<[T, mysql.FieldPacket[]]> {
       // Einfache Mock-Daten für Entwicklung
       if (sql.includes('SELECT * FROM users WHERE role = "employee"')) {
-        return [[[] as MockUser[]], []] as unknown as [T, mysql.FieldPacket[]];
+        return Promise.resolve([[[] as MockUser[]], []] as unknown as [
+          T,
+          mysql.FieldPacket[],
+        ]);
       } else if (sql.includes("SELECT * FROM departments")) {
-        return [
+        return Promise.resolve([
           [
             [
               {
@@ -69,9 +72,9 @@ if (USE_MOCK_DB) {
             ] as MockDepartment[],
           ],
           [],
-        ] as unknown as [T, mysql.FieldPacket[]];
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("SELECT * FROM documents")) {
-        return [
+        return Promise.resolve([
           [
             [
               {
@@ -91,25 +94,25 @@ if (USE_MOCK_DB) {
             ] as MockDocument[],
           ],
           [],
-        ] as unknown as [T, mysql.FieldPacket[]];
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("COUNT(*) as count FROM users")) {
-        return [[[{ count: 0 }] as RowDataPacket[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ];
+        return Promise.resolve([
+          [[{ count: 0 }] as RowDataPacket[]],
+          [],
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("COUNT(*) as count FROM departments")) {
-        return [[[{ count: 2 }] as RowDataPacket[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ];
+        return Promise.resolve([
+          [[{ count: 2 }] as RowDataPacket[]],
+          [],
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("COUNT(*) as count FROM documents")) {
-        return [[[{ count: 2 }] as RowDataPacket[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ];
+        return Promise.resolve([
+          [[{ count: 2 }] as RowDataPacket[]],
+          [],
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("SELECT * FROM users WHERE username = ?")) {
-        if (params && params[0] === "admin") {
-          return [
+        if (params !== undefined && params[0] === "admin") {
+          return Promise.resolve([
             [
               [
                 {
@@ -125,18 +128,21 @@ if (USE_MOCK_DB) {
               ] as MockUser[],
             ],
             [],
-          ] as unknown as [T, mysql.FieldPacket[]];
+          ] as unknown as [T, mysql.FieldPacket[]]);
         }
-        return [[[]], []] as unknown as [T, mysql.FieldPacket[]];
+        return Promise.resolve([[[]], []] as unknown as [
+          T,
+          mysql.FieldPacket[],
+        ]);
       } else if (
         sql.includes(
           "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?",
         )
       ) {
         // Mock für findById
-        const userId = params ? params[0] : null;
-        if (userId == 999) {
-          return [
+        const userId = params !== undefined ? params[0] : null;
+        if (userId === 999) {
+          return Promise.resolve([
             [
               [
                 {
@@ -152,40 +158,43 @@ if (USE_MOCK_DB) {
               ] as MockUser[],
             ],
             [],
-          ] as unknown as [T, mysql.FieldPacket[]];
+          ] as unknown as [T, mysql.FieldPacket[]]);
         }
-        return [[[]], []] as unknown as [T, mysql.FieldPacket[]];
+        return Promise.resolve([[[]], []] as unknown as [
+          T,
+          mysql.FieldPacket[],
+        ]);
       } else if (
         sql.includes("UPDATE users SET") &&
         sql.includes("WHERE id = ?")
       ) {
         // Mock für update
-        return [[{ affectedRows: 1 } as ResultSetHeader], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ];
+        return Promise.resolve([
+          [{ affectedRows: 1 } as ResultSetHeader],
+          [],
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("INSERT INTO users")) {
         // Mock für create
-        return [[{ insertId: 4 } as ResultSetHeader], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ];
+        return Promise.resolve([
+          [{ insertId: 4 } as ResultSetHeader],
+          [],
+        ] as unknown as [T, mysql.FieldPacket[]]);
       } else if (sql.includes("DELETE FROM users WHERE id = ?")) {
         // Mock für delete
-        return [[{ affectedRows: 1 } as ResultSetHeader], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ];
+        return Promise.resolve([
+          [{ affectedRows: 1 } as ResultSetHeader],
+          [],
+        ] as unknown as [T, mysql.FieldPacket[]]);
       }
 
       // Standardantwort für nicht implementierte Abfragen
-      return [[[]], []] as unknown as [T, mysql.FieldPacket[]];
+      return Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
     },
     // Execute method (alias for query in mock)
     async execute<
       T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
     >(sql: string, params?: unknown[]): Promise<[T, mysql.FieldPacket[]]> {
-      return this.query<T>(sql, params);
+      return mockDb.query<T>(sql, params);
     },
     async getConnection() {
       // Mock connection object
@@ -204,18 +213,21 @@ if (USE_MOCK_DB) {
         },
         async beginTransaction() {
           // Mock transaction - do nothing
+          return Promise.resolve();
         },
         async commit() {
           // Mock commit - do nothing
+          return Promise.resolve();
         },
         async rollback() {
           // Mock rollback - do nothing
+          return Promise.resolve();
         },
         release() {
           // Mock release - do nothing
         },
       };
-      return mockConnection;
+      return Promise.resolve(mockConnection);
     },
   };
 
@@ -228,18 +240,24 @@ if (USE_MOCK_DB) {
     database:
       process.env.DB_NAME ??
       (process.env.NODE_ENV === "test" ? "main" : "main"),
-    port: process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307"),
+    port:
+      process.env.DB_PORT ?? (process.env.CI !== undefined ? "3306" : "3307"),
     NODE_ENV: process.env.NODE_ENV,
     CI: process.env.CI,
   });
 
   // Initialize pool immediately with config
   // Use port 3306 for CI, 3307 for local development
-  const defaultPort = process.env.CI ? "3306" : "3307";
+  const defaultPort =
+    process.env.CI !== undefined && process.env.CI !== "" ? "3306" : "3307";
   const defaultDatabase = process.env.NODE_ENV === "test" ? "main" : "main";
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(process.env.DB_PORT ?? defaultPort),
+    port: parseInt(
+      process.env.DB_PORT !== undefined && process.env.DB_PORT !== ""
+        ? process.env.DB_PORT
+        : defaultPort,
+    ),
     user: process.env.DB_USER ?? "assixx_user",
     password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
     database: process.env.DB_NAME ?? defaultDatabase,
@@ -280,26 +298,26 @@ if (USE_MOCK_DB) {
           console.info("[DEBUG] Database connection test successful");
           conn.release();
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error(
             "[DEBUG] Database connection test failed:",
             err instanceof Error ? err.message : "Unknown error",
           );
         });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Fehler beim Verbinden mit der Datenbank:", error);
     // Create a dummy pool that throws errors
     pool = {
       async query<
         T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
       >(): Promise<[T, mysql.FieldPacket[]]> {
-        throw new Error("Database connection failed");
+        return Promise.reject(new Error("Database connection failed"));
       },
       async execute<
         T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
       >(): Promise<[T, mysql.FieldPacket[]]> {
-        throw new Error("Database connection failed");
+        return Promise.reject(new Error("Database connection failed"));
       },
       async getConnection(): Promise<{
         query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
@@ -317,7 +335,7 @@ if (USE_MOCK_DB) {
         rollback(): Promise<void>;
         release(): void;
       }> {
-        throw new Error("Database connection failed");
+        return Promise.reject(new Error("Database connection failed"));
       },
     } as MockDatabase;
   }
@@ -329,13 +347,13 @@ export { pool };
 
 // Function to close the pool (for tests)
 export async function closePool(): Promise<void> {
-  if (pool && "end" in pool && typeof pool.end === "function") {
+  if ("end" in pool && typeof pool.end === "function") {
     try {
       // Give connections time to finish
       await new Promise((resolve) => setTimeout(resolve, 100));
       await pool.end();
       console.info("[DEBUG] Database pool closed");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[DEBUG] Error closing pool:", error);
     }
   }

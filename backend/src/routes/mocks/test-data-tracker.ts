@@ -76,16 +76,20 @@ export class TestDataTracker {
     return {
       tenants:
         tenantIds.length > 0
-          ? `WHERE id IN (${tenantIds.join(",")})`
+          ? `WHERE id IN (${String(tenantIds.join(","))})`
           : "WHERE 1=0", // Never delete if no test tenants
       users:
-        userIds.length > 0 ? `WHERE id IN (${userIds.join(",")})` : "WHERE 1=0",
+        userIds.length > 0
+          ? `WHERE id IN (${String(userIds.join(","))})`
+          : "WHERE 1=0",
       departments:
         departmentIds.length > 0
-          ? `WHERE id IN (${departmentIds.join(",")})`
+          ? `WHERE id IN (${String(departmentIds.join(","))})`
           : "WHERE 1=0",
       teams:
-        teamIds.length > 0 ? `WHERE id IN (${teamIds.join(",")})` : "WHERE 1=0",
+        teamIds.length > 0
+          ? `WHERE id IN (${String(teamIds.join(","))})`
+          : "WHERE 1=0",
     };
   }
 }

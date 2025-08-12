@@ -34,11 +34,11 @@ export interface MockTenant extends RowDataPacket {
 
 // Test database configuration - matches GitHub Actions MySQL service
 const TEST_DB_CONFIG = {
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "3306"),
-  user: process.env.DB_USER || "assixx_user",
-  password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
-  database: process.env.DB_NAME || "main",
+  host: process.env.DB_HOST ?? "localhost",
+  port: parseInt(process.env.DB_PORT ?? "3306"),
+  user: process.env.DB_USER ?? "assixx_user",
+  password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
+  database: process.env.DB_NAME ?? "main",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -146,7 +146,7 @@ export function setupCommonMocks() {
   jest.clearAllMocks();
 
   // Mock user queries
-  mockQuery.mockImplementation((sql: string, params?: any[]) => {
+  mockQuery.mockImplementation((sql: string, params?: unknown[]) => {
     if (sql.includes("SELECT * FROM users WHERE")) {
       if (sql.includes("email = ?")) {
         const email = params?.[0];
@@ -255,7 +255,7 @@ export async function createTestDatabase(): Promise<Pool> {
   // Ensure test database exists
   try {
     await pool.execute("SELECT 1");
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Test database connection failed:", error);
     throw error;
   }
@@ -302,7 +302,7 @@ export async function createTestTenant(
 export async function createTestUser(
   db: Pool,
   userData: TestUserData,
-): Promise<any> {
+): Promise<unknown> {
   const hashedPassword = await bcrypt.hash(userData.password, 10);
 
   const [result] = await db.execute(
@@ -317,8 +317,8 @@ export async function createTestUser(
       userData.tenant_id,
       userData.first_name ?? "Test",
       userData.last_name ?? "User",
-      userData.department_id || null,
-      userData.position || null,
+      userData.department_id ?? null,
+      userData.position ?? null,
       "active",
     ],
   );

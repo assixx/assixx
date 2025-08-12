@@ -367,7 +367,11 @@ describe("Role Switch API v2 - CRITICAL SECURITY TESTS", () => {
       // This is a known issue that needs to be fixed in production
       // For now, we'll test what we have
       const currentBehavior = statusCheck.body.data.originalRole === "employee";
-      if (currentBehavior) {
+      if (
+        currentBehavior !== null &&
+        currentBehavior !== undefined &&
+        currentBehavior !== ""
+      ) {
         console.warn(
           "WARNING: originalRole not preserved correctly in JWT - this is a security issue!",
         );

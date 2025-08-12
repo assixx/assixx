@@ -11,6 +11,18 @@ import { logger } from "../utils/logger";
 
 // Request interface is already extended in types/express-extensions.d.ts
 
+interface RequestWithBody extends Request {
+  body: {
+    subdomain?: string;
+    tenant_id?: number;
+    [key: string]: unknown;
+  };
+  user?: {
+    tenant_id?: number;
+    [key: string]: unknown;
+  };
+}
+
 /**
  * Extrahiert den Tenant aus der Subdomain
  * Beispiel: bosch.assixx.de -> bosch
@@ -47,7 +59,7 @@ export async function tenantMiddleware(
     let tenantSubdomain = getTenantFromHost(req.hostname);
 
     // Fallback für Entwicklung: X-Tenant-ID Header oder Query Parameter
-    if (!tenantSubdomain) {
+    if (tenantSubdomain == null || tenantSubdomain === "") {
       const headerTenant = req.headers["x-tenant-id"];
       const queryTenant = req.query.tenant;
 
@@ -60,19 +72,27 @@ export async function tenantMiddleware(
     }
 
     // Für Login/Signup: Tenant aus Body
-    if (!tenantSubdomain && req.body?.subdomain) {
-      tenantSubdomain = req.body.subdomain;
+    const reqWithBody = req as RequestWithBody;
+    if (
+      (tenantSubdomain == null || tenantSubdomain === "") &&
+      reqWithBody.body?.subdomain != null &&
+      reqWithBody.body.subdomain !== ""
+    ) {
+      tenantSubdomain = reqWithBody.body.subdomain;
     }
 
     // Fallback: Wenn User eingeloggt ist, verwende tenant_id aus JWT
-    if (!tenantSubdomain && req.user?.tenant_id) {
-      const tenant = await TenantModel.findById(req.user.tenant_id);
+    if (
+      (tenantSubdomain == null || tenantSubdomain === "") &&
+      reqWithBody.user?.tenant_id != null
+    ) {
+      const tenant = await TenantModel.findById(reqWithBody.user.tenant_id);
       if (tenant) {
         tenantSubdomain = tenant.subdomain;
       }
     }
 
-    if (!tenantSubdomain) {
+    if (tenantSubdomain == null || tenantSubdomain === "") {
       res.status(400).json({
         error:
           "Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.",
@@ -126,11 +146,11 @@ export async function tenantMiddleware(
 
     // 6. Wenn User eingeloggt ist, prüfe ob er zu diesem Tenant gehört
     if (
-      "user" in req &&
-      req.user &&
-      "tenant_id" in req.user &&
-      typeof req.user.tenant_id === "number" &&
-      req.user.tenant_id !== tenant.id
+      "user" in reqWithBody &&
+      reqWithBody.user != null &&
+      "tenant_id" in reqWithBody.user &&
+      typeof reqWithBody.user.tenant_id === "number" &&
+      reqWithBody.user.tenant_id !== tenant.id
     ) {
       res.status(403).json({
         error: "Sie haben keinen Zugriff auf diese Firma.",
@@ -143,7 +163,7 @@ export async function tenantMiddleware(
     );
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Tenant middleware error:", error);
     res.status(500).json({
       error: "Fehler beim Laden der Firmenkonfiguration",

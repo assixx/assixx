@@ -11,8 +11,8 @@ import { getAuthToken } from './auth';
 
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
 let selectedEmployeeId: number | null = null;
-let selectedEmployeeName: string = '';
-let documentCount: number = 0;
+let selectedEmployeeName = '';
+let documentCount = 0;
 
 /**
  * Zeigt das Mitarbeiter-Löschdialog an mit optionalen Archivierungsoptionen
@@ -32,13 +32,13 @@ function showDeleteEmployeeDialog(employeeId: number): void {
   fetch(`/api/users/${employeeId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-    .then((response) => {
+    .then(async (response) => {
       if (!response.ok) {
         throw new Error('Mitarbeiter konnte nicht abgerufen werden');
       }
       return response.json();
     })
-    .then((employee: User) => {
+    .then(async (employee: User) => {
       selectedEmployeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
 
       // Prüfen, ob der Mitarbeiter Dokumente hat
@@ -176,7 +176,6 @@ function processEmployeeDeletion(): void {
     // Archivierung ist derzeit nicht implementiert
 
     alert('Die Archivierungsfunktion ist derzeit nicht verfügbar. Bitte verwenden Sie die Lösch-Option.');
-    return;
   } else if (selectedOption === 'delete') {
     // Zusätzliche Bestätigung einholen, wenn Dokumente vorhanden sind
     if (documentCount > 0) {
@@ -306,7 +305,7 @@ function processEmployeeDeletion(): void {
  * Hide modal utility function
  */
 function hideModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.getElementById(modalId);
   if (modal) {
     modal.remove();
   }

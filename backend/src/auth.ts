@@ -121,7 +121,7 @@ export async function authenticateUser(
     } else {
       return { user: null, error: "INVALID_PASSWORD" };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(
       "Error during authentication for user",
       usernameOrEmail,
@@ -151,13 +151,13 @@ export function generateToken(
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
         sessionId ??
-        `sess_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`, // Cryptographically secure session ID
+        `sess_${String(Date.now())}_${String(crypto.randomBytes(16).toString("hex"))}`, // Cryptographically secure session ID
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "30m" }); // 30 Minuten
 
     return token;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`Error generating token for user ${user.username}:`, error);
     throw error;
   }
@@ -279,7 +279,7 @@ export async function authenticateToken(
             return;
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("[AUTH] Session validation error:", error);
         // Continue anyway in case of database issues
       }
@@ -386,7 +386,7 @@ export function validateToken(token: string): TokenValidationResult {
       valid: true,
       user: decoded,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     return {
       valid: false,
       error: error instanceof Error ? error.message : "Unknown error",

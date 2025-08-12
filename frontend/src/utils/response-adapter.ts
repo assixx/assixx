@@ -258,11 +258,7 @@ export class ResponseAdapter {
       web_rtc_enabled: 'webRtcEnabled',
     };
 
-    if (specialCases[str]) {
-      return specialCases[str];
-    }
-
-    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    return specialCases[str] ?? str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
   }
 
   /**
@@ -458,11 +454,7 @@ export class ResponseAdapter {
       webRtcEnabled: 'web_rtc_enabled',
     };
 
-    if (specialCases[str]) {
-      return specialCases[str];
-    }
-
-    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    return specialCases[str] ?? str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
   }
 
   /**
@@ -487,8 +479,8 @@ export class ResponseAdapter {
     ];
 
     dateFields.forEach((field) => {
-      if (data[field] && typeof data[field] === 'string') {
-        const date = new Date(data[field] as string);
+      if (data[field] != null && typeof data[field] === 'string') {
+        const date = new Date(data[field]);
         if (!isNaN(date.getTime())) {
           data[field] = date.toISOString();
         }
@@ -547,7 +539,7 @@ export class ResponseAdapter {
     ];
 
     numericFields.forEach((field) => {
-      if (data[field] && typeof data[field] === 'string') {
+      if (data[field] != null && typeof data[field] === 'string') {
         const num = Number(data[field]);
         if (!isNaN(num)) {
           data[field] = num;
@@ -596,7 +588,7 @@ export class ResponseAdapter {
     ];
 
     booleanFields.forEach((field) => {
-      if (data[field] !== undefined && data[field] !== null) {
+      if (data[field] != null) {
         if (typeof data[field] === 'string') {
           data[field] = data[field] === 'true' || data[field] === '1';
         } else if (typeof data[field] === 'number') {
@@ -631,7 +623,7 @@ export class ResponseAdapter {
 
     dateFields.forEach((field) => {
       if (data[field] instanceof Date) {
-        data[field] = (data[field] as Date).toISOString();
+        data[field] = data[field].toISOString();
       }
     });
 
@@ -735,11 +727,11 @@ export class ResponseAdapter {
   /**
    * Adapt pagination response format
    */
-  static adaptPaginationResponse(response: unknown, v2Format: boolean = true): unknown {
+  static adaptPaginationResponse(response: unknown, v2Format = true): unknown {
     if (v2Format) {
       // Convert v1 pagination to v2 format
       const responseObj = response as Record<string, unknown>;
-      if (responseObj.data && Array.isArray(responseObj.data)) {
+      if (responseObj.data != null && Array.isArray(responseObj.data)) {
         return {
           success: true,
           data: {
@@ -751,12 +743,10 @@ export class ResponseAdapter {
               totalPages:
                 responseObj.total_pages ??
                 Math.ceil(
-                  (responseObj.total !== undefined
-                    ? Number(responseObj.total)
-                    : (responseObj.data as unknown[]).length) /
-                    (responseObj.per_page !== undefined
+                  (responseObj.total != null ? Number(responseObj.total) : (responseObj.data as unknown[]).length) /
+                    (responseObj.per_page != null
                       ? Number(responseObj.per_page)
-                      : responseObj.limit !== undefined
+                      : responseObj.limit != null
                         ? Number(responseObj.limit)
                         : 20),
                 ),
@@ -782,7 +772,7 @@ export class ResponseAdapter {
       // Convert v2 pagination to v1 format
       const respObj = response as Record<string, unknown>;
       const respData = respObj.data as Record<string, unknown>;
-      if (respData?.items && respData.pagination) {
+      if (respData.items != null && respData.pagination != null) {
         const pagination = respData.pagination as Record<string, unknown>;
         return {
           data: this.fromV2Format(respData.items),
@@ -794,7 +784,7 @@ export class ResponseAdapter {
       }
 
       // Handle non-paginated responses
-      if ((response as Record<string, unknown>).data) {
+      if ((response as Record<string, unknown>).data != null) {
         return this.fromV2Format((response as Record<string, unknown>).data);
       }
 
@@ -805,7 +795,7 @@ export class ResponseAdapter {
   /**
    * Adapt error response format
    */
-  static adaptErrorResponse(error: unknown, v2Format: boolean = true): unknown {
+  static adaptErrorResponse(error: unknown, v2Format = true): unknown {
     if (v2Format) {
       // Convert v1 error to v2 format
       return {
@@ -822,7 +812,7 @@ export class ResponseAdapter {
     } else {
       // Convert v2 error to v1 format
       const errorObj = error as Record<string, unknown>;
-      if (errorObj.error) {
+      if (errorObj.error != null) {
         const errorDetails = errorObj.error as Record<string, unknown>;
         return {
           error: errorDetails.code,
@@ -838,13 +828,13 @@ export class ResponseAdapter {
    * Convert from v2 format (camelCase) to v1 format (snake_case)
    */
   static fromV2Format(data: unknown): unknown {
-    if (!data) return data;
+    if (data === null || data === undefined) return data;
 
     if (Array.isArray(data)) {
       return data.map((item) => this.fromV2Format(item));
     }
 
-    if (typeof data === 'object' && data !== null) {
+    if (typeof data === 'object') {
       const converted: Record<string, unknown> = {};
 
       for (const key in data) {
@@ -864,7 +854,7 @@ export class ResponseAdapter {
    * Adapt user response from v2 (camelCase) to v1 (snake_case) format
    */
   static adaptUserResponse(v2User: unknown): unknown {
-    if (!v2User) return v2User;
+    if (v2User === null || v2User === undefined) return v2User;
 
     // Convert from v2 to v1 format
     return this.fromV2Format(v2User);
@@ -874,7 +864,7 @@ export class ResponseAdapter {
    * Adapt user request from v1 (snake_case) to v2 (camelCase) format
    */
   static adaptUserRequest(v1User: unknown): unknown {
-    if (!v1User) return v1User;
+    if (v1User === null || v1User === undefined) return v1User;
 
     // Convert from v1 to v2 format
     return this.toV2Format(v1User);

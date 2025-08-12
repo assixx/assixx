@@ -80,7 +80,7 @@ class FeatureController {
    * Holt alle Feature Einträge
    * GET /api/feature
    */
-  async getAll(req: FeatureQueryRequest, res: Response): Promise<void> {
+  getAll(req: FeatureQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -95,12 +95,18 @@ class FeatureController {
             : req.query.is_enabled === "false"
               ? false
               : undefined,
-        page: req.query.page ? parseInt(req.query.page, 10) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+        page:
+          req.query.page !== null && req.query.page !== undefined
+            ? parseInt(req.query.page, 10)
+            : undefined,
+        limit:
+          req.query.limit !== null && req.query.limit !== undefined
+            ? parseInt(req.query.limit, 10)
+            : undefined,
       };
-      const result = await featureService.getAll(req.tenantDb, filters);
+      const result = featureService.getAll(req.tenantDb, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in FeatureController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -113,7 +119,7 @@ class FeatureController {
    * Holt einen Feature Eintrag per ID
    * GET /api/feature/:id
    */
-  async getById(req: FeatureGetRequest, res: Response): Promise<void> {
+  getById(req: FeatureGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -126,13 +132,13 @@ class FeatureController {
         return;
       }
 
-      const result = await featureService.getById(req.tenantDb, id);
+      const result = featureService.getById(req.tenantDb, id);
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in FeatureController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -145,7 +151,7 @@ class FeatureController {
    * Erstellt einen neuen Feature Eintrag
    * POST /api/feature
    */
-  async create(req: FeatureCreateRequest, res: Response): Promise<void> {
+  create(req: FeatureCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -156,11 +162,12 @@ class FeatureController {
         tenant_id: req.user?.tenantId ?? 0,
         feature_key: req.body.feature_key ?? req.body.key ?? "new_feature",
         is_enabled: req.body.is_enabled ?? false,
-        enabled_by: req.body.is_enabled ? (req.user?.id ?? null) : null,
+        enabled_by:
+          req.body.is_enabled === true ? (req.user?.id ?? null) : null,
       };
-      const result = await featureService.create(req.tenantDb, featureData);
+      const result = featureService.create(req.tenantDb, featureData);
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in FeatureController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -173,7 +180,7 @@ class FeatureController {
    * Aktualisiert einen Feature Eintrag
    * PUT /api/feature/:id
    */
-  async update(req: FeatureUpdateRequest, res: Response): Promise<void> {
+  update(req: FeatureUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -186,9 +193,9 @@ class FeatureController {
         return;
       }
 
-      const result = await featureService.update(req.tenantDb, id, req.body);
+      const result = featureService.update(req.tenantDb, id, req.body);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in FeatureController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -201,7 +208,7 @@ class FeatureController {
    * Löscht einen Feature Eintrag
    * DELETE /api/feature/:id
    */
-  async delete(req: FeatureGetRequest, res: Response): Promise<void> {
+  delete(req: FeatureGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -214,9 +221,9 @@ class FeatureController {
         return;
       }
 
-      await featureService.delete(req.tenantDb, id);
+      featureService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in FeatureController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

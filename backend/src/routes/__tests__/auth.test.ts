@@ -38,7 +38,7 @@ describe("Authentication API Endpoints", () => {
     try {
       await testDb.execute("SELECT 1");
       console.info("Database connection successful");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Database connection failed:", error);
     }
 
@@ -59,7 +59,7 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM activity_logs WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -68,7 +68,7 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM admin_logs WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -77,7 +77,7 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM user_sessions WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -86,7 +86,7 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM login_attempts WHERE username IN (?, ?)`,
           ["testuser1@authtest1.de", "testuser2@authtest2.de"],
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -95,7 +95,7 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM oauth_tokens WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -113,7 +113,7 @@ describe("Authentication API Endpoints", () => {
         "authtest1",
         "Auth Test Company 1",
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create tenant1:", error);
       throw error;
     }
@@ -124,7 +124,7 @@ describe("Authentication API Endpoints", () => {
         "authtest2",
         "Auth Test Company 2",
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create tenant2:", error);
       throw error;
     }
@@ -140,7 +140,7 @@ describe("Authentication API Endpoints", () => {
         first_name: "Test",
         last_name: "User1",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create testUser1:", error);
       throw error;
     }
@@ -155,7 +155,7 @@ describe("Authentication API Endpoints", () => {
         first_name: "Test",
         last_name: "User2",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create testUser2:", error);
       throw error;
     }
@@ -208,7 +208,9 @@ describe("Authentication API Endpoints", () => {
       // Cookie should be set
       const cookies = response.headers["set-cookie"];
       expect(cookies).toBeDefined();
-      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+      const cookieArray = Array.isArray(cookies)
+        ? cookies !== null && cookies !== undefined
+        : [cookies];
       expect(cookieArray.some((cookie) => cookie.startsWith("token="))).toBe(
         true,
       );
@@ -252,7 +254,7 @@ describe("Authentication API Endpoints", () => {
         "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
         [testUser1.id],
       );
-      const sessions = asTestRows<any>(rows);
+      const sessions = asTestRows<unknown>(rows);
       expect(sessions.length).toBeGreaterThanOrEqual(1);
       expect(sessions[0]).toMatchObject({
         user_id: testUser1.id,
@@ -358,7 +360,7 @@ describe("Authentication API Endpoints", () => {
         "SELECT COUNT(*) as count FROM login_attempts WHERE username = ? AND success = 0",
         [testUser1.username],
       );
-      const attempts = asTestRows<any>(rows);
+      const attempts = asTestRows<unknown>(rows);
       expect(attempts[0].count).toBeGreaterThanOrEqual(3);
     });
 
@@ -406,7 +408,9 @@ describe("Authentication API Endpoints", () => {
 
       // Cookie should be cleared
       const cookies = response.headers["set-cookie"];
-      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+      const cookieArray = Array.isArray(cookies)
+        ? cookies !== null && cookies !== undefined
+        : [cookies];
       expect(cookieArray.some((cookie) => cookie.includes("token=;"))).toBe(
         true,
       );
@@ -421,7 +425,7 @@ describe("Authentication API Endpoints", () => {
         "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
         [decoded.id],
       );
-      const sessionsBefore = asTestRows<any>(rowsBefore);
+      const sessionsBefore = asTestRows<unknown>(rowsBefore);
       expect(sessionsBefore.length).toBeGreaterThan(0);
 
       await request(app)
@@ -435,7 +439,7 @@ describe("Authentication API Endpoints", () => {
         "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
         [decoded.id],
       );
-      const sessionsAfter = asTestRows<any>(rowsAfter);
+      const sessionsAfter = asTestRows<unknown>(rowsAfter);
       expect(sessionsAfter).toHaveLength(0);
     });
 
@@ -667,7 +671,7 @@ describe("Authentication API Endpoints", () => {
         "SELECT * FROM password_reset_tokens WHERE user_id = ?",
         [testUser1.id],
       );
-      const tokens = asTestRows<any>(rows);
+      const tokens = asTestRows<unknown>(rows);
       expect(tokens).toHaveLength(1);
     });
 

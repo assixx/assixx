@@ -112,7 +112,7 @@ router.get(
     try {
       const features = await Feature.findAll();
       res.json(successResponse(features));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error fetching available features: ${getErrorMessage(error)}`,
       );
@@ -148,7 +148,7 @@ router.get(
 
       const features = await Feature.getTenantFeatures(requestedTenantId);
       res.json(successResponse(features));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching tenant features: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -166,7 +166,7 @@ router.get(
       const tenantId = req.user.tenant_id;
       const features = await Feature.getTenantFeatures(tenantId);
       res.json(successResponse(features));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching my features: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -192,7 +192,7 @@ router.post(
         `Feature ${featureCode} activated for tenant ${tenantId} by user ${req.user.username}`,
       );
       res.json(successResponse(null, "Feature erfolgreich aktiviert"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error activating feature: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -215,7 +215,7 @@ router.post(
         `Feature ${featureCode} deactivated for tenant ${tenantId} by user ${req.user.username}`,
       );
       res.json(successResponse(null, "Feature erfolgreich deaktiviert"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error deactivating feature: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -241,7 +241,7 @@ router.get(
         endDate as string,
       );
       res.json(successResponse(stats));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching usage stats: ${getErrorMessage(error)}`);
       res
         .status(500)
@@ -289,11 +289,11 @@ router.get(
 
       // Get activated features for each tenant
       for (const tenant of tenants) {
-        tenant.features = await Feature.getTenantFeatures(tenant.id);
+        tenant.features = await Feature.getTenantFeatures(tenant.id as number);
       }
 
       res.json(successResponse(tenants));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error fetching all tenants with features: ${getErrorMessage(error)}`,
       );

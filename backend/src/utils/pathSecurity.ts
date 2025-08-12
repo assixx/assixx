@@ -42,8 +42,8 @@ export function validatePath(filePath: string, baseDir: string): string | null {
     }
 
     return normalizedPath;
-  } catch (error) {
-    logger.error(`Error validating path: ${error}`);
+  } catch (error: unknown) {
+    logger.error(`Error validating path: ${String(error)}`);
     return null;
   }
 }
@@ -64,7 +64,7 @@ export function sanitizeFilename(filename: string): string {
 
   // Ensure filename is not empty after sanitization
   if (!sanitized || sanitized === "_") {
-    sanitized = `file_${Date.now()}`;
+    sanitized = `file_${String(Date.now())}`;
   }
 
   // Limit filename length
@@ -88,7 +88,7 @@ export function createSecurePath(baseDir: string, filename: string): string {
 
   // Validate the final path
   const validated = validatePath(sanitizedFilename, baseDir);
-  if (!validated) {
+  if (validated == null || validated === "") {
     throw new Error("Invalid file path");
   }
 
@@ -144,7 +144,14 @@ export async function safeDeleteFile(filePath: string): Promise<boolean> {
     const uploadsDir = path.resolve(process.cwd(), "uploads");
     const validatedPath = validatePath(filePath, process.cwd());
 
-    if (!validatedPath?.startsWith(uploadsDir)) {
+    // Check if path validation failed
+    if (validatedPath == null) {
+      logger.warn(`Invalid file path provided: ${filePath}`);
+      return false;
+    }
+
+    // Check if path is outside uploads directory
+    if (!validatedPath.startsWith(uploadsDir)) {
       logger.warn(
         `Attempted to delete file outside uploads directory: ${filePath}`,
       );
@@ -163,8 +170,8 @@ export async function safeDeleteFile(filePath: string): Promise<boolean> {
       logger.warn(`File not found or inaccessible: ${validatedPath}`);
       return false;
     }
-  } catch (error) {
-    logger.error(`Error in safeDeleteFile: ${error}`);
+  } catch (error: unknown) {
+    logger.error(`Error in safeDeleteFile: ${String(error)}`);
     return false;
   }
 }

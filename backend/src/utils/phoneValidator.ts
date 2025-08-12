@@ -10,7 +10,7 @@ import type { Pool, PoolConnection, RowDataPacket } from "mysql2/promise";
  * @returns true if valid, false otherwise
  */
 export function isValidPhoneNumber(phone: string | null | undefined): boolean {
-  if (!phone) return true; // Allow empty/null for optional fields
+  if (phone == null || phone === "") return true; // Allow empty/null for optional fields
 
   // Must start with + and contain 7-29 digits
   const phoneRegex = /^\+[0-9]{7,29}$/;
@@ -23,7 +23,7 @@ export function isValidPhoneNumber(phone: string | null | undefined): boolean {
  * @returns Formatted phone number
  */
 export function formatPhoneNumber(phone: string | null | undefined): string {
-  if (!phone) return "";
+  if (phone == null || phone === "") return "";
 
   // Remove all non-digit characters except the leading +
   const cleaned = phone.replace(/[^\d+]/g, "");
@@ -66,11 +66,12 @@ export async function isPhoneUnique(
 ): Promise<boolean> {
   const { query } = await import("./db");
 
-  const sql = userId
-    ? "SELECT COUNT(*) as count FROM users WHERE phone = ? AND id != ?"
-    : "SELECT COUNT(*) as count FROM users WHERE phone = ?";
+  const sql =
+    userId != null && userId !== 0
+      ? "SELECT COUNT(*) as count FROM users WHERE phone = ? AND id != ?"
+      : "SELECT COUNT(*) as count FROM users WHERE phone = ?";
 
-  const params = userId ? [phone, userId] : [phone];
+  const params = userId != null && userId !== 0 ? [phone, userId] : [phone];
 
   interface CountResult extends RowDataPacket {
     count: number;

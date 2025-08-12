@@ -25,9 +25,7 @@ interface RequiredFieldsValidationResult {
 }
 
 // Data object interface for required fields validation
-interface DataObject {
-  [key: string]: unknown;
-}
+type DataObject = Record<string, unknown>;
 
 /**
  * Validate email format
@@ -135,7 +133,7 @@ export function isValidFileType(
   allowedTypes: string[],
 ): boolean {
   const ext = filename.split(".").pop()?.toLowerCase();
-  return ext ? allowedTypes.includes(ext) : false;
+  return ext != null && ext !== "" ? allowedTypes.includes(ext) : false;
 }
 
 /**
@@ -179,9 +177,11 @@ export function validateRequiredFields(
   const missingFields: string[] = [];
 
   requiredFields.forEach((field: string) => {
+    const value = data[field];
     if (
-      !data[field] ||
-      (typeof data[field] === "string" && data[field].trim() === "")
+      value == null ||
+      value === "" ||
+      (typeof value === "string" && value.trim() === "")
     ) {
       missingFields.push(field);
     }

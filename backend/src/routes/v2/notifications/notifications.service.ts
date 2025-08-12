@@ -6,7 +6,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 import { executeQuery } from "../../../database.js";
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -58,7 +58,7 @@ export async function listNotifications(
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
     LEFT JOIN users u ON n.created_by = u.id
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${String(conditions.join(" AND "))}
   `;
 
   // Add unread filter if specified
@@ -78,7 +78,7 @@ export async function listNotifications(
     SELECT COUNT(*) as total
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${String(conditions.join(" AND "))}
     ${filters.unread === true ? "AND nrs.id IS NULL" : ""}
   `;
   const countParams = [userId, ...params.slice(1, -2)]; // Exclude limit/offset
@@ -93,7 +93,7 @@ export async function listNotifications(
     SELECT COUNT(*) as unread
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${conditions.join(" AND ")} AND nrs.id IS NULL
+    WHERE ${String(conditions.join(" AND "))} AND nrs.id IS NULL
   `;
   const [[unreadResult]] = await executeQuery<RowDataPacket[]>(unreadQuery, [
     userId,
@@ -309,7 +309,7 @@ export async function getPreferences(userId: number, tenantId: number) {
           typeof prefs.preferences === "string"
             ? JSON.parse(prefs.preferences)
             : prefs.preferences;
-      } catch (e) {
+      } catch (e: unknown) {
         console.error(
           "[Notifications Service] Failed to parse preferences:",
           e,
@@ -324,7 +324,7 @@ export async function getPreferences(userId: number, tenantId: number) {
       sms_notifications: !!prefs.sms_notifications,
       notification_types: notificationTypes,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Notifications Service] getPreferences error:", error);
     throw error;
   }

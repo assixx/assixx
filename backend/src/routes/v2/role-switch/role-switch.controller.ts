@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   errorResponse,
   successResponse,
@@ -38,7 +38,7 @@ export class RoleSwitchController {
           message: result.message,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -78,7 +78,7 @@ export class RoleSwitchController {
           message: result.message,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -115,7 +115,7 @@ export class RoleSwitchController {
           message: result.message,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -150,7 +150,7 @@ export class RoleSwitchController {
       };
 
       res.json(successResponse(status));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Get status error:", getErrorMessage(error));
       res
         .status(500)

@@ -200,12 +200,12 @@ const pagePermissions: Record<string, PageConfig> = {
  */
 function getTokenFromRequest(req: Request): string | null {
   // Try cookie first
-  const cookieToken = req.cookies?.["token"];
-  if (cookieToken) return cookieToken;
+  const cookieToken = req.cookies?.token as string | undefined;
+  if (cookieToken != null && cookieToken !== "") return cookieToken;
 
   // Try Authorization header
   const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith("Bearer ")) {
+  if (authHeader?.startsWith("Bearer ") === true) {
     return authHeader.substring(7);
   }
 
@@ -240,28 +240,31 @@ export function protectPage(
   const pageConfig = pagePermissions[pagePath];
 
   // If page is not in our config, allow it (static assets, etc.)
-  if (!pageConfig) {
-    return next();
+  if (pageConfig == null) {
+    next();
+    return;
   }
 
   // Public pages
   if (pageConfig.allowedRoles.includes("*")) {
-    return next();
+    next();
+    return;
   }
 
   // Get token
   const token = getTokenFromRequest(req);
 
-  if (!token) {
+  if (token == null || token === "") {
     logger.warn(`No token for protected page: ${pagePath}`);
-    return res.redirect("/login");
+    res.redirect("/login");
+    return;
   }
 
   try {
     // Verify token
     const decoded = jwt.verify(
       token,
-      process.env["JWT_SECRET"] ?? "your-secret-key",
+      process.env.JWT_SECRET ?? "your-secret-key",
     ) as DecodedToken;
 
     // Check if user's role is allowed
@@ -272,12 +275,13 @@ export function protectPage(
 
       // Redirect to appropriate page based on role
       const redirectUrl = getDashboardForRole(decoded.role);
-      return res.redirect(redirectUrl);
+      res.redirect(redirectUrl);
+      return;
     }
 
     // User is authorized, continue
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Token verification failed:", error);
     res.redirect("/login");
   }
@@ -289,19 +293,20 @@ export function protectPage(
 export function redirectToDashboard(req: Request, res: Response): void {
   const token = getTokenFromRequest(req);
 
-  if (!token) {
+  if (token == null || token === "") {
     // No token - redirect to landing page
-    return res.redirect("/index");
+    res.redirect("/index");
+    return;
   }
 
   try {
     const decoded = jwt.verify(
       token,
-      process.env["JWT_SECRET"] ?? "your-secret-key",
+      process.env.JWT_SECRET ?? "your-secret-key",
     ) as DecodedToken;
     const dashboardUrl = getDashboardForRole(decoded.role);
     res.redirect(dashboardUrl);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Token verification failed:", error);
     // Invalid token - redirect to landing page
     res.redirect("/index");

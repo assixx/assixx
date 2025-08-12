@@ -116,17 +116,17 @@ class MachineModel {
     `;
     const params: (string | number | boolean | null)[] = [tenant_id];
 
-    if (filters.status) {
+    if (filters.status != null && filters.status !== "") {
       query += " AND m.status = ?";
       params.push(filters.status);
     }
 
-    if (filters.machine_type) {
+    if (filters.machine_type != null && filters.machine_type !== "") {
       query += " AND m.machine_type = ?";
       params.push(filters.machine_type);
     }
 
-    if (filters.department_id) {
+    if (filters.department_id != null && filters.department_id !== 0) {
       query += " AND m.department_id = ?";
       params.push(filters.department_id);
     }
@@ -136,12 +136,12 @@ class MachineModel {
       params.push(filters.is_active);
     }
 
-    if (filters.needs_maintenance) {
+    if (filters.needs_maintenance === true) {
       query +=
         " AND (m.next_maintenance <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) OR m.status = 'maintenance')";
     }
 
-    if (filters.search) {
+    if (filters.search != null && filters.search !== "") {
       query +=
         " AND (m.name LIKE ? OR m.model LIKE ? OR m.manufacturer LIKE ? OR m.serial_number LIKE ? OR m.asset_number LIKE ?)";
       const searchTerm = `%${filters.search}%`;
@@ -164,7 +164,7 @@ class MachineModel {
       WHERE m.id = ? AND m.tenant_id = ?
     `;
     const [rows] = await executeQuery<Machine[]>(query, [id, tenant_id]);
-    return rows[0] || null;
+    return rows[0] ?? null;
   }
 
   // Create new machine
@@ -343,11 +343,11 @@ class MachineModel {
     // Update machine's last_maintenance and next_maintenance dates
     if (result.insertId) {
       // Update machine's last_maintenance and next_maintenance dates
-      type MachineUpdateData = {
+      interface MachineUpdateData {
         last_maintenance?: Date;
         next_maintenance?: Date;
         status?: Machine["status"];
-      };
+      }
       const updateData: MachineUpdateData = {
         last_maintenance: data.performed_date,
         next_maintenance: data.next_maintenance_date,
@@ -356,7 +356,12 @@ class MachineModel {
             ? "repair"
             : (data.status_after ?? "operational"),
       };
-      if (data.machine_id && data.tenant_id) {
+      if (
+        data.machine_id != null &&
+        data.machine_id !== 0 &&
+        data.tenant_id != null &&
+        data.tenant_id !== 0
+      ) {
         await this.update(
           data.machine_id,
           data.tenant_id,
@@ -371,7 +376,7 @@ class MachineModel {
   // Get upcoming maintenance
   async getUpcomingMaintenance(
     tenant_id: number,
-    days: number = 30,
+    days = 30,
   ): Promise<Machine[]> {
     const query = `
       SELECT m.*, d.name as department_name

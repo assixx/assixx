@@ -60,12 +60,12 @@ class DeletionWorker {
             await this.checkAndProcessQueue();
           }
           await this.sleep(this.processingInterval);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error("Error in worker main loop:", error);
           await this.sleep(60000); // 1 minute wait on error
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to start deletion worker:", error);
       process.exit(1);
     }
@@ -77,7 +77,7 @@ class DeletionWorker {
     try {
       logger.debug("Checking deletion queue...");
       await tenantDeletionService.processQueue();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error processing deletion queue:", error);
     } finally {
       this.isProcessing = false;
@@ -113,7 +113,7 @@ class DeletionWorker {
     });
   }
 
-  private sleep(ms: number): Promise<void> {
+  private async sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
@@ -146,7 +146,7 @@ class DeletionWorker {
 
       logger.info("✅ Deletion Worker shutdown complete");
       process.exit(0);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error during shutdown:", error);
       process.exit(1);
     }
@@ -155,7 +155,7 @@ class DeletionWorker {
 
 // Start the worker when run directly
 const worker = new DeletionWorker();
-worker.start().catch((error) => {
+worker.start().catch((error: unknown) => {
   logger.error("Fatal error starting deletion worker:", error);
   process.exit(1);
 });

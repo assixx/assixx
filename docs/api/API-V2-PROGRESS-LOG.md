@@ -34,25 +34,31 @@
 #### Kritische Bug-Fixes:
 
 1. **Privacy-Bug:**
+
    ```typescript
    // Problem: Admins konnten alle privaten Events sehen
    // Alt (Zeile 197 in calendar.ts):
    if (filter === "all" && role !== "admin" && role !== "root")
-   
+
    // Neu (Privacy für alle):
    if (filter === "all")
    ```
 
 2. **Field-Mapping Issues:**
+
    ```typescript
    // v2 API: camelCase
-   { firstName, lastName, startTime, endTime }
-   
-   // v1 API: snake_case  
-   { first_name, last_name, start_time, end_time }
-   
+   {
+     (firstName, lastName, startTime, endTime);
+   }
+
+   // v1 API: snake_case
+   {
+     (first_name, last_name, start_time, end_time);
+   }
+
    // Lösung: Bidirektionales Mapping
-   const firstName = user.first_name ?? user.firstName ?? '';
+   const firstName = user.first_name ?? user.firstName ?? "";
    ```
 
 #### Technische Details:

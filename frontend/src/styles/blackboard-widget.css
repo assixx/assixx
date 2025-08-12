@@ -3,7 +3,7 @@
   background: hsla(0, 0%, 100%, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
+  border-radius: var(--radius-md);
   padding: 1.5rem;
   margin-bottom: 2rem;
   /* Prevent animation on initial load */

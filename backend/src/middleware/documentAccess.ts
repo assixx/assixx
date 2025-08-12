@@ -5,7 +5,7 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 
 import Document from "../models/document.js";
 import User from "../models/user.js";
-import { DocumentRequest } from "../types/request.types.js";
+import type { DocumentRequest } from "../types/request.types.js";
 import { logger } from "../utils/logger.js";
 
 export interface DocumentAccessOptions {
@@ -59,7 +59,7 @@ export const checkDocumentAccess = (
       }
 
       // Admin-Zugriff prüfen
-      if (options.allowAdmin && userRole === "admin") {
+      if (options.allowAdmin === true && userRole === "admin") {
         logger.info(
           `Admin access granted for user ${userId} to document ${documentId}`,
         );
@@ -67,7 +67,8 @@ export const checkDocumentAccess = (
           ...document,
           filename: document.file_name,
         };
-        return next();
+        next();
+        return;
       }
 
       // Zugriff basierend auf Empfängertyp prüfen
@@ -82,7 +83,8 @@ export const checkDocumentAccess = (
               ...document,
               filename: document.file_name,
             };
-            return next();
+            next();
+            return;
           }
           break;
 
@@ -110,14 +112,18 @@ export const checkDocumentAccess = (
               ...document,
               filename: document.file_name,
             };
-            return next();
+            next();
+            return;
           }
+          break;
+
+        default:
           break;
       }
 
       // Abteilungsleiter-Zugriff prüfen (nur für user-spezifische Dokumente)
       if (
-        options.allowDepartmentHeads &&
+        options.allowDepartmentHeads === true &&
         userRole === "department_head" &&
         document.recipient_type === "user" &&
         document.user_id
@@ -137,12 +143,13 @@ export const checkDocumentAccess = (
             ...document,
             filename: document.file_name,
           };
-          return next();
+          next();
+          return;
         }
       }
 
       // Wenn requireOwnership false ist und keine anderen Bedingungen zutreffen
-      if (!options.requireOwnership) {
+      if (options.requireOwnership !== true) {
         logger.info(
           `General access granted for user ${userId} to document ${documentId} (ownership not required)`,
         );
@@ -150,7 +157,8 @@ export const checkDocumentAccess = (
           ...document,
           filename: document.file_name,
         };
-        return next();
+        next();
+        return;
       }
 
       // Zugriff verweigert
@@ -160,7 +168,7 @@ export const checkDocumentAccess = (
       return res.status(403).json({
         error: "Keine Berechtigung für dieses Dokument",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in checkDocumentAccess middleware:", error);
       return res.status(500).json({
         error: "Fehler bei der Überprüfung der Dokumentenberechtigung",
@@ -176,33 +184,37 @@ export const checkPublicDocumentAccess = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   try {
     const { documentId } = req.params;
 
     const document = await Document.findById(parseInt(documentId, 10));
     if (!document) {
-      return res.status(404).json({
+      res.status(404).json({
         error: "Dokument nicht gefunden",
       });
+      return;
     }
 
     // Prüfe, ob das Dokument öffentlich ist
-    if (!document.isPublic) {
-      return res.status(403).json({
+    if (document.isPublic !== true) {
+      res.status(403).json({
         error: "Dieses Dokument ist nicht öffentlich zugänglich",
       });
+      return;
     }
 
     // Store document in request - extend Request if needed
     const docReq = req as Request & { document: typeof document };
     docReq.document = document;
-    return next();
-  } catch (error) {
+    next();
+    return;
+  } catch (error: unknown) {
     logger.error("Error in checkPublicDocumentAccess middleware:", error);
-    return res.status(500).json({
+    res.status(500).json({
       error: "Fehler beim Abrufen des Dokuments",
     });
+    return;
   }
 };
 

@@ -8,7 +8,7 @@
  * Get role abbreviation
  */
 function getRoleAbbreviation(role: string): string {
-  const roleMap: { [key: string]: string } = {
+  const roleMap: Record<string, string> = {
     root: "RT",
     admin: "AD",
     employee: "EMP",

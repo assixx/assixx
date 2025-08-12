@@ -8,7 +8,10 @@ import jwt from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
 
 import { executeQuery } from "../../database";
-import { AuthenticatedRequest, PublicRequest } from "../../types/request.types";
+import type {
+  AuthenticatedRequest,
+  PublicRequest,
+} from "../../types/request.types";
 import { errorResponse } from "../../utils/apiResponse";
 import { dbToApi } from "../../utils/fieldMapping";
 
@@ -80,7 +83,7 @@ async function verifyAccessToken(token: string): Promise<JWTPayload | null> {
     }
 
     return decoded;
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof jwt.TokenExpiredError) {
       console.info("[AUTH v2] Token expired");
     } else if (error instanceof jwt.JsonWebTokenError) {
@@ -128,7 +131,7 @@ async function getUserDetails(
 
     // Convert to camelCase for API v2
     return dbToApi(users[0]);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[AUTH v2] User lookup error:", error);
     return null;
   }
@@ -209,7 +212,7 @@ export async function authenticateV2(
     (req as AuthenticatedRequest).tenantId = userDetails.tenantId;
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[AUTH v2] Unexpected error:", error);
     res.status(500).json(errorResponse("SERVER_ERROR", "Authentication error"));
   }

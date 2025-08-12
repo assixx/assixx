@@ -58,7 +58,11 @@ class AuthService {
       }
 
       // Validate tenant if subdomain is provided
-      if (tenantSubdomain) {
+      if (
+        tenantSubdomain !== null &&
+        tenantSubdomain !== undefined &&
+        tenantSubdomain !== ""
+      ) {
         // Get tenant by subdomain
         const [tenantRows] = await execute<RowDataPacket[]>(
           "SELECT id FROM tenants WHERE subdomain = ?",
@@ -76,12 +80,12 @@ class AuthService {
           };
         }
 
-        const tenantId = tenantRows[0].id;
+        const tenantId = tenantRows[0].id as number;
 
         // Check if user belongs to the specified tenant
         if (result.user.tenant_id !== tenantId) {
           logger.warn(
-            `User ${username} attempted to login to tenant ${tenantId} but belongs to tenant ${result.user.tenant_id}`,
+            `User ${username} attempted to login to tenant ${String(tenantId)} but belongs to tenant ${result.user.tenant_id}`,
           );
           return {
             success: false,
@@ -94,7 +98,7 @@ class AuthService {
       // Generate cryptographically secure session ID
       const crypto = await import("crypto");
       const randomBytes = crypto.randomBytes(16).toString("hex");
-      const sessionId = `sess_${Date.now()}_${randomBytes}`;
+      const sessionId = `sess_${String(Date.now())}_${randomBytes}`;
 
       // Generate JWT token with fingerprint and session ID
       const token = generateToken(result.user, fingerprint, sessionId);
@@ -102,17 +106,21 @@ class AuthService {
       // Generate refresh token - tenant_id is guaranteed to exist after successful auth
       const refreshToken = await this.generateRefreshToken(
         result.user.id,
-        result.user.tenant_id as number,
+        result.user.tenant_id ?? 0,
       );
 
       // Store session info if fingerprint provided
-      if (fingerprint) {
+      if (
+        fingerprint !== null &&
+        fingerprint !== undefined &&
+        fingerprint !== ""
+      ) {
         try {
           await execute<ResultSetHeader>(
             "INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
             [result.user.id, sessionId, fingerprint],
           );
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn("Failed to store session info:", error);
           // Continue anyway - session will work without stored fingerprint
         }
@@ -132,7 +140,7 @@ class AuthService {
           this.dbUserToDatabaseUser(userWithoutPassword),
         ) as unknown as AuthResult["user"],
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Authentication error:", error);
       return {
         success: false,
@@ -179,7 +187,7 @@ class AuthService {
       }
 
       // Check if tenant ID is provided
-      if (!userData.tenant_id) {
+      if (userData.tenant_id == null || userData.tenant_id === 0) {
         return {
           success: false,
           user: null,
@@ -208,7 +216,7 @@ class AuthService {
       }
 
       const userWithoutPassword =
-        user && "password" in user
+        "password" in user
           ? (() => {
               const { password: _password, ...rest } = user;
               return rest;
@@ -227,7 +235,7 @@ class AuthService {
           this.dbUserToDatabaseUser(userWithTenantId),
         ) as unknown as AuthResult["user"],
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Registration error:", error);
       throw error;
     }
@@ -238,10 +246,10 @@ class AuthService {
    * @param {string} token - JWT token
    * @returns {Promise<TokenValidationResult>} Decoded token data
    */
-  async verifyToken(token: string): Promise<TokenValidationResult> {
+  verifyToken(token: string): TokenValidationResult {
     try {
       const secret = process.env.JWT_SECRET;
-      if (!secret) {
+      if (secret == null || secret === "") {
         throw new Error("JWT_SECRET not configured");
       }
       const decoded = jwt.verify(token, secret);
@@ -249,7 +257,7 @@ class AuthService {
         valid: true,
         user: decoded as unknown as DatabaseUser,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Token verification error:", error);
       return {
         valid: false,
@@ -285,7 +293,7 @@ class AuthService {
       email: dbUser.email,
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
-      role: dbUser.role as "admin" | "root" | "employee",
+      role: dbUser.role,
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id,
       is_active: dbUser.is_active,
@@ -394,20 +402,20 @@ class AuthService {
           VALUES (?, ?, ?, 'refresh', DATE_ADD(NOW(), INTERVAL 7 DAY), NOW())`,
           [tenantId, userId, hashedToken],
         );
-      } catch (error) {
+      } catch (error: unknown) {
         const dbError = error as { code?: string };
         if (dbError.code === "ER_NO_SUCH_TABLE") {
           logger.warn(
             "oauth_tokens table does not exist, skipping refresh token storage",
           );
           // Return a dummy refresh token for tests
-          return `test_refresh_${userId}_${Date.now()}`;
+          return `test_refresh_${userId}_${String(Date.now())}`;
         }
         throw error;
       }
 
       return refreshToken;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to generate refresh token:", error);
       throw new Error("Failed to generate refresh token");
     }
@@ -439,7 +447,10 @@ class AuthService {
       // Find matching token by comparing hashes
       let validToken = null;
       for (const token of tokens) {
-        const isMatch = await bcrypt.compare(refreshToken, token.token);
+        const isMatch = await bcrypt.compare(
+          refreshToken,
+          token.token as string,
+        );
         if (isMatch) {
           validToken = token;
           break;
@@ -451,7 +462,7 @@ class AuthService {
       }
 
       // Check if user is active
-      if (!validToken.is_active) {
+      if (validToken.is_active == null || validToken.is_active === false) {
         return null;
       }
 
@@ -463,15 +474,15 @@ class AuthService {
 
       // Create user object for token generation
       const user = {
-        id: validToken.user_id,
-        username: validToken.username,
-        email: validToken.email,
-        role: validToken.role,
-        tenant_id: validToken.tenant_id,
-        first_name: validToken.first_name,
-        last_name: validToken.last_name,
-        department_id: validToken.department_id,
-        position: validToken.position,
+        id: validToken.user_id as number,
+        username: validToken.username as string,
+        email: validToken.email as string,
+        role: validToken.role as string,
+        tenant_id: validToken.tenant_id as number,
+        first_name: validToken.first_name as string | null,
+        last_name: validToken.last_name as string | null,
+        department_id: validToken.department_id as number | null,
+        position: validToken.position as string | null,
       };
 
       // Generate new access token
@@ -481,15 +492,15 @@ class AuthService {
 
       // Generate new refresh token
       const newRefreshToken = await this.generateRefreshToken(
-        validToken.user_id,
-        validToken.tenant_id,
+        validToken.user_id as number,
+        validToken.tenant_id as number,
       );
 
       // Create a complete user object with all required fields
       const completeUser = {
         ...user,
         password: "", // Not needed for mapping
-        is_active: validToken.is_active ?? true,
+        is_active: (validToken.is_active as boolean) ?? true,
         is_archived: false,
         profile_picture: null,
         phone: null,
@@ -508,7 +519,7 @@ class AuthService {
           this.dbUserToDatabaseUser(completeUser),
         ),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to refresh access token:", error);
       return null;
     }

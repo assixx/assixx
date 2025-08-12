@@ -7,7 +7,7 @@ import Tenant from "../../../models/tenant.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
-import { SignupRequest, SubdomainValidation } from "./types.js";
+import type { SignupRequest, SubdomainValidation } from "./types.js";
 
 export class SignupService {
   /**
@@ -111,7 +111,7 @@ export class SignupService {
         subdomain: result.subdomain,
         trialEndsAt: result.trialEndsAt.toISOString(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.info("[SignupService] CATCH BLOCK ENTERED");
       console.info("[SignupService] Error type:", error?.constructor?.name);
       console.info(
@@ -167,7 +167,7 @@ export class SignupService {
         available,
         subdomain,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error checking subdomain availability:", error);
       throw new ServiceError(
         "CHECK_FAILED",

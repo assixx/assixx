@@ -6,12 +6,12 @@
 import { Response } from "express";
 import { validationResult } from "express-validator";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { rolesService } from "./service.js";
-import { RoleCheckRequest, RoleName } from "./types.js";
+import type { RoleCheckRequest, RoleName } from "./types.js";
 
 export class RolesController {
   /**
@@ -25,7 +25,7 @@ export class RolesController {
         success: true,
         data: roles,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting roles:", error);
       res.status(500).json({
         success: false,
@@ -66,7 +66,7 @@ export class RolesController {
         success: true,
         data: role,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -102,7 +102,7 @@ export class RolesController {
         success: true,
         data: hierarchy,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting role hierarchy:", error);
       res.status(500).json({
         success: false,
@@ -130,7 +130,7 @@ export class RolesController {
         success: true,
         data: assignableRoles,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting assignable roles:", error);
       res.status(500).json({
         success: false,
@@ -183,7 +183,7 @@ export class RolesController {
         success: true,
         data: result,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,

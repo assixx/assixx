@@ -14,8 +14,8 @@ export interface ModalConfig {
 }
 
 class ModalManager {
-  private activeModals: Map<string, HTMLElement> = new Map();
-  private templates: Map<string, string> = new Map();
+  private activeModals = new Map<string, HTMLElement>();
+  private templates = new Map<string, string>();
 
   constructor() {
     this.setupEventListeners();
@@ -246,7 +246,7 @@ class ModalManager {
 
       // Close button clicked
       if (target.matches('[data-action="close"]') ?? target.closest('[data-action="close"]')) {
-        const modal = target.closest('.modal-overlay') as HTMLElement;
+        const modal = target.closest('.modal-overlay');
         if (modal?.id) {
           this.hide(modal.id);
         }

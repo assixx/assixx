@@ -154,7 +154,7 @@ describe("Audit Trail API v2", () => {
       );
       testEntryId = result.insertId;
       logError(`Created ${result.affectedRows} test audit entries`);
-    } catch (error) {
+    } catch (error: unknown) {
       logError("Failed to create test audit entries:", error);
       throw error;
     }

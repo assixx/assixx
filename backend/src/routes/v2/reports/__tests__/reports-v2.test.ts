@@ -171,11 +171,11 @@ describe("Reports API v2", () => {
     ];
 
     for (const shift of shiftData) {
-      const startTime = `${todayStr} ${String(shift.startHour % 24).padStart(2, "0")}:00:00`;
+      const startTime = `${todayStr} ${String(String(shift.startHour % 24).padStart(2, "0"))}:00:00`;
       const endTime =
         shift.endHour > 24
-          ? `${todayStr} ${String(shift.endHour - 24).padStart(2, "0")}:00:00`
-          : `${todayStr} ${String(shift.endHour).padStart(2, "0")}:00:00`;
+          ? `${todayStr} ${String(String(shift.endHour - 24).padStart(2, "0"))}:00:00`
+          : `${todayStr} ${String(String(shift.endHour).padStart(2, "0"))}:00:00`;
 
       await testDb.execute(
         `INSERT INTO shifts 

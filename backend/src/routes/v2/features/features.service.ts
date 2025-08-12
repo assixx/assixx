@@ -43,7 +43,7 @@ export class FeaturesService {
         }
         return mapped;
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching features: ${error}`);
       throw error;
     }
@@ -70,7 +70,7 @@ export class FeaturesService {
       }, [] as FeatureCategory[]);
 
       return categorized;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching features by category: ${error}`);
       throw error;
     }
@@ -86,7 +86,7 @@ export class FeaturesService {
 
       if (rows.length === 0) return null;
       return fieldMapper.dbToApi<Feature>(rows[0]);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching feature by code: ${error}`);
       throw error;
     }
@@ -134,7 +134,7 @@ export class FeaturesService {
         // Price is available through feature reference
         return mapped;
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching tenant features: ${error}`);
       throw error;
     }
@@ -196,7 +196,7 @@ export class FeaturesService {
 
         return result;
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching features with tenant info: ${error}`);
       throw error;
     }
@@ -283,7 +283,7 @@ export class FeaturesService {
       logger.info(
         `Feature ${request.featureCode} activated for tenant ${request.tenantId}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error activating feature: ${error}`);
       throw error;
     }
@@ -330,7 +330,7 @@ export class FeaturesService {
       );
 
       logger.info(`Feature ${featureCode} deactivated for tenant ${tenantId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error deactivating feature: ${error}`);
       throw error;
     }
@@ -375,7 +375,7 @@ export class FeaturesService {
         usageCount: row.usage_count,
         uniqueUsers: row.unique_users,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching usage stats: ${error}`);
       throw error;
     }
@@ -409,7 +409,7 @@ export class FeaturesService {
       });
 
       return summary;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching tenant features summary: ${error}`);
       throw error;
     }
@@ -435,7 +435,7 @@ export class FeaturesService {
       );
 
       return rows.length > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error checking tenant feature access: ${error}`);
       return false;
     }
@@ -467,7 +467,7 @@ export class FeaturesService {
       );
 
       // Note: current_usage tracking would go here if the column existed
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error logging feature usage: ${error}`);
       // Don't throw - we don't want to break the app if usage logging fails
     }
@@ -502,7 +502,7 @@ export class FeaturesService {
       );
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching all tenants with features: ${error}`);
       throw error;
     }

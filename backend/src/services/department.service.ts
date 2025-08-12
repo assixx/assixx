@@ -39,7 +39,7 @@ class DepartmentService {
       // Note: Department.findAll doesn't support limit/offset yet
       // TODO: Add pagination support to Department model
       return await Department.findAll(tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentService.getAll:", error);
       throw error;
     }
@@ -55,7 +55,7 @@ class DepartmentService {
   ): Promise<DepartmentData | null> {
     try {
       return await Department.findById(id, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentService.getById:", error);
       throw error;
     }
@@ -75,7 +75,7 @@ class DepartmentService {
         throw new Error("Failed to retrieve created department");
       }
       return created;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentService.create:", error);
       throw error;
     }
@@ -96,7 +96,7 @@ class DepartmentService {
         return await Department.findById(id, tenantId);
       }
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentService.update:", error);
       throw error;
     }
@@ -108,7 +108,7 @@ class DepartmentService {
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {
       return await Department.delete(id);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in DepartmentService.delete:", error);
       throw error;
     }

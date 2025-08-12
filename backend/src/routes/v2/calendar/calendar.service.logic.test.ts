@@ -80,20 +80,20 @@ describe("Calendar Service Business Logic", () => {
 
   describe("Pagination Logic", () => {
     it("should calculate correct page values", () => {
-      const page = Math.max(1, parseInt("5", 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt("20", 10) || 50));
+      const page = Math.max(1, parseInt("5", 10) ?? 1);
+      const limit = Math.min(100, Math.max(1, parseInt("20", 10) ?? 50));
 
       expect(page).toBe(5);
       expect(limit).toBe(20);
     });
 
     it("should handle invalid page numbers", () => {
-      const page = Math.max(1, parseInt("-5", 10) || 1);
+      const page = Math.max(1, parseInt("-5", 10) ?? 1);
       expect(page).toBe(1);
     });
 
     it("should limit maximum page size", () => {
-      const limit = Math.min(100, Math.max(1, parseInt("200", 10) || 50));
+      const limit = Math.min(100, Math.max(1, parseInt("200", 10) ?? 50));
       expect(limit).toBe(100);
     });
 
@@ -211,7 +211,7 @@ describe("Calendar Service Business Logic", () => {
       };
 
       const invalidField = "invalid";
-      const sortBy = sortByMap[invalidField] || "start_date";
+      const sortBy = sortByMap[invalidField] ?? "start_date";
 
       expect(sortBy).toBe("start_date");
     });
@@ -297,12 +297,12 @@ describe("Calendar Service Business Logic", () => {
 
       const row = [
         event.title,
-        event.description || "",
-        event.location || "",
+        event.description ?? "",
+        event.location ?? "",
         event.start_date.toISOString(),
         event.end_date.toISOString(),
         event.all_day ? "Yes" : "No",
-        event.status || "confirmed",
+        event.status ?? "confirmed",
       ];
 
       expect(row[0]).toBe("Meeting");

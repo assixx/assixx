@@ -6,8 +6,8 @@
 import { Response } from "express";
 import { validationResult, ValidationError } from "express-validator";
 
-import { RootLog } from "../../../models/rootLog";
-import { AuthenticatedRequest } from "../../../types/request.types";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import {
   successResponse,
   errorResponse,
@@ -76,7 +76,7 @@ export const usersController = {
       );
 
       res.json(paginatedResponse(result.data, result.pagination));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] List error:", error);
       if (error instanceof ServiceError) {
         res
@@ -104,7 +104,7 @@ export const usersController = {
       }
       const user = await usersService.getUserById(req.userId, req.tenantId);
       res.json(successResponse(user));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Get current user error:", error);
       if (error instanceof ServiceError) {
         res
@@ -144,7 +144,7 @@ export const usersController = {
       }
       const user = await usersService.getUserById(userId, req.tenantId);
       res.json(successResponse(user));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Get user by ID error:", error);
       if (error instanceof ServiceError) {
         res
@@ -191,7 +191,7 @@ export const usersController = {
         action: "create",
         entity_type: "user",
         entity_id: (user as User).id,
-        details: `Benutzer erstellt: ${(user as User).email}`,
+        details: `Benutzer erstellt: ${String((user as User).email)}`,
         new_values: {
           email: (user as User).email,
           username: (user as User).username,
@@ -206,7 +206,7 @@ export const usersController = {
       });
 
       res.status(201).json(successResponse(user, "User created successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Create error:", error);
       if (error instanceof ServiceError) {
         res
@@ -258,7 +258,7 @@ export const usersController = {
         action: "update",
         entity_type: "user",
         entity_id: userId,
-        details: `Benutzer aktualisiert: ${(user as User).email}`,
+        details: `Benutzer aktualisiert: ${String((user as User).email)}`,
         old_values: {
           email: (oldUser as User | null)?.email,
           username: (oldUser as User | null)?.username,
@@ -282,7 +282,7 @@ export const usersController = {
       });
 
       res.json(successResponse(user, "User updated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Update error:", error);
       if (error instanceof ServiceError) {
         res
@@ -330,7 +330,7 @@ export const usersController = {
       );
 
       res.json(successResponse(user, "Profile updated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Update profile error:", error);
       if (error instanceof ServiceError) {
         res
@@ -379,7 +379,7 @@ export const usersController = {
       );
 
       res.json(successResponse(null, "Password changed successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Change password error:", error);
       if (error instanceof ServiceError) {
         res
@@ -430,7 +430,7 @@ export const usersController = {
         action: "delete",
         entity_type: "user",
         entity_id: userId,
-        details: `Benutzer gelöscht: ${(deletedUser as User | null)?.email}`,
+        details: `Benutzer gelöscht: ${String((deletedUser as User | null)?.email)}`,
         old_values: {
           email: (deletedUser as User | null)?.email,
           username: (deletedUser as User | null)?.username,
@@ -445,7 +445,7 @@ export const usersController = {
       });
 
       res.json(successResponse(null, "User deleted successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Delete error:", error);
       if (error instanceof ServiceError) {
         res
@@ -495,7 +495,7 @@ export const usersController = {
       await usersService.archiveUser(userId, req.tenantId);
 
       res.json(successResponse(null, "User archived successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Archive error:", error);
       if (error instanceof ServiceError) {
         res
@@ -536,7 +536,7 @@ export const usersController = {
       await usersService.unarchiveUser(userId, req.tenantId);
 
       res.json(successResponse(null, "User unarchived successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Unarchive error:", error);
       if (error instanceof ServiceError) {
         res
@@ -567,7 +567,7 @@ export const usersController = {
         req.tenantId,
       );
       res.sendFile(filePath);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Get profile picture error:", error);
       if (error instanceof ServiceError) {
         res
@@ -589,7 +589,7 @@ export const usersController = {
     res: Response,
   ): Promise<void> {
     uploadMiddleware.single("profilePicture")(req, res, (err) => {
-      if (err) {
+      if (err !== null && err !== undefined && err !== "") {
         res.status(400).json(errorResponse("BAD_REQUEST", err.message));
         return;
       }
@@ -621,7 +621,7 @@ export const usersController = {
           res.json(
             successResponse(user, "Profile picture uploaded successfully"),
           );
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("[Users v2] Upload profile picture error:", error);
           if (error instanceof ServiceError) {
             res
@@ -659,7 +659,7 @@ export const usersController = {
       }
       await usersService.deleteProfilePicture(req.userId, req.tenantId);
       res.json(successResponse(null, "Profile picture deleted successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Delete profile picture error:", error);
       if (error instanceof ServiceError) {
         res
@@ -710,7 +710,7 @@ export const usersController = {
       );
 
       res.json(successResponse(user, "Availability updated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[Users v2] Update availability error:", error);
       if (error instanceof ServiceError) {
         res

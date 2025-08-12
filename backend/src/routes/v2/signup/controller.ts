@@ -6,12 +6,12 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { signupService } from "./service.js";
-import { SignupRequest } from "./types.js";
+import type { SignupRequest } from "./types.js";
 
 interface SignupResult {
   tenantId: number;
@@ -91,7 +91,7 @@ export class SignupController {
           message: "Registration successful! You can now log in.",
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.info("[SignupController] CATCH BLOCK ENTERED");
       console.info("[SignupController] Error type:", error?.constructor?.name);
       console.info(
@@ -162,7 +162,7 @@ export class SignupController {
         success: true,
         data: result,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(500).json({
           success: false,

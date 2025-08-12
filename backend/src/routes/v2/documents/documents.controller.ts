@@ -10,8 +10,8 @@
 import { Response } from "express";
 import multer from "multer";
 
-import { RootLog } from "../../../models/rootLog";
-import { AuthenticatedRequest } from "../../../types/request.types";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { logger } from "../../../utils/logger";
 
@@ -163,8 +163,8 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(result));
-  } catch (error) {
-    logger.error(`List documents error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`List documents error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -222,8 +222,8 @@ export async function getDocumentById(
     );
 
     res.json(successResponse(document));
-  } catch (error) {
-    logger.error(`Get document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`Get document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -346,7 +346,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
       action: "upload",
       entity_type: "document",
       entity_id: (document as unknown as Document).id,
-      details: `Hochgeladen: ${(document as unknown as Document).filename ?? documentData.filename}`,
+      details: `Hochgeladen: ${String((document as unknown as Document).filename ?? documentData.filename)}`,
       new_values: {
         filename:
           (document as unknown as Document).filename ?? documentData.filename,
@@ -362,8 +362,8 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
     });
 
     res.status(201).json(successResponse(document));
-  } catch (error) {
-    logger.error(`Create document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`Create document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -464,8 +464,8 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
     );
 
     res.json(successResponse(document));
-  } catch (error) {
-    logger.error(`Update document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`Update document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -541,7 +541,7 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
       action: "delete",
       entity_type: "document",
       entity_id: documentId,
-      details: `Gelöscht: ${(document as unknown as Document | null)?.filename ?? "unknown"}`,
+      details: `Gelöscht: ${String((document as unknown as Document | null)?.filename ?? "unknown")}`,
       old_values: {
         filename:
           (document as unknown as Document | null)?.filename ?? "unknown",
@@ -560,8 +560,8 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
     });
 
     res.json(successResponse(result));
-  } catch (error) {
-    logger.error(`Delete document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`Delete document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -629,8 +629,8 @@ export async function archiveDocument(
     );
 
     res.json(successResponse(result));
-  } catch (error) {
-    logger.error(`Archive document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`Archive document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -697,8 +697,10 @@ export async function unarchiveDocument(
     );
 
     res.json(successResponse(result));
-  } catch (error) {
-    logger.error(`Unarchive document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(
+      `Unarchive document error: ${String((error as Error).message)}`,
+    );
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -766,8 +768,10 @@ export async function downloadDocument(
 
     // Send file content
     res.send(documentContent.content);
-  } catch (error) {
-    logger.error(`Download document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(
+      `Download document error: ${String((error as Error).message)}`,
+    );
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -835,8 +839,8 @@ export async function previewDocument(
 
     // Send file content
     res.send(documentContent.content);
-  } catch (error) {
-    logger.error(`Preview document error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(`Preview document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)
@@ -900,8 +904,10 @@ export async function getDocumentStats(
     );
 
     res.json(successResponse(stats));
-  } catch (error) {
-    logger.error(`Get document stats error: ${(error as Error).message}`);
+  } catch (error: unknown) {
+    logger.error(
+      `Get document stats error: ${String((error as Error).message)}`,
+    );
     if (error instanceof ServiceError) {
       res
         .status(error.statusCode)

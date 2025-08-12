@@ -141,7 +141,11 @@ describe("KVP API v2", () => {
 
   afterEach(async () => {
     // Clean up test data in correct order
-    if (testSuggestionId) {
+    if (
+      testSuggestionId !== null &&
+      testSuggestionId !== undefined &&
+      testSuggestionId !== ""
+    ) {
       await testDb.execute(
         "DELETE FROM kvp_attachments WHERE suggestion_id = ?",
         [testSuggestionId],

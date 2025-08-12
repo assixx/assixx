@@ -9,8 +9,8 @@ import path from "path";
 
 import { Response, NextFunction } from "express";
 
-import { RootLog } from "../../../models/rootLog.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import {
   validatePath,
@@ -66,7 +66,7 @@ export class ChatController {
           total: users.length,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -110,7 +110,7 @@ export class ChatController {
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -179,7 +179,7 @@ export class ChatController {
       });
 
       res.status(201).json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Controller] createConversation error:", error);
       next(error);
     }
@@ -226,7 +226,7 @@ export class ChatController {
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -314,7 +314,7 @@ export class ChatController {
       });
 
       res.status(201).json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -341,7 +341,7 @@ export class ChatController {
       const unreadSummary = await chatService.getUnreadCount(tenantId, userId);
 
       res.json(successResponse(unreadSummary));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -379,7 +379,7 @@ export class ChatController {
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       logError("[Chat Controller] markAsRead error:", error);
       next(error);
     }
@@ -430,7 +430,7 @@ export class ChatController {
           message: "Conversation deleted successfully",
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -473,17 +473,17 @@ export class ChatController {
       if (forceDownload) {
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="${path.basename(filename)}"`,
+          `attachment; filename="${String(path.basename(filename))}"`,
         );
       } else {
         res.setHeader(
           "Content-Disposition",
-          `inline; filename="${path.basename(filename)}"`,
+          `inline; filename="${String(path.basename(filename))}"`,
         );
       }
 
       res.sendFile(filePath);
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -523,7 +523,7 @@ export class ChatController {
       }
 
       res.json(successResponse({ conversation }));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -541,7 +541,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -559,7 +559,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -577,7 +577,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -595,7 +595,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -613,7 +613,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -631,7 +631,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }
@@ -649,7 +649,7 @@ export class ChatController {
       res
         .status(501)
         .json(errorResponse("NOT_IMPLEMENTED", "Feature not yet implemented"));
-    } catch (error) {
+    } catch (error: unknown) {
       next(error);
     }
   }

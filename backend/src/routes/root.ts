@@ -13,7 +13,7 @@ const router: Router = express.Router();
 import { executeQuery, execute } from "../database";
 import { security } from "../middleware/security";
 import { createValidation } from "../middleware/validation";
-import { RootLog } from "../models/rootLog";
+import { getRootLogsByUserId, getLastRootLogin } from "../models/rootLog";
 import Tenant from "../models/tenant";
 import User from "../models/user";
 import { tenantDeletionService } from "../services/tenantDeletion.service";
@@ -149,7 +149,7 @@ router.post(
           [req.user.tenant_id, adminId],
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
-      } catch (taError) {
+      } catch (taError: unknown) {
         logger.warn("Could not add admin to tenant_admins:", taError);
         // Continue anyway - the admin was created successfully
       }
@@ -158,7 +158,7 @@ router.post(
       res
         .status(201)
         .json({ message: "Admin-Benutzer erfolgreich erstellt", adminId });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         "Fehler beim Erstellen des Admin-Benutzers:",
         getErrorMessage(error),
@@ -216,7 +216,7 @@ router.post(
           [req.user.tenant_id, adminId],
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
-      } catch (taError) {
+      } catch (taError: unknown) {
         logger.warn("Could not add admin to tenant_admins:", taError);
         // Continue anyway - the admin was created successfully
       }
@@ -225,7 +225,7 @@ router.post(
       res
         .status(201)
         .json({ message: "Admin-Benutzer erfolgreich erstellt", adminId });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         "Fehler beim Erstellen des Admin-Benutzers:",
         getErrorMessage(error),
@@ -261,7 +261,7 @@ router.get(
       // Tenant-Informationen hinzufügen
       const adminsWithTenants = await Promise.all(
         admins.map(async (admin) => {
-          if (admin.tenant_id) {
+          if (admin.tenant_id != null && admin.tenant_id !== 0) {
             const tenant = await Tenant.findById(admin.tenant_id);
             admin.tenant_name = tenant ? tenant.company_name : null;
           }
@@ -271,7 +271,7 @@ router.get(
 
       logger.info(`Retrieved ${adminsWithTenants.length} admin users`);
       res.json(adminsWithTenants);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         "Fehler beim Abrufen der Admin-Benutzer:",
         getErrorMessage(error),
@@ -320,7 +320,7 @@ router.put(
       }
 
       // Passwort hashen falls vorhanden
-      if (updateData.password) {
+      if (updateData.password != null && updateData.password !== "") {
         updateData.password = await bcrypt.hash(updateData.password, 10);
       }
 
@@ -336,7 +336,7 @@ router.put(
       } else {
         res.status(500).json(errorResponse("Fehler beim Aktualisieren", 500));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Aktualisieren des Admins:", error);
       res.status(500).json(errorResponse("Fehler beim Aktualisieren", 500));
     }
@@ -392,7 +392,7 @@ router.delete(
           .status(500)
           .json(errorResponse("Fehler beim Löschen des Admin-Benutzers", 500));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error deleting admin user with ID ${adminId}:`, error);
       res
         .status(500)
@@ -441,14 +441,14 @@ router.get(
       const { password: _password, ...adminData } = admin;
 
       // Letzten Login-Zeitpunkt hinzufügen, falls vorhanden
-      const lastLogin = await RootLog.getLastLogin(parseInt(adminId, 10));
+      const lastLogin = await getLastRootLogin(parseInt(adminId, 10));
       if (lastLogin) {
         adminData.last_login = lastLogin.created_at;
       }
 
       logger.info(`Details for admin ${adminId} retrieved successfully`);
       res.json(successResponse(adminData));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrieving details for admin ${adminId}:`, error);
       res
         .status(500)
@@ -499,7 +499,11 @@ router.put(
       };
 
       // Wenn ein neues Passwort übermittelt wurde, Hash erstellen
-      if (new_password && new_password.trim() !== "") {
+      if (
+        new_password != null &&
+        new_password !== "" &&
+        new_password.trim() !== ""
+      ) {
         updateData.password = await bcrypt.hash(new_password, 10);
       }
 
@@ -512,7 +516,7 @@ router.put(
       res.json(
         successResponse(null, "Admin-Benutzer erfolgreich aktualisiert"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error updating admin ${adminId}:`, error);
       res
         .status(500)
@@ -561,11 +565,11 @@ router.get(
       }
 
       // Logs abrufen
-      const logs = await RootLog.getByUserId(parseInt(adminId, 10), days);
+      const logs = await getRootLogsByUserId(parseInt(adminId, 10), days);
 
       logger.info(`Retrieved ${logs.length} logs for admin ${adminId}`);
       res.json(successResponse(logs));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrieving logs for admin ${adminId}:`, error);
       res
         .status(500)
@@ -584,7 +588,7 @@ router.get(
     try {
       const tenants = await Tenant.findAll();
       res.json(successResponse(tenants));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Fehler beim Abrufen der Tenants:", error);
       res
         .status(500)
@@ -626,7 +630,7 @@ router.get(
         `Dashboard data retrieved successfully for root user ${req.user.username}`,
       );
       res.json(successResponse(dashboardData));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrieving dashboard data:`, error);
       res
         .status(500)
@@ -656,14 +660,14 @@ router.get(
       }
 
       // Get storage limits based on tenant plan
-      const storageLimits: { [key: string]: number } = {
+      const storageLimits: Record<string, number> = {
         basic: 5 * 1024 * 1024 * 1024, // 5 GB
         professional: 25 * 1024 * 1024 * 1024, // 25 GB
         enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
       };
 
       const totalStorage =
-        storageLimits[tenant.current_plan ?? "basic"] || storageLimits["basic"];
+        storageLimits[tenant.current_plan ?? "basic"] || storageLimits.basic;
 
       // Get actual storage usage (sum of all document sizes)
       const usedStorage = await Document.getTotalStorageUsed(
@@ -684,7 +688,7 @@ router.get(
         `Storage info for tenant ${req.user.tenant_id}: ${usedStorage} / ${totalStorage} bytes (${percentage}%)`,
       );
       res.json(successResponse(storageInfo));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrieving storage info:`, error);
       res
         .status(500)
@@ -717,7 +721,7 @@ router.get(
       );
 
       res.json(successResponse(deletions));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching deletion status:", error);
       res
         .status(500)
@@ -755,7 +759,7 @@ router.delete(
           );
         return;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error checking root users:", error);
     }
 
@@ -801,13 +805,13 @@ router.delete(
           "Löschung wurde beantragt und wartet auf Genehmigung",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error queueing tenant ${tenantId} for deletion:`, error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Einplanen der Löschung",
+            getErrorMessage(error) ?? "Fehler beim Einplanen der Löschung",
             500,
           ),
         );
@@ -827,7 +831,7 @@ router.post(
       await tenantDeletionService.approveDeletion(queueId, approverId);
 
       res.json(successResponse({ message: "Löschung genehmigt" }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error approving deletion:", error);
       const message =
         error instanceof Error ? error.message : "Fehler bei der Genehmigung";
@@ -853,7 +857,7 @@ router.post(
       );
 
       res.json(successResponse({ message: "Löschung abgelehnt" }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error rejecting deletion:", error);
       const message =
         error instanceof Error ? error.message : "Fehler beim Ablehnen";
@@ -874,7 +878,7 @@ router.post(
       await tenantDeletionService.emergencyStop(queueId, stoppedBy);
 
       res.json(successResponse({ message: "Emergency Stop aktiviert!" }));
-    } catch (error) {
+    } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Fehler beim Emergency Stop";
       logger.error("Error emergency stop:", error);
@@ -961,13 +965,13 @@ router.delete(
           "Löschung wurde beantragt und wartet auf Genehmigung",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error queueing tenant ${tenantId} for deletion:`, error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Einplanen der Löschung",
+            getErrorMessage(error) ?? "Fehler beim Einplanen der Löschung",
             500,
           ),
         );
@@ -1003,7 +1007,7 @@ router.get(
         [tenantId],
       );
 
-      if (!deletionQueue) {
+      if (deletionQueue == null || deletionQueue.length === 0) {
         res
           .status(404)
           .json(errorResponse("Keine aktive Löschung gefunden", 404));
@@ -1011,7 +1015,7 @@ router.get(
       }
 
       res.json(successResponse(deletionQueue, "Löschstatus abgerufen"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting deletion status:", error);
       res
         .status(500)
@@ -1052,7 +1056,7 @@ router.get(
       }
 
       res.json(successResponse(status));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error getting deletion status for tenant ${tenantId}:`,
         error,
@@ -1082,13 +1086,13 @@ router.post(
       res.json(
         successResponse({ tenantId }, "Löschung erfolgreich abgebrochen"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error cancelling deletion:", error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Abbrechen der Löschung",
+            getErrorMessage(error) ?? "Fehler beim Abbrechen der Löschung",
             500,
           ),
         );
@@ -1127,13 +1131,13 @@ router.post(
           "Löschung wurde erfolgreich abgebrochen",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error cancelling deletion for tenant ${tenantId}:`, error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Abbrechen der Löschung",
+            getErrorMessage(error) ?? "Fehler beim Abbrechen der Löschung",
             500,
           ),
         );
@@ -1167,13 +1171,13 @@ router.post(
             "Löschung wurde genehmigt und wird nach der Grace Period durchgeführt",
           ),
         );
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`Error approving deletion ${queueId}:`, error);
         res
           .status(500)
           .json(
             errorResponse(
-              getErrorMessage(error) || "Fehler bei der Genehmigung",
+              getErrorMessage(error) ?? "Fehler bei der Genehmigung",
               500,
             ),
           );
@@ -1212,13 +1216,13 @@ router.post(
         res.json(
           successResponse({ rejected: true }, "Löschung wurde abgelehnt"),
         );
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`Error rejecting deletion ${queueId}:`, error);
         res
           .status(500)
           .json(
             errorResponse(
-              getErrorMessage(error) || "Fehler bei der Ablehnung",
+              getErrorMessage(error) ?? "Fehler bei der Ablehnung",
               500,
             ),
           );
@@ -1248,7 +1252,7 @@ router.get(
       );
 
       res.json(successResponse(pendingApprovals));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting pending approvals:", error);
       res
         .status(500)
@@ -1283,13 +1287,13 @@ router.post(
           "Emergency Stop ausgelöst - Löschung wird angehalten",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error triggering emergency stop ${queueId}:`, error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim Emergency Stop",
+            getErrorMessage(error) ?? "Fehler beim Emergency Stop",
             500,
           ),
         );
@@ -1325,7 +1329,7 @@ router.post(
       const report = await tenantDeletionService.performDryRun(tenantId);
 
       res.json(successResponse(report));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error performing dry-run for tenant ${tenantId}:`, error);
       res.status(500).json(errorResponse("Fehler bei der Simulation", 500));
     }
@@ -1350,13 +1354,13 @@ router.post(
       res.json(
         successResponse({ retrying: true }, "Löschung wird erneut versucht"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error retrying deletion ${queueId}:`, error);
       res
         .status(500)
         .json(
           errorResponse(
-            getErrorMessage(error) || "Fehler beim erneuten Versuch",
+            getErrorMessage(error) ?? "Fehler beim erneuten Versuch",
             500,
           ),
         );
@@ -1389,7 +1393,7 @@ router.get(
       );
 
       res.json(successResponse({ users: rootUsers }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching root users:", error);
       res
         .status(500)
@@ -1424,7 +1428,7 @@ router.get(
       }
 
       res.json(successResponse({ user: users[0] }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching root user:", error);
       res
         .status(500)
@@ -1483,7 +1487,8 @@ router.post(
         [rootUser.tenant_id],
       );
 
-      const subdomain = tenantData[0]?.subdomain ?? "DEFAULT";
+      const subdomain: string =
+        (tenantData[0]?.subdomain as string) ?? "DEFAULT";
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -1546,7 +1551,7 @@ router.post(
           "Root-Benutzer erfolgreich erstellt",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error creating root user:", error);
       res
         .status(500)
@@ -1617,7 +1622,7 @@ router.put(
       );
 
       res.json(successResponse(null, "Root-Benutzer erfolgreich aktualisiert"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error updating root user:", error);
       res
         .status(500)
@@ -1658,7 +1663,7 @@ router.delete(
         return;
       }
 
-      const deletedEmail = users[0].email;
+      const deletedEmail: string = users[0].email as string;
 
       // Check if at least 2 root users will remain
       const [rootCount] = await executeQuery<RowDataPacket[]>(
@@ -1702,7 +1707,7 @@ router.delete(
       logger.warn(`Root user deleted: ${deletedEmail} by ${rootUser.email}`);
 
       res.json(successResponse(null, "Root-Benutzer erfolgreich gelöscht"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error deleting root user:", error);
       res
         .status(500)
@@ -1715,7 +1720,7 @@ router.delete(
 router.delete(
   "/delete-tenant",
   ...security.root(),
-  typed.auth(async (_req, res) => {
+  typed.auth((_req, res) => {
     logger.warn(
       `DEPRECATED: Using old synchronous delete endpoint. Please use DELETE /tenants/:id instead`,
     );

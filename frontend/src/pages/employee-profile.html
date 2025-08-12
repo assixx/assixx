@@ -227,6 +227,64 @@
           margin-bottom: 10px;
         }
       }
+
+      /* Notification Styles */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 16px 20px;
+        min-width: 300px;
+        max-width: 500px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        transform: translateX(400px);
+        transition: all 0.3s ease-out;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.notification-error {
+        border-left: 4px solid #ff4444;
+        color: #d32f2f;
+      }
+
+      .notification.notification-error i {
+        color: #ff4444;
+        font-size: 16px;
+      }
+
+      .notification.notification-success {
+        border-left: 4px solid #4caf50;
+        color: #2e7d32;
+      }
+
+      .notification.notification-success i {
+        color: #4caf50;
+        font-size: 16px;
+      }
+
+      .notification.notification-info {
+        border-left: 4px solid #2196f3;
+        color: #1976d2;
+      }
+
+      .notification.notification-info i {
+        color: #2196f3;
+        font-size: 16px;
+      }
     </style>
   </head>
   <body>
@@ -443,9 +501,15 @@
       // Konto löschen
       function deleteAccount() {
         if (confirm('Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
-          alert('Diese Funktion ist noch nicht implementiert.');
+          showInfo('Diese Funktion ist noch nicht implementiert.');
         }
       }
+
+      // Make functions available globally for onclick handlers
+      window.showTab = showTab;
+      window.goBack = goBack;
+      window.deleteAccount = deleteAccount;
+      window.downloadDocument = downloadDocument;
 
       // Seite laden und Daten abrufen
       document.addEventListener('DOMContentLoaded', () => {
@@ -469,11 +533,11 @@
             fillUserData(userData);
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            showError(`Fehler: ${error.message}`);
           }
         } catch (error) {
           console.error('Fehler beim Laden der Benutzerdaten:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
         }
       }
 
@@ -491,11 +555,11 @@
             displayDocuments(documents);
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            showError(`Fehler: ${error.message}`);
           }
         } catch (error) {
           console.error('Fehler beim Laden der Dokumente:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
         }
       }
 
@@ -652,11 +716,11 @@
             window.URL.revokeObjectURL(url);
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            showError(`Fehler: ${error.message}`);
           }
         } catch (error) {
           console.error('Fehler beim Herunterladen des Dokuments:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
         }
       }
 
@@ -688,7 +752,7 @@
 
             if (!pictureResponse.ok) {
               const pictureError = await pictureResponse.json();
-              alert(`Fehler beim Hochladen des Profilbilds: ${pictureError.message}`);
+              showError(`Fehler beim Hochladen des Profilbilds: ${pictureError.message}`);
             }
           }
 
@@ -707,17 +771,17 @@
 
           if (response.ok) {
             const result = await response.json();
-            alert(result.message);
+            showSuccess(result.message);
 
             // Daten neu laden
             loadUserData();
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            showError(`Fehler: ${error.message}`);
           }
         } catch (error) {
           console.error('Fehler beim Aktualisieren des Profils:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
         }
       });
 
@@ -729,7 +793,7 @@
 
         // Passwortvalidierung
         if (newPassword && newPassword !== confirmPassword) {
-          alert('Die Passwörter stimmen nicht überein!');
+          showError('Die Passwörter stimmen nicht überein!');
           return;
         }
 
@@ -755,20 +819,84 @@
 
           if (response.ok) {
             const result = await response.json();
-            alert(result.message);
+            showSuccess(result.message);
 
             // Passwortfelder zurücksetzen
             document.getElementById('new_password').value = '';
             document.getElementById('confirm_password').value = '';
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            showError(`Fehler: ${error.message}`);
           }
         } catch (error) {
           console.error('Fehler beim Aktualisieren der Einstellungen:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
         }
       });
+
+      // Notification functions
+      function showError(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification notification-error';
+        notification.innerHTML = `
+          <i class="fas fa-exclamation-circle"></i>
+          <span>${message}</span>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 4000);
+      }
+
+      function showSuccess(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification notification-success';
+        notification.innerHTML = `
+          <i class="fas fa-check-circle"></i>
+          <span>${message}</span>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+      }
+
+      function showInfo(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification notification-info';
+        notification.innerHTML = `
+          <i class="fas fa-info-circle"></i>
+          <span>${message}</span>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+          notification.classList.remove('show');
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3500);
+      }
     </script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>

@@ -1,46 +1,43 @@
-/**
- * Jest Setup File
- * Configuration for test environment
- */
+import { config } from "dotenv";
+import path from "path";
 
-import { jest } from "@jest/globals";
+// Load environment variables from backend/.env.test
+config({ path: path.join(__dirname, "../../.env.test") });
 
-// Set test environment
-process.env["NODE_ENV"] = "test";
-process.env["JWT_SECRET"] =
-  process.env["JWT_SECRET"] || "test-secret-key-for-testing";
-
-// Database configuration - use GitHub Actions values or local defaults
-process.env["DB_HOST"] = process.env["DB_HOST"] || "localhost";
-process.env["DB_PORT"] =
-  process.env["DB_PORT"] || (process.env["CI"] ? "3306" : "3307");
-process.env["DB_USER"] = process.env["DB_USER"] || "assixx_user";
-process.env["DB_PASSWORD"] = process.env["DB_PASSWORD"] || "AssixxP@ss2025!";
-process.env["DB_NAME"] = process.env["DB_NAME"] || "main";
-
-// Redis configuration
-process.env["REDIS_HOST"] = process.env["REDIS_HOST"] || "localhost";
-process.env["REDIS_PORT"] = process.env["REDIS_PORT"] || "6379";
-
-// Mock console methods to reduce noise during tests
-global.console = {
-  ...console,
-  log: () => {},
-  debug: () => {},
-  info: () => {},
-  warn: () => {},
-  error: () => {},
+// Set test environment variables with defaults
+const setEnvDefault = (key: string, value: string): void => {
+  const currentValue = process.env[key];
+  if (currentValue === undefined || currentValue === "") {
+    process.env[key] = value;
+  }
 };
 
-// Global test timeout
-jest.setTimeout(30000);
+setEnvDefault("NODE_ENV", "test");
+setEnvDefault("DB_HOST", process.env.CI === "true" ? "mysql" : "localhost");
+setEnvDefault("DB_PORT", process.env.CI === "true" ? "3306" : "3307");
+setEnvDefault("DB_USER", "assixx_user");
+setEnvDefault("DB_PASSWORD", "AssixxP@ss2025!");
+setEnvDefault("DB_NAME", "main_test");
+setEnvDefault("JWT_SECRET", "test-secret-key-for-github-actions");
+setEnvDefault("SMTP_HOST", "smtp.gmail.com");
+setEnvDefault("SMTP_PORT", "587");
 
-// Mock modules that might not be available in test environment
-jest.mock("../utils/logger", () => ({
-  logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+// Mock console methods to reduce test noise
+global.console = {
+  ...console,
+  log: (): void => {
+    /* no-op */
   },
-}));
+  debug: (): void => {
+    /* no-op */
+  },
+  info: (): void => {
+    /* no-op */
+  },
+  warn: (): void => {
+    /* no-op */
+  },
+  error: (): void => {
+    /* no-op */
+  },
+};

@@ -225,16 +225,16 @@
             }
           } else {
             console.error('Error loading archived employees:', response.statusText);
-            alert('Fehler beim Laden der archivierten Mitarbeiter.');
+            showError('Fehler beim Laden der archivierten Mitarbeiter.');
           }
         } catch (error) {
           console.error('Error loading archived employees:', error);
-          alert('Fehler beim Laden der archivierten Mitarbeiter.');
+          showError('Fehler beim Laden der archivierten Mitarbeiter.');
         }
       }
 
       // Mitarbeiter wiederherstellen
-      async function unarchiveEmployee(employeeId) {
+      window.unarchiveEmployee = async function (employeeId) {
         try {
           const response = await fetch(`/admin/unarchive-employee/${employeeId}`, {
             method: 'POST',
@@ -246,20 +246,20 @@
           });
 
           if (response.ok) {
-            alert('Mitarbeiter erfolgreich wiederhergestellt');
+            showSuccess('Mitarbeiter erfolgreich wiederhergestellt');
             loadArchivedEmployees(); // Tabelle aktualisieren
           } else {
             const errorData = await response.json();
-            alert(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
+            showError(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
           }
         } catch (error) {
           console.error('Error unarchiving employee:', error);
-          alert('Fehler beim Wiederherstellen des Mitarbeiters.');
+          showError('Fehler beim Wiederherstellen des Mitarbeiters.');
         }
-      }
+      };
 
       // Bestätigungsmodal für endgültiges Löschen
-      function confirmDelete(employeeId, employeeName) {
+      window.confirmDelete = function (employeeId, employeeName) {
         const modal = document.getElementById('confirm-modal');
         const modalTitle = document.getElementById('confirm-modal-title');
         const modalBody = document.getElementById('confirm-modal-body');
@@ -277,7 +277,7 @@
         };
 
         modal.style.display = 'flex';
-      }
+      };
 
       // Mitarbeiter endgültig löschen
       async function deleteEmployeeForce(employeeId) {
@@ -290,15 +290,15 @@
           });
 
           if (response.ok) {
-            alert('Mitarbeiter wurde endgültig gelöscht');
+            showSuccess('Mitarbeiter wurde endgültig gelöscht');
             loadArchivedEmployees(); // Tabelle aktualisieren
           } else {
             const errorData = await response.json();
-            alert(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
+            showError(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
           }
         } catch (error) {
           console.error('Error deleting employee:', error);
-          alert('Fehler beim Löschen des Mitarbeiters.');
+          showError('Fehler beim Löschen des Mitarbeiters.');
         }
       }
 

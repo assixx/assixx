@@ -7,8 +7,8 @@ import type { Notification } from '../../types/utils.types';
 
 export class NotificationService {
   private container: HTMLElement | null = null;
-  private notifications: Map<string, Notification> = new Map();
-  private defaultDuration: number = 5000; // 5 seconds
+  private notifications = new Map<string, Notification>();
+  private defaultDuration = 5000; // 5 seconds
 
   constructor() {
     this.init();
@@ -231,15 +231,17 @@ export class NotificationService {
     `;
 
     // Add event listeners
-    const closeBtn = element.querySelector('.notification-close') as HTMLElement;
+    const closeBtn = element.querySelector('.notification-close');
     if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.dismiss(notification.id));
+      closeBtn.addEventListener('click', () => {
+        this.dismiss(notification.id);
+      });
     }
 
     // Add action listeners
     if (notification.actions) {
       notification.actions.forEach((action) => {
-        const btn = element.querySelector(`[data-action="${action.label}"]`) as HTMLElement;
+        const btn = element.querySelector(`[data-action="${action.label}"]`);
         if (btn) {
           btn.addEventListener('click', () => {
             action.handler();

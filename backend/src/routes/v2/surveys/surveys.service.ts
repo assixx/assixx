@@ -3,7 +3,7 @@
  * Business logic for survey management
  */
 
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import Survey from "../../../models/survey.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
@@ -110,7 +110,7 @@ export class SurveysService {
           creatorLastName: survey.creator_last_name,
         };
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error listing surveys:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to list surveys");
     }
@@ -189,7 +189,7 @@ export class SurveysService {
       }
 
       return apiSurvey;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error("Error getting survey:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get survey");
@@ -247,7 +247,7 @@ export class SurveysService {
 
       // Return the created survey
       return this.getSurveyById(surveyId, tenantId, userId, "admin");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating survey:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to create survey");
     }
@@ -332,7 +332,7 @@ export class SurveysService {
 
       // Return the updated survey
       return this.getSurveyById(surveyId, tenantId, userId, userRole);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error("Error updating survey:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to update survey");
@@ -398,7 +398,7 @@ export class SurveysService {
       });
 
       return { message: "Survey deleted successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error("Error deleting survey:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to delete survey");
@@ -414,7 +414,7 @@ export class SurveysService {
       return templates.map((template) =>
         dbToApi<Record<string, unknown>>(template),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error getting templates:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get survey templates");
     }
@@ -451,7 +451,7 @@ export class SurveysService {
 
       // Return the created survey
       return this.getSurveyById(surveyId, tenantId, userId, "admin");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating from template:", error);
       throw new ServiceError(
         "SERVER_ERROR",
@@ -510,7 +510,7 @@ export class SurveysService {
             : undefined,
         })),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error("Error getting statistics:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get survey statistics");

@@ -110,7 +110,7 @@ export class RolesService {
         requiredRole: request.requiredRole,
         hasAccess: userRoleLevel >= requiredRoleLevel, // Higher level = more access
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error checking user role:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to check user role");

@@ -7,7 +7,7 @@ import { typed } from "../../../utils/routeHandlers";
 
 import { PlansService } from "./plans.service";
 import { plansValidation } from "./plans.validation";
-import { UpgradePlanRequest, UpdateAddonsRequest } from "./types";
+import type { UpgradePlanRequest, UpdateAddonsRequest } from "./types";
 
 const router = Router();
 
@@ -83,7 +83,7 @@ router.get(
       const plans = await PlansService.getAllPlans(includeInactive);
 
       res.json(successResponse(plans));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("PLANS_FETCH_ERROR", message));
     }
@@ -139,7 +139,7 @@ router.get(
       }
 
       res.json(successResponse(currentPlan));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("CURRENT_PLAN_ERROR", message));
     }
@@ -186,7 +186,7 @@ router.get(
       const addons = await PlansService.getTenantAddons(tenantId);
 
       res.json(successResponse(addons));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("ADDONS_FETCH_ERROR", message));
     }
@@ -264,7 +264,7 @@ router.put(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("ADDONS_UPDATE_ERROR", message));
     }
@@ -323,7 +323,7 @@ router.get(
       const costs = await PlansService.calculateCosts(tenantId);
 
       res.json(successResponse(costs));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("COSTS_CALC_ERROR", message));
     }
@@ -390,7 +390,7 @@ router.get(
       }
 
       res.json(successResponse(plan));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("PLAN_FETCH_ERROR", message));
     }
@@ -450,7 +450,7 @@ router.get(
       const features = await PlansService.getPlanFeatures(planId);
 
       res.json(successResponse(features));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("FEATURES_FETCH_ERROR", message));
     }
@@ -534,7 +534,7 @@ router.put(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse("PLAN_UPGRADE_ERROR", message));
     }

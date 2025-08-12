@@ -22,7 +22,7 @@ declare module "express-validator" {
     isObject(): ValidationChain;
     isBoolean(): ValidationChain;
     isString(): ValidationChain;
-    isIn(values: any[]): ValidationChain;
+    isIn(values: unknown[]): ValidationChain;
     optional(options?: any): ValidationChain;
     withMessage(message: string): ValidationChain;
     custom(

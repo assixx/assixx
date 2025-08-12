@@ -2,7 +2,7 @@ import MachineModel, {
   Machine,
   MachineMaintenanceHistory,
 } from "../../../models/machine.js";
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 import {
@@ -332,13 +332,13 @@ export class MachinesService {
   async getStatistics(tenantId: number): Promise<MachineStatistics> {
     const stats = await MachineModel.getStatistics(tenantId);
     return {
-      totalMachines: parseInt(String(stats.total_machines)) || 0,
-      operational: parseInt(String(stats.operational)) || 0,
-      inMaintenance: parseInt(String(stats.in_maintenance)) || 0,
-      inRepair: parseInt(String(stats.in_repair)) || 0,
-      standby: parseInt(String(stats.standby)) || 0,
-      decommissioned: parseInt(String(stats.decommissioned)) || 0,
-      needsMaintenanceSoon: parseInt(String(stats.needs_maintenance_soon)) || 0,
+      totalMachines: parseInt(String(stats.total_machines)) ?? 0,
+      operational: parseInt(String(stats.operational)) ?? 0,
+      inMaintenance: parseInt(String(stats.in_maintenance)) ?? 0,
+      inRepair: parseInt(String(stats.in_repair)) ?? 0,
+      standby: parseInt(String(stats.standby)) ?? 0,
+      decommissioned: parseInt(String(stats.decommissioned)) ?? 0,
+      needsMaintenanceSoon: parseInt(String(stats.needs_maintenance_soon)) ?? 0,
     };
   }
 

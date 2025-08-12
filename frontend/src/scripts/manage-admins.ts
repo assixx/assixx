@@ -341,7 +341,7 @@
       btn.addEventListener('click', (e) => {
         console.info('🔵 Permission button clicked!');
         const target = e.target as HTMLElement;
-        const button = target.closest('.action-btn.permissions') as HTMLElement;
+        const button = target.closest('.action-btn.permissions');
         const adminId = parseInt(button?.getAttribute('data-admin-id') ?? '0');
         console.info('Admin ID from button:', adminId);
         if (adminId) {
@@ -409,7 +409,7 @@
     if (activeStatusGroup) activeStatusGroup.style.display = 'block';
 
     const isActiveCheckbox = document.getElementById('adminIsActive') as HTMLInputElement;
-    const isActive = admin.is_active !== false;
+    const isActive = admin.is_active;
     console.info('Setting checkbox for edit - admin.is_active:', admin.is_active, 'checkbox will be:', isActive);
     isActiveCheckbox.checked = isActive;
 
@@ -437,17 +437,15 @@
 
     // Set the appropriate permission type based on current assignments
     if (admin.hasAllAccess) {
-      const allRadio = document.querySelector('input[name="permissionType"][value="all"]') as HTMLInputElement;
+      const allRadio = document.querySelector('input[name="permissionType"][value="all"]');
       if (allRadio) {
-        allRadio.checked = true;
+        (allRadio as HTMLInputElement).checked = true;
         console.info('✅ Set permission type to: all');
       }
     } else if (admin.departments && admin.departments.length > 0) {
-      const specificRadio = document.querySelector(
-        'input[name="permissionType"][value="specific"]',
-      ) as HTMLInputElement;
+      const specificRadio = document.querySelector('input[name="permissionType"][value="specific"]');
       if (specificRadio) {
-        specificRadio.checked = true;
+        (specificRadio as HTMLInputElement).checked = true;
         console.info('✅ Set permission type to: specific');
 
         // Show department container and load departments
@@ -473,9 +471,9 @@
         }
       }
     } else {
-      const noneRadio = document.querySelector('input[name="permissionType"][value="none"]') as HTMLInputElement;
+      const noneRadio = document.querySelector('input[name="permissionType"][value="none"]');
       if (noneRadio) {
-        noneRadio.checked = true;
+        (noneRadio as HTMLInputElement).checked = true;
         console.info('✅ Set permission type to: none');
       }
     }
@@ -661,7 +659,7 @@
 
   // Handle permission type radio change
   function handlePermissionTypeChange() {
-    const type = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)?.value;
+    const type = document.querySelector('input[name="permissionType"]:checked')?.value;
     const departmentContainer = document.getElementById('departmentSelectContainer');
     const groupContainer = document.getElementById('groupSelectContainer');
 
@@ -702,7 +700,7 @@
   }
 
   // Render group tree
-  function renderGroupTree(groups: DepartmentGroup[], level: number = 0): string {
+  function renderGroupTree(groups: DepartmentGroup[], level = 0): string {
     return groups
       .map(
         (group) => `
@@ -750,20 +748,20 @@
     await loadPermissionsModalData(adminId);
 
     // Ensure departments tab is active by default
-    const deptTab = document.querySelector('[data-tab="departments"]') as HTMLElement;
-    const groupTab = document.querySelector('[data-tab="groups"]') as HTMLElement;
-    const deptContent = document.getElementById('departmentsTab') as HTMLElement;
-    const groupContent = document.getElementById('groupsTab') as HTMLElement;
+    const deptTab = document.querySelector('[data-tab="departments"]');
+    const groupTab = document.querySelector('[data-tab="groups"]');
+    const deptContent = document.getElementById('departmentsTab');
+    const groupContent = document.getElementById('groupsTab');
 
     if (deptTab && groupTab && deptContent && groupContent) {
       // Reset all tabs
       deptTab.classList.add('active');
-      deptTab.style.borderBottomColor = 'var(--primary-color)';
-      deptTab.style.color = 'var(--text-primary)';
+      (deptTab as HTMLElement).style.borderBottomColor = 'var(--primary-color)';
+      (deptTab as HTMLElement).style.color = 'var(--text-primary)';
 
       groupTab.classList.remove('active');
-      groupTab.style.borderBottomColor = 'transparent';
-      groupTab.style.color = 'var(--text-secondary)';
+      (groupTab as HTMLElement).style.borderBottomColor = 'transparent';
+      (groupTab as HTMLElement).style.color = 'var(--text-secondary)';
 
       // Show departments content, hide groups
       deptContent.style.display = 'block';
@@ -1018,8 +1016,7 @@
           const adminId = currentAdminId ?? result.adminId ?? result.id;
 
           // Set permissions for both new and existing admins
-          const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)
-            ?.value;
+          const permissionType = document.querySelector('input[name="permissionType"]:checked')?.value;
           console.info('🔵 Permission type selected:', permissionType);
 
           if (adminId && permissionType) {

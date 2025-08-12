@@ -522,6 +522,13 @@
             <textarea name="description" class="form-control" rows="3"></textarea>
           </div>
           <div class="form-group">
+            <label class="form-label">Bereich (Area)</label>
+            <select name="area_id" id="department-area-select" class="form-control">
+              <option value="">Kein Bereich</option>
+              <!-- Will be populated dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
             <label class="form-label">Status</label>
             <select name="status" class="form-control">
               <option value="active">Aktiv</option>
@@ -647,9 +654,27 @@
       }
 
       // Modal functions
-      window.showDepartmentModal = function () {
+      window.showDepartmentModal = async function () {
         document.getElementById('modalTitle').textContent = 'Neue Abteilung';
         document.getElementById('department-form').reset();
+
+        // Load areas for dropdown
+        try {
+          const response = await apiClient.get('/areas');
+          const areaSelect = document.getElementById('department-area-select');
+          if (areaSelect && response) {
+            areaSelect.innerHTML = '<option value="">Kein Bereich</option>';
+            response.forEach((area) => {
+              const option = document.createElement('option');
+              option.value = area.id;
+              option.textContent = `${area.name} (${area.type || 'other'})`;
+              areaSelect.appendChild(option);
+            });
+          }
+        } catch (error) {
+          console.error('Error loading areas:', error);
+        }
+
         document.getElementById('department-modal').classList.add('active');
       };
 
@@ -667,6 +692,22 @@
           form.description.value = dept.description || '';
           form.status.value = dept.status || 'active';
           form.visibility.value = dept.visibility || 'public';
+
+          // Load areas and select the current one
+          const response = await apiClient.get('/areas');
+          const areaSelect = document.getElementById('department-area-select');
+          if (areaSelect && response) {
+            areaSelect.innerHTML = '<option value="">Kein Bereich</option>';
+            response.forEach((area) => {
+              const option = document.createElement('option');
+              option.value = area.id;
+              option.textContent = `${area.name} (${area.type || 'other'})`;
+              if (area.id === dept.area_id || area.id === dept.areaId) {
+                option.selected = true;
+              }
+              areaSelect.appendChild(option);
+            });
+          }
 
           form.dataset.departmentId = id;
           document.getElementById('department-modal').classList.add('active');
@@ -724,6 +765,16 @@
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         const departmentId = e.target.dataset.departmentId;
+
+        // Convert area_id to areaId (camelCase for v2 API) and to integer if it exists
+        if (data.area_id && data.area_id !== '') {
+          data.areaId = parseInt(data.area_id); // Use camelCase for v2 API
+        } else {
+          data.areaId = null;
+        }
+        delete data.area_id; // Remove snake_case version
+
+        console.info('Department form data:', data);
 
         try {
           if (departmentId) {

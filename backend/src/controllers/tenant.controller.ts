@@ -80,7 +80,7 @@ class TenantController {
    * Holt alle Tenant Einträge
    * GET /api/tenant
    */
-  async getAll(req: TenantQueryRequest, res: Response): Promise<void> {
+  getAll(req: TenantQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -95,12 +95,18 @@ class TenantController {
             : req.query.is_active === "false"
               ? false
               : undefined,
-        page: req.query.page ? parseInt(req.query.page, 10) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+        page:
+          req.query.page != null && req.query.page !== ""
+            ? parseInt(req.query.page, 10)
+            : undefined,
+        limit:
+          req.query.limit != null && req.query.limit !== ""
+            ? parseInt(req.query.limit, 10)
+            : undefined,
       };
-      const result = await tenantService.getAll(req.tenantDb, filters);
+      const result = tenantService.getAll(req.tenantDb, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -113,7 +119,7 @@ class TenantController {
    * Holt einen Tenant Eintrag per ID
    * GET /api/tenant/:id
    */
-  async getById(req: TenantGetRequest, res: Response): Promise<void> {
+  getById(req: TenantGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -126,13 +132,13 @@ class TenantController {
         return;
       }
 
-      const result = await tenantService.getById(req.tenantDb, id);
+      const result = tenantService.getById(req.tenantDb, id);
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -145,7 +151,7 @@ class TenantController {
    * Erstellt einen neuen Tenant Eintrag
    * POST /api/tenant
    */
-  async create(req: TenantCreateRequest, res: Response): Promise<void> {
+  create(req: TenantCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -170,7 +176,7 @@ class TenantController {
         subdomain: req.body.subdomain,
         company_name: req.body.company_name,
         company_email: req.body.company_email  ?? req.body.contact_email || req.body.email || '',
-        company_phone: req.body.company_phone  ?? req.body.contact_phone || null,
+        company_phone: req.body.company_phone  ?? req.body.contact_phone ?? null,
         country: req.body.country  ?? 'DE',
         status: req.body.status  ?? 'active',
         trial_ends_at: req.body.trial_ends_at  ?? null,
@@ -181,7 +187,7 @@ class TenantController {
       const result = await tenantService.create(req.tenantDb, tenantData);
       res.status(201).json(result);
       */
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -194,7 +200,7 @@ class TenantController {
    * Aktualisiert einen Tenant Eintrag
    * PUT /api/tenant/:id
    */
-  async update(req: TenantUpdateRequest, res: Response): Promise<void> {
+  update(req: TenantUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -207,9 +213,9 @@ class TenantController {
         return;
       }
 
-      const result = await tenantService.update(req.tenantDb, id, req.body);
+      const result = tenantService.update(req.tenantDb, id, req.body);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -222,7 +228,7 @@ class TenantController {
    * Löscht einen Tenant Eintrag
    * DELETE /api/tenant/:id
    */
-  async delete(req: TenantGetRequest, res: Response): Promise<void> {
+  delete(req: TenantGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
         res.status(400).json({ error: "Tenant database not available" });
@@ -235,9 +241,9 @@ class TenantController {
         return;
       }
 
-      await tenantService.delete(req.tenantDb, id);
+      tenantService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

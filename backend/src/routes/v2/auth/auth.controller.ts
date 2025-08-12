@@ -7,9 +7,9 @@ import bcryptjs from "bcryptjs";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
-import { RootLog } from "../../../models/rootLog";
+import RootLog from "../../../models/rootLog";
 import User from "../../../models/user";
-import { AuthenticatedRequest } from "../../../types/request.types";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { dbToApi } from "../../../utils/fieldMapping";
 import { logger } from "../../../utils/logger";
@@ -175,7 +175,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         user: userApi,
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Login error:", error);
     res
       .status(500)
@@ -300,7 +300,7 @@ export async function register(
     const userApi = dbToApi(safeUser);
 
     res.status(201).json(successResponse(userApi));
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Register error:", error);
     res
       .status(500)
@@ -360,7 +360,7 @@ export async function logout(
         message: "Logged out successfully",
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Logout error:", error);
     res
       .status(500)
@@ -414,7 +414,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
         accessToken,
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof jwt.JsonWebTokenError) {
       res
         .status(401)
@@ -459,7 +459,7 @@ export async function verify(
         },
       }),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Verify error:", error);
     res
       .status(500)
@@ -504,7 +504,7 @@ export async function getCurrentUser(
     const userApi = dbToApi(safeUser);
 
     res.json(successResponse(userApi));
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Get current user error:", error);
     res
       .status(500)

@@ -40,8 +40,8 @@ interface AdminUpdateForm extends HTMLFormElement {
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
   const updateAdminForm = document.getElementById('update-admin-form') as AdminUpdateForm;
-  const adminDetailsContainer = document.getElementById('admin-details') as HTMLElement;
-  const adminUsernameTitle = document.getElementById('admin-username') as HTMLElement;
+  const adminDetailsContainer = document.getElementById('admin-details');
+  const adminUsernameTitle = document.getElementById('admin-username');
   const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
 
@@ -70,7 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => {
       // Set active tab button
-      tabButtons.forEach((btn) => btn.classList.remove('active'));
+      tabButtons.forEach((btn) => {
+        btn.classList.remove('active');
+      });
       button.classList.add('active');
 
       // Set active tab content
@@ -194,10 +196,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Show loading state
-    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const submitButton = form.querySelector('button[type="submit"]');
     const originalText = submitButton?.textContent ?? 'Speichern';
     if (submitButton) {
-      submitButton.disabled = true;
+      (submitButton as HTMLButtonElement).disabled = true;
       submitButton.textContent = 'Wird gespeichert...';
     }
 
@@ -228,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       // Reset button state
       if (submitButton) {
-        submitButton.disabled = false;
+        (submitButton as HTMLButtonElement).disabled = false;
         submitButton.textContent = originalText;
       }
     }
@@ -245,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTab = document.querySelector('.tab-content.active');
     if (!activeTab) return;
 
-    const logsContainer = activeTab.querySelector('.logs-container') as HTMLElement;
+    const logsContainer = activeTab.querySelector('.logs-container');
     if (!logsContainer) return;
 
     // Show loading state
@@ -262,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const logs: AdminLog[] = await response.json();
-        displayAdminLogs(logs, logsContainer);
+        displayAdminLogs(logs, logsContainer as HTMLElement);
       } else {
         logsContainer.innerHTML = '<p class="error-message">Fehler beim Laden der Logs.</p>';
       }

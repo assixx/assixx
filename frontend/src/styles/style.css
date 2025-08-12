@@ -318,7 +318,7 @@ header {
 /* Responsive utilities */
 @media (max-width: 576px) {
   .container {
-    padding: var(--spacing-md); /* 16px auf Mobile */
+    padding: var(--spacing-2sm); /* 16px auf Mobile */
   }
 }
 

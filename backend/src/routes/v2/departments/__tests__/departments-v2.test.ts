@@ -277,7 +277,7 @@ describe("Departments v2 API Endpoints", () => {
       await createTestDepartment(
         testDb,
         tenant2Id,
-        `Tenant2 Test Dept ${Date.now()}`,
+        `Tenant2 Test Dept ${String(Date.now())}`,
       );
 
       const response = await request(app)
@@ -582,7 +582,7 @@ describe("Departments v2 API Endpoints", () => {
   describe("Multi-tenant isolation", () => {
     it("should completely isolate department data between tenants", async () => {
       // Create a department for tenant2 to test isolation
-      const tenant2TestDeptName = `Tenant2 Private Dept ${Date.now()}`;
+      const tenant2TestDeptName = `Tenant2 Private Dept ${String(Date.now())}`;
       await createTestDepartment(testDb, tenant2Id, tenant2TestDeptName);
 
       // Admin from tenant1 should not see tenant2's departments
@@ -599,7 +599,7 @@ describe("Departments v2 API Endpoints", () => {
       const tenant2DeptId = await createTestDepartment(
         testDb,
         tenant2Id,
-        `Tenant2 Isolation Test ${Date.now()}`,
+        `Tenant2 Isolation Test ${String(Date.now())}`,
       );
 
       // Try to create department in tenant1 with parent from tenant2

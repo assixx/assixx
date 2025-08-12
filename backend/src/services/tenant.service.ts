@@ -53,15 +53,12 @@ class TenantService {
   /**
    * Holt alle Tenant Einträge für einen Tenant
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: TenantFilters = {},
-  ): Promise<TenantData[]> {
+  getAll(_tenantDb: Pool, _filters: TenantFilters = {}): TenantData[] {
     try {
       // TODO: Tenant.getAll doesn't exist in the model
       console.warn("Tenant.getAll is not implemented");
       return [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantService.getAll:", error);
       throw error;
     }
@@ -70,12 +67,12 @@ class TenantService {
   /**
    * Holt einen Tenant Eintrag per ID
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<TenantData | null> {
+  getById(_tenantDb: Pool, _id: number): TenantData | null {
     try {
       // TODO: Tenant.getById doesn't exist in the model
       console.warn("Tenant.getById is not implemented");
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantService.getById:", error);
       throw error;
     }
@@ -91,7 +88,7 @@ class TenantService {
     try {
       const result = await Tenant.create(data);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantService.create:", error);
       throw error;
     }
@@ -100,16 +97,16 @@ class TenantService {
   /**
    * Aktualisiert einen Tenant Eintrag
    */
-  async update(
+  update(
     _tenantDb: Pool,
     _id: number,
     _data: TenantUpdateData,
-  ): Promise<TenantData | null> {
+  ): TenantData | null {
     try {
       // TODO: Tenant.update doesn't exist in the model
       console.warn("Tenant.update is not implemented");
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantService.update:", error);
       throw error;
     }
@@ -118,12 +115,12 @@ class TenantService {
   /**
    * Löscht einen Tenant Eintrag
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
       // TODO: Tenant.delete doesn't exist in the model
       console.warn("Tenant.delete is not implemented");
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TenantService.delete:", error);
       throw error;
     }

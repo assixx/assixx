@@ -23,7 +23,7 @@ export class DocumentBase {
   protected pageSubtitle: string;
   protected showSearch: boolean;
   protected currentViewMode: ViewMode = 'active';
-  protected favoriteDocIds: Set<number> = new Set();
+  protected favoriteDocIds = new Set<number>();
 
   constructor(scope: DocumentScope, title: string, subtitle: string, showSearch = true) {
     this.currentScope = scope;
@@ -321,7 +321,7 @@ export class DocumentBase {
   protected createDocumentCard(doc: Document): HTMLElement {
     const card = document.createElement('div');
     card.className = 'document-card';
-    card.onclick = () => this.viewDocument(doc.id);
+    card.onclick = async () => this.viewDocument(doc.id);
 
     const icon = this.getFileIcon(doc.mime_type ?? doc.file_name);
     const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
@@ -421,7 +421,7 @@ export class DocumentBase {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
       const endpoint = useV2Documents ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
       fetchWithAuth(endpoint)
-        .then((response) => {
+        .then(async (response) => {
           if (!response.ok) throw new Error('Preview failed');
           return response.blob();
         })
@@ -526,8 +526,12 @@ export class DocumentBase {
   }
 
   protected closeAllDropdowns(): void {
-    document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-    document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-display').forEach((d) => {
+      d.classList.remove('active');
+    });
+    document.querySelectorAll('.dropdown-options').forEach((d) => {
+      d.classList.remove('active');
+    });
   }
 
   /**

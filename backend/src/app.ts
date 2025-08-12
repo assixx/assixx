@@ -220,7 +220,7 @@ app.use("/js", rateLimiter.public, (req: Request, res: Response): void => {
   };
 
   const tsPath = tsMapping[jsFileName];
-  if (tsPath) {
+  if (tsPath !== null && tsPath !== undefined && tsPath !== "") {
     // Redirect to the TypeScript file
     res.redirect(tsPath);
     return;
@@ -536,7 +536,7 @@ app.post(
     try {
       // Call auth controller directly
       await authController.login(req, res);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[DEBUG] Error in /login endpoint:", error);
       res.status(500).json({
         message: "Internal server error",

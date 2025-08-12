@@ -95,7 +95,7 @@ describe("Chat API v2", () => {
       );
       conversationId = conv1Result.insertId;
       log("Created conversation 1 with ID:", conversationId);
-    } catch (error) {
+    } catch (error: unknown) {
       logError("Failed to create conversation 1:", error);
       throw error;
     }
@@ -464,7 +464,7 @@ describe("Chat API v2", () => {
       if (response.status !== 200) {
         process.stderr.write(`\nMark as read failed: ${response.status}\n`);
         process.stderr.write(
-          `Response body: ${JSON.stringify(response.body)}\n`,
+          `Response body: ${String(JSON.stringify(response.body))}\n`,
         );
         process.stderr.write(`conversationId: ${conversationId}\n`);
         process.stderr.write(

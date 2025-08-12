@@ -57,7 +57,7 @@ class TeamService {
         team_lead_name: null as string | null,
         member_count: 0,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamService.getAll:", error);
       throw error;
     }
@@ -77,7 +77,7 @@ class TeamService {
         team_lead_name: null,
         member_count: 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamService.getById:", error);
       throw error;
     }
@@ -104,7 +104,7 @@ class TeamService {
         team_lead_name: null,
         member_count: 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamService.create:", error);
       throw error;
     }
@@ -129,7 +129,7 @@ class TeamService {
         return await this.getById(tenantDb, id);
       }
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamService.update:", error);
       throw error;
     }
@@ -142,7 +142,7 @@ class TeamService {
     try {
       // TODO: Team.delete expects different parameters
       return await Team.delete(id);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamService.delete:", error);
       throw error;
     }

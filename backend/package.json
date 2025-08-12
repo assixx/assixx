@@ -16,6 +16,7 @@
     "test:integration": "jest --testPathPattern=integration --runInBand",
     "lint": "eslint src/**/*.ts --no-warn-ignored",
     "lint:fix": "eslint src/**/*.ts --no-warn-ignored --fix",
+    "lint:fixnowarn": "eslint src/**/*.ts --no-warn-ignored --fix --quiet",
     "prettier": "prettier --check src/**/*.ts",
     "prettier:fix": "prettier --write src/**/*.ts",
     "typecheck": "tsc --noEmit",

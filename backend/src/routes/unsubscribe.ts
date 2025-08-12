@@ -151,7 +151,7 @@ router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
         </body>
       </html>
     `);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Fehler bei der Abmeldung von Benachrichtigungen: ${getErrorMessage(error)}`,
     );

@@ -130,20 +130,20 @@ export const security = {
     const stack: RequestHandler[] = [];
 
     // Add rate limiter
-    if (options.rateLimit) {
+    if (options.rateLimit != null) {
       const rateLimitMiddleware = rateLimiter[options.rateLimit];
-      if (rateLimitMiddleware) {
+      if (rateLimitMiddleware != null) {
         stack.push(rateLimitMiddleware);
       }
     }
 
     // Add authentication
-    if (options.authenticate) {
+    if (options.authenticate === true) {
       stack.push(authenticateToken as RequestHandler);
     }
 
     // Add role authorization
-    if (options.roles) {
+    if (options.roles != null) {
       stack.push(requireRole(options.roles) as RequestHandler);
     }
 

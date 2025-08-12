@@ -123,11 +123,15 @@ export class AuditTrailService {
       conditions.push("user_id = ?");
       params.push(userId);
     }
-    if (action) {
+    if (action !== null && action !== undefined && action !== "") {
       conditions.push("action = ?");
       params.push(action);
     }
-    if (resourceType) {
+    if (
+      resourceType !== null &&
+      resourceType !== undefined &&
+      resourceType !== ""
+    ) {
       conditions.push("resource_type = ?");
       params.push(resourceType);
     }
@@ -139,15 +143,15 @@ export class AuditTrailService {
       conditions.push("status = ?");
       params.push(status);
     }
-    if (dateFrom) {
+    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== "") {
       conditions.push("created_at >= ?");
       params.push(dateFrom);
     }
-    if (dateTo) {
+    if (dateTo !== null && dateTo !== undefined && dateTo !== "") {
       conditions.push("created_at <= ?");
       params.push(dateTo);
     }
-    if (search) {
+    if (search !== null && search !== undefined && search !== "") {
       conditions.push(
         "(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)",
       );
@@ -171,7 +175,9 @@ export class AuditTrailService {
       "user_id",
       "resource_type",
     ];
-    const orderBy = validSortFields.includes(sortBy) ? sortBy : "created_at";
+    const orderBy = validSortFields.includes(sortBy)
+      ? sortBy !== null && sortBy !== undefined
+      : "created_at";
     const order = sortOrder === "asc" ? "ASC" : "DESC";
 
     // Debug logging
@@ -221,11 +227,11 @@ export class AuditTrailService {
     const conditions: string[] = ["tenant_id = ?"];
     const params: (string | number | Date)[] = [tenantId];
 
-    if (dateFrom) {
+    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== "") {
       conditions.push("created_at >= ?");
       params.push(dateFrom);
     }
-    if (dateTo) {
+    if (dateTo !== null && dateTo !== undefined && dateTo !== "") {
       conditions.push("created_at <= ?");
       params.push(dateTo);
     }

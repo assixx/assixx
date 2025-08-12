@@ -268,7 +268,9 @@ function renderDocuments(): void {
 function createDocumentCard(doc: Document): HTMLElement {
   const card = document.createElement('div');
   card.className = 'document-card';
-  card.onclick = () => void viewDocument(doc.id);
+  card.onclick = () => {
+    viewDocument(doc.id);
+  };
 
   const icon = getFileIcon(doc.mime_type ?? doc.file_name);
   const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
@@ -419,7 +421,7 @@ function showDocumentModal(doc: Document): void {
     // For iframe, we need to handle authentication differently
     // First, try to fetch the document
     fetchWithAuth(previewUrl)
-      .then((response) => {
+      .then(async (response) => {
         if (!response.ok) throw new Error('Preview failed');
         return response.blob();
       })
@@ -614,8 +616,12 @@ window.selectSort = function (value: SortOption, text: string): void {
  * Close all dropdowns
  */
 function closeAllDropdowns(): void {
-  document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-  document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+  document.querySelectorAll('.dropdown-display').forEach((d) => {
+    d.classList.remove('active');
+  });
+  document.querySelectorAll('.dropdown-options').forEach((d) => {
+    d.classList.remove('active');
+  });
 }
 
 /**

@@ -21,7 +21,7 @@ describe("Authentication API v2 Endpoints", () => {
   let tenantId: number;
   let testUser: any;
 
-  const JWT_SECRET = process.env.JWT_SECRET || "test-jwt-secret";
+  const JWT_SECRET = process.env.JWT_SECRET ?? "test-jwt-secret";
 
   beforeAll(async () => {
     testDb = await createTestDatabase();

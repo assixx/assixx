@@ -27,22 +27,26 @@ if (!JWT_SECRET && process.env.NODE_ENV === "production") {
 // Helper to extract token from request
 function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
-  const authHeader = req.headers["authorization"];
-  const bearerToken = authHeader?.startsWith("Bearer ")
-    ? authHeader.substring(7)
-    : null;
+  const authHeader = req.headers.authorization;
+  const bearerToken =
+    authHeader !== null &&
+    authHeader !== undefined &&
+    authHeader !== "" &&
+    authHeader.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : null;
 
   // Check cookie as fallback
-  const cookieToken = req.cookies?.token;
+  const cookieToken = req.cookies?.token as string | undefined;
 
   return bearerToken ?? cookieToken ?? null;
 }
 
 // Helper to verify JWT token
-async function verifyToken(token: string): Promise<TokenPayload | null> {
+function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (typeof decoded === "string" || !decoded) {
+    if (typeof decoded === "string" || decoded == null) {
       return null;
     }
     return decoded as TokenPayload;
@@ -56,7 +60,11 @@ async function validateSession(
   userId: number,
   sessionId?: string,
 ): Promise<boolean> {
-  if (!sessionId || process.env.VALIDATE_SESSIONS !== "true") {
+  if (
+    sessionId == null ||
+    sessionId === "" ||
+    process.env.VALIDATE_SESSIONS !== "true"
+  ) {
     return true;
   }
 
@@ -66,7 +74,7 @@ async function validateSession(
       [userId, sessionId],
     );
     return sessions.length > 0;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[AUTH] Session validation error:", error);
     // Allow access if database is down
     return true;
@@ -94,7 +102,17 @@ async function getUserDetails(
       return null;
     }
 
-    const user = users[0];
+    const user = users[0] as {
+      id: number;
+      username: string;
+      email: string;
+      role: string;
+      tenant_id: number;
+      tenantName: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      department_id: number | null;
+    };
     return {
       id: user.id,
       userId: user.id,
@@ -102,12 +120,12 @@ async function getUserDetails(
       email: user.email,
       role: user.role,
       tenant_id: user.tenant_id,
-      tenantName: user.tenantName,
-      first_name: user.firstName,
-      last_name: user.lastName,
+      tenantName: user.tenantName ?? undefined,
+      first_name: user.firstName ?? undefined,
+      last_name: user.lastName ?? undefined,
       department_id: user.department_id,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[AUTH] User lookup error:", error);
     return null;
   }
@@ -123,7 +141,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     // Extract token
     const token = extractToken(req);
 
-    if (!token) {
+    if (token === null || token === undefined || token === "") {
       res
         .status(401)
         .json(errorResponse("Authentication token required", 401, "NO_TOKEN"));
@@ -131,13 +149,13 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     }
 
     // Verify token
-    const decoded = await verifyToken(token);
+    const decoded = verifyToken(token);
 
     if (!decoded) {
       // Check if request accepts HTML (browser request) vs JSON (API request)
       const acceptsHtml = req.headers.accept?.includes("text/html");
 
-      if (acceptsHtml) {
+      if (acceptsHtml === true) {
         // Send HTML page that redirects to login with timeout parameter
         res.status(403).send(`
           <!DOCTYPE html>
@@ -384,7 +402,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     (req as AuthenticatedRequest).tenantId = authenticatedUser.tenant_id;
 
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[AUTH] Unexpected error:", error);
     res
       .status(500)
@@ -400,7 +418,7 @@ export async function optionalAuth(
 ): Promise<void> {
   const token = extractToken(req);
 
-  if (!token) {
+  if (token === null || token === undefined || token === "") {
     // No token, but that's okay for optional auth
     next();
     return;
@@ -408,7 +426,7 @@ export async function optionalAuth(
 
   // If token is provided, validate it
   await authenticateToken(req, res, (err?: unknown) => {
-    if (err) {
+    if (err !== null && err !== undefined && err !== "") {
       // Token is invalid, but continue anyway for optional auth
       console.warn("[AUTH] Invalid token in optional auth:", err);
     }
@@ -425,7 +443,7 @@ export function requireRole(allowedRoles: string | string[]) {
     res: Response,
     next: NextFunction,
   ): void => {
-    if (!req.user) {
+    if (req.user === null || req.user === undefined) {
       res
         .status(401)
         .json(

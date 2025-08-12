@@ -18,7 +18,7 @@ function isAuthenticated(req: Request): req is AuthenticatedRequest {
 // Middleware um zu prüfen ob ein Tenant ein bestimmtes Feature hat
 export const checkFeature =
   (featureCode: string, options: FeatureCheckOptions = {}) =>
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // Tenant ID aus Request holen
       // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
@@ -26,17 +26,20 @@ export const checkFeature =
 
       // Check if request is authenticated
       if (!isAuthenticated(req)) {
-        return res.status(401).json({ error: "Authentication required" });
+        res.status(401).json({ error: "Authentication required" });
+        return;
       }
 
       // Debug logging
       logger.info(
-        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenant_id: req.user.tenant_id } : null)}`,
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${req.user != null ? JSON.stringify({ id: req.user.id, tenant_id: req.user.tenant_id }) : "null"}`,
       );
 
-      if (req.tenantId) {
+      if (req.tenantId != null) {
         // Check if tenantId is already numeric (from auth middleware)
-        if (typeof req.tenantId === "number" || !isNaN(Number(req.tenantId))) {
+        if (typeof req.tenantId === "number") {
+          numericTenantId = req.tenantId;
+        } else if (!isNaN(Number(req.tenantId))) {
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
@@ -47,21 +50,23 @@ export const checkFeature =
           );
 
           if (tenantRows.length === 0) {
-            return res.status(404).json({
+            res.status(404).json({
               error: "Tenant nicht gefunden",
               upgrade_required: true,
             });
+            return;
           }
 
-          numericTenantId = tenantRows[0].id;
+          numericTenantId = tenantRows[0].id as number;
         }
       } else if (req.user?.tenant_id) {
         // Fallback: Verwende tenant_id aus JWT Token
         numericTenantId = req.user.tenant_id;
       } else {
-        return res.status(400).json({
+        res.status(400).json({
           error: "Keine Tenant-ID gefunden",
         });
+        return;
       }
 
       logger.info(
@@ -96,31 +101,40 @@ export const checkFeature =
           response.upgrade_required = true;
         }
 
-        return res.status(403).json(response);
+        res.status(403).json(response);
+        return;
       }
 
       logger.info(
         `Feature '${featureCode}' is active for tenant ${numericTenantId}`,
       );
-      return next();
+      next();
+      return;
     } catch (error) {
       logger.error(`Error checking feature '${featureCode}':`, error);
-      return res.status(500).json({
+      res.status(500).json({
         error: "Fehler bei der Feature-Überprüfung",
       });
+      return;
     }
   };
 
 // Middleware um mehrere Features gleichzeitig zu prüfen (mindestens eines muss aktiv sein)
 export const checkAnyFeature =
   (featureCodes: string[], options: FeatureCheckOptions = {}) =>
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       let numericTenantId: number;
 
-      if (req.tenantId) {
+      if (req.tenantId != null) {
         // Check if tenantId is already numeric (from auth middleware)
-        if (typeof req.tenantId === "number" || !isNaN(Number(req.tenantId))) {
+        if (typeof req.tenantId === "number") {
+          numericTenantId = req.tenantId;
+        } else if (!isNaN(Number(req.tenantId))) {
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
@@ -131,20 +145,22 @@ export const checkAnyFeature =
           );
 
           if (tenantRows.length === 0) {
-            return res.status(404).json({
+            res.status(404).json({
               error: "Tenant nicht gefunden",
               upgrade_required: true,
             });
+            return;
           }
 
-          numericTenantId = tenantRows[0].id;
+          numericTenantId = tenantRows[0].id as number;
         }
       } else if (req.user?.tenant_id) {
         numericTenantId = req.user.tenant_id;
       } else {
-        return res.status(400).json({
+        res.status(400).json({
           error: "Keine Tenant-ID gefunden",
         });
+        return;
       }
 
       // Prüfe jedes Feature
@@ -157,7 +173,8 @@ export const checkAnyFeature =
           logger.info(
             `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`,
           );
-          return next();
+          next();
+          return;
         }
       }
 
@@ -174,29 +191,37 @@ export const checkAnyFeature =
         )}] are available for tenant ${numericTenantId}`,
       );
 
-      return res.status(403).json({
+      res.status(403).json({
         error: errorMessage,
         features_required: featureCodes,
         upgrade_required: options.sendUpgradeHint !== false,
       });
+      return;
     } catch (error) {
       logger.error("Error checking features:", error);
-      return res.status(500).json({
+      res.status(500).json({
         error: "Fehler bei der Feature-Überprüfung",
       });
+      return;
     }
   };
 
 // Middleware um alle Features zu prüfen (alle müssen aktiv sein)
 export const checkAllFeatures =
   (featureCodes: string[], options: FeatureCheckOptions = {}) =>
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       let numericTenantId: number;
 
-      if (req.tenantId) {
+      if (req.tenantId != null) {
         // Check if tenantId is already numeric (from auth middleware)
-        if (typeof req.tenantId === "number" || !isNaN(Number(req.tenantId))) {
+        if (typeof req.tenantId === "number") {
+          numericTenantId = req.tenantId;
+        } else if (!isNaN(Number(req.tenantId))) {
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
@@ -207,20 +232,22 @@ export const checkAllFeatures =
           );
 
           if (tenantRows.length === 0) {
-            return res.status(404).json({
+            res.status(404).json({
               error: "Tenant nicht gefunden",
               upgrade_required: true,
             });
+            return;
           }
 
-          numericTenantId = tenantRows[0].id;
+          numericTenantId = tenantRows[0].id as number;
         }
       } else if (req.user?.tenant_id) {
         numericTenantId = req.user.tenant_id;
       } else {
-        return res.status(400).json({
+        res.status(400).json({
           error: "Keine Tenant-ID gefunden",
         });
+        return;
       }
 
       // Prüfe jedes Feature
@@ -248,12 +275,13 @@ export const checkAllFeatures =
           )}] are not available for tenant ${numericTenantId}`,
         );
 
-        return res.status(403).json({
+        res.status(403).json({
           error: errorMessage,
           features_required: featureCodes,
           features_missing: missingFeatures,
           upgrade_required: options.sendUpgradeHint !== false,
         });
+        return;
       }
 
       logger.info(
@@ -261,12 +289,14 @@ export const checkAllFeatures =
           ", ",
         )}] are active for tenant ${numericTenantId}`,
       );
-      return next();
+      next();
+      return;
     } catch (error) {
       logger.error("Error checking all features:", error);
-      return res.status(500).json({
+      res.status(500).json({
         error: "Fehler bei der Feature-Überprüfung",
       });
+      return;
     }
   };
 

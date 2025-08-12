@@ -473,6 +473,64 @@
           font-size: 1.5rem;
         }
       }
+
+      /* Notification Styles */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 16px 20px;
+        min-width: 300px;
+        max-width: 500px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        transform: translateX(400px);
+        transition: all 0.3s ease-out;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.notification-error {
+        border-left: 4px solid #ff4444;
+        color: #d32f2f;
+      }
+
+      .notification.notification-error i {
+        color: #ff4444;
+        font-size: 16px;
+      }
+
+      .notification.notification-success {
+        border-left: 4px solid #4caf50;
+        color: #2e7d32;
+      }
+
+      .notification.notification-success i {
+        color: #4caf50;
+        font-size: 16px;
+      }
+
+      .notification.notification-info {
+        border-left: 4px solid #2196f3;
+        color: #1976d2;
+      }
+
+      .notification.notification-info i {
+        color: #2196f3;
+        font-size: 16px;
+      }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -574,11 +632,11 @@
               displayDocuments(documents);
             } else {
               const error = await response.json();
-              alert(`Fehler: ${error.message}`);
+              showError(`Fehler: ${error.message}`);
             }
           } catch (error) {
             console.error('Fehler beim Laden der Dokumente:', error);
-            alert('Dokumente konnten nicht geladen werden.');
+            showError('Dokumente konnten nicht geladen werden.');
           }
         }
 
@@ -603,11 +661,11 @@
                 displayDocuments(documents);
               } else {
                 const error = await response.json();
-                alert(`Fehler: ${error.message}`);
+                showError(`Fehler: ${error.message}`);
               }
             } catch (error) {
               console.error('Fehler bei der Dokumentensuche:', error);
-              alert('Suche konnte nicht durchgeführt werden.');
+              showError('Suche konnte nicht durchgeführt werden.');
             }
           }
         }
@@ -681,7 +739,7 @@
           // Den Token aus dem localStorage holen
           const token = localStorage.getItem('token');
           if (!token) {
-            alert('Sie müssen angemeldet sein, um Dokumente herunterzuladen.');
+            showError('Sie müssen angemeldet sein, um Dokumente herunterzuladen.');
             return;
           }
 
@@ -724,7 +782,7 @@
 
               // Fallback wenn popup blockiert
               if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                alert('Pop-up wurde blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
+                showInfo('Pop-up wurde blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
 
                 // Alternativ einen unsichtbaren Link erstellen und klicken
                 const a = document.createElement('a');
@@ -742,7 +800,7 @@
             })
             .catch((error) => {
               console.error('Fehler beim Herunterladen des Dokuments:', error);
-              alert(error.message || 'Fehler beim Herunterladen des Dokuments');
+              showError(error.message || 'Fehler beim Herunterladen des Dokuments');
 
               // Button wieder aktivieren, wenn ein Fehler auftritt
               if (downloadBtn) {
@@ -760,9 +818,73 @@
             openDocumentInNewTab(documentId); // Verwende unsere verbesserte Funktion
           } catch (error) {
             console.error('Fehler beim Herunterladen des Dokuments:', error);
-            alert('Fehler beim Herunterladen des Dokuments');
+            showError('Fehler beim Herunterladen des Dokuments');
           }
         };
+
+        // Notification functions
+        function showError(message) {
+          const notification = document.createElement('div');
+          notification.className = 'notification notification-error';
+          notification.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${message}</span>
+          `;
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            notification.classList.add('show');
+          }, 100);
+
+          setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+              document.body.removeChild(notification);
+            }, 300);
+          }, 4000);
+        }
+
+        function showSuccess(message) {
+          const notification = document.createElement('div');
+          notification.className = 'notification notification-success';
+          notification.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            <span>${message}</span>
+          `;
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            notification.classList.add('show');
+          }, 100);
+
+          setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+              document.body.removeChild(notification);
+            }, 300);
+          }, 3000);
+        }
+
+        function showInfo(message) {
+          const notification = document.createElement('div');
+          notification.className = 'notification notification-info';
+          notification.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <span>${message}</span>
+          `;
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            notification.classList.add('show');
+          }, 100);
+
+          setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+              document.body.removeChild(notification);
+            }, 300);
+          }, 3500);
+        }
 
         function logout() {
           if (confirm('Möchten Sie sich wirklich abmelden?')) {

@@ -10,7 +10,8 @@ export const TEST_DATA_PREFIX = "__AUTOTEST__";
 export const testName = {
   tenant: (name: string) => `${TEST_DATA_PREFIX}${name}`,
   user: (name: string) => `${TEST_DATA_PREFIX}${name}`,
-  subdomain: (name: string) => `${TEST_DATA_PREFIX}${name.toLowerCase()}`,
+  subdomain: (name: string) =>
+    `${TEST_DATA_PREFIX}${String(name.toLowerCase())}`,
 };
 
 // SQL condition for safe cleanup

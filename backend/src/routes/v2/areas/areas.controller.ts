@@ -5,8 +5,8 @@
 
 import { Response } from "express";
 
-import { RootLog } from "../../../models/rootLog.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import RootLog from "../../../models/rootLog.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   successResponse,
   errorResponse,
@@ -44,7 +44,7 @@ export class AreasController {
       const areas = await AreasService.getAreas(req.user.tenant_id, filters);
 
       res.json(successResponse(areas, "Areas retrieved successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -64,7 +64,7 @@ export class AreasController {
       res.json(
         successResponse(hierarchy, "Area hierarchy retrieved successfully"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -94,7 +94,7 @@ export class AreasController {
       }
 
       res.json(successResponse(area, "Area retrieved successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -146,7 +146,7 @@ export class AreasController {
       res
         .status(201)
         .json(successResponse(newArea, "Area created successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -224,7 +224,7 @@ export class AreasController {
       });
 
       res.json(successResponse(updatedArea, "Area updated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -273,7 +273,7 @@ export class AreasController {
         action: "delete",
         entity_type: "area",
         entity_id: areaId,
-        details: `Gelöscht: ${(deletedArea as Area | null)?.name}`,
+        details: `Gelöscht: ${String((deletedArea as Area | null)?.name)}`,
         old_values: {
           name: (deletedArea as Area | null)?.name,
           type: (deletedArea as Area | null)?.type,
@@ -288,7 +288,7 @@ export class AreasController {
       });
 
       res.json(successResponse(null, "Area deleted successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -314,7 +314,7 @@ export class AreasController {
       res.json(
         successResponse(stats, "Area statistics retrieved successfully"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }

@@ -17,9 +17,9 @@ interface RequestOptions extends RequestInit {
 export class ApiService {
   private baseURL: string;
   private token: string | null;
-  private useV2: boolean = false;
+  private useV2 = false;
 
-  constructor(baseURL: string = '/api') {
+  constructor(baseURL = '/api') {
     this.baseURL = baseURL;
     // Check for v2 token first, then v1
     this.token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
@@ -110,7 +110,7 @@ export class ApiService {
         let response: unknown;
 
         // Build query string for GET requests
-        const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+        const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
         const fullEndpoint = endpoint + queryString;
 
         switch (method) {
@@ -154,7 +154,7 @@ export class ApiService {
         if (data instanceof FormData) {
           // Remove Content-Type header for FormData
           requestOptions.headers = new Headers(requestOptions.headers);
-          (requestOptions.headers as Headers).delete('Content-Type');
+          requestOptions.headers.delete('Content-Type');
           requestOptions.body = data;
         } else {
           requestOptions.body = JSON.stringify(data);
@@ -192,23 +192,23 @@ export class ApiService {
   }
 
   // Convenience methods
-  get<T = unknown>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
+  async get<T = unknown>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
     return this.request<T>('GET', endpoint, null, { params });
   }
 
-  post<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
+  async post<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('POST', endpoint, data);
   }
 
-  put<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
+  async put<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('PUT', endpoint, data);
   }
 
-  patch<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
+  async patch<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('PATCH', endpoint, data);
   }
 
-  delete<T = unknown>(endpoint: string): Promise<T> {
+  async delete<T = unknown>(endpoint: string): Promise<T> {
     return this.request<T>('DELETE', endpoint);
   }
 
@@ -330,7 +330,7 @@ export class ApiService {
     }
   }
 
-  uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {
+  async uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {
     const formData = new FormData();
     formData.append('profilePicture', file);
 
@@ -338,42 +338,42 @@ export class ApiService {
   }
 
   // Document endpoints
-  getDocuments(params?: PaginationParams & { category?: string }): Promise<PaginatedResponse<Document>> {
+  async getDocuments(params?: PaginationParams & { category?: string }): Promise<PaginatedResponse<Document>> {
     const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
     return this.get('/documents', queryParams);
   }
 
-  getDocument(id: number): Promise<Document> {
+  async getDocument(id: number): Promise<Document> {
     return this.get(`/documents/${id}`);
   }
 
-  uploadDocument(formData: FormData): Promise<ApiResponse<Document>> {
+  async uploadDocument(formData: FormData): Promise<ApiResponse<Document>> {
     return this.post('/documents', formData);
   }
 
-  deleteDocument(id: number): Promise<ApiResponse> {
+  async deleteDocument(id: number): Promise<ApiResponse> {
     return this.delete(`/documents/${id}`);
   }
 
   // Employee endpoints
-  getEmployees(params?: PaginationParams): Promise<PaginatedResponse<User>> {
+  async getEmployees(params?: PaginationParams): Promise<PaginatedResponse<User>> {
     const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
     return this.get('/users', queryParams);
   }
 
-  getEmployee(id: number): Promise<User> {
+  async getEmployee(id: number): Promise<User> {
     return this.get(`/users/${id}`);
   }
 
-  createEmployee(data: Partial<User>): Promise<ApiResponse<User>> {
+  async createEmployee(data: Partial<User>): Promise<ApiResponse<User>> {
     return this.post('/users', data);
   }
 
-  updateEmployee(id: number, data: Partial<User>): Promise<ApiResponse<User>> {
+  async updateEmployee(id: number, data: Partial<User>): Promise<ApiResponse<User>> {
     return this.patch(`/users/${id}`, data);
   }
 
-  deleteEmployee(id: number): Promise<ApiResponse> {
+  async deleteEmployee(id: number): Promise<ApiResponse> {
     return this.delete(`/users/${id}`);
   }
 }

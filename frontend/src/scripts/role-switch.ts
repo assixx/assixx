@@ -12,7 +12,7 @@ let currentView = localStorage.getItem('activeRole') ?? userRole;
 // Role switch handler
 async function switchRole(): Promise<void> {
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-  const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+  const roleIndicator = document.getElementById('role-indicator');
 
   if (!switchBtn || !roleIndicator) return;
 
@@ -109,9 +109,9 @@ async function switchRole(): Promise<void> {
 
 // Update UI based on current role
 function updateRoleUI(): void {
-  const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+  const roleIndicator = document.getElementById('role-indicator');
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-  const switchText = switchBtn?.querySelector('.role-switch-text') as HTMLElement;
+  const switchText = switchBtn?.querySelector('.role-switch-text');
 
   if (!roleIndicator || !switchBtn) return;
 
@@ -222,7 +222,9 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' = 'suc
 
   setTimeout(() => {
     toast.style.animation = 'slideOutRight 0.3s ease-in';
-    setTimeout(() => toast.remove(), 300);
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
   }, 3000);
 }
 

@@ -11,8 +11,8 @@ import { Response, NextFunction } from "express";
 
 import type { CalendarEvent } from "../../../models/calendar.js";
 import CalendarModel from "../../../models/calendar.js";
-import { RootLog } from "../../../models/rootLog.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../users/users.service.js";
 
@@ -120,7 +120,7 @@ export async function listEvents(
     );
 
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       const errorCode =
         error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
@@ -186,7 +186,7 @@ export async function getEvent(
     );
 
     res.json(successResponse({ event }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       const errorCode =
         error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
@@ -310,7 +310,7 @@ export async function createEvent(
     });
 
     res.status(201).json(successResponse({ event }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       const errorCode =
         error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
@@ -477,7 +477,7 @@ export async function updateEvent(
     }
 
     res.json(successResponse({ event }));
-  } catch (err) {
+  } catch (err: unknown) {
     next(err);
   }
 }
@@ -581,7 +581,7 @@ export async function deleteEvent(
     }
 
     res.json(successResponse({ message: "Event deleted successfully" }));
-  } catch (err) {
+  } catch (err: unknown) {
     next(err);
   }
 }
@@ -664,7 +664,7 @@ export async function updateAttendeeResponse(
     });
 
     res.json(successResponse({ message: "Response updated successfully" }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       const errorCode =
         error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
@@ -737,7 +737,7 @@ export async function exportEvents(
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(data);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       const errorCode =
         error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
@@ -819,7 +819,7 @@ export async function getDashboardEvents(
     );
 
     res.json(successResponse(events));
-  } catch (err) {
+  } catch (err: unknown) {
     next(err);
   }
 }
@@ -877,7 +877,7 @@ export async function getUnreadEvents(
     const result = await calendarService.getUnreadEvents(tenantId, userId);
 
     res.json(successResponse(result));
-  } catch (err) {
+  } catch (err: unknown) {
     next(err);
   }
 }

@@ -323,9 +323,7 @@ function updateNotificationBadge(count: number): void {
  */
 function initializeBootstrapComponents(): void {
   // Bootstrap type declaration
-  interface BootstrapTooltip {
-    new (element: Element): unknown;
-  }
+  type BootstrapTooltip = new (element: Element) => unknown;
 
   interface WindowWithBootstrap extends Window {
     bootstrap?: {

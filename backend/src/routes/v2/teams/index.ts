@@ -330,4 +330,143 @@ router.delete(
   typed.auth(teamsController.removeTeamMember),
 );
 
+/**
+ * @swagger
+ * /api/v2/teams/{id}/machines:
+ *   get:
+ *     summary: Get team machines
+ *     tags: [Teams v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     responses:
+ *       200:
+ *         description: Team machines retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *                   serial_number:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   is_primary:
+ *                     type: boolean
+ *                   assigned_at:
+ *                     type: string
+ *                     format: date-time
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ */
+router.get(
+  "/:id/machines",
+  authenticateV2,
+  requireRoleV2(["admin", "root"]) as RequestHandler,
+  teamsValidation.getMembers,
+  typed.auth(teamsController.getTeamMachines),
+);
+
+/**
+ * @swagger
+ * /api/v2/teams/{id}/machines:
+ *   post:
+ *     summary: Add machine to team
+ *     tags: [Teams v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - machineId
+ *             properties:
+ *               machineId:
+ *                 type: integer
+ *                 description: Machine ID to add to team
+ *     responses:
+ *       201:
+ *         description: Machine added to team successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessMessageResponseV2'
+ *       409:
+ *         description: Machine already assigned to this team
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenV2'
+ */
+router.post(
+  "/:id/machines",
+  authenticateV2,
+  requireRoleV2(["admin", "root"]) as RequestHandler,
+  teamsValidation.addMember,
+  typed.auth(teamsController.addTeamMachine),
+);
+
+/**
+ * @swagger
+ * /api/v2/teams/{id}/machines/{machineId}:
+ *   delete:
+ *     summary: Remove machine from team
+ *     tags: [Teams v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *       - in: path
+ *         name: machineId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Machine ID to remove
+ *     responses:
+ *       200:
+ *         description: Machine removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessMessageResponseV2'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenV2'
+ */
+router.delete(
+  "/:id/machines/:machineId",
+  authenticateV2,
+  requireRoleV2(["admin", "root"]) as RequestHandler,
+  teamsValidation.removeMember,
+  typed.auth(teamsController.removeTeamMachine),
+);
+
 export default router;

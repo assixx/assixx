@@ -5,7 +5,7 @@ import { ResultSetHeader, RowDataPacket } from "mysql2";
 
 import { authenticateToken, authorizeRole } from "../auth.js";
 import { executeQuery } from "../database.js";
-import { AuthenticatedRequest } from "../types/request.types.js";
+import type { AuthenticatedRequest } from "../types/request.types.js";
 import { logger } from "../utils/logger.js";
 
 interface LogEntry extends RowDataPacket {
@@ -76,15 +76,18 @@ router.get(
       return;
     }
 
-    const limit = authReq.query.limit
-      ? parseInt(authReq.query.limit as string)
-      : 20;
-    const offset = authReq.query.offset
-      ? parseInt(authReq.query.offset as string)
-      : 0;
-    const userId = authReq.query.user_id
-      ? parseInt(authReq.query.user_id as string)
-      : null;
+    const limit =
+      authReq.query.limit != null
+        ? parseInt(authReq.query.limit as string)
+        : 20;
+    const offset =
+      authReq.query.offset != null
+        ? parseInt(authReq.query.offset as string)
+        : 0;
+    const userId =
+      authReq.query.user_id != null
+        ? parseInt(authReq.query.user_id as string)
+        : null;
     const action = (authReq.query.action as string) ?? null;
     const entityType = (authReq.query.entity_type as string) ?? null;
     const timerange = (authReq.query.timerange as string) ?? null;
@@ -98,22 +101,26 @@ router.get(
       conditions.push("al.tenant_id = ?");
       params.push(authReq.user.tenant_id);
 
-      if (userId) {
+      if (userId != null && userId !== 0) {
         conditions.push("al.user_id = ?");
         params.push(userId);
       }
 
-      if (action) {
+      if (action !== null && action !== undefined && action !== "") {
         conditions.push("al.action = ?");
         params.push(action);
       }
 
-      if (entityType) {
+      if (
+        entityType !== null &&
+        entityType !== undefined &&
+        entityType !== ""
+      ) {
         conditions.push("al.entity_type = ?");
         params.push(entityType);
       }
 
-      if (timerange) {
+      if (timerange !== null && timerange !== undefined && timerange !== "") {
         let dateCondition = "";
 
         switch (timerange) {
@@ -144,7 +151,11 @@ router.get(
             break;
         }
 
-        if (dateCondition) {
+        if (
+          dateCondition !== null &&
+          dateCondition !== undefined &&
+          dateCondition !== ""
+        ) {
           conditions.push(`(${dateCondition})`);
         }
       }
@@ -193,7 +204,7 @@ router.get(
       const processedLogs = logs.map((log) => ({
         ...log,
         details:
-          log.details &&
+          log.details != null &&
           typeof log.details === "object" &&
           Buffer.isBuffer(log.details)
             ? log.details.toString("utf8")
@@ -203,7 +214,7 @@ router.get(
           typeof log.user_name === "object" &&
           Buffer.isBuffer(log.user_name)
             ? (log.user_name as Buffer).toString("utf8")
-            : log.user_name || null,
+            : (log.user_name ?? null),
       }));
 
       res.json({
@@ -218,7 +229,7 @@ router.get(
           },
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching logs:", error);
       logger.error("Error details:", {
         message: error instanceof Error ? error.message : "Unknown error",
@@ -270,20 +281,22 @@ router.delete(
       return;
     }
 
-    const userId = authReq.query.user_id
-      ? parseInt(authReq.query.user_id as string)
-      : null;
+    const userId =
+      authReq.query.user_id != null
+        ? parseInt(authReq.query.user_id as string)
+        : null;
     const action = (authReq.query.action as string) ?? null;
     const entityType = (authReq.query.entity_type as string) ?? null;
     const timerange = (authReq.query.timerange as string) ?? null;
     const password = (authReq.body as { password?: string }).password;
 
     // Check if no specific filters are provided (meaning "all actions" deletion)
-    const noSpecificFilters = !userId && !action && !entityType && !timerange;
+    const noSpecificFilters =
+      (userId == null || userId === 0) && !action && !entityType && !timerange;
 
     // If deleting all logs (no filters), require password verification
     if (noSpecificFilters) {
-      if (!password) {
+      if (password == null || password === "") {
         res.status(403).json({
           success: false,
           error: "Root-Passwort erforderlich für das Löschen aller Logs",
@@ -317,7 +330,7 @@ router.delete(
           });
           return;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error("Error verifying root password:", error);
         res.status(500).json({
           success: false,
@@ -336,22 +349,26 @@ router.delete(
       conditions.push("tenant_id = ?");
       params.push(authReq.user.tenant_id);
 
-      if (userId) {
+      if (userId != null && userId !== 0) {
         conditions.push("user_id = ?");
         params.push(userId);
       }
 
-      if (action) {
+      if (action !== null && action !== undefined && action !== "") {
         conditions.push("action = ?");
         params.push(action);
       }
 
-      if (entityType) {
+      if (
+        entityType !== null &&
+        entityType !== undefined &&
+        entityType !== ""
+      ) {
         conditions.push("entity_type = ?");
         params.push(entityType);
       }
 
-      if (timerange) {
+      if (timerange !== null && timerange !== undefined && timerange !== "") {
         let dateCondition = "";
 
         switch (timerange) {
@@ -379,7 +396,11 @@ router.delete(
             break;
         }
 
-        if (dateCondition) {
+        if (
+          dateCondition !== null &&
+          dateCondition !== undefined &&
+          dateCondition !== ""
+        ) {
           conditions.push(`(${dateCondition})`);
         }
       }
@@ -400,7 +421,7 @@ router.delete(
 
       // Create a human-readable description of what was deleted
       const filterDescriptions: string[] = [];
-      if (userId) {
+      if (userId != null && userId !== 0) {
         // Get username for the filter
         const [userInfo] = await executeQuery<UserInfo[]>(
           'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = ?',
@@ -410,8 +431,8 @@ router.delete(
           `Benutzer: ${userInfo[0]?.name ?? `ID ${userId}`}`,
         );
       }
-      if (action) {
-        const actionLabels: { [key: string]: string } = {
+      if (action !== null && action !== undefined && action !== "") {
+        const actionLabels: Record<string, string> = {
           login: "Anmeldungen",
           logout: "Abmeldungen",
           create: "Erstellungen",
@@ -425,11 +446,15 @@ router.delete(
         };
         filterDescriptions.push(`Aktion: ${actionLabels[action] ?? action}`);
       }
-      if (entityType) {
+      if (
+        entityType !== null &&
+        entityType !== undefined &&
+        entityType !== ""
+      ) {
         filterDescriptions.push(`Typ: ${entityType}`);
       }
-      if (timerange) {
-        const timeLabels: { [key: string]: string } = {
+      if (timerange !== null && timerange !== undefined && timerange !== "") {
+        const timeLabels: Record<string, string> = {
           today: "Heute",
           yesterday: "Gestern",
           week: "Letzte 7 Tage",
@@ -467,7 +492,7 @@ router.delete(
         deletedCount,
         message: `${deletedCount} Logs wurden erfolgreich gelöscht.`,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error deleting logs:", error);
       res.status(500).json({
         success: false,
@@ -488,7 +513,7 @@ export async function createLog(
   details?: string,
   ipAddress?: string,
   userAgent?: string,
-) {
+): Promise<void> {
   try {
     await executeQuery(
       `
@@ -507,7 +532,7 @@ export async function createLog(
         userAgent,
       ],
     );
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Error creating log entry:", error);
   }
 }

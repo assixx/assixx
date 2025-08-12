@@ -172,7 +172,7 @@ export class CalendarService {
           profilePicture: attendee.profile_picture,
         })),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
@@ -366,7 +366,7 @@ export class CalendarService {
         userId,
       );
       return eventWithAttendees;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
@@ -458,7 +458,7 @@ export class CalendarService {
       // Return updated event
       const updatedEvent = await this.getEventById(eventId, tenantId, userId);
       return updatedEvent;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
@@ -510,7 +510,7 @@ export class CalendarService {
         throw new ServiceError("SERVER_ERROR", "Failed to delete event", 500);
       }
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       // Re-throw ServiceErrors to preserve their status codes
       if (error instanceof ServiceError) {
         throw error;
@@ -545,7 +545,7 @@ export class CalendarService {
       }
 
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
@@ -645,7 +645,9 @@ export class CalendarService {
       const [result] = await executeQuery(query, [tenantId, userId]);
 
       // Type guard to ensure result is an array
-      const events = Array.isArray(result) ? result : [];
+      const events: CalendarEvent[] = Array.isArray(result)
+        ? (result as CalendarEvent[])
+        : [];
 
       // Count total unread events
       const totalUnread = events.length;
@@ -659,7 +661,7 @@ export class CalendarService {
           requiresResponse: true,
         })),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error getting unread events:", error);
       return {
         totalUnread: 0,
@@ -695,7 +697,7 @@ DTEND:${dtend}Z
 SUMMARY:${event.title}
 DESCRIPTION:${event.description ?? ""}
 LOCATION:${event.location ?? ""}
-STATUS:${(event.status ?? "CONFIRMED").toUpperCase()}
+STATUS:${String((event.status ?? "CONFIRMED").toUpperCase())}
 END:VEVENT`;
       })
       .join("\n");

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 
-import { RootLog } from "../../../models/rootLog.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -36,7 +36,7 @@ export class DepartmentController {
       );
 
       res.json(successResponse(departments));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in getDepartments:", error);
       const errorObj = error as {
         code?: number;
@@ -87,7 +87,7 @@ export class DepartmentController {
       );
 
       res.json(successResponse(department));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in getDepartmentById:", error);
       const errorObj = error as {
         code?: number;
@@ -141,6 +141,7 @@ export class DepartmentController {
         description?: string;
         managerId?: number;
         parentId?: number;
+        areaId?: number;
         status?: string;
         visibility?: string;
       };
@@ -151,6 +152,7 @@ export class DepartmentController {
           description: body.description,
           managerId: body.managerId,
           parentId: body.parentId,
+          areaId: body.areaId,
           status: body.status,
           visibility: body.visibility,
         },
@@ -182,7 +184,7 @@ export class DepartmentController {
       res
         .status(201)
         .json(successResponse(department, "Department created successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in createDepartment:", error);
       const errorObj = error as {
         code?: number;
@@ -249,6 +251,7 @@ export class DepartmentController {
         description?: string;
         managerId?: number;
         parentId?: number;
+        areaId?: number;
         status?: string;
         visibility?: string;
       };
@@ -266,6 +269,7 @@ export class DepartmentController {
           description: body.description,
           managerId: body.managerId,
           parentId: body.parentId,
+          areaId: body.areaId,
           status: body.status,
           visibility: body.visibility,
         },
@@ -306,7 +310,7 @@ export class DepartmentController {
       });
 
       res.json(successResponse(department, "Department updated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in updateDepartment:", error);
       const errorObj = error as {
         code?: number;
@@ -382,7 +386,7 @@ export class DepartmentController {
         action: "delete",
         entity_type: "department",
         entity_id: departmentId,
-        details: `Gelöscht: ${(deletedDepartment as unknown as Department | null)?.name}`,
+        details: `Gelöscht: ${String((deletedDepartment as unknown as Department | null)?.name)}`,
         old_values: {
           name: (deletedDepartment as unknown as Department | null)?.name,
           description: (deletedDepartment as unknown as Department | null)
@@ -405,7 +409,7 @@ export class DepartmentController {
           "Department deleted successfully",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in deleteDepartment:", error);
       const errorObj = error as {
         code?: number;
@@ -456,7 +460,7 @@ export class DepartmentController {
       );
 
       res.json(successResponse(members));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in getDepartmentMembers:", error);
       const errorObj = error as {
         code?: number;
@@ -497,7 +501,7 @@ export class DepartmentController {
       );
 
       res.json(successResponse(stats));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in getDepartmentStats:", error);
       const errorObj = error as {
         code?: number;

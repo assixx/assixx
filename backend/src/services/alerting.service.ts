@@ -20,12 +20,12 @@ interface TeamsAlert {
   severity: "info" | "warning" | "critical";
   title: string;
   message: string;
-  facts?: Array<{ name: string; value: string }>;
-  actions?: Array<{
+  facts?: { name: string; value: string }[];
+  actions?: {
     type: string;
     name: string;
     target: string;
-  }>;
+  }[];
 }
 
 interface PagerDutyIncident {
@@ -41,7 +41,10 @@ export class AlertingService {
    * Send alert to Slack
    */
   async sendSlackAlert(alert: SlackAlert): Promise<void> {
-    if (!process.env.SLACK_WEBHOOK_URL) {
+    if (
+      process.env.SLACK_WEBHOOK_URL == null ||
+      process.env.SLACK_WEBHOOK_URL === ""
+    ) {
       logger.warn("Slack webhook URL not configured, skipping alert");
       return;
     }
@@ -82,7 +85,7 @@ export class AlertingService {
         alert.message,
         response.status,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to send Slack alert:", error);
       await this.logAlert(
         "slack",
@@ -101,7 +104,10 @@ export class AlertingService {
    * Send alert to Microsoft Teams
    */
   async sendTeamsAlert(alert: TeamsAlert): Promise<void> {
-    if (!process.env.TEAMS_WEBHOOK_URL) {
+    if (
+      process.env.TEAMS_WEBHOOK_URL == null ||
+      process.env.TEAMS_WEBHOOK_URL === ""
+    ) {
       logger.warn("Teams webhook URL not configured, skipping alert");
       return;
     }
@@ -144,7 +150,7 @@ export class AlertingService {
         alert.message,
         response.status,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to send Teams alert:", error);
       await this.logAlert(
         "teams",
@@ -163,7 +169,12 @@ export class AlertingService {
    * Create PagerDuty incident
    */
   async sendPagerDutyAlert(incident: PagerDutyIncident): Promise<void> {
-    if (!process.env.PAGERDUTY_TOKEN || !process.env.PAGERDUTY_SERVICE_ID) {
+    if (
+      process.env.PAGERDUTY_TOKEN == null ||
+      process.env.PAGERDUTY_TOKEN === "" ||
+      process.env.PAGERDUTY_SERVICE_ID == null ||
+      process.env.PAGERDUTY_SERVICE_ID === ""
+    ) {
       logger.warn("PagerDuty not configured, skipping alert");
       return;
     }
@@ -182,19 +193,23 @@ export class AlertingService {
             type: "incident_body",
             details: JSON.stringify(incident.details, null, 2),
           },
-          incident_key: `assixx-${Date.now()}`,
-          ...(incident.component && {
-            component: {
-              id: incident.component,
-              type: "component_reference",
-            },
-          }),
-          ...(incident.group && {
-            priority: {
-              id: incident.group,
-              type: "priority_reference",
-            },
-          }),
+          incident_key: `assixx-${String(Date.now())}`,
+          ...(incident.component != null && incident.component !== ""
+            ? {
+                component: {
+                  id: incident.component,
+                  type: "component_reference",
+                },
+              }
+            : {}),
+          ...(incident.group != null && incident.group !== ""
+            ? {
+                priority: {
+                  id: incident.group,
+                  type: "priority_reference",
+                },
+              }
+            : {}),
         },
       };
 
@@ -211,7 +226,9 @@ export class AlertingService {
         },
       );
 
-      logger.info(`PagerDuty incident created: ${response.data.incident.id}`);
+      logger.info(
+        `PagerDuty incident created: ${(response.data as { incident: { id: string } }).incident.id}`,
+      );
 
       // Log alert to database
       await this.logAlert(
@@ -222,7 +239,7 @@ export class AlertingService {
         JSON.stringify(incident.details),
         response.status,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to create PagerDuty incident:", error);
       await this.logAlert(
         "pagerduty",
@@ -254,14 +271,14 @@ export class AlertingService {
         severity: "critical",
         title,
         message,
-        fields: Object.entries(details).reduce(
+        fields: Object.entries(details).reduce<Record<string, string>>(
           (acc, [key, value]) => {
             acc[key] = String(value);
             return acc;
           },
-          {} as Record<string, string>,
+          {},
         ),
-      }).catch((error) => {
+      }).catch((error: unknown) => {
         logger.error("Slack critical alert failed:", error);
       }),
     );
@@ -275,7 +292,7 @@ export class AlertingService {
           name,
           value: String(value),
         })),
-      }).catch((error) => {
+      }).catch((error: unknown) => {
         logger.error("Teams critical alert failed:", error);
       }),
     );
@@ -288,7 +305,7 @@ export class AlertingService {
           message,
           ...details,
         },
-      }).catch((error) => {
+      }).catch((error: unknown) => {
         logger.error("PagerDuty critical alert failed:", error);
       }),
     );
@@ -324,7 +341,7 @@ export class AlertingService {
           errorMessage ?? null,
         ],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Failed to log alert to database:", error);
     }
   }

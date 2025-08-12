@@ -3,7 +3,7 @@
  * Logs to both activity_logs (for frontend) and root_logs (for audit)
  */
 
-import { RootLog } from "../models/rootLog";
+import RootLog from "../models/rootLog";
 import { createLog } from "../routes/logs";
 
 interface DualLogOptions {
@@ -138,11 +138,36 @@ export function getActionDetails(
   let details = `${actionText}: ${entityText}`;
 
   // Add specific data if available
-  if (data) {
-    if (data.name) details += ` - ${data.name}`;
-    else if (data.title) details += ` - ${data.title}`;
-    else if (data.email) details += ` - ${data.email}`;
-    else if (data.filename) details += ` - ${data.filename}`;
+  if (data != null) {
+    const name = data.name;
+    const title = data.title;
+    const email = data.email;
+    const filename = data.filename;
+
+    if (
+      name != null &&
+      name !== "" &&
+      (typeof name === "string" || typeof name === "number")
+    )
+      details += ` - ${String(name)}`;
+    else if (
+      title != null &&
+      title !== "" &&
+      (typeof title === "string" || typeof title === "number")
+    )
+      details += ` - ${String(title)}`;
+    else if (
+      email != null &&
+      email !== "" &&
+      (typeof email === "string" || typeof email === "number")
+    )
+      details += ` - ${String(email)}`;
+    else if (
+      filename != null &&
+      filename !== "" &&
+      (typeof filename === "string" || typeof filename === "number")
+    )
+      details += ` - ${String(filename)}`;
   }
 
   return details;

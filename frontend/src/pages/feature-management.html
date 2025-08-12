@@ -154,6 +154,64 @@
           transform: translateY(0);
         }
       }
+
+      /* Notification Styles */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 16px 20px;
+        min-width: 300px;
+        max-width: 500px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        transform: translateX(400px);
+        transition: all 0.3s ease-out;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.notification-error {
+        border-left: 4px solid #ff4444;
+        color: #d32f2f;
+      }
+
+      .notification.notification-error i {
+        color: #ff4444;
+        font-size: 16px;
+      }
+
+      .notification.notification-success {
+        border-left: 4px solid #4caf50;
+        color: #2e7d32;
+      }
+
+      .notification.notification-success i {
+        color: #4caf50;
+        font-size: 16px;
+      }
+
+      .notification.notification-info {
+        border-left: 4px solid #2196f3;
+        color: #1976d2;
+      }
+
+      .notification.notification-info i {
+        color: #2196f3;
+        font-size: 16px;
+      }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -292,7 +350,7 @@
         <script>
           const token = localStorage.getItem('token');
           let currentTenantId = null;
-          let allFeatures = [];
+          const allFeatures = [];
 
           // Tenants laden
           async function loadTenants() {
@@ -314,7 +372,7 @@
               }
             } catch (error) {
               console.error('Error loading tenants:', error);
-              alert('Fehler beim Laden der Tenants');
+              showError('Fehler beim Laden der Tenants');
             }
           }
 
@@ -341,7 +399,7 @@
               }
             } catch (error) {
               console.error('Error loading features:', error);
-              alert('Fehler beim Laden der Features');
+              showError('Fehler beim Laden der Features');
             }
           }
 
@@ -403,7 +461,7 @@
 
             const featureCode = document.getElementById('feature-select').value;
             if (!featureCode) {
-              alert('Bitte ein Feature auswählen');
+              showError('Bitte ein Feature auswählen');
               return;
             }
 
@@ -430,16 +488,16 @@
               });
 
               if (response.ok) {
-                alert('Feature erfolgreich aktiviert');
+                showSuccess('Feature erfolgreich aktiviert');
                 loadTenantFeatures();
                 document.getElementById('activate-feature-form').reset();
               } else {
                 const error = await response.json();
-                alert(`Fehler: ${error.error}`);
+                showError(`Fehler: ${error.error}`);
               }
             } catch (error) {
               console.error('Error activating feature:', error);
-              alert('Fehler beim Aktivieren des Features');
+              showError('Fehler beim Aktivieren des Features');
             }
           });
 
@@ -463,15 +521,15 @@
               });
 
               if (response.ok) {
-                alert('Feature erfolgreich deaktiviert');
+                showSuccess('Feature erfolgreich deaktiviert');
                 loadTenantFeatures();
               } else {
                 const error = await response.json();
-                alert(`Fehler: ${error.error}`);
+                showError(`Fehler: ${error.error}`);
               }
             } catch (error) {
               console.error('Error deactivating feature:', error);
-              alert('Fehler beim Deaktivieren des Features');
+              showError('Fehler beim Deaktivieren des Features');
             }
           }
 
@@ -482,6 +540,74 @@
 
             loadTenants();
           });
+
+          // Notification functions
+          function showError(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-error';
+            notification.innerHTML = `
+              <i class="fas fa-exclamation-circle"></i>
+              <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+              notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => {
+                document.body.removeChild(notification);
+              }, 300);
+            }, 4000);
+          }
+
+          function showSuccess(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-success';
+            notification.innerHTML = `
+              <i class="fas fa-check-circle"></i>
+              <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+              notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => {
+                document.body.removeChild(notification);
+              }, 300);
+            }, 3000);
+          }
+
+          function showInfo(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-info';
+            notification.innerHTML = `
+              <i class="fas fa-info-circle"></i>
+              <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+              notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => {
+                document.body.removeChild(notification);
+              }, 300);
+            }, 3500);
+          }
+
+          // Make functions available globally for onclick handlers
+          window.deactivateFeature = deactivateFeature;
+          window.showActivateForm = showActivateForm;
         </script>
       </main>
     </div>

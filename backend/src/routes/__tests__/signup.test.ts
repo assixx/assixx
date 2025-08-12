@@ -105,7 +105,7 @@ describe("Signup API Endpoints", () => {
         "SELECT * FROM tenants WHERE subdomain = ?",
         [validSignupData.subdomain],
       );
-      const tenants = asTestRows<any>(rows);
+      const tenants = asTestRows<unknown>(rows);
       expect(tenants).toHaveLength(1);
       expect(tenants[0]).toMatchObject({
         company_name: validSignupData.company_name,
@@ -121,14 +121,14 @@ describe("Signup API Endpoints", () => {
         "SELECT * FROM users WHERE tenant_id = ?",
         [tenantId],
       );
-      const allUsers = asTestRows<any>(allUserRows);
+      const allUsers = asTestRows<unknown>(allUserRows);
       console.info("All users for tenant:", allUsers);
 
       const [userRows] = await testDb.execute(
         "SELECT * FROM users WHERE tenant_id = ? AND role = 'admin'",
         [tenantId],
       );
-      const users = asTestRows<any>(userRows);
+      const users = asTestRows<unknown>(userRows);
       expect(users).toHaveLength(1);
       expect(users[0]).toMatchObject({
         email: validSignupData.admin_email,
@@ -155,7 +155,7 @@ describe("Signup API Endpoints", () => {
         "SELECT trial_ends_at FROM tenants WHERE subdomain = ?",
         ["trialcompany"],
       );
-      const tenants = asTestRows<any>(rows);
+      const tenants = asTestRows<unknown>(rows);
       expect(tenants[0].trial_ends_at).toBeTruthy();
 
       // Trial should be approximately 30 days from now
@@ -248,7 +248,7 @@ describe("Signup API Endpoints", () => {
           .send({
             ...validSignupData,
             phone,
-            subdomain: `test${Date.now()}`,
+            subdomain: `test${String(Date.now())}`,
           });
 
         expect(response.status).toBe(400);
@@ -277,7 +277,7 @@ describe("Signup API Endpoints", () => {
         "SELECT id FROM tenants WHERE subdomain = ?",
         ["dbtest"],
       );
-      const tenants = asTestRows<any>(rows);
+      const tenants = asTestRows<unknown>(rows);
       const tenantId = tenants[0].id;
 
       // Check default department was created
@@ -285,7 +285,7 @@ describe("Signup API Endpoints", () => {
         "SELECT * FROM departments WHERE tenant_id = ?",
         [tenantId],
       );
-      const departments = asTestRows<any>(deptRows);
+      const departments = asTestRows<unknown>(deptRows);
       expect(departments.length).toBeGreaterThan(0);
       expect(departments[0].name).toBe("Allgemein");
 
@@ -294,7 +294,7 @@ describe("Signup API Endpoints", () => {
         "SELECT * FROM tenant_features WHERE tenant_id = ?",
         [tenantId],
       );
-      const features = asTestRows<any>(featureRows);
+      const features = asTestRows<unknown>(featureRows);
       expect(features.length).toBeGreaterThan(0);
     });
   });
@@ -400,23 +400,23 @@ describe("Signup API Endpoints", () => {
         "SELECT id FROM tenants WHERE subdomain = ?",
         ["tenant1"],
       );
-      const tenant1 = asTestRows<any>(tenant1Rows);
+      const tenant1 = asTestRows<unknown>(tenant1Rows);
       const [tenant2Rows] = await testDb.execute(
         "SELECT id FROM tenants WHERE subdomain = ?",
         ["tenant2"],
       );
-      const tenant2 = asTestRows<any>(tenant2Rows);
+      const tenant2 = asTestRows<unknown>(tenant2Rows);
 
       const [users1Rows] = await testDb.execute(
         "SELECT * FROM users WHERE tenant_id = ?",
         [tenant1[0].id],
       );
-      const users1 = asTestRows<any>(users1Rows);
+      const users1 = asTestRows<unknown>(users1Rows);
       const [users2Rows] = await testDb.execute(
         "SELECT * FROM users WHERE tenant_id = ?",
         [tenant2[0].id],
       );
-      const users2 = asTestRows<any>(users2Rows);
+      const users2 = asTestRows<unknown>(users2Rows);
 
       // Each tenant should have exactly one admin user
       expect(users1).toHaveLength(1);

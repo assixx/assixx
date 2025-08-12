@@ -4,14 +4,17 @@
  */
 
 import lodash from "lodash";
-const { camelCase, snakeCase } = lodash;
+
+// Wrap lodash methods to avoid unbound method issues
+const camelCase = (str: string): string => lodash.camelCase(str);
+const snakeCase = (str: string): string => lodash.snakeCase(str);
 
 export const fieldMapper = {
   /**
    * Convert database object (snake_case) to API object (camelCase)
    */
-  dbToApi<T>(dbObject: Record<string, unknown>): T {
-    if (!dbObject) return dbObject as T;
+  dbToApi(dbObject: Record<string, unknown>): unknown {
+    if (dbObject == null) return dbObject;
 
     const result: Record<string, unknown> = {};
 
@@ -41,23 +44,23 @@ export const fieldMapper = {
       // Handle arrays
       else if (Array.isArray(value)) {
         result[camelKey] = value.map((item) =>
-          item && typeof item === "object"
+          item != null && typeof item === "object"
             ? this.dbToApi(item as Record<string, unknown>)
-            : item,
+            : (item as unknown),
         );
       } else {
         result[camelKey] = value;
       }
     }
 
-    return result as T;
+    return result;
   },
 
   /**
    * Convert API object (camelCase) to database object (snake_case)
    */
-  apiToDb<T>(apiObject: Record<string, unknown>): T {
-    if (!apiObject) return apiObject as T;
+  apiToDb(apiObject: Record<string, unknown>): unknown {
+    if (apiObject == null) return apiObject;
 
     const result: Record<string, unknown> = {};
 
@@ -82,16 +85,16 @@ export const fieldMapper = {
       // Handle arrays
       else if (Array.isArray(value)) {
         result[snakeKey] = value.map((item) =>
-          item && typeof item === "object"
+          item != null && typeof item === "object"
             ? this.apiToDb(item as Record<string, unknown>)
-            : item,
+            : (item as unknown),
         );
       } else {
         result[snakeKey] = value;
       }
     }
 
-    return result as T;
+    return result;
   },
 
   /**

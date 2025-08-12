@@ -62,7 +62,7 @@ interface KvpWindow extends Window {
 
 class KvpPage {
   private currentUser: User | null = null;
-  private currentFilter: string = 'all';
+  private currentFilter = 'all';
   private suggestions: KvpSuggestion[] = [];
   private categories: KvpCategory[] = [];
   private departments: Department[] = [];
@@ -128,7 +128,7 @@ class KvpPage {
     // Check localStorage for activeRole (more reliable for root users)
     const activeRole = localStorage.getItem('activeRole');
     if (activeRole && activeRole !== this.currentUser.role) {
-      return activeRole as string;
+      return activeRole;
     }
 
     return this.currentUser.role;
@@ -189,7 +189,9 @@ class KvpPage {
         this.categories.forEach((category) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
-          option.onclick = () => (window as unknown as KvpWindow).selectCategory(category.id.toString(), category.name);
+          option.onclick = () => {
+            (window as unknown as KvpWindow).selectCategory(category.id.toString(), category.name);
+          };
           option.textContent = category.name;
           categoryDropdown.appendChild(option);
         });
@@ -227,7 +229,9 @@ class KvpPage {
         this.departments.forEach((dept) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
-          option.onclick = () => (window as unknown as KvpWindow).selectDepartment(dept.id.toString(), dept.name);
+          option.onclick = () => {
+            (window as unknown as KvpWindow).selectDepartment(dept.id.toString(), dept.name);
+          };
           option.textContent = dept.name;
           departmentDropdown.appendChild(option);
         });
@@ -519,7 +523,9 @@ class KvpPage {
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn').forEach((b) => {
+          b.classList.remove('active');
+        });
         btn.classList.add('active');
         this.currentFilter = btn.getAttribute('data-filter') ?? 'all';
         void this.loadSuggestions();

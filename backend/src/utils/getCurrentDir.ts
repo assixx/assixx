@@ -10,7 +10,10 @@ export function getCurrentDirPath(): string {
   const baseDir = process.cwd();
 
   // In tests, we're already in the backend directory
-  if (process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID) {
+  if (
+    process.env.NODE_ENV === "test" ||
+    (process.env.JEST_WORKER_ID != null && process.env.JEST_WORKER_ID !== "")
+  ) {
     return path.join(baseDir, "src");
   }
 

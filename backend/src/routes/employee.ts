@@ -88,7 +88,7 @@ router.get(
 
       logger.info(`Information retrieved for Employee ${employeeId}`);
       res.json(successResponse(employeeData));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error retrieving information for Employee: ${getErrorMessage(error)}`,
       );
@@ -163,7 +163,7 @@ router.get(
         `Retrieved ${result.documents.length} accessible documents for Employee ${employeeId}`,
       );
       res.json(successResponse(result.documents));
-    } catch (error) {
+    } catch (error: unknown) {
       const employeeId2 = req.user?.id ?? "unknown";
       logger.error(
         `Error retrieving documents for Employee ${employeeId2}: ${getErrorMessage(error)}`,
@@ -207,7 +207,7 @@ router.post(
           markedCount: result.documents.length,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error marking documents as read: ${getErrorMessage(error)}`,
       );
@@ -236,7 +236,7 @@ router.get(
       );
 
       res.json(successResponse({ unreadCount }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error getting unread document count: ${getErrorMessage(error)}`,
       );
@@ -254,10 +254,11 @@ router.get(
       const employeeId = req.user.id;
       const tenantId = req.user.tenant_id;
       const { query } = req.query;
+      const queryString = typeof query === "string" ? query : "";
       logger.info(
-        `Employee ${employeeId} searching accessible documents with query: ${query}`,
+        `Employee ${employeeId} searching accessible documents with query: ${queryString}`,
       );
-      if (!query) {
+      if (queryString === "") {
         logger.warn(`Employee ${employeeId} attempted search without query`);
         res.status(400).json(errorResponse("Suchbegriff erforderlich", 400));
         return;
@@ -267,14 +268,14 @@ router.get(
       const documents = await Document.searchWithEmployeeAccess(
         employeeId,
         tenantId,
-        String(query),
+        queryString,
       );
 
       logger.info(
-        `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${query}`,
+        `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${queryString}`,
       );
       res.json(successResponse(documents));
-    } catch (error) {
+    } catch (error: unknown) {
       const employeeId3 = req.user?.id ?? "unknown";
       logger.error(
         `Error searching documents for Employee ${employeeId3}: ${getErrorMessage(error)}`,
@@ -308,7 +309,7 @@ router.get(
         `Retrieved ${documents.length} salary documents for Employee ${employeeId}`,
       );
       res.json(successResponse(documents));
-    } catch (error) {
+    } catch (error: unknown) {
       const employeeId4 = req.user?.id ?? "unknown";
       logger.error(
         `Error retrieving salary documents for Employee ${employeeId4}: ${getErrorMessage(error)}`,
@@ -364,9 +365,9 @@ router.get(
               [employeeId, document.team_id, tenantId],
             );
             hasAccess = teamMembership.length > 0;
-          } catch (err) {
+          } catch (err: unknown) {
             logger.error(
-              `Error checking team membership: ${(err as Error).message}`,
+              `Error checking team membership: ${getErrorMessage(err)}`,
             );
           }
           break;
@@ -379,9 +380,9 @@ router.get(
               [employeeId, tenantId],
             );
             hasAccess = userDept[0]?.department_id == document.department_id;
-          } catch (err) {
+          } catch (err: unknown) {
             logger.error(
-              `Error checking department membership: ${(err as Error).message}`,
+              `Error checking department membership: ${getErrorMessage(err)}`,
             );
           }
           break;
@@ -394,7 +395,7 @@ router.get(
 
       if (!hasAccess) {
         logger.warn(
-          `Access denied: Employee ${employeeId} attempted to access document ${documentId} (type: ${document.recipient_type})`,
+          `Access denied: Employee ${employeeId} attempted to access document ${documentId} (type: ${String(document.recipient_type)})`,
         );
         res.status(403).json(errorResponse("Zugriff verweigert", 403));
         return;
@@ -427,7 +428,7 @@ router.get(
 
       // Für alle Dateien einfach den gesamten Inhalt auf einmal senden
       res.end(document.file_content);
-    } catch (error) {
+    } catch (error: unknown) {
       const employeeId5 = req.user?.id ?? "unknown";
       const documentId2 = req.params?.documentId ?? "unknown";
       logger.error(

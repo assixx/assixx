@@ -7,7 +7,7 @@ import express, { Router } from "express";
 import jwt from "jsonwebtoken";
 
 import { authenticateToken } from "../middleware/auth.js";
-import { RootLog } from "../models/rootLog.js";
+import { createRootLog } from "../models/rootLog.js";
 import User from "../models/user.js";
 import { getErrorMessage } from "../utils/errorHandler.js";
 import { typed } from "../utils/routeHandlers";
@@ -40,7 +40,7 @@ router.post(
       }
 
       // Prüfen ob Employee-Daten vollständig sind (nur position - department_id ist optional)
-      const needsEmployeeData = !user.position;
+      const needsEmployeeData = user.position == null || user.position === "";
 
       if (needsEmployeeData) {
         // Update nur fehlende Employee-Daten (keine neue employee_id!)
@@ -49,7 +49,7 @@ router.post(
         // WICHTIG: department_id NICHT setzen wenn keine Departments existieren
         // department_id kann NULL bleiben bis Departments angelegt werden
 
-        if (!user.position) {
+        if (user.position == null || user.position === "") {
           updateData.position = "Mitarbeiter"; // Default position
         }
 
@@ -75,7 +75,7 @@ router.post(
       );
 
       // Log the action
-      await RootLog.create({
+      await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_to_employee",
@@ -101,7 +101,7 @@ router.post(
           ? "Mitarbeiter-Profil erstellt und gewechselt"
           : "Erfolgreich zu Mitarbeiter-Ansicht gewechselt",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Role switch error:", getErrorMessage(error));
       res.status(500).json({
         message: "Fehler beim Rollenwechsel",
@@ -152,7 +152,7 @@ router.post(
       );
 
       // Log the action
-      await RootLog.create({
+      await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_to_admin",
@@ -176,7 +176,7 @@ router.post(
         },
         message: `Erfolgreich zu ${user.role === "root" ? "Root" : "Admin"}-Ansicht gewechselt`,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Role switch back error:", getErrorMessage(error));
       res.status(500).json({
         message: "Fehler beim Rollenwechsel",
@@ -227,14 +227,14 @@ router.post(
       );
 
       // Log the action
-      await RootLog.create({
+      await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_to_root",
         entity_type: "user",
         entity_id: req.user.id,
         new_values: {
-          from_role: req.user.activeRole ?? (req.user.role || "unknown"),
+          from_role: req.user.activeRole ?? req.user.role ?? "unknown",
           to_role: "root",
           timestamp: new Date(),
         },
@@ -251,7 +251,7 @@ router.post(
         },
         message: "Erfolgreich zu Root-Ansicht gewechselt",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Role switch to root error:", getErrorMessage(error));
       res.status(500).json({
         message: "Fehler beim Rollenwechsel",
@@ -300,7 +300,7 @@ router.post(
       );
 
       // Log the action
-      await RootLog.create({
+      await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: "role_switch_root_to_admin",
@@ -324,7 +324,7 @@ router.post(
         },
         message: "Erfolgreich zu Admin-Ansicht gewechselt",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Role switch root to admin error:", getErrorMessage(error));
       res.status(500).json({
         message: "Fehler beim Rollenwechsel",

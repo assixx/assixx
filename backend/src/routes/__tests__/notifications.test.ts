@@ -199,7 +199,7 @@ describe("Notification API Endpoints", () => {
         "SELECT id FROM notifications WHERE recipient_id = ? AND tenant_id = ? LIMIT 1",
         [employeeUser1.id, tenant1Id],
       );
-      const notifs = asTestRows<any>(rows);
+      const notifs = asTestRows<unknown>(rows);
 
       if ((notifs as any[]).length > 0) {
         await testDb.execute(
@@ -278,7 +278,7 @@ describe("Notification API Endpoints", () => {
         "SELECT * FROM notifications WHERE id = ?",
         [response.body.data.notificationId],
       );
-      const notifications = asTestRows<any>(rows);
+      const notifications = asTestRows<unknown>(rows);
       expect((notifications as any[])[0]).toMatchObject({
         type: notificationData.type,
         title: notificationData.title,
@@ -376,7 +376,7 @@ describe("Notification API Endpoints", () => {
         "SELECT scheduled_for FROM notifications WHERE id = ?",
         [response.body.data.notificationId],
       );
-      const notifications = asTestRows<any>(rows);
+      const notifications = asTestRows<unknown>(rows);
       expect((notifications as any[])[0].scheduled_for).toBeTruthy();
     });
 
@@ -421,7 +421,7 @@ describe("Notification API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       notificationId = (result as any).insertId;
     });
 
@@ -438,7 +438,7 @@ describe("Notification API Endpoints", () => {
         "SELECT * FROM notification_read_status WHERE notification_id = ? AND user_id = ?",
         [notificationId, employeeUser1.id],
       );
-      const readStatus = asTestRows<any>(rows);
+      const readStatus = asTestRows<unknown>(rows);
       expect((readStatus as any[]).length).toBe(1);
     });
 
@@ -504,7 +504,7 @@ describe("Notification API Endpoints", () => {
          AND nrs.id IS NULL`,
         [employeeUser1.id, employeeUser1.id, tenant1Id],
       );
-      const unread = asTestRows<any>(rows);
+      const unread = asTestRows<unknown>(rows);
       expect((unread as any[]).length).toBe(0);
     });
 
@@ -520,7 +520,7 @@ describe("Notification API Endpoints", () => {
          WHERE n.recipient_id = ? AND n.tenant_id = ? AND nrs.id IS NULL`,
         [employeeUser2.id, tenant1Id],
       );
-      const unread = asTestRows<any>(rows);
+      const unread = asTestRows<unknown>(rows);
       expect((unread as any[])[0].count).toBeGreaterThan(0);
     });
   });
@@ -544,7 +544,7 @@ describe("Notification API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       notificationId = (result as any).insertId;
     });
 
@@ -561,7 +561,7 @@ describe("Notification API Endpoints", () => {
         "SELECT * FROM notifications WHERE id = ?",
         [notificationId],
       );
-      const notifications = asTestRows<any>(rows);
+      const notifications = asTestRows<unknown>(rows);
       expect((notifications as any[]).length).toBe(0);
     });
 
@@ -652,7 +652,7 @@ describe("Notification API Endpoints", () => {
           "SELECT * FROM notification_preferences WHERE user_id = ?",
           [employeeUser1.id],
         );
-        const prefs = asTestRows<any>(rows);
+        const prefs = asTestRows<unknown>(rows);
         expect((prefs as any[]).length).toBe(1);
       });
 

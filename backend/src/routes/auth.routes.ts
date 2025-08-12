@@ -99,7 +99,7 @@ router.get(
     res.json(
       successResponse(
         {
-          csrfToken: res.locals.csrfToken,
+          csrfToken: res.locals.csrfToken as string,
         },
         "CSRF token generated successfully",
       ),
@@ -111,8 +111,8 @@ router.get(
 router.get(
   "/check",
   ...security.user(),
-  typed.auth(async (req, res) => {
-    await authController.checkAuth(req, res);
+  typed.auth((req, res) => {
+    authController.checkAuth(req, res);
   }),
 );
 router.get(
@@ -169,8 +169,8 @@ router.post(
       .normalizeEmail()
       .withMessage("Gültige E-Mail-Adresse erforderlich"),
   ]),
-  typed.body<{ email: string }>(async (req, res) => {
-    await authController.forgotPassword(req, res);
+  typed.body<{ email: string }>((req, res) => {
+    authController.forgotPassword(req, res);
   }),
 );
 
@@ -183,8 +183,8 @@ router.post(
       .isLength({ min: 8 })
       .withMessage("Passwort muss mindestens 8 Zeichen lang sein"),
   ]),
-  typed.body<{ token: string; newPassword: string }>(async (req, res) => {
-    await authController.resetPassword(req, res);
+  typed.body<{ token: string; newPassword: string }>((req, res) => {
+    authController.resetPassword(req, res);
   }),
 );
 

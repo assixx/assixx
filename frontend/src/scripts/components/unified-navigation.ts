@@ -66,7 +66,7 @@ interface UserProfileResponse extends User {
 // Removed unused interfaces
 
 // Access Control Map - Definiert welche Rollen auf welche Seiten zugreifen dürfen
-const accessControlMap: Record<string, Array<'root' | 'admin' | 'employee'>> = {
+const accessControlMap: Record<string, ('root' | 'admin' | 'employee')[]> = {
   // Root-only pages
   '/root-dashboard': ['root'],
   '/pages/root-dashboard': ['root'],
@@ -156,10 +156,10 @@ class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
   private currentRole: 'admin' | 'employee' | 'root' | null = null;
   private navigationItems: NavigationItems;
-  private isCollapsed: boolean = false;
+  private isCollapsed = false;
   private userProfileData: UserProfileResponse | null = null;
   private lastKvpClickTimestamp: number | null = null;
-  private lastKnownKvpCount: number = 0;
+  private lastKnownKvpCount = 0;
 
   constructor() {
     this.navigationItems = this.getNavigationItems();
@@ -1248,7 +1248,7 @@ class UnifiedNavigation {
   }
 
   private escapeHtml(text: string): string {
-    const map: { [key: string]: string } = {
+    const map: Record<string, string> = {
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
@@ -1328,7 +1328,7 @@ class UnifiedNavigation {
         `;
   }
 
-  private createMenuItem(item: NavItem, isActive: boolean = false): string {
+  private createMenuItem(item: NavItem, isActive = false): string {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
     const hasSubmenu = item.hasSubmenu && item.submenu && item.submenu.length > 0;
@@ -1464,13 +1464,13 @@ class UnifiedNavigation {
 
     // Create and store the new handler
     this.documentClickHandler = (e: MouseEvent) => {
-      const navLink = (e.target as HTMLElement).closest('.sidebar-link:not([onclick])') as HTMLElement;
+      const navLink = (e.target as HTMLElement).closest('.sidebar-link:not([onclick])');
       if (navLink) {
-        this.handleNavigationClick(navLink, e);
+        this.handleNavigationClick(navLink as HTMLElement, e);
       }
 
       // Submenu Link Clicks
-      const submenuLink = (e.target as HTMLElement).closest('.submenu-link') as HTMLElement;
+      const submenuLink = (e.target as HTMLElement).closest('.submenu-link');
       if (submenuLink) {
         // Store the parent submenu state
         const parentSubmenu = submenuLink.closest('.submenu');
@@ -1544,12 +1544,10 @@ class UnifiedNavigation {
 
     // Try to find the navigation sidebar specifically
     const navContainer = document.getElementById('navigation-container');
-    const sidebar = navContainer
-      ? (navContainer.querySelector('.sidebar') as HTMLElement)
-      : (document.querySelector('.sidebar') as HTMLElement);
-    const mainContent = document.querySelector('.main-content') as HTMLElement;
-    const chatMain = document.querySelector('.chat-main') as HTMLElement;
-    const chatSidebar = document.querySelector('.chat-sidebar') as HTMLElement;
+    const sidebar = navContainer ? navContainer.querySelector('.sidebar') : document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const chatMain = document.querySelector('.chat-main');
+    const chatSidebar = document.querySelector('.chat-sidebar');
 
     console.info('[UnifiedNav] Toggle button:', toggleBtn);
     console.info('[UnifiedNav] Sidebar:', sidebar);
@@ -1569,10 +1567,10 @@ class UnifiedNavigation {
       mainContent?.classList.add('sidebar-collapsed');
       chatMain?.classList.add('sidebar-collapsed');
       chatSidebar?.classList.add('sidebar-collapsed');
-      sidebar.style.setProperty('width', '68px', 'important');
+      (sidebar as HTMLElement).style.setProperty('width', '68px', 'important');
       this.updateToggleIcon();
     } else {
-      sidebar.style.setProperty('width', '280px', 'important');
+      (sidebar as HTMLElement).style.setProperty('width', '280px', 'important');
     }
 
     // Toggle click handler
@@ -1595,21 +1593,21 @@ class UnifiedNavigation {
       // Set width directly as inline style to override any CSS
       console.info('[UnifiedNav] Setting width for collapsed state:', newState);
       if (newState) {
-        sidebar.style.width = '70px';
-        sidebar.style.setProperty('width', '70px', 'important');
+        (sidebar as HTMLElement).style.width = '70px';
+        (sidebar as HTMLElement).style.setProperty('width', '70px', 'important');
         console.info('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
 
         // Check if there's a CSS rule overriding
         const computedStyle = window.getComputedStyle(sidebar);
         console.info('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
       } else {
-        sidebar.style.width = '280px';
-        sidebar.style.setProperty('width', '280px', 'important');
+        (sidebar as HTMLElement).style.width = '280px';
+        (sidebar as HTMLElement).style.setProperty('width', '280px', 'important');
         console.info('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
       }
 
       // Force browser to recalculate styles
-      void sidebar.offsetWidth;
+      void (sidebar as HTMLElement).offsetWidth;
 
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
@@ -1931,7 +1929,9 @@ class UnifiedNavigation {
 
       // If admin/root clicked on KVP, reset the badge
       if (navId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
-        this.resetKvpBadge().catch((error) => console.error('Error resetting KVP badge:', error));
+        this.resetKvpBadge().catch((error) => {
+          console.error('Error resetting KVP badge:', error);
+        });
       }
     }
 
@@ -2072,11 +2072,11 @@ class UnifiedNavigation {
             }
 
             // Find and open the parent submenu
-            const submenu = link.closest('.submenu') as HTMLElement;
+            const submenu = link.closest('.submenu');
             const parentItem = submenu?.closest('.sidebar-item.has-submenu');
 
             if (submenu && parentItem) {
-              submenu.style.display = 'block';
+              (submenu as HTMLElement).style.display = 'block';
               parentItem.classList.add('open');
               parentItem.classList.add('active');
 
@@ -2204,12 +2204,12 @@ class UnifiedNavigation {
       // Note: apiClient automatically adds /api/v2 prefix for v2 endpoints
       const data = await apiClient.get<{
         totalUnread: number;
-        conversations: Array<{
+        conversations: {
           conversationId: number;
           conversationName: string | null;
           unreadCount: number;
           lastMessageTime: Date;
-        }>;
+        }[];
       }>('/chat/unread-count');
 
       const badge = document.getElementById('chat-unread-badge');
@@ -2236,12 +2236,12 @@ class UnifiedNavigation {
 
       const data = await apiClient.get<{
         totalUnread: number;
-        eventsRequiringResponse: Array<{
+        eventsRequiringResponse: {
           id: number;
           title: string;
           startTime: string;
           requiresResponse: boolean;
-        }>;
+        }[];
       }>('/calendar/unread-events');
 
       const badge = document.getElementById('calendar-unread-badge');
@@ -2640,7 +2640,7 @@ class UnifiedNavigation {
       // Update UI
       const usedElement = document.getElementById('storage-used');
       const totalElement = document.getElementById('storage-total');
-      const progressBar = document.getElementById('storage-progress-bar') as HTMLElement;
+      const progressBar = document.getElementById('storage-progress-bar');
       const percentageElement = document.getElementById('storage-percentage');
 
       if (usedElement) usedElement.textContent = this.formatBytes(used);
@@ -3952,10 +3952,10 @@ window.dismissRoleSwitchBanner = function () {
     }
 
     // Reset sidebar position
-    const sidebar = document.querySelector('.sidebar') as HTMLElement;
+    const sidebar = document.querySelector('.sidebar');
     if (sidebar) {
-      sidebar.style.top = '';
-      sidebar.style.height = '';
+      (sidebar as HTMLElement).style.top = '';
+      (sidebar as HTMLElement).style.height = '';
     }
   }
 };

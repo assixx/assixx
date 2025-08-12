@@ -90,7 +90,7 @@ describe("Calendar v2 API - Simple Debug Test", () => {
     const token = loginRes.body.data?.accessToken;
     console.info("Got token:", token ? "Yes" : "No");
 
-    if (token) {
+    if (token !== null && token !== undefined && token !== "") {
       const calendarRes = await request(app)
         .get("/api/v2/calendar/events")
         .set("Authorization", `Bearer ${token}`);

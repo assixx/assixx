@@ -92,7 +92,7 @@ describe("DEBUG: Users v2 Archive API", () => {
 
       // Try with string ID
       const responseWithString = await request(app)
-        .post(`/api/v2/users/${userId.toString()}/archive`)
+        .post(`/api/v2/users/${String(userId.toString())}/archive`)
         .set("Authorization", `Bearer ${adminToken}`);
 
       console.info("Response with string ID:", responseWithString.status);

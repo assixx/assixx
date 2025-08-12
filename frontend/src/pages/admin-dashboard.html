@@ -75,22 +75,27 @@
 
       /* Ansprechendere Compact-Cards */
       .compact-card {
-        position: relative;
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        backdrop-filter: var(--glass-backdrop);
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
+        padding: var(--spacing-xl);
+        position: relative;
+        transition: all 0.3s ease;
       }
 
       .compact-card::before {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         content: '';
-        position: absolute;
-        top: 0;
+        height: 4px;
         left: 0;
+        position: absolute;
         right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        opacity: 0;
+        top: 0;
       }
 
       .compact-card:hover::before {
@@ -98,11 +103,12 @@
       }
 
       .compact-card:hover {
-        transform: translateY(-5px);
+        background: hsla(0, 0%, 100%, 0.03);
+        border-color: rgba(0, 142, 255, 0.5);
         box-shadow:
           0 12px 40px rgba(0, 0, 0, 0.5),
-          inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.03);
+          inset 0 1px 0 hsla(0, 0%, 100%, 0.15);
+        transform: translateY(-8px);
       }
 
       .compact-card .card-header {
@@ -586,6 +592,7 @@
       /* Prevent any layout shift during initial load */
       body:not(.loaded) * {
         /* Reserved for dynamic styles to prevent layout shift */
+        transition: none;
       }
 
       /* Breadcrumb Styles sind jetzt in breadcrumb.js enthalten */
@@ -643,14 +650,18 @@
                   <p class="text-secondary" class="u-mt-text">Mitarbeiter verwalten und hinzufügen</p>
                 </div>
                 <div class="compact-content">
-                  <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
-                    Neuer Mitarbeiter
-                  </button>
+                  <a
+                    href="/pages/manage-employees.html"
+                    class="btn btn-primary btn-block mb-3"
+                    style="display: flex; align-items: center; justify-content: center; text-decoration: none"
+                  >
+                    Mitarbeiter verwalten
+                  </a>
                   <div class="compact-list" id="recent-employees">
                     <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
                   </div>
-                  <a href="#" class="view-all-link" id="manage-employees-link">
-                    Verwalten
+                  <a href="/pages/manage-employees.html" class="view-all-link" id="manage-employees-link">
+                    Alle anzeigen
                     <span class="arrow">→</span>
                   </a>
                 </div>
@@ -766,24 +777,27 @@
 
           <!-- Payslips Section removed - now using documents-payroll.html -->
 
-          <!-- Employees Section -->
-          <section id="employees-section" class="content-section" class="u-hidden">
+          <!-- Employees Section moved to /manage-employees -->
+
+          <!-- Departments Section -->
+          <section id="departments-section" class="content-section u-hidden">
             <div class="card">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
                 <div>
-                  <h2 class="card-title">Mitarbeiterübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Alle Mitarbeiter verwalten und bearbeiten</p>
+                  <h2 class="card-title">Abteilungsübersicht</h2>
+                  <p class="text-secondary u-mt-text">Alle Abteilungen verwalten und bearbeiten</p>
                 </div>
               </div>
               <div class="flex-between mb-3">
                 <div class="filter-buttons">
-                  <button id="show-all-employees" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                  <button id="filter-employees-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-                  <button id="filter-employees-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+                  <button id="show-all-departments" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                  <button id="filter-departments-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                  <button id="filter-departments-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+                  <button id="filter-departments-restructuring" class="btn btn-sm btn-secondary">Umstrukturierung</button>
                 </div>
                 <div class="search-container">
-                  <input type="text" id="employee-search" class="search-input" placeholder="Name, E-Mail oder Position..." />
-                  <button id="employee-search-btn" class="btn btn-secondary">Suchen</button>
+                  <input type="text" id="department-search" class="search-input" placeholder="Name oder Manager..." />
+                  <button id="department-search-btn" class="btn btn-secondary">Suchen</button>
                 </div>
               </div>
 
@@ -792,15 +806,16 @@
                   <thead>
                     <tr>
                       <th>Name</th>
-                      <th>E-Mail</th>
-                      <th>Mitarbeiter-ID</th>
-                      <th>Abteilung</th>
+                      <th>Manager</th>
+                      <th>Bereich</th>
+                      <th>Übergeordnet</th>
                       <th>Status</th>
-                      <th>Verfügbarkeit</th>
+                      <th>Mitarbeiter</th>
+                      <th>Teams</th>
                       <th>Aktionen</th>
                     </tr>
                   </thead>
-                  <tbody id="employees-table-body">
+                  <tbody id="departments-table-body">
                     <!-- Wird dynamisch gefüllt -->
                   </tbody>
                 </table>
@@ -809,7 +824,7 @@
           </section>
 
           <!-- Documents Section -->
-          <section id="documents-section" class="content-section" class="u-hidden">
+          <section id="documents-section" class="content-section u-hidden">
             <div class="flex-between mb-3">
               <div>
                 <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
@@ -864,22 +879,122 @@
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
                 <div>
                   <h2 class="card-title">Teamübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Teams und Mitgliedschaften verwalten</p>
+                  <p class="text-secondary" class="u-mt-text">Alle Teams verwalten und bearbeiten</p>
                 </div>
-                <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
               </div>
+              <div class="flex-between mb-3">
+                <div class="filter-buttons">
+                  <button id="show-all-teams" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                  <button id="filter-teams-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                  <button id="filter-teams-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+                </div>
+                <div class="search-container">
+                  <input type="text" id="team-search" class="search-input" placeholder="Name, Abteilung oder Team-Lead..." />
+                  <button id="team-search-btn" class="btn btn-secondary">Suchen</button>
+                </div>
+              </div>
+
               <div class="table-responsive">
                 <table class="table">
                   <thead>
                     <tr>
                       <th>Name</th>
                       <th>Abteilung</th>
-                      <th>Beschreibung</th>
+                      <th>Team-Lead</th>
                       <th>Mitglieder</th>
+                      <th>Status</th>
+                      <th>Erstellt am</th>
                       <th>Aktionen</th>
                     </tr>
                   </thead>
                   <tbody id="teams-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Machines Section -->
+          <section id="machines-section" class="content-section" class="u-hidden">
+            <div class="card">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+                <div>
+                  <h2 class="card-title">Maschinenübersicht</h2>
+                  <p class="text-secondary" class="u-mt-text">Alle Maschinen verwalten und bearbeiten</p>
+                </div>
+              </div>
+              <div class="flex-between mb-3">
+                <div class="filter-buttons">
+                  <button id="show-all-machines" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                  <button id="filter-machines-operational" class="btn btn-sm btn-secondary">Betriebsbereit</button>
+                  <button id="filter-machines-maintenance" class="btn btn-sm btn-secondary">In Wartung</button>
+                  <button id="filter-machines-repair" class="btn btn-sm btn-secondary">In Reparatur</button>
+                </div>
+                <div class="search-container">
+                  <input type="text" id="machine-search" class="search-input" placeholder="Name, Modell, Hersteller oder Abteilung..." />
+                  <button id="machine-search-btn" class="btn btn-secondary">Suchen</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Modell</th>
+                      <th>Hersteller</th>
+                      <th>Abteilung</th>
+                      <th>Status</th>
+                      <th>Betriebsstunden</th>
+                      <th>Nächste Wartung</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="machines-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Areas Section -->
+          <section id="areas-section" class="content-section" class="u-hidden">
+            <div class="card">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+                <div>
+                  <h2 class="card-title">Bereichsübersicht</h2>
+                  <p class="text-secondary" class="u-mt-text">Alle Bereiche und Standorte verwalten</p>
+                </div>
+              </div>
+              <div class="flex-between mb-3">
+                <div class="filter-buttons">
+                  <button id="show-all-areas" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                  <button id="filter-areas-production" class="btn btn-sm btn-secondary">Produktion</button>
+                  <button id="filter-areas-warehouse" class="btn btn-sm btn-secondary">Lager</button>
+                  <button id="filter-areas-office" class="btn btn-sm btn-secondary">Büro</button>
+                </div>
+                <div class="search-container">
+                  <input type="text" id="area-search" class="search-input" placeholder="Name, Adresse oder Typ..." />
+                  <button id="area-search-btn" class="btn btn-secondary">Suchen</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Beschreibung</th>
+                      <th>Typ</th>
+                      <th>Kapazität</th>
+                      <th>Adresse</th>
+                      <th>Status</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="areas-table-body">
                     <!-- Wird dynamisch gefüllt -->
                   </tbody>
                 </table>
@@ -985,85 +1100,6 @@
           <div class="button-group">
             <button type="submit" class="btn btn-primary">Status speichern</button>
             <button type="button" class="btn btn-secondary" onclick="hideModal('employee-status-modal')">Abbrechen</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Employee Modal -->
-    <div id="employee-modal" class="modal" data-debug="employee-modal" style="display: none">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Neuer Mitarbeiter</h3>
-          <button class="modal-close" id="close-employee-modal">&times;</button>
-        </div>
-        <form id="create-employee-form" style="padding: var(--spacing-lg)">
-          <div class="form-group">
-            <label class="form-label">E-Mail</label>
-            <input type="email" name="email" id="email" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail bestätigen</label>
-            <input type="email" name="email_confirm" id="email_confirm" class="form-control" required />
-            <small id="email-error" class="error-message" style="color: red; display: none">
-              Die E-Mail-Adressen stimmen nicht überein
-            </small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Passwort</label>
-            <input type="password" name="password" id="password" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Passwort bestätigen</label>
-            <input type="password" name="password_confirm" id="password_confirm" class="form-control" required />
-            <small id="password-error" class="error-message" style="color: red; display: none">Die Passwörter stimmen nicht überein</small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Vorname</label>
-            <input type="text" name="first_name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nachname</label>
-            <input type="text" name="last_name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Personalnummer *</label>
-            <input
-              type="text"
-              name="employee_number"
-              class="form-control"
-              placeholder="z.B. ABC-123 oder 2025-001"
-              maxlength="10"
-              pattern="[A-Za-z0-9\-]{1,10}"
-              required
-            />
-            <small class="form-text" style="color: var(--text-secondary); font-size: 12px">
-              Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)
-            </small>
-          </div>
-          <!-- Mitarbeiter-ID wird automatisch generiert -->
-          <!-- IBAN-Feld wurde entfernt -->
-          <div class="form-group">
-            <label class="form-label">Abteilung</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="employee-department-display" onclick="toggleDropdown('employee-department')">
-                <span>Keine Abteilung</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="employee-department-dropdown">
-                <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
-                  Keine Abteilung
-                </div>
-                <!-- Wird dynamisch gefüllt -->
-              </div>
-              <input type="hidden" name="department_id" id="employee-department-select" />
-            </div>
-          </div>
-          <div class="button-group">
-            <button type="button" class="btn btn-secondary" id="cancel-employee-button">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">Speichern</button>
           </div>
         </form>
       </div>
@@ -1185,7 +1221,7 @@
 
       .modal .form-control {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -1254,62 +1290,130 @@
         width: 100%;
       }
 
-      .dropdown-display {
+      /* Dropdown Display - Trigger Button */
+      .dropdown-display,
+      .custom-select-display {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 12px;
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
+        transition: all 0.3s ease;
       }
 
-      .dropdown-display:hover {
+      .dropdown-display:hover,
+      .custom-select-display:hover {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.2);
       }
 
-      .dropdown-display.active svg {
+      .dropdown-display.active svg,
+      .custom-select-display.active svg {
         transform: rotate(180deg);
+        transition: transform 0.3s ease;
       }
 
       .dropdown-display svg {
-        /* Placeholder for future SVG styles */
+        transition: transform 0.3s ease;
       }
 
+      .dropdown-display.disabled,
+      .custom-select-display.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Dropdown Options - Container */
       .dropdown-options {
-        display: none; /* Initially hidden */
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
         right: 0;
-        background: rgba(18, 18, 18, 0.98);
-        backdrop-filter: var(--glass-backdrop);
-        -webkit-backdrop-filter: var(--glass-backdrop);
-        border: var(--glass-border);
-        border-radius: 8px;
-        box-shadow: var(--shadow-sm);
+        background: rgba(18, 18, 18, 0.8);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
         max-height: 200px;
         overflow-y: auto;
-        z-index: 1001;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 10001;
       }
 
+      /* Active State für Dropdown Options */
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      /* Legacy show class Support */
       .dropdown-options.show {
-        display: block;
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
       }
 
+      /* Dropdown Option Items */
       .dropdown-option {
         padding: 10px 12px;
-        color: rgba(255, 255, 255, 0.8);
+        color: var(--text-primary);
         cursor: pointer;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.2s ease;
       }
 
       .dropdown-option:last-child {
         border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+      }
+
+      .dropdown-option.selected {
+        background: rgba(33, 150, 243, 0.1);
+        color: var(--primary-color);
+      }
+
+      /* Icons in Dropdown Options */
+      .dropdown-option i {
+        margin-right: 0.5rem;
+        width: 16px;
+        text-align: center;
+        color: var(--primary-color);
+      }
+
+      /* Scrollbar Styling */
+      .dropdown-options::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
       }
     </style>
 
@@ -1402,6 +1506,10 @@
 
     <!-- Initialize dashboard on page load -->
     <script type="module">
+      // Import ApiClient for dropdown functions
+      import { ApiClient } from '/utils/api-client.js';
+      window.ApiClient = ApiClient;
+
       // Check if user should be on admin dashboard by reading from JWT token
       const token = localStorage.getItem('token');
       let activeRole = null;
@@ -1519,26 +1627,18 @@
       document.addEventListener('DOMContentLoaded', () => {
         console.info('[Performance] DOMContentLoaded event fired');
         const pageStartTime = performance.now();
-        // Event-Listener für das Schließen des Mitarbeiter-Modals
-        const closeEmployeeModalBtn = document.getElementById('close-employee-modal');
-        const cancelEmployeeBtn = document.getElementById('cancel-employee-button');
+        // Event-Listener für das Schließen des Mitarbeiter-Modals (neu mit data-action)
         const employeeModal = document.getElementById('employee-modal');
 
-        if (closeEmployeeModalBtn && employeeModal) {
-          console.info('Close employee modal button found, adding event listener');
-          closeEmployeeModalBtn.addEventListener('click', function () {
-            console.info('Close button clicked, hiding employee modal');
-            employeeModal.style.display = 'none';
+        // Handler für alle Buttons mit data-action="close-employee-modal"
+        document.querySelectorAll('[data-action="close-employee-modal"]').forEach((button) => {
+          button.addEventListener('click', function () {
+            console.info('Close employee modal button clicked');
+            if (employeeModal) {
+              employeeModal.style.display = 'none';
+            }
           });
-        }
-
-        if (cancelEmployeeBtn && employeeModal) {
-          console.info('Cancel employee button found, adding event listener');
-          cancelEmployeeBtn.addEventListener('click', function () {
-            console.info('Cancel button clicked, hiding employee modal');
-            employeeModal.style.display = 'none';
-          });
-        }
+        });
 
         // Schließen des Modals beim Klick außerhalb
         employeeModal?.addEventListener('click', function (event) {
@@ -1547,6 +1647,222 @@
             employeeModal.style.display = 'none';
           }
         });
+
+        // Neue dedizierte Funktionen für Active Status Dropdown (Aktiv/Inaktiv)
+        window.toggleActiveStatusDropdown = function () {
+          console.info('toggleActiveStatusDropdown called');
+          const dropdown = document.getElementById('employee-active-status-dropdown');
+          const display = document.getElementById('employee-active-status-display');
+
+          if (dropdown && display) {
+            // Close all other dropdowns first
+            document.querySelectorAll('.dropdown-options').forEach((d) => {
+              if (d !== dropdown) d.classList.remove('active', 'show');
+            });
+            document.querySelectorAll('.dropdown-display').forEach((d) => {
+              if (d !== display) d.classList.remove('active');
+            });
+
+            // Toggle this dropdown
+            const isActive = dropdown.classList.contains('active');
+            if (isActive) {
+              dropdown.classList.remove('active', 'show');
+              display.classList.remove('active');
+              console.info('Active Status dropdown closed');
+            } else {
+              dropdown.classList.add('active', 'show');
+              display.classList.add('active');
+              console.info('Active Status dropdown opened - should be visible now!');
+              console.info('Dropdown element:', dropdown);
+              console.info('Classes on dropdown:', dropdown.className);
+            }
+          } else {
+            console.error('Active Status dropdown elements not found');
+          }
+        };
+
+        window.selectActiveStatusOption = function (value, text) {
+          console.info('selectActiveStatusOption called:', value, text);
+          const hiddenInput = document.getElementById('employee-active-status-select');
+          const display = document.getElementById('employee-active-status-display');
+          const dropdown = document.getElementById('employee-active-status-dropdown');
+
+          if (hiddenInput && display && dropdown) {
+            hiddenInput.value = value;
+            const span = display.querySelector('span');
+            if (span) {
+              span.textContent = text;
+            }
+            dropdown.classList.remove('active', 'show');
+            display.classList.remove('active');
+            console.info('Active Status selected:', value, text);
+          }
+        };
+
+        // Global click handler to close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('#employeeActiveStatusWrapper')) {
+            const dropdown = document.getElementById('employee-active-status-dropdown');
+            const display = document.getElementById('employee-active-status-display');
+            if (dropdown && display) {
+              dropdown.classList.remove('active', 'show');
+              display.classList.remove('active');
+            }
+          }
+        });
+
+        // Helper functions for notifications
+        function showSuccess(message) {
+          // Create success toast/notification
+          console.info('Success:', message);
+          Toastify({
+            text: message,
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: '#22c55e',
+          }).showToast();
+        }
+
+        function showError(message) {
+          // Create error toast/notification
+          console.error('Error:', message);
+          Toastify({
+            text: 'Fehler: ' + message,
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: '#ef4444',
+          }).showToast();
+        }
+
+        // Employee form submit handler
+        const employeeForm = document.getElementById('create-employee-form');
+        if (employeeForm) {
+          employeeForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const mode = this.dataset.mode || 'create';
+            const employeeId = this.dataset.employeeId;
+
+            // Convert FormData to object
+            const data = {};
+            formData.forEach((value, key) => {
+              // Convert to camelCase for API v2
+              const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+              data[camelKey] = value;
+            });
+
+            // Get dropdown values
+            data.departmentId = document.getElementById('employee-department-select')?.value || null;
+            data.teamId = document.getElementById('employee-team-select')?.value || null;
+            data.isActive = document.getElementById('employee-active-status-select')?.value === '1';
+
+            console.info('Submitting employee data:', data, 'Mode:', mode);
+
+            try {
+              const token = localStorage.getItem('token');
+              let response;
+
+              if (mode === 'edit' && employeeId) {
+                // Update existing employee
+                response = await fetch(`/api/v2/users/${employeeId}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(data),
+                });
+              } else {
+                // Create new employee
+                data.password = data.password || 'AssixxTemp123!'; // Default password for new users
+                response = await fetch('/api/v2/users', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(data),
+                });
+              }
+
+              if (response.ok) {
+                const result = await response.json();
+                showSuccess(mode === 'edit' ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
+
+                // Close modal
+                document.getElementById('employee-modal').style.display = 'none';
+
+                // Reset form
+                employeeForm.reset();
+                delete employeeForm.dataset.mode;
+                delete employeeForm.dataset.employeeId;
+
+                // Reload employees table if function exists
+                if (typeof window.loadEmployeesTable === 'function') {
+                  window.loadEmployeesTable();
+                }
+              } else {
+                const error = await response.json();
+                showError(error.message || 'Fehler beim Speichern');
+              }
+            } catch (error) {
+              console.error('Error saving employee:', error);
+              showError('Fehler beim Speichern des Mitarbeiters');
+            }
+          });
+        }
+
+        // Function to show new employee modal
+        window.showNewEmployeeModal = function () {
+          const modal = document.getElementById('employee-modal');
+          const form = document.getElementById('create-employee-form');
+
+          if (modal && form) {
+            // Reset form
+            form.reset();
+            delete form.dataset.mode;
+            delete form.dataset.employeeId;
+
+            // Reset modal title
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) {
+              modalTitle.textContent = 'Neuer Mitarbeiter';
+            }
+
+            // Make password fields required again for new employee
+            const passwordInput = form.querySelector('input[name="password"]');
+            const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
+            if (passwordInput) passwordInput.setAttribute('required', 'required');
+            if (passwordConfirmInput) passwordConfirmInput.setAttribute('required', 'required');
+
+            // Show email confirm field again
+            const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
+            if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
+
+            // Reset submit button
+            const submitBtn = document.getElementById('employee-submit-btn');
+            if (submitBtn) {
+              submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>Mitarbeiter erstellen</span>';
+            }
+
+            // Reset dropdowns
+            selectDropdownOption('employee-department', '', 'Keine Abteilung');
+            selectDropdownOption('employee-team', '', 'Kein Team');
+            selectActiveStatusOption('1', 'Aktiv');
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            // Load departments for dropdown
+            if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+              loadDepartmentsForEmployeeSelect();
+            }
+          }
+        };
+
         console.info('DOM loaded, setting up debugging handlers');
 
         // Debug-Funktionen für alle Buttons (ENTFERNT - blockiert role-switch)
@@ -1606,41 +1922,61 @@
       });
     </script>
     <script>
-      // Custom Dropdown Funktionen
+      // Custom Dropdown Funktionen - Global definiert für Employee Modal
+      // Using the same pattern as chat.html that works!
       function toggleDropdown(dropdownId) {
+        console.info('toggleDropdown called for:', dropdownId);
         const dropdown = document.getElementById(dropdownId + '-dropdown');
         const display = document.getElementById(dropdownId + '-display');
 
         if (dropdown && display) {
-          // Use class toggle instead of inline style
-          dropdown.classList.toggle('show');
-          display.classList.toggle('active');
+          // Close all other dropdowns
+          document.querySelectorAll('.dropdown-display').forEach((d) => {
+            if (d !== display) d.classList.remove('active');
+          });
+          document.querySelectorAll('.dropdown-options').forEach((d) => {
+            if (d !== dropdown) d.classList.remove('active');
+          });
 
-          // Optional: Close when clicking outside
-          if (dropdown.classList.contains('show')) {
-            setTimeout(() => {
-              document.addEventListener('click', function closeDropdown(e) {
-                if (!e.target.closest('.custom-dropdown')) {
-                  dropdown.classList.remove('show');
-                  display.classList.remove('active');
-                  document.removeEventListener('click', closeDropdown);
-                }
-              });
-            }, 100);
-          }
+          // Toggle current dropdown
+          display.classList.toggle('active');
+          dropdown.classList.toggle('active');
+
+          console.info('Dropdown toggled:', dropdown.classList.contains('active') ? 'opened' : 'closed');
+        } else {
+          console.error('Dropdown elements not found for:', dropdownId);
         }
       }
 
+      // Add global click handler like in chat.html
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
       function selectDropdownOption(dropdownId, value, text) {
-        const hiddenInput = document.getElementById(dropdownId + '-select');
+        console.info('selectDropdownOption called:', dropdownId, value, text);
+        // Try both ID formats for compatibility
+        let hiddenInput = document.getElementById(dropdownId + '-select');
+        if (!hiddenInput) {
+          hiddenInput = document.getElementById(dropdownId + 'Select');
+        }
         const display = document.getElementById(dropdownId + '-display');
         const dropdown = document.getElementById(dropdownId + '-dropdown');
 
         if (hiddenInput && display && dropdown) {
           hiddenInput.value = value;
-          display.querySelector('span').textContent = text;
-          dropdown.classList.remove('show');
+          const span = display.querySelector('span');
+          if (span) {
+            span.textContent = text;
+          }
+          dropdown.classList.remove('active'); // USE ACTIVE NOT SHOW!
           display.classList.remove('active');
+
+          // Log successful selection
+          console.info('✅ dropdown selected:', { dropdownId, value, text });
 
           // Spezielle Logik für Employee Status Dropdown
           if (dropdownId === 'employee-status') {
@@ -1665,8 +2001,20 @@
               }
             }
           }
+
+          // Trigger change event for dependent dropdowns
+          if (dropdownId === 'employeeDepartment') {
+            // Reload teams when department changes
+            loadTeamsForEmployeeSelect();
+          }
+        } else {
+          console.error('Dropdown elements not found for selection:', dropdownId);
         }
       }
+
+      // Ensure functions are available globally
+      window.toggleDropdown = toggleDropdown;
+      window.selectDropdownOption = selectDropdownOption;
     </script>
     <script>
       // Funktionstabelle direkt definieren
@@ -2032,313 +2380,17 @@
         }
       }
 
-      // Mitarbeiter bearbeiten
-      async function editEmployeeAsync(employeeId) {
-        console.info(`Editing employee ${employeeId}`);
-        const token = localStorage.getItem('token');
-
-        try {
-          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? fetch(`/api/v2/users/${employeeId}`, {
-                method: 'GET',
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                },
-              })
-            : fetch(`/api/users/${employeeId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }));
-
-          if (response.ok) {
-            const responseData = await response.json();
-            // Handle v2 API response structure
-            const employee =
-              window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
-            console.info('Employee data:', employee);
-
-            // Erstelle ein Modal für die Bearbeitung
-            const modalHTML = `
-                        <div class="modal" id="edit-employee-modal" style="display: flex;">
-                            <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-                                <div class="modal-header">
-                                    <h3 class="modal-title">Mitarbeiter bearbeiten</h3>
-                                    <button type="button" class="modal-close" onclick="document.getElementById('edit-employee-modal').remove()">&times;</button>
-                                </div>
-                                <form id="edit-employee-form">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                        <div class="form-group">
-                                            <label class="form-label">Benutzername</label>
-                                            <input type="text" name="username" class="form-control" value="${employee.username || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">E-Mail</label>
-                                            <input type="email" name="email" class="form-control" value="${employee.email || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Vorname</label>
-                                            <input type="text" name="first_name" class="form-control" value="${employee.firstName || employee.first_name || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Nachname</label>
-                                            <input type="text" name="last_name" class="form-control" value="${employee.lastName || employee.last_name || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Telefon</label>
-                                            <input type="tel" name="phone" class="form-control" value="${employee.phone || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Position</label>
-                                            <input type="text" name="position" class="form-control" value="${employee.position || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Abteilung</label>
-                                            <div class="custom-dropdown">
-                                                <div class="dropdown-display" id="edit-employee-department-display" onclick="toggleDropdown('edit-employee-department')">
-                                                    <span>${employee.department || 'Keine Abteilung'}</span>
-                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                                    </svg>
-                                                </div>
-                                                <div class="dropdown-options" id="edit-employee-department-dropdown">
-                                                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
-                                                        Keine Abteilung
-                                                    </div>
-                                                    <!-- Wird dynamisch gefüllt -->
-                                                </div>
-                                                <input type="hidden" name="department_id" id="edit-employee-department-select" value="${employee.department_id || ''}" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Geburtsdatum</label>
-                                            <input type="date" name="birthday" class="form-control" value="${employee.birthday ? employee.birthday.split('T')[0] : ''}">
-                                        </div>
-                                        <div class="form-group" style="grid-column: span 2;">
-                                            <label class="form-label">Notizen</label>
-                                            <textarea name="notes" class="form-control" rows="3">${employee.notes || ''}</textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Status</label>
-                                            <div class="custom-dropdown">
-                                                <div class="dropdown-display" id="edit-employee-status-display" onclick="toggleDropdown('edit-employee-status')">
-                                                    <span>${employee.is_active ? 'Aktiv' : 'Inaktiv'}</span>
-                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                                    </svg>
-                                                </div>
-                                                <div class="dropdown-options" id="edit-employee-status-dropdown">
-                                                    <div class="dropdown-option" data-value="1" onclick="selectDropdownOption('edit-employee-status', '1', 'Aktiv')">
-                                                        Aktiv
-                                                    </div>
-                                                    <div class="dropdown-option" data-value="0" onclick="selectDropdownOption('edit-employee-status', '0', 'Inaktiv')">
-                                                        Inaktiv
-                                                    </div>
-                                                </div>
-                                                <input type="hidden" name="is_active" id="edit-employee-status-select" value="${employee.is_active ? '1' : '0'}" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Neues Passwort (optional)</label>
-                                            <input type="password" name="password" id="edit-employee-password" class="form-control" placeholder="Leer lassen für keine Änderung">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Passwort bestätigen</label>
-                                            <input type="password" name="password_confirm" id="edit-employee-password-confirm" class="form-control" placeholder="Passwort wiederholen">
-                                        </div>
-                                    </div>
-                                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">
-                                            Abbrechen
-                                        </button>
-                                        <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">
-                                            <i class="fas fa-save"></i> Änderungen speichern
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    `;
-
-            // Modal zum Body hinzufügen
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-            // Lade Abteilungen für das Custom Dropdown
-            const departmentDropdown = document.getElementById('edit-employee-department-dropdown');
-            if (departmentDropdown) {
-              // Hilfsfunktion zum Laden der Abteilungen
-              const loadDepts = async () => {
-                try {
-                  const deptResponse = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
-                    ? fetch('/api/v2/departments', {
-                        method: 'GET',
-                        headers: {
-                          Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                        },
-                      })
-                    : fetch('/api/departments', {
-                        headers: { Authorization: `Bearer ${token}` },
-                      }));
-
-                  if (deptResponse.ok) {
-                    const deptData = await deptResponse.json();
-
-                    // Handle v2 API response structure
-                    const departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
-                      ? deptData.data || deptData // v2 returns {success: true, data: [...]}
-                      : deptData; // v1 returns array directly
-
-                    // Clear existing options and add placeholder
-                    departmentDropdown.innerHTML = `
-                      <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
-                        Keine Abteilung
-                      </div>
-                    `;
-
-                    // Add department options
-                    if (Array.isArray(departments)) {
-                      departments.forEach((dept) => {
-                        const optionDiv = document.createElement('div');
-                        optionDiv.className = 'dropdown-option';
-                        optionDiv.setAttribute('data-value', dept.id.toString());
-                        optionDiv.textContent = dept.name;
-                        optionDiv.onclick = () => {
-                          selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
-                        };
-                        departmentDropdown.appendChild(optionDiv);
-
-                        // If this is the current department, select it
-                        if (dept.id == employee.department_id) {
-                          selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
-                        }
-                      });
-                    } else {
-                      console.error('Departments is not an array:', departments);
-                    }
-                  }
-                } catch (err) {
-                  console.error('Error loading departments:', err);
-                }
-              };
-
-              loadDepts();
-            }
-          } else {
-            console.error('Failed to load employee data');
-            alert('Fehler beim Laden der Mitarbeiterdaten.');
-          }
-        } catch (error) {
-          console.error('Error loading employee:', error);
-          alert('Ein Fehler ist aufgetreten.');
-        }
-      }
-
-      // Mitarbeiter aktualisieren
-      async function updateEmployee(employeeId) {
-        console.info(`Updating employee ${employeeId}`);
-        const token = localStorage.getItem('token');
-        const form = document.getElementById('edit-employee-form');
-
-        if (!form) {
-          console.error('Edit employee form not found');
-          return;
-        }
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-
-        // Password validation
-        if (data.password && data.password.trim() !== '') {
-          if (data.password !== data.password_confirm) {
-            alert('Die Passwörter stimmen nicht überein!');
-            return;
-          }
-          // Remove password_confirm from data as it's not needed for the API
-          delete data.password_confirm;
-        } else {
-          // Remove both password fields if empty
-          delete data.password;
-          delete data.password_confirm;
-        }
-
-        // Convert string values to proper types
-        if (data.department_id === '') {
-          data.department_id = null;
-        } else if (data.department_id) {
-          data.department_id = parseInt(data.department_id);
-        }
-
-        // Convert is_active to boolean and add status field
-        data.is_active = data.is_active === '1';
-        // Also set the status field based on is_active
-        data.status = data.is_active ? 'active' : 'inactive';
-
-        // Clean up empty values but keep is_active and status even if false
-        Object.keys(data).forEach((key) => {
-          if (key !== 'is_active' && key !== 'status' && (data[key] === '' || data[key] === null)) {
-            delete data[key];
-          }
-        });
-
-        // Debug log to check what we're sending
-        console.info('Sending update data:', data);
-
-        try {
-          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? fetch(`/api/v2/users/${employeeId}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                },
-                body: JSON.stringify(data),
-              })
-            : fetch(`/api/users/${employeeId}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(data),
-              }));
-
-          if (response.ok) {
-            alert('Mitarbeiter erfolgreich aktualisiert');
-            // Modal schließen
-            const modal = document.getElementById('edit-employee-modal');
-            if (modal) modal.remove();
-            // Tabelle neu laden
-            if (typeof loadEmployeesTable === 'function') {
-              loadEmployeesTable();
-            }
-            // Diese Funktionen sind möglicherweise nicht global verfügbar
-            if (typeof window.loadRecentEmployees === 'function') {
-              window.loadRecentEmployees();
-            }
-            if (typeof window.loadDashboardStats === 'function') {
-              window.loadDashboardStats();
-            }
-            // Als Fallback die Seite neu laden um alle Daten zu aktualisieren
-            if (typeof loadEmployeesTable !== 'function') {
-              window.location.reload();
-            }
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
-          }
-        } catch (error) {
-          console.error('Error updating employee:', error);
-          alert('Ein Fehler ist aufgetreten beim Aktualisieren des Mitarbeiters.');
-        }
-      }
+      // OLD editEmployeeAsync - REMOVED (replaced by new editEmployee function above)
 
       // Mitarbeiter löschen
-      async function deleteEmployee(employeeId) {
+      async function deleteEmployeeWrapper(employeeId) {
         // This function is now handled by employee-deletion.ts
         // Call the enhanced delete dialog from employee-deletion.ts
         if (window.deleteEmployee) {
           window.deleteEmployee(employeeId);
         } else {
           console.error('Delete employee function not loaded from employee-deletion.ts');
-          alert('Löschfunktion nicht verfügbar. Bitte laden Sie die Seite neu.');
+          showError('Löschfunktion nicht verfügbar. Bitte laden Sie die Seite neu.');
         }
       }
 
@@ -2423,18 +2475,148 @@
         }
       }
 
+      // REMOVED: Duplicate dropdown functions - using the ones defined earlier (line 2011)
+
+      // Lade Abteilungen für Employee Modal
+      async function loadDepartmentsForEmployeeSelect() {
+        try {
+          console.info('[loadDepartmentsForEmployeeSelect] Starting...');
+
+          // Ensure ApiClient is available and create instance
+          if (typeof ApiClient === 'undefined') {
+            console.error('ApiClient not loaded yet');
+            return;
+          }
+
+          const apiClient = new ApiClient();
+          const response = await apiClient.get('/departments');
+          console.info('[loadDepartmentsForEmployeeSelect] API response:', response);
+
+          // API v2 returns { success: true, data: [...] }
+          const departments = response.data || response;
+          console.info('[loadDepartmentsForEmployeeSelect] Departments:', departments);
+
+          const dropdown = document.getElementById('employeeDepartment-dropdown');
+          console.info('[loadDepartmentsForEmployeeSelect] Dropdown element:', dropdown);
+
+          if (dropdown && departments) {
+            // Clear existing options and add default
+            dropdown.innerHTML = `
+              <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employeeDepartment', '', 'Keine Abteilung')">
+                <i class="fas fa-times-circle"></i> Keine Abteilung
+              </div>
+            `;
+
+            // Add department options
+            departments.forEach((dept) => {
+              const optionDiv = document.createElement('div');
+              optionDiv.className = 'dropdown-option';
+              optionDiv.setAttribute('data-value', dept.id.toString());
+              optionDiv.innerHTML = `<i class="fas fa-building"></i> ${dept.name}`;
+              optionDiv.setAttribute(
+                'onclick',
+                `selectDropdownOption('employeeDepartment', '${dept.id}', '${dept.name.replace(/'/g, "\\'")}')`,
+              );
+              dropdown.appendChild(optionDiv);
+            });
+
+            console.info('Loaded departments for employee select:', departments.length);
+          } else {
+            console.error('[loadDepartmentsForEmployeeSelect] Missing dropdown or departments!');
+            console.error('Dropdown:', dropdown);
+            console.error('Departments:', departments);
+
+            // Debug: Alle Elemente mit "employeeDepartment" im Namen suchen
+            const allElements = document.querySelectorAll('[id*="employeeDepartment"]');
+            console.info('Found elements with "employeeDepartment" in ID:', allElements.length);
+            allElements.forEach((el) => console.info('  -', el.id, el.tagName));
+          }
+        } catch (error) {
+          console.error('Error loading departments:', error);
+        }
+      }
+
+      // Lade Teams für Employee Modal
+      async function loadTeamsForEmployeeSelect() {
+        try {
+          // Ensure ApiClient is available
+          if (typeof ApiClient === 'undefined') {
+            console.error('ApiClient not loaded yet');
+            return;
+          }
+
+          const apiClient = new ApiClient();
+
+          // Get selected department to filter teams
+          const selectedDeptId = document.getElementById('employeeDepartmentSelect')?.value;
+
+          const response = await apiClient.get('/teams');
+          // API v2 returns { success: true, data: [...] }
+          const allTeams = response.data || response;
+          const dropdown = document.getElementById('employeeTeam-dropdown');
+
+          if (dropdown && allTeams) {
+            // Filter teams by department if one is selected
+            let teams = allTeams;
+            if (selectedDeptId) {
+              teams = allTeams.filter((team) => team.departmentId == selectedDeptId);
+            }
+
+            // Clear existing options and add default
+            dropdown.innerHTML = `
+              <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employeeTeam', '', 'Kein Team')">
+                <i class="fas fa-times-circle"></i> Kein Team
+              </div>
+            `;
+
+            // Add team options
+            teams.forEach((team) => {
+              const optionDiv = document.createElement('div');
+              optionDiv.className = 'dropdown-option';
+              optionDiv.setAttribute('data-value', team.id.toString());
+              const teamDisplay = team.departmentName ? `${team.name} (${team.departmentName})` : team.name;
+              optionDiv.innerHTML = `<i class="fas fa-users"></i> ${teamDisplay}`;
+              optionDiv.setAttribute(
+                'onclick',
+                `selectDropdownOption('employeeTeam', '${team.id}', '${teamDisplay.replace(/'/g, "\\'")}')`,
+              );
+              dropdown.appendChild(optionDiv);
+            });
+
+            console.info(
+              `Loaded teams for employee select: ${teams.length} teams ${selectedDeptId ? 'for department ' + selectedDeptId : '(all)'}`,
+            );
+          }
+        } catch (error) {
+          console.error('Error loading teams:', error);
+        }
+      }
+
       function showEmployeeModal() {
         console.info('showEmployeeModal function called');
         const modal = document.getElementById('employee-modal');
         if (modal) {
           console.info('employee-modal found, showing directly');
           modal.style.display = 'flex';
-          // Abteilungen für das Formular laden
-          if (typeof loadDepartmentsForEmployeeSelect === 'function') {
-            loadDepartmentsForEmployeeSelect();
-          } else {
-            console.error('loadDepartmentsForEmployeeSelect is not a function');
-          }
+
+          // Warte kurz bis Modal vollständig gerendert ist
+          setTimeout(() => {
+            console.info('Loading departments and teams for employee modal...');
+
+            // Abteilungen für das Formular laden
+            if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+              loadDepartmentsForEmployeeSelect();
+            } else {
+              console.error('loadDepartmentsForEmployeeSelect is not a function');
+            }
+
+            // Teams für das Formular laden
+            if (typeof loadTeamsForEmployeeSelect === 'function') {
+              loadTeamsForEmployeeSelect();
+            } else {
+              console.warn('loadTeamsForEmployeeSelect is not defined yet');
+            }
+          }, 100);
         } else {
           console.error('employee-modal not found');
           alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
@@ -2454,6 +2636,28 @@
           alert('Dokument-Upload-Formular konnte nicht geladen werden.');
         }
       }
+
+      // Make functions globally available
+      window.showEmployeeModal = showEmployeeModal;
+      window.loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
+      window.loadTeamsForEmployeeSelect = loadTeamsForEmployeeSelect;
+      window.showDocumentModal = showDocumentModal;
+      window.showModal = showModal;
+      window.hideModal = hideModal;
+      window.toggleDropdown = toggleDropdown;
+      window.selectDropdownOption = selectDropdownOption;
+
+      // Global click handler to close dropdowns when clicking outside
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown') && !e.target.closest('.dropdown-display')) {
+          document.querySelectorAll('.dropdown-options').forEach((d) => {
+            d.classList.remove('active', 'show');
+          });
+          document.querySelectorAll('.dropdown-display').forEach((d) => {
+            d.classList.remove('active');
+          });
+        }
+      });
 
       // showDepartmentModal wurde nach departments.html verschoben
 
@@ -2661,7 +2865,6 @@
       document.addEventListener('DOMContentLoaded', () => {
         window.loadEmployeesTable = loadEmployeesTable;
         window.editEmployee = editEmployee;
-        window.editEmployeeAsync = editEmployeeAsync;
         window.updateEmployee = updateEmployee;
         window.deleteEmployee = deleteEmployee;
         window.loadDocumentsTable = loadDocumentsTable || (() => console.info('loadDocumentsTable not implemented'));
@@ -2686,10 +2889,123 @@
         window.loadDashboardStats = window.loadDashboardStats || (() => console.info('loadDashboardStats not implemented'));
       });
 
-      // Edit employee - Placeholder function, actual implementation below
-      function editEmployee(employeeId) {
-        // This is overridden by the async function below
-        window.editEmployeeAsync(employeeId);
+      // Edit employee - Opens the employee modal with existing data
+      async function editEmployee(employeeId) {
+        console.info(`Editing employee ${employeeId}`);
+        const token = localStorage.getItem('token');
+
+        try {
+          // Load employee data
+          const response = await fetch(`/api/v2/users/${employeeId}`, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load employee data');
+          }
+
+          const responseData = await response.json();
+          const employee = responseData.data || responseData;
+          console.info('Employee data loaded:', employee);
+
+          // Open the employee modal
+          const modal = document.getElementById('employee-modal');
+          if (modal) {
+            modal.style.display = 'flex';
+
+            // Change modal title
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) {
+              modalTitle.textContent = 'Mitarbeiter bearbeiten';
+            }
+
+            // Fill the form with employee data
+            const form = document.getElementById('create-employee-form');
+            if (form) {
+              // Store employee ID for update
+              form.dataset.employeeId = employeeId;
+              form.dataset.mode = 'edit';
+
+              // Make password fields optional for edit mode
+              const passwordInput = form.querySelector('input[name="password"]');
+              const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
+              if (passwordInput) passwordInput.removeAttribute('required');
+              if (passwordConfirmInput) passwordConfirmInput.removeAttribute('required');
+
+              // Hide email confirm field for edit mode
+              const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
+              if (emailConfirmGroup) emailConfirmGroup.style.display = 'none';
+
+              // Fill basic fields
+              const usernameInput = form.querySelector('input[name="username"]');
+              if (usernameInput) usernameInput.value = employee.username || '';
+
+              const emailInput = form.querySelector('input[name="email"]');
+              if (emailInput) emailInput.value = employee.email || '';
+
+              const firstNameInput = form.querySelector('input[name="firstName"]');
+              if (firstNameInput) firstNameInput.value = employee.first_name || employee.firstName || '';
+
+              const lastNameInput = form.querySelector('input[name="lastName"]');
+              if (lastNameInput) lastNameInput.value = employee.last_name || employee.lastName || '';
+
+              const phoneInput = form.querySelector('input[name="phone"]');
+              if (phoneInput) phoneInput.value = employee.phone || '';
+
+              const positionInput = form.querySelector('input[name="position"]');
+              if (positionInput) positionInput.value = employee.position || '';
+
+              const employeeNumberInput = form.querySelector('input[name="employeeNumber"]');
+              if (employeeNumberInput) employeeNumberInput.value = employee.employee_id || employee.employeeId || '';
+
+              const birthdayInput = form.querySelector('input[name="birthday"]');
+              if (birthdayInput && employee.birthday) {
+                birthdayInput.value = employee.birthday.split('T')[0];
+              }
+
+              // Set department dropdown
+              if (employee.department_id || employee.departmentId) {
+                const deptId = employee.department_id || employee.departmentId;
+                const deptName = employee.department_name || employee.departmentName || 'Unbekannte Abteilung';
+                selectDropdownOption('employee-department', deptId, deptName);
+              }
+
+              // Set team dropdown if exists
+              if (employee.team_id || employee.teamId) {
+                const teamId = employee.team_id || employee.teamId;
+                const teamName = employee.team_name || employee.teamName || 'Unbekanntes Team';
+                selectDropdownOption('employee-team', teamId, teamName);
+              }
+
+              // Set active status
+              const isActive = employee.is_active !== undefined ? employee.is_active : 1;
+              selectActiveStatusOption(isActive ? '1' : '0', isActive ? 'Aktiv' : 'Inaktiv');
+
+              // Change submit button text
+              const submitBtn = form.querySelector('button[type="submit"]');
+              if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Änderungen speichern';
+              }
+
+              // Load departments and teams for dropdowns
+              if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+                loadDepartmentsForEmployeeSelect();
+              }
+              if (employee.department_id || employee.departmentId) {
+                const deptId = employee.department_id || employee.departmentId;
+                if (typeof loadTeamsForEmployeeSelect === 'function') {
+                  loadTeamsForEmployeeSelect(deptId);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading employee:', error);
+          showError('Fehler beim Laden der Mitarbeiterdaten');
+        }
       }
 
       // Delete employee
@@ -3016,7 +3332,7 @@
 
       .department-item,
       .team-item {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         background-color: var(--background-dark);
         border-radius: var(--radius-sm);
         display: flex;
@@ -3051,10 +3367,650 @@
         transform: scale(1.1);
         box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
       }
+
+      /* Modal Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal-container {
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+        max-width: 900px;
+        position: relative;
+        width: 100%;
+        border: var(--border-width) solid hsla(0, 0%, 100%, 0.1);
+        overflow: hidden;
+        max-height: 85vh !important;
+        backdrop-filter: var(--glass-backdrop);
+        background: var(--glass-card-bg);
+        border: var(--glass-card-border);
+        border-radius: var(--glass-card-radius);
+      }
+
+      /* Modal Large Variante für größere Formulare */
+      .modal-container.modal-lg {
+        max-width: 800px;
+      }
+
+      /* Form Sections für bessere Strukturierung */
+      .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .section-title i {
+        color: var(--primary-color);
+        font-size: 1rem;
+      }
+
+      .modal-header {
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+      }
+
+      .modal-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+      }
+
+      .modal-body {
+        padding: 24px;
+      }
+
+      .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      .form-group label i {
+        margin-right: 8px;
+        color: var(--primary-color);
+      }
+
+      /* Form Controls mit Glassmorphismus - EXAKT wie im Calendar Modal */
+      .form-control,
+      input[type='text'],
+      input[type='email'],
+      input[type='password'],
+      input[type='date'],
+      input[type='time'],
+      input[type='number'],
+      textarea {
+        width: 100%;
+        padding: var(--spacing-2sm);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus,
+      input:focus,
+      textarea:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      .form-control::placeholder,
+      input::placeholder,
+      textarea::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+      }
+
+      .form-control option {
+        background: rgba(18, 18, 18, 0.95);
+        color: var(--text-primary);
+      }
+
+      /* Disabled state */
+      .form-control:disabled,
+      input:disabled,
+      textarea:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .form-row {
+        display: flex;
+        gap: 16px;
+      }
+
+      .form-row .form-group {
+        flex: 1;
+      }
+
+      /* Grid System für Formulare */
+      .col-md-6 {
+        flex: 1;
+        min-width: 0;
+      }
+
+      @media (max-width: 768px) {
+        .form-row {
+          flex-direction: column;
+        }
+
+        .col-md-6 {
+          width: 100%;
+        }
+      }
+
+      .required {
+        color: var(--danger-color);
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
     </style>
 
-    <!-- Floating Action Button for Employees -->
+    <!-- Floating Action Buttons -->
     <button class="add-employee-btn" id="floating-add-employee" onclick="showEmployeeModal()" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-team" onclick="showTeamModal()" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-machine" onclick="showMachineModal()" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-area" onclick="showAreaModal()" style="display: none">+</button>
+
+    <!-- Team Creation Modal -->
+    <div class="modal-overlay" id="teamModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-users"></i>
+            Neues Team erstellen
+          </h2>
+          <button type="button" class="modal-close" onclick="closeTeamModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="teamForm">
+            <div class="form-group">
+              <label for="teamName">
+                <i class="fas fa-tag"></i>
+                Team Name
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" id="teamName" name="name" placeholder="z.B. Produktionsteam Alpha" required />
+            </div>
+
+            <div class="form-group">
+              <label for="teamDescription">
+                <i class="fas fa-align-left"></i>
+                Beschreibung
+              </label>
+              <textarea
+                class="form-control"
+                id="teamDescription"
+                name="description"
+                rows="3"
+                placeholder="Beschreibung des Teams"
+              ></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="teamType">
+                  <i class="fas fa-th-list"></i>
+                  Team Typ
+                </label>
+                <select class="form-control" id="teamType" name="teamType">
+                  <option value="production">Produktion</option>
+                  <option value="quality">Qualität</option>
+                  <option value="maintenance">Wartung</option>
+                  <option value="logistics">Logistik</option>
+                  <option value="administration">Verwaltung</option>
+                  <option value="other">Sonstiges</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="teamStatus">
+                  <i class="fas fa-info-circle"></i>
+                  Status
+                </label>
+                <select class="form-control" id="teamStatus" name="status">
+                  <option value="active">Aktiv</option>
+                  <option value="inactive">Inaktiv</option>
+                  <option value="restructuring">Umstrukturierung</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="teamMaxMembers">
+                  <i class="fas fa-users"></i>
+                  Max. Mitglieder
+                </label>
+                <input type="number" class="form-control" id="teamMaxMembers" name="maxMembers" min="1" max="100" placeholder="z.B. 15" />
+              </div>
+
+              <div class="form-group">
+                <label for="teamDepartment">
+                  <i class="fas fa-building"></i>
+                  Abteilung
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="team-department-display" onclick="toggleDropdown('team-department')">
+                    <span>Keine Abteilung</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="team-department-dropdown">
+                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('team-department', '', 'Keine Abteilung')">
+                      Keine Abteilung
+                    </div>
+                    <!-- Will be populated dynamically -->
+                  </div>
+                  <input type="hidden" name="departmentId" id="team-department-select" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="teamMachines">
+                <i class="fas fa-cogs"></i>
+                Zugewiesene Maschinen
+              </label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="team-machines-display" onclick="toggleDropdown('team-machines')">
+                  <span>Keine Maschinen zugewiesen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="team-machines-dropdown" style="max-height: 200px; overflow-y: auto">
+                  <!-- Will be populated with checkboxes for multiple selection -->
+                </div>
+                <input type="hidden" name="machineIds" id="team-machines-select" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="teamUsers">
+                <i class="fas fa-users"></i>
+                Team-Mitglieder
+              </label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="team-users-display" onclick="toggleDropdown('team-users')">
+                  <span>Keine Mitglieder zugewiesen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="team-users-dropdown" style="max-height: 200px; overflow-y: auto">
+                  <!-- Will be populated with checkboxes for multiple user selection -->
+                </div>
+                <input type="hidden" name="userIds" id="team-users-select" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeTeamModal()">Abbrechen</button>
+          <button type="button" class="btn btn-primary" onclick="saveTeam()">
+            <i class="fas fa-save"></i>
+            Team erstellen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Machine Creation Modal -->
+    <div class="modal-overlay" id="machineModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-cogs"></i>
+            Neue Maschine hinzufügen
+          </h2>
+          <button type="button" class="modal-close" onclick="closeMachineModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="machineForm">
+            <div class="form-group">
+              <label for="machineName">
+                <i class="fas fa-tag"></i>
+                Maschinen Name
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" id="machineName" name="name" placeholder="z.B. CNC Fräsmaschine 001" required />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineModel">
+                  <i class="fas fa-cube"></i>
+                  Modell
+                </label>
+                <input type="text" class="form-control" id="machineModel" name="model" placeholder="z.B. DMU 50" />
+              </div>
+
+              <div class="form-group">
+                <label for="machineManufacturer">
+                  <i class="fas fa-industry"></i>
+                  Hersteller
+                </label>
+                <input type="text" class="form-control" id="machineManufacturer" name="manufacturer" placeholder="z.B. DMG MORI" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineSerialNumber">
+                  <i class="fas fa-barcode"></i>
+                  Seriennummer
+                </label>
+                <input type="text" class="form-control" id="machineSerialNumber" name="serialNumber" placeholder="z.B. SN-2024-001" />
+              </div>
+
+              <div class="form-group">
+                <label for="machineAssetNumber">
+                  <i class="fas fa-hashtag"></i>
+                  Inventarnummer
+                </label>
+                <input type="text" class="form-control" id="machineAssetNumber" name="assetNumber" placeholder="z.B. ASSET-001" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineType">
+                  <i class="fas fa-th-list"></i>
+                  Maschinen Typ
+                </label>
+                <select class="form-control" id="machineType" name="machineType">
+                  <option value="production">Produktion</option>
+                  <option value="packaging">Verpackung</option>
+                  <option value="quality_control">Qualitätskontrolle</option>
+                  <option value="logistics">Logistik</option>
+                  <option value="utility">Versorgung</option>
+                  <option value="other">Sonstiges</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="machineStatus">
+                  <i class="fas fa-info-circle"></i>
+                  Status
+                </label>
+                <select class="form-control" id="machineStatus" name="status">
+                  <option value="operational">Betriebsbereit</option>
+                  <option value="maintenance">In Wartung</option>
+                  <option value="repair">In Reparatur</option>
+                  <option value="standby">Standby</option>
+                  <option value="decommissioned">Außer Betrieb</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineDepartment">
+                  <i class="fas fa-building"></i>
+                  Abteilung
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="machine-department-display" onclick="toggleDropdown('machine-department')">
+                    <span>Keine Abteilung</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="machine-department-dropdown">
+                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('machine-department', '', 'Keine Abteilung')">
+                      Keine Abteilung
+                    </div>
+                    <!-- Will be populated dynamically -->
+                  </div>
+                  <input type="hidden" name="departmentId" id="machine-department-select" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="machineArea">
+                  <i class="fas fa-map-marker-alt"></i>
+                  Bereich
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="machine-area-display" onclick="toggleDropdown('machine-area')">
+                    <span>Kein Bereich</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="machine-area-dropdown">
+                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('machine-area', '', 'Kein Bereich')">
+                      Kein Bereich
+                    </div>
+                    <!-- Will be populated dynamically -->
+                  </div>
+                  <input type="hidden" name="areaId" id="machine-area-select" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="machineLocation">
+                <i class="fas fa-map-marker-alt"></i>
+                Standort
+              </label>
+              <input type="text" class="form-control" id="machineLocation" name="location" placeholder="z.B. Halle A, Bereich 3" />
+            </div>
+
+            <div class="form-group">
+              <label for="machineNotes">
+                <i class="fas fa-sticky-note"></i>
+                Notizen
+              </label>
+              <textarea
+                class="form-control"
+                id="machineNotes"
+                name="notes"
+                rows="3"
+                placeholder="Zusätzliche Informationen zur Maschine"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeMachineModal()">Abbrechen</button>
+          <button type="button" class="btn btn-primary" onclick="saveMachine()">
+            <i class="fas fa-save"></i>
+            Maschine hinzufügen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Area Creation Modal -->
+    <div class="modal-overlay" id="areaModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-map-marker-alt"></i>
+            Neuen Bereich erstellen
+          </h2>
+          <button type="button" class="modal-close" onclick="closeAreaModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="areaForm">
+            <div class="form-group">
+              <label for="areaName">
+                <i class="fas fa-tag"></i>
+                Bereichsname
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" id="areaName" name="name" placeholder="z.B. Halle A" required />
+            </div>
+            <div class="form-group">
+              <label for="areaDescription">
+                <i class="fas fa-align-left"></i>
+                Beschreibung
+              </label>
+              <textarea
+                class="form-control"
+                id="areaDescription"
+                name="description"
+                rows="3"
+                placeholder="Beschreibung des Bereichs"
+              ></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="areaType">
+                  <i class="fas fa-th-list"></i>
+                  Bereichstyp
+                </label>
+                <select class="form-control" id="areaType" name="type">
+                  <option value="production">Produktion</option>
+                  <option value="warehouse">Lager</option>
+                  <option value="office">Büro</option>
+                  <option value="building">Gebäude</option>
+                  <option value="outdoor">Außenbereich</option>
+                  <option value="other">Sonstiges</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="areaCapacity">
+                  <i class="fas fa-users"></i>
+                  Kapazität
+                </label>
+                <input type="number" class="form-control" id="areaCapacity" name="capacity" min="1" placeholder="z.B. 50" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="areaAddress">
+                <i class="fas fa-map-marked-alt"></i>
+                Adresse
+              </label>
+              <textarea
+                class="form-control"
+                id="areaAddress"
+                name="address"
+                rows="2"
+                placeholder="Vollständige Adresse des Bereichs"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeAreaModal()">Abbrechen</button>
+          <button type="button" class="btn btn-primary" onclick="saveArea()">
+            <i class="fas fa-save"></i>
+            Bereich erstellen
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Mark body as loaded after all scripts -->
     <script>
@@ -3067,17 +4023,31 @@
 
       // Show/hide floating button based on section
       document.addEventListener('DOMContentLoaded', function () {
-        const floatingBtn = document.getElementById('floating-add-employee');
+        const floatingBtnEmployee = document.getElementById('floating-add-employee');
+        const floatingBtnTeam = document.getElementById('floating-add-team');
+        const floatingBtnMachine = document.getElementById('floating-add-machine');
+        const floatingBtnArea = document.getElementById('floating-add-area');
 
-        // Function to check if employees section is active
+        // Function to check which section is active
         function updateFloatingButton() {
           const urlParams = new URLSearchParams(window.location.search);
           const section = urlParams.get('section');
 
-          if (section === 'employees' && floatingBtn) {
-            floatingBtn.style.display = 'flex';
-          } else if (floatingBtn) {
-            floatingBtn.style.display = 'none';
+          // Hide all buttons first
+          if (floatingBtnEmployee) floatingBtnEmployee.style.display = 'none';
+          if (floatingBtnTeam) floatingBtnTeam.style.display = 'none';
+          if (floatingBtnMachine) floatingBtnMachine.style.display = 'none';
+          if (floatingBtnArea) floatingBtnArea.style.display = 'none';
+
+          // Show the appropriate button
+          if (section === 'employees' && floatingBtnEmployee) {
+            floatingBtnEmployee.style.display = 'flex';
+          } else if (section === 'teams' && floatingBtnTeam) {
+            floatingBtnTeam.style.display = 'flex';
+          } else if (section === 'machines' && floatingBtnMachine) {
+            floatingBtnMachine.style.display = 'flex';
+          } else if (section === 'areas' && floatingBtnArea) {
+            floatingBtnArea.style.display = 'flex';
           }
         }
 

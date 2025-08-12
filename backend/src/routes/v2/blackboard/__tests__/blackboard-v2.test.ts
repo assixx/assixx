@@ -76,15 +76,15 @@ describe("Blackboard API v2", () => {
     if (entryIds.length > 0) {
       // Delete related data using the IDs directly
       await testDb.execute(
-        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${String(entryIds.map(() => "?").join(","))})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${String(entryIds.map(() => "?").join(","))})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+        `DELETE FROM blackboard_attachments WHERE entry_id IN (${String(entryIds.map(() => "?").join(","))})`,
         entryIds,
       );
     }
@@ -167,15 +167,15 @@ describe("Blackboard API v2", () => {
     if (entryIds.length > 0) {
       // Delete related data using the IDs directly
       await testDb.execute(
-        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+        `DELETE FROM blackboard_confirmations WHERE entry_id IN (${String(entryIds.map(() => "?").join(","))})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+        `DELETE FROM blackboard_entry_tags WHERE entry_id IN (${String(entryIds.map(() => "?").join(","))})`,
         entryIds,
       );
       await testDb.execute(
-        `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+        `DELETE FROM blackboard_attachments WHERE entry_id IN (${String(entryIds.map(() => "?").join(","))})`,
         entryIds,
       );
     }
@@ -573,7 +573,7 @@ describe("Blackboard API v2", () => {
           "blackboard-test2",
           "Test Blackboard Tenant 2",
         );
-      } catch (error) {
+      } catch (error: unknown) {
         // Tenant might already exist, try to get its ID
         const [tenants] = await testDb.execute<any[]>(
           "SELECT id FROM tenants WHERE code = ?",

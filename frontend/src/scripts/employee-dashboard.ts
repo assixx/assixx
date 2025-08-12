@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show role indicator for admins
   if (isAdminAsEmployee) {
-    const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+    const roleIndicator = document.getElementById('role-indicator');
     const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
 
     if (roleIndicator) {

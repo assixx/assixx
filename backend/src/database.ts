@@ -286,7 +286,7 @@ if (USE_MOCK_DB) {
       .catch((err) => {
         console.error("[DEBUG] Database connection test failed:", err.message);
       });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Fehler beim Verbinden mit der Datenbank:", error);
     // Create a dummy pool that throws errors
     pool = {

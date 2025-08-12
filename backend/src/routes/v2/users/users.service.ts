@@ -8,7 +8,7 @@ import path from "path";
 
 import bcrypt from "bcryptjs";
 
-import { User } from "../../../models/user";
+import User from "../../../models/user";
 import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
 
 import {
@@ -149,7 +149,8 @@ export class UsersService {
     }
 
     // Generate employee number if not provided
-    const employeeNumber = userData.employeeNumber ?? `EMP${Date.now()}`;
+    const employeeNumber =
+      userData.employeeNumber ?? `EMP${String(Date.now())}`;
 
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -184,7 +185,7 @@ export class UsersService {
       }
 
       return dbToApi(sanitizeUser(createdUser));
-    } catch (error) {
+    } catch (error: unknown) {
       // Handle database errors
       if (
         error instanceof Error &&
@@ -196,8 +197,8 @@ export class UsersService {
           ? "Email"
           : message.includes("username")
             ? "Username"
-            : message.includes("phone")
-              ? "Phone number"
+            : message.includes("employee_number")
+              ? "Employee number"
               : message.includes("employee_id")
                 ? "Employee ID"
                 : "Field";
@@ -248,7 +249,7 @@ export class UsersService {
       }
 
       return dbToApi(sanitizeUser(updatedUser));
-    } catch (error) {
+    } catch (error: unknown) {
       // Handle database errors
       if (
         error instanceof Error &&
@@ -258,8 +259,8 @@ export class UsersService {
         const message = error.message ?? "";
         const field = message.includes("email")
           ? "Email"
-          : message.includes("phone")
-            ? "Phone number"
+          : message.includes("employee_number")
+            ? "Employee number"
             : "Field";
 
         throw new ServiceError("CONFLICT", `${field} already exists`, 409);
@@ -314,14 +315,26 @@ export class UsersService {
       }
 
       return dbToApi(sanitizeUser(updatedUser));
-    } catch (error) {
+    } catch (error: unknown) {
       // Handle database errors
       if (
         error instanceof Error &&
         "code" in error &&
         (error as { code: string }).code === "ER_DUP_ENTRY"
       ) {
-        throw new ServiceError("CONFLICT", "Phone number already exists", 409);
+        // Parse the error message to determine which field is duplicate
+        const errorMessage = (error as { message?: string }).message ?? "";
+        if (errorMessage.includes("email")) {
+          throw new ServiceError("CONFLICT", "Email already exists", 409);
+        } else if (errorMessage.includes("employee_number")) {
+          throw new ServiceError(
+            "CONFLICT",
+            "Employee number already exists",
+            409,
+          );
+        } else {
+          throw new ServiceError("CONFLICT", "Duplicate field value", 409);
+        }
       }
       throw error;
     }
@@ -476,7 +489,7 @@ export class UsersService {
     const filePath = path.join(process.cwd(), user.profile_picture);
     try {
       await fs.unlink(filePath);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to delete profile picture file:", error);
     }
 

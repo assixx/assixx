@@ -28,7 +28,7 @@ const mockRedisClient = {
 function generateTestToken(
   userId: number,
   tenantId: number,
-  role: string = "root",
+  role = "root",
 ): string {
   return jwt.sign(
     { userId, tenantId, role },
@@ -58,7 +58,7 @@ async function cleanupTestData(tenantId: number): Promise<void> {
       'UPDATE tenants SET deletion_status = "active", deletion_requested_at = NULL WHERE id = ?',
       [tenantId],
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Cleanup error:", error);
   }
 }
@@ -100,7 +100,7 @@ describe("Tenant Deletion Integration Tests", () => {
 
   afterAll(async () => {
     // Clean up test data
-    if (testTenantId) {
+    if (testTenantId !== 0 && !isNaN(testTenantId)) {
       await cleanupTestData(testTenantId);
       await query("DELETE FROM users WHERE tenant_id = ?", [testTenantId]);
       await query("DELETE FROM tenants WHERE id = ?", [testTenantId]);
@@ -395,7 +395,7 @@ describe("Tenant Deletion Integration Tests", () => {
         "INSERT INTO tenant_deletion_queue (tenant_id, created_by, reason, status, error_message) VALUES (?, ?, ?, ?, ?)",
         [testTenantId, testUserId, "Retry test", "failed", "Test failure"],
       );
-      const queueId = (queueResult as any).insertId;
+      const queueId = (queueResult as { insertId: number }).insertId;
 
       const response = await request(app)
         .post(`/api/root/deletion-queue/${queueId}/retry`)
@@ -417,7 +417,7 @@ describe("Tenant Deletion Integration Tests", () => {
       // Simulate a critical step failing
       jest
         .spyOn(tenantDeletionService as any, "executeStep")
-        .mockImplementationOnce(async (step) => {
+        .mockImplementationOnce((step) => {
           if (step.name === "deleteTenant") {
             throw new Error("Critical step failed");
           }

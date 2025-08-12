@@ -160,11 +160,13 @@ export class DocumentsService {
           pages: Math.ceil(totalCount / limit),
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error listing documents: ${(error as Error).message}`);
+      logger.error(
+        `Error listing documents: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to list documents", 500);
     }
   }
@@ -228,11 +230,13 @@ export class DocumentsService {
         downloadUrl: `/api/v2/documents/${document.id}/download`,
         previewUrl: `/api/v2/documents/${document.id}/preview`,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error getting document ${id}: ${(error as Error).message}`);
+      logger.error(
+        `Error getting document ${id}: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to get document", 500);
     }
   }
@@ -284,11 +288,13 @@ export class DocumentsService {
 
       // Return the created document
       return this.getDocumentById(documentId, createdBy, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error creating document: ${(error as Error).message}`);
+      logger.error(
+        `Error creating document: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to create document", 500);
     }
   }
@@ -347,12 +353,12 @@ export class DocumentsService {
 
       // Return updated document
       return this.getDocumentById(id, userId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
       logger.error(
-        `Error updating document ${id}: ${(error as Error).message}`,
+        `Error updating document ${id}: ${String((error as Error).message)}`,
       );
       throw new ServiceError("SERVER_ERROR", "Failed to update document", 500);
     }
@@ -388,12 +394,12 @@ export class DocumentsService {
       await Document.delete(id);
 
       return { message: "Document deleted successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
       logger.error(
-        `Error deleting document ${id}: ${(error as Error).message}`,
+        `Error deleting document ${id}: ${String((error as Error).message)}`,
       );
       throw new ServiceError("SERVER_ERROR", "Failed to delete document", 500);
     }
@@ -442,12 +448,12 @@ export class DocumentsService {
           ? "Document archived successfully"
           : "Document unarchived successfully",
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
       logger.error(
-        `Error archiving document ${id}: ${(error as Error).message}`,
+        `Error archiving document ${id}: ${String((error as Error).message)}`,
       );
       throw new ServiceError("SERVER_ERROR", "Failed to archive document", 500);
     }
@@ -488,12 +494,12 @@ export class DocumentsService {
         mimeType: document.mime_type,
         size: document.file_size,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
       logger.error(
-        `Error getting document content ${id}: ${(error as Error).message}`,
+        `Error getting document content ${id}: ${String((error as Error).message)}`,
       );
       throw new ServiceError(
         "SERVER_ERROR",
@@ -536,8 +542,10 @@ export class DocumentsService {
         storageUsed,
         categoryCounts,
       };
-    } catch (error) {
-      logger.error(`Error getting document stats: ${(error as Error).message}`);
+    } catch (error: unknown) {
+      logger.error(
+        `Error getting document stats: ${String((error as Error).message)}`,
+      );
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get document stats",

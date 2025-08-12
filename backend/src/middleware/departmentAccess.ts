@@ -27,11 +27,11 @@ interface AuthenticatedRequest extends Request {
  * Middleware to check department access for admin users
  */
 export const checkDepartmentAccess = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const authReq = req as AuthenticatedRequest;
+  const authReq = req;
   const { user } = authReq;
 
   if (!user) {
@@ -41,7 +41,8 @@ export const checkDepartmentAccess = async (
 
   // Root and employees bypass department checks
   if (user.role === "root" || user.role === "employee") {
-    return next();
+    next();
+    return;
   }
 
   // For admin users, check department permissions
@@ -50,28 +51,28 @@ export const checkDepartmentAccess = async (
     let department_id: number | undefined;
 
     // Check body
-    if (req.body && authReq.body.department_id) {
+    if (req.body != null && authReq.body.department_id != null) {
       department_id = parseInt(String(authReq.body.department_id));
     }
     // Check query parameters
-    else if (req.query?.department_id) {
+    else if (req.query?.department_id != null) {
       department_id = parseInt(req.query.department_id as string);
     }
     // Check route parameters
-    else if (req.params?.department_id) {
+    else if (req.params?.department_id != null) {
       department_id = parseInt(req.params.department_id);
     }
     // Check for departmentId variant
-    else if (req.body?.departmentId) {
-      department_id = parseInt(req.body.departmentId);
-    } else if (req.query?.departmentId) {
+    else if (authReq.body?.departmentId != null) {
+      department_id = parseInt(String(authReq.body.departmentId));
+    } else if (req.query?.departmentId != null) {
       department_id = parseInt(req.query.departmentId as string);
-    } else if (req.params?.departmentId) {
+    } else if (req.params?.departmentId != null) {
       department_id = parseInt(req.params.departmentId);
     }
 
     // If department_id is found, check access
-    if (department_id && !isNaN(department_id)) {
+    if (department_id != null && !isNaN(department_id) && department_id !== 0) {
       // Determine required permission level based on HTTP method
       let requiredPermission: "read" | "write" | "delete" = "read";
 
@@ -120,12 +121,14 @@ export const filterDepartmentResults = async (
   const { user } = authReq;
 
   if (!user || user.role !== "admin") {
-    return next();
+    next();
+    return;
   }
 
   // Type assertion for user with proper check
   if (!user.id || typeof user.tenant_id !== "number") {
-    return next();
+    next();
+    return;
   }
 
   // Get departments upfront for the admin

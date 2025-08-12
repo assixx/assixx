@@ -5,7 +5,7 @@
 
 import { Response, NextFunction } from "express";
 
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
 
@@ -31,7 +31,11 @@ export function validateTenantIsolation(
       req.headers["x-tenant-id"] ?? req.params.tenantId ?? req.query.tenant_id;
 
     // If a specific tenant is requested, validate access
-    if (requestedTenantId) {
+    if (
+      requestedTenantId !== null &&
+      requestedTenantId !== undefined &&
+      requestedTenantId !== ""
+    ) {
       const requestedId = parseInt(requestedTenantId.toString(), 10);
       const userTenantId = req.user.tenant_id;
 
@@ -53,7 +57,7 @@ export function validateTenantIsolation(
 
     // All checks passed
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("Tenant isolation middleware error:", error);
     res
       .status(500)

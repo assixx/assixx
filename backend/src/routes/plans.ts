@@ -4,7 +4,7 @@ import { RowDataPacket } from "mysql2";
 
 import { security } from "../middleware/security";
 import { createValidation } from "../middleware/validation";
-import { Plan } from "../models/plan";
+import Plan from "../models/plan";
 import { successResponse, errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
 import { typed } from "../utils/routeHandlers";
@@ -65,7 +65,7 @@ router.get(
 // Simple available route
 router.get(
   "/simple",
-  typed.public(async (_req, res) => {
+  typed.public((_req, res) => {
     try {
       res.json(
         successResponse([
@@ -122,7 +122,7 @@ router.get(
           },
         ]),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Simple route error:", error);
       res.status(500).json(errorResponse("Fehler beim Abrufen der Pläne", 500));
     }
@@ -149,7 +149,7 @@ router.get(
       // Add feature information to each plan
       const plansWithFeatures = await Promise.all(
         plans.map(async (plan) => {
-          const features = await Plan.getPlanFeatures(plan.id);
+          const features = await Plan.getPlanFeatures(plan.id as number);
           return {
             ...plan,
             features: features.filter((f) => f.is_included),
@@ -158,7 +158,7 @@ router.get(
       );
 
       res.json(successResponse(plansWithFeatures));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching plans: ${(error as Error).message}`);
       res.status(500).json(errorResponse("Fehler beim Abrufen der Pläne", 500));
     }
@@ -196,7 +196,7 @@ router.get(
           costs,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching current plan: ${(error as Error).message}`);
       res
         .status(500)
@@ -239,7 +239,7 @@ router.get(
           costs,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching tenant plan: ${(error as Error).message}`);
       res
         .status(500)
@@ -275,7 +275,10 @@ router.post(
       await Plan.changeTenantPlan({
         tenantId,
         newPlanCode,
-        effectiveDate: effectiveDate ? new Date(effectiveDate) : undefined,
+        effectiveDate:
+          effectiveDate != null && effectiveDate !== ""
+            ? new Date(effectiveDate)
+            : undefined,
       });
 
       // Get updated plan info
@@ -291,7 +294,7 @@ router.post(
           "Plan erfolgreich geändert",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error changing plan: ${(error as Error).message}`);
       res.status(500).json(errorResponse("Fehler beim Ändern des Plans", 500));
     }
@@ -308,7 +311,7 @@ router.get(
       const addons = await Plan.getTenantAddons(tenantId);
 
       res.json(successResponse(addons));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching addons: ${(error as Error).message}`);
       res
         .status(500)
@@ -361,7 +364,7 @@ router.post(
           "Add-ons erfolgreich aktualisiert",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error updating addons: ${(error as Error).message}`);
       res
         .status(500)
@@ -391,7 +394,7 @@ router.get(
 
       const costs = await Plan.calculateTenantCost(tenantId);
       res.json(successResponse(costs));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error calculating costs: ${(error as Error).message}`);
       res
         .status(500)

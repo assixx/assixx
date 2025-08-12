@@ -8,7 +8,7 @@ import helmet from "helmet";
 import hpp from "hpp";
 // import { doubleCsrf } from 'csrf-csrf'; // Package not installed
 
-import { AuthenticatedRequest } from "../types/request.types.js";
+import type { AuthenticatedRequest } from "../types/request.types.js";
 
 // Type definitions
 interface AuditEntry {
@@ -57,7 +57,7 @@ export const generateCSRFTokenMiddleware = (
     const token = generateToken(req as AuthenticatedRequest, res);
     res.locals.csrfToken = token;
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error generating CSRF token:", error);
     res.status(500).json({ error: "Could not generate CSRF token" });
   }
@@ -70,8 +70,9 @@ export const validateCSRFToken = (
   next: NextFunction,
 ): void => {
   // Skip CSRF validation for API endpoints that use Bearer token authentication
-  if (req.headers.authorization?.startsWith("Bearer ")) {
-    return next();
+  if (req.headers.authorization?.startsWith("Bearer ") === true) {
+    next();
+    return;
   }
 
   // Skip CSRF validation for public endpoints
@@ -85,7 +86,8 @@ export const validateCSRFToken = (
   ];
 
   if (publicEndpoints.some((endpoint) => req.path.startsWith(endpoint))) {
-    return next();
+    next();
+    return;
   }
 
   // Use the CSRF protection middleware
@@ -98,8 +100,8 @@ export const attachCSRFToken = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (res.locals.csrfToken) {
-    res.setHeader("X-CSRF-Token", res.locals.csrfToken);
+  if (res.locals.csrfToken != null) {
+    res.setHeader("X-CSRF-Token", res.locals.csrfToken as string);
   }
   next();
 };
@@ -114,7 +116,7 @@ export const enforceHTTPS = (
     req.header("x-forwarded-proto") !== "https" &&
     process.env.NODE_ENV === "production"
   ) {
-    res.redirect(`https://${req.header("host")}${req.url}`);
+    res.redirect(`https://${String(req.header("host"))}${req.url}`);
     return;
   }
   next();
@@ -177,7 +179,10 @@ export const securityHeaders = helmet({
 export const corsOptions: cors.CorsOptions = {
   origin(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (origin == null || origin === "") {
+      callback(null, true);
+      return;
+    }
 
     // Check if origin matches allowed patterns
     const allowedPatterns = [
@@ -470,7 +475,7 @@ export const suspiciousActivityLimiter = rateLimit({
   skip: (req) => {
     // Skip for authenticated users with valid sessions
     const authReq = req as AuthenticatedRequest;
-    return !!(authReq.headers.authorization ?? authReq.user);
+    return authReq.headers.authorization != null || authReq.user != null;
   },
 });
 
@@ -491,7 +496,7 @@ export const validateTenantContext = (
   next: NextFunction,
 ): void => {
   const authReq = req as AuthenticatedRequest;
-  if (authReq.user && authReq.tenant) {
+  if (authReq.user != null && authReq.tenant != null) {
     const userTenant = authReq.user.tenant_id;
     const requestTenant = authReq.tenant.id;
 
@@ -519,7 +524,7 @@ export const auditLogger =
     const startTime = Date.now();
 
     // Capture original end function
-    const originalEnd = res.end;
+    const originalEnd = res.end.bind(res);
 
     // Override end function - simplified type assertion for complex overload
     const endFunction = function (
@@ -535,7 +540,7 @@ export const auditLogger =
         // end(chunk, cb)
         (
           originalEnd as (chunk: string | Buffer, cb: () => void) => Response
-        ).call(res, chunk as string | Buffer, encoding);
+        ).call(res, chunk ?? "", encoding);
       } else if (typeof cb === "function") {
         // end(chunk, encoding, cb)
         (
@@ -544,12 +549,7 @@ export const auditLogger =
             encoding: globalThis.BufferEncoding,
             cb: () => void,
           ) => Response
-        ).call(
-          res,
-          chunk as string | Buffer,
-          encoding as globalThis.BufferEncoding,
-          cb,
-        );
+        ).call(res, chunk ?? "", encoding ?? "utf8", cb);
       } else if (encoding !== undefined) {
         // end(chunk, encoding)
         (
@@ -557,17 +557,10 @@ export const auditLogger =
             chunk: string | Buffer,
             encoding: globalThis.BufferEncoding,
           ) => Response
-        ).call(
-          res,
-          chunk as string | Buffer,
-          encoding as globalThis.BufferEncoding,
-        );
+        ).call(res, chunk ?? "", encoding);
       } else if (chunk !== undefined) {
         // end(chunk)
-        (originalEnd as (chunk: string | Buffer) => Response).call(
-          res,
-          chunk as string | Buffer,
-        );
+        (originalEnd as (chunk: string | Buffer) => Response).call(res, chunk);
       } else {
         // end()
         (originalEnd as () => Response).call(res);
@@ -633,7 +626,11 @@ export const apiSecurityHeaders = (
 export const validateContentType =
   (expectedType: string) =>
   (req: Request, res: Response, next: NextFunction): void => {
-    if (req.is(expectedType) || !req.get("content-type")) {
+    if (
+      req.is(expectedType) !== false ||
+      req.get("content-type") == null ||
+      req.get("content-type") === ""
+    ) {
       next();
     } else {
       res.status(400).json({
@@ -650,13 +647,12 @@ export const fileUploadSecurity = (
 ): void => {
   // Type assertion to access files property from express-extensions
   const uploadReq = req as Request & {
-    files?:
-      | Express.Multer.File[]
-      | { [fieldname: string]: Express.Multer.File[] };
+    files?: Express.Multer.File[] | Record<string, Express.Multer.File[]>;
   };
 
   if (!uploadReq.files || Object.keys(uploadReq.files).length === 0) {
-    return next();
+    next();
+    return;
   }
 
   const allowedMimeTypes = [

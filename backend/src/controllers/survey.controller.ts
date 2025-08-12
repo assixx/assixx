@@ -63,12 +63,12 @@ interface SurveyCreateRequest extends AuthenticatedRequest {
   body: {
     title: string;
     description?: string;
-    questions: Array<{
+    questions: {
       question_text: string;
       question_type: "multiple_choice" | "text" | "rating" | "yes_no";
       is_required?: boolean;
       options?: string[];
-    }>;
+    }[];
     is_anonymous?: boolean;
     start_date?: Date | string;
     end_date?: Date | string;
@@ -91,13 +91,13 @@ interface SurveyUpdateRequest extends AuthenticatedRequest {
   body: {
     title?: string;
     description?: string;
-    questions?: Array<{
+    questions?: {
       id?: number;
       question_text: string;
       question_type: "multiple_choice" | "text" | "rating" | "yes_no";
       is_required?: boolean;
       options?: string[];
-    }>;
+    }[];
     is_anonymous?: boolean;
     start_date?: Date | string;
     end_date?: Date | string;
@@ -131,15 +131,22 @@ class SurveyController {
         ...req.query,
         // Remove 'archived' status if present, not supported by service
         status: req.query.status === "archived" ? "closed" : req.query.status,
-        page: req.query.page ? parseInt(req.query.page, 10) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
-        created_by: req.query.created_by
-          ? parseInt(req.query.created_by, 10)
-          : undefined,
+        page:
+          req.query.page != null && req.query.page !== ""
+            ? parseInt(req.query.page, 10)
+            : undefined,
+        limit:
+          req.query.limit != null && req.query.limit !== ""
+            ? parseInt(req.query.limit, 10)
+            : undefined,
+        created_by:
+          req.query.created_by != null && req.query.created_by !== ""
+            ? parseInt(req.query.created_by, 10)
+            : undefined,
       };
       const result = await surveyService.getAllByTenant(tenantId, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -165,7 +172,7 @@ class SurveyController {
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -197,9 +204,7 @@ class SurveyController {
           question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),
         // Ensure status is compatible with model
-        status: (req.body.status === "archived"
-          ? "closed"
-          : req.body.status) as "draft" | "active" | "closed" | undefined,
+        status: req.body.status === "archived" ? "closed" : req.body.status,
       };
 
       // Using direct model import since the original controller does this
@@ -207,7 +212,7 @@ class SurveyController {
       res
         .status(201)
         .json({ id: surveyId, message: "Umfrage erfolgreich erstellt" });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -238,9 +243,7 @@ class SurveyController {
           question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),
         // Ensure status is compatible with model
-        status: (req.body.status === "archived"
-          ? "closed"
-          : req.body.status) as "draft" | "active" | "closed" | undefined,
+        status: req.body.status === "archived" ? "closed" : req.body.status,
       };
 
       // Using direct model import since the original controller does this
@@ -252,7 +255,7 @@ class SurveyController {
         is_anonymous: updateData.is_anonymous,
         start_date: updateData.start_date,
         end_date: updateData.end_date,
-        status: updateData.status as "draft" | "active" | "closed" | undefined,
+        status: updateData.status,
       };
 
       const result = await Survey.update(
@@ -265,7 +268,7 @@ class SurveyController {
         success: result,
         message: "Umfrage erfolgreich aktualisiert",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -288,7 +291,7 @@ class SurveyController {
         return;
       }
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",
@@ -306,7 +309,7 @@ class SurveyController {
       const tenantId = req.user.tenant_id;
       const templates = await surveyService.getTemplates(tenantId);
       res.json(templates);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.getTemplates:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Templates",
@@ -334,7 +337,7 @@ class SurveyController {
       res
         .status(201)
         .json({ id: surveyId, message: "Umfrage aus Template erstellt" });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.createFromTemplate:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen aus Template",
@@ -355,7 +358,7 @@ class SurveyController {
         tenantId,
       );
       res.json(statistics);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in SurveyController.getStatistics:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Statistiken",

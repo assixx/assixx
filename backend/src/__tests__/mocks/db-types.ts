@@ -14,7 +14,7 @@ export type TestRowDataPacket<T = any> = T & RowDataPacket;
 /**
  * Type guard to check if a value is a RowDataPacket array
  */
-export function isRowDataPacketArray(value: any): value is RowDataPacket[] {
+export function isRowDataPacketArray(value: unknown): value is RowDataPacket[] {
   return Array.isArray(value) && value.length >= 0;
 }
 
@@ -26,13 +26,13 @@ export function isRowDataPacketArray(value: any): value is RowDataPacket[] {
  * const [rows] = await db.execute(...);
  * const sessions = asTestRows<SessionType>(rows);
  */
-export function asTestRows<T>(rows: any): T[] {
+export function asTestRows<T>(rows: unknown): T[] {
   return rows as T[];
 }
 
 /**
  * Helper function to cast a single row to the expected type
  */
-export function asTestRow<T>(row: any): T {
+export function asTestRow<T>(row: unknown): T {
   return row as T;
 }

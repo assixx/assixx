@@ -86,7 +86,7 @@
 - [x] chat.html ✅ VERIFIZIERT (keine direkten API Calls)
   - Unread Conversation Styling hinzugefügt
   - Badge mit Pulse-Animation implementiert
-- [x] notification.service.ts  keine api calls hier
+- [x] notification.service.ts keine api calls hier
 
 #### Planning & Organization
 

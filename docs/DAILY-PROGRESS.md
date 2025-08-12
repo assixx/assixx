@@ -18,6 +18,7 @@
 ### ✅ Erfolge
 
 **Calendar v2 Migration:**
+
 - ✅ calendar.ts vollständig auf API v2 migriert
 - ✅ Alle Field-Mappings (camelCase/snake_case) implementiert
 - ✅ Badge-System für ungelesene Events mit Statusanfrage
@@ -32,6 +33,7 @@
 ### 🔧 Technische Details
 
 **Badge-System Implementation:**
+
 - Backend-Endpoint `/api/v2/calendar/unread-events` erstellt
 - Datenbank-Migration für `requires_response` Feld
 - Frontend Badge in `unified-navigation.ts` integriert
@@ -39,12 +41,14 @@
 - Modal öffnet sich automatisch bei ungelesenen Events
 
 **Privacy-Fix Details:**
+
 - Problem: Admins konnten alle privaten Events sehen
 - Lösung: Visibility-Rules gelten jetzt für ALLE User
 - Zeile 197 in `backend/src/models/calendar.ts` angepasst
 - Admins sehen nur noch Events, an denen sie beteiligt sind
 
 **Field-Mapping Fixes:**
+
 - v2 API: camelCase (firstName, lastName, startTime, endTime)
 - v1 API: snake_case (first_name, last_name, start_time, end_time)
 - Bidirektionales Mapping implementiert für Kompatibilität
@@ -74,6 +78,7 @@
 ### ✅ Erfolge
 
 **Blackboard:**
+
 - ✅ blackboard.ts vollständig auf API v2 migriert
 - ✅ Backend v2 Routes existieren bereits (waren nur nicht richtig gemountet)
 - ✅ Feature Flag USE_API_V2_BLACKBOARD aktiviert
@@ -81,6 +86,7 @@
 - ✅ blackboard-modal-update.html gelöscht (war redundant)
 
 **Chat (KOMPLETT FERTIG!):**
+
 - ✅ chat.ts vollständig auf API v2 migriert
 - ✅ WebSocket Multi-Tenant-Isolation gefixt (tenant_id → tenantId)
 - ✅ camelCase/snake_case Issues komplett behoben

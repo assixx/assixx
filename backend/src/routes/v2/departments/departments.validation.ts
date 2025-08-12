@@ -25,6 +25,11 @@ export const createDepartmentValidation: ValidationChain[] = [
     .isInt({ min: 1 })
     .withMessage("Parent ID must be a positive integer"),
 
+  body("areaId")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Area ID must be a positive integer"),
+
   body("status")
     .optional()
     .isIn(["active", "inactive"])
@@ -65,6 +70,11 @@ export const updateDepartmentValidation: ValidationChain[] = [
     .optional()
     .isInt({ min: 1 })
     .withMessage("Parent ID must be a positive integer"),
+
+  body("areaId")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Area ID must be a positive integer"),
 
   body("status")
     .optional()

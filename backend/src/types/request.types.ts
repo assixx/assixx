@@ -29,7 +29,7 @@ export interface AuthUser {
 
 // Base authenticated request
 export interface AuthenticatedRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  extends Request<ParamsDictionary, unknown, unknown> {
   user: AuthUser;
   tenant?: TenantInfo | null;
   tenant_id?: number | null;
@@ -106,14 +106,14 @@ export interface DocumentRequest extends AuthenticatedRequest {
 
 // Public Request (no authentication required)
 export interface PublicRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  extends Request<ParamsDictionary, unknown, unknown> {
   subdomain?: string;
   tenantId?: number | null;
 }
 
 // Optional Auth Request (authentication optional)
 export interface OptionalAuthRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  extends Request<ParamsDictionary, unknown, unknown> {
   user?: AuthUser;
   tenant?: TenantInfo | null;
   tenantId?: number | null;
@@ -122,7 +122,7 @@ export interface OptionalAuthRequest
 
 // API Key Request
 export interface ApiKeyRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  extends Request<ParamsDictionary, unknown, unknown> {
   apiKey?: string;
   apiKeyPermissions?: string[];
   tenantId?: number;

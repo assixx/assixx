@@ -90,7 +90,7 @@ router.get(
 
       const { password: _password, ...userWithoutPassword } = user;
       res.json(successResponse(userWithoutPassword));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching user profile:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -158,7 +158,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const departments = await Department.findAll(req.user.tenant_id);
-      res.json(successResponse(departments || []));
+      res.json(successResponse(departments ?? []));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -172,7 +172,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const teams = await Team.findAll(req.user.tenant_id);
-      res.json(successResponse(teams || []));
+      res.json(successResponse(teams ?? []));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -203,8 +203,8 @@ router.get(
         role: "admin",
         tenant_id: req.user.tenant_id,
       });
-      res.json(successResponse(admins || []));
-    } catch (error) {
+      res.json(successResponse(admins ?? []));
+    } catch (error: unknown) {
       console.error("Error fetching admins:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -215,7 +215,7 @@ router.get(
 router.get(
   "/api/root-dashboard-data",
   ...security.root(),
-  typed.auth(async (req, res) => {
+  typed.auth((req, res) => {
     try {
       const response: RootDashboardResponse = {
         user: {
@@ -226,7 +226,7 @@ router.get(
       };
 
       res.json(successResponse(response));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching root dashboard data:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -269,7 +269,7 @@ router.post(
       };
 
       res.json(successResponse(response));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error creating admin:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -286,7 +286,7 @@ router.delete(
       await User.delete(adminId);
 
       res.json(successResponse({ message: "Admin deleted successfully" }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting admin:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -300,7 +300,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const documents = await Document.findByUserId(req.user.id);
-      res.json(successResponse(documents || []));
+      res.json(successResponse(documents ?? []));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -324,14 +324,14 @@ router.get(
         first_name: user.first_name,
         last_name: user.last_name,
         department_id: user.department_id,
-        team_id: user.team_id,
+        team_id: user.team_id as number | null,
         phone: user.phone,
         created_at: user.created_at,
         is_active: user.is_active,
       }));
 
       res.json(successResponse(sanitizedEmployees));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching employees:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -342,12 +342,12 @@ router.get(
 router.get(
   "/teams",
   ...security.user(),
-  typed.auth(async (_req, res) => {
+  typed.auth((_req, res) => {
     try {
       // For now, return empty array since teams table structure needs to be defined
       // This will prevent JSON parse errors
       res.json(successResponse([]));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching teams:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }

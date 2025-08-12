@@ -6,7 +6,7 @@
 import express, { Router } from "express";
 
 import { authenticateToken } from "../auth";
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { getErrorMessage } from "../utils/errorHandler";
 
 const router: Router = express.Router();
@@ -35,11 +35,11 @@ interface Area {
  * Get all areas for the authenticated tenant
  * GET /api/areas
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get("/", authenticateToken, (req, res): void => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
   try {
-    if (!authReq.tenantId) {
+    if (authReq.tenantId == null || authReq.tenantId === 0) {
       res.status(401).json({
         success: false,
         message: "Tenant ID not found",
@@ -83,7 +83,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Areas] List error:", error);
     res.status(500).json({
       success: false,
@@ -97,12 +97,12 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * Get area by ID
  * GET /api/areas/:id
  */
-router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
+router.get("/:id", authenticateToken, (req, res): void => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
 
   try {
-    if (!authReq.tenantId) {
+    if (authReq.tenantId == null || authReq.tenantId === 0) {
       res.status(401).json({
         success: false,
         message: "Tenant ID not found",
@@ -136,7 +136,7 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
       success: true,
       data: area,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Areas] Get by ID error:", error);
     res.status(500).json({
       success: false,
@@ -150,14 +150,14 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
  * Create new area (Admin only)
  * POST /api/areas
  */
-router.post("/", authenticateToken, async (req, res): Promise<void> => {
+router.post("/", authenticateToken, (req, res): void => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
 
   try {
     // Check admin permission
     if (
-      !authReq.user ||
+      authReq.user == null ||
       !["admin", "root", "manager"].includes(authReq.user.role)
     ) {
       res.status(403).json({
@@ -167,7 +167,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    if (!authReq.tenantId) {
+    if (authReq.tenantId == null || authReq.tenantId === 0) {
       res.status(401).json({
         success: false,
         message: "Tenant ID not found",
@@ -203,7 +203,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       data: newArea,
       message: "Bereich erfolgreich erstellt",
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Areas] Create error:", error);
     res.status(500).json({
       success: false,

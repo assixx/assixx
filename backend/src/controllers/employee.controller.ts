@@ -102,14 +102,14 @@ class EmployeeController {
    */
   async getAll(req: EmployeeQueryRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === null || req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       // Parse query parameters to appropriate types
       const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (!tenantId) {
+      if (tenantId === null || tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
@@ -118,22 +118,43 @@ class EmployeeController {
         tenant_id: tenantId,
         search: req.query.search,
         role: req.query.role,
-        department_id: req.query.department_id
-          ? parseInt(req.query.department_id)
-          : undefined,
-        team_id: req.query.team_id ? parseInt(req.query.team_id) : undefined,
-        is_active: req.query.is_active
-          ? req.query.is_active === "true"
-          : undefined,
-        page: req.query.page ? parseInt(req.query.page) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit) : undefined,
+        department_id:
+          req.query.department_id !== null &&
+          req.query.department_id !== undefined &&
+          req.query.department_id !== ""
+            ? parseInt(req.query.department_id)
+            : undefined,
+        team_id:
+          req.query.team_id !== null &&
+          req.query.team_id !== undefined &&
+          req.query.team_id !== ""
+            ? parseInt(req.query.team_id)
+            : undefined,
+        is_active:
+          req.query.is_active !== null &&
+          req.query.is_active !== undefined &&
+          req.query.is_active !== ""
+            ? req.query.is_active === "true"
+            : undefined,
+        page:
+          req.query.page !== null &&
+          req.query.page !== undefined &&
+          req.query.page !== ""
+            ? parseInt(req.query.page)
+            : undefined,
+        limit:
+          req.query.limit !== null &&
+          req.query.limit !== undefined &&
+          req.query.limit !== ""
+            ? parseInt(req.query.limit)
+            : undefined,
         sortBy: req.query.sortBy,
         sortDir: req.query.sortDir,
       };
 
       const result = await employeeService.getAll(req.tenantDb, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in EmployeeController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -148,7 +169,7 @@ class EmployeeController {
    */
   async getById(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === null || req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -161,18 +182,18 @@ class EmployeeController {
 
       // Get tenant ID from request
       const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (!tenantId) {
+      if (tenantId === null || tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
 
       const result = await employeeService.getById(req.tenantDb, id, tenantId);
-      if (!result) {
+      if (result === null || result === undefined) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in EmployeeController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -187,14 +208,14 @@ class EmployeeController {
    */
   async create(req: EmployeeCreateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === null || req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       // Get tenant ID from request
       const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (!tenantId) {
+      if (tenantId === null || tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
@@ -216,7 +237,7 @@ class EmployeeController {
       };
       const result = await employeeService.create(req.tenantDb, employeeData);
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in EmployeeController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -231,7 +252,7 @@ class EmployeeController {
    */
   async update(req: EmployeeUpdateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === null || req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -261,16 +282,19 @@ class EmployeeController {
               : undefined,
         is_archived: req.body.is_archived ?? req.body.archived,
       };
-      // Remove undefined values
-      Object.keys(updateData).forEach((key) => {
-        if (updateData[key as keyof typeof updateData] === undefined) {
-          delete updateData[key as keyof typeof updateData];
+      // Remove undefined values - create new object without undefined values
+      const cleanedUpdateData = Object.entries(updateData).reduce<
+        Partial<UserCreateData>
+      >((acc, [key, value]) => {
+        if (value !== undefined) {
+          (acc as Record<string, unknown>)[key] = value;
         }
-      });
+        return acc;
+      }, {});
 
       // Get tenant ID from request
       const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (!tenantId) {
+      if (tenantId === null || tenantId === undefined || tenantId === 0) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
       }
@@ -279,10 +303,10 @@ class EmployeeController {
         req.tenantDb,
         id,
         tenantId,
-        updateData,
+        cleanedUpdateData,
       );
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in EmployeeController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -297,7 +321,7 @@ class EmployeeController {
    */
   async delete(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
+      if (req.tenantDb === null || req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -310,7 +334,7 @@ class EmployeeController {
 
       await employeeService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in EmployeeController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

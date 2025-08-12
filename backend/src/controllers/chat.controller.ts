@@ -10,7 +10,7 @@ import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
 
 import chatService from "../services/chat.service";
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { validatePath } from "../utils/pathSecurity";
 
 // Extended request with tenantDb
@@ -39,10 +39,10 @@ class ChatController {
 
       const users = await chatService.getUsers(
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId,
       );
       res.json(users);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -61,7 +61,8 @@ class ChatController {
       };
 
       if (
-        !participantIds ||
+        participantIds === null ||
+        participantIds === undefined ||
         !Array.isArray(participantIds) ||
         participantIds.length === 0
       ) {
@@ -71,14 +72,14 @@ class ChatController {
 
       const conversation = await chatService.createConversation(
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId,
         participantIds,
         participantIds.length > 1,
         name,
       );
 
       res.status(201).json(conversation);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -93,11 +94,11 @@ class ChatController {
 
       const conversations = await chatService.getConversations(
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId,
       );
 
       res.json(conversations);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -111,8 +112,12 @@ class ChatController {
       }
 
       const conversationId = parseInt(req.params.id);
-      const limit = parseInt(String(req.query.limit ?? "50"));
-      const offset = parseInt(String(req.query.offset ?? "0"));
+      const limit = parseInt(
+        typeof req.query.limit === "string" ? req.query.limit : "50",
+      );
+      const offset = parseInt(
+        typeof req.query.offset === "string" ? req.query.offset : "0",
+      );
 
       const result = await chatService.getMessages(
         req.user.tenant_id,
@@ -124,7 +129,7 @@ class ChatController {
 
       // Frontend expects just the messages array
       res.json(result.messages);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -143,14 +148,17 @@ class ChatController {
       let attachmentUrl: string | undefined;
 
       // Handle file upload
-      if (req.file) {
+      if (req.file !== null && req.file !== undefined) {
         attachmentUrl = `/uploads/chat/${req.file.filename}`;
-        if (!content) {
+        if (content.length === 0) {
           content = "Sent an attachment";
         }
       }
 
-      if (!content && !attachmentUrl) {
+      if (
+        content.length === 0 &&
+        (attachmentUrl === null || attachmentUrl === undefined)
+      ) {
         res
           .status(400)
           .json({ error: "Message content or attachment is required" });
@@ -162,7 +170,7 @@ class ChatController {
         conversationId,
         req.user.userId,
         content,
-        attachmentUrl
+        attachmentUrl !== null && attachmentUrl !== undefined
           ? {
               path: attachmentUrl,
               name: req.file?.originalname ?? "",
@@ -172,7 +180,7 @@ class ChatController {
       );
 
       res.status(201).json(message);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -196,7 +204,7 @@ class ChatController {
       );
 
       res.json(participants);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -212,7 +220,7 @@ class ChatController {
       const conversationId = parseInt(req.params.id);
       const { userId } = req.body as { userId?: number };
 
-      if (!userId) {
+      if (userId == null) {
         res.status(400).json({ error: "User ID is required" });
         return;
       }
@@ -220,12 +228,12 @@ class ChatController {
       await chatService.addParticipant(
         conversationId,
         userId,
-        req.user.userId || req.user.id,
+        req.user.userId ?? req.user.id,
         req.user.tenant_id,
       );
 
       res.json({ message: "Participant added successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -244,12 +252,12 @@ class ChatController {
       await chatService.removeParticipant(
         conversationId,
         userId,
-        req.user.userId || req.user.id,
+        req.user.userId ?? req.user.id,
         req.user.tenant_id,
       );
 
       res.json({ message: "Participant removed successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -265,7 +273,7 @@ class ChatController {
       const conversationId = parseInt(req.params.id);
       const { name } = req.body as { name?: string };
 
-      if (!name || name.trim().length === 0) {
+      if (name == null || name.trim().length === 0) {
         res.status(400).json({ error: "Name is required" });
         return;
       }
@@ -273,12 +281,12 @@ class ChatController {
       await chatService.updateConversationName(
         conversationId,
         name,
-        req.user.userId || req.user.id,
+        req.user.userId ?? req.user.id,
         req.user.tenant_id,
       );
 
       res.json({ message: "Conversation name updated successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -290,7 +298,7 @@ class ChatController {
       const uploadsDir = path.join(process.cwd(), "uploads", "chat");
       const validatedPath = validatePath(filename, uploadsDir);
 
-      if (!validatedPath) {
+      if (validatedPath == null) {
         res.status(400).json({ error: "Invalid file path" });
         return;
       }
@@ -304,7 +312,7 @@ class ChatController {
       }
 
       res.download(validatedPath);
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -317,14 +325,20 @@ class ChatController {
         return;
       }
 
+      const tenantDb = (req as TenantAuthenticatedRequest).tenantDb;
+      if (!tenantDb) {
+        res.status(500).json({ error: "Tenant database not available" });
+        return;
+      }
+
       const unreadCount = await chatService.getUnreadCount(
-        (req as TenantAuthenticatedRequest).tenantDb as Pool, // tenantDb parameter is not used but required
+        tenantDb,
         req.user.tenant_id,
-        req.user.userId || req.user.id,
+        req.user.userId ?? req.user.id,
       );
 
       res.json({ unreadCount });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -343,7 +357,7 @@ class ChatController {
       await chatService.markConversationAsRead(conversationId, userId);
 
       res.json({ message: "Messages marked as read" });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }
@@ -360,11 +374,11 @@ class ChatController {
 
       await chatService.deleteConversation(
         conversationId,
-        req.user.userId || req.user.id,
+        req.user.userId ?? req.user.id,
       );
 
       res.json({ message: "Conversation deleted successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       res.status(500).json({ error: (error as Error).message });
     }
   }

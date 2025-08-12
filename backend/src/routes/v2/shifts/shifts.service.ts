@@ -5,7 +5,7 @@
 
 import { RowDataPacket } from "mysql2";
 
-import { RootLog } from "../../../models/rootLog";
+import RootLog from "../../../models/rootLog";
 import Shift from "../../../models/shift";
 import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
 import { logger } from "../../../utils/logger";
@@ -158,7 +158,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
         const minutes = startTime.getMinutes().toString().padStart(2, "0");
         apiShift.startTime = `${hours}:${minutes}`;
       }
-    } catch (e) {
+    } catch (e: unknown) {
       logger.error("Error parsing start_time:", e);
     }
   }
@@ -172,7 +172,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
         const minutes = endTime.getMinutes().toString().padStart(2, "0");
         apiShift.endTime = `${hours}:${minutes}`;
       }
-    } catch (e) {
+    } catch (e: unknown) {
       logger.error("Error parsing end_time:", e);
     }
   }
@@ -184,7 +184,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
       if (!isNaN(date.getTime())) {
         apiShift.date = date.toISOString().split("T")[0]; // YYYY-MM-DD format
       }
-    } catch (e) {
+    } catch (e: unknown) {
       logger.error("Error parsing date:", e);
     }
   }
@@ -207,7 +207,7 @@ export class ShiftsService {
 
       const shifts = await Shift.findAll(dbFilters);
       return shifts.map((shift) => dbShiftToApi(shift));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error listing shifts:", error);
       throw new ServiceError("LIST_SHIFTS_ERROR", "Failed to list shifts");
     }
@@ -220,7 +220,7 @@ export class ShiftsService {
         throw new ServiceError("SHIFT_NOT_FOUND", "Shift not found");
       }
       return dbShiftToApi(shift);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error getting shift:", error);
       throw new ServiceError("GET_SHIFT_ERROR", "Failed to get shift");
@@ -259,7 +259,7 @@ export class ShiftsService {
       });
 
       return this.getShiftById(shiftId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error creating shift:", error);
       throw new ServiceError("CREATE_SHIFT_ERROR", "Failed to create shift");
     }
@@ -294,7 +294,7 @@ export class ShiftsService {
       });
 
       return this.getShiftById(id, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating shift:", error);
       throw new ServiceError("UPDATE_SHIFT_ERROR", "Failed to update shift");
@@ -326,7 +326,7 @@ export class ShiftsService {
       });
 
       return { message: "Shift deleted successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error deleting shift:", error);
       throw new ServiceError("DELETE_SHIFT_ERROR", "Failed to delete shift");
@@ -339,7 +339,7 @@ export class ShiftsService {
     try {
       const templates = await Shift.getTemplates(tenantId);
       return templates.map((template) => dbToApi(template));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error listing templates:", error);
       throw new ServiceError(
         "LIST_TEMPLATES_ERROR",
@@ -355,7 +355,7 @@ export class ShiftsService {
         throw new ServiceError("TEMPLATE_NOT_FOUND", "Template not found");
       }
       return dbToApi(template);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting template:", error);
       throw new ServiceError("GET_TEMPLATE_ERROR", "Failed to get template");
     }
@@ -404,7 +404,7 @@ export class ShiftsService {
       });
 
       return this.getTemplateById(templateId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error creating template:", error);
       throw new ServiceError(
         "CREATE_TEMPLATE_ERROR",
@@ -453,7 +453,7 @@ export class ShiftsService {
       });
 
       return this.getTemplateById(id, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating template:", error);
       throw new ServiceError(
@@ -488,7 +488,7 @@ export class ShiftsService {
       });
 
       return { message: "Template deleted successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error deleting template:", error);
       throw new ServiceError(
@@ -507,7 +507,7 @@ export class ShiftsService {
     try {
       const requests = await Shift.getSwapRequests(tenantId, filters);
       return requests.map((request) => dbToApi(request));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error listing swap requests:", error);
       throw new ServiceError(
         "LIST_SWAP_REQUESTS_ERROR",
@@ -564,7 +564,7 @@ export class ShiftsService {
         ...convertedResult,
         message: "Swap request created successfully",
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error creating swap request:", error);
       throw new ServiceError(
@@ -607,7 +607,7 @@ export class ShiftsService {
       });
 
       return { message: `Swap request ${status} successfully` };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating swap request:", error);
       throw new ServiceError(
@@ -628,7 +628,7 @@ export class ShiftsService {
         tenantId,
       );
       return dbToApi(overtime);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting overtime report:", error);
       throw new ServiceError(
         "GET_OVERTIME_ERROR",
@@ -659,7 +659,7 @@ export class ShiftsService {
           "Excel export not yet implemented",
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error exporting shifts:", error);
       throw new ServiceError("EXPORT_ERROR", "Failed to export shifts");

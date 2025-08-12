@@ -154,9 +154,9 @@ async function handleFormSubmit(event: Event) {
   const userData: UserData = {
     first_name: firstName,
     last_name: lastName,
-    email: email,
-    position: position,
-    notes: notes,
+    email,
+    position,
+    notes,
     is_active: currentEditId ? isActive : true, // New users are always active
   };
 
@@ -171,7 +171,7 @@ async function handleFormSubmit(event: Event) {
     const method = currentEditId ? 'PUT' : 'POST';
 
     const response = await fetchWithAuth(url, {
-      method: method,
+      method,
       body: JSON.stringify(userData),
     });
 

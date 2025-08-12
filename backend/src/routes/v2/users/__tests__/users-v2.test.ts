@@ -236,14 +236,14 @@ describe("Users v2 API Endpoints", () => {
   describe("POST /api/v2/users", () => {
     it("should create a new user with camelCase input", async () => {
       const newUser = {
-        email: `__AUTOTEST__newuser.v2.${Date.now()}@test.com`, // Make email unique
+        email: `__AUTOTEST__newuser.v2.${String(Date.now())}@test.com`, // Make email unique
         firstName: "New",
         lastName: "UserV2",
         password: "NewPass123!",
         role: "employee",
         departmentId: dept1Id,
         position: "Developer",
-        phone: `+123456${Date.now().toString().slice(-7)}`,
+        phone: `+123456${String(Date.now().toString().slice(-7))}`,
       };
 
       const response = await request(app)

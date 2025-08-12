@@ -16,7 +16,7 @@ import { security } from "../middleware/security";
 import { apiLimiter, uploadLimiter } from "../middleware/security-enhanced";
 import { createValidation, validationSchemas } from "../middleware/validation";
 import User, { DbUser } from "../models/user";
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { successResponse, errorResponse } from "../types/response.types";
 import { getErrorMessage } from "../utils/errorHandler";
 import { logger } from "../utils/logger";
@@ -98,7 +98,10 @@ router.get(
           req.user.id,
           req.user.tenant_id,
         );
-        if (currentUser?.department_id) {
+        if (
+          currentUser?.department_id != null &&
+          currentUser.department_id !== 0
+        ) {
           const allUsers = await User.findAllByTenant(req.user.tenant_id);
           users = allUsers.filter(
             (u) => u.department_id === currentUser.department_id,
@@ -110,12 +113,12 @@ router.get(
       }
 
       // Filter by role if specified
-      if (role && typeof role === "string") {
+      if (role != null && role !== "" && typeof role === "string") {
         users = users.filter((user) => user.role === role);
       }
 
       // Apply limit if specified
-      if (limit && typeof limit === "string") {
+      if (limit != null && limit !== "" && typeof limit === "string") {
         const limitNum = parseInt(limit, 10);
         if (!isNaN(limitNum) && limitNum > 0) {
           users = users.slice(0, limitNum);
@@ -131,20 +134,20 @@ router.get(
         first_name: user.first_name,
         last_name: user.last_name,
         department_id: user.department_id,
-        team_id: user.team_id,
-        phone: user.phone,
-        created_at: user.created_at,
-        is_active: user.is_active,
-        position: user.position,
-        department: user.department,
-        availability_status: user.availability_status,
-        availability_start: user.availability_start,
-        availability_end: user.availability_end,
-        availability_notes: user.availability_notes,
+        team_id: user.team_id as number | null,
+        phone: user.phone as string | null,
+        created_at: user.created_at ?? new Date(),
+        is_active: user.is_active ?? true,
+        position: user.position as string | null,
+        department: user.department as string | null,
+        availability_status: user.availability_status as string | null,
+        availability_start: user.availability_start as Date | null,
+        availability_end: user.availability_end as Date | null,
+        availability_notes: user.availability_notes as string | null,
       }));
 
       res.json(sanitizedUsers);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error fetching users:", error);
       res.status(500).json({
         message: "Error fetching users",
@@ -189,7 +192,7 @@ router.get(
 
       // Return in the format expected by the frontend
       res.json({ user: userProfile });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error retrieving profile for user: ${getErrorMessage(error)}`,
       );
@@ -220,7 +223,7 @@ router.get(
       // Remove password from response
       const { password: _password, ...userProfile } = user;
       res.json(userProfile);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error fetching user ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -295,7 +298,7 @@ router.put(
 
       logger.info(`User ${userId} updated by ${req.user.id}`);
       res.json({ message: "Benutzer erfolgreich aktualisiert" });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error updating user ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -341,7 +344,7 @@ router.delete(
 
       logger.info(`User ${userId} deleted by ${req.user.id}`);
       res.json(successResponse(null, "Benutzer erfolgreich gelöscht"));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error deleting user ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -417,7 +420,7 @@ router.get(
 
       logger.info(`User ${userId} retrieved their profile`);
       res.json(successResponse(userProfile));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error retrieving profile for user: ${getErrorMessage(error)}`,
       );
@@ -434,7 +437,7 @@ const storage = multer.diskStorage({
     cb(null, "uploads/profile_pictures/");
   },
   filename(_req, file, cb) {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
     const extension = path.extname(file.originalname);
     cb(null, `profile-${uniqueSuffix}${extension}`);
   },
@@ -472,7 +475,7 @@ router.put(
       delete updateData.tenant_id;
 
       // Validate email if provided
-      if (updateData.email) {
+      if (updateData.email != null && updateData.email !== "") {
         // Use a simpler, non-backtracking regex to prevent ReDoS
         // First check length to prevent processing extremely long inputs
         if (updateData.email.length > 254) {
@@ -505,7 +508,7 @@ router.put(
           .status(500)
           .json(errorResponse("Fehler beim Aktualisieren des Profils", 500));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error updating profile for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
@@ -558,16 +561,16 @@ router.post(
           .status(500)
           .json({ message: "Fehler beim Speichern des Profilbildes" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
-        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${getErrorMessage(error)}`,
+        `Error uploading profile picture for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
 
       // Clean up uploaded file
-      if (req.file?.path) {
+      if (req.file?.path != null && req.file.path !== "") {
         try {
           await safeDeleteFile(req.file.path);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
           );
@@ -599,17 +602,19 @@ router.delete(
       }
 
       // Delete old profile picture file if it exists
-      if (user.profile_picture_url) {
+      if (user.profile_picture_url != null && user.profile_picture_url !== "") {
         const oldFilePath = path.join(
           __dirname,
           "..",
           "..",
-          user.profile_picture_url,
+          typeof user.profile_picture_url === "string"
+            ? user.profile_picture_url
+            : String(user.profile_picture_url),
         );
 
         try {
           await safeDeleteFile(oldFilePath);
-        } catch (unlinkError) {
+        } catch (unlinkError: unknown) {
           logger.warn(
             `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`,
           );
@@ -631,7 +636,7 @@ router.delete(
           .status(500)
           .json({ message: "Fehler beim Löschen des Profilbildes" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error deleting profile picture for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
@@ -669,7 +674,7 @@ router.put(
       } else {
         res.status(400).json(errorResponse(result.message, 400));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error changing password for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
@@ -696,7 +701,7 @@ router.put(
       } = req.body;
 
       // Validation is now handled by middleware
-      if (!availability_status) {
+      if (availability_status == null || availability_status === "") {
         res
           .status(400)
           .json(errorResponse("Availability status is required", 400));
@@ -725,7 +730,7 @@ router.put(
       } else {
         res.status(404).json(errorResponse("Mitarbeiter nicht gefunden", 404));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error updating availability for employee ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -794,7 +799,7 @@ router.patch(
             errorResponse("Fehler beim Aktualisieren der Personalnummer", 500),
           );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error updating employee number: ${getErrorMessage(error)}`);
       res
         .status(500)

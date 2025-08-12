@@ -1,6 +1,6 @@
 import { executeQuery as query } from "../../../config/database";
-import { Plan as PlanModel } from "../../../models/plan";
-import { RootLog } from "../../../models/rootLog";
+import PlanModel from "../../../models/plan";
+import RootLog from "../../../models/rootLog";
 
 import {
   Plan,

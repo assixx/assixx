@@ -90,7 +90,7 @@ function sanitizeHtml(html: string): string {
   ];
 
   urlPatterns.forEach((pattern) => {
-    sanitized = sanitized.replace(pattern, (match, url) => {
+    sanitized = sanitized.replace(pattern, (match: string, url: string) => {
       const lowerUrl = url.toLowerCase().trim();
 
       // Gefährliche Schemas
@@ -116,7 +116,7 @@ function sanitizeHtml(html: string): string {
   // Schritt 4: Style-Bereinigung
   sanitized = sanitized.replace(
     /style\s*=\s*["']([^"']*?)["']/gi,
-    (_match, styleContent) => {
+    (_match: string, styleContent: string) => {
       let cleanedStyle = styleContent;
 
       // Gefährliche CSS-Eigenschaften mit globaler Ersetzung
@@ -147,7 +147,7 @@ function sanitizeHtml(html: string): string {
         },
       );
 
-      return cleanedStyle.trim() ? `style="${cleanedStyle}"` : "";
+      return cleanedStyle.trim() !== "" ? `style="${cleanedStyle}"` : "";
     },
   );
 
@@ -200,7 +200,7 @@ interface BulkMessageOptions {
   html?: string;
   text?: string;
   templateName?: string;
-  replacements?: { [key: string]: string };
+  replacements?: Record<string, string>;
   notificationType?: string;
   attachments?: Attachment[];
   tenantId?: number;
@@ -208,16 +208,14 @@ interface BulkMessageOptions {
   checkFeature?: boolean;
 }
 
-interface TemplateReplacements {
-  [key: string]: string;
-}
+type TemplateReplacements = Record<string, string>;
 
 type QueueItem = EmailOptions;
 
 // Queue für Massen-E-Mails
 const emailQueue: QueueItem[] = [];
-let isProcessingQueue: boolean = false;
-const MAX_EMAILS_PER_BATCH: number = 50; // Maximale Anzahl von E-Mails pro Batch
+let isProcessingQueue = false;
+const MAX_EMAILS_PER_BATCH = 50; // Maximale Anzahl von E-Mails pro Batch
 
 // Konfiguration des Transport-Objekts (wird später aus .env geladen)
 let transporter: Transporter | null = null;
@@ -274,33 +272,33 @@ async function loadTemplate(
 
     // Helper function to escape HTML
     const escapeHtml = (str: string): string => {
-      const htmlEscapes: { [key: string]: string } = {
+      const htmlEscapes: Record<string, string> = {
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#39;",
       };
-      return String(str).replace(/[&<>"']/g, (match) => htmlEscapes[match]);
+      return str.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
     };
 
     // Platzhalter ersetzen (Format: {{variable}})
     Object.keys(replacements).forEach((key: string): void => {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
       // Escape replacement values to prevent XSS
-      const safeValue = escapeHtml(String(replacements[key]));
+      const safeValue = escapeHtml(replacements[key]);
       templateContent = templateContent.replace(regex, safeValue);
     });
 
     return templateContent;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Fehler beim Laden des E-Mail-Templates '${templateName}': ${(error as Error).message}`,
     );
     // Fallback-Template
     // Escape HTML to prevent XSS
     const escapeHtml = (str: string): string => {
-      const htmlEscapes: { [key: string]: string } = {
+      const htmlEscapes: Record<string, string> = {
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
@@ -311,7 +309,7 @@ async function loadTemplate(
     };
 
     const safeMessage = escapeHtml(
-      replacements.message || "Keine Nachricht verfügbar",
+      replacements.message ?? "Keine Nachricht verfügbar",
     );
     return `
       <html>
@@ -338,6 +336,9 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     throw new Error("Email transporter could not be initialized");
   }
 
+  // Create a local constant that TypeScript knows is non-null
+  const mailer: Transporter = transporter;
+
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
     const from: string =
@@ -345,7 +346,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
     // HTML-Sanitization
     let sanitizedHtml: string | undefined = options.html;
-    if (options.html) {
+    if (options.html != null && options.html !== "") {
       // HTML mit unserer Sanitization-Funktion bereinigen
       sanitizedHtml = sanitizeHtml(options.html);
 
@@ -391,11 +392,14 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       attachments: options.attachments,
     };
 
-    const info: SentMessageInfo = await transporter.sendMail(mailOptions);
+    // Type assertion needed because nodemailer's sendMail returns any
+    const info = (await mailer.sendMail(
+      mailOptions,
+    )) as unknown as SentMessageInfo;
 
-    logger.info(`E-Mail gesendet: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
+    logger.info(`E-Mail gesendet: ${String(info.messageId)}`);
+    return { success: true, messageId: String(info.messageId) };
+  } catch (error: unknown) {
     logger.error(`Fehler beim Senden der E-Mail: ${(error as Error).message}`);
     return { success: false, error: (error as Error).message };
   }
@@ -438,7 +442,9 @@ async function processQueue(): Promise<void> {
 
       // E-Mails parallel senden, aber mit Limit
       const results: EmailResult[] = await Promise.all(
-        batch.map((emailOptions: EmailOptions) => sendEmail(emailOptions)),
+        batch.map(async (emailOptions: EmailOptions) =>
+          sendEmail(emailOptions),
+        ),
       );
 
       const successful = results.filter((r: EmailResult) => r.success).length;
@@ -453,7 +459,7 @@ async function processQueue(): Promise<void> {
         await new Promise((resolve) => global.setTimeout(resolve, 1000));
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Fehler bei der Verarbeitung der E-Mail-Queue: ${(error as Error).message}`,
     );
@@ -504,7 +510,7 @@ async function sendNewDocumentNotification(
       html,
       text: `Hallo ${replacements.userName},\n\nEin neues Dokument "${replacements.documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Fehler beim Senden der Dokumentenbenachrichtigung: ${(error as Error).message}`,
     );
@@ -540,7 +546,7 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
       html,
       text: `Hallo ${replacements.userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Fehler beim Senden der Willkommens-E-Mail: ${(error as Error).message}`,
     );
@@ -560,7 +566,10 @@ async function sendBulkNotification(
 ): Promise<EmailResult> {
   try {
     // Feature-Prüfung für Massen-E-Mails (wenn verfügbar)
-    if (messageOptions.tenantId && messageOptions.checkFeature) {
+    if (
+      messageOptions.tenantId != null &&
+      messageOptions.checkFeature === true
+    ) {
       const hasAccess = await Feature.checkTenantAccess(
         messageOptions.tenantId,
         "email_notifications",
@@ -598,7 +607,10 @@ async function sendBulkNotification(
 
     // HTML aus Template laden, falls nicht direkt angegeben
     let html: string = messageOptions.html ?? "";
-    if (messageOptions.templateName) {
+    if (
+      messageOptions.templateName != null &&
+      messageOptions.templateName !== ""
+    ) {
       // const notificationType: string =
       //   messageOptions.notificationType || 'notification'; // Unused
 
@@ -636,7 +648,7 @@ async function sendBulkNotification(
       success: true,
       messageId: `${validUsers.length} E-Mails zur Versandwarteschlange hinzugefügt`,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${(error as Error).message}`,
     );
@@ -650,7 +662,7 @@ async function sendBulkNotification(
  * @param type - Typ der Benachrichtigung
  * @returns Unsubscribe-Link
  */
-function generateUnsubscribeLink(email: string, type: string = "all"): string {
+function generateUnsubscribeLink(email: string, type = "all"): string {
   // Token generieren (würde normalerweise mit JWT o.ä. implementiert)
   const token: string = jwt.sign(
     { email, type, purpose: "unsubscribe" },

@@ -12,7 +12,7 @@ import express, { Router, Request, Response, NextFunction } from "express";
 import { authenticateToken } from "../auth";
 import Department from "../models/department";
 import User from "../models/user";
-import { AuthenticatedRequest } from "../types/request.types";
+import type { AuthenticatedRequest } from "../types/request.types";
 import { getErrorMessage } from "../utils/errorHandler";
 import { logger } from "../utils/logger";
 import { typed } from "../utils/routeHandlers";
@@ -151,7 +151,7 @@ router.post(
       }
 
       // If a manager is specified, check if they exist
-      if (manager_id) {
+      if (manager_id != null && manager_id !== 0) {
         const manager = await User.findById(manager_id, authReq.user.tenant_id);
         if (!manager) {
           res
@@ -162,7 +162,7 @@ router.post(
       }
 
       // If a parent department is specified, check if it exists
-      if (parent_id) {
+      if (parent_id != null && parent_id !== 0) {
         const parentDept = await Department.findById(
           parent_id,
           authReq.user.tenant_id,
@@ -190,7 +190,7 @@ router.post(
         message: "Abteilung erfolgreich erstellt",
         departmentId,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error creating department: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: "Fehler beim Erstellen der Abteilung",
@@ -236,13 +236,13 @@ router.get(
   "/",
   typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
+      const authReq = req;
       logger.info(`Fetching departments for user: ${authReq.user.username}`);
       const departments = await Department.findAll(authReq.user.tenant_id);
 
       logger.info(`Returning ${departments.length} departments`);
       res.json(departments);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error fetching departments: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: "Fehler beim Abrufen der Abteilungen",
@@ -315,7 +315,7 @@ router.get(
       }
 
       res.json(department);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error fetching department ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -455,7 +455,7 @@ router.put(
       }
 
       // If a manager is specified, check if they exist
-      if (manager_id) {
+      if (manager_id != null && manager_id !== 0) {
         const manager = await User.findById(manager_id, authReq.user.tenant_id);
         if (!manager) {
           res
@@ -466,7 +466,7 @@ router.put(
       }
 
       // If a parent department is specified, check if it exists
-      if (parent_id) {
+      if (parent_id != null && parent_id !== 0) {
         // Prevent circular reference
         if (parent_id === departmentId) {
           res.status(400).json({
@@ -505,7 +505,7 @@ router.put(
           .status(500)
           .json({ message: "Fehler beim Aktualisieren der Abteilung" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error updating department ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -633,7 +633,7 @@ router.delete(
         logger.warn(`Failed to delete department ${departmentId}`);
         res.status(500).json({ message: "Fehler beim Löschen der Abteilung" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error deleting department ${req.params.id}: ${getErrorMessage(error)}`,
       );
@@ -732,7 +732,7 @@ router.get(
 
       const users = await Department.getUsersByDepartment(departmentId);
       res.json(users);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error fetching members for department ${req.params.id}: ${getErrorMessage(error)}`,
       );

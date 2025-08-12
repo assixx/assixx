@@ -14,7 +14,7 @@ import multer from "multer";
 
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { requireRoleV2 } from "../../../middleware/v2/roleCheck.middleware.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   sanitizeFilename,
   getUploadDirectory,

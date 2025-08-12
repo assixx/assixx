@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -82,10 +82,10 @@ export const listNotifications = async (
     );
 
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -146,10 +146,10 @@ export const createNotification = async (
     );
 
     res.status(201).json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -194,10 +194,10 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -247,10 +247,10 @@ export const markAllAsRead = async (
     );
 
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -301,10 +301,10 @@ export const deleteNotification = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -345,10 +345,10 @@ export const getPreferences = async (
     );
 
     res.json(successResponse({ preferences }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -394,10 +394,10 @@ export const updatePreferences = async (
     );
 
     res.json(successResponse(null));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -446,10 +446,10 @@ export const getStatistics = async (
     const stats = await notificationsService.getStatistics(req.user.tenant_id);
 
     res.json(successResponse(stats));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -490,10 +490,10 @@ export const getPersonalStats = async (
     );
 
     res.json(successResponse(stats));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -541,7 +541,7 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
 
     // TODO: Implement push notification subscription
     // For now, return a mock subscription ID
-    const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const subscriptionId = `sub_${String(Date.now())}_${String(Math.random().toString(36).substr(2, 9))}`;
 
     res.json(
       successResponse(
@@ -549,10 +549,10 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
         "Successfully subscribed to notifications",
       ),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -591,10 +591,10 @@ export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
     res.json(
       successResponse(null, "Successfully unsubscribed from notifications"),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -643,10 +643,10 @@ export const getTemplates = async (
     // TODO: Implement template management
     // For now, return empty array
     res.json(successResponse({ templates: [] }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res
@@ -703,10 +703,10 @@ export const createFromTemplate = async (
     // TODO: Implement template-based notification creation
     // For now, return not found
     throw new ServiceError("NOT_FOUND", "Template not found", 404);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
       res
-        .status(error.statusCode || 500)
+        .status(error.statusCode ?? 500)
         .json(errorResponse(error.code, error.message));
     } else {
       res

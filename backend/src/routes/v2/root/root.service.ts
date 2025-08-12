@@ -6,7 +6,7 @@
 import bcrypt from "bcryptjs";
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import TenantModel from "../../../models/tenant.js";
 import UserModel from "../../../models/user.js";
 import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
@@ -81,7 +81,7 @@ export class RootService {
       );
 
       return adminsWithTenants;
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to retrieve admin users",
@@ -126,7 +126,7 @@ export class RootService {
         updatedAt: admin.updated_at ?? new Date(),
         lastLogin: lastLogin?.created_at,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to retrieve admin", error);
     }
   }
@@ -160,13 +160,13 @@ export class RootService {
           "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
           [tenantId, adminId],
         );
-      } catch (error) {
+      } catch (error: unknown) {
         // Log but don't fail - admin was created successfully
         console.warn("Could not add admin to tenant_admins:", error);
       }
 
       return adminId;
-    } catch (error) {
+    } catch (error: unknown) {
       const dbError = error as { code?: string };
       if (dbError.code === "ER_DUP_ENTRY") {
         throw new ServiceError(
@@ -213,7 +213,7 @@ export class RootService {
       if (!success) {
         throw new ServiceError("UPDATE_FAILED", "Failed to update admin", 500);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError("SERVER_ERROR", "Failed to update admin", error);
     }
@@ -234,7 +234,7 @@ export class RootService {
       if (!success) {
         throw new ServiceError("DELETE_FAILED", "Failed to delete admin", 500);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError("SERVER_ERROR", "Failed to delete admin", error);
     }
@@ -268,7 +268,7 @@ export class RootService {
         userAgent: log.user_agent,
         createdAt: log.created_at,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         "SERVER_ERROR",
@@ -323,7 +323,7 @@ export class RootService {
       );
 
       return tenantsWithCounts;
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to retrieve tenants",
@@ -360,7 +360,7 @@ export class RootService {
         createdAt: user.created_at,
         updatedAt: user.updated_at,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to retrieve root users",
@@ -404,7 +404,7 @@ export class RootService {
         createdAt: user.created_at,
         updatedAt: user.updated_at,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to retrieve root user",
@@ -470,7 +470,7 @@ export class RootService {
       ]);
 
       return result.insertId;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         "SERVER_ERROR",
@@ -531,10 +531,10 @@ export class RootService {
       values.push(id);
 
       await execute(
-        `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
+        `UPDATE users SET ${String(fields.join(", "))} WHERE id = ?`,
         values,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         "SERVER_ERROR",
@@ -579,7 +579,7 @@ export class RootService {
       }
 
       await execute("DELETE FROM users WHERE id = ?", [id]);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         "SERVER_ERROR",
@@ -629,7 +629,7 @@ export class RootService {
         activeFeatures,
         systemHealth,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get dashboard stats",
@@ -699,7 +699,7 @@ export class RootService {
           backups: backupsSize,
         },
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get storage info",
@@ -736,7 +736,7 @@ export class RootService {
       );
 
       return queueId;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError(
         "SERVER_ERROR",
@@ -788,7 +788,7 @@ export class RootService {
         canCancel: ["pending", "approved"].includes(deletion.status),
         canApprove: deletion.status === "pending",
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get deletion status",
@@ -827,7 +827,7 @@ export class RootService {
         reason: d.reason,
         status: d.status,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get deletion requests",
@@ -871,7 +871,7 @@ export class RootService {
         reason: a.reason,
         status: a.status,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to get pending approvals",
@@ -911,7 +911,7 @@ export class RootService {
         warnings: report.warnings,
         canProceed: report.blockers.length === 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to perform dry run",

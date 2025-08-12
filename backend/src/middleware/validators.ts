@@ -475,13 +475,13 @@ export const validatePaginationQuery = (
 ): void => {
   const { page, limit } = req.query;
 
-  if (page && (!Number.isInteger(Number(page)) || Number(page) < 1)) {
+  if (page != null && (!Number.isInteger(Number(page)) || Number(page) < 1)) {
     res.status(400).json({ message: "Page muss eine positive Zahl sein" });
     return;
   }
 
   if (
-    limit &&
+    limit != null &&
     (!Number.isInteger(Number(limit)) ||
       Number(limit) < 1 ||
       Number(limit) > 100)
@@ -502,7 +502,11 @@ export const validateFileUpload = (allowedTypes: string[], maxSize: number) => {
     }
 
     const fileExtension = req.file.originalname.split(".").pop()?.toLowerCase();
-    if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+    if (
+      fileExtension == null ||
+      fileExtension === "" ||
+      !allowedTypes.includes(fileExtension)
+    ) {
       res.status(400).json({
         message: `Dateityp nicht erlaubt. Erlaubte Typen: ${allowedTypes.join(", ")}`,
       });
@@ -512,7 +516,7 @@ export const validateFileUpload = (allowedTypes: string[], maxSize: number) => {
     // Check file size if available (in tests it might be undefined)
     if (req.file.size && req.file.size > maxSize) {
       res.status(400).json({
-        message: `Datei zu groß. Maximum: ${Math.round(maxSize / 1024 / 1024)}MB`,
+        message: `Datei zu groß. Maximum: ${String(Math.round(maxSize / 1024 / 1024))}MB`,
       });
       return;
     }

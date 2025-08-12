@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { Response } from "express";
 
 import User from "../../../models/user.js";
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -64,7 +64,7 @@ export const logsController = {
       const result = await logsService.getLogs(filters);
       logger.info(`[Logs v2] Successfully fetched ${result.logs.length} logs`);
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("===== LOGS V2 CONTROLLER ERROR =====");
       console.error("Error:", error);
       console.error("Stack:", (error as Error).stack);
@@ -88,7 +88,7 @@ export const logsController = {
 
       const stats = await logsService.getStats();
       res.json(successResponse(stats));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Logs v2] Error fetching stats:", error);
       res.status(500).json(errorResponse("SERVER_ERROR", "Failed to fetch statistics"));
     }
@@ -155,7 +155,7 @@ export const logsController = {
         message: `Successfully deleted ${deletedCount} logs`,
         deletedCount
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("[Logs v2] Error deleting logs:", error);
       res.status(500).json(errorResponse("SERVER_ERROR", "Failed to delete logs"));
     }

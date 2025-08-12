@@ -6,7 +6,7 @@
 import { Response } from "express";
 import { validationResult } from "express-validator";
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -31,7 +31,7 @@ export class DepartmentGroupsController {
         success: true,
         data: groups,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting department groups:", error);
       res.status(500).json({
         success: false,
@@ -58,7 +58,7 @@ export class DepartmentGroupsController {
         success: true,
         data: group,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -127,7 +127,7 @@ export class DepartmentGroupsController {
         },
         message: "Department group created successfully",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -195,7 +195,7 @@ export class DepartmentGroupsController {
         success: true,
         message: "Department group updated successfully",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -262,7 +262,7 @@ export class DepartmentGroupsController {
         success: true,
         message: "Department group deleted successfully",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -334,7 +334,7 @@ export class DepartmentGroupsController {
         success: true,
         message: "Departments added to group successfully",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -407,7 +407,7 @@ export class DepartmentGroupsController {
         success: true,
         message: "Department removed from group successfully",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json({
           success: false,
@@ -467,7 +467,7 @@ export class DepartmentGroupsController {
         success: true,
         data: departments,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting group departments:", error);
       res.status(500).json({
         success: false,

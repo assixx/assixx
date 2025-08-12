@@ -69,7 +69,7 @@ class AdminPermissionService {
       }
 
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error checking admin access:", error);
       return false;
     }
@@ -147,10 +147,10 @@ class AdminPermissionService {
 
       // Add direct permissions
       directDepts.forEach((dept) => {
-        departmentMap.set(dept.id, {
-          id: dept.id,
-          name: dept.name,
-          description: dept.description,
+        departmentMap.set(dept.id as number, {
+          id: dept.id as number,
+          name: dept.name as string,
+          description: dept.description as string | null,
           can_read: dept.can_read === 1,
           can_write: dept.can_write === 1,
           can_delete: dept.can_delete === 1,
@@ -159,17 +159,17 @@ class AdminPermissionService {
 
       // Add/update with group permissions (taking maximum permissions)
       groupDepts.forEach((dept) => {
-        const existing = departmentMap.get(dept.id);
+        const existing = departmentMap.get(dept.id as number);
         if (existing) {
           // Take maximum permissions
           existing.can_read = existing.can_read ?? dept.can_read === 1;
           existing.can_write = existing.can_write ?? dept.can_write === 1;
           existing.can_delete = existing.can_delete ?? dept.can_delete === 1;
         } else {
-          departmentMap.set(dept.id, {
-            id: dept.id,
-            name: dept.name,
-            description: dept.description,
+          departmentMap.set(dept.id as number, {
+            id: dept.id as number,
+            name: dept.name as string,
+            description: dept.description as string | null,
             can_read: dept.can_read === 1,
             can_write: dept.can_write === 1,
             can_delete: dept.can_delete === 1,
@@ -181,7 +181,7 @@ class AdminPermissionService {
         departments: Array.from(departmentMap.values()),
         hasAllAccess,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting admin departments:", error);
       return { departments: [], hasAllAccess: false };
     }
@@ -280,7 +280,7 @@ class AdminPermissionService {
       await connection.commit();
       logger.info(`[DEBUG] Successfully set permissions for admin ${adminId}`);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
       logger.error("Error setting admin permissions:", error);
       logger.error("[DEBUG] Error details:", {
@@ -346,7 +346,7 @@ class AdminPermissionService {
 
       await connection.commit();
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
       logger.error("Error setting admin group permissions:", error);
       return false;
@@ -371,7 +371,7 @@ class AdminPermissionService {
       );
 
       return result.affectedRows > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error removing admin permission:", error);
       return false;
     }
@@ -393,7 +393,7 @@ class AdminPermissionService {
       );
 
       return result.affectedRows > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error removing admin group permission:", error);
       return false;
     }
@@ -424,11 +424,11 @@ class AdminPermissionService {
           targetId,
           targetType,
           changedBy,
-          oldPermissions ? JSON.stringify(oldPermissions) : null,
-          newPermissions ? JSON.stringify(newPermissions) : null,
+          oldPermissions != null ? JSON.stringify(oldPermissions) : null,
+          newPermissions != null ? JSON.stringify(newPermissions) : null,
         ],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error logging permission change:", error);
     }
   }

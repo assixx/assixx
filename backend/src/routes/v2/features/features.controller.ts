@@ -1,12 +1,15 @@
 import { Response } from "express";
 
-import { AuthenticatedRequest } from "../../../types/request.types";
+import type { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../types/response.types";
 import { getErrorMessage } from "../../../utils/errorHandler";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { FeaturesService } from "./features.service";
-import { FeatureActivationRequest, FeatureDeactivationRequest } from "./types";
+import type {
+  FeatureActivationRequest,
+  FeatureDeactivationRequest,
+} from "./types";
 
 export class FeaturesController {
   /**
@@ -60,7 +63,7 @@ export class FeaturesController {
       const features = await FeaturesService.getAllFeatures(includeInactive);
 
       res.json(successResponse(features, "Features retrieved successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -106,7 +109,7 @@ export class FeaturesController {
           "Features by category retrieved successfully",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -156,7 +159,7 @@ export class FeaturesController {
       }
 
       res.json(successResponse(feature, "Feature retrieved successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -215,7 +218,7 @@ export class FeaturesController {
       res.json(
         successResponse(features, "Tenant features retrieved successfully"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -251,7 +254,7 @@ export class FeaturesController {
         await FeaturesService.getFeaturesWithTenantInfo(tenantId);
 
       res.json(successResponse(features, "My features retrieved successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -313,7 +316,7 @@ export class FeaturesController {
           "Tenant features summary retrieved successfully",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -364,7 +367,7 @@ export class FeaturesController {
       await FeaturesService.activateFeature(activationRequest, activatedBy);
 
       res.json(successResponse(null, "Feature activated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -423,7 +426,7 @@ export class FeaturesController {
       );
 
       res.json(successResponse(null, "Feature deactivated successfully"));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -509,7 +512,7 @@ export class FeaturesController {
       res.json(
         successResponse(stats, "Usage statistics retrieved successfully"),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -581,7 +584,7 @@ export class FeaturesController {
           message: `Access to feature ${featureCode} granted`,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }
@@ -628,7 +631,7 @@ export class FeaturesController {
           "All tenants with features retrieved successfully",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
     }

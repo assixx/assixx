@@ -20,7 +20,7 @@ const connectionCache: Record<string, Pool> = {};
  */
 export async function createTenantConnection(tenantId: string): Promise<Pool> {
   // Prüfe ob Verbindung bereits im Cache
-  if (connectionCache[tenantId]) {
+  if (connectionCache[tenantId] != null) {
     return connectionCache[tenantId];
   }
 
@@ -53,7 +53,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
 
     console.info(`Datenbankverbindung für Tenant ${tenantId} erstellt`);
     return pool;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(
       `Fehler beim Erstellen der DB-Verbindung für ${tenantId}:`,
       error,
@@ -114,7 +114,7 @@ export async function initializeTenantDatabase(
     }
 
     console.info(`Datenbank für Tenant ${tenantId} initialisiert`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(
       `Fehler beim Initialisieren der Tenant-DB ${tenantId}:`,
       error,
@@ -134,7 +134,7 @@ export async function closeAllConnections(): Promise<void> {
     try {
       await pool.end();
       console.info(`Verbindung für Tenant ${tenantId} geschlossen`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(
         `Fehler beim Schließen der Verbindung für ${tenantId}:`,
         error,

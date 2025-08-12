@@ -31,7 +31,7 @@ class KvpPermissionService {
         tenantId,
       );
       return result.departments.map((dept) => dept.id);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting admin departments:", error);
       return [];
     }
@@ -90,11 +90,11 @@ class KvpPermissionService {
 
         // Check if admin manages this department
         const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id);
+        return adminDepts.includes(suggestion.department_id as number);
       }
 
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error checking view permission:", error);
       return false;
     }
@@ -143,11 +143,11 @@ class KvpPermissionService {
 
         // For department suggestions, check admin permissions
         const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id);
+        return adminDepts.includes(suggestion.department_id as number);
       }
 
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error checking edit permission:", error);
       return false;
     }
@@ -181,7 +181,7 @@ class KvpPermissionService {
         [userId],
       );
 
-      const userDeptId = userInfo[0]?.department_id ?? null;
+      const userDeptId = userInfo[0]?.department_id as number | null;
 
       // Employee sees: own + department + company-wide
       const visibilityConditions = [
@@ -215,12 +215,12 @@ class KvpPermissionService {
     }
 
     // Status filter
-    if (!includeArchived) {
+    if (includeArchived === false) {
       conditions.push("s.status != ?");
       queryParams.push("archived");
     }
 
-    if (statusFilter && statusFilter !== "all") {
+    if (statusFilter != null && statusFilter !== "" && statusFilter !== "all") {
       if (statusFilter === "active") {
         conditions.push("s.status NOT IN (?, ?)");
         queryParams.push("archived", "rejected");
@@ -231,7 +231,11 @@ class KvpPermissionService {
     }
 
     // Department filter (for admins)
-    if (departmentFilter && role === "admin") {
+    if (
+      departmentFilter != null &&
+      departmentFilter !== 0 &&
+      role === "admin"
+    ) {
       conditions.push("s.department_id = ?");
       queryParams.push(departmentFilter);
     }
@@ -270,8 +274,8 @@ class KvpPermissionService {
 
       // Check if admin manages this department
       const adminDepts = await this.getAdminDepartments(adminId, tenantId);
-      return adminDepts.includes(suggestion.department_id);
-    } catch (error) {
+      return adminDepts.includes(suggestion.department_id as number);
+    } catch (error: unknown) {
       logger.error("Error checking share permission:", error);
       return false;
     }
@@ -284,7 +288,7 @@ class KvpPermissionService {
     adminId: number,
     action: string,
     entityId: number,
-    entityType: string = "kvp_suggestion",
+    entityType = "kvp_suggestion",
     tenantId: number,
     oldValue?: unknown,
     newValue?: unknown,
@@ -300,11 +304,11 @@ class KvpPermissionService {
           action,
           entityType,
           entityId,
-          oldValue ? JSON.stringify(oldValue) : null,
-          newValue ? JSON.stringify(newValue) : null,
+          oldValue != null ? JSON.stringify(oldValue) : null,
+          newValue != null ? JSON.stringify(newValue) : null,
         ],
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error logging admin action:", error);
     }
   }
@@ -360,12 +364,12 @@ class KvpPermissionService {
       // Build result
       const byStatus: Record<string, number> = {};
       statusCounts.forEach((row: RowDataPacket) => {
-        byStatus[row.status] = row.count;
+        byStatus[row.status as string] = row.count as number;
       });
 
       const byPriority: Record<string, number> = {};
       priorityCounts.forEach((row: RowDataPacket) => {
-        byPriority[row.priority] = row.count;
+        byPriority[row.priority as string] = row.count as number;
       });
 
       const total = Object.values(byStatus).reduce(
@@ -377,9 +381,9 @@ class KvpPermissionService {
         total,
         byStatus,
         byPriority,
-        totalSavings: parseFloat(savings[0].total_savings) ?? 0,
+        totalSavings: parseFloat(savings[0].total_savings as string) ?? 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting suggestion stats:", error);
       return {
         total: 0,

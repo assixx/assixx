@@ -802,7 +802,7 @@ describe("Calendar v2 API Endpoints", () => {
           first_name: "Admin",
           last_name: "Tenant2",
         });
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Failed to create tenant2 admin:", error);
         throw error;
       }

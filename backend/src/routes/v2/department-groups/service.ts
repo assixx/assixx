@@ -5,7 +5,7 @@
 
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import { execute, getConnection } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
@@ -117,7 +117,7 @@ export class DepartmentGroupsService {
       );
 
       return groupId;
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
 
       if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
@@ -209,7 +209,7 @@ export class DepartmentGroupsService {
       });
 
       return rootGroups;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting group hierarchy:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get groups");
     }
@@ -246,7 +246,7 @@ export class DepartmentGroupsService {
         updatedAt: new Date(row.updated_at).toISOString(),
         createdBy: row.created_by,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error getting group by ID:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get group");
@@ -281,7 +281,7 @@ export class DepartmentGroupsService {
         tenantId,
         `Updated department group: ${data.name} (ID: ${groupId})`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
         throw new ServiceError("GROUP_EXISTS", "Group name already exists");
       }
@@ -367,7 +367,7 @@ export class DepartmentGroupsService {
         tenantId,
         `Deleted department group: ${groupName} (ID: ${groupId})`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
       if (error instanceof ServiceError) throw error;
       logger.error("Error deleting department group:", error);
@@ -424,7 +424,7 @@ export class DepartmentGroupsService {
         tenantId,
         `Added ${departmentIds.length} departments to group ${groupId}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error adding departments to group:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to add departments");
@@ -458,7 +458,7 @@ export class DepartmentGroupsService {
         tenantId,
         `Removed department ${departmentId} from group ${groupId}`,
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error removing department from group:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to remove department");
@@ -505,7 +505,7 @@ export class DepartmentGroupsService {
       }
 
       return Array.from(departments.values());
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting group departments:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get departments");
     }

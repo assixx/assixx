@@ -387,7 +387,9 @@ import { ApiClient } from '../utils/api-client';
 
     // Reset dropdown selections
     const dropdowns = document.querySelectorAll('.dropdown-option');
-    dropdowns.forEach((option) => option.classList.remove('selected'));
+    dropdowns.forEach((option) => {
+      option.classList.remove('selected');
+    });
 
     currentFilters = {};
     currentOffset = 0;
@@ -420,7 +422,7 @@ import { ApiClient } from '../utils/api-client';
         filterHTML += `<li>• <strong>Benutzer:</strong> ${currentFilters.user}</li>`;
       }
       if (currentFilters.action) {
-        const actionLabels: { [key: string]: string } = {
+        const actionLabels: Record<string, string> = {
           all: 'Alle Aktionen',
           login: 'Anmeldung',
           logout: 'Abmeldung',
@@ -440,7 +442,7 @@ import { ApiClient } from '../utils/api-client';
         filterHTML += `<li>• <strong>Entitätstyp:</strong> ${entityLabel}</li>`;
       }
       if (currentFilters.timerange) {
-        const timeLabels: { [key: string]: string } = {
+        const timeLabels: Record<string, string> = {
           all: 'Alle Zeit',
           today: 'Heute',
           yesterday: 'Gestern',
@@ -658,7 +660,7 @@ import { ApiClient } from '../utils/api-client';
 
   // Helper function to get readable action labels
   function getActionLabel(action: string): string {
-    const actionLabels: { [key: string]: string } = {
+    const actionLabels: Record<string, string> = {
       login: 'Anmeldung',
       logout: 'Abmeldung',
       create: 'Erstellt',
@@ -677,7 +679,7 @@ import { ApiClient } from '../utils/api-client';
 
   // Helper function to get readable role labels
   function getRoleLabel(role: string): string {
-    const roleLabels: { [key: string]: string } = {
+    const roleLabels: Record<string, string> = {
       root: 'Root',
       admin: 'Admin',
       employee: 'Mitarbeiter',
@@ -722,19 +724,19 @@ import { ApiClient } from '../utils/api-client';
 
   // Update delete button state based on active filters
   function updateDeleteButtonState() {
-    const deleteBtn = document.querySelector('.btn-danger[onclick="deleteFilteredLogs()"]') as HTMLButtonElement;
+    const deleteBtn = document.querySelector('.btn-danger[onclick="deleteFilteredLogs()"]');
     if (deleteBtn) {
       const hasActiveFilters = Object.keys(currentFilters).length > 0;
-      deleteBtn.disabled = !hasActiveFilters;
+      (deleteBtn as HTMLButtonElement).disabled = !hasActiveFilters;
 
       if (hasActiveFilters) {
-        deleteBtn.style.opacity = '1';
-        deleteBtn.style.cursor = 'pointer';
-        deleteBtn.title = 'Löscht alle Logs die den aktuellen Filtern entsprechen';
+        (deleteBtn as HTMLElement).style.opacity = '1';
+        (deleteBtn as HTMLElement).style.cursor = 'pointer';
+        (deleteBtn as HTMLElement).title = 'Löscht alle Logs die den aktuellen Filtern entsprechen';
       } else {
-        deleteBtn.style.opacity = '0.5';
-        deleteBtn.style.cursor = 'not-allowed';
-        deleteBtn.title = 'Wählen Sie zuerst spezifische Filter aus';
+        (deleteBtn as HTMLElement).style.opacity = '0.5';
+        (deleteBtn as HTMLElement).style.cursor = 'not-allowed';
+        (deleteBtn as HTMLElement).title = 'Wählen Sie zuerst spezifische Filter aus';
       }
     }
   }

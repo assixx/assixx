@@ -56,7 +56,7 @@ router.get(
         success: true,
         data: groups,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error getting department groups: ${getErrorMessage(error)}`,
       );
@@ -83,7 +83,7 @@ router.get(
         success: true,
         data: hierarchy,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error getting group hierarchy: ${getErrorMessage(error)}`);
       res.status(500).json({
         success: false,
@@ -122,7 +122,7 @@ router.post(
         req.user.id,
       );
 
-      if (!groupId) {
+      if (groupId == null || groupId === 0) {
         res.status(500).json({
           success: false,
           error: "Fehler beim Erstellen der Gruppe",
@@ -149,7 +149,7 @@ router.post(
         data: { id: groupId },
         message: "Abteilungsgruppe erfolgreich erstellt",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (getErrorMessage(error) === "Group name already exists") {
         res.status(409).json({
           success: false,
@@ -220,7 +220,7 @@ router.put(
             error: "Gruppe nicht gefunden",
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         if (getErrorMessage(error) === "Group name already exists") {
           res.status(409).json({
             success: false,
@@ -275,7 +275,7 @@ router.delete(
           error: "Gruppe nicht gefunden",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (
         getErrorMessage(error) ===
         "Cannot delete group with active admin permissions"
@@ -348,7 +348,7 @@ router.post(
             error: "Fehler beim Hinzufügen der Abteilungen",
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(
           `Error adding departments to group: ${getErrorMessage(error)}`,
         );
@@ -396,7 +396,7 @@ router.delete(
           error: "Abteilung oder Gruppe nicht gefunden",
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error removing department from group: ${getErrorMessage(error)}`,
       );
@@ -435,7 +435,7 @@ router.get(
         success: true,
         data: departments,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(
         `Error getting group departments: ${getErrorMessage(error)}`,
       );

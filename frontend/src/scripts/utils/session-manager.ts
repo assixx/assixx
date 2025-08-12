@@ -42,7 +42,7 @@ export class SessionManager {
 
     // Also track API calls as activity
     const originalFetch = window.fetch;
-    window.fetch = (...args) => {
+    window.fetch = async (...args) => {
       this.updateActivity();
       return originalFetch.apply(window, args);
     };
@@ -173,7 +173,7 @@ export class SessionManager {
     console.info('Session extended');
   }
 
-  public logout(isTimeout: boolean = false): void {
+  public logout(isTimeout = false): void {
     // Clear session data
     removeAuthToken();
     localStorage.removeItem('userRole');

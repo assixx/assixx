@@ -12,7 +12,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     email: dbUser.email,
     firstName: dbUser.first_name,
     lastName: dbUser.last_name,
-    role: dbUser.role as User["role"],
+    role: dbUser.role,
     tenant_id: dbUser.tenant_id,
     departmentId: dbUser.department_id,
     isActive: dbUser.is_active,
@@ -54,11 +54,16 @@ export function createApiResponse<T>(
   success: boolean,
   data?: T,
   error?: string,
-) {
+): {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+} {
   return {
     success,
     ...(data !== undefined && { data }),
-    ...(error && { error, message: error }),
+    ...(error != null && error !== "" && { error, message: error }),
   };
 }
 
@@ -66,7 +71,7 @@ export function createApiResponse<T>(
  * Convert snake_case string to camelCase
  */
 export function snakeToCamelString(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /**
@@ -79,17 +84,17 @@ export function camelToSnakeString(str: string): string {
 /**
  * Convert object keys from snake_case to camelCase
  */
-export function snakeToCamel<T = unknown>(obj: unknown): T {
+export function snakeToCamel(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
-    return obj as T;
+    return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => snakeToCamel(item)) as T;
+    return obj.map((item) => snakeToCamel(item));
   }
 
   if (typeof obj !== "object" || obj instanceof Date) {
-    return obj as T;
+    return obj;
   }
 
   const converted: Record<string, unknown> = {};
@@ -99,23 +104,23 @@ export function snakeToCamel<T = unknown>(obj: unknown): T {
       converted[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key]);
     }
   }
-  return converted as T;
+  return converted;
 }
 
 /**
  * Convert object keys from camelCase to snake_case
  */
-export function camelToSnake<T = unknown>(obj: unknown): T {
+export function camelToSnake(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
-    return obj as T;
+    return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => camelToSnake(item)) as T;
+    return obj.map((item) => camelToSnake(item));
   }
 
   if (typeof obj !== "object" || obj instanceof Date) {
-    return obj as T;
+    return obj;
   }
 
   const converted: Record<string, unknown> = {};
@@ -125,7 +130,7 @@ export function camelToSnake<T = unknown>(obj: unknown): T {
       converted[snakeKey] = camelToSnake((obj as Record<string, unknown>)[key]);
     }
   }
-  return converted as T;
+  return converted;
 }
 
 /**

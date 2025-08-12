@@ -142,7 +142,7 @@ router.post(
       console.info("[SIGNUP ROUTE] Inside try block");
       await signupController.signup(req, res);
       console.info("[SIGNUP ROUTE] Controller call completed");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[SIGNUP ROUTE] Error caught in route handler:", error);
       res.status(500).json({
         success: false,

@@ -208,22 +208,22 @@ interface UserData extends User {
 // Global variables
 let calendar: FullCalendarApi; // FullCalendar instance
 // Always default to 'all' filter on page load
-let currentFilter: string = 'all';
-let currentSearch: string = '';
+let currentFilter = 'all';
+let currentSearch = '';
 let departments: Department[] = [];
 let teams: Team[] = [];
 let employees: User[] = [];
-let isAdmin: boolean = false;
+let isAdmin = false;
 let currentUserId: number | null = null;
 let selectedAttendees: number[] = [];
 let eventToDelete: number | null = null; // Track which event to delete
-let calendarView: string = 'dayGridMonth'; // Default view
+let calendarView = 'dayGridMonth'; // Default view
 
 /**
  * Helper function to set selected organization ID
  */
 function selectOrgId(id: number, name: string): void {
-  const selectedOrgIdElement = document.getElementById('selectedOrgId') as HTMLElement;
+  const selectedOrgIdElement = document.getElementById('selectedOrgId');
   const eventOrgIdElement = document.getElementById('eventOrgId') as HTMLInputElement;
 
   if (selectedOrgIdElement) {
@@ -505,7 +505,7 @@ function initializeCalendar(): void {
 
   console.info('Calendar: Initializing FullCalendar...');
 
-  const calendarEl = document.getElementById('calendar') as HTMLElement;
+  const calendarEl = document.getElementById('calendar');
   console.info('Calendar: Calendar element found:', !!calendarEl);
 
   if (!calendarEl) {
@@ -518,7 +518,9 @@ function initializeCalendar(): void {
   if (typeof window.FullCalendar === 'undefined') {
     console.info('Calendar: FullCalendar not yet loaded, waiting...');
     // Try again after a short delay
-    setTimeout(() => initializeCalendar(), 500);
+    setTimeout(() => {
+      initializeCalendar();
+    }, 500);
     return;
   }
 
@@ -637,7 +639,9 @@ function setupEventListeners(): void {
 
     button.addEventListener('click', function (this: HTMLButtonElement) {
       // Remove active class from all buttons
-      levelFilterButtons.forEach((btn) => btn.classList.remove('active'));
+      levelFilterButtons.forEach((btn) => {
+        btn.classList.remove('active');
+      });
       // Add active class to clicked button
       this.classList.add('active');
 
@@ -653,7 +657,9 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all pills
-      document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
+      document.querySelectorAll('.filter-pill').forEach((pill) => {
+        pill.classList.remove('active');
+      });
       // Add active class to clicked pill
       this.classList.add('active');
 
@@ -702,7 +708,9 @@ function setupEventListeners(): void {
         calendar.changeView(view);
 
         // Update active state
-        document.querySelectorAll('.view-btn').forEach((btn) => btn.classList.remove('active'));
+        document.querySelectorAll('.view-btn').forEach((btn) => {
+          btn.classList.remove('active');
+        });
         this.classList.add('active');
       }
     });
@@ -860,9 +868,10 @@ function setupEventListeners(): void {
       e.preventDefault();
       e.stopPropagation();
 
-      const display = target.closest('.dropdown-display') as HTMLElement;
+      const display = target.closest('.dropdown-display');
+      if (!display) return;
       const wrapper = display.closest('.custom-dropdown');
-      const dropdown = wrapper?.querySelector('.dropdown-options') as HTMLElement;
+      const dropdown = wrapper?.querySelector('.dropdown-options');
 
       if (dropdown) {
         // Check which dropdown was clicked
@@ -885,20 +894,21 @@ function setupEventListeners(): void {
       e.preventDefault();
       e.stopPropagation();
 
-      const option = target.closest('.dropdown-option') as HTMLElement;
+      const option = target.closest('.dropdown-option');
+      if (!option) return;
       const dropdown = option.closest('.dropdown-options');
 
       if (dropdown?.id === 'orgLevelDropdown') {
         // Extract value and text from the option
-        const value = option.dataset.value ?? '';
+        const value = (option as HTMLElement).dataset.value ?? '';
         const text = option.textContent?.trim() ?? '';
         selectOrgLevel(value, text);
       } else if (dropdown?.id === 'reminderDropdown') {
-        const value = option.dataset.value ?? '';
+        const value = (option as HTMLElement).dataset.value ?? '';
         const text = option.textContent?.trim() ?? '';
         selectReminder(value, text);
       } else if (dropdown?.id === 'recurrenceDropdown') {
-        const value = option.dataset.value ?? '';
+        const value = (option as HTMLElement).dataset.value ?? '';
         const text = option.textContent?.trim() ?? '';
         selectRecurrence(value, text);
       }
@@ -1141,7 +1151,7 @@ async function loadUpcomingEvents(): Promise<void> {
     displayUpcomingEvents(events);
   } catch (error) {
     console.error('Error loading upcoming events:', error);
-    const upcomingEvents = document.getElementById('upcomingEvents') as HTMLElement;
+    const upcomingEvents = document.getElementById('upcomingEvents');
     if (upcomingEvents) {
       upcomingEvents.innerHTML = '<p class="text-center">Fehler beim Laden der Termine.</p>';
     }
@@ -1152,7 +1162,7 @@ async function loadUpcomingEvents(): Promise<void> {
  * Display upcoming events in the sidebar
  */
 function displayUpcomingEvents(events: CalendarEvent[]): void {
-  const container = document.getElementById('upcomingEvents') as HTMLElement;
+  const container = document.getElementById('upcomingEvents');
 
   if (!container) {
     console.error('Upcoming events container not found');
@@ -1627,7 +1637,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
 
   // Set default org level and show info message
   const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement;
-  const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel') as HTMLElement;
+  const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
 
   if (!eventId) {
     // For new events, set default to company and show appropriate UI
@@ -1637,8 +1647,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     // Use setTimeout to ensure DOM is fully rendered before updating
     setTimeout(() => {
       // Show attendees section with company info by default
-      const attendeesGroup = document.getElementById('attendeesGroup') as HTMLElement;
-      const attendeesContainer = document.getElementById('attendeesContainer') as HTMLElement;
+      const attendeesGroup = document.getElementById('attendeesGroup');
+      const attendeesContainer = document.getElementById('attendeesContainer');
       const addAttendeeBtn = document.getElementById('addAttendeeBtn') as HTMLButtonElement;
 
       if (attendeesGroup) attendeesGroup.style.display = 'block';
@@ -1649,8 +1659,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
 
       // Also update the department/team groups visibility for company events
-      const departmentGroup = document.getElementById('departmentGroup') as HTMLElement;
-      const teamGroup = document.getElementById('teamGroup') as HTMLElement;
+      const departmentGroup = document.getElementById('departmentGroup');
+      const teamGroup = document.getElementById('teamGroup');
       if (departmentGroup) departmentGroup.style.display = 'none';
       if (teamGroup) teamGroup.style.display = 'none';
     }, 50);
@@ -1741,17 +1751,17 @@ function formatTimeForInput(date: Date): string {
  */
 function updateOrgIdDropdown(level: string): void {
   // Handle department dropdown
-  const departmentGroup = document.getElementById('departmentGroup') as HTMLElement;
-  const departmentDropdown = document.getElementById('departmentDropdown') as HTMLElement;
+  const departmentGroup = document.getElementById('departmentGroup');
+  const departmentDropdown = document.getElementById('departmentDropdown');
 
   // Handle team dropdown
-  const teamGroup = document.getElementById('teamGroup') as HTMLElement;
-  const teamDropdown = document.getElementById('teamDropdown') as HTMLElement;
+  const teamGroup = document.getElementById('teamGroup');
+  const teamDropdown = document.getElementById('teamDropdown');
 
   // Handle attendees section
-  const attendeesGroup = document.getElementById('attendeesGroup') as HTMLElement;
+  const attendeesGroup = document.getElementById('attendeesGroup');
   const addAttendeeBtn = document.getElementById('addAttendeeBtn') as HTMLButtonElement;
-  const attendeesContainer = document.getElementById('attendeesContainer') as HTMLElement;
+  const attendeesContainer = document.getElementById('attendeesContainer');
 
   // Clear dropdowns
   if (departmentDropdown) departmentDropdown.innerHTML = '';
@@ -1804,7 +1814,6 @@ function updateOrgIdDropdown(level: string): void {
 
   if (level === 'personal' || level === 'company') {
     // No additional selection needed
-    return;
   } else if (level === 'department') {
     // Show only department selection
     if (departmentGroup) {
@@ -1875,7 +1884,7 @@ function selectTeam(teamId: number, teamName: string): void {
  * Load teams for selected department
  */
 function loadTeamsForDepartment(departmentId: number): void {
-  const teamDropdown = document.getElementById('teamDropdown') as HTMLElement;
+  const teamDropdown = document.getElementById('teamDropdown');
   if (!teamDropdown) return;
 
   teamDropdown.innerHTML = '';
@@ -2015,7 +2024,7 @@ async function saveEvent(): Promise<void> {
 
   if (recurrenceType && recurrenceType !== '') {
     // Build recurrence rule based on selection
-    const recurrenceEnd = (document.getElementById('selectedRecurrenceEnd') as HTMLElement)?.textContent;
+    const recurrenceEnd = document.getElementById('selectedRecurrenceEnd')?.textContent;
     const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement)?.value;
     const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement)?.value;
 
@@ -2065,11 +2074,11 @@ async function saveEvent(): Promise<void> {
       description: descriptionInput.value,
       startTime: startDateTime, // camelCase for v2
       endTime: endDateTime, // camelCase for v2
-      allDay: allDay, // camelCase for v2
+      allDay, // camelCase for v2
       location: locationInput.value,
       orgLevel: orgLevelInput.value ?? 'personal', // camelCase for v2
       color,
-      requiresResponse: requiresResponse, // New field for status requests
+      requiresResponse, // New field for status requests
     };
 
     // Only add optional fields if they have values (camelCase)
@@ -2408,7 +2417,7 @@ async function confirmDeleteEvent(): Promise<void> {
  * Search attendees
  */
 function searchAttendees(query: string): void {
-  const searchResults = document.getElementById('attendeeSearchResults') as HTMLElement;
+  const searchResults = document.getElementById('attendeeSearchResults');
   if (!searchResults) return;
 
   if (!query || query.length < 2) {
@@ -2462,7 +2471,7 @@ function addAttendee(userId: number, _name: string): void {
 
     // Clear search
     const searchInput = document.getElementById('attendeeSearch') as HTMLInputElement;
-    const searchResults = document.getElementById('attendeeSearchResults') as HTMLElement;
+    const searchResults = document.getElementById('attendeeSearchResults');
     if (searchInput) searchInput.value = '';
     if (searchResults) searchResults.innerHTML = '';
   }
@@ -2586,7 +2595,7 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 function escapeHtml(text: string | null | undefined): string {
   if (!text) return '';
   const str = String(text);
-  const map: { [key: string]: string } = {
+  const map: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
@@ -3037,7 +3046,9 @@ if (typeof window !== 'undefined') {
   console.info('Calendar: Exporting functions to window...');
   window.viewEvent = viewEvent;
   window.showEventDetails = showEventDetails;
-  window.editEvent = (eventId: number) => openEventForm(eventId);
+  window.editEvent = (eventId: number) => {
+    openEventForm(eventId);
+  };
   window.deleteEvent = deleteEvent;
   window.respondToEvent = respondToEvent;
   window.openEventForm = openEventForm;

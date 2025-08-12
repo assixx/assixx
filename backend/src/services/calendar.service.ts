@@ -71,10 +71,7 @@ class CalendarService {
    * Holt alle Calendar Einträge für einen Tenant
    * Note: This method is kept for compatibility but uses the more specific getAllEvents internally
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: EventFilters = {},
-  ): Promise<CalendarEvent[]> {
+  getAll(_tenantDb: Pool, _filters: EventFilters = {}): CalendarEvent[] {
     try {
       // Extract tenant_id from the connection pool config if possible
       // For now, we'll need to pass it as a parameter in the controller
@@ -82,7 +79,7 @@ class CalendarService {
         "CalendarService.getAll: This method requires refactoring to pass tenantId and userId",
       );
       throw new Error("Method needs refactoring - use getAllEvents directly");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.getAll:", error);
       throw error;
     }
@@ -98,7 +95,7 @@ class CalendarService {
   ): Promise<EventsResponse> {
     try {
       return await getAllEvents(tenantId, userId, options);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.getAllEvents:", error);
       throw error;
     }
@@ -108,13 +105,13 @@ class CalendarService {
    * Holt einen Calendar Eintrag per ID
    * Note: This method is kept for compatibility but uses getEventById internally
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<CalendarEvent | null> {
+  getById(_tenantDb: Pool, _id: number): CalendarEvent | null {
     try {
       console.warn(
         "CalendarService.getById: This method requires refactoring to pass tenantId and userId",
       );
       throw new Error("Method needs refactoring - use getEventById directly");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.getById:", error);
       throw error;
     }
@@ -130,7 +127,7 @@ class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       return await getEventById(id, tenantId, userId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.getEventById:", error);
       throw error;
     }
@@ -146,7 +143,7 @@ class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       return await createEvent(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.create:", error);
       throw error;
     }
@@ -158,7 +155,7 @@ class CalendarService {
   async createEvent(eventData: EventCreateData): Promise<CalendarEvent | null> {
     try {
       return await createEvent(eventData);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.createEvent:", error);
       throw error;
     }
@@ -168,17 +165,17 @@ class CalendarService {
    * Aktualisiert einen Calendar Eintrag
    * Note: This method is kept for compatibility but uses updateEvent internally
    */
-  async update(
+  update(
     _tenantDb: Pool,
     _id: number,
     _data: EventUpdateData,
-  ): Promise<CalendarEvent | null> {
+  ): CalendarEvent | null {
     try {
       console.warn(
         "CalendarService.update: This method requires refactoring to pass tenantId",
       );
       throw new Error("Method needs refactoring - use updateEvent directly");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.update:", error);
       throw error;
     }
@@ -194,7 +191,7 @@ class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       return await updateEvent(id, eventData, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.updateEvent:", error);
       throw error;
     }
@@ -204,13 +201,13 @@ class CalendarService {
    * Löscht einen Calendar Eintrag
    * Note: This method is kept for compatibility but uses deleteEvent internally
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
       console.warn(
         "CalendarService.delete: This method requires refactoring to pass tenantId",
       );
       throw new Error("Method needs refactoring - use deleteEvent directly");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.delete:", error);
       throw error;
     }
@@ -222,7 +219,7 @@ class CalendarService {
   async deleteEvent(id: number, tenantId: number): Promise<boolean> {
     try {
       return await deleteEvent(id, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.deleteEvent:", error);
       throw error;
     }
@@ -238,7 +235,7 @@ class CalendarService {
   ): Promise<boolean> {
     try {
       return await addEventAttendee(eventId, userId, responseStatus);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.addEventAttendee:", error);
       throw error;
     }
@@ -250,7 +247,7 @@ class CalendarService {
   async removeEventAttendee(eventId: number, userId: number): Promise<boolean> {
     try {
       return await removeEventAttendee(eventId, userId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.removeEventAttendee:", error);
       throw error;
     }
@@ -266,7 +263,7 @@ class CalendarService {
   ): Promise<boolean> {
     try {
       return await respondToEvent(eventId, userId, response);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.respondToEvent:", error);
       throw error;
     }
@@ -281,7 +278,7 @@ class CalendarService {
   ): Promise<EventAttendee[]> {
     try {
       return await getEventAttendees(eventId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.getEventAttendees:", error);
       throw error;
     }
@@ -298,7 +295,7 @@ class CalendarService {
   ): Promise<CalendarEvent[]> {
     try {
       return await getDashboardEvents(tenantId, userId, days, limit);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.getDashboardEvents:", error);
       throw error;
     }
@@ -322,7 +319,7 @@ class CalendarService {
           teamId: null,
         },
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in CalendarService.canManageEvent:", error);
       throw error;
     }

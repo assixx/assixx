@@ -319,7 +319,7 @@ export class AreasService {
     values.push(id, tenantId);
     const query = `
       UPDATE areas 
-      SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP
+      SET ${String(updates.join(", "))}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `;
 

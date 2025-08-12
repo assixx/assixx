@@ -23,11 +23,11 @@ interface ApiResponse<T = unknown> {
 }
 
 export class ApiClient {
-  private static instance: ApiClient;
+  private static instance: ApiClient | undefined;
   private token: string | null = null;
   private refreshToken: string | null = null;
   private version: 'v1' | 'v2' = 'v2';
-  private baseUrl: string = '';
+  private baseUrl = '';
 
   private constructor() {
     this.loadTokens();
@@ -36,32 +36,30 @@ export class ApiClient {
   }
 
   static getInstance(): ApiClient {
-    if (!ApiClient.instance) {
-      ApiClient.instance = new ApiClient();
-    }
+    ApiClient.instance ??= new ApiClient();
     return ApiClient.instance;
   }
 
-  private loadTokens() {
+  private loadTokens(): void {
     this.token = localStorage.getItem('accessToken');
     this.refreshToken = localStorage.getItem('refreshToken');
   }
 
-  setTokens(accessToken: string, refreshToken: string) {
+  setTokens(accessToken: string, refreshToken: string): void {
     this.token = accessToken;
     this.refreshToken = refreshToken;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
   }
 
-  setVersion(version: 'v1' | 'v2') {
+  setVersion(version: 'v1' | 'v2'): void {
     this.version = version;
   }
 
   async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
     // Check feature flags to determine version
     const featureKey = `USE_API_V2_${this.extractApiName(endpoint).toUpperCase()}`;
-    const version = window.FEATURE_FLAGS?.[featureKey] ? 'v2' : (config.version ?? this.version);
+    const version = window.FEATURE_FLAGS?.[featureKey] === true ? 'v2' : (config.version ?? this.version);
 
     const baseApiPath = version === 'v2' ? '/api/v2' : '/api';
     const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
@@ -69,7 +67,7 @@ export class ApiClient {
     const headers: Record<string, string> = {};
 
     // Copy existing headers if they exist
-    if (options.headers) {
+    if (options.headers !== undefined) {
       const h = options.headers as Record<string, string>;
       Object.keys(h).forEach((key) => {
         headers[key] = h[key];
@@ -77,17 +75,15 @@ export class ApiClient {
     }
 
     // Only set Content-Type for requests with body
-    if (options.body && config.contentType !== undefined) {
-      if (config.contentType) {
-        headers['Content-Type'] = config.contentType;
-      }
-    } else if (options.body && !(options.body instanceof FormData)) {
+    if (options.body !== undefined && config.contentType !== undefined) {
+      headers['Content-Type'] = config.contentType;
+    } else if (options.body !== undefined && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
 
     // Add auth header for v2
-    if (version === 'v2' && config.useAuth !== false && this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (version === 'v2' && config.useAuth !== false && this.token !== null && this.token !== '') {
+      headers.Authorization = `Bearer ${this.token}`;
     }
 
     try {
@@ -100,27 +96,33 @@ export class ApiClient {
       });
 
       // Handle token refresh for v2
-      if (version === 'v2' && response.status === 401 && this.refreshToken && config.useAuth !== false) {
+      if (
+        version === 'v2' &&
+        response.status === 401 &&
+        this.refreshToken !== null &&
+        this.refreshToken !== '' &&
+        config.useAuth !== false
+      ) {
         console.info('[API v2] Token expired, attempting refresh...');
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {
           // Retry request with new token
-          headers['Authorization'] = `Bearer ${this.token}`;
+          headers.Authorization = `Bearer ${this.token ?? ''}`;
           const retryResponse = await fetch(url, {
             ...options,
             headers,
             credentials: 'omit',
           });
-          return this.handleResponse<T>(retryResponse, version);
+          return await this.handleResponse<T>(retryResponse, version);
         }
       }
 
-      return this.handleResponse<T>(response, version);
+      return await this.handleResponse<T>(response, version);
     } catch (error) {
       console.error(`[API ${version}] Request failed:`, error);
 
       // If v2 fails and we're not explicitly using v2, try v1 as fallback
-      if (version === 'v2' && !config.version && this.version !== 'v1') {
+      if (version === 'v2' && config.version === undefined && this.version !== 'v1') {
         console.info('[API] v2 failed, falling back to v1...');
         return this.request<T>(endpoint, options, { ...config, version: 'v1' });
       }
@@ -132,38 +134,42 @@ export class ApiClient {
   private extractApiName(endpoint: string): string {
     // Extract API name from endpoint (e.g., /auth/login -> auth)
     const parts = endpoint.split('/').filter(Boolean);
-    return parts[0] || '';
+    return parts[0] ?? '';
   }
 
   private async handleResponse<T>(response: Response, version: 'v1' | 'v2'): Promise<T> {
     const contentType = response.headers.get('content-type');
 
     // Handle non-JSON responses (e.g., file downloads)
-    if (!contentType?.includes('application/json')) {
+    if (contentType?.includes('application/json') !== true) {
       if (!response.ok) {
         throw new ApiError(`Request failed with status ${response.status}`, 'NON_JSON_ERROR', response.status);
       }
       return response as unknown as T;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
 
     // Check for expired token error
     if (response.status === 401 || response.status === 403) {
       // Handle v2 API error structure: data.error.message or data.message
-      const errorMessage = String(data.error?.message ?? data.error ?? data.message ?? '');
+      const error = data.error as { message?: string; details?: string } | undefined;
+      const errorMessage =
+        typeof error?.message === 'string'
+          ? error.message
+          : typeof data.error === 'string'
+            ? data.error
+            : typeof data.message === 'string'
+              ? data.message
+              : '';
       const errorDetails =
-        typeof data.details === 'string'
-          ? data.details
-          : typeof data.error?.details === 'string'
-            ? data.error.details
-            : '';
+        typeof data.details === 'string' ? data.details : typeof error?.details === 'string' ? error.details : '';
 
       // Check if token is expired
       if (
         errorMessage.toLowerCase().includes('expired') ||
         errorMessage.toLowerCase().includes('invalid token') ||
-        errorDetails?.toLowerCase().includes('expired')
+        (errorDetails !== '' && errorDetails.toLowerCase().includes('expired'))
       ) {
         console.info('[API] Token expired, redirecting to login with session expired message');
         this.clearTokens();
@@ -176,7 +182,7 @@ export class ApiClient {
     if (version === 'v2') {
       // Check if response has the standard v2 format with success flag
       if ('success' in data && typeof data.success === 'boolean') {
-        const apiResponse = data as ApiResponse<T>;
+        const apiResponse = data as unknown as ApiResponse<T>;
 
         if (!apiResponse.success) {
           throw new ApiError(
@@ -192,11 +198,16 @@ export class ApiClient {
         // Some v2 endpoints (like /root/*) return data directly without wrapper
         // Check if response is ok based on status code
         if (!response.ok) {
+          const error = data.error as { message?: string; code?: string; details?: unknown } | undefined;
           throw new ApiError(
-            data.error?.message ?? data.message ?? `Request failed with status ${response.status}`,
-            data.error?.code ?? 'API_ERROR',
+            typeof error?.message === 'string'
+              ? error.message
+              : typeof data.message === 'string'
+                ? data.message
+                : `Request failed with status ${response.status}`,
+            typeof error?.code === 'string' ? error.code : 'API_ERROR',
             response.status,
-            data.error?.details,
+            error?.details,
           );
         }
 
@@ -206,7 +217,16 @@ export class ApiClient {
     } else {
       // v1 response handling
       if (!response.ok) {
-        throw new ApiError(data.message ?? data.error ?? 'Request failed', 'API_ERROR', response.status, data);
+        throw new ApiError(
+          typeof data.message === 'string'
+            ? data.message
+            : typeof data.error === 'string'
+              ? data.error
+              : 'Request failed',
+          'API_ERROR',
+          response.status,
+          data as unknown,
+        );
       }
 
       return data as T;
@@ -229,9 +249,12 @@ export class ApiClient {
         throw new Error('Token refresh failed');
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        success?: boolean;
+        data?: { accessToken: string; refreshToken: string };
+      };
 
-      if (data.success && data.data) {
+      if (data.success === true && data.data !== undefined) {
         this.setTokens(data.data.accessToken, data.data.refreshToken);
         return true;
       }
@@ -246,7 +269,7 @@ export class ApiClient {
     }
   }
 
-  clearTokens() {
+  clearTokens(): void {
     this.token = null;
     this.refreshToken = null;
     localStorage.removeItem('accessToken');
@@ -260,55 +283,55 @@ export class ApiClient {
     }
 
     if (error instanceof Error) {
-      return new ApiError(error.message ?? 'Network error', 'NETWORK_ERROR', 0);
+      return new ApiError(error.message, 'NETWORK_ERROR', 0);
     }
 
     return new ApiError('Unknown error occurred', 'UNKNOWN_ERROR', 0);
   }
 
   // Convenience methods
-  get<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
+  async get<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET' }, config);
   }
 
-  post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
         method: 'POST',
-        body: data ? JSON.stringify(data) : undefined,
+        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
       },
       config,
     );
   }
 
-  put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
         method: 'PUT',
-        body: data ? JSON.stringify(data) : undefined,
+        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
       },
       config,
     );
   }
 
-  patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+  async patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
         method: 'PATCH',
-        body: data ? JSON.stringify(data) : undefined,
+        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
       },
       config,
     );
   }
 
-  delete<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
+  async delete<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' }, config);
   }
 
-  upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
+  async upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
     return this.request<T>(
       endpoint,
       {
@@ -338,11 +361,17 @@ export class ApiError extends Error {
 declare global {
   interface Window {
     FEATURE_FLAGS?: Record<string, boolean | undefined>;
+    ApiClient: typeof ApiClient;
   }
 }
 
 // Export singleton instance
 export const apiClient = ApiClient.getInstance();
+
+// Make ApiClient available globally for inline scripts
+if (typeof window !== 'undefined') {
+  window.ApiClient = ApiClient;
+}
 
 // Global error handler for unhandled API errors
 window.addEventListener('unhandledrejection', (event) => {

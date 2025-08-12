@@ -3,7 +3,7 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { query as executeQuery } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
 
-import { LogsResponse, LogsListResponse, LogsFilterParams, LogsStatsResponse } from "./types.js";
+import type { LogsResponse, LogsListResponse, LogsFilterParams, LogsStatsResponse } from "./types.js";
 
 interface DbLogRow extends RowDataPacket {
   id: number;
@@ -71,27 +71,27 @@ export class LogsService {
       params.push(tenantId);
     }
 
-    if (action) {
+    if (action !== null && action !== undefined && action !== "") {
       conditions.push('rl.action = ?');
       params.push(action);
     }
 
-    if (entityType) {
+    if (entityType !== null && entityType !== undefined && entityType !== "") {
       conditions.push('rl.entity_type = ?');
       params.push(entityType);
     }
 
-    if (startDate) {
+    if (startDate !== null && startDate !== undefined && startDate !== "") {
       conditions.push('rl.created_at >= ?');
       params.push(startDate);
     }
 
-    if (endDate) {
+    if (endDate !== null && endDate !== undefined && endDate !== "") {
       conditions.push('rl.created_at <= ?');
       params.push(endDate);
     }
 
-    if (search) {
+    if (search !== null && search !== undefined && search !== "") {
       conditions.push('(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)');
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern);
@@ -146,7 +146,7 @@ export class LogsService {
           hasMore: offset + limit < total  // Add hasMore flag
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Logs v2 Service] Error fetching logs - Detailed error:', error);
       logger.error('[Logs v2 Service] Error stack:', (error as Error).stack);
       logger.error('[Logs v2 Service] Query params were:', { whereClause, params, limit, offset });
@@ -207,7 +207,7 @@ export class LogsService {
           count: row.count ?? 0
         }))
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Logs v2] Error fetching stats:', error);
       throw error;
     }
@@ -270,7 +270,7 @@ export class LogsService {
         params
       );
       return result.affectedRows;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Logs v2] Error deleting logs:', error);
       throw error;
     }

@@ -134,10 +134,7 @@ class KvpService {
    * Holt alle Kvp Einträge für einen Tenant
    * NOTE: This generic method doesn't match the actual KVP model functionality
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: KvpFilters = {},
-  ): Promise<KvpEntry[]> {
+  getAll(_tenantDb: Pool, _filters: KvpFilters = {}): KvpEntry[] {
     try {
       // The actual KVP model doesn't have a generic getAll method
       // This should probably call getSuggestions instead
@@ -145,7 +142,7 @@ class KvpService {
         "KvpService.getAll: This method should use getSuggestions from the KVP model",
       );
       throw new Error("Method needs refactoring - use getSuggestions instead");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.getAll:", error);
       throw error;
     }
@@ -155,7 +152,7 @@ class KvpService {
    * Holt einen Kvp Eintrag per ID
    * NOTE: This should use getSuggestionById
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<KvpEntry | null> {
+  getById(_tenantDb: Pool, _id: number): KvpEntry | null {
     try {
       console.warn(
         "KvpService.getById: This method should use getSuggestionById from the KVP model",
@@ -163,7 +160,7 @@ class KvpService {
       throw new Error(
         "Method needs refactoring - use getSuggestionById instead",
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.getById:", error);
       throw error;
     }
@@ -173,7 +170,7 @@ class KvpService {
    * Erstellt einen neuen Kvp Eintrag
    * NOTE: This should use createSuggestion
    */
-  async create(_tenantDb: Pool, _data: KvpCreateData): Promise<KvpEntry> {
+  create(_tenantDb: Pool, _data: KvpCreateData): KvpEntry {
     try {
       console.warn(
         "KvpService.create: This method should use createSuggestion from the KVP model",
@@ -181,7 +178,7 @@ class KvpService {
       throw new Error(
         "Method needs refactoring - use createSuggestion instead",
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.create:", error);
       throw error;
     }
@@ -191,11 +188,7 @@ class KvpService {
    * Aktualisiert einen Kvp Eintrag
    * NOTE: This should use updateSuggestionStatus or other specific update methods
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: KvpUpdateData,
-  ): Promise<KvpEntry | null> {
+  update(_tenantDb: Pool, _id: number, _data: KvpUpdateData): KvpEntry | null {
     try {
       console.warn(
         "KvpService.update: This method should use updateSuggestionStatus from the KVP model",
@@ -203,7 +196,7 @@ class KvpService {
       throw new Error(
         "Method needs refactoring - use updateSuggestionStatus instead",
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.update:", error);
       throw error;
     }
@@ -213,7 +206,7 @@ class KvpService {
    * Löscht einen Kvp Eintrag
    * NOTE: This should use deleteSuggestion
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
       console.warn(
         "KvpService.delete: This method should use deleteSuggestion from the KVP model",
@@ -221,7 +214,7 @@ class KvpService {
       throw new Error(
         "Method needs refactoring - use deleteSuggestion instead",
       );
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.delete:", error);
       throw error;
     }
@@ -239,7 +232,7 @@ class KvpService {
       const categories = await KVPModel.getCategories();
       // Add tenant_id to match the Category interface expectation
       return categories.map((cat) => ({ ...cat, tenant_id: tenantId }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.getCategories:", error);
       throw error;
     }
@@ -256,7 +249,7 @@ class KvpService {
   ): Promise<Suggestion[]> {
     try {
       return await KVPModel.getSuggestions(tenantId, userId, userRole, filters);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.getSuggestions:", error);
       throw error;
     }
@@ -279,7 +272,7 @@ class KvpService {
         throw new Error("Failed to retrieve created suggestion");
       }
       return suggestion as Suggestion;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.createSuggestion:", error);
       throw error;
     }
@@ -294,11 +287,11 @@ class KvpService {
     totalSavings: number;
     suggestionsByCategory: Record<string, number>;
     suggestionsByStatus: Record<string, number>;
-    topContributors: Array<{
+    topContributors: {
       userId: number;
       userName: string;
       points: number;
-    }>;
+    }[];
   }> {
     try {
       const stats = await KVPModel.getDashboardStats(tenantId);
@@ -317,7 +310,7 @@ class KvpService {
         },
         topContributors: [], // TODO: Implement top contributors
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in KvpService.getDashboardStats:", error);
       throw error;
     }

@@ -1,4 +1,4 @@
-import { Department, DbDepartment } from "../../../models/department.js";
+import Department, { DbDepartment } from "../../../models/department.js";
 import { logger } from "../../../utils/logger.js";
 
 // API v2 Types
@@ -8,6 +8,7 @@ export interface DepartmentV2 {
   description?: string;
   managerId?: number;
   parentId?: number;
+  areaId?: number; // Add areaId field (camelCase)
   status?: string;
   visibility?: string;
   tenantId: number;
@@ -24,6 +25,7 @@ export interface CreateDepartmentData {
   description?: string;
   managerId?: number;
   parentId?: number;
+  areaId?: number; // camelCase for v2 API
   status?: string;
   visibility?: string;
 }
@@ -33,6 +35,7 @@ export interface UpdateDepartmentData {
   description?: string;
   managerId?: number;
   parentId?: number;
+  areaId?: number; // camelCase for v2 API
   status?: string;
   visibility?: string;
 }
@@ -78,6 +81,7 @@ export class DepartmentService {
         description: dept.description,
         managerId: dept.manager_id,
         parentId: dept.parent_id,
+        areaId: dept.area_id, // Add areaId to response
         status: dept.status,
         visibility: dept.visibility,
         tenantId: dept.tenant_id,
@@ -90,7 +94,7 @@ export class DepartmentService {
           teamCount: dept.team_count ?? 0,
         }),
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting departments:", error);
       throw new ServiceError(500, "Failed to retrieve departments", error);
     }
@@ -115,6 +119,7 @@ export class DepartmentService {
         description: department.description,
         managerId: department.manager_id,
         parentId: department.parent_id,
+        areaId: department.area_id, // Add areaId to response
         status: department.status,
         visibility: department.visibility,
         tenantId: department.tenant_id,
@@ -125,7 +130,7 @@ export class DepartmentService {
         employeeCount: department.employee_count ?? 0,
         teamCount: department.team_count ?? 0,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error getting department:", error);
       throw new ServiceError(500, "Failed to retrieve department", error);
@@ -158,17 +163,18 @@ export class DepartmentService {
         description: data.description,
         manager_id: data.managerId,
         parent_id: data.parentId,
+        area_id: data.areaId, // Add area_id field (snake_case for DB) - undefined is OK
         status: data.status ?? "active",
         visibility: data.visibility ?? "public",
         tenant_id: tenantId,
       });
 
       return this.getDepartmentById(departmentId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
 
       // Check for duplicate key error
-      const errorMessage = (error as Error).message || "";
+      const errorMessage = (error as Error).message ?? "";
       if (
         errorMessage.includes("Duplicate entry") ||
         errorMessage.includes("unique_name_tenant")
@@ -224,6 +230,7 @@ export class DepartmentService {
         description: string;
         manager_id: number;
         parent_id: number;
+        area_id: number;
         status: string;
         visibility: string;
       }> = {};
@@ -232,6 +239,7 @@ export class DepartmentService {
         updateData.description = data.description;
       if (data.managerId !== undefined) updateData.manager_id = data.managerId;
       if (data.parentId !== undefined) updateData.parent_id = data.parentId;
+      if (data.areaId !== undefined) updateData.area_id = data.areaId; // Add area_id mapping
       if (data.status !== undefined) updateData.status = data.status;
       if (data.visibility !== undefined)
         updateData.visibility = data.visibility;
@@ -243,7 +251,7 @@ export class DepartmentService {
       }
 
       return this.getDepartmentById(id, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating department:", error);
       throw new ServiceError(500, "Failed to update department", error);
@@ -276,7 +284,7 @@ export class DepartmentService {
       if (!success) {
         throw new ServiceError(500, "Failed to delete department");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error deleting department:", error);
       throw new ServiceError(500, "Failed to delete department", error);
@@ -322,7 +330,7 @@ export class DepartmentService {
           isActive: user.status === "active",
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error getting department members:", error);
       throw new ServiceError(
@@ -348,7 +356,7 @@ export class DepartmentService {
         totalDepartments: departmentCount,
         totalTeams: teamCount,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting department stats:", error);
       throw new ServiceError(
         500,

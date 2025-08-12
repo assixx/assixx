@@ -18,21 +18,21 @@ interface SecurityEvent {
   userAgent?: string;
 }
 
-export class SessionSecurity {
+export const SessionSecurity = {
   /**
    * Best Practice Security Checks (wie Google, Facebook, etc.)
    * - Erkennt verdächtige Muster
    * - Blockiert nur bei echten Bedrohungen
    * - Stört normale User nicht
    */
-  static async checkSession(
+  checkSession(
     _req: Request,
     _userId: number,
-  ): Promise<{
+  ): {
     isValid: boolean;
     shouldWarn: boolean;
     reason?: string;
-  }> {
+  } {
     // Immer erlauben für normale Nutzung
     // Nur bei extremen Fällen blockieren:
 
@@ -52,12 +52,12 @@ export class SessionSecurity {
       isValid: true,
       shouldWarn: false,
     };
-  }
+  },
 
   /**
    * Log Security Events für spätere Analyse
    */
-  static async logSecurityEvent(event: SecurityEvent): Promise<void> {
+  logSecurityEvent(event: SecurityEvent): void {
     // In Produktion: In Datenbank speichern
     // Für jetzt: Nur console.info
 
@@ -70,13 +70,13 @@ export class SessionSecurity {
         time: event.timestamp,
       });
     }
-  }
+  },
 
   /**
    * Smart Session Validation
    * Wie große Plattformen es machen
    */
-  static getSecurityLevel(changes: {
+  getSecurityLevel(changes: {
     fingerprintChanged: boolean;
     ipChanged: boolean;
     countryChanged: boolean;
@@ -96,8 +96,8 @@ export class SessionSecurity {
     // Nur in extremen Fällen!
 
     return "allow";
-  }
-}
+  },
+} as const;
 
 /**
  * Best Practices Summary:

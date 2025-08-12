@@ -34,7 +34,7 @@ interface PaginationResponse {
  * @param length - Length of the string
  * @returns Random string
  */
-export function generateRandomString(length: number = 32): string {
+export function generateRandomString(length = 32): string {
   return crypto.randomBytes(length).toString("hex");
 }
 
@@ -112,7 +112,7 @@ export function generateSlug(text: string): string {
  * @returns Formatted date string
  */
 export function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return "";
+  if (date == null) return "";
 
   const d = new Date(date);
   return d.toLocaleDateString("de-DE", {
@@ -128,7 +128,7 @@ export function formatDate(date: Date | string | null | undefined): string {
  * @returns Formatted datetime string
  */
 export function formatDateTime(date: Date | string | null | undefined): string {
-  if (!date) return "";
+  if (date == null) return "";
 
   const d = new Date(date);
   return d.toLocaleDateString("de-DE", {
@@ -157,7 +157,7 @@ export function calculatePercentage(value: number, total: number): number {
  * @returns Cloned object
  */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+  return JSON.parse(JSON.stringify(obj)) as T;
 }
 
 /**
@@ -175,10 +175,10 @@ export function isEmpty(obj: object): boolean {
  * @param key - Key to group by
  * @returns Grouped object
  */
-export function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
-  return array.reduce((result: { [key: string]: T[] }, item: T) => {
+export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
+  return array.reduce((result: Record<string, T[]>, item: T) => {
     const group = String(item[key]);
-    if (!result[group]) result[group] = [];
+    result[group] ??= [];
     result[group].push(item);
     return result;
   }, {});

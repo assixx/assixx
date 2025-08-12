@@ -251,7 +251,7 @@ describe("Blackboard Integration Tests", () => {
 
       // Try to update as employee
       await request(app)
-        .put(`/api/blackboard/${entryId}`)
+        .put(`/api/blackboard/${String(entryId)}`)
         .set("Authorization", `Bearer ${employeeToken}`)
         .send({
           title: "Hacked!",

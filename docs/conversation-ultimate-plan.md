@@ -1,4 +1,5 @@
 # 🎯 ULTIMATE Chat Database Consolidation Plan 2025
+
 ## Der finale, konsolidierte Masterplan
 
 ---
@@ -12,9 +13,10 @@
 **RISIKO:** Ohne tenant_id könnte ein User theoretisch zu Conversations anderer Firmen/Tenants hinzugefügt werden!
 
 **SOFORT-FIX ERFORDERLICH:**
+
 ```sql
 -- KRITISCH: Führe das SOFORT aus!
-ALTER TABLE conversation_participants 
+ALTER TABLE conversation_participants
 ADD COLUMN tenant_id INT NOT NULL AFTER id;
 
 -- Setze tenant_id basierend auf conversation
@@ -23,8 +25,8 @@ JOIN conversations c ON cp.conversation_id = c.id
 SET cp.tenant_id = c.tenant_id;
 
 -- Füge Foreign Key und Index hinzu
-ALTER TABLE conversation_participants 
-ADD CONSTRAINT fk_cp_tenant 
+ALTER TABLE conversation_participants
+ADD CONSTRAINT fk_cp_tenant
 FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
 ADD INDEX idx_tenant (tenant_id);
 
@@ -38,17 +40,20 @@ DESCRIBE conversation_participants;
 ## 📊 AKTUELLE SITUATION (Code-Analyse)
 
 ### Tatsächlich genutzte Tabellen (NUR 3!)
+
 Nach systematischer Analyse von `chat.service.ts`, `chat.controller.ts` und `chat.ts`:
 
-| Tabelle | Status | Verwendung im Code | tenant_id |
-|---------|--------|-------------------|-----------|
-| `conversations` | ✅ AKTIV | Lines 317, 334, 452, 807, 1010 | ✅ HAT |
-| `conversation_participants` | ✅ AKTIV | Lines 362, 456, 571, 861, 921 | ❌ FEHLT! |
-| `messages` | ✅ AKTIV | Lines 610, 645, 728, 877 | ✅ HAT |
+| Tabelle                     | Status   | Verwendung im Code             | tenant_id |
+| --------------------------- | -------- | ------------------------------ | --------- |
+| `conversations`             | ✅ AKTIV | Lines 317, 334, 452, 807, 1010 | ✅ HAT    |
+| `conversation_participants` | ✅ AKTIV | Lines 362, 456, 571, 861, 921  | ❌ FEHLT! |
+| `messages`                  | ✅ AKTIV | Lines 610, 645, 728, 877       | ✅ HAT    |
 
 ### Ungenutzte Tabellen (14 Stück!)
+
 Diese erscheinen **NIRGENDS** im Code:
-- `chat_messages` 
+
+- `chat_messages`
 - `chat_channels`
 - `message_groups`
 - `chat_channel_members`
@@ -74,15 +79,15 @@ Diese erscheinen **NIRGENDS** im Code:
 -- docker exec assixx-mysql mysqldump -u root -p main > backup_security_fix_$(date +%Y%m%d_%H%M%S).sql
 
 -- 2. Fix Multi-Tenant Isolation
-ALTER TABLE conversation_participants 
+ALTER TABLE conversation_participants
 ADD COLUMN tenant_id INT NOT NULL AFTER id;
 
 UPDATE conversation_participants cp
 JOIN conversations c ON cp.conversation_id = c.id
 SET cp.tenant_id = c.tenant_id;
 
-ALTER TABLE conversation_participants 
-ADD CONSTRAINT fk_cp_tenant 
+ALTER TABLE conversation_participants
+ADD CONSTRAINT fk_cp_tenant
 FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
 ADD INDEX idx_tenant (tenant_id);
 ```
@@ -101,7 +106,7 @@ SHOW TABLES LIKE '%message%';
 
 -- Lösche UNGENUTZTE Tabellen EINZELN!
 DROP TABLE IF EXISTS chat_messages;            -- Confirm: Query OK
-DROP TABLE IF EXISTS chat_channels;            -- Confirm: Query OK  
+DROP TABLE IF EXISTS chat_channels;            -- Confirm: Query OK
 DROP TABLE IF EXISTS message_groups;           -- Confirm: Query OK
 DROP TABLE IF EXISTS chat_channel_members;     -- Confirm: Query OK
 DROP TABLE IF EXISTS message_group_members;    -- Confirm: Query OK
@@ -128,13 +133,13 @@ SHOW TABLES LIKE '%conversation%';
 
 ```sql
 -- 1. Messages Tabelle optimieren
-ALTER TABLE messages 
+ALTER TABLE messages
 ADD INDEX idx_conversation_created (conversation_id, created_at DESC),
 ADD INDEX idx_tenant (tenant_id),
 ADD FULLTEXT idx_content (content);
 
 -- 2. Conversations Tabelle erweitern
-ALTER TABLE conversations 
+ALTER TABLE conversations
 ADD COLUMN last_message_id INT,
 ADD COLUMN last_message_at TIMESTAMP,
 ADD INDEX idx_last_message (last_message_at DESC);
@@ -163,7 +168,7 @@ CREATE TABLE conversations (
   last_message_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
+
   INDEX idx_tenant (tenant_id),
   INDEX idx_last_message (last_message_at DESC),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
@@ -179,7 +184,7 @@ CREATE TABLE conversation_participants (
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   last_read_message_id INT,
   last_read_at TIMESTAMP,
-  
+
   UNIQUE KEY unique_member (conversation_id, user_id),
   INDEX idx_tenant (tenant_id),
   FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
@@ -201,7 +206,7 @@ CREATE TABLE messages (
   is_deleted BOOLEAN DEFAULT FALSE,
   deleted_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
+
   INDEX idx_conversation_created (conversation_id, created_at DESC),
   INDEX idx_tenant (tenant_id),
   FULLTEXT idx_content (content),
@@ -219,21 +224,19 @@ CREATE TABLE messages (
 
 ```typescript
 // ❌ FALSCH - Keine Tenant-Isolation!
-const messages = await query(
-  `SELECT * FROM messages WHERE conversation_id = ?`,
-  [conversationId]
-);
+const messages = await query(`SELECT * FROM messages WHERE conversation_id = ?`, [conversationId]);
 
 // ✅ RICHTIG - Mit Tenant-Isolation!
 const messages = await query(
   `SELECT * FROM messages 
    WHERE conversation_id = ? 
    AND tenant_id = ?`,
-  [conversationId, tenantId]
+  [conversationId, tenantId],
 );
 ```
 
 ### Code-Updates erforderlich in:
+
 - `/backend/src/routes/v2/chat/chat.service.ts`
 - `/backend/src/routes/v2/chat/chat.controller.ts`
 - Alle Queries die `conversation_participants` nutzen
@@ -253,13 +256,17 @@ const messages = await query(
 ## ⚡ SOFORT-AKTIONEN
 
 ### 1. Security Fix (KRITISCH!)
+
 ```bash
 docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main
 ```
+
 Dann SQL von oben ausführen für `conversation_participants.tenant_id`
 
 ### 2. Code Update
+
 In `chat.service.ts` alle Queries mit `conversation_participants` updaten:
+
 ```typescript
 // Alt:
 FROM conversation_participants WHERE user_id = ?
@@ -269,6 +276,7 @@ FROM conversation_participants WHERE user_id = ? AND tenant_id = ?
 ```
 
 ### 3. Tabellen löschen
+
 Manuell die 14 ungenutzten Tabellen löschen (siehe Phase 2)
 
 ---
@@ -293,6 +301,6 @@ Manuell die 14 ungenutzten Tabellen löschen (siehe Phase 2)
 
 ---
 
-*Erstellt: 2025-08-08*  
-*Status: BEREIT ZUR AUSFÜHRUNG*  
-*Priorität: KRITISCH (Security Fix)*
+_Erstellt: 2025-08-08_  
+_Status: BEREIT ZUR AUSFÜHRUNG_  
+_Priorität: KRITISCH (Security Fix)_

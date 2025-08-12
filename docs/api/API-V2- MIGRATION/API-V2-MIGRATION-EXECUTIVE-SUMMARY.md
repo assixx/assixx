@@ -274,5 +274,5 @@
 
 **Decision Required By:** Flexibel - Pilot kann jederzeit starten  
 **Prepared By:** API Migration Team  
-**Approved By:** ******\_\_\_****** (Signature)  
-**Date:** ******\_\_\_******
+**Approved By:** **\*\***\_\_\_**\*\*** (Signature)  
+**Date:** **\*\***\_\_\_**\*\***

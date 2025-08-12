@@ -89,36 +89,37 @@ export const commonValidations = {
     ),
 
   // Text fields
-  requiredText: (field: string) =>
+  requiredText: (field: string): ValidationChain =>
     body(field).notEmpty().trim().withMessage(`${field} is required`),
 
-  optionalText: (field: string) => body(field).optional().trim(),
+  optionalText: (field: string): ValidationChain =>
+    body(field).optional().trim(),
 
   // Boolean
-  boolean: (field: string) =>
+  boolean: (field: string): ValidationChain =>
     body(field)
       .optional()
       .isBoolean()
       .withMessage(`${field} must be a boolean`),
 
   // Date
-  date: (field: string) =>
+  date: (field: string): ValidationChain =>
     body(field)
       .optional()
       .isISO8601()
       .withMessage(`${field} must be a valid date`),
 
   // Array
-  array: (field: string) =>
+  array: (field: string): ValidationChain =>
     body(field).optional().isArray().withMessage(`${field} must be an array`),
 
   // Integer
-  integer: (field: string, min?: number, max?: number) => {
+  integer: (field: string, min?: number, max?: number): ValidationChain => {
     let validation = body(field).isInt();
     if (min !== undefined) validation = validation.isInt({ min });
     if (max !== undefined) validation = validation.isInt({ max });
     return validation.withMessage(
-      `${field} must be an integer${min ? ` >= ${min}` : ""}${max ? ` <= ${max}` : ""}`,
+      `${field} must be an integer${min != null ? ` >= ${min}` : ""}${max != null ? ` <= ${max}` : ""}`,
     );
   },
 };
@@ -268,7 +269,10 @@ export const validationSchemas = {
     body("confirmPassword")
       .notEmpty()
       .withMessage("Password confirmation is required")
-      .custom((value, { req }) => value === req.body.newPassword)
+      .custom(
+        (value, { req }) =>
+          value === (req.body as { newPassword?: string }).newPassword,
+      )
       .withMessage("Passwords do not match"),
     handleValidationErrors,
   ] as ValidationMiddleware,
@@ -343,7 +347,7 @@ export function createValidation(
 }
 
 // Helper to validate request against schema
-export function validate(schema: ValidationMiddleware) {
+export function validate(schema: ValidationMiddleware): ValidationMiddleware {
   return schema;
 }
 

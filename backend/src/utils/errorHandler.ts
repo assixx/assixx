@@ -14,7 +14,7 @@ export function getErrorMessage(error: unknown): string {
   if (typeof error === "string") {
     return error;
   }
-  if (error && typeof error === "object" && "message" in error) {
+  if (error != null && typeof error === "object" && "message" in error) {
     return String(error.message);
   }
   return "An unknown error occurred";
@@ -26,7 +26,7 @@ export function getErrorMessage(error: unknown): string {
  * @returns Stack trace or undefined
  */
 export function getErrorStack(error: unknown): string | undefined {
-  if (error instanceof Error && error.stack) {
+  if (error instanceof Error && error.stack != null && error.stack !== "") {
     return error.stack;
   }
   return undefined;

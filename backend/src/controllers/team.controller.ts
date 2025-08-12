@@ -81,24 +81,32 @@ class TeamController {
 
       const filters = {
         ...req.query,
-        department_id: req.query.department_id
-          ? parseInt(req.query.department_id, 10)
-          : undefined,
-        team_lead_id: req.query.team_lead_id
-          ? parseInt(req.query.team_lead_id, 10)
-          : undefined,
+        department_id:
+          req.query.department_id != null && req.query.department_id !== ""
+            ? parseInt(req.query.department_id, 10)
+            : undefined,
+        team_lead_id:
+          req.query.team_lead_id != null && req.query.team_lead_id !== ""
+            ? parseInt(req.query.team_lead_id, 10)
+            : undefined,
         is_active:
           req.query.is_active === "true"
             ? true
             : req.query.is_active === "false"
               ? false
               : undefined,
-        page: req.query.page ? parseInt(req.query.page, 10) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+        page:
+          req.query.page != null && req.query.page !== ""
+            ? parseInt(req.query.page, 10)
+            : undefined,
+        limit:
+          req.query.limit != null && req.query.limit !== ""
+            ? parseInt(req.query.limit, 10)
+            : undefined,
       };
       const result = await teamService.getAll(req.tenantDb, filters);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -130,7 +138,7 @@ class TeamController {
         return;
       }
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
@@ -152,7 +160,7 @@ class TeamController {
 
       const result = await teamService.create(req.tenantDb, req.body);
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
@@ -180,7 +188,7 @@ class TeamController {
 
       const result = await teamService.update(req.tenantDb, id, req.body);
       res.json(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
@@ -208,7 +216,7 @@ class TeamController {
 
       await teamService.delete(req.tenantDb, id);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in TeamController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",

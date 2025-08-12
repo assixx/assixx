@@ -67,7 +67,7 @@ const router: Router = express.Router();
 router.get(
   "/validate",
   ...security.user(),
-  typed.auth(async (req, res) => {
+  typed.auth((req, res) => {
     try {
       // Token is valid if we reach this point (authenticateToken middleware passed)
       res.json(
@@ -84,7 +84,7 @@ router.get(
           "Token is valid",
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Token validation error:", error);
       res
         .status(500)
@@ -115,7 +115,7 @@ router.get(
       const { password, ...userWithoutPassword } = user;
 
       res.json(successResponse(userWithoutPassword));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in get user profile:", error);
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -205,7 +205,7 @@ router.get(
 router.post(
   "/login",
   ...security.auth(validationSchemas.login),
-  authController.login,
+  async (req: Request, res: Response) => authController.login(req, res),
 );
 
 /**
@@ -282,7 +282,7 @@ router.post(
 router.post(
   "/register",
   ...security.auth(validationSchemas.signup),
-  authController.register,
+  async (req: Request, res: Response) => authController.register(req, res),
 );
 
 /**
@@ -311,7 +311,11 @@ router.post(
  *                   type: string
  *                   example: Logout successful
  */
-router.post("/logout", ...security.user(), typed.auth(authController.logout));
+router.post(
+  "/logout",
+  ...security.user(),
+  typed.auth(async (req, res) => authController.logout(req, res)),
+);
 
 /**
  * @route GET /api/auth/me
@@ -349,7 +353,7 @@ router.get(
               tenantName = tenantName.substring("__AUTOTEST__".length);
             }
           }
-        } catch (tenantError) {
+        } catch (tenantError: unknown) {
           logger.error("Error fetching tenant info:", tenantError);
           // Continue without tenant name
         }
@@ -368,7 +372,7 @@ router.get(
           department_id: user.department_id,
         }),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in /api/auth/me:", error);
       res.status(500).json(errorResponse("Failed to fetch user info", 500));
     }

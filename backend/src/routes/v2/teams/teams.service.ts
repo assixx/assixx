@@ -3,10 +3,13 @@
  * Handles all business logic for team management
  */
 
+import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
+
 import Department from "../../../models/department.js";
 import Team from "../../../models/team.js";
 import type { TeamCreateData, TeamUpdateData } from "../../../models/team.js";
 import User from "../../../models/user.js";
+import { execute } from "../../../utils/db.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -95,8 +98,8 @@ export class TeamsService {
       });
 
       return apiTeams;
-    } catch (error) {
-      logger.error(`Error listing teams: ${(error as Error).message}`);
+    } catch (error: unknown) {
+      logger.error(`Error listing teams: ${String((error as Error).message)}`);
       throw new ServiceError("SERVER_ERROR", "Failed to list teams", 500);
     }
   }
@@ -145,11 +148,13 @@ export class TeamsService {
       }));
 
       return apiTeam;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error getting team ${id}: ${(error as Error).message}`);
+      logger.error(
+        `Error getting team ${id}: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to get team", 500);
     }
   }
@@ -202,11 +207,11 @@ export class TeamsService {
 
       // Return the created team
       return this.getTeamById(teamId, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error creating team: ${(error as Error).message}`);
+      logger.error(`Error creating team: ${String((error as Error).message)}`);
       throw new ServiceError("SERVER_ERROR", "Failed to create team", 500);
     }
   }
@@ -284,11 +289,13 @@ export class TeamsService {
 
       // Return updated team
       return this.getTeamById(id, tenantId);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error updating team ${id}: ${(error as Error).message}`);
+      logger.error(
+        `Error updating team ${id}: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to update team", 500);
     }
   }
@@ -321,11 +328,13 @@ export class TeamsService {
       }
 
       return { message: "Team deleted successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error deleting team ${id}: ${(error as Error).message}`);
+      logger.error(
+        `Error deleting team ${id}: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to delete team", 500);
     }
   }
@@ -352,11 +361,13 @@ export class TeamsService {
         position: member.position,
         employeeId: member.employee_id,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error getting team members: ${(error as Error).message}`);
+      logger.error(
+        `Error getting team members: ${String((error as Error).message)}`,
+      );
       throw new ServiceError("SERVER_ERROR", "Failed to get team members", 500);
     }
   }
@@ -388,7 +399,7 @@ export class TeamsService {
       }
 
       return { message: "Team member added successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
@@ -430,14 +441,172 @@ export class TeamsService {
       }
 
       return { message: "Team member removed successfully" };
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error removing team member: ${(error as Error).message}`);
+      logger.error(
+        `Error removing team member: ${String((error as Error).message)}`,
+      );
       throw new ServiceError(
         "SERVER_ERROR",
         "Failed to remove team member",
+        500,
+      );
+    }
+  }
+
+  /**
+   * Get team machines
+   */
+  async getTeamMachines(teamId: number, tenantId: number) {
+    try {
+      // Check if team exists
+      const team = await this.getTeamById(teamId, tenantId);
+      if (!team) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Get machines assigned to this team
+      const [result] = await execute(
+        `SELECT 
+          m.id,
+          m.name,
+          m.serial_number,
+          m.status,
+          mt.is_primary,
+          mt.assigned_at,
+          mt.notes
+        FROM machine_teams mt
+        JOIN machines m ON mt.machine_id = m.id
+        WHERE mt.team_id = ? AND mt.tenant_id = ?`,
+        [teamId, tenantId],
+      );
+
+      return result;
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(
+        `Error getting team machines: ${String((error as Error).message)}`,
+      );
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to get team machines",
+        500,
+      );
+    }
+  }
+
+  /**
+   * Add machine to team
+   */
+  async addTeamMachine(
+    teamId: number,
+    machineId: number,
+    tenantId: number,
+    assignedBy: number,
+  ) {
+    try {
+      // Check if team exists
+      const team = await this.getTeamById(teamId, tenantId);
+      if (!team) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Check if machine exists
+      const [machineResult] = await execute(
+        "SELECT id FROM machines WHERE id = ? AND tenant_id = ?",
+        [machineId, tenantId],
+      );
+
+      if (!machineResult || (machineResult as RowDataPacket[]).length === 0) {
+        throw new ServiceError("NOT_FOUND", "Machine not found", 404);
+      }
+
+      // Check if machine is already assigned to this team
+      const [existingResult] = await execute(
+        "SELECT id FROM machine_teams WHERE machine_id = ? AND team_id = ? AND tenant_id = ?",
+        [machineId, teamId, tenantId],
+      );
+
+      if (existingResult && (existingResult as RowDataPacket[]).length > 0) {
+        throw new ServiceError(
+          "CONFLICT",
+          "Machine already assigned to this team",
+          409,
+        );
+      }
+
+      // Add machine to team
+      const [result] = await execute(
+        `INSERT INTO machine_teams (tenant_id, machine_id, team_id, assigned_by, is_primary) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [tenantId, machineId, teamId, assignedBy, false],
+      );
+
+      return {
+        id: (result as ResultSetHeader).insertId,
+        message: "Machine added to team successfully",
+      };
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(
+        `Error adding machine to team: ${String((error as Error).message)}`,
+      );
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to add machine to team",
+        500,
+      );
+    }
+  }
+
+  /**
+   * Remove machine from team
+   */
+  async removeTeamMachine(teamId: number, machineId: number, tenantId: number) {
+    try {
+      // Check if team exists
+      const team = await this.getTeamById(teamId, tenantId);
+      if (!team) {
+        throw new ServiceError("NOT_FOUND", "Team not found", 404);
+      }
+
+      // Check if machine is assigned to this team
+      const [existingResult] = await execute(
+        "SELECT id FROM machine_teams WHERE machine_id = ? AND team_id = ? AND tenant_id = ?",
+        [machineId, teamId, tenantId],
+      );
+
+      if (!existingResult || (existingResult as RowDataPacket[]).length === 0) {
+        throw new ServiceError(
+          "NOT_FOUND",
+          "Machine not assigned to this team",
+          404,
+        );
+      }
+
+      // Remove machine from team
+      const [_deleteResult] = await execute(
+        "DELETE FROM machine_teams WHERE machine_id = ? AND team_id = ? AND tenant_id = ?",
+        [machineId, teamId, tenantId],
+      );
+
+      return { message: "Machine removed from team successfully" };
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(
+        `Error removing machine from team: ${String((error as Error).message)}`,
+      );
+      throw new ServiceError(
+        "SERVER_ERROR",
+        "Failed to remove machine from team",
         500,
       );
     }

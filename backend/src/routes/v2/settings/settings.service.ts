@@ -6,7 +6,7 @@
 import { RowDataPacket } from "mysql2";
 
 import { executeQuery } from "../../../database.js";
-import { RootLog } from "../../../models/rootLog.js";
+import RootLog from "../../../models/rootLog";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -690,7 +690,7 @@ export async function bulkUpdateSettings(
           break;
       }
       results.push({ key: setting.setting_key, success: true });
-    } catch (error) {
+    } catch (error: unknown) {
       results.push({
         key: setting.setting_key,
         success: false,

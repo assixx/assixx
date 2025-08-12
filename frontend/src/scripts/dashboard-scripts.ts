@@ -40,7 +40,7 @@ function initModals(): void {
     button.addEventListener('click', (e) => {
       // Find closest modal-overlay
       const target = e.currentTarget as HTMLElement;
-      const modalOverlay = target.closest('.modal-overlay') as HTMLElement;
+      const modalOverlay = target.closest('.modal-overlay');
       if (modalOverlay) {
         closeModal(modalOverlay.id);
       }
@@ -61,7 +61,7 @@ function initModals(): void {
  * Öffnet ein Modal
  */
 function openModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.getElementById(modalId);
   if (modal) {
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -74,7 +74,7 @@ function openModal(modalId: string): void {
  * Schließt ein Modal
  */
 function closeModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.getElementById(modalId);
   if (modal) {
     modal.style.opacity = '0';
     modal.style.visibility = 'hidden';
@@ -117,7 +117,7 @@ function initTabs(): void {
  * Benutzerdaten und Logout-Funktionalität
  */
 async function setupUserAndLogout(): Promise<void> {
-  const userInfo = document.getElementById('user-info') as HTMLElement;
+  const userInfo = document.getElementById('user-info');
   const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
 
   if (userInfo) {

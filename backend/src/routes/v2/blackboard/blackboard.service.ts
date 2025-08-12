@@ -86,7 +86,7 @@ export class BlackboardService {
         entries: result.entries.map((entry) => this.transformEntry(entry)),
         pagination: result.pagination,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new ServiceError("SERVER_ERROR", "Failed to list entries", error);
     }
   }
@@ -333,7 +333,9 @@ export class BlackboardService {
     // Transform tags from objects to string array if present
     if (entry.tags && Array.isArray(entry.tags)) {
       transformed.tags = entry.tags.map((tag: unknown) =>
-        typeof tag === "string" ? tag : (tag as { name: string }).name,
+        typeof tag === "string"
+          ? tag !== null && tag !== undefined
+          : (tag as { name: string }).name,
       );
     }
 

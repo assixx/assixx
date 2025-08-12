@@ -105,10 +105,10 @@ export class TenantDeletionService {
             [tenantId],
           );
 
-          if (legalHolds && legalHolds.length > 0) {
+          if (legalHolds.length > 0) {
             const legalHold = legalHolds[0];
             throw new Error(
-              `Tenant has active legal hold: ${legalHold.reason ?? "No reason specified"}`,
+              `Tenant has active legal hold: ${String(legalHold.reason ?? "No reason specified")}`,
             );
           }
 
@@ -126,7 +126,7 @@ export class TenantDeletionService {
           );
 
           const sharedDocs = sharedDocsResult[0];
-          if (sharedDocs && sharedDocs.count > 0) {
+          if (sharedDocs.count > 0) {
             throw new Error(
               `Tenant has ${sharedDocs.count} documents shared with other tenants`,
             );
@@ -160,7 +160,7 @@ export class TenantDeletionService {
         description: "Erstelle finales Backup",
         critical: true,
         handler: async (tenantId: number) => {
-          const backupFile = `/backups/tenant_${tenantId}_final_${Date.now()}.sql.gz`;
+          const backupFile = `/backups/tenant_${tenantId}_final_${String(Date.now())}.sql.gz`;
 
           // Erstelle tenant-spezifisches Backup
           // Da wir innerhalb des Containers sind, können wir direkt auf MySQL zugreifen
@@ -187,11 +187,9 @@ export class TenantDeletionService {
         ) => {
           try {
             // Prüfe ob invoices Tabelle existiert
-            const tables = await conn.query<RowDataPacket[]>(
-              "SHOW TABLES LIKE 'invoices'",
-            );
+            const tables = await conn.query("SHOW TABLES LIKE 'invoices'");
 
-            if (!tables || tables.length === 0) {
+            if (tables.length === 0) {
               logger.info(
                 `Invoices table not found, skipping archival for tenant ${tenantId}`,
               );
@@ -227,7 +225,7 @@ export class TenantDeletionService {
             );
 
             return (result as unknown as ResultSetHeader).affectedRows ?? 0;
-          } catch (error) {
+          } catch (error: unknown) {
             logger.warn(
               `Failed to archive billing records for tenant ${tenantId}:`,
               error,
@@ -294,7 +292,7 @@ export class TenantDeletionService {
                   timeout: 5000,
                 },
               );
-            } catch (error) {
+            } catch (error: unknown) {
               logger.warn(
                 `Webhook notification failed: ${(webhook as unknown as WebhookRow).url}`,
                 error,
@@ -320,7 +318,7 @@ export class TenantDeletionService {
 
           try {
             const redis = await getRedisClient();
-            if (!redis) {
+            if (redis == null) {
               logger.info("Redis not available - skipping cleanup");
               return 0;
             }
@@ -356,7 +354,7 @@ export class TenantDeletionService {
               await redis.del(tenantKeys);
               deletedKeys += tenantKeys.length;
             }
-          } catch (error) {
+          } catch (error: unknown) {
             logger.warn("Error during Redis cleanup:", error);
           }
 
@@ -708,7 +706,7 @@ export class TenantDeletionService {
               try {
                 await fs.access(fullPath);
                 await fs.unlink(fullPath);
-              } catch (err) {
+              } catch (err: unknown) {
                 if (
                   err instanceof Error &&
                   "code" in err &&
@@ -717,7 +715,7 @@ export class TenantDeletionService {
                   throw err;
                 }
               }
-            } catch (error) {
+            } catch (error: unknown) {
               failedFiles.push({
                 document_id: (file as unknown as FileRow).id,
                 path: (file as unknown as FileRow).file_path,
@@ -1510,8 +1508,8 @@ export class TenantDeletionService {
           );
 
           if (
-            !queueResult?.[0] ||
-            !(queueResult as unknown as QueueRow[])[0].created_by
+            queueResult[0] == null ||
+            (queueResult as unknown as QueueRow[])[0].created_by == null
           ) {
             logger.warn(`No created_by found for queue ${queueId}`);
             // Lösche alle Users wenn kein created_by gefunden wurde
@@ -1582,14 +1580,14 @@ export class TenantDeletionService {
             "DELETE FROM scheduled_tasks WHERE tenant_id = ?",
             [tenantId],
           );
-          deleted += tasksResult.affectedRows || 0;
+          deleted += tasksResult.affectedRows ?? 0;
 
           // Recurring Jobs
           const jobsResult = await conn.execute(
             "DELETE FROM recurring_jobs WHERE tenant_id = ?",
             [tenantId],
           );
-          deleted += jobsResult.affectedRows || 0;
+          deleted += jobsResult.affectedRows ?? 0;
 
           return deleted;
         },
@@ -1630,8 +1628,8 @@ export class TenantDeletionService {
           );
 
           if (
-            !queueResult?.[0] ||
-            !(queueResult as unknown as QueueRow[])[0].created_by
+            queueResult[0] == null ||
+            (queueResult as unknown as QueueRow[])[0].created_by == null
           ) {
             logger.warn(`No created_by found for queue ${queueId}`);
             return 0;
@@ -1680,7 +1678,7 @@ export class TenantDeletionService {
         name: "release_subdomain",
         description: "Subdomain wieder verfügbar machen",
         critical: false,
-        handler: async (
+        handler: (
           tenantId: number,
           _queueId: number,
           _conn: ConnectionWrapper,
@@ -1709,7 +1707,7 @@ export class TenantDeletionService {
             try {
               await fs.rm(dir, { recursive: true, force: true });
               cleanedDirs++;
-            } catch (error) {
+            } catch (error: unknown) {
               logger.warn(`Failed to clean directory ${dir}:`, error);
             }
           }
@@ -1721,7 +1719,7 @@ export class TenantDeletionService {
         name: "external_storage_cleanup",
         description: "Bereinige S3/CDN",
         critical: false,
-        handler: async (_tenantId: number) => {
+        handler: (_tenantId: number) => {
           if (process.env.USE_S3 === "true") {
             logger.warn("S3 cleanup disabled - AWS SDK not installed");
             // AWS SDK not currently installed
@@ -1751,7 +1749,7 @@ export class TenantDeletionService {
             //
             //     return objects.Contents.length;
             //   }
-            // } catch (error) {
+            // } catch (error: unknown) {
             //   logger.error('S3 cleanup failed:', error);
             // }
           }
@@ -1783,7 +1781,7 @@ export class TenantDeletionService {
         [tenantId],
       );
 
-      if (!tenant) {
+      if (tenant == null) {
         throw new Error("Tenant not found");
       }
 
@@ -1811,19 +1809,23 @@ export class TenantDeletionService {
 
       // 4. Calculate scheduled deletion date (30 days grace period)
       // TESTPHASE: Grace Period kann über Umgebungsvariable gesetzt werden
-      const gracePeriodDays = process.env.DELETION_GRACE_PERIOD_DAYS
-        ? parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
-        : 30;
+      const gracePeriodDays =
+        process.env.DELETION_GRACE_PERIOD_DAYS != null &&
+        process.env.DELETION_GRACE_PERIOD_DAYS !== ""
+          ? parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
+          : 30;
       const scheduledDate = new Date();
       scheduledDate.setDate(scheduledDate.getDate() + gracePeriodDays);
 
       // 5. Create queue entry with pending approval status and 24h cooling-off
       // TESTPHASE: Cooling-off kann über Umgebungsvariable gesetzt werden
-      const coolingOffHours = process.env.DELETION_COOLING_OFF_HOURS
-        ? parseInt(process.env.DELETION_COOLING_OFF_HOURS)
-        : process.env.NODE_ENV === "development"
-          ? 0
-          : 24;
+      const coolingOffHours =
+        process.env.DELETION_COOLING_OFF_HOURS != null &&
+        process.env.DELETION_COOLING_OFF_HOURS !== ""
+          ? parseInt(process.env.DELETION_COOLING_OFF_HOURS)
+          : process.env.NODE_ENV === "development"
+            ? 0
+            : 24;
 
       const [result] = await connection.query<ResultSetHeader>(
         `INSERT INTO tenant_deletion_queue 
@@ -1841,9 +1843,11 @@ export class TenantDeletionService {
       );
 
       // 6. Send deletion warning emails (non-blocking)
-      this.sendDeletionWarningEmails(tenantId, scheduledDate).catch((err) => {
-        logger.error("Failed to send deletion warning emails:", err);
-      });
+      this.sendDeletionWarningEmails(tenantId, scheduledDate).catch(
+        (err: unknown) => {
+          logger.error("Failed to send deletion warning emails:", err);
+        },
+      );
 
       // 7. Notify other root admins for approval (non-blocking)
       this.notifyRootAdminsForApproval(
@@ -1851,7 +1855,7 @@ export class TenantDeletionService {
         requestedBy,
         tenant.company_name,
         result.insertId,
-      ).catch((err) => {
+      ).catch((err: unknown) => {
         logger.error("Failed to notify root admins:", err);
       });
 
@@ -1871,9 +1875,9 @@ export class TenantDeletionService {
     approverId: number,
     comment?: string,
   ): Promise<void> {
-    return await transaction(async (connection) => {
+    await transaction(async (connection) => {
       // Get queue item
-      interface QueueRow extends RowDataPacket {
+      interface QueueRowLocal extends RowDataPacket {
         id: number;
         tenant_id: number;
         created_by: number;
@@ -1882,12 +1886,12 @@ export class TenantDeletionService {
         cooling_off_hours?: number;
         scheduled_deletion_date?: Date;
       }
-      const [queueResults] = await connection.query<QueueRow[]>(
+      const [queueResults] = await connection.query<QueueRowLocal[]>(
         "SELECT * FROM tenant_deletion_queue WHERE id = ?",
         [queueId],
       );
 
-      if (!queueResults || queueResults.length === 0) {
+      if (queueResults.length === 0) {
         throw new Error("Deletion request not found");
       }
 
@@ -1963,7 +1967,9 @@ export class TenantDeletionService {
               : "Not scheduled",
           },
         })
-        .catch((err) => logger.error("Failed to send approval alert:", err));
+        .catch((err: unknown) =>
+          logger.error("Failed to send approval alert:", err),
+        );
     });
   }
 
@@ -1976,12 +1982,22 @@ export class TenantDeletionService {
     reason: string,
   ): Promise<void> {
     await transaction(async (connection) => {
-      const [queueResults] = await connection.query<QueueRow[]>(
+      interface QueueRowLocal extends RowDataPacket {
+        id: number;
+        tenant_id: number;
+        created_by: number;
+        approval_status: string;
+        approval_requested_at: Date;
+        cooling_off_hours?: number;
+        scheduled_deletion_date?: Date;
+      }
+
+      const [queueResults] = await connection.query<QueueRowLocal[]>(
         "SELECT * FROM tenant_deletion_queue WHERE id = ?",
         [queueId],
       );
 
-      if (!queueResults || queueResults.length === 0) {
+      if (queueResults.length === 0) {
         throw new Error("Deletion request not found");
       }
 
@@ -2039,7 +2055,9 @@ export class TenantDeletionService {
             Reason: reason,
           },
         })
-        .catch((err) => logger.error("Failed to send rejection alert:", err));
+        .catch((err: unknown) =>
+          logger.error("Failed to send rejection alert:", err),
+        );
     });
   }
 
@@ -2073,7 +2091,7 @@ export class TenantDeletionService {
         [queueId],
       );
 
-      if (queueItem) {
+      if (queueItem != null) {
         // Notify about emergency stop
         await this.notifyEmergencyStop(
           (queueItem as unknown as QueueRow).tenant_id,
@@ -2083,10 +2101,10 @@ export class TenantDeletionService {
 
         // Log the emergency stop
         logger.warn(
-          `EMERGENCY STOP activated for tenant ${(queueItem as unknown as QueueRow).tenant_id} deletion by user ${stoppedBy}`,
+          `EMERGENCY STOP activated for tenant ${String((queueItem as unknown as QueueRow).tenant_id)} deletion by user ${stoppedBy}`,
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error in emergency stop:", error);
       throw error;
     }
@@ -2108,12 +2126,12 @@ export class TenantDeletionService {
          LIMIT 1`,
       );
 
-      if (!queueItems || queueItems.length === 0) {
+      if (queueItems.length === 0) {
         return; // Nothing to process
       }
 
-      await this.processTenantDeletion(queueItems[0].id);
-    } catch (error) {
+      await this.processTenantDeletion(queueItems[0].id as number);
+    } catch (error: unknown) {
       logger.error("Error processing deletion queue:", error);
     }
   }
@@ -2122,7 +2140,7 @@ export class TenantDeletionService {
    * Process single tenant deletion
    */
   private async processTenantDeletion(queueId: number): Promise<void> {
-    let tenantId: number = 0;
+    let tenantId = 0;
 
     try {
       // Get tenant info first
@@ -2131,11 +2149,11 @@ export class TenantDeletionService {
         [queueId],
       );
 
-      if (!queueInfo || queueInfo.length === 0) {
+      if (queueInfo.length === 0) {
         throw new Error(`Queue item ${queueId} not found`);
       }
 
-      tenantId = queueInfo[0].tenant_id;
+      tenantId = queueInfo[0].tenant_id as number;
 
       await transaction(async (connection) => {
         // 1. Mark as processing
@@ -2213,7 +2231,7 @@ export class TenantDeletionService {
 
               return await step.handler(tenantId, queueId, connWrapper);
             });
-          } catch (stepError) {
+          } catch (stepError: unknown) {
             logger.error(
               `Step ${step.name} failed for tenant ${tenantId}:`,
               stepError,
@@ -2237,7 +2255,7 @@ export class TenantDeletionService {
           );
 
           completedSteps++;
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`Error in deletion step ${step.name}:`, error);
 
           // Log failure
@@ -2270,7 +2288,7 @@ export class TenantDeletionService {
       );
 
       logger.info(`Tenant ${tenantId} deletion completed successfully`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Tenant deletion failed:", error);
 
       // Mark as failed
@@ -2289,7 +2307,7 @@ export class TenantDeletionService {
         [queueId],
       );
 
-      if (queueItem) {
+      if (queueItem != null) {
         await execute("UPDATE tenants SET deletion_status = ? WHERE id = ?", [
           "active",
           (queueItem as unknown as QueueRow).tenant_id,
@@ -2358,7 +2376,7 @@ export class TenantDeletionService {
           Action: "Deletion process will be halted at next checkpoint",
         },
       })
-      .catch((err) =>
+      .catch((err: unknown) =>
         logger.error("Failed to send emergency stop alert:", err),
       );
   }
@@ -2404,7 +2422,10 @@ export class TenantDeletionService {
       [queueId],
     );
 
-    if (stoppedByUser?.emergency_stopped_by) {
+    if (
+      stoppedByUser?.emergency_stopped_by != null &&
+      stoppedByUser.emergency_stopped_by !== 0
+    ) {
       await this.notifyEmergencyStop(
         tenantId,
         queueId,
@@ -2444,7 +2465,7 @@ export class TenantDeletionService {
       [queueId, "failed"],
     );
 
-    if (!queueItem) {
+    if (queueItem == null) {
       throw new Error("Queue item not found or not in failed state");
     }
 
@@ -2463,7 +2484,7 @@ export class TenantDeletionService {
       [tenantId, "queued"],
     );
 
-    if (!queueItem) {
+    if (queueItem == null) {
       throw new Error("No cancellable deletion found for this tenant");
     }
 
@@ -2575,13 +2596,16 @@ export class TenantDeletionService {
         "SELECT * FROM tenants WHERE id = ?",
         [tenantId],
       );
-      const tenantInfo = tenantResults[0];
+      const tenantInfo = tenantResults[0] as RowDataPacket;
 
       const [userResults] = await connection.query(
         "SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?",
         [tenantId],
       );
-      const userCount = userResults[0]?.user_count ?? 0;
+      const firstUserResult = userResults[0] as
+        | { user_count: number }
+        | undefined;
+      const userCount = firstUserResult?.user_count ?? 0;
 
       await connection.query(
         `INSERT INTO deletion_audit_trail 
@@ -2589,16 +2613,16 @@ export class TenantDeletionService {
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
-          tenantInfo?.company_name ?? "Unknown",
+          (tenantInfo?.company_name as string) ?? "Unknown",
           userCount,
           requestedBy,
           ipAddress ?? "unknown",
           reason ?? "No reason provided",
           JSON.stringify({
-            subdomain: tenantInfo?.subdomain ?? null,
-            created_at: tenantInfo?.created_at ?? null,
-            plan: tenantInfo?.current_plan_id ?? null,
-            deletion_status: tenantInfo?.deletion_status ?? null,
+            subdomain: (tenantInfo?.subdomain as string) ?? null,
+            created_at: (tenantInfo?.created_at as Date) ?? null,
+            plan: (tenantInfo?.current_plan_id as number) ?? null,
+            deletion_status: (tenantInfo?.deletion_status as string) ?? null,
           }),
         ],
       );
@@ -2615,7 +2639,7 @@ export class TenantDeletionService {
           "SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?",
           [tenantId],
         );
-        const userCount = userResults[0]?.user_count ?? 0;
+        const userCount = (userResults[0]?.user_count as number) ?? 0;
 
         await conn.query(
           `INSERT INTO deletion_audit_trail 
@@ -2623,16 +2647,17 @@ export class TenantDeletionService {
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             tenantId,
-            tenantInfo?.company_name ?? "Unknown",
+            (tenantInfo?.company_name as string) ?? "Unknown",
             userCount,
             requestedBy,
             ipAddress ?? "unknown",
             reason ?? "No reason provided",
             JSON.stringify({
-              subdomain: tenantInfo?.subdomain ?? null,
-              created_at: tenantInfo?.created_at ?? null,
-              plan: tenantInfo?.current_plan_id ?? null,
-              deletion_status: tenantInfo?.deletion_status ?? null,
+              subdomain: (tenantInfo?.subdomain as string | undefined) ?? null,
+              created_at: (tenantInfo?.created_at as Date | undefined) ?? null,
+              plan: (tenantInfo?.current_plan_id as number | undefined) ?? null,
+              deletion_status:
+                (tenantInfo?.deletion_status as string | undefined) ?? null,
             }),
           ],
         );
@@ -2672,7 +2697,7 @@ export class TenantDeletionService {
     // Schedule reminder emails (non-blocking)
     try {
       await this.scheduleReminderEmails(tenantId, scheduledDate);
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error("Failed to schedule reminder emails:", err);
       // Don't fail the whole operation
     }
@@ -2811,7 +2836,7 @@ export class TenantDeletionService {
         <h2>${subject}</h2>
         <p>Ihre Anfrage zur Löschung des Tenants <strong>${tenant.company_name}</strong> wurde bearbeitet.</p>
         ${statusText}
-        ${reason ? `<p><strong>Grund:</strong> ${reason}</p>` : ""}
+        ${reason != null && reason !== "" ? `<p><strong>Grund:</strong> ${reason}</p>` : ""}
         ${
           status === "approved"
             ? `
@@ -2849,7 +2874,7 @@ export class TenantDeletionService {
           <h2>Tenant-Löschung eingeleitet</h2>
           <p>Der Tenant <strong>${tenantName}</strong> (ID: ${tenantId}) wurde zur Löschung markiert.</p>
           <p>Gelöscht von: ${deletedByUser.username}</p>
-          <p>Geplantes Löschdatum: ${(() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }); })()}</p>
+          <p>Geplantes Löschdatum: ${String((() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' )}); })()}</p>
           <p>Sie können die Löschung im Admin-Dashboard überwachen oder abbrechen.</p>
         `
       });
@@ -2891,7 +2916,9 @@ export class TenantDeletionService {
           "Action Required": "Check logs and retry or contact support",
         },
       })
-      .catch((err) => logger.error("Failed to send Slack alert:", err));
+      .catch((err: unknown) =>
+        logger.error("Failed to send Slack alert:", err),
+      );
 
     await alertingService
       .sendTeamsAlert({
@@ -2904,7 +2931,9 @@ export class TenantDeletionService {
           { name: "Time", value: new Date().toISOString() },
         ],
       })
-      .catch((err) => logger.error("Failed to send Teams alert:", err));
+      .catch((err: unknown) =>
+        logger.error("Failed to send Teams alert:", err),
+      );
   }
 
   /**
@@ -2978,7 +3007,7 @@ export class TenantDeletionService {
       [tenantId],
     );
 
-    if (legalHold) {
+    if (legalHold != null) {
       report.blockers.push(`Legal hold active: ${legalHold.reason}`);
     }
 
@@ -3015,7 +3044,7 @@ export class TenantDeletionService {
         report.affectedRecords[step.name] = count;
         report.totalRecords += count;
         report.estimatedDuration += count * 0.001; // 1ms per record estimate
-      } catch (error) {
+      } catch (error: unknown) {
         report.warnings.push(
           `Could not estimate ${step.name}: ${error instanceof Error ? error.message : String(error)}`,
         );

@@ -181,7 +181,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT * FROM calendar_events WHERE id = ?",
         [response.body.data.id],
       );
-      const events = asTestRows<any>(rows);
+      const events = asTestRows<unknown>(rows);
       expect(events[0]).toMatchObject({
         title: validEventData.title,
         description: validEventData.description,
@@ -210,7 +210,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT all_day FROM calendar_events WHERE id = ?",
         [response.body.data.id],
       );
-      const events = asTestRows<any>(rows);
+      const events = asTestRows<unknown>(rows);
       expect(events[0].all_day).toBe(1);
     });
 
@@ -303,7 +303,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT * FROM calendar_recurring_patterns WHERE event_id = ?",
         [response.body.data.id],
       );
-      const patterns = asTestRows<any>(rows);
+      const patterns = asTestRows<unknown>(rows);
       expect(patterns[0]).toMatchObject({
         frequency: "weekly",
         interval: 1,
@@ -329,7 +329,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT * FROM calendar_event_participants WHERE event_id = ?",
         [response.body.data.id],
       );
-      const participants = asTestRows<any>(rows);
+      const participants = asTestRows<unknown>(rows);
       expect(participants.length).toBe(2);
     });
 
@@ -348,7 +348,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT tenant_id FROM calendar_events WHERE id = ?",
         [response.body.data.id],
       );
-      const events = asTestRows<any>(rows);
+      const events = asTestRows<unknown>(rows);
       expect(events[0].tenant_id).toBe(tenant1Id);
     });
   });
@@ -379,7 +379,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result1 = asTestRows<any>(rows);
+      const result1 = asTestRows<unknown>(rows);
       companyEventId = (result1 as any).insertId;
 
       const [rowsDept1] = await testDb.execute(
@@ -396,7 +396,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result2 = asTestRows<any>(rowsDept1);
+      const result2 = asTestRows<unknown>(rowsDept1);
       dept1EventId = (result2 as any).insertId;
 
       const [rowsDept2] = await testDb.execute(
@@ -413,7 +413,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result3 = asTestRows<any>(rowsDept2);
+      const result3 = asTestRows<unknown>(rowsDept2);
       dept2EventId = (result3 as any).insertId;
 
       const [rowsTeam] = await testDb.execute(
@@ -430,7 +430,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result4 = asTestRows<any>(rowsTeam);
+      const result4 = asTestRows<unknown>(rowsTeam);
       team1EventId = (result4 as any).insertId;
     });
 
@@ -545,7 +545,7 @@ describe("Calendar API Endpoints", () => {
           1,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const recurringId = (result as any).insertId;
 
       await testDb.execute(
@@ -582,7 +582,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       eventId = (result as any).insertId;
     });
 
@@ -657,7 +657,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const deptEventId = (result as any).insertId;
 
       // Employee1 (dept1) should not see dept2 event
@@ -696,7 +696,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       eventId = (result as any).insertId;
     });
 
@@ -720,7 +720,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT title, description, location FROM calendar_events WHERE id = ?",
         [eventId],
       );
-      const events = asTestRows<any>(rows);
+      const events = asTestRows<unknown>(rows);
       expect(events[0]).toMatchObject(updateData);
     });
 
@@ -764,7 +764,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const empEventId = (result as any).insertId;
 
       const response = await request(app)
@@ -804,7 +804,7 @@ describe("Calendar API Endpoints", () => {
           1,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const recurringId = (result as any).insertId;
 
       await testDb.execute(
@@ -854,7 +854,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       eventId = (result as any).insertId;
     });
 
@@ -871,7 +871,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT * FROM calendar_events WHERE id = ?",
         [eventId],
       );
-      const events = asTestRows<any>(rows);
+      const events = asTestRows<unknown>(rows);
       expect(events.length).toBe(0);
     });
 
@@ -891,7 +891,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT * FROM calendar_event_participants WHERE event_id = ?",
         [eventId],
       );
-      const participants = asTestRows<any>(rows);
+      const participants = asTestRows<unknown>(rows);
       expect(participants.length).toBe(0);
     });
 
@@ -911,7 +911,7 @@ describe("Calendar API Endpoints", () => {
           1,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const recurringId = (result as any).insertId;
 
       await testDb.execute(
@@ -930,7 +930,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT * FROM calendar_recurring_patterns WHERE event_id = ?",
         [recurringId],
       );
-      const patterns = asTestRows<any>(rowsPatternCheck);
+      const patterns = asTestRows<unknown>(rowsPatternCheck);
       expect(patterns.length).toBe(0);
     });
 
@@ -957,7 +957,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       const empEventId = (result as any).insertId;
 
       const response = await request(app)
@@ -993,7 +993,7 @@ describe("Calendar API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result = asTestRows<any>(rows);
+      const result = asTestRows<unknown>(rows);
       eventId = (result as any).insertId;
 
       // Add employees as participants
@@ -1026,7 +1026,7 @@ describe("Calendar API Endpoints", () => {
         "SELECT status FROM calendar_event_participants WHERE event_id = ? AND user_id = ?",
         [eventId, employeeUser1.id],
       );
-      const participants = asTestRows<any>(rows);
+      const participants = asTestRows<unknown>(rows);
       expect(participants[0].status).toBe("accepted");
     });
 
@@ -1074,7 +1074,7 @@ describe("Calendar API Endpoints", () => {
 
       const response = await request(app)
         .get(
-          `/api/calendar/availability?users=${employeeUser1.id}&date=${busyTime.toISOString()}`,
+          `/api/calendar/availability?users=${employeeUser1.id}&date=${String(busyTime.toISOString())}`,
         )
         .set("Authorization", `Bearer ${adminToken1}`);
 

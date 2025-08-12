@@ -45,7 +45,7 @@ export class RootController {
     try {
       const admins = await rootService.getAdmins(req.user.tenant_id);
       res.json({ admins });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting admins:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -90,7 +90,7 @@ export class RootController {
       }
 
       res.json({ admin });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting admin:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -276,7 +276,7 @@ export class RootController {
    */
   async getAdminLogs(req: Request, res: Response): Promise<void> {
     try {
-      const days = parseInt(req.query.days as string) || 30;
+      const days = parseInt(req.query.days as string) ?? 30;
       const logs = await rootService.getAdminLogs(
         parseInt(req.params.id),
         req.user.tenant_id,
@@ -318,7 +318,7 @@ export class RootController {
     try {
       const tenants = await rootService.getTenants();
       res.json({ tenants });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting tenants:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -343,7 +343,7 @@ export class RootController {
     try {
       const users = await rootService.getRootUsers(req.user.tenant_id);
       res.json({ users });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting root users:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -388,7 +388,7 @@ export class RootController {
       }
 
       res.json({ user });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting root user:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -620,7 +620,7 @@ export class RootController {
     try {
       const stats = await rootService.getDashboardStats(req.user.tenant_id);
       res.json(stats);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting dashboard stats:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -754,7 +754,7 @@ export class RootController {
       }
 
       res.json(status);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting deletion status:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -785,7 +785,7 @@ export class RootController {
       );
 
       res.json({ message: "Deletion cancelled successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error cancelling deletion:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -810,7 +810,7 @@ export class RootController {
     try {
       const deletions = await rootService.getAllDeletionRequests();
       res.json({ deletions });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting deletion requests:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -835,7 +835,7 @@ export class RootController {
     try {
       const approvals = await rootService.getPendingApprovals(req.user.id);
       res.json({ approvals });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error getting pending approvals:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -882,7 +882,7 @@ export class RootController {
       );
 
       res.json({ message: "Deletion approved successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error approving deletion:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -938,7 +938,7 @@ export class RootController {
       await tenantDeletionService.rejectDeletion(queueId, req.user.id, reason);
 
       res.json({ message: "Deletion rejected successfully" });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error rejecting deletion:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -976,7 +976,7 @@ export class RootController {
       );
 
       res.json({ message: "Emergency stop activated" });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error triggering emergency stop:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
@@ -1003,7 +1003,7 @@ export class RootController {
         req.user.tenant_id,
       );
       res.json(report);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error("Error performing dry run:", error);
       res.status(500).json({
         error: "SERVER_ERROR",
