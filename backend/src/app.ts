@@ -550,7 +550,6 @@ app.post(
 // Role Switch Routes - BEFORE CSRF Protection
 // Swagger API Documentation - BEFORE CSRF Protection
 // TEMPORARY: Enable Swagger in all modes for API documentation
-// eslint-disable-next-line no-constant-condition, no-constant-binary-expression
 if (true || process.env.NODE_ENV === "development") {
   console.info("[DEBUG] Mounting Swagger UI at /api-docs");
 

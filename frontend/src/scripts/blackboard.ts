@@ -191,9 +191,9 @@ function initializeBlackboard() {
 
       // Get user data from localStorage instead of fetching again
       const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
+      if (storedUser !== null && storedUser.length > 0) {
         try {
-          const userData = JSON.parse(storedUser);
+          const userData = JSON.parse(storedUser) as UserData;
           currentUserId = userData.id;
           isAdmin = userData.role === 'admin' || userData.role === 'root';
 
@@ -233,8 +233,8 @@ function initializeBlackboard() {
               }
               void loadDepartmentsAndTeams();
             })
-            .catch((error) => {
-              console.error('[Blackboard] Error loading user data:', error);
+            .catch((err1: unknown) => {
+              console.error('[Blackboard] Error loading user data:', err1);
               showError('Fehler beim Laden der Benutzerdaten');
             });
         }
@@ -261,8 +261,8 @@ function initializeBlackboard() {
             }
             void loadDepartmentsAndTeams();
           })
-          .catch((error) => {
-            console.error('[Blackboard] Error loading user data:', error);
+          .catch((err2: unknown) => {
+            console.error('[Blackboard] Error loading user data:', err2);
             showError('Fehler beim Laden der Benutzerdaten');
           });
       }
@@ -274,7 +274,7 @@ function initializeBlackboard() {
         const urlParams = new URLSearchParams(window.location.search);
         const entryId = urlParams.get('entry');
 
-        if (entryId) {
+        if (entryId !== null && entryId.length > 0) {
           // If we have an entry ID, scroll to the specific one
           const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
           if (entryElement) {
@@ -306,7 +306,7 @@ function initializeBlackboard() {
       // Setup event listeners
       setupEventListeners();
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       console.error('Error checking login:', error);
       window.location.href = '/login';
     });
@@ -653,7 +653,7 @@ async function loadEntries(): Promise<void> {
 
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token.length === 0) {
       window.location.href = '/login';
       throw new Error('No token found');
     }
@@ -702,16 +702,14 @@ async function loadEntries(): Promise<void> {
       throw new Error('Failed to load entries');
     }
 
-    const responseData = await response.json();
+    const responseData = (await response.json()) as { data?: BlackboardResponse } & BlackboardResponse;
     const data: BlackboardResponse = responseData.data ?? responseData;
 
     // Update pagination
-    if (data.pagination) {
-      updatePagination(data.pagination);
-    }
+    updatePagination(data.pagination);
 
     // Display entries
-    displayEntries(data.entries || []);
+    displayEntries(data.entries);
 
     // Erfolgreiche Anfrage - deaktiviere weitere automatische API-Aufrufe
     entriesLoadingEnabled = false;
@@ -740,7 +738,7 @@ async function loadEntries(): Promise<void> {
  */
 async function checkLoggedIn(): Promise<void> {
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token.length === 0) {
     throw new Error('No authentication token found');
   }
 
@@ -775,7 +773,7 @@ async function checkLoggedIn(): Promise<void> {
  */
 async function fetchUserData(): Promise<UserData> {
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token.length === 0) {
     throw new Error('No authentication token found');
   }
 
@@ -797,7 +795,7 @@ async function fetchUserData(): Promise<UserData> {
       throw new Error('Failed to fetch user data');
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as { data?: UserData } & UserData;
     // API returns { success: true, data: {...} }, we need just the data
     return result.data ?? result;
   }
@@ -810,7 +808,7 @@ async function fetchUserData(): Promise<UserData> {
  */
 async function loadDepartmentsAndTeams(): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token.length === 0) return;
 
   try {
     const apiClient = ApiClient.getInstance();
@@ -832,7 +830,7 @@ async function loadDepartmentsAndTeams(): Promise<void> {
       });
 
       if (deptResponse.ok) {
-        departments = await deptResponse.json();
+        departments = (await deptResponse.json()) as Department[];
       }
     }
 
@@ -851,7 +849,7 @@ async function loadDepartmentsAndTeams(): Promise<void> {
       });
 
       if (teamResponse.ok) {
-        teams = await teamResponse.json();
+        teams = (await teamResponse.json()) as Team[];
       }
     }
   } catch (error) {
@@ -900,7 +898,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
 
   // Determine card type based on priority or content
   let cardClass = 'pinboard-sticky';
-  let cardColor = entry.color ?? 'yellow';
+  let cardColor = entry.color;
 
   // High priority items get info box style
   if (entry.priority_level === 'high' || entry.priority_level === 'critical') {
@@ -911,7 +909,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     cardClass = 'pinboard-note';
   }
 
-  const canEdit = isAdmin ?? entry.created_by === currentUserId;
+  const canEdit = isAdmin || entry.created_by === currentUserId;
   const priorityIcon = getPriorityIcon(entry.priority_level);
 
   // Check if this is a direct attachment
@@ -1003,7 +1001,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       ${contentHtml}
 
       ${
-        !isDirectAttachment && entry.attachment_count && entry.attachment_count > 0
+        !isDirectAttachment && entry.attachment_count !== undefined && entry.attachment_count > 0
           ? `
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
           <i class="fas fa-paperclip" style="color: #666;"></i>
@@ -1156,7 +1154,7 @@ function openEntryForm(entryId?: number): void {
     fileInput.value = '';
   }
 
-  if (entryId) {
+  if (entryId !== undefined && entryId !== 0) {
     // Load entry data for editing
     void loadEntryForEdit(entryId);
   } else {
@@ -1220,18 +1218,18 @@ async function saveEntry(): Promise<void> {
 
   const formData = new FormData(form);
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token.length === 0) return;
 
   // Get selected color
-  const selectedColor = document.querySelector('.color-option.active');
-  const color = (selectedColor as HTMLElement)?.dataset.color ?? '#f8f9fa';
+  const selectedColor = document.querySelector<HTMLElement>('.color-option.active');
+  const color = selectedColor?.dataset.color ?? '#f8f9fa';
 
   const entryData = {
     title: formData.get('title') as string,
     content: formData.get('content') as string,
     priority_level: formData.get('priority_level') as string,
     org_level: formData.get('org_level') as string,
-    org_id: formData.get('org_level') === 'all' ? null : parseInt(formData.get('org_id') as string),
+    org_id: formData.get('org_level') === 'all' ? null : parseInt(formData.get('org_id') as string, 10),
     color,
   };
 
@@ -1240,13 +1238,13 @@ async function saveEntry(): Promise<void> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
     const entryId = formData.get('entry_id') as string;
     const endpoint = useV2
-      ? entryId
+      ? entryId.length > 0
         ? `/blackboard/entries/${entryId}`
         : '/blackboard/entries'
-      : entryId
+      : entryId.length > 0
         ? `/blackboard/${entryId}`
         : '/blackboard';
-    const method = entryId ? 'PUT' : 'POST';
+    const method = entryId.length > 0 ? 'PUT' : 'POST';
 
     let response: { ok: boolean; json: () => Promise<unknown> };
     if (useV2) {
@@ -1264,7 +1262,7 @@ async function saveEntry(): Promise<void> {
         response = { ok: false, json: async () => Promise.resolve(error) };
       }
     } else {
-      const url = entryId ? `/api/blackboard/${entryId}` : '/api/blackboard';
+      const url = entryId.length > 0 ? `/api/blackboard/${entryId}` : '/api/blackboard';
       response = await fetch(url, {
         method,
         headers: {
@@ -1279,12 +1277,12 @@ async function saveEntry(): Promise<void> {
       const savedEntry = (await response.json()) as { id: number };
 
       // Upload attachments if any
-      if (selectedFiles.length > 0 && !entryId) {
+      if (selectedFiles.length > 0 && entryId.length === 0) {
         // Only upload attachments for new entries
         await uploadAttachments(savedEntry.id);
       }
 
-      showSuccess(entryId ? 'Eintrag erfolgreich aktualisiert!' : 'Eintrag erfolgreich erstellt!');
+      showSuccess(entryId.length > 0 ? 'Eintrag erfolgreich aktualisiert!' : 'Eintrag erfolgreich erstellt!');
       closeModal('entryFormModal');
 
       // Clear selected files
@@ -1308,7 +1306,7 @@ async function saveEntry(): Promise<void> {
  */
 async function loadEntryForEdit(entryId: number): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token.length === 0) return;
 
   try {
     const apiClient = ApiClient.getInstance();
@@ -1329,7 +1327,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
         showError('Fehler beim Laden des Eintrags');
         return;
       }
-      entry = await response.json();
+      entry = (await response.json()) as BlackboardEntry;
     }
 
     // Fill form with entry data
@@ -1344,7 +1342,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
 
     // Update org dropdown
     updateOrgIdDropdown(entry.org_level);
-    if (entry.org_id) {
+    if (entry.org_id !== undefined && entry.org_id !== 0) {
       (form.elements.namedItem('org_id') as HTMLSelectElement).value = entry.org_id.toString();
     }
 
@@ -1369,7 +1367,7 @@ async function uploadAttachments(entryId: number): Promise<void> {
   if (selectedFiles.length === 0) return;
 
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token.length === 0) return;
 
   const formData = new FormData();
   selectedFiles.forEach((file) => {
@@ -1421,7 +1419,9 @@ async function uploadAttachments(entryId: number): Promise<void> {
  */
 async function loadAttachments(entryId: number): Promise<BlackboardAttachment[]> {
   const token = getAuthToken();
-  if (!token) return [];
+  if (token === null || token === '') {
+    return [];
+  }
 
   try {
     const apiClient = ApiClient.getInstance();
@@ -1438,7 +1438,7 @@ async function loadAttachments(entryId: number): Promise<BlackboardAttachment[]>
       });
 
       if (response.ok) {
-        return await response.json();
+        return (await response.json()) as BlackboardAttachment[];
       }
     }
   } catch (error) {
@@ -1504,7 +1504,7 @@ function deleteEntry(entryId: number): void {
  */
 async function performDelete(entryId: number): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token.length === 0) return;
 
   try {
     const apiClient = ApiClient.getInstance();
@@ -1562,7 +1562,7 @@ function formatDate(dateString: string): string {
 async function viewEntry(entryId: number): Promise<void> {
   console.info(`[Blackboard] viewEntry called for entry ${entryId}`);
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token.length === 0) return;
 
   try {
     console.info(`[Blackboard] Fetching entry ${entryId}...`);
@@ -1591,7 +1591,7 @@ async function viewEntry(entryId: number): Promise<void> {
         showError('Fehler beim Laden des Eintrags');
         return;
       }
-      entry = await response.json();
+      entry = (await response.json()) as BlackboardEntry;
       console.info(`[Blackboard] Entry ${entryId} loaded (v1):`, entry);
     }
 
@@ -1604,7 +1604,7 @@ async function viewEntry(entryId: number): Promise<void> {
     const detailContent = document.getElementById('entryDetailContent');
     if (detailContent) {
       const priorityIcon = getPriorityIcon(entry.priority_level);
-      const canEdit = isAdmin ?? entry.created_by === currentUserId;
+      const canEdit = isAdmin || entry.created_by === currentUserId;
 
       detailContent.innerHTML = `
           <div class="entry-detail-header">
@@ -1713,7 +1713,7 @@ async function viewEntry(entryId: number): Promise<void> {
 
         attachmentItems.forEach((item, index) => {
           const htmlItem = item as HTMLElement;
-          const attachmentId = parseInt(htmlItem.getAttribute('data-attachment-id') ?? '0');
+          const attachmentId = parseInt(htmlItem.getAttribute('data-attachment-id') ?? '0', 10);
           const mimeType = htmlItem.getAttribute('data-mime-type') ?? '';
           const filename = htmlItem.getAttribute('data-filename') ?? '';
 
@@ -1839,7 +1839,7 @@ async function viewEntry(entryId: number): Promise<void> {
 async function previewAttachment(attachmentId: number, mimeType: string, fileName: string): Promise<void> {
   console.info(`[Blackboard] previewAttachment called:`, { attachmentId, mimeType, fileName });
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token.length === 0) {
     console.error('[Blackboard] No auth token for preview');
     return;
   }
@@ -2004,11 +2004,11 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
         if (openButton) {
           openButton.onclick = async () => {
             try {
-              const response = await fetch(attachmentUrl, {
+              const resp = await fetch(attachmentUrl, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              const blob = await response.blob();
-              const url = URL.createObjectURL(blob);
+              const fileBlob = await resp.blob();
+              const url = URL.createObjectURL(fileBlob);
               const a = document.createElement('a');
               a.href = url;
               a.target = '_blank';
@@ -2211,7 +2211,7 @@ function setupDirectAttachHandlers(): void {
     dropZone.style.borderColor = 'rgba(255,255,255,0.3)';
     dropZone.style.background = 'transparent';
 
-    if (event.dataTransfer?.files?.[0]) {
+    if (event.dataTransfer?.files[0]) {
       console.info('[DirectAttach] File dropped:', event.dataTransfer.files[0].name);
       handleDirectAttachFile(event.dataTransfer.files[0]);
     }
@@ -2281,7 +2281,7 @@ function handleDirectAttachFile(file: File): void {
 
   // Set title from filename if empty
   const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
-  if (titleInput && !titleInput.value) {
+  if (titleInput && titleInput.value.length === 0) {
     titleInput.value = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
   }
 
@@ -2361,7 +2361,7 @@ async function saveDirectAttachment(): Promise<void> {
 
   try {
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (token === null || token.length === 0) {
       showError('Keine Authentifizierung gefunden');
       return;
     }
@@ -2480,29 +2480,18 @@ function setupFullscreenControls(): void {
         // Add fullscreen mode class to body
         document.body.classList.add('fullscreen-mode');
 
-        // Request fullscreen
-        if (document.documentElement.requestFullscreen) {
+        // Request fullscreen - check for browser compatibility
+        const elem = document.documentElement as Document['documentElement'] & {
+          webkitRequestFullscreen?: () => Promise<void>;
+          msRequestFullscreen?: () => Promise<void>;
+        };
+
+        if ('requestFullscreen' in document.documentElement) {
           await document.documentElement.requestFullscreen();
-        } else if (
-          (document.documentElement as Document['documentElement'] & { webkitRequestFullscreen?: () => Promise<void> })
-            .webkitRequestFullscreen
-        ) {
-          const elem = document.documentElement as Document['documentElement'] & {
-            webkitRequestFullscreen?: () => Promise<void>;
-          };
-          if (elem.webkitRequestFullscreen) {
-            await elem.webkitRequestFullscreen();
-          }
-        } else if (
-          (document.documentElement as Document['documentElement'] & { msRequestFullscreen?: () => Promise<void> })
-            .msRequestFullscreen
-        ) {
-          const elem = document.documentElement as Document['documentElement'] & {
-            msRequestFullscreen?: () => Promise<void>;
-          };
-          if (elem.msRequestFullscreen) {
-            await elem.msRequestFullscreen();
-          }
+        } else if (elem.webkitRequestFullscreen !== undefined) {
+          await elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen !== undefined) {
+          await elem.msRequestFullscreen();
         }
 
         // Start auto-refresh (every 60 minutes)
@@ -2572,23 +2561,21 @@ function handleFullscreenChange(): void {
  * Exit fullscreen mode
  */
 function exitFullscreen(): void {
-  if (document.exitFullscreen) {
+  // Check for browser compatibility
+  const doc = document as Document & {
+    webkitExitFullscreen?: () => void;
+    mozCancelFullScreen?: () => void;
+    msExitFullscreen?: () => void;
+  };
+
+  if ('exitFullscreen' in document) {
     void document.exitFullscreen();
-  } else if ((document as Document & { webkitExitFullscreen?: () => void }).webkitExitFullscreen) {
-    const doc = document as Document & { webkitExitFullscreen?: () => void };
-    if (doc.webkitExitFullscreen) {
-      doc.webkitExitFullscreen();
-    }
-  } else if ((document as Document & { mozCancelFullScreen?: () => void }).mozCancelFullScreen) {
-    const doc = document as Document & { mozCancelFullScreen?: () => void };
-    if (doc.mozCancelFullScreen) {
-      doc.mozCancelFullScreen();
-    }
-  } else if ((document as Document & { msExitFullscreen?: () => void }).msExitFullscreen) {
-    const doc = document as Document & { msExitFullscreen?: () => void };
-    if (doc.msExitFullscreen) {
-      doc.msExitFullscreen();
-    }
+  } else if (doc.webkitExitFullscreen !== undefined) {
+    doc.webkitExitFullscreen();
+  } else if (doc.mozCancelFullScreen !== undefined) {
+    doc.mozCancelFullScreen();
+  } else if (doc.msExitFullscreen !== undefined) {
+    doc.msExitFullscreen();
   }
 
   document.body.classList.remove('fullscreen-mode');

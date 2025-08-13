@@ -124,12 +124,12 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS;
     console.info('[loadDepartmentsForEmployeeSelect] Feature flag USE_API_V2_DEPARTMENTS:', useV2);
     console.info('[loadDepartmentsForEmployeeSelect] window.FEATURE_FLAGS:', window.FEATURE_FLAGS);
-    const apiPath = useV2 ? '/api/v2/departments' : '/api/departments';
+    const apiPath = useV2 === true ? '/api/v2/departments' : '/api/departments';
     console.info('[loadDepartmentsForEmployeeSelect] Using API path:', apiPath);
 
     const response = await fetch(apiPath, {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Authorization: `Bearer ${authToken ?? ''}`,
       },
     });
 
@@ -137,9 +137,11 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       throw new Error('Failed to load departments for select');
     }
 
-    const responseData = await response.json();
+    const responseData = (await response.json()) as { data?: Department[] } | Department[];
     console.info('[loadDepartmentsForEmployeeSelect] Response data:', responseData);
-    const departments = useV2 ? responseData.data : responseData;
+    const departments = (
+      useV2 === true ? (responseData as { data?: Department[] }).data : responseData
+    ) as Department[];
     console.info('[loadDepartmentsForEmployeeSelect] Departments:', departments);
     const dropdownOptions = document.getElementById('employee-department-dropdown');
 
@@ -178,8 +180,8 @@ const showNewEmployeeModal = function (): void {
   const modal = document.getElementById('employee-modal');
   if (modal) {
     // Formular zurücksetzen, falls es bereits benutzt wurde
-    const form = document.getElementById('create-employee-form') as HTMLFormElement;
-    if (form) {
+    const form = document.getElementById('create-employee-form') as HTMLFormElement | null;
+    if (form !== null) {
       form.reset();
 
       // Fehler-Anzeigen zurücksetzen
@@ -198,7 +200,7 @@ const showNewEmployeeModal = function (): void {
   } else {
     console.error('employee-modal element not found!');
 
-    alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
+    console.warn('Das Mitarbeiterformular konnte nicht geöffnet werden.');
   }
 };
 
@@ -213,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // }
 
   // Für Testzwecke ohne Token
-  token ??= 'test-mode';
+  token = token ?? 'test-mode';
 
   // User info in header is handled by unified-navigation.ts
   // loadHeaderUserInfo(); // Removed to avoid redundancy
@@ -231,7 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event-Listener für Formulare
   if (createEmployeeForm) {
-    createEmployeeForm.addEventListener('submit', (e) => void createEmployee(e));
+    createEmployeeForm.addEventListener('submit', (e) => {
+      void createEmployee(e);
+    });
 
     // Live-Validierung für E-Mail und Passwort hinzufügen
     const emailInput = document.getElementById('email') as HTMLInputElement | null;
@@ -245,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // E-Mail-Validierung
     if (emailInput && emailConfirmInput && emailError) {
       const checkEmails = function () {
-        if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
+        if (emailConfirmInput.value.length > 0 && emailInput.value !== emailConfirmInput.value) {
           emailError.style.display = 'block';
         } else {
           emailError.style.display = 'none';
@@ -259,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Passwort-Validierung
     if (passwordInput && passwordConfirmInput && passwordError) {
       const checkPasswords = function () {
-        if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
+        if (passwordConfirmInput.value.length > 0 && passwordInput.value !== passwordConfirmInput.value) {
           passwordError.style.display = 'block';
         } else {
           passwordError.style.display = 'none';
@@ -273,8 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // TODO: uploadDocument function needs to be implemented
   // if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
-  if (departmentForm) departmentForm.addEventListener('submit', (e) => void createDepartment(e));
-  if (teamForm) teamForm.addEventListener('submit', (e) => void createTeam(e));
+  if (departmentForm)
+    departmentForm.addEventListener('submit', (e) => {
+      void createDepartment(e);
+    });
+  if (teamForm)
+    teamForm.addEventListener('submit', (e) => {
+      void createTeam(e);
+    });
   // Logout Button - DISABLED: Handled by unified-navigation.ts
   // if (logoutBtn) {
   //   logoutBtn.addEventListener('click', (e) => {
@@ -322,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle section parameter on page load
   const urlParams = new URLSearchParams(window.location.search);
   const section = urlParams.get('section');
-  if (section) {
+  if (section !== null && section.length > 0) {
     console.info('[Admin Dashboard] Section parameter found:', section);
     showSection(section);
   } else {
@@ -363,8 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadDashboardStats(): Promise<void> {
     try {
       // Get auth token
-      const token = getAuthToken();
-      if (!token) {
+      const authToken = getAuthToken();
+      if (authToken === null || authToken.length === 0) {
         console.error('No auth token found');
         return;
       }
@@ -376,20 +386,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const useV2Teams = window.FEATURE_FLAGS?.USE_API_V2_TEAMS;
 
       // If any v2 API is enabled, use individual loading instead
-      if (useV2Users || useV2Documents || useV2Departments || useV2Teams) {
+      if (useV2Users === true || useV2Documents === true || useV2Departments === true || useV2Teams === true) {
         console.info('[loadDashboardStats] Using v2 APIs - calling loadDashboardStatsIndividually()');
-        return loadDashboardStatsIndividually();
+        await loadDashboardStatsIndividually();
+        return;
       }
 
       // Otherwise use v1 admin stats endpoint
       const statsRes = await fetch('/api/admin/dashboard-stats', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
 
       if (statsRes.ok) {
-        const responseData = await statsRes.json();
+        const responseData = (await statsRes.json()) as { data?: DashboardStats } | DashboardStats;
         // Handle v2 response format which wraps data
-        const stats: DashboardStats = responseData.data ?? responseData;
+        const stats =
+          'data' in responseData && responseData.data ? responseData.data : (responseData as DashboardStats);
 
         // Update UI mit den Statistiken vom Admin Dashboard Endpoint
         const employeeCount = document.getElementById('employee-count');
@@ -397,10 +409,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const deptCountElement = document.getElementById('department-count');
         const teamCount = document.getElementById('team-count');
 
-        if (employeeCount) employeeCount.textContent = (stats.employeeCount ?? 0).toString();
-        if (documentCount) documentCount.textContent = (stats.documentCount ?? 0).toString();
-        if (deptCountElement) deptCountElement.textContent = (stats.departmentCount ?? 0).toString();
-        if (teamCount) teamCount.textContent = (stats.teamCount ?? 0).toString();
+        if (employeeCount) employeeCount.textContent = stats.employeeCount.toString();
+        if (documentCount) documentCount.textContent = stats.documentCount.toString();
+        if (deptCountElement) deptCountElement.textContent = stats.departmentCount.toString();
+        if (teamCount) teamCount.textContent = stats.teamCount.toString();
       } else {
         console.error('Failed to load dashboard stats', statsRes.statusText);
 
@@ -425,8 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fallback-Funktion, die Statistiken einzeln lädt
   async function loadDashboardStatsIndividually(): Promise<void> {
     // Get auth token
-    const token = getAuthToken();
-    if (!token) {
+    const authToken = getAuthToken();
+    if (authToken === null || authToken.length === 0) {
       console.error('No auth token found for individual stats loading');
       return;
     }
@@ -436,16 +448,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
       let employees: User[] = [];
 
-      if (useV2Users) {
+      if (useV2Users === true) {
         // Use apiClient for v2
-        employees = (await apiClient.get<User[]>('/users?role=employee')) ?? [];
+        const result = await apiClient.get<User[]>('/users?role=employee');
+        employees = result;
       } else {
         // Use v1 API
         const employeesRes = await fetch('/api/admin/employees', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
         if (employeesRes.ok) {
-          employees = await employeesRes.json();
+          employees = (await employeesRes.json()) as User[];
         } else {
           console.error('Failed to load employees', employeesRes.statusText);
         }
@@ -462,17 +475,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
       let documents: Document[] = [];
 
-      if (useV2Documents) {
+      if (useV2Documents === true) {
         // Use apiClient for v2 - response has nested structure
         const response = await apiClient.get<{ documents: Document[] }>('/documents');
-        documents = response?.documents ?? [];
+        documents = response.documents;
       } else {
         // Use v1 API
         const documentsRes = await fetch('/api/admin/documents', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
         if (documentsRes.ok) {
-          documents = await documentsRes.json();
+          documents = (await documentsRes.json()) as Document[];
         } else {
           console.error('Failed to load documents', documentsRes.statusText);
         }
@@ -487,15 +500,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Abteilungen - Already has v2 support
     try {
       const useV2Departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS;
-      const apiPath = useV2Departments ? '/api/v2/departments' : '/api/departments';
+      const apiPath = useV2Departments === true ? '/api/v2/departments' : '/api/departments';
 
       const departmentsRes = await fetch(apiPath, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
 
       if (departmentsRes.ok) {
-        const responseData = await departmentsRes.json();
-        const departments = useV2Departments ? responseData.data : responseData;
+        const responseData = (await departmentsRes.json()) as { data?: Department[] } | Department[];
+        const departments =
+          useV2Departments === true && 'data' in responseData
+            ? ((responseData as { data?: Department[] }).data ?? [])
+            : (responseData as Department[]);
         const deptCountElement = document.getElementById('department-count');
         if (deptCountElement) {
           deptCountElement.textContent = departments.length.toString();
@@ -512,16 +528,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const useV2Teams = window.FEATURE_FLAGS?.USE_API_V2_TEAMS;
       let teams: Team[] = [];
 
-      if (useV2Teams) {
+      if (useV2Teams === true) {
         // Use apiClient for v2
-        teams = (await apiClient.get<Team[]>('/teams')) ?? [];
+        const result = await apiClient.get<Team[]>('/teams');
+        teams = result;
       } else {
         // Use v1 API
         const teamsRes = await fetch('/api/teams', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
         if (teamsRes.ok) {
-          teams = await teamsRes.json();
+          teams = (await teamsRes.json()) as Team[];
         } else {
           console.error('Failed to load teams', teamsRes.statusText);
         }
@@ -537,8 +554,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Blackboard Preview - zeigt die neuesten 3 Einträge
   async function loadBlackboardPreview(): Promise<void> {
     try {
-      const token = getAuthToken();
-      if (!token) {
+      const authToken = getAuthToken();
+      if (authToken === null || authToken.length === 0) {
         console.error('No auth token found for blackboard preview');
         return;
       }
@@ -546,14 +563,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const useV2Blackboard = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
       let entries: BlackboardEntry[] = [];
 
-      if (useV2Blackboard) {
+      if (useV2Blackboard === true) {
         // Use apiClient for v2 - correct endpoint is /blackboard/entries
-        entries =
-          (await apiClient.get<BlackboardEntry[]>('/blackboard/entries?limit=3&sortBy=created_at&sortDir=DESC')) ?? [];
+        const result = await apiClient.get<BlackboardEntry[]>(
+          '/blackboard/entries?limit=3&sortBy=created_at&sortDir=DESC',
+        );
+        entries = result;
       } else {
         // Use v1 API
         const response = await fetch('/api/blackboard/entries?limit=3&sortBy=created_at&sortOrder=DESC', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
 
         if (!response.ok) {
@@ -563,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('Failed to load blackboard entries');
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as { entries?: BlackboardEntry[] };
         entries = data.entries ?? [];
       }
 
@@ -597,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }) => {
             // Handle v1 vs v2 field names
             const priority = entry.priority ?? entry.priorityLevel ?? 'normal';
-            const createdAt = entry.created_at ?? entry.createdAt ?? '';
+            const createdAt = entry.created_at ?? '';
 
             const priorityClass = `priority-${priority}`;
             const priorityLabel = getPriorityLabel(priority);
@@ -653,8 +672,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadBlackboardWidget(): Promise<void> {
     console.info('[BlackboardWidget] Starting to load widget...');
     try {
-      const token = getAuthToken();
-      if (!token) {
+      const authToken = getAuthToken();
+      if (authToken === null || authToken.length === 0) {
         console.error('[BlackboardWidget] No auth token found');
         return;
       }
@@ -663,14 +682,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const useV2Blackboard = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
       let entries: BlackboardEntry[] = [];
 
-      if (useV2Blackboard) {
+      if (useV2Blackboard === true) {
         // Use apiClient for v2
-        entries = (await apiClient.get<BlackboardEntry[]>('/blackboard/dashboard?limit=3')) ?? [];
+        entries = await apiClient.get<BlackboardEntry[]>('/blackboard/dashboard?limit=3');
         console.info('[BlackboardWidget] V2 API Response - entries:', entries);
       } else {
         // Use v1 API
         const response = await fetch('/api/blackboard/dashboard?limit=3', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
 
         console.info('[BlackboardWidget] Response status:', response.status);
@@ -682,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('Failed to load blackboard entries');
         }
 
-        entries = await response.json();
+        entries = (await response.json()) as BlackboardEntry[];
       }
 
       const containerElement = document.getElementById('blackboard-widget-container');
@@ -745,8 +764,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.info(`[BlackboardWidget] Processing entry ${index + 1}:`, entry);
 
         const noteDiv = document.createElement('div');
-        const colorClass = entry.color ?? 'white';
-        const hasAttachment = entry.attachments && entry.attachments.length > 0;
+        const colorClass = entry.color !== '' ? entry.color : 'white';
+        const hasAttachment = (entry.attachments?.length ?? 0) > 0;
         noteDiv.className = `mini-note ${colorClass}${hasAttachment ? ' has-attachment' : ''}`;
         noteDiv.id = `mini-note-${entry.id}`;
 
@@ -754,9 +773,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hasAttachment && entry.attachments?.[0]) {
           const attachment = entry.attachments[0];
           // Handle v2 API path for attachments
-          const attachmentPath = useV2Blackboard
-            ? `/api/v2/blackboard/attachments/${attachment.id}`
-            : `/api/blackboard/attachments/${attachment.id}/preview`;
+          const attachmentPath =
+            useV2Blackboard === true
+              ? `/api/v2/blackboard/attachments/${attachment.id}`
+              : `/api/blackboard/attachments/${attachment.id}/preview`;
 
           if (attachment.mime_type === 'application/pdf') {
             // PDF preview - using new approach with scaling
@@ -793,8 +813,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Handle v1 vs v2 field names
-        const createdAt = entry.created_at ?? entry.createdAt ?? '';
-        const priorityLevel = entry.priority_level ?? entry.priorityLevel ?? 'normal';
+        const createdAt = entry.created_at !== '' ? entry.created_at : '';
+        const priorityLevel = entry.priority_level;
 
         const createdDate = new Date(createdAt);
         const dateStr = createdDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
@@ -850,14 +870,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!createEmployeeForm) return;
 
     const formData = new FormData(createEmployeeForm);
-    const employeeData = Object.fromEntries(formData.entries()) as unknown as EmployeeFormData;
+    const employeeData = Object.fromEntries(Array.from(formData.entries())) as unknown as EmployeeFormData;
 
     // E-Mail-Übereinstimmung prüfen
     const emailError = document.getElementById('email-error');
     if (employeeData.email !== employeeData.email_confirm) {
       if (emailError) emailError.style.display = 'block';
 
-      alert('Die E-Mail-Adressen stimmen nicht überein');
+      console.warn('Die E-Mail-Adressen stimmen nicht überein');
       return;
     } else {
       if (emailError) emailError.style.display = 'none';
@@ -868,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (employeeData.password !== employeeData.password_confirm) {
       if (passwordError) passwordError.style.display = 'block';
 
-      alert('Die Passwörter stimmen nicht überein');
+      console.warn('Die Passwörter stimmen nicht überein');
       return;
     } else {
       if (passwordError) passwordError.style.display = 'none';
@@ -885,8 +905,11 @@ document.addEventListener('DOMContentLoaded', () => {
         first_name: employeeData.first_name,
         last_name: employeeData.last_name,
         employee_id: employeeData.employee_id,
-        department_id: employeeData.department_id ? parseInt(employeeData.department_id) : null,
-        phone: employeeData.phone ?? '',
+        department_id:
+          employeeData.department_id !== '' && employeeData.department_id !== undefined
+            ? parseInt(employeeData.department_id, 10)
+            : null,
+        phone: employeeData.phone !== '' && employeeData.phone !== undefined ? employeeData.phone : '',
         birth_date: employeeData.birth_date ?? null,
         start_date: employeeData.start_date ?? null,
         street: employeeData.street ?? '',
@@ -896,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
         role: 'employee', // Explicitly set role for v2 API
       };
 
-      if (useV2Users) {
+      if (useV2Users === true) {
         // Use apiClient for v2 - convert snake_case to camelCase
         const v2UserData = {
           username: userData.username,
@@ -919,7 +942,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           response = await apiClient.post('/users', v2UserData);
         } catch (error) {
-          response = { success: false, error: (error as Error).message ?? 'Failed to create employee' };
+          response = {
+            success: false,
+            error: (error as Error).message !== '' ? (error as Error).message : 'Failed to create employee',
+          };
         }
       } else {
         // Use v1 API
@@ -927,13 +953,13 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token ?? ''}`,
           },
           body: JSON.stringify(userData),
         });
       }
 
-      const isSuccess = useV2Users ? (response as { success: boolean }).success : (response as Response).ok;
+      const isSuccess = useV2Users === true ? (response as { success: boolean }).success : (response as Response).ok;
 
       if (isSuccess) {
         showSuccess('Mitarbeiter erfolgreich erstellt!');
@@ -953,10 +979,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000); // Kurze Verzögerung damit die Erfolgsmeldung noch sichtbar ist
       } else {
         let errorMessage: string;
-        if (useV2Users) {
+        if (useV2Users === true) {
           errorMessage = (response as { error?: string }).error ?? 'Fehler beim Erstellen des Mitarbeiters';
         } else {
-          const error = await (response as Response).json();
+          const error = (await (response as Response).json()) as { message?: string };
           errorMessage = error.message ?? 'Fehler beim Erstellen des Mitarbeiters';
         }
         showError(errorMessage);
@@ -981,18 +1007,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Placeholder functions - to be implemented
   async function loadRecentEmployees(): Promise<void> {
     try {
-      const token = getAuthToken();
+      const authToken = getAuthToken();
       const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
       let employees: User[] = [];
 
-      if (useV2Users) {
+      if (useV2Users === true) {
         // Use apiClient for v2
-        employees = (await apiClient.get<User[]>('/users?role=employee&limit=5')) ?? [];
+        employees = await apiClient.get<User[]>('/users?role=employee&limit=5');
       } else {
         // Use v1 API
         const response = await fetch('/api/users?role=employee&limit=5', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken ?? ''}`,
           },
         });
 
@@ -1000,8 +1026,12 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('Failed to load recent employees');
         }
 
-        const data = await response.json();
-        employees = Array.isArray(data) ? data : (data.users ?? data.employees ?? []);
+        const data = (await response.json()) as User[] | { users?: User[]; employees?: User[] };
+        employees = Array.isArray(data)
+          ? data
+          : ((data as { users?: User[]; employees?: User[] }).users ??
+            (data as { users?: User[]; employees?: User[] }).employees ??
+            []);
       }
 
       // Fill compact card
@@ -1009,14 +1039,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (employeeCard) {
         employeeCard.innerHTML = '';
 
-        if (!employees || employees.length === 0) {
+        if (employees.length === 0) {
           employeeCard.innerHTML = '<p class="text-muted">Keine neuen Mitarbeiter</p>';
         } else {
           employees.slice(0, 5).forEach((emp: User) => {
             const item = document.createElement('div');
             item.className = 'compact-item';
             item.innerHTML = `
-              <span class="compact-item-name">${emp.first_name} ${emp.last_name}</span>
+              <span class="compact-item-name">${emp.first_name ?? ''} ${emp.last_name ?? ''}</span>
               <span class="compact-item-count">${emp.position ?? 'Mitarbeiter'}</span>
             `;
             employeeCard.appendChild(item);
@@ -1029,13 +1059,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (employeeDetailList) {
         employeeDetailList.innerHTML = '';
 
-        if (!employees || employees.length === 0) {
+        if (employees.length === 0) {
           employeeDetailList.innerHTML = '<li class="text-muted">Keine neuen Mitarbeiter</li>';
         } else {
           employees.slice(0, 10).forEach((emp: User) => {
             const listItem = document.createElement('li');
             listItem.innerHTML = `
-              <strong>${emp.first_name} ${emp.last_name}</strong> - ${emp.position ?? 'Mitarbeiter'}
+              <strong>${emp.first_name ?? ''} ${emp.last_name ?? ''}</strong> - ${emp.position ?? 'Mitarbeiter'}
               <span class="text-muted">(${emp.department ?? 'Keine Abteilung'})</span>
             `;
             employeeDetailList.appendChild(listItem);
@@ -1049,19 +1079,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadRecentDocuments(): Promise<void> {
     try {
-      const token = getAuthToken();
+      const authToken = getAuthToken();
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
       let documents: Document[] = [];
 
-      if (useV2Documents) {
+      if (useV2Documents === true) {
         // Use apiClient for v2 - response has nested structure
         const response = await apiClient.get<{ documents: Document[] }>('/documents?limit=5');
-        documents = response?.documents ?? [];
+        documents = response.documents;
       } else {
         // Use v1 API
         const response = await fetch('/api/documents?limit=5', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken ?? ''}`,
           },
         });
 
@@ -1069,18 +1099,10 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('Failed to load recent documents');
         }
 
-        const data = await response.json();
-        documents = Array.isArray(data)
-          ? data
-          : data.documents
-            ? Array.isArray(data.documents)
-              ? data.documents
-              : []
-            : data.data?.documents
-              ? Array.isArray(data.data.documents)
-                ? data.data.documents
-                : []
-              : [];
+        const data = (await response.json()) as
+          | Document[]
+          | { documents?: Document[]; data?: { documents?: Document[] } };
+        documents = Array.isArray(data) ? data : ((data as { documents?: Document[] }).documents ?? []);
       }
 
       // Fill compact card
@@ -1088,15 +1110,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (documentCard) {
         documentCard.innerHTML = '';
 
-        if (!documents || documents.length === 0) {
+        if (documents.length === 0) {
           documentCard.innerHTML = '<p class="text-muted">Keine neuen Dokumente</p>';
         } else {
           documents.slice(0, 5).forEach((doc: Document & { fileName?: string; createdAt?: string }) => {
             const item = document.createElement('div');
             item.className = 'compact-item';
             // Handle v1 vs v2 field names
-            const fileName = doc.file_name ?? doc.fileName ?? 'Unknown';
-            const createdAt = doc.created_at ?? doc.createdAt ?? '';
+            const fileName = doc.file_name;
+            const createdAt = doc.created_at;
             const uploadDate = new Date(createdAt).toLocaleDateString('de-DE');
             item.innerHTML = `
               <span class="compact-item-name">${fileName}</span>
@@ -1112,17 +1134,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (documentDetailList) {
         documentDetailList.innerHTML = '';
 
-        if (!documents || documents.length === 0) {
+        if (documents.length === 0) {
           documentDetailList.innerHTML = '<li class="text-muted">Keine neuen Dokumente</li>';
         } else {
           documents.slice(0, 10).forEach((doc: Document & { fileName?: string; createdAt?: string }) => {
             const listItem = document.createElement('li');
             // Handle v1 vs v2 field names
-            const fileName = doc.file_name ?? doc.fileName ?? 'Unknown';
-            const createdAt = doc.created_at ?? doc.createdAt ?? '';
+            const fileName = doc.file_name;
+            const createdAt = doc.created_at;
             const uploadDate = new Date(createdAt).toLocaleDateString('de-DE');
             listItem.innerHTML = `
-              <strong>${fileName}</strong> - ${doc.category || 'Allgemein'}
+              <strong>${fileName}</strong> - ${doc.category}
               <span class="text-muted">(${uploadDate})</span>
             `;
             documentDetailList.appendChild(listItem);
@@ -1136,13 +1158,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadDepartments(): Promise<void> {
     try {
-      const token = getAuthToken();
-      const useV2Departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS;
+      const authToken = getAuthToken();
+      const useV2Departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true;
       const apiPath = useV2Departments ? '/api/v2/departments' : '/api/departments';
 
       const response = await fetch(apiPath, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${authToken ?? ''}`,
         },
       });
 
@@ -1150,10 +1172,13 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('Failed to load departments');
       }
 
-      const responseData = await response.json();
+      const responseData = (await response.json()) as Department[] | { data?: Department[] };
 
       // Handle v2 response format which wraps data
-      const departments = useV2Departments && responseData.data ? responseData.data : responseData;
+      const departments =
+        useV2Departments && !Array.isArray(responseData) && 'data' in responseData
+          ? (responseData as { data: Department[] }).data
+          : (responseData as Department[]);
 
       const departmentList = document.getElementById('department-list');
 
@@ -1171,14 +1196,13 @@ document.addEventListener('DOMContentLoaded', () => {
         .forEach((dept: { id: number; name: string; description?: string | { type: string; data: number[] } }) => {
           // Convert Buffer to String if needed
           let description = '';
-          if (dept.description) {
+          if (dept.description !== undefined) {
             if (
               typeof dept.description === 'object' &&
-              dept.description !== null &&
               'type' in dept.description &&
-              dept.description.type === 'Buffer' &&
               'data' in dept.description &&
-              Array.isArray(dept.description.data)
+              (dept.description as { type: string; data: number[] }).type === 'Buffer' &&
+              Array.isArray((dept.description as { type: string; data: number[] }).data)
             ) {
               description = String.fromCharCode(...dept.description.data);
             } else if (typeof dept.description === 'string') {
@@ -1201,18 +1225,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadTeams(): Promise<void> {
     try {
-      const token = getAuthToken();
+      const authToken = getAuthToken();
       const useV2Teams = window.FEATURE_FLAGS?.USE_API_V2_TEAMS;
       let teams: Team[] = [];
 
-      if (useV2Teams) {
+      if (useV2Teams === true) {
         // Use apiClient for v2
-        teams = (await apiClient.get<Team[]>('/teams')) ?? [];
+        const result = await apiClient.get<Team[]>('/teams');
+        teams = result;
       } else {
         // Use v1 API
         const response = await fetch('/api/teams', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken ?? ''}`,
           },
         });
 
@@ -1220,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error('Failed to load teams');
         }
 
-        teams = await response.json();
+        teams = (await response.json()) as Team[];
       }
       const teamList = document.getElementById('team-list');
 
@@ -1237,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = document.createElement('div');
         item.className = 'compact-item';
         // Handle v1 vs v2 field names
-        const departmentName = team.department_name ?? team.departmentName ?? '';
+        const departmentName = team.department_name ?? '';
         item.innerHTML = `
           <span class="compact-item-name">${team.name}</span>
           <span class="compact-item-count">${departmentName}</span>
@@ -1260,13 +1285,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
-      status: (formData.get('status') as string) ?? 'active',
-      visibility: (formData.get('visibility') as string) ?? 'public',
+      status: (formData.get('status') as string | null) ?? 'active',
+      visibility: (formData.get('visibility') as string | null) ?? 'public',
     };
 
     try {
-      const token = getAuthToken();
-      const useV2Departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS;
+      const authToken = getAuthToken();
+      const useV2Departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true;
 
       if (useV2Departments) {
         // Use apiClient for v2
@@ -1274,22 +1299,24 @@ document.addEventListener('DOMContentLoaded', () => {
           await apiClient.post('/departments', departmentData);
           showSuccess('Abteilung erfolgreich erstellt');
         } catch (error) {
-          throw new Error((error as Error).message ?? 'Failed to create department');
+          const errorMessage = (error as Error).message;
+          throw new Error(errorMessage !== '' ? errorMessage : 'Failed to create department');
         }
       } else {
         // Use v1 API
-        const apiPath = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS ? '/api/v2/departments' : '/api/departments';
+        const apiPath =
+          window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true ? '/api/v2/departments' : '/api/departments';
         const response = await fetch(apiPath, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken ?? ''}`,
           },
           body: JSON.stringify(departmentData),
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          const error = (await response.json()) as { message?: string };
           throw new Error(error.message ?? 'Failed to create department');
         }
 
@@ -1319,13 +1346,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const teamData = {
       name: formData.get('name') as string,
-      department_id: parseInt(formData.get('department_id') as string),
+      department_id: parseInt(formData.get('department_id') as string, 10),
       description: formData.get('description') as string,
     };
 
     try {
-      const token = getAuthToken();
-      const useV2Teams = window.FEATURE_FLAGS?.USE_API_V2_TEAMS;
+      const authToken = getAuthToken();
+      const useV2Teams = window.FEATURE_FLAGS?.USE_API_V2_TEAMS === true;
 
       if (useV2Teams) {
         // Use apiClient for v2 - convert to camelCase
@@ -1339,7 +1366,8 @@ document.addEventListener('DOMContentLoaded', () => {
           await apiClient.post('/teams', v2TeamData);
           showSuccess('Team erfolgreich erstellt');
         } catch (error) {
-          throw new Error((error as Error).message ?? 'Failed to create team');
+          const errorMessage = (error as Error).message;
+          throw new Error(errorMessage !== '' ? errorMessage : 'Failed to create team');
         }
       } else {
         // Use v1 API
@@ -1347,13 +1375,13 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken ?? ''}`,
           },
           body: JSON.stringify(teamData),
         });
 
         if (!response.ok) {
-          const error = await response.json();
+          const error = (await response.json()) as { message?: string };
           throw new Error(error.message ?? 'Failed to create team');
         }
 

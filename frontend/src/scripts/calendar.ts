@@ -9,6 +9,27 @@ import { featureFlags } from '../utils/feature-flags';
 import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
 
+// Window.unifiedNav is already declared in global.d.ts
+
+// API Response interfaces
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data: {
+    data: T[];
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+}
+
+interface LegacyApiResponse<T = unknown> {
+  data: T[];
+  events?: T[];
+}
+
 // FullCalendar types
 interface FullCalendarApi {
   render(): void;
@@ -120,6 +141,26 @@ declare global {
   }
 }
 
+// API Response Types for proper typing
+interface ApiV2Response<T> {
+  success: boolean;
+  data: {
+    data: T[];
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+interface ApiV1Response<T> {
+  data?: T[];
+  events?: T[];
+  success?: boolean;
+}
+
 interface CalendarEvent {
   id: number;
   title: string;
@@ -139,6 +180,8 @@ interface CalendarEvent {
   reminder_time?: number;
   reminderTime?: number; // v2 API field
   reminderMinutes?: number; // v2 API field
+  requiresResponse?: boolean; // v2 API field
+  requires_response?: boolean; // v1 API field
   created_by: number;
   createdBy?: number; // v2 API field
   created_at: string;
@@ -224,12 +267,12 @@ let calendarView = 'dayGridMonth'; // Default view
  */
 function selectOrgId(id: number, name: string): void {
   const selectedOrgIdElement = document.getElementById('selectedOrgId');
-  const eventOrgIdElement = document.getElementById('eventOrgId') as HTMLInputElement;
+  const eventOrgIdElement = document.getElementById('eventOrgId') as HTMLInputElement | null;
 
   if (selectedOrgIdElement) {
     selectedOrgIdElement.textContent = name;
   }
-  if (eventOrgIdElement) {
+  if (eventOrgIdElement !== null) {
     eventOrgIdElement.value = id.toString();
   }
 }
@@ -251,9 +294,9 @@ function initializeApp() {
         isAdmin = userData.role === 'admin' || userData.role === 'root';
 
         // Show/hide "New Event" button based on permissions
-        const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
-        console.info('Calendar: newEventBtn found:', !!newEventBtn);
-        if (newEventBtn) {
+        const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement | null;
+        console.info('Calendar: newEventBtn found:', newEventBtn !== null);
+        if (newEventBtn !== null) {
           newEventBtn.style.display = isAdmin ? 'block' : 'none';
         }
 
@@ -284,11 +327,11 @@ function initializeApp() {
 
         console.info('Calendar: Initialization complete');
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Error loading user data:', error);
         window.location.href = '/login';
       });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error checking login:', error);
     window.location.href = '/login';
   }
@@ -367,7 +410,7 @@ function getUnreadEventsModalTemplate(): string {
 async function checkUnreadEvents(): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
     const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
@@ -383,9 +426,9 @@ async function checkUnreadEvents(): Promise<void> {
       return;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { data?: { totalUnread?: number }; totalUnread?: number };
     const result = useV2 ? data.data : data;
-    const totalUnread = result.totalUnread ?? 0;
+    const totalUnread = result?.totalUnread ?? 0;
 
     // If there are unread events, show the modal
     if (totalUnread > 0) {
@@ -400,10 +443,8 @@ async function checkUnreadEvents(): Promise<void> {
     }
 
     // Update badge in navigation
-    if (window.unifiedNav) {
-      void window.unifiedNav.updateUnreadCalendarEvents();
-    }
-  } catch (error) {
+    void window.unifiedNav.updateUnreadCalendarEvents();
+  } catch (error: unknown) {
     console.error('Error checking unread events:', error);
   }
 }
@@ -425,7 +466,7 @@ async function showEventDetails(eventId: number): Promise<void> {
 async function showUnreadEventsModal(): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
     const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
@@ -441,9 +482,12 @@ async function showUnreadEventsModal(): Promise<void> {
       return;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      data?: { eventsRequiringResponse?: UnreadEvent[] };
+      eventsRequiringResponse?: UnreadEvent[];
+    };
     const result = useV2 ? data.data : data;
-    const events = result.eventsRequiringResponse ?? [];
+    const events: UnreadEvent[] = result?.eventsRequiringResponse ?? [];
 
     // Show modal
     const modal = modalManager.show('unreadEventsModal');
@@ -463,7 +507,7 @@ async function showUnreadEventsModal(): Promise<void> {
     } else {
       listContainer.innerHTML = events
         .map(
-          (event: UnreadEvent) => `
+          (event) => `
         <div class="unread-event-item" data-event-id="${event.id}">
           <div class="event-info">
             <h4>${escapeHtml(event.title)}</h4>
@@ -487,7 +531,7 @@ async function showUnreadEventsModal(): Promise<void> {
         )
         .join('');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading unread events:', error);
   }
 }
@@ -592,10 +636,12 @@ function initializeCalendar(): void {
         // Show tooltip on hover
         const tooltip = document.createElement('div');
         tooltip.className = 'event-tooltip';
+        const description = (info.event.extendedProps?.description as string | undefined) ?? '';
+        const location = info.event.extendedProps?.location as string | undefined;
         tooltip.innerHTML = `
         <strong>${info.event.title}</strong><br>
-        ${info.event.extendedProps?.description ?? ''}
-        ${info.event.extendedProps?.location ? `<br><i class="fas fa-map-marker-alt"></i> ${info.event.extendedProps.location}` : ''}
+        ${description}
+        ${location !== undefined && location !== '' ? `<br><i class="fas fa-map-marker-alt"></i> ${location}` : ''}
       `;
         document.body.appendChild(tooltip);
 
@@ -617,7 +663,7 @@ function initializeCalendar(): void {
     });
 
     calendar.render();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error initializing calendar:', error);
     showError('Fehler beim Initialisieren des Kalenders. Bitte laden Sie die Seite neu.');
   }
@@ -703,7 +749,7 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.view-btn').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       const view = this.dataset.view;
-      if (view) {
+      if (view !== undefined && view !== '') {
         calendarView = view;
         calendar.changeView(view);
 
@@ -717,10 +763,10 @@ function setupEventListeners(): void {
   });
 
   // Search button
-  const searchButton = document.getElementById('searchButton') as HTMLButtonElement;
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const searchButton = document.getElementById('searchButton') as HTMLButtonElement | null;
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
 
-  if (searchButton && searchInput) {
+  if (searchButton !== null && searchInput !== null) {
     searchButton.addEventListener('click', () => {
       currentSearch = searchInput.value.trim();
       calendar.refetchEvents();
@@ -735,14 +781,14 @@ function setupEventListeners(): void {
   }
 
   // New event button (in filter bar) - only for admins and root
-  const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
+  const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement | null;
   console.info('Calendar: Looking for newEventBtn:', newEventBtn);
 
   // Get user role
   const currentUserRole = localStorage.getItem('userRole');
   const canCreate = currentUserRole === 'admin' || currentUserRole === 'root';
 
-  if (newEventBtn) {
+  if (newEventBtn !== null) {
     if (!canCreate) {
       // Hide button for employees
       console.info('Calendar: Hiding new event button for employee');
@@ -763,7 +809,7 @@ function setupEventListeners(): void {
         try {
           openEventForm();
           console.info('Calendar: openEventForm() call completed');
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Calendar: Error calling openEventForm:', error);
         }
       });
@@ -773,14 +819,14 @@ function setupEventListeners(): void {
   }
 
   // New event button in calendar card header - only for admins and root
-  const newCalendarEventBtn = document.getElementById('newCalendarEventBtn') as HTMLButtonElement;
+  const newCalendarEventBtn = document.getElementById('newCalendarEventBtn') as HTMLButtonElement | null;
   console.info('Calendar: Looking for newCalendarEventBtn:', newCalendarEventBtn);
 
   // Check user role
   const userRole = localStorage.getItem('userRole');
   const canCreateEvents = userRole === 'admin' || userRole === 'root';
 
-  if (newCalendarEventBtn) {
+  if (newCalendarEventBtn !== null) {
     if (!canCreateEvents) {
       // Hide button for employees
       console.info('Calendar: Hiding new event button for employee');
@@ -799,7 +845,7 @@ function setupEventListeners(): void {
         try {
           openEventForm();
           console.info('Calendar: openEventForm() call completed from calendar header');
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Calendar: Error calling openEventForm:', error);
         }
       });
@@ -809,16 +855,16 @@ function setupEventListeners(): void {
   }
 
   // Save event button
-  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement;
-  if (saveEventBtn) {
+  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement | null;
+  if (saveEventBtn !== null) {
     saveEventBtn.addEventListener('click', () => {
       void saveEvent();
     });
   }
 
   // Organization level change
-  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLSelectElement;
-  if (eventOrgLevel) {
+  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLSelectElement | null;
+  if (eventOrgLevel !== null) {
     eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
     });
@@ -827,8 +873,8 @@ function setupEventListeners(): void {
   // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
-  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
-  if (allDayCheckbox) {
+  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement | null;
+  if (allDayCheckbox !== null) {
     allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
@@ -845,8 +891,8 @@ function setupEventListeners(): void {
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
       // Only open modal if button is visible (for personal events)
-      const orgLevelInput = document.getElementById('orgLevelInput') as HTMLInputElement;
-      if (orgLevelInput && orgLevelInput.value === 'personal') {
+      const orgLevelInput = document.getElementById('orgLevelInput') as HTMLInputElement | null;
+      if (orgLevelInput !== null && orgLevelInput.value === 'personal') {
         modalManager.show('attendeesModal');
         void loadEmployeesForAttendees();
       } else {
@@ -901,15 +947,15 @@ function setupEventListeners(): void {
       if (dropdown?.id === 'orgLevelDropdown') {
         // Extract value and text from the option
         const value = (option as HTMLElement).dataset.value ?? '';
-        const text = option.textContent?.trim() ?? '';
+        const text = option.textContent.trim();
         selectOrgLevel(value, text);
       } else if (dropdown?.id === 'reminderDropdown') {
         const value = (option as HTMLElement).dataset.value ?? '';
-        const text = option.textContent?.trim() ?? '';
+        const text = option.textContent.trim();
         selectReminder(value, text);
       } else if (dropdown?.id === 'recurrenceDropdown') {
         const value = (option as HTMLElement).dataset.value ?? '';
-        const text = option.textContent?.trim() ?? '';
+        const text = option.textContent.trim();
         selectRecurrence(value, text);
       }
     }
@@ -928,7 +974,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
   try {
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
@@ -940,7 +986,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
       filter: currentFilter,
     });
 
-    if (currentSearch) {
+    if (currentSearch !== '' && currentSearch.trim() !== '') {
       params.append('search', currentSearch);
     }
 
@@ -978,12 +1024,15 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
           }
         });
         // Retry with personal filter
-        return loadCalendarEvents(fetchInfo);
+        return await loadCalendarEvents(fetchInfo);
       }
       throw new Error('Failed to load events');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as
+      | ApiResponse<CalendarEvent>
+      | LegacyApiResponse<CalendarEvent>
+      | CalendarEvent[];
     console.info('[CALENDAR] API Response:', data);
 
     // Handle different response formats
@@ -992,19 +1041,22 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     if (Array.isArray(data)) {
       // Direct array response (v1)
       events = data;
-    } else if (data?.data?.data && Array.isArray(data.data.data)) {
+    } else if (
+      'success' in data &&
+      'data' in data &&
+      typeof data.data === 'object' &&
+      'data' in data.data &&
+      Array.isArray(data.data.data)
+    ) {
       // v2 API response: {success, data: {data: [...], pagination: {...}}}
       events = data.data.data;
       console.info('[CALENDAR] v2 events found:', events.length);
-    } else if (data && Array.isArray(data.events)) {
+    } else if ('events' in data && Array.isArray(data.events)) {
       // Paginated response with events array
       events = data.events;
-    } else if (data?.data && Array.isArray(data.data)) {
+    } else if ('data' in data && Array.isArray(data.data)) {
       // Standard API response format with data wrapper
       events = data.data;
-    } else if (data?.data && Array.isArray(data.data.events)) {
-      // Paginated response wrapped in data
-      events = data.data.events;
     } else {
       console.error('Calendar API returned unexpected response format:', data);
       showError('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
@@ -1032,10 +1084,10 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     }
 
     console.info('[CALENDAR] Formatted events for display:', events);
-    const formattedEvents = events.map(formatEventForCalendar).filter((e) => e !== null);
+    const formattedEvents = events.map(formatEventForCalendar).filter((e): e is FullCalendarEventInput => e !== null);
     console.info('[CALENDAR] Events to render:', formattedEvents);
     return formattedEvents;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading events:', error);
     showError('Fehler beim Laden der Termine.');
     return [];
@@ -1045,11 +1097,11 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 /**
  * Format event for FullCalendar
  */
-function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput {
+function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput | null {
   // Color based on organization level - matching the legend
   let color = event.color ?? '#3498db'; // Default blue
 
-  if (!event.color) {
+  if (event.color === undefined || event.color === '') {
     switch (event.org_level) {
       case 'company':
         color = '#3498db'; // Blue for company (Firma)
@@ -1070,24 +1122,24 @@ function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput {
   }
 
   // Ensure we have valid dates
-  const startTime = event.start_time ?? event.startTime;
-  const endTime = event.end_time ?? event.endTime;
+  const startTime = event.start_time !== '' ? event.start_time : (event.startTime ?? '');
+  const endTime = event.end_time !== '' ? event.end_time : (event.endTime ?? '');
 
-  if (!startTime || !endTime) {
+  if (startTime === '' || endTime === '') {
     console.error('[CALENDAR] Event missing time fields:', event);
-    return null as unknown as FullCalendarEventInput; // Will be filtered out
+    return null;
   }
 
   return {
-    id: event.id ? event.id.toString() : '',
-    title: event.title ?? 'Unbenannter Termin',
+    id: event.id !== 0 ? event.id.toString() : '',
+    title: event.title !== '' ? event.title : 'Unbenannter Termin',
     start: startTime,
     end: endTime,
     allDay: event.all_day === 1 || event.all_day === '1' || event.all_day === true,
     backgroundColor: color,
     borderColor: color,
     textColor: '#ffffff',
-    classNames: [`fc-event-${event.org_level ?? 'personal'}`], // Add org_level as class
+    classNames: [`fc-event-${event.org_level}`], // Add org_level as class
     extendedProps: {
       description: event.description,
       location: event.location,
@@ -1110,7 +1162,7 @@ async function loadUpcomingEvents(): Promise<void> {
   try {
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
@@ -1131,25 +1183,28 @@ async function loadUpcomingEvents(): Promise<void> {
       throw new Error('Failed to load upcoming events');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as
+      | CalendarEvent[]
+      | ApiV2Response<CalendarEvent>
+      | ApiV1Response<CalendarEvent>;
     console.info('[CALENDAR] Dashboard response:', data);
     let events: CalendarEvent[] = [];
 
     // Handle API response format
     if (Array.isArray(data)) {
       events = data;
-    } else if (data?.data && Array.isArray(data.data)) {
-      events = data.data;
-    } else if (data?.success && data?.data) {
+    } else if ('data' in data && data.data && Array.isArray((data as ApiV2Response<CalendarEvent>).data.data)) {
+      events = (data as ApiV2Response<CalendarEvent>).data.data;
+    } else if ('success' in data && data.success === true && 'data' in data && data.data) {
       // v2 format: {success: true, data: [...]}
-      events = data.data;
+      events = (data as ApiV1Response<CalendarEvent>).data ?? [];
     } else {
       console.error('Unexpected response format from dashboard:', data);
       events = [];
     }
 
     displayUpcomingEvents(events);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading upcoming events:', error);
     const upcomingEvents = document.getElementById('upcomingEvents');
     if (upcomingEvents) {
@@ -1171,7 +1226,7 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
 
   container.innerHTML = '';
 
-  if (!events || events.length === 0) {
+  if (events.length === 0) {
     container.innerHTML = '<p class="text-center">Keine anstehenden Termine gefunden.</p>';
     return;
   }
@@ -1186,9 +1241,10 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
     const month = startDate.toLocaleDateString('de-DE', { month: 'short' });
 
     // Format time (only if not all day)
-    const timeStr = event.all_day
-      ? 'Ganztägig'
-      : `${startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    const timeStr =
+      event.all_day === true || event.all_day === 1 || event.all_day === '1'
+        ? 'Ganztägig'
+        : `${startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 
     // Determine level badge class
     let levelClass = 'event-level-personal';
@@ -1217,9 +1273,9 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
       </div>
       <div class="event-details">
         <div class="event-title">${escapeHtml(event.title)}</div>
-        ${event.location ? `<div class="event-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location)}</div>` : ''}
+        ${event.location !== undefined && event.location !== '' ? `<div class="event-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location)}</div>` : ''}
         <span class="event-level ${levelClass}">${levelText}</span>
-        ${event.user_response ? `<span class="status-${event.user_response} event-response">Ihr Status: ${getResponseText(event.user_response)}</span>` : ''}
+        ${event.user_response !== undefined ? `<span class="status-${event.user_response} event-response">Ihr Status: ${getResponseText(event.user_response)}</span>` : ''}
       </div>
     `;
 
@@ -1255,17 +1311,17 @@ async function viewEvent(eventId: number): Promise<void> {
   try {
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
 
     // Ensure currentUserId and isAdmin are set
-    if (!currentUserId) {
+    if (currentUserId === null || currentUserId === 0) {
       const userStr = localStorage.getItem('user');
-      if (userStr) {
+      if (userStr !== null && userStr !== '') {
         try {
-          const user = JSON.parse(userStr);
+          const user = JSON.parse(userStr) as UserData;
           currentUserId = user.id;
           isAdmin = user.role === 'admin' || user.role === 'root';
           console.info('[CALENDAR] Set from localStorage - currentUserId:', currentUserId, 'isAdmin:', isAdmin);
@@ -1294,9 +1350,22 @@ async function viewEvent(eventId: number): Promise<void> {
       throw new Error('Failed to load event details');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as unknown;
     // v2 API returns data.data.event, v1 API returns data directly
-    const eventData = useV2 ? (data.data?.event ?? data.data ?? data) : (data.data ?? data);
+    let eventData: CalendarEvent;
+    if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+      const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
+      if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
+        eventData = v2Data.data.event;
+      } else {
+        eventData = v2Data.data as CalendarEvent;
+      }
+    } else if (typeof data === 'object' && data !== null && 'data' in data) {
+      const v1Data = data as { data: CalendarEvent };
+      eventData = v1Data.data;
+    } else {
+      eventData = data as CalendarEvent;
+    }
 
     // Map v2 API camelCase to snake_case for consistency
     let event: CalendarEvent;
@@ -1354,30 +1423,30 @@ async function viewEvent(eventId: number): Promise<void> {
     if (event.org_level === 'company') {
       levelText = 'Firmentermin';
     } else if (event.org_level === 'department') {
-      levelText = `Abteilungstermin${event.department_name ? `: ${event.department_name}` : ''}`;
+      levelText = `Abteilungstermin${event.department_name !== undefined && event.department_name !== '' ? `: ${event.department_name}` : ''}`;
     } else if (event.org_level === 'team') {
-      levelText = `Teamtermin${event.team_name ? `: ${event.team_name}` : ''}`;
+      levelText = `Teamtermin${event.team_name !== undefined && event.team_name !== '' ? `: ${event.team_name}` : ''}`;
     }
 
     // Build modal content
     let modalContent = `
       <h3>
-        <i class="fas fa-${event.all_day ? 'calendar-day' : 'clock'}"></i>
-        ${escapeHtml(event.title ?? 'Unbenannter Termin')}
+        <i class="fas fa-${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? 'calendar-day' : 'clock'}"></i>
+        ${escapeHtml(event.title !== '' ? event.title : 'Unbenannter Termin')}
       </h3>
-      ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ''}
+      ${event.description !== undefined && event.description !== '' ? `<p>${escapeHtml(event.description)}</p>` : ''}
 
       <div class="event-details-grid">
         <div class="detail-item">
           <i class="fas fa-calendar"></i>
-          <span><strong>Beginn:</strong> ${event.all_day ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`}</span>
+          <span><strong>Beginn:</strong> ${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`}</span>
         </div>
         <div class="detail-item">
           <i class="fas fa-calendar-check"></i>
-          <span><strong>Ende:</strong> ${event.all_day ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
+          <span><strong>Ende:</strong> ${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
         </div>
         ${
-          event.location
+          event.location !== undefined && event.location !== ''
             ? `
         <div class="detail-item">
           <i class="fas fa-map-marker-alt"></i>
@@ -1411,7 +1480,12 @@ async function viewEvent(eventId: number): Promise<void> {
         // userId variable removed - not used
         const responseStatus = attendee.responseStatus ?? attendee.response ?? 'pending';
 
-        const name = `${firstName} ${lastName}`.trim() || username || 'Unknown';
+        const name =
+          `${firstName} ${lastName}`.trim() !== ''
+            ? `${firstName} ${lastName}`.trim()
+            : username !== ''
+              ? username
+              : 'Unknown';
         const statusIcon = getAttendeeStatusIcon(responseStatus);
         modalContent += `
           <div class="attendee-item">
@@ -1431,7 +1505,7 @@ async function viewEvent(eventId: number): Promise<void> {
       event.attendees?.some((a) => {
         const userId = a.userId ?? a.user_id;
         return userId === currentUserId;
-      })
+      }) === true
     ) {
       const currentAttendee = event.attendees.find((a) => {
         const userId = a.userId ?? a.user_id;
@@ -1516,7 +1590,7 @@ async function viewEvent(eventId: number): Promise<void> {
         }
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error viewing event:', error);
     showError('Fehler beim Laden der Termindetails.');
   }
@@ -1544,7 +1618,7 @@ function getAttendeeStatusIcon(status: string): string {
 async function respondToEvent(eventId: number, response: string): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
     const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}/attendees/response` : `/api/calendar/${eventId}/respond`;
@@ -1573,19 +1647,17 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
       void checkUnreadEvents();
 
       // Update badge in navigation
-      if (window.unifiedNav) {
-        void window.unifiedNav.updateUnreadCalendarEvents();
-      }
+      void window.unifiedNav.updateUnreadCalendarEvents();
 
       // Reload the page to refresh everything
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } else {
-      const error = await apiResponse.json();
+      const error = (await apiResponse.json()) as { message?: string };
       showError(error.message ?? 'Fehler beim Speichern der Antwort');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error responding to event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
@@ -1607,7 +1679,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
 
   // Check if modalManager exists
   console.info('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
-  console.info('Calendar: modalManager.show exists:', typeof modalManager?.show === 'function');
+  console.info('Calendar: modalManager.show exists:', typeof modalManager.show === 'function');
 
   // Force re-register template to ensure latest version is used
   const eventFormTemplate = getEventFormModalTemplate();
@@ -1624,8 +1696,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   }
 
   // Reset form
-  const form = document.getElementById('eventForm') as HTMLFormElement;
-  if (form) form.reset();
+  const form = document.getElementById('eventForm') as HTMLFormElement | null;
+  form?.reset();
 
   // No color selection needed anymore - color is determined by org_level
 
@@ -1636,10 +1708,10 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   selectedAttendees = [];
 
   // Set default org level and show info message
-  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement;
+  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement | null;
   const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
 
-  if (!eventId) {
+  if (eventId === undefined || eventId === null) {
     // For new events, set default to company and show appropriate UI
     if (orgLevelInput) orgLevelInput.value = 'company';
     if (selectedOrgLevelSpan) selectedOrgLevelSpan.textContent = 'Firma';
@@ -1649,7 +1721,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       // Show attendees section with company info by default
       const attendeesGroup = document.getElementById('attendeesGroup');
       const attendeesContainer = document.getElementById('attendeesContainer');
-      const addAttendeeBtn = document.getElementById('addAttendeeBtn') as HTMLButtonElement;
+      const addAttendeeBtn = document.getElementById('addAttendeeBtn') as HTMLButtonElement | null;
 
       if (attendeesGroup) attendeesGroup.style.display = 'block';
       if (addAttendeeBtn) addAttendeeBtn.style.display = 'none'; // Hide for company events
@@ -1671,7 +1743,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     updateSelectedAttendees();
   }
 
-  if (eventId) {
+  if (eventId !== undefined && eventId !== null) {
     // Update modal title for editing
     const modalTitle = modal.querySelector('.modal-title');
     if (modalTitle) {
@@ -1687,32 +1759,32 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
     // New event
     if (startDate) {
-      const startInput = document.getElementById('eventStartDate') as HTMLInputElement;
-      const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement;
+      const startInput = document.getElementById('eventStartDate') as HTMLInputElement | null;
+      const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement | null;
 
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
       }
 
-      if (!allDay && startTimeInput) {
+      if (allDay !== true && startTimeInput) {
         startTimeInput.value = formatTimeForInput(startDate);
       }
     }
 
     if (endDate) {
-      const endInput = document.getElementById('eventEndDate') as HTMLInputElement;
-      const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement;
+      const endInput = document.getElementById('eventEndDate') as HTMLInputElement | null;
+      const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement | null;
 
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
       }
 
-      if (!allDay && endTimeInput) {
+      if (allDay !== true && endTimeInput) {
         endTimeInput.value = formatTimeForInput(endDate);
       }
     }
 
-    const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
+    const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement | null;
     if (allDayCheckbox && allDay !== undefined) {
       allDayCheckbox.checked = allDay;
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
@@ -1776,7 +1848,7 @@ function updateOrgIdDropdown(level: string): void {
     if (level === 'personal') {
       // Show attendees section for personal events
       attendeesGroup.style.display = 'block';
-      if (addAttendeeBtn) addAttendeeBtn.style.display = 'inline-flex';
+      addAttendeeBtn.style.display = 'inline-flex';
       if (attendeesContainer) {
         if (selectedAttendees.length === 0) {
           attendeesContainer.innerHTML = '<p class="text-muted">Keine Teilnehmer ausgewählt</p>';
@@ -1785,7 +1857,7 @@ function updateOrgIdDropdown(level: string): void {
     } else {
       // Hide attendees section for other event types
       attendeesGroup.style.display = 'block'; // Keep container visible for info text
-      if (addAttendeeBtn) addAttendeeBtn.style.display = 'none';
+      addAttendeeBtn.style.display = 'none';
 
       // Show info text about automatic attendees
       if (attendeesContainer) {
@@ -1863,7 +1935,7 @@ function updateOrgIdDropdown(level: string): void {
  */
 function selectDepartment(departmentId: number, departmentName: string): void {
   const selectedElement = document.getElementById('selectedDepartment');
-  const inputElement = document.getElementById('eventDepartmentId') as HTMLInputElement;
+  const inputElement = document.getElementById('eventDepartmentId') as HTMLInputElement | null;
 
   if (selectedElement) selectedElement.textContent = departmentName;
   if (inputElement) inputElement.value = departmentId.toString();
@@ -1874,7 +1946,7 @@ function selectDepartment(departmentId: number, departmentName: string): void {
  */
 function selectTeam(teamId: number, teamName: string): void {
   const selectedElement = document.getElementById('selectedTeam');
-  const inputElement = document.getElementById('eventTeamId') as HTMLInputElement;
+  const inputElement = document.getElementById('eventTeamId') as HTMLInputElement | null;
 
   if (selectedElement) selectedElement.textContent = teamName;
   if (inputElement) inputElement.value = teamId.toString();
@@ -1912,7 +1984,7 @@ function loadTeamsForDepartment(departmentId: number): void {
   // Reset team selection
   const selectedTeam = document.getElementById('selectedTeam');
   if (selectedTeam) selectedTeam.textContent = '-- Team wählen --';
-  const teamInput = document.getElementById('eventTeamId') as HTMLInputElement;
+  const teamInput = document.getElementById('eventTeamId') as HTMLInputElement | null;
   if (teamInput) teamInput.value = '';
 }
 
@@ -1922,57 +1994,57 @@ function loadTeamsForDepartment(departmentId: number): void {
 async function saveEvent(): Promise<void> {
   console.info('saveEvent called');
 
-  const form = document.getElementById('eventForm') as HTMLFormElement;
-  if (!form) {
+  const form = document.getElementById('eventForm') as HTMLFormElement | null;
+  if (form === null) {
     console.error('Form not found');
     return;
   }
 
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No token found');
     return;
   }
 
   // Get form values directly from elements
-  const titleInput = document.getElementById('eventTitle') as HTMLInputElement;
-  const descriptionInput = document.getElementById('eventDescription') as HTMLTextAreaElement;
-  const startDateInput = document.getElementById('eventStartDate') as HTMLInputElement;
-  const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement;
-  const endDateInput = document.getElementById('eventEndDate') as HTMLInputElement;
-  const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement;
-  const allDayInput = document.getElementById('eventAllDay') as HTMLInputElement;
-  const locationInput = document.getElementById('eventLocation') as HTMLInputElement;
-  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement;
-  const departmentIdInput = document.getElementById('eventDepartmentId') as HTMLInputElement;
-  const teamIdInput = document.getElementById('eventTeamId') as HTMLInputElement;
-  const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement;
-  const eventIdInput = document.getElementById('eventId') as HTMLInputElement;
+  const titleInput = document.getElementById('eventTitle') as HTMLInputElement | null;
+  const descriptionInput = document.getElementById('eventDescription') as HTMLTextAreaElement | null;
+  const startDateInput = document.getElementById('eventStartDate') as HTMLInputElement | null;
+  const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement | null;
+  const endDateInput = document.getElementById('eventEndDate') as HTMLInputElement | null;
+  const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement | null;
+  const allDayInput = document.getElementById('eventAllDay') as HTMLInputElement | null;
+  const locationInput = document.getElementById('eventLocation') as HTMLInputElement | null;
+  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement | null;
+  const departmentIdInput = document.getElementById('eventDepartmentId') as HTMLInputElement | null;
+  const teamIdInput = document.getElementById('eventTeamId') as HTMLInputElement | null;
+  const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement | null;
+  const eventIdInput = document.getElementById('eventId') as HTMLInputElement | null;
 
   // Validate required fields
-  if (!titleInput?.value) {
+  if (titleInput?.value === undefined || titleInput.value === '') {
     showError('Bitte geben Sie einen Titel ein');
     return;
   }
 
-  if (!startDateInput?.value) {
+  if (startDateInput?.value === undefined || startDateInput.value === '') {
     showError('Bitte wählen Sie ein Startdatum');
     return;
   }
 
-  if (!endDateInput?.value) {
+  if (endDateInput?.value === undefined || endDateInput.value === '') {
     showError('Bitte wählen Sie ein Enddatum');
     return;
   }
 
-  if (!orgLevelInput?.value) {
+  if (orgLevelInput?.value === undefined || orgLevelInput.value === '') {
     showError('Bitte wählen Sie aus, wer den Termin sehen soll');
     return;
   }
 
   // Set color automatically based on org_level
   let color = '#3498db'; // Default blue
-  const orgLevel = orgLevelInput?.value ?? 'personal';
+  const orgLevel = orgLevelInput.value !== '' ? orgLevelInput.value : 'personal';
   switch (orgLevel) {
     case 'company':
       color = '#3498db'; // Blue for company
@@ -1989,19 +2061,19 @@ async function saveEvent(): Promise<void> {
   }
 
   // Parse dates and times
-  const startDate = startDateInput.value;
-  const startTime = startTimeInput.value;
-  const endDate = endDateInput.value;
-  const endTime = endTimeInput.value;
-  const allDay = allDayInput.checked;
+  const startDate = startDateInput.value !== '' ? startDateInput.value : '';
+  const startTime = startTimeInput?.value ?? '';
+  const endDate = endDateInput.value !== '' ? endDateInput.value : '';
+  const endTime = endTimeInput?.value ?? '';
+  const allDay = allDayInput?.checked ?? false;
 
   // Validate time fields for non-all-day events
   if (!allDay) {
-    if (!startTime) {
+    if (startTime === '') {
       showError('Bitte wählen Sie eine Startzeit');
       return;
     }
-    if (!endTime) {
+    if (endTime === '') {
       showError('Bitte wählen Sie eine Endzeit');
       return;
     }
@@ -2019,21 +2091,21 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get recurrence data
-  const recurrenceType = (document.getElementById('eventRecurrence') as HTMLInputElement)?.value;
+  const recurrenceType = (document.getElementById('eventRecurrence') as HTMLInputElement | null)?.value;
   let recurrenceRule = '';
 
-  if (recurrenceType && recurrenceType !== '') {
+  if (recurrenceType !== undefined && recurrenceType !== '') {
     // Build recurrence rule based on selection
     const recurrenceEnd = document.getElementById('selectedRecurrenceEnd')?.textContent;
-    const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement)?.value;
-    const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement)?.value;
+    const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement | null)?.value;
+    const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement | null)?.value;
 
     // Build simplified recurrence rule
     recurrenceRule = recurrenceType;
 
-    if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount) {
+    if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount !== undefined && recurrenceCount !== '') {
       recurrenceRule += `;COUNT=${recurrenceCount}`;
-    } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate) {
+    } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate !== undefined && recurrenceEndDate !== '') {
       recurrenceRule += `;UNTIL=${recurrenceEndDate}`;
     }
   }
@@ -2043,24 +2115,26 @@ async function saveEvent(): Promise<void> {
   let teamId = null;
 
   if (orgLevelInput.value === 'department') {
-    departmentId = departmentIdInput.value ? parseInt(departmentIdInput.value) : null;
+    departmentId =
+      departmentIdInput !== null && departmentIdInput.value !== '' ? parseInt(departmentIdInput.value, 10) : null;
   } else if (orgLevelInput.value === 'team') {
-    departmentId = departmentIdInput.value ? parseInt(departmentIdInput.value) : null;
-    teamId = teamIdInput.value ? parseInt(teamIdInput.value) : null;
+    departmentId =
+      departmentIdInput !== null && departmentIdInput.value !== '' ? parseInt(departmentIdInput.value, 10) : null;
+    teamId = teamIdInput !== null && teamIdInput.value !== '' ? parseInt(teamIdInput.value, 10) : null;
   }
 
   // Handle reminder_time properly - check if value is valid number
   let reminderTime = undefined;
-  if (reminderTimeInput.value && reminderTimeInput.value !== '') {
-    const parsed = parseInt(reminderTimeInput.value);
+  if (reminderTimeInput?.value !== undefined && reminderTimeInput.value !== '') {
+    const parsed = parseInt(reminderTimeInput.value, 10);
     if (!isNaN(parsed) && parsed >= 0) {
       reminderTime = parsed;
     }
   }
 
   // Get requires response checkbox
-  const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement;
-  const requiresResponse = requiresResponseInput ? requiresResponseInput.checked : false;
+  const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement | null;
+  const requiresResponse = requiresResponseInput?.checked ?? false;
 
   const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
 
@@ -2070,48 +2144,48 @@ async function saveEvent(): Promise<void> {
   if (useV2) {
     // v2 API uses camelCase
     eventData = {
-      title: titleInput.value,
-      description: descriptionInput.value,
+      title: titleInput.value !== '' ? titleInput.value : '',
+      description: descriptionInput !== null && descriptionInput.value !== '' ? descriptionInput.value : '',
       startTime: startDateTime, // camelCase for v2
       endTime: endDateTime, // camelCase for v2
       allDay, // camelCase for v2
-      location: locationInput.value,
-      orgLevel: orgLevelInput.value ?? 'personal', // camelCase for v2
+      location: locationInput !== null && locationInput.value !== '' ? locationInput.value : '',
+      orgLevel: orgLevelInput.value !== '' ? orgLevelInput.value : 'personal', // camelCase for v2
       color,
       requiresResponse, // New field for status requests
     };
 
     // Only add optional fields if they have values (camelCase)
-    if (departmentId) eventData.departmentId = departmentId;
-    if (teamId) eventData.teamId = teamId;
+    if (departmentId !== null && departmentId !== 0) eventData.departmentId = departmentId;
+    if (teamId !== null && teamId !== 0) eventData.teamId = teamId;
     if (reminderTime !== undefined) eventData.reminderMinutes = reminderTime; // v2 uses reminderMinutes
     if (selectedAttendees.length > 0) eventData.attendeeIds = selectedAttendees;
-    if (recurrenceRule) eventData.recurrenceRule = recurrenceRule;
+    if (recurrenceRule !== '') eventData.recurrenceRule = recurrenceRule;
   } else {
     // v1 API uses snake_case
     eventData = {
-      title: titleInput.value,
-      description: descriptionInput.value,
+      title: titleInput.value !== '' ? titleInput.value : '',
+      description: descriptionInput !== null && descriptionInput.value !== '' ? descriptionInput.value : '',
       start_time: startDateTime,
       end_time: endDateTime,
       all_day: allDay,
-      location: locationInput.value,
-      org_level: orgLevelInput.value ?? 'personal',
+      location: locationInput !== null && locationInput.value !== '' ? locationInput.value : '',
+      org_level: orgLevelInput.value !== '' ? orgLevelInput.value : 'personal',
       color,
       requires_response: requiresResponse, // New field for status requests
     };
 
     // Only add optional fields if they have values (snake_case)
-    if (departmentId) eventData.department_id = departmentId;
-    if (teamId) eventData.team_id = teamId;
+    if (departmentId !== null && departmentId !== 0) eventData.department_id = departmentId;
+    if (teamId !== null && teamId !== 0) eventData.team_id = teamId;
     if (reminderTime !== undefined) eventData.reminder_time = reminderTime;
     if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
-    if (recurrenceRule) eventData.recurrence_rule = recurrenceRule;
+    if (recurrenceRule !== '') eventData.recurrence_rule = recurrenceRule;
 
     // For API v1 compatibility, add org_id based on org_level
-    if (orgLevelInput.value === 'department' && departmentId) {
+    if (orgLevelInput.value === 'department' && departmentId !== null && departmentId !== 0) {
       eventData.org_id = departmentId;
-    } else if (orgLevelInput.value === 'team' && teamId) {
+    } else if (orgLevelInput.value === 'team' && teamId !== null && teamId !== 0) {
       eventData.org_id = teamId;
     }
   }
@@ -2119,15 +2193,16 @@ async function saveEvent(): Promise<void> {
   console.info('Saving event data:', eventData); // Debug log
 
   try {
-    const eventId = eventIdInput.value;
-    const url = eventId
-      ? useV2
-        ? `/api/v2/calendar/events/${eventId}`
-        : `/api/calendar/${eventId}`
-      : useV2
-        ? '/api/v2/calendar/events'
-        : '/api/calendar';
-    const method = eventId ? 'PUT' : 'POST';
+    const eventId = eventIdInput?.value;
+    const url =
+      eventId !== undefined && eventId !== ''
+        ? useV2
+          ? `/api/v2/calendar/events/${eventId}`
+          : `/api/calendar/${eventId}`
+        : useV2
+          ? '/api/v2/calendar/events'
+          : '/api/calendar';
+    const method = eventId !== undefined && eventId !== '' ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
       method,
@@ -2139,20 +2214,22 @@ async function saveEvent(): Promise<void> {
     });
 
     if (response.ok) {
-      const result = await response.json();
+      const result = (await response.json()) as { id?: number; message?: string };
       console.info('[CALENDAR] Save successful:', result);
-      showSuccess(eventId ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!');
+      showSuccess(
+        eventId !== undefined && eventId !== '' ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!',
+      );
       modalManager.hide('eventFormModal');
 
       // Refresh calendar
       calendar.refetchEvents();
       void loadUpcomingEvents();
     } else {
-      const error = await response.json();
+      const error = (await response.json()) as { message?: string };
       console.error('[CALENDAR] Save error:', error);
       showError(error.message ?? 'Fehler beim Speichern des Termins');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error saving event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
@@ -2163,7 +2240,7 @@ async function saveEvent(): Promise<void> {
  */
 async function loadEventForEdit(eventId: number): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
@@ -2176,16 +2253,29 @@ async function loadEventForEdit(eventId: number): Promise<void> {
     });
 
     if (response.ok) {
-      const data = await response.json();
+      const data = (await response.json()) as unknown;
       // v2 API returns data.data.event, v1 API returns data directly
-      const eventData = useV2 ? (data.data?.event ?? data.data ?? data) : (data.data ?? data);
+      let eventData: CalendarEvent;
+      if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+        const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
+        if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
+          eventData = v2Data.data.event;
+        } else {
+          eventData = v2Data.data as CalendarEvent;
+        }
+      } else if (typeof data === 'object' && data !== null && 'data' in data) {
+        const v1Data = data as { data: CalendarEvent };
+        eventData = v1Data.data;
+      } else {
+        eventData = data as CalendarEvent;
+      }
 
       // Check if user is the creator
-      if (!currentUserId) {
+      if (currentUserId === null || currentUserId === 0) {
         const userStr = localStorage.getItem('user');
-        if (userStr) {
+        if (userStr !== null && userStr !== '') {
           try {
-            const user = JSON.parse(userStr);
+            const user = JSON.parse(userStr) as UserData;
             currentUserId = user.id;
           } catch (e) {
             console.error('Error parsing user from localStorage:', e);
@@ -2227,12 +2317,12 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Fill form with event data
-      const form = document.getElementById('eventForm') as HTMLFormElement;
-      if (!form) return;
+      const form = document.getElementById('eventForm') as HTMLFormElement | null;
+      if (form === null) return;
 
       // Set event ID
-      const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement;
-      if (eventIdInput && event.id) {
+      const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement | null;
+      if (eventIdInput !== null && event.id !== 0) {
         eventIdInput.value = event.id.toString();
       } else {
         console.error('[CALENDAR] loadEventForEdit - event.id is missing:', event);
@@ -2240,13 +2330,13 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
       // Set basic fields
       const titleInput = form.elements.namedItem('title') as HTMLInputElement;
-      if (titleInput) titleInput.value = event.title;
+      titleInput.value = event.title;
 
       const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
-      if (descInput) descInput.value = event.description ?? '';
+      descInput.value = event.description ?? '';
 
       const locationInput = form.elements.namedItem('location') as HTMLInputElement;
-      if (locationInput) locationInput.value = event.location ?? '';
+      locationInput.value = event.location ?? '';
 
       // Set org level using custom dropdown
       const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
@@ -2269,24 +2359,22 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
       // Set date fields
       const startDateInput = form.elements.namedItem('start_date') as HTMLInputElement;
-      if (startDateInput) startDateInput.value = formatDateForInput(startDate);
+      startDateInput.value = formatDateForInput(startDate);
 
       const endDateInput = form.elements.namedItem('end_date') as HTMLInputElement;
-      if (endDateInput) endDateInput.value = formatDateForInput(endDate);
+      endDateInput.value = formatDateForInput(endDate);
 
       // Set all day checkbox
       const allDayCheckbox = form.elements.namedItem('all_day') as HTMLInputElement;
-      if (allDayCheckbox) {
-        allDayCheckbox.checked = Boolean(event.all_day);
-      }
+      allDayCheckbox.checked = Boolean(event.all_day);
 
       // Set time fields
-      if (!event.all_day) {
+      if (event.all_day !== true) {
         const startTimeInput = form.elements.namedItem('start_time') as HTMLInputElement;
-        if (startTimeInput) startTimeInput.value = formatTimeForInput(startDate);
+        startTimeInput.value = formatTimeForInput(startDate);
 
         const endTimeInput = form.elements.namedItem('end_time') as HTMLInputElement;
-        if (endTimeInput) endTimeInput.value = formatTimeForInput(endDate);
+        endTimeInput.value = formatTimeForInput(endDate);
       }
 
       // Update time inputs disabled state
@@ -2297,7 +2385,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
       // Update org dropdown
       updateOrgIdDropdown(event.org_level);
-      if (event.org_id) {
+      if (event.org_id !== undefined && event.org_id !== 0) {
         const orgName = event.department_name ?? event.team_name ?? '';
         selectOrgId(event.org_id, orgName);
       }
@@ -2305,16 +2393,16 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
-      const reminderSelect = document.getElementById('eventReminderTime') as HTMLSelectElement;
-      if (reminderSelect && event.reminder_time !== undefined && event.reminder_time !== null) {
+      const reminderSelect = document.getElementById('eventReminderTime') as HTMLSelectElement | null;
+      if (reminderSelect !== null && event.reminder_time !== undefined) {
         reminderSelect.value = event.reminder_time.toString();
       }
 
       // Set requires response checkbox
-      const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement;
-      if (requiresResponseInput) {
+      const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement | null;
+      if (requiresResponseInput !== null) {
         // Check both camelCase and snake_case fields
-        const requiresResponse = eventData.requiresResponse ?? eventData.requires_response ?? false;
+        const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
         requiresResponseInput.checked = requiresResponse;
       }
 
@@ -2331,7 +2419,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       showError('Fehler beim Laden des Termins');
       modalManager.hide('eventFormModal');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading event:', error);
     showError('Ein Fehler ist aufgetreten');
     modalManager.hide('eventFormModal');
@@ -2370,7 +2458,7 @@ function deleteEvent(eventId: number): void {
 async function confirmDeleteEvent(): Promise<void> {
   console.info('[CALENDAR] confirmDeleteEvent called, eventToDelete:', eventToDelete);
 
-  if (!eventToDelete) {
+  if (eventToDelete === null) {
     console.error('[CALENDAR] No event ID to delete');
     modalManager.hide('confirmationModal');
     return;
@@ -2378,7 +2466,7 @@ async function confirmDeleteEvent(): Promise<void> {
 
   const eventId = eventToDelete;
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
@@ -2404,10 +2492,10 @@ async function confirmDeleteEvent(): Promise<void> {
       calendar.refetchEvents();
       void loadUpcomingEvents();
     } else {
-      const error = await response.json();
+      const error = (await response.json()) as { message?: string };
       showError(error.message ?? 'Fehler beim Löschen des Termins');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
@@ -2420,7 +2508,7 @@ function searchAttendees(query: string): void {
   const searchResults = document.getElementById('attendeeSearchResults');
   if (!searchResults) return;
 
-  if (!query || query.length < 2) {
+  if (query === '' || query.length < 2) {
     searchResults.innerHTML = '';
     return;
   }
@@ -2431,8 +2519,8 @@ function searchAttendees(query: string): void {
     const firstName = emp.first_name ?? '';
     const lastName = emp.last_name ?? '';
     const fullName = `${firstName} ${lastName}`.toLowerCase();
-    const username = (emp.username ?? '').toLowerCase();
-    const email = (emp.email ?? '').toLowerCase();
+    const username = emp.username.toLowerCase();
+    const email = emp.email.toLowerCase();
     return (
       fullName.includes(query.toLowerCase()) ||
       username.includes(query.toLowerCase()) ||
@@ -2450,7 +2538,12 @@ function searchAttendees(query: string): void {
     // Handle both snake_case (v1) and camelCase (v2) field names
     const firstName = emp.first_name ?? '';
     const lastName = emp.last_name ?? '';
-    const name = `${firstName} ${lastName}`.trim() || emp.username || emp.email;
+    const name =
+      `${firstName} ${lastName}`.trim() !== ''
+        ? `${firstName} ${lastName}`.trim()
+        : emp.username !== ''
+          ? emp.username
+          : emp.email;
     item.innerHTML = `
       <span>${escapeHtml(name)}</span>
       <button class="btn btn-sm btn-primary" onclick="addAttendee(${emp.id}, '${escapeHtml(name)}')">
@@ -2470,10 +2563,10 @@ function addAttendee(userId: number, _name: string): void {
     updateSelectedAttendees();
 
     // Clear search
-    const searchInput = document.getElementById('attendeeSearch') as HTMLInputElement;
+    const searchInput = document.getElementById('attendeeSearch') as HTMLInputElement | null;
     const searchResults = document.getElementById('attendeeSearchResults');
-    if (searchInput) searchInput.value = '';
-    if (searchResults) searchResults.innerHTML = '';
+    if (searchInput !== null) searchInput.value = '';
+    if (searchResults !== null) searchResults.innerHTML = '';
   }
 }
 
@@ -2490,7 +2583,7 @@ function removeAttendee(userId: number): void {
  */
 function checkLoggedIn(): void {
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No authentication token found');
     window.location.href = '/login';
     throw new Error('No authentication token found');
@@ -2502,7 +2595,7 @@ function checkLoggedIn(): void {
  */
 async function fetchUserData(): Promise<UserData> {
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token === '') {
     throw new Error('No authentication token found');
   }
 
@@ -2520,7 +2613,7 @@ async function fetchUserData(): Promise<UserData> {
     throw new Error('Failed to fetch user data');
   }
 
-  return response.json();
+  return response.json() as Promise<UserData>;
 }
 
 /**
@@ -2528,7 +2621,7 @@ async function fetchUserData(): Promise<UserData> {
  */
 async function loadDepartmentsAndTeams(): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     // Load departments
@@ -2541,8 +2634,8 @@ async function loadDepartmentsAndTeams(): Promise<void> {
     });
 
     if (deptResponse.ok) {
-      const deptData = await deptResponse.json();
-      departments = useV2Departments && deptData.data ? deptData.data : deptData;
+      const deptData = (await deptResponse.json()) as ApiV2Response<Department> | Department[];
+      departments = useV2Departments && 'data' in deptData ? deptData.data.data : (deptData as Department[]);
     }
 
     // Load teams
@@ -2555,8 +2648,8 @@ async function loadDepartmentsAndTeams(): Promise<void> {
     });
 
     if (teamResponse.ok) {
-      const teamData = await teamResponse.json();
-      teams = useV2Teams && teamData.data ? teamData.data : teamData;
+      const teamData = (await teamResponse.json()) as ApiV2Response<Team> | Team[];
+      teams = useV2Teams && 'data' in teamData ? teamData.data.data : (teamData as Team[]);
     }
 
     // Load employees for attendees
@@ -2569,22 +2662,22 @@ async function loadDepartmentsAndTeams(): Promise<void> {
     });
 
     if (empResponse.ok) {
-      const empData = await empResponse.json();
-      const allEmployees = useV2Users && empData.data ? empData.data : empData;
+      const empData = (await empResponse.json()) as ApiV2Response<User> | User[];
+      const allEmployees: User[] = useV2Users && 'data' in empData ? empData.data.data : (empData as User[]);
       // Get current user ID to exclude from employees list
       const userStr = localStorage.getItem('user');
-      let currentUserId = 0;
-      if (userStr) {
+      let currentUserIdLocal = 0;
+      if (userStr !== null && userStr !== '') {
         try {
-          const user = JSON.parse(userStr);
-          currentUserId = user.id ?? 0;
+          const user = JSON.parse(userStr) as UserData;
+          currentUserIdLocal = user.id;
         } catch (e) {
           console.error('Error parsing user from localStorage:', e);
         }
       }
-      employees = allEmployees.filter((emp: User) => emp.id !== currentUserId);
+      employees = allEmployees.filter((emp: User) => emp.id !== currentUserIdLocal);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading departments, teams, and employees:', error);
   }
 }
@@ -2593,8 +2686,8 @@ async function loadDepartmentsAndTeams(): Promise<void> {
  * Utility function to escape HTML
  */
 function escapeHtml(text: string | null | undefined): string {
-  if (!text) return '';
-  const str = String(text);
+  if (text === null || text === undefined || text === '') return '';
+  const str = text;
   const map: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
@@ -2638,8 +2731,8 @@ declare global {
  */
 function setupModalEventListeners(): void {
   // Save event button
-  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement;
-  if (saveEventBtn) {
+  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement | null;
+  if (saveEventBtn !== null) {
     // Remove existing listeners by cloning
     const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
     saveEventBtn.parentNode?.replaceChild(newButton, saveEventBtn);
@@ -2667,8 +2760,8 @@ function setupModalEventListeners(): void {
   }
 
   // All day checkbox
-  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
-  if (allDayCheckbox) {
+  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement | null;
+  if (allDayCheckbox !== null) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
 
@@ -2683,12 +2776,8 @@ function setupModalEventListeners(): void {
     });
   }
 
-  // Organization level change
-  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLInputElement;
-  if (eventOrgLevel) {
-    // This is already handled by the dropdown delegation
-    console.info('Organization level input found');
-  }
+  // Organization level change - handled by dropdown delegation
+  console.info('Organization level input found');
 }
 
 // Custom dropdown functions
@@ -2712,8 +2801,8 @@ function selectOrgLevel(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedOrgLevel');
   const inputElement = document.getElementById('eventOrgLevel') as HTMLInputElement;
 
-  if (selectedElement) selectedElement.textContent = text;
-  if (inputElement) inputElement.value = value;
+  if (selectedElement !== null) selectedElement.textContent = text;
+  inputElement.value = value;
 
   // Update org ID dropdown based on selection
   updateOrgIdDropdown(value);
@@ -2722,7 +2811,7 @@ function selectOrgLevel(value: string, text: string): void {
 
 function toggleOrgIdDropdown(): void {
   const display = document.getElementById('orgIdDisplay');
-  if (display?.classList.contains('disabled')) return;
+  if (display?.classList.contains('disabled') === true) return;
 
   const dropdown = document.getElementById('orgIdDropdown');
   if (dropdown && display) {
@@ -2757,8 +2846,8 @@ function selectReminder(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedReminder');
   const inputElement = document.getElementById('eventReminderTime') as HTMLInputElement;
 
-  if (selectedElement) selectedElement.textContent = text;
-  if (inputElement) inputElement.value = value;
+  if (selectedElement !== null) selectedElement.textContent = text;
+  inputElement.value = value;
   closeAllDropdowns();
 }
 
@@ -2814,13 +2903,13 @@ function selectRecurrence(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedRecurrence');
   const inputElement = document.getElementById('eventRecurrence') as HTMLInputElement;
 
-  if (selectedElement) selectedElement.textContent = text;
-  if (inputElement) inputElement.value = value;
+  if (selectedElement !== null) selectedElement.textContent = text;
+  inputElement.value = value;
 
   // Show/hide recurrence end options
   const endWrapper = document.getElementById('recurrenceEndWrapper');
   if (endWrapper) {
-    endWrapper.style.display = value && value !== '' ? 'block' : 'none';
+    endWrapper.style.display = value !== '' ? 'block' : 'none';
   }
 
   closeAllDropdowns();
@@ -2880,7 +2969,7 @@ function closeAllDropdowns(): void {
 // Load employees for attendees modal
 async function loadEmployeesForAttendees(): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     const userRole = localStorage.getItem('userRole');
@@ -2919,24 +3008,24 @@ async function loadEmployeesForAttendees(): Promise<void> {
     });
 
     if (response.ok) {
-      const data = await response.json();
-      const users = useV2Users && data.data ? data.data : data;
+      const data = (await response.json()) as ApiV2Response<User> | User[];
+      const users: User[] = useV2Users && 'data' in data ? data.data.data : (data as User[]);
       const attendeesList = document.getElementById('attendeesList');
 
       // Get current user ID to exclude from list
       const userStr = localStorage.getItem('user');
-      let currentUserId = 0;
-      if (userStr) {
+      let currentUserIdLocal = 0;
+      if (userStr !== null && userStr !== '') {
         try {
-          const user = JSON.parse(userStr);
-          currentUserId = user.id ?? 0;
+          const user = JSON.parse(userStr) as UserData;
+          currentUserIdLocal = user.id;
         } catch (e) {
           console.error('Error parsing user from localStorage:', e);
         }
       }
 
       // Store employees for later use in updateSelectedAttendees
-      employees = users.filter((user: User) => user.id !== currentUserId);
+      employees = users.filter((user: User) => user.id !== currentUserIdLocal);
 
       if (attendeesList) {
         attendeesList.innerHTML = employees
@@ -2944,14 +3033,19 @@ async function loadEmployeesForAttendees(): Promise<void> {
             // Handle both snake_case (v1) and camelCase (v2) field names
             const firstName = user.first_name ?? '';
             const lastName = user.last_name ?? '';
-            const displayName = `${firstName} ${lastName}`.trim() || user.username || user.email;
+            const displayName =
+              `${firstName} ${lastName}`.trim() !== ''
+                ? `${firstName} ${lastName}`.trim()
+                : user.username !== ''
+                  ? user.username
+                  : user.email;
 
             return `
           <div class="attendee-option">
             <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
             <label for="attendee-${user.id}">
               ${escapeHtml(displayName)}
-              (${escapeHtml(user.email ?? user.username)})
+              (${escapeHtml(user.email)})
             </label>
           </div>
         `;
@@ -2974,7 +3068,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
           console.info('Found checked boxes:', checkboxes.length);
 
           checkboxes.forEach((checkbox) => {
-            const userId = parseInt(checkbox.value);
+            const userId = parseInt(checkbox.value, 10);
             if (!selectedAttendees.includes(userId)) {
               selectedAttendees.push(userId);
               console.info('Added attendee:', userId);
@@ -2987,8 +3081,8 @@ async function loadEmployeesForAttendees(): Promise<void> {
       }
 
       // Also re-attach the search functionality
-      const attendeeSearch = document.getElementById('attendeeSearch') as HTMLInputElement;
-      if (attendeeSearch) {
+      const attendeeSearch = document.getElementById('attendeeSearch') as HTMLInputElement | null;
+      if (attendeeSearch !== null) {
         const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
         attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);
 
@@ -2997,7 +3091,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
         });
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading employees:', error);
   }
 }
@@ -3020,7 +3114,12 @@ function updateSelectedAttendees(): void {
         // Handle both snake_case (v1) and camelCase (v2) field names
         const firstName = employee.first_name ?? '';
         const lastName = employee.last_name ?? '';
-        const displayName = `${firstName} ${lastName}`.trim() || employee.username || employee.email;
+        const displayName =
+          `${firstName} ${lastName}`.trim() !== ''
+            ? `${firstName} ${lastName}`.trim()
+            : employee.username !== ''
+              ? employee.username
+              : employee.email;
 
         return `
         <div class="attendee-item">
@@ -3567,7 +3666,7 @@ function setupFullscreenControls(): void {
           document.body.classList.add('calendar-fullscreen-mode');
 
           // Request fullscreen
-          if (calendarContainer.requestFullscreen) {
+          if ('requestFullscreen' in calendarContainer) {
             await calendarContainer.requestFullscreen();
           } else if (
             (calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> })
@@ -3594,7 +3693,7 @@ function setupFullscreenControls(): void {
           fullscreenBtn.title = 'Vollbild beenden';
         } else {
           // Exit fullscreen mode
-          if (document.exitFullscreen) {
+          if ('exitFullscreen' in document) {
             await document.exitFullscreen();
           } else if ((document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
             const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
@@ -3608,7 +3707,7 @@ function setupFullscreenControls(): void {
             }
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Calendar: Fullscreen error:', error);
         showError('Vollbild-Modus konnte nicht aktiviert werden');
       }
@@ -3635,7 +3734,7 @@ function setupFullscreenControls(): void {
     }
 
     // Refresh calendar layout after fullscreen change
-    if (typeof calendar !== 'undefined' && calendar) {
+    if (typeof calendar !== 'undefined') {
       setTimeout(() => {
         calendar.render();
       }, 100);

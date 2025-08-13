@@ -39,10 +39,10 @@ interface AdminUpdateForm extends HTMLFormElement {
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
-  const updateAdminForm = document.getElementById('update-admin-form') as AdminUpdateForm;
+  const updateAdminForm = document.getElementById('update-admin-form') as AdminUpdateForm | null;
   const adminDetailsContainer = document.getElementById('admin-details');
   const adminUsernameTitle = document.getElementById('admin-username');
-  const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
+  const backBtn = document.getElementById('back-btn') as HTMLButtonElement | null;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
 
   // Get URL parameters
@@ -50,19 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminId = urlParams.get('id');
   const adminUsername = urlParams.get('username');
 
-  if (!adminId) {
+  if (adminId === null || adminId.length === 0) {
     showError('Keine Admin-ID angegeben');
     return;
   }
 
   // Store admin ID in form
-  const adminIdInput = document.getElementById('admin-id') as HTMLInputElement;
-  if (adminIdInput) {
+  const adminIdInput = document.getElementById('admin-id') as HTMLInputElement | null;
+  if (adminIdInput !== null) {
     adminIdInput.value = adminId;
   }
 
   // Display admin username in title
-  if (adminUsername && adminUsernameTitle) {
+  if (adminUsername !== null && adminUsername.length > 0 && adminUsernameTitle) {
     adminUsernameTitle.textContent = `Admin bearbeiten: ${adminUsername}`;
   }
 
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Set active tab content
       const tabId = button.getAttribute('data-tab');
-      if (!tabId) return;
+      if (tabId === null || tabId.length === 0) return;
 
       document.querySelectorAll<HTMLElement>('.tab-content').forEach((tab) => {
         tab.classList.remove('active');
@@ -95,15 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Event listeners
-  if (updateAdminForm) {
-    updateAdminForm.addEventListener('submit', (e) => void updateAdmin(e));
-  }
+  updateAdminForm?.addEventListener('submit', (e) => {
+    void updateAdmin(e);
+  });
 
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      window.location.href = '/root-dashboard';
-    });
-  }
+  backBtn?.addEventListener('click', () => {
+    window.location.href = '/root-dashboard';
+  });
 
   // Load data
   void loadAdminDetails(adminId);
@@ -112,23 +110,23 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Load admin details
    */
-  async function loadAdminDetails(adminId: string): Promise<void> {
+  async function loadAdminDetails(adminIdParam: string): Promise<void> {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token.length === 0) return;
 
     try {
-      const response = await fetch(`/api/root/admin/${adminId}`, {
+      const response = await fetch(`/api/root/admin/${adminIdParam}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
-        const admin: AdminUser = await response.json();
+        const admin = (await response.json()) as AdminUser;
         displayAdminDetails(admin);
         populateAdminForm(admin);
       } else {
-        const error = await response.json();
+        const error = (await response.json()) as { message?: string };
         showError(error.message ?? 'Fehler beim Laden der Admin-Details');
       }
     } catch (error) {
@@ -144,7 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!adminDetailsContainer) return;
 
     const createdAt = formatDateTime(admin.created_at);
-    const lastLogin = admin.last_login ? formatDateTime(admin.last_login) : 'Noch nie';
+    const lastLogin =
+      admin.last_login !== undefined && admin.last_login.length > 0 ? formatDateTime(admin.last_login) : 'Noch nie';
 
     adminDetailsContainer.innerHTML = `
       <p><strong>Benutzer-ID:</strong> ${admin.id}</p>
@@ -157,15 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
    * Populate admin form with data
    */
   function populateAdminForm(admin: AdminUser): void {
-    const usernameInput = document.getElementById('username') as HTMLInputElement;
-    const emailInput = document.getElementById('email') as HTMLInputElement;
-    const companyInput = document.getElementById('company') as HTMLInputElement;
-    const notesInput = document.getElementById('notes') as HTMLTextAreaElement;
+    const usernameInput = document.getElementById('username') as HTMLInputElement | null;
+    const emailInput = document.getElementById('email') as HTMLInputElement | null;
+    const companyInput = document.getElementById('company') as HTMLInputElement | null;
+    const notesInput = document.getElementById('notes') as HTMLTextAreaElement | null;
 
-    if (usernameInput) usernameInput.value = admin.username ?? '';
-    if (emailInput) emailInput.value = admin.email ?? '';
-    if (companyInput) companyInput.value = admin.company ?? '';
-    if (notesInput) notesInput.value = admin.notes ?? '';
+    if (usernameInput !== null) usernameInput.value = admin.username;
+    if (emailInput !== null) emailInput.value = admin.email;
+    if (companyInput !== null) companyInput.value = admin.company ?? '';
+    if (notesInput !== null) notesInput.value = admin.notes ?? '';
     // Password is not populated as it's not stored in plain text
   }
 
@@ -179,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formData = new FormData(form);
     const token = getAuthToken();
 
-    if (!token) return;
+    if (token === null || token.length === 0) return;
 
     // Prepare update data
     const updateData: Partial<AdminUser> & { password?: string } = {
@@ -191,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Only include password if provided
     const password = formData.get('password') as string;
-    if (password) {
+    if (password.length > 0) {
       updateData.password = password;
     }
 
@@ -204,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch(`/api/root/admin/${adminId}`, {
+      const response = await fetch(`/api/root/admin/${adminId ?? ''}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -213,12 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(updateData),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as { error?: string };
 
       if (response.ok) {
         showSuccess('Admin-Daten erfolgreich aktualisiert!');
         // Reload details to show updated data
-        if (adminId) {
+        if (adminId !== null && adminId.length > 0) {
           void loadAdminDetails(adminId);
         }
       } else {
@@ -239,9 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Load admin logs
    */
-  async function loadAdminLogs(adminId: string, days: number): Promise<void> {
+  async function loadAdminLogs(adminIdParam: string, days: number): Promise<void> {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token.length === 0) return;
 
     // Find the correct container for the active tab
     const activeTab = document.querySelector('.tab-content.active');
@@ -254,7 +253,8 @@ document.addEventListener('DOMContentLoaded', () => {
     logsContainer.innerHTML = '<p>Lade Logs...</p>';
 
     try {
-      const url = days > 0 ? `/api/root/admin/${adminId}/logs?days=${days}` : `/api/root/admin/${adminId}/logs`;
+      const url =
+        days > 0 ? `/api/root/admin/${adminIdParam}/logs?days=${days}` : `/api/root/admin/${adminIdParam}/logs`;
 
       const response = await fetch(url, {
         headers: {
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const logs: AdminLog[] = await response.json();
+        const logs = (await response.json()) as AdminLog[];
         displayAdminLogs(logs, logsContainer as HTMLElement);
       } else {
         logsContainer.innerHTML = '<p class="error-message">Fehler beim Laden der Logs.</p>';
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="log-action">${log.action}</span>
           </div>
           <div class="log-description">${log.description}</div>
-          ${log.ip_address ? `<div class="log-ip">IP: ${log.ip_address}</div>` : ''}
+          ${log.ip_address !== undefined && log.ip_address.length > 0 ? `<div class="log-ip">IP: ${log.ip_address}</div>` : ''}
         </div>
       `;
       })

@@ -32,7 +32,7 @@ export function getAuthToken(): string | null {
   // Check if v2 is enabled
   const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
 
-  if (useV2) {
+  if (useV2 === true) {
     // For v2, use accessToken
     return localStorage.getItem('accessToken');
   }
@@ -46,10 +46,10 @@ export function setAuthToken(token: string, refreshToken?: string): void {
   // Check if v2 is enabled
   const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
 
-  if (useV2) {
+  if (useV2 === true) {
     // For v2, store both access and refresh tokens
     localStorage.setItem('accessToken', token);
-    if (refreshToken) {
+    if (refreshToken !== undefined && refreshToken.length > 0) {
       localStorage.setItem('refreshToken', refreshToken);
     }
     // Also store in old format for compatibility
@@ -87,13 +87,13 @@ export function removeAuthToken(): void {
 // Check if user is authenticated
 export function isAuthenticated(): boolean {
   const token = getAuthToken();
-  if (!token || token.length === 0) {
+  if (token === null || token.length === 0) {
     return false;
   }
 
   // Check if token is expired
   const payload = parseJwt(token);
-  if (!payload?.exp) {
+  if (payload?.exp === undefined) {
     return false;
   }
 
@@ -130,7 +130,7 @@ export function parseJwt(token: string): JWTPayload | null {
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
 
-  if (!token) {
+  if (token === null || token.length === 0) {
     window.location.href = '/login';
     throw new Error('No authentication token');
   }
@@ -138,7 +138,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   // Check if v2 is enabled
   const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
 
-  if (useV2) {
+  if (useV2 === true) {
     // Use the new API client for v2
     try {
       // Extract the path from the URL
@@ -157,12 +157,18 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
           response = await apiClient.get(path);
           break;
         case 'POST': {
-          const postBody = options.body ? JSON.parse(options.body as string) : undefined;
+          const postBody =
+            options.body !== undefined && options.body !== null
+              ? (JSON.parse(options.body as string) as unknown)
+              : undefined;
           response = await apiClient.post(path, postBody);
           break;
         }
         case 'PUT': {
-          const putBody = options.body ? JSON.parse(options.body as string) : undefined;
+          const putBody =
+            options.body !== undefined && options.body !== null
+              ? (JSON.parse(options.body as string) as unknown)
+              : undefined;
           response = await apiClient.put(path, putBody);
           break;
         }
@@ -228,7 +234,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       'X-Browser-Fingerprint': fingerprint,
-      ...options.headers,
+      ...(options.headers ? (options.headers as Record<string, string>) : {}),
     };
 
     const response = await fetch(url, {
@@ -290,7 +296,7 @@ export async function loadUserInfo(): Promise<User> {
     // If there's already a request in progress, wait for it
     if (profileLoadingPromise) {
       console.info('loadUserInfo: Waiting for existing profile request...');
-      return profileLoadingPromise;
+      return await profileLoadingPromise;
     }
 
     console.info('loadUserInfo: Attempting to fetch user profile...');
@@ -298,18 +304,37 @@ export async function loadUserInfo(): Promise<User> {
     // Create the promise and store it
     profileLoadingPromise = (async () => {
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-      const profileUrl = useV2 ? '/api/v2/users/me' : '/api/user/profile';
+      const profileUrl = useV2 === true ? '/api/v2/users/me' : '/api/user/profile';
 
       const response = await fetchWithAuth(profileUrl);
       console.info('loadUserInfo: Response status:', response.status);
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        id?: number;
+        username?: string;
+        email?: string;
+        firstName?: string;
+        first_name?: string;
+        lastName?: string;
+        last_name?: string;
+        role?: string;
+        tenantId?: number;
+        tenant_id?: number;
+        isActive?: boolean;
+        isArchived?: boolean;
+        createdAt?: string;
+        created_at?: string;
+        updatedAt?: string;
+        updated_at?: string;
+        user?: User;
+        message?: string;
+      };
       console.info('loadUserInfo: Response data:', data);
 
       if (response.ok) {
         let user: User;
 
-        if (useV2) {
+        if (useV2 === true) {
           // v2 response has camelCase fields, convert to snake_case for compatibility
           const v2User = data;
           user = {
@@ -320,14 +345,14 @@ export async function loadUserInfo(): Promise<User> {
             last_name: v2User.lastName ?? v2User.last_name,
             role: v2User.role,
             tenant_id: v2User.tenantId ?? v2User.tenant_id,
-            is_active: v2User.isActive !== undefined ? v2User.isActive : true,
-            is_archived: v2User.isArchived !== undefined ? v2User.isArchived : false,
+            is_active: v2User.isActive ?? true,
+            is_archived: v2User.isArchived ?? false,
             created_at: v2User.createdAt ?? v2User.created_at,
             updated_at: v2User.updatedAt ?? v2User.updated_at,
           } as User;
         } else {
           // v1 response
-          user = data.user ?? data;
+          user = data.user ?? (data as User);
         }
 
         // Update user display - check both element IDs for compatibility
@@ -340,7 +365,7 @@ export async function loadUserInfo(): Promise<User> {
 
         const userRole = document.getElementById('userRole');
         if (userRole) {
-          userRole.textContent = user.role ?? 'Benutzer';
+          userRole.textContent = user.role;
         }
 
         // Update cache with fresh data
@@ -357,7 +382,7 @@ export async function loadUserInfo(): Promise<User> {
       }
     })();
 
-    return profileLoadingPromise;
+    return await profileLoadingPromise;
   } catch (error) {
     console.error('Error loading user info:', error);
     profileLoadingPromise = null;
@@ -394,12 +419,12 @@ export async function logout(): Promise<void> {
   const token = getAuthToken();
 
   // Call logout API to log the action
-  if (token) {
+  if (token !== null && token.length > 0) {
     try {
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-      const logoutUrl = useV2 ? '/api/v2/auth/logout' : '/api/auth/logout';
+      const logoutUrl = useV2 === true ? '/api/v2/auth/logout' : '/api/auth/logout';
 
-      if (useV2) {
+      if (useV2 === true) {
         // Use API client for v2
         await apiClient.post('/auth/logout', {});
       } else {
@@ -435,7 +460,7 @@ export async function logout(): Promise<void> {
   profileLoadingPromise = null;
 
   // Clear API client tokens
-  if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
+  if (window.FEATURE_FLAGS?.USE_API_V2_AUTH === true) {
     apiClient.clearTokens();
   }
 
@@ -447,9 +472,9 @@ export async function logout(): Promise<void> {
 export async function login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
   try {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-    const loginUrl = useV2 ? '/api/v2/auth/login' : '/api/auth/login';
+    const loginUrl = useV2 === true ? '/api/v2/auth/login' : '/api/auth/login';
 
-    if (useV2) {
+    if (useV2 === true) {
       // Use API client for v2
       try {
         const response = await apiClient.post<{
@@ -462,7 +487,12 @@ export async function login(email: string, password: string): Promise<{ success:
         }); // No auth needed for login
 
         // v2 response format
-        if (response.accessToken && response.refreshToken) {
+        if (
+          response.accessToken !== undefined &&
+          response.accessToken.length > 0 &&
+          response.refreshToken !== undefined &&
+          response.refreshToken.length > 0
+        ) {
           // Store tokens
           apiClient.setTokens(response.accessToken, response.refreshToken);
           setAuthToken(response.accessToken, response.refreshToken);
@@ -495,14 +525,34 @@ export async function login(email: string, password: string): Promise<{ success:
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        id?: number;
+        username?: string;
+        email?: string;
+        firstName?: string;
+        first_name?: string;
+        lastName?: string;
+        last_name?: string;
+        role?: string;
+        tenantId?: number;
+        tenant_id?: number;
+        isActive?: boolean;
+        isArchived?: boolean;
+        createdAt?: string;
+        created_at?: string;
+        updatedAt?: string;
+        updated_at?: string;
+        token?: string;
+        user?: User;
+        message?: string;
+      };
 
-      if (response.ok && data.token) {
+      if (response.ok && data.token !== undefined && data.token.length > 0) {
         // Store token
         setAuthToken(data.token);
 
         // Store user info
-        if (data.user) {
+        if (data.user !== undefined) {
           localStorage.setItem('userRole', data.user.role);
         }
 
@@ -519,23 +569,20 @@ export async function login(email: string, password: string): Promise<{ success:
 
 // Show success message
 export function showSuccess(message: string): void {
-  // Simple alert for now, can be enhanced with toast notifications
-
-  alert(`✅ ${message}`);
+  // Simple console log for now, can be enhanced with toast notifications
+  console.info(`✅ ${message}`);
 }
 
 // Show error message
 export function showError(message: string): void {
-  // Simple alert for now, can be enhanced with toast notifications
-
-  alert(`❌ ${message}`);
+  // Simple console log for now, can be enhanced with toast notifications
+  console.error(`❌ ${message}`);
 }
 
 // Show info message
 export function showInfo(message: string): void {
-  // Simple alert for now, can be enhanced with toast notifications
-
-  alert(`ℹ️ ${message}`);
+  // Simple console log for now, can be enhanced with toast notifications
+  console.info(`ℹ️ ${message}`);
 }
 
 // Initialize authentication on page load
@@ -545,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const activeRole = localStorage.getItem('activeRole');
 
   console.info('[AUTH] Initialization:', {
-    token: !!token,
+    token: token !== null && token.length > 0,
     userRole,
     activeRole,
     path: window.location.pathname,
@@ -562,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load user info if on authenticated page
   if (isAuthenticated() && !window.location.pathname.includes('login')) {
     console.info('[AUTH] Loading user info...');
-    loadUserInfo().catch((error) => {
+    loadUserInfo().catch((error: unknown) => {
       console.error('Failed to load user info:', error);
       // Don't redirect immediately, let the user see the error
     });
@@ -572,9 +619,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.info('[AUTH] Session manager initialized');
 
     // Enforce page access based on role - use UnifiedNavigation if available
-    const unifiedNav = window.unifiedNav;
-    if (unifiedNav && typeof unifiedNav.enforcePageAccess === 'function') {
-      unifiedNav.enforcePageAccess();
+    if (typeof window.unifiedNav.enforcePageAccess === 'function') {
+      window.unifiedNav.enforcePageAccess();
       console.info('[AUTH] Page access enforced via UnifiedNavigation');
     } else {
       // UnifiedNavigation will handle this when it initializes

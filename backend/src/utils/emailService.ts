@@ -7,11 +7,7 @@ import fs from "fs";
 import path from "path";
 
 import jwt from "jsonwebtoken";
-import nodemailer, {
-  Transporter,
-  SendMailOptions,
-  SentMessageInfo,
-} from "nodemailer";
+import nodemailer, { Transporter, SendMailOptions } from "nodemailer";
 import type { Attachment } from "nodemailer/lib/mailer";
 
 import Feature from "../models/feature";
@@ -393,12 +389,12 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     };
 
     // Type assertion needed because nodemailer's sendMail returns any
-    const info = (await mailer.sendMail(
-      mailOptions,
-    )) as unknown as SentMessageInfo;
 
-    logger.info(`E-Mail gesendet: ${String(info.messageId)}`);
-    return { success: true, messageId: String(info.messageId) };
+    const info = await mailer.sendMail(mailOptions);
+
+    const messageId = String(info.messageId);
+    logger.info(`E-Mail gesendet: ${messageId}`);
+    return { success: true, messageId };
   } catch (error: unknown) {
     logger.error(`Fehler beim Senden der E-Mail: ${(error as Error).message}`);
     return { success: false, error: (error as Error).message };

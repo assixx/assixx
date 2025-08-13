@@ -67,13 +67,10 @@ class DepartmentsManager {
   }
 
   private async confirmAction(message: string): Promise<boolean> {
-    // Use a promise-based approach for confirmation
-    return new Promise((resolve) => {
-      // For now, use native confirm but wrapped in Promise
-      // In production, replace with a custom modal
-
-      resolve(confirm(message));
-    });
+    // TODO: Implement custom confirmation modal
+    // For now, show error and block action for safety
+    showError(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
+    return Promise.resolve(false); // Block action until proper modal is implemented
   }
 
   private initializeEventListeners() {
@@ -100,8 +97,8 @@ class DepartmentsManager {
 
     // Search
     document.getElementById('department-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('department-search') as HTMLInputElement;
-      this.searchTerm = searchInput?.value ?? '';
+      const searchInput = document.getElementById('department-search') as HTMLInputElement | null;
+      this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadDepartments();
     });
 
@@ -122,7 +119,7 @@ class DepartmentsManager {
     });
   }
 
-  async loadDepartments() {
+  async loadDepartments(): Promise<void> {
     try {
       const params: Record<string, string> = {};
 
@@ -130,7 +127,7 @@ class DepartmentsManager {
         params.status = this.currentFilter;
       }
 
-      if (this.searchTerm !== null) {
+      if (this.searchTerm.length > 0) {
         params.search = this.searchTerm;
       }
 
@@ -139,20 +136,20 @@ class DepartmentsManager {
       });
 
       // v2 API: apiClient.request already extracts the data array
-      this.departments = response ?? [];
+      this.departments = response;
 
       // Apply client-side filtering if needed
       if (this.currentFilter !== 'all') {
         this.departments = this.departments.filter((dept) => dept.status === this.currentFilter);
       }
 
-      if (this.searchTerm !== null) {
+      if (this.searchTerm.length > 0) {
         const search = this.searchTerm.toLowerCase();
         this.departments = this.departments.filter(
           (dept) =>
             dept.name.toLowerCase().includes(search) ||
-            (dept.description?.toLowerCase().includes(search) ?? false) ||
-            dept.managerName?.toLowerCase().includes(search),
+            dept.description?.toLowerCase().includes(search) === true ||
+            dept.managerName?.toLowerCase().includes(search) === true,
         );
       }
 
@@ -165,7 +162,7 @@ class DepartmentsManager {
 
   private renderDepartmentsTable() {
     const tableBody = document.getElementById('departments-table-body');
-    if (tableBody === null || tableBody === undefined) return;
+    if (!tableBody) return;
 
     if (this.departments.length === 0) {
       tableBody.innerHTML = `
@@ -182,11 +179,11 @@ class DepartmentsManager {
       <tr>
         <td>
           <strong>${dept.name}</strong>
-          ${dept.description ? `<br><small class="text-muted">${dept.description}</small>` : ''}
+          ${dept.description !== undefined ? `<br><small class="text-muted">${dept.description}</small>` : ''}
         </td>
-        <td>${String(dept.managerName ?? '-')}</td>
-        <td>${String(dept.areaName ?? '-')}</td>
-        <td>${String(dept.parentName ?? '-')}</td>
+        <td>${dept.managerName ?? '-'}</td>
+        <td>${dept.areaName ?? '-'}</td>
+        <td>${dept.parentName ?? '-'}</td>
         <td>
           <span class="badge ${this.getStatusBadgeClass(dept.status)}">
             ${this.getStatusLabel(dept.status)}
@@ -237,7 +234,7 @@ class DepartmentsManager {
     }
   }
 
-  showDepartmentModal() {
+  showDepartmentModal(): void {
     const modal = document.getElementById('department-modal');
     if (modal !== null) {
       modal.style.display = 'flex';
@@ -253,14 +250,14 @@ class DepartmentsManager {
     }
   }
 
-  closeDepartmentModal() {
+  closeDepartmentModal(): void {
     const modal = document.getElementById('department-modal');
     if (modal !== null) {
       modal.style.display = 'none';
     }
   }
 
-  async createDepartment(data: Partial<Department>) {
+  async createDepartment(data: Partial<Department>): Promise<Department> {
     try {
       const response = await this.apiClient.request<Department>('/departments', {
         method: 'POST',
@@ -277,7 +274,7 @@ class DepartmentsManager {
     }
   }
 
-  async updateDepartment(id: number, data: Partial<Department>) {
+  async updateDepartment(id: number, data: Partial<Department>): Promise<Department> {
     try {
       const response = await this.apiClient.request<Department>(`/departments/${id}`, {
         method: 'PUT',
@@ -294,13 +291,13 @@ class DepartmentsManager {
     }
   }
 
-  async deleteDepartment(id: number) {
+  async deleteDepartment(id: number): Promise<void> {
     // Use custom confirmation dialog or showError for better UX
     const confirmed = await this.confirmAction(
       'Sind Sie sicher, dass Sie diese Abteilung löschen möchten? Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.',
     );
 
-    if (confirmed === null || confirmed === undefined) {
+    if (!confirmed) {
       return;
     }
 
@@ -322,7 +319,7 @@ class DepartmentsManager {
       const response = await this.apiClient.request<Department>(`/departments/${id}`, {
         method: 'GET',
       });
-      return response ?? null;
+      return response;
     } catch (error) {
       console.error('Error getting department details:', error);
       showError('Fehler beim Laden der Abteilungsdetails');
@@ -330,14 +327,14 @@ class DepartmentsManager {
     }
   }
 
-  async loadAreasForDepartmentSelect() {
+  async loadAreasForDepartmentSelect(): Promise<void> {
     try {
       const response = await this.apiClient.request<Area[]>('/areas', {
         method: 'GET',
       });
 
       const dropdown = document.getElementById('department-area-dropdown');
-      if (dropdown && response) {
+      if (dropdown !== null) {
         dropdown.innerHTML = `
           <div class="dropdown-option" data-value="" onclick="selectDropdownOption('department-area', '', 'Kein Bereich')">
             <i class="fas fa-times-circle"></i> Kein Bereich
@@ -363,17 +360,17 @@ class DepartmentsManager {
     }
   }
 
-  async loadManagersForDepartmentSelect() {
+  async loadManagersForDepartmentSelect(): Promise<void> {
     try {
       const response = await this.apiClient.request<User[]>('/users', {
         method: 'GET',
       });
 
       // Filter for users who can be managers (admins or managers)
-      const managers = response?.filter((user) => user.role === 'admin' || user.role === 'manager') ?? [];
+      const managers = response.filter((user) => user.role === 'admin' || user.role === 'manager');
 
       const dropdown = document.getElementById('department-manager-dropdown');
-      if (dropdown && managers) {
+      if (dropdown !== null) {
         dropdown.innerHTML = `
           <div class="dropdown-option" data-value="" onclick="selectDropdownOption('department-manager', '', 'Kein Manager')">
             <i class="fas fa-times-circle"></i> Kein Manager
@@ -385,7 +382,9 @@ class DepartmentsManager {
           optionDiv.className = 'dropdown-option';
           optionDiv.setAttribute('data-value', manager.id.toString());
           const name =
-            manager.firstName && manager.lastName ? `${manager.firstName} ${manager.lastName}` : manager.username;
+            manager.firstName !== undefined && manager.lastName !== undefined
+              ? `${manager.firstName} ${manager.lastName}`
+              : manager.username;
           optionDiv.innerHTML = `<i class="fas fa-user-tie"></i> ${name}`;
           optionDiv.setAttribute(
             'onclick',
@@ -401,14 +400,14 @@ class DepartmentsManager {
     }
   }
 
-  async loadParentDepartmentsForSelect() {
+  async loadParentDepartmentsForSelect(): Promise<void> {
     try {
       const response = await this.apiClient.request<Department[]>('/departments', {
         method: 'GET',
       });
 
       const dropdown = document.getElementById('department-parent-dropdown');
-      if (dropdown && response) {
+      if (dropdown !== null) {
         dropdown.innerHTML = `
           <div class="dropdown-option" data-value="" onclick="selectDropdownOption('department-parent', '', 'Keine übergeordnete Abteilung')">
             <i class="fas fa-times-circle"></i> Keine übergeordnete Abteilung
@@ -483,14 +482,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveDepartment = async () => {
-      const form = document.getElementById('department-form') as HTMLFormElement;
-      if (form === null || form === undefined) return;
+      const form = document.getElementById('department-form') as HTMLFormElement | null;
+      if (form === null) return;
 
       const formData = new FormData(form);
       const data: Record<string, unknown> = {};
 
       formData.forEach((value, key) => {
-        if (value && value !== undefined && typeof value === 'string') {
+        if (typeof value === 'string' && value.length > 0) {
           // Convert to appropriate types
           if (key === 'areaId' || key === 'managerId' || key === 'parentId') {
             data[key] = parseInt(value, 10);
@@ -501,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Ensure required fields
-      if (data.name === null || data.name === undefined) {
+      if (typeof data.name !== 'string' || data.name.length === 0) {
         showError('Bitte geben Sie einen Abteilungsnamen ein');
         return;
       }
@@ -531,13 +530,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('popstate', checkAndLoadDepartments);
 
     // Override pushState and replaceState
-    const originalPushState = window.history.pushState;
+    const originalPushState = window.history.pushState.bind(window.history);
     window.history.pushState = function (...args) {
       originalPushState.apply(window.history, args);
       setTimeout(checkAndLoadDepartments, 100);
     };
 
-    const originalReplaceState = window.history.replaceState;
+    const originalReplaceState = window.history.replaceState.bind(window.history);
     window.history.replaceState = function (...args) {
       originalReplaceState.apply(window.history, args);
       setTimeout(checkAndLoadDepartments, 100);

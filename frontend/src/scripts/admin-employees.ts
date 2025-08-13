@@ -70,6 +70,14 @@ class EmployeesManager {
     this.initializeEventListeners();
   }
 
+  private showConfirmDialog(message: string): boolean {
+    // TODO: Implement custom modal dialog
+    // For now, return false to block action
+    // In production, this should open a proper confirmation modal
+    showError(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
+    return false; // Safer to block action until proper modal is implemented
+  }
+
   private initializeEventListeners() {
     // Filter buttons
     document.getElementById('show-all-employees')?.addEventListener('click', () => {
@@ -89,8 +97,8 @@ class EmployeesManager {
 
     // Search
     document.getElementById('employee-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('employee-search') as HTMLInputElement;
-      this.searchTerm = searchInput?.value ?? '';
+      const searchInput = document.getElementById('employee-search') as HTMLInputElement | null;
+      this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadEmployees();
     });
 
@@ -111,7 +119,7 @@ class EmployeesManager {
     });
   }
 
-  async loadEmployees() {
+  async loadEmployees(): Promise<void> {
     try {
       const params: Record<string, string> = {};
 
@@ -119,7 +127,7 @@ class EmployeesManager {
         params.status = this.currentFilter;
       }
 
-      if (this.searchTerm !== null) {
+      if (this.searchTerm.length > 0) {
         params.search = this.searchTerm;
       }
 
@@ -130,7 +138,7 @@ class EmployeesManager {
       // CRITICAL SECURITY: Only show users with role='employee'
       // NEVER show admins or roots in the employees table
       // Admins cannot manage other admins or see root users
-      this.employees = (response ?? []).filter((user) => user.role === 'employee');
+      this.employees = response.filter((user) => user.role === 'employee');
 
       // Apply status filter based on is_active field
       if (this.currentFilter === 'active') {
@@ -139,15 +147,15 @@ class EmployeesManager {
         this.employees = this.employees.filter((emp) => !emp.is_active);
       }
 
-      if (this.searchTerm !== null) {
+      if (this.searchTerm.length > 0) {
         const search = this.searchTerm.toLowerCase();
         this.employees = this.employees.filter(
           (emp) =>
             (emp.first_name?.toLowerCase().includes(search) ?? false) ||
             (emp.last_name?.toLowerCase().includes(search) ?? false) ||
-            emp.email?.toLowerCase().includes(search) ||
+            emp.email.toLowerCase().includes(search) ||
             (emp.position?.toLowerCase().includes(search) ?? false) ||
-            emp.employeeId?.toLowerCase().includes(search),
+            (emp.employeeId?.toLowerCase().includes(search) ?? false),
         );
       }
 
@@ -158,9 +166,9 @@ class EmployeesManager {
     }
   }
 
-  private renderEmployeesTable() {
+  private renderEmployeesTable(): void {
     const tableBody = document.getElementById('employees-table-body');
-    if (tableBody === null || tableBody === undefined) return;
+    if (tableBody === null) return;
 
     if (this.employees.length === 0) {
       tableBody.innerHTML = `
@@ -176,14 +184,14 @@ class EmployeesManager {
         (employee) => `
       <tr>
         <td>
-          <strong>${String(employee.first_name ?? '')} ${String(employee.last_name ?? '')}</strong>
-          ${employee.position ? `<br><small class="text-muted">${employee.position}</small>` : ''}
+          <strong>${employee.first_name ?? ''} ${employee.last_name ?? ''}</strong>
+          ${employee.position !== undefined && employee.position.length > 0 ? `<br><small class="text-muted">${employee.position}</small>` : ''}
         </td>
-        <td>${String(employee.email ?? '-')}</td>
+        <td>${employee.email}</td>
         <td>
-          <code>${String(employee.employee_id ?? employee.employeeId ?? '-')}</code>
+          <code>${employee.employee_id ?? employee.employeeId ?? '-'}</code>
         </td>
-        <td>${String(employee.departmentName ?? '-')}</td>
+        <td>${employee.departmentName ?? '-'}</td>
         <td>
           <span class="badge ${!employee.is_active ? 'badge-secondary' : 'badge-success'}">
             ${!employee.is_active ? 'Inaktiv' : 'Aktiv'}
@@ -276,7 +284,7 @@ class EmployeesManager {
     }
   }
 
-  showEmployeeModal() {
+  showEmployeeModal(): void {
     const modal = document.getElementById('employee-modal');
     if (modal !== null) {
       modal.style.display = 'flex';
@@ -284,20 +292,20 @@ class EmployeesManager {
       // Load departments and teams after showing modal
       setTimeout(() => {
         const w = window as WindowWithEmployeeHandlers;
-        void w.loadDepartmentsForEmployeeSelect?.();
+        void w.loadDepartmentsForEmployeeSelect();
         void w.loadTeamsForEmployeeSelect?.();
       }, 100);
     }
   }
 
-  hideEmployeeModal() {
+  hideEmployeeModal(): void {
     const modal = document.getElementById('employee-modal');
     if (modal !== null) {
       modal.style.display = 'none';
     }
   }
 
-  async createEmployee(data: Partial<Employee>) {
+  async createEmployee(data: Partial<Employee>): Promise<Employee> {
     try {
       const response = await this.apiClient.request<Employee>('/users', {
         method: 'POST',
@@ -314,10 +322,10 @@ class EmployeesManager {
     }
   }
 
-  async updateEmployee(id: number, data: Partial<Employee>) {
+  async updateEmployee(id: number, data: Partial<Employee>): Promise<Employee> {
     // SECURITY: First check if user is actually an employee
     const user = await this.getEmployeeDetails(id);
-    if (user === null || user === undefined) {
+    if (user === null) {
       showError('Mitarbeiter nicht gefunden');
       throw new Error('User not found');
     }
@@ -345,10 +353,10 @@ class EmployeesManager {
     }
   }
 
-  async deleteEmployee(id: number) {
+  async deleteEmployee(id: number): Promise<void> {
     // SECURITY: First check if user is actually an employee
     const user = await this.getEmployeeDetails(id);
-    if (user === null || user === undefined) {
+    if (user === null) {
       showError('Mitarbeiter nicht gefunden');
       return;
     }
@@ -360,7 +368,8 @@ class EmployeesManager {
       return;
     }
 
-    if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?')) {
+    const confirmDelete = this.showConfirmDialog('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?');
+    if (!confirmDelete) {
       return;
     }
 
@@ -382,7 +391,7 @@ class EmployeesManager {
       const response = await this.apiClient.request<Employee>(`/users/${id}`, {
         method: 'GET',
       });
-      return response ?? null;
+      return response;
     } catch (error) {
       console.error('Error getting employee details:', error);
       showError('Fehler beim Laden der Mitarbeiterdetails');
@@ -395,7 +404,7 @@ class EmployeesManager {
       const response = await this.apiClient.request<Department[]>('/departments', {
         method: 'GET',
       });
-      return response ?? null;
+      return response;
     } catch (error) {
       console.error('Error loading departments:', error);
       return null;
@@ -407,7 +416,7 @@ class EmployeesManager {
       const response = await this.apiClient.request<Team[]>('/teams', {
         method: 'GET',
       });
-      return response ?? null;
+      return response;
     } catch (error) {
       console.error('Error loading teams:', error);
       return null;
@@ -463,14 +472,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveEmployee = async () => {
-      const form = document.getElementById('create-employee-form') as HTMLFormElement;
-      if (form === null || form === undefined) return;
+      const form = document.getElementById('create-employee-form') as HTMLFormElement | null;
+      if (form === null) return;
 
       const formData = new FormData(form);
       const data: Record<string, unknown> = {};
 
       formData.forEach((value, key) => {
-        if (value && value !== undefined && typeof value === 'string') {
+        if (typeof value === 'string' && value.length > 0) {
           // Convert to appropriate types
           if (key === 'departmentId' || key === 'teamId') {
             data[key] = parseInt(value, 10);
@@ -481,7 +490,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Ensure required fields
-      if (!data.email || !data.firstName || !data.lastName) {
+      if (
+        typeof data.email !== 'string' ||
+        data.email.length === 0 ||
+        typeof data.firstName !== 'string' ||
+        data.firstName.length === 0 ||
+        typeof data.lastName !== 'string' ||
+        data.lastName.length === 0
+      ) {
         showError('Bitte füllen Sie alle Pflichtfelder aus');
         return;
       }
@@ -524,13 +540,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadTeamsForEmployeeSelect = async () => {
       const teams = await employeesManager?.loadTeams();
-      const selectedDeptId = (document.getElementById('employee-department-select') as HTMLInputElement)?.value;
+      const selectedDeptId = (document.getElementById('employee-department-select') as HTMLInputElement | null)?.value;
       const dropdown = document.getElementById('employee-team-dropdown');
 
       if (dropdown && teams) {
         // Filter teams by department if one is selected
         let filteredTeams = teams;
-        if (selectedDeptId !== null && selectedDeptId !== undefined && selectedDeptId !== '0') {
+        if (selectedDeptId !== undefined && selectedDeptId !== '0') {
           filteredTeams = teams.filter((team) => team.departmentId === parseInt(selectedDeptId, 10));
         }
 
@@ -571,13 +587,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('popstate', checkAndLoadEmployees);
 
     // Override pushState and replaceState
-    const originalPushState = window.history.pushState;
+    const originalPushState = window.history.pushState.bind(window.history);
     window.history.pushState = function (...args) {
       originalPushState.apply(window.history, args);
       setTimeout(checkAndLoadEmployees, 100);
     };
 
-    const originalReplaceState = window.history.replaceState;
+    const originalReplaceState = window.history.replaceState.bind(window.history);
     window.history.replaceState = function (...args) {
       originalReplaceState.apply(window.history, args);
       setTimeout(checkAndLoadEmployees, 100);

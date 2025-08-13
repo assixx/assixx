@@ -83,7 +83,7 @@ class TeamsManager {
       const response = await this.apiClient.request<Department[]>('/departments', {
         method: 'GET',
       });
-      return response ?? null;
+      return response;
     } catch (error) {
       console.error('Error loading departments:', error);
       return null;
@@ -114,8 +114,8 @@ class TeamsManager {
 
     // Search
     document.getElementById('team-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('team-search') as HTMLInputElement;
-      this.searchTerm = searchInput?.value ?? '';
+      const searchInput = document.getElementById('team-search') as HTMLInputElement | null;
+      this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadTeams();
     });
 
@@ -129,7 +129,7 @@ class TeamsManager {
     });
   }
 
-  async loadTeams() {
+  async loadTeams(): Promise<void> {
     try {
       const params: Record<string, string> = {};
 
@@ -137,7 +137,7 @@ class TeamsManager {
         params.status = this.currentFilter;
       }
 
-      if (this.searchTerm !== null) {
+      if (this.searchTerm.length > 0) {
         params.search = this.searchTerm;
       }
 
@@ -146,7 +146,7 @@ class TeamsManager {
       });
 
       // v2 API: apiClient.request already extracts the data array
-      this.teams = response ?? [];
+      this.teams = response;
       this.renderTeamsTable();
     } catch (error) {
       console.error('Error loading teams:', error);
@@ -156,7 +156,7 @@ class TeamsManager {
 
   private renderTeamsTable() {
     const tbody = document.getElementById('teams-table-body');
-    if (tbody === null || tbody === undefined) return;
+    if (tbody === null) return;
 
     if (this.teams.length === 0) {
       tbody.innerHTML = `
@@ -174,16 +174,16 @@ class TeamsManager {
         <td>
           <strong>${team.name}</strong>
         </td>
-        <td>${String(team.description ?? '-')}</td>
-        <td>${String(team.leaderName ?? '-')}</td>
-        <td>${String(team.departmentName ?? '-')}</td>
+        <td>${team.description ?? '-'}</td>
+        <td>${team.leaderName ?? '-'}</td>
+        <td>${team.departmentName ?? '-'}</td>
         <td>
           <span class="badge ${this.getStatusBadgeClass(team.status)}">
             ${this.getStatusLabel(team.status)}
           </span>
         </td>
-        <td>${String(team.memberCount ?? 0)}/${String(team.maxMembers ?? '-')}</td>
-        <td>${team.performanceScore ? `${team.performanceScore}%` : '-'}</td>
+        <td>${team.memberCount ?? 0}/${team.maxMembers ?? '-'}</td>
+        <td>${team.performanceScore !== undefined ? `${team.performanceScore}%` : '-'}</td>
         <td>
           <button class="btn btn-sm btn-secondary" onclick="window.editTeam(${team.id})">
             <i class="fas fa-edit"></i>
@@ -227,7 +227,7 @@ class TeamsManager {
     }
   }
 
-  async createTeam(teamData: Partial<Team>) {
+  async createTeam(teamData: Partial<Team>): Promise<Team> {
     try {
       const response = await this.apiClient.request<Team>('/teams', {
         method: 'POST',
@@ -244,7 +244,7 @@ class TeamsManager {
     }
   }
 
-  async updateTeam(id: number, teamData: Partial<Team>) {
+  async updateTeam(id: number, teamData: Partial<Team>): Promise<Team> {
     try {
       const response = await this.apiClient.request<Team>(`/teams/${id}`, {
         method: 'PUT',
@@ -261,13 +261,18 @@ class TeamsManager {
     }
   }
 
-  async deleteTeam(id: number) {
+  async deleteTeam(_id: number): Promise<void> {
+    // TODO: Implement proper confirmation modal
+    showError('Löschbestätigung: Feature noch nicht implementiert - Team kann nicht gelöscht werden');
+    await Promise.resolve();
+    // Code below will be activated once confirmation modal is implemented
+    /*
     if (!confirm('Sind Sie sicher, dass Sie dieses Team löschen möchten?')) {
       return;
     }
 
     try {
-      await this.apiClient.request<void>(`/teams/${id}`, {
+      await this.apiClient.request(`/teams/${_id}`, {
         method: 'DELETE',
       });
 
@@ -277,6 +282,7 @@ class TeamsManager {
       console.error('Error deleting team:', error);
       showError('Fehler beim Löschen des Teams');
     }
+    */
   }
 
   async getTeamDetails(id: number): Promise<Team | null> {
@@ -285,7 +291,7 @@ class TeamsManager {
         method: 'GET',
       });
 
-      return response ?? null;
+      return response;
     } catch (error) {
       console.error('Error getting team details:', error);
       showError('Fehler beim Laden der Teamdetails');
@@ -376,10 +382,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const machineResponse = await teamsManager.apiClient.request<Machine[]>('/machines', {
               method: 'GET',
             });
-            const machines = machineResponse ?? [];
+            const machines = machineResponse;
             const machineDropdown = document.getElementById('team-machines-dropdown');
 
-            if (machineDropdown && machines) {
+            if (machineDropdown !== null) {
               // Clear and create checkboxes for multi-selection
               machineDropdown.innerHTML = '';
 
@@ -396,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <input type="checkbox" value="${machine.id}"
                              onchange="updateMachineSelection()"
                              style="margin-right: 8px;">
-                      <span>${machine.name} ${machine.departmentName ? `(${machine.departmentName})` : ''}</span>
+                      <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName.length > 0 ? `(${machine.departmentName})` : ''}</span>
                     </label>
                   `;
                   machineDropdown.appendChild(optionDiv);
@@ -414,10 +420,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const userResponse = await teamsManager.apiClient.request<User[]>('/users', {
               method: 'GET',
             });
-            const users = userResponse ?? [];
+            const users = userResponse;
             const userDropdown = document.getElementById('team-users-dropdown');
 
-            if (userDropdown && users) {
+            if (userDropdown !== null) {
               // Clear and create checkboxes for multi-selection
               userDropdown.innerHTML = '';
 
@@ -430,13 +436,18 @@ document.addEventListener('DOMContentLoaded', () => {
                   optionDiv.className = 'dropdown-option';
                   optionDiv.style.padding = '8px 12px';
                   const displayName =
-                    user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username;
+                    user.firstName !== undefined &&
+                    user.firstName.length > 0 &&
+                    user.lastName !== undefined &&
+                    user.lastName.length > 0
+                      ? `${user.firstName} ${user.lastName}`
+                      : user.username;
                   optionDiv.innerHTML = `
                     <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
                       <input type="checkbox" value="${user.id}"
                              onchange="updateUserSelection()"
                              style="margin-right: 8px;">
-                      <span>${displayName} ${user.departmentName ? `(${user.departmentName})` : ''}</span>
+                      <span>${displayName} ${user.departmentName !== undefined && user.departmentName.length > 0 ? `(${user.departmentName})` : ''}</span>
                     </label>
                   `;
                   userDropdown.appendChild(optionDiv);
@@ -451,8 +462,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Reset form
-        const form = document.getElementById('teamForm') as HTMLFormElement;
-        if (form !== null) form.reset();
+        const form = document.getElementById('teamForm') as HTMLFormElement | null;
+        if (form !== null) {
+          form.reset();
+        }
       }
     };
 
@@ -480,10 +493,12 @@ document.addEventListener('DOMContentLoaded', () => {
         selectDropdownOption?: (fieldId: string, value: string, displayText: string) => void;
       }
     ).selectDropdownOption = (fieldId: string, value: string, displayText: string) => {
-      const input = document.getElementById(`${fieldId}-select`) as HTMLInputElement;
+      const input = document.getElementById(`${fieldId}-select`) as HTMLInputElement | null;
       const display = document.getElementById(`${fieldId}-display`);
 
-      if (input !== null) input.value = value;
+      if (input !== null) {
+        input.value = value;
+      }
       if (display !== null) {
         const span = display.querySelector('span');
         if (span !== null) span.textContent = displayText;
@@ -491,16 +506,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Close dropdown
       const dropdown = document.getElementById(`${fieldId}-dropdown`);
-      if (dropdown !== null) dropdown.classList.remove('active');
+      if (dropdown !== null) {
+        dropdown.classList.remove('active');
+      }
     };
 
     // Update user selection handler
     (window as WindowWithTeamHandlers & { updateUserSelection?: () => void }).updateUserSelection = () => {
       const userDropdown = document.getElementById('team-users-dropdown');
       const userDisplay = document.getElementById('team-users-display');
-      const userInput = document.getElementById('team-users-select') as HTMLInputElement;
+      const userInput = document.getElementById('team-users-select') as HTMLInputElement | null;
 
-      if (!userDropdown || !userDisplay || !userInput) return;
+      if (userDropdown === null || userDisplay === null || userInput === null) {
+        return;
+      }
 
       const checkboxes = userDropdown.querySelectorAll('input[type="checkbox"]:checked');
       const selectedIds: string[] = [];
@@ -510,8 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = checkbox as HTMLInputElement;
         selectedIds.push(input.value);
         const label = checkbox.parentElement?.querySelector('span');
-        if (label !== null) {
-          if (label) selectedNames.push(label.textContent?.split(' (')[0] ?? '');
+        if (label && label.textContent.length > 0) {
+          selectedNames.push(label.textContent.split(' (')[0]);
         }
       });
 
@@ -535,9 +554,11 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
       const machineDropdown = document.getElementById('team-machines-dropdown');
       const machineDisplay = document.getElementById('team-machines-display');
-      const machineInput = document.getElementById('team-machines-select') as HTMLInputElement;
+      const machineInput = document.getElementById('team-machines-select') as HTMLInputElement | null;
 
-      if (!machineDropdown || !machineDisplay || !machineInput) return;
+      if (machineDropdown === null || machineDisplay === null || machineInput === null) {
+        return;
+      }
 
       const checkboxes = machineDropdown.querySelectorAll('input[type="checkbox"]:checked');
       const selectedIds: string[] = [];
@@ -547,8 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = checkbox as HTMLInputElement;
         selectedIds.push(input.value);
         const label = checkbox.parentElement?.querySelector('span');
-        if (label !== null) {
-          if (label) selectedNames.push(label.textContent?.split(' (')[0] ?? '');
+        if (label && label.textContent.length > 0) {
+          selectedNames.push(label.textContent.split(' (')[0]);
         }
       });
 
@@ -570,8 +591,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save team handler
     w.saveTeam = async () => {
-      const form = document.getElementById('teamForm') as HTMLFormElement;
-      if (form === null || form === undefined) return;
+      const form = document.getElementById('teamForm') as HTMLFormElement | null;
+      if (form === null) {
+        return;
+      }
 
       const formData = new FormData(form);
       const teamData: Record<string, string | number> = {};
@@ -580,19 +603,19 @@ document.addEventListener('DOMContentLoaded', () => {
       let machineIds: number[] = [];
       let userIds: number[] = [];
       formData.forEach((value, key) => {
-        if (key === 'machineIds' && value && typeof value === 'string') {
+        if (key === 'machineIds' && typeof value === 'string' && value.length > 0) {
           // Extract machine IDs for separate handling
           machineIds = value
             .split(',')
-            .filter((id) => id)
+            .filter((id) => id.length > 0)
             .map((id) => parseInt(id, 10));
-        } else if (key === 'userIds' && value && typeof value === 'string') {
+        } else if (key === 'userIds' && typeof value === 'string' && value.length > 0) {
           // Extract user IDs for separate handling
           userIds = value
             .split(',')
-            .filter((id) => id)
+            .filter((id) => id.length > 0)
             .map((id) => parseInt(id, 10));
-        } else if (value && value !== undefined && typeof value === 'string') {
+        } else if (typeof value === 'string' && value.length > 0) {
           if (key === 'maxMembers' || key === 'departmentId') {
             teamData[key] = parseInt(value, 10);
           } else {
@@ -602,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Validate required fields
-      if (teamData.name === null || teamData.name === undefined) {
+      if (typeof teamData.name !== 'string' || teamData.name.length === 0) {
         showError('Bitte geben Sie einen Teamnamen ein');
         return;
       }
@@ -672,13 +695,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('popstate', checkTeamsVisibility);
 
     // Also check when section parameter changes
-    const originalPushState = window.history.pushState;
+    const originalPushState = window.history.pushState.bind(window.history);
     window.history.pushState = function (...args) {
       originalPushState.apply(window.history, args);
       setTimeout(checkTeamsVisibility, 100);
     };
 
-    const originalReplaceState = window.history.replaceState;
+    const originalReplaceState = window.history.replaceState.bind(window.history);
     window.history.replaceState = function (...args) {
       originalReplaceState.apply(window.history, args);
       setTimeout(checkTeamsVisibility, 100);

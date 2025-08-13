@@ -206,7 +206,6 @@ export async function authenticateToken(
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   jwt.verify(token, JWT_SECRET, async (err, decoded) => {
     if (err || !decoded || typeof decoded === "string") {
       // Check if client expects HTML (browser page request) or JSON (API request)

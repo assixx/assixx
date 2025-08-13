@@ -111,7 +111,6 @@ router.get(
       }
 
       // Remove sensitive data
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userWithoutPassword } = user;
 
       res.json(successResponse(userWithoutPassword));

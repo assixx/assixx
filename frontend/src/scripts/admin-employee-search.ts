@@ -4,7 +4,7 @@
 
 import type { User } from '../types/api.types';
 
-import { getAuthToken } from './auth';
+import { getAuthToken, showError } from './auth';
 
 interface Department {
   id: number;
@@ -30,34 +30,32 @@ interface SearchResponse {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Bestehende Elemente
-  const employeeTableBody = document.getElementById('employee-table-body') as HTMLTableSectionElement;
+  const employeeTableBody = document.getElementById('employee-table-body') as HTMLTableSectionElement | null;
 
   // Neue Elemente für die erweiterte Suche
-  const searchForm = document.getElementById('employee-search-form') as HTMLFormElement;
-  const searchInput = document.getElementById('employee-search-input') as HTMLInputElement;
-  const departmentFilter = document.getElementById('department-filter') as HTMLSelectElement;
+  const searchForm = document.getElementById('employee-search-form') as HTMLFormElement | null;
+  const searchInput = document.getElementById('employee-search-input') as HTMLInputElement | null;
+  const departmentFilter = document.getElementById('department-filter') as HTMLSelectElement | null;
   const paginationContainer = document.getElementById('pagination-container');
 
   // Event-Listener hinzufügen
-  if (searchForm) {
-    searchForm.addEventListener('submit', handleSearch);
-  }
+  searchForm?.addEventListener('submit', handleSearch);
 
-  if (departmentFilter) {
+  if (departmentFilter !== null) {
     departmentFilter.addEventListener('change', handleSearch);
     // Abteilungen laden
     void loadDepartments();
   }
 
   // Initialen Suchvorgang ausführen
-  if (searchForm) {
+  if (searchForm !== null) {
     void loadEmployees();
   }
 
   // Funktion zum Laden der Abteilungen
   async function loadDepartments(): Promise<void> {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token.length === 0) return;
 
     try {
       const response = await fetch('/departments', {
@@ -67,17 +65,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const departments: Department[] = await response.json();
+        const departments = (await response.json()) as Department[];
 
         // Departmentfilter befüllen
-        departmentFilter.innerHTML = '<option value="">Alle Abteilungen</option>';
+        if (departmentFilter !== null) {
+          departmentFilter.innerHTML = '<option value="">Alle Abteilungen</option>';
 
-        departments.forEach((dept) => {
-          const option = document.createElement('option');
-          option.value = dept.id.toString();
-          option.textContent = dept.name;
-          departmentFilter.appendChild(option);
-        });
+          departments.forEach((dept) => {
+            const option = document.createElement('option');
+            option.value = dept.id.toString();
+            option.textContent = dept.name;
+            departmentFilter.appendChild(option);
+          });
+        }
       } else {
         console.error('Fehler beim Laden der Abteilungen');
       }
@@ -89,21 +89,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Funktion zum Laden der Mitarbeiter mit Filtern
   async function loadEmployees(page = 1): Promise<void> {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token.length === 0) return;
 
     try {
       // Suchparameter aufbauen
-      const searchTerm = searchInput ? searchInput.value.trim() : '';
-      const departmentId = departmentFilter ? departmentFilter.value : '';
+      const searchTerm = searchInput !== null ? searchInput.value.trim() : '';
+      const departmentId = departmentFilter !== null ? departmentFilter.value : '';
 
       // URL mit Parametern erstellen
       let url = `/users/search?role=employee&page=${page}&limit=10`;
 
-      if (searchTerm) {
+      if (searchTerm.length > 0) {
         url += `&search=${encodeURIComponent(searchTerm)}`;
       }
 
-      if (departmentId) {
+      if (departmentId.length > 0) {
         url += `&department_id=${departmentId}`;
       }
 
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const data: SearchResponse = await response.json();
+        const data = (await response.json()) as SearchResponse;
         displayEmployees(data.users);
 
         // Pagination anzeigen
@@ -122,17 +122,17 @@ document.addEventListener('DOMContentLoaded', () => {
           displayPagination(data.pagination, page);
         }
       } else {
-        const error = await response.json();
+        const error = (await response.json()) as { message?: string };
         console.error('Fehler:', error.message);
 
-        if (employeeTableBody) {
-          employeeTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Fehler beim Laden der Mitarbeiter: ${error.message}</td></tr>`;
+        if (employeeTableBody !== null) {
+          employeeTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Fehler beim Laden der Mitarbeiter: ${error.message ?? 'Unbekannter Fehler'}</td></tr>`;
         }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiter:', error);
 
-      if (employeeTableBody) {
+      if (employeeTableBody !== null) {
         employeeTableBody.innerHTML =
           '<tr><td colspan="5" class="text-center">Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.</td></tr>';
       }
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Funktion zum Anzeigen der Mitarbeiter
   function displayEmployees(employees: EmployeeSearchResult[]): void {
-    if (!employeeTableBody) return;
+    if (employeeTableBody === null) return;
 
     employeeTableBody.innerHTML = '';
 
@@ -162,14 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const row = document.createElement('tr');
 
       // Profilbild oder Platzhalter
-      const profileImage = employee.profile_picture
-        ? `<img src="/${employee.profile_picture}" class="profile-thumbnail" alt="${employee.first_name}" width="40" height="40">`
-        : `<div class="profile-placeholder">${(employee.first_name ?? '').charAt(0)}${(employee.last_name ?? '').charAt(0)}</div>`;
+      const profileImage =
+        employee.profile_picture !== undefined && employee.profile_picture.length > 0
+          ? `<img src="/${employee.profile_picture}" class="profile-thumbnail" alt="${employee.first_name ?? ''}" width="40" height="40">`
+          : `<div class="profile-placeholder">${(employee.first_name ?? '').charAt(0)}${(employee.last_name ?? '').charAt(0)}</div>`;
 
       // Abteilungsinformation
-      const departmentInfo = employee.department_name
-        ? `<span class="department-badge">${employee.department_name}</span>`
-        : '';
+      const departmentInfo =
+        employee.department_name !== undefined && employee.department_name.length > 0
+          ? `<span class="department-badge">${employee.department_name}</span>`
+          : '';
 
       row.innerHTML = `
         <td>
@@ -189,13 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${employee.phone ?? '-'}</td>
         <td>
           <button onclick="uploadDocumentFor('${employee.id}')" class="btn btn-sm btn-primary">Dokument hochladen</button>
-          <button class="delete-btn btn btn-sm btn-danger" 
-                  data-id="${employee.id}" 
+          <button class="delete-btn btn btn-sm btn-danger"
+                  data-id="${employee.id}"
                   data-name="${employee.first_name ?? ''} ${employee.last_name ?? ''}">
               Löschen
           </button>
-          <button class="edit-btn btn btn-sm btn-secondary" 
-                  data-id="${employee.id}" 
+          <button class="edit-btn btn btn-sm btn-secondary"
+                  data-id="${employee.id}"
                   data-name="${employee.first_name ?? ''} ${employee.last_name ?? ''}">
               Bearbeiten
           </button>
@@ -207,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event-Listener für die Lösch-Buttons hinzufügen
     document.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach((button) => {
-      button.addEventListener('click', (e) => void deleteEmployee(e));
+      button.addEventListener('click', deleteEmployee);
     });
 
     // Event-Listener für die Bearbeiten-Buttons hinzufügen
@@ -285,19 +287,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Löschen eines Mitarbeiters
-  async function deleteEmployee(e: Event): Promise<void> {
+  function deleteEmployee(e: Event): void {
     const button = e.target as HTMLButtonElement;
     const employeeId = button.getAttribute('data-id');
     const employeeName = button.getAttribute('data-name');
 
-    if (!employeeId || !employeeName) return;
+    if (employeeId === null || employeeId.length === 0 || employeeName === null || employeeName.length === 0) return;
 
-    if (!confirm(`Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`)) {
-      return;
-    }
+    // TODO: Implement proper confirmation modal
+    showError(`Löschbestätigung für "${employeeName}" - Feature noch nicht implementiert`);
 
+    // Code below will be activated once confirmation modal is implemented
+    /*
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token.length === 0) return;
 
     try {
       const response = await fetch(`/admin/delete-employee/${employeeId}`, {
@@ -308,19 +311,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        alert(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht.`);
+        showSuccess(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht.`);
         // Mitarbeiterliste neu laden
         void loadEmployees();
       } else {
-        const error = await response.json();
-
-        alert(`Fehler: ${error.message}`);
+        const error = (await response.json()) as { message?: string };
+        showError(`Fehler: ${error.message ?? 'Unbekannter Fehler'}`);
       }
     } catch (error) {
       console.error('Fehler beim Löschen des Mitarbeiters:', error);
-
-      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
+    */
   }
 
   // Funktion zum Bearbeiten eines Mitarbeiters
@@ -329,12 +331,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const employeeId = button.getAttribute('data-id');
     const employeeName = button.getAttribute('data-name');
 
-    if (!employeeId || !employeeName) return;
+    if (employeeId === null || employeeId.length === 0 || employeeName === null || employeeName.length === 0) return;
 
     // Modal oder separate Seite zum Bearbeiten des Mitarbeiters öffnen
     // Hier kann je nach UI-Design eine eigene Implementierung erfolgen
 
-    alert(`Bearbeiten von Mitarbeiter "${employeeName}" (ID: ${employeeId}) wird implementiert...`);
+    showError(`Bearbeiten von Mitarbeiter "${employeeName}" - Feature noch nicht implementiert`);
 
     // Beispielweise:
     // window.location.href = `/admin/edit-employee.html?id=${employeeId}`;

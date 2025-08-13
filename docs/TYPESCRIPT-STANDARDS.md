@@ -1,225 +1,309 @@
-# 📋 TypeScript Standards & Best Practices für Assixx
+# 📋 Assixx TypeScript Code Standards - Der definitive Style Guide
 
-> **Zweck:** Vermeidung häufiger TypeScript-Fehler und Sicherstellung konsistenter Code-Qualität
-> **Erstellt:** 08.06.2025
-> **Aktualisiert:** 24.07.2025 (API Workshop Decisions)
-> **Status:** ✅ Aktiv
+> **Version:** 2.0.0
+> **Aktualisiert:** 28.01.2025
+> **Basiert auf:** ESLint & Prettier Configs
+> **Philosophie:** MAXIMUM STRICTNESS - Zero-Tolerance für schlechten Code
 
-## 🎯 Übersicht
+## 🎯 Executive Summary
 
-Dieses Dokument definiert verbindliche TypeScript-Standards für das Assixx-Projekt, basierend auf häufigen Fehlern und Best Practices.
+Dieses Dokument ist unser **Code of Conduct** - die einzige Wahrheit für TypeScript-Code im Assixx-Projekt. Es basiert direkt auf unseren ESLint und Prettier Konfigurationen und stellt sicher, dass **KEINE** ESLint-Fehler oder Warnungen entstehen.
 
-## 📁 1. TypeScript Konfiguration
+**Goldene Regel:** Code, der gegen diese Standards verstößt, wird NICHT gemerged.
 
-### 1.1 Separate Konfigurationen
+---
 
-**Regel:** Jeder Hauptordner mit TypeScript-Code benötigt eine eigene `tsconfig.json`
+## 📁 1. Prettier Code Formatting
 
-```
-/backend/tsconfig.json    → Node.js spezifisch
-/frontend/tsconfig.json   → Browser spezifisch
-/tsconfig.json           → Root für gemeinsame Settings
-```
-
-### 1.2 Library-Definitionen
-
-**Backend tsconfig.json:**
+Alle Code-Formatierung wird durch Prettier automatisch gehandhabt. **KEINE** Diskussionen über Formatierung.
 
 ```json
 {
-  "compilerOptions": {
-    "lib": ["ES2022"],
-    "types": ["node", "jest"]
-  }
+  "semi": true,                    // IMMER Semikolons
+  "trailingComma": "all",          // IMMER trailing commas
+  "singleQuote": false,             // IMMER double quotes
+  "printWidth": 80,                 // Max 80 Zeichen pro Zeile
+  "tabWidth": 2,                    // 2 Spaces Einrückung
+  "useTabs": false,                 // KEINE Tabs
+  "arrowParens": "always",          // IMMER Klammern bei Arrow Functions
+  "endOfLine": "lf",                // Unix Line Endings
+  "bracketSpacing": true            // Spaces in Objekten { foo: bar }
 }
 ```
 
-**Frontend tsconfig.json:**
-
-```json
-{
-  "compilerOptions": {
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"]
-  }
-}
-```
-
-### 1.3 Strict Mode Settings
-
-**Pflicht für alle tsconfig.json:**
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
-
-## 🚫 2. Type-Safety Regeln
-
-### 2.1 Niemals `any` ohne Begründung
-
-❌ **Falsch:**
+### Beispiele:
 
 ```typescript
-function processData(data: any) {
-  return data.value;
-}
+// ✅ RICHTIG - Prettier formatiert
+const user = {
+  id: 1,
+  name: "Admin",
+  roles: ["admin", "root"],
+};
+
+const calculate = (x: number): number => x * 2;
+
+// ❌ FALSCH - Wird automatisch korrigiert
+const user={id:1,name:'Admin',roles:['admin','root']}
+const calculate = x => x * 2
 ```
 
-✅ **Richtig:**
+---
+
+## 🚫 2. TypeScript Type Safety - KEINE Kompromisse
+
+### 2.1 NIEMALS `any` verwenden
 
 ```typescript
-function processData(data: unknown): string {
-  if (typeof data === "object" && data !== null && "value" in data) {
-    return String(data.value);
-  }
-  throw new Error("Invalid data format");
+// ❌ FALSCH - ESLint Error: @typescript-eslint/no-explicit-any
+function processData(data: any): void {
+  console.log(data.value);
 }
-```
 
-### 2.2 Explizite Return Types
-
-❌ **Falsch:**
-
-```typescript
-function calculateTotal(items: Item[]) {
-  return items.reduce((sum, item) => sum + item.price, 0);
-}
-```
-
-✅ **Richtig:**
-
-```typescript
-function calculateTotal(items: Item[]): number {
-  return items.reduce((sum, item) => sum + item.price, 0);
-}
-```
-
-### 2.3 Ungenutzte Variablen
-
-❌ **Falsch:**
-
-```typescript
-function handleClick(event: MouseEvent, index: number): void {
-  // index wird nicht verwendet
-  console.info("Clicked!");
-}
-```
-
-✅ **Richtig:**
-
-```typescript
-function handleClick(event: MouseEvent, _index: number): void {
-  // Prefix mit _ für bewusst ungenutzte Parameter
-  console.info("Clicked!");
-}
-```
-
-## 🌐 3. Globale Erweiterungen
-
-### 3.1 Window-Objekt Erweiterungen
-
-**Datei:** `/frontend/src/types/global.d.ts`
-
-```typescript
-declare global {
-  interface Window {
-    // Assixx-spezifische Funktionen
-    openEntryForm?: (entryId?: number) => void;
-    viewEntry?: (entryId: number) => void;
-    editEntry?: (entryId: number) => void;
-    deleteEntry?: (entryId: number) => Promise<void>;
-
-    // Dashboard UI
-    DashboardUI?: {
-      openModal: (modalId: string) => void;
-      closeModal: (modalId: string) => void;
-      showToast: (message: string, type?: "success" | "error" | "warning" | "info") => void;
-    };
+// ✅ RICHTIG - unknown mit Type Guards
+function processData(data: unknown): void {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "value" in data
+  ) {
+    console.log((data as { value: unknown }).value);
   }
 }
 
-export {};
-```
-
-### 3.2 Express Request Erweiterungen
-
-**Datei:** `/backend/src/types/express.d.ts`
-
-```typescript
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: number;
-        username: string;
-        role: string;
-        tenant_id: number;
-      };
-    }
-  }
+// ✅ RICHTIG - Spezifischer Type
+interface DataPayload {
+  value: string;
+  timestamp: number;
 }
 
-export {};
-```
-
-## 📝 4. Interface & Type Definitionen
-
-### 4.1 Zentrale Type-Definitionen
-
-**Struktur:**
-
-```
-/types/
-  ├── api.types.ts      # API Request/Response Types
-  ├── models.types.ts   # Datenbank-Modelle
-  ├── auth.types.ts     # Authentication Types
-  └── shared.types.ts   # Gemeinsame Types (Frontend & Backend)
-```
-
-### 4.2 Namenskonventionen
-
-- **Interfaces:** PascalCase mit Prefix `I` nur bei Konflikten
-- **Type Aliases:** PascalCase
-- **Enums:** PascalCase für Name, UPPER_CASE für Werte
-- **API Fields:** camelCase (nicht snake_case!)
-
-```typescript
-// Interface
-interface User {
-  id: number;
-  username: string;
-  firstName: string; // ✅ camelCase für API
-  createdAt: string; // ✅ ISO 8601 string
-  isActive: boolean; // ✅ boolean prefix
-}
-
-// Type Alias
-type UserRole = "admin" | "employee" | "root";
-
-// Enum
-enum Status {
-  ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  PENDING = "PENDING",
+function processData(data: DataPayload): void {
+  console.log(data.value);
 }
 ```
 
-### 4.3 API Response Standards (Workshop Decision 24.07.2025)
-
-**Success Response:**
+### 2.2 Explizite Return Types PFLICHT
 
 ```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/explicit-module-boundary-types
+export function calculate(a: number, b: number) {
+  return a + b;
+}
+
+// ✅ RICHTIG - Expliziter Return Type
+export function calculate(a: number, b: number): number {
+  return a + b;
+}
+
+// ✅ RICHTIG - Async mit Promise
+export async function fetchUser(id: number): Promise<User> {
+  const response = await fetch(`/api/users/${id}`);
+  return response.json() as Promise<User>;
+}
+```
+
+### 2.3 Nullish Coalescing (`??`) statt Logical OR (`||`)
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/prefer-nullish-coalescing
+const port = process.env.PORT || 3000;  // Problem: "0" wird zu 3000
+const name = user.name || "Anonymous";  // Problem: "" wird zu "Anonymous"
+
+// ✅ RICHTIG - Nullish Coalescing
+const port = process.env.PORT ?? 3000;  // Nur null/undefined → 3000
+const name = user.name ?? "Anonymous";  // Nur null/undefined → "Anonymous"
+
+// ✅ RICHTIG - Explizite Prüfung wenn || gewollt
+const displayName = user.name || user.email || "Anonymous";  // Mit Kommentar warum
+```
+
+### 2.4 Keine Non-Null Assertions (`!`)
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/no-non-null-assertion
+const userId = req.user!.id;  // Gefährlich!
+
+// ✅ RICHTIG - Explizite Prüfung
+if (!req.user) {
+  res.status(401).json({ error: "Unauthorized" });
+  return;
+}
+const userId = req.user.id;  // Jetzt type-safe
+```
+
+### 2.5 Strict Boolean Expressions
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/strict-boolean-expressions
+if (user.name) {  // String in condition
+  console.log(user.name);
+}
+
+if (items.length) {  // Number in condition
+  processItems(items);
+}
+
+// ✅ RICHTIG - Explizite Boolean Checks
+if (user.name !== undefined && user.name !== null && user.name !== "") {
+  console.log(user.name);
+}
+
+// ✅ RICHTIG - Oder mit Helper
+if (user.name?.length > 0) {
+  console.log(user.name);
+}
+
+if (items.length > 0) {
+  processItems(items);
+}
+```
+
+---
+
+## 📝 3. Variablen und Funktionen
+
+### 3.1 Ungenutzte Variablen mit `_` Prefix
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/no-unused-vars
+app.use((req, res, next, error) => {  // error nicht genutzt
+  console.log("Middleware");
+  next();
+});
+
+// ✅ RICHTIG - Underscore für bewusst ungenutzt
+app.use((req, res, next, _error) => {
+  console.log("Middleware");
+  next();
+});
+
+// ✅ RICHTIG - Destructuring mit Rest
+const { id, name, ...rest } = user;  // rest ignoriert ungenutzte Felder
+```
+
+### 3.2 Const über Let, niemals Var
+
+```typescript
+// ❌ FALSCH - ESLint Error: prefer-const, no-var
+var oldStyle = "bad";
+let unchanged = 42;  // Wird nie geändert
+
+// ✅ RICHTIG
+const immutable = 42;
+let mutable = 0;
+mutable += 1;
+```
+
+### 3.3 Arrow Functions bevorzugen
+
+```typescript
+// ❌ FALSCH - ESLint Warning: prefer-arrow-callback
+array.map(function(item) {
+  return item * 2;
+});
+
+// ✅ RICHTIG - Arrow Function
+array.map((item) => item * 2);
+
+// ✅ RICHTIG - Arrow mit Block wenn komplex
+array.map((item) => {
+  const doubled = item * 2;
+  console.log(`Processing: ${doubled}`);
+  return doubled;
+});
+```
+
+---
+
+## 🔄 4. Async/Await Best Practices
+
+### 4.1 Promises IMMER awaiten
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/no-floating-promises
+fetchUser(123);  // Promise wird ignoriert!
+
+async function process(): void {
+  doAsyncWork();  // Nicht geawaited!
+}
+
+// ✅ RICHTIG - Await oder handle
+await fetchUser(123);
+
+async function process(): Promise<void> {
+  await doAsyncWork();
+}
+
+// ✅ RICHTIG - Explicit void wenn Fire-and-Forget
+void fetchAnalytics();  // Explizit ignoriert
+```
+
+### 4.2 Async Functions returnen Promise
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/promise-function-async
+function fetchData(): Promise<Data> {  // Nicht async markiert
+  return fetch("/api/data").then(r => r.json());
+}
+
+// ✅ RICHTIG - Async/Await
+async function fetchData(): Promise<Data> {
+  const response = await fetch("/api/data");
+  return response.json();
+}
+```
+
+### 4.3 Keine async in void Callbacks
+
+```typescript
+// ❌ FALSCH - ESLint Error: @typescript-eslint/no-misused-promises
+uploadMiddleware(req, res, async (err) => {  // async in void callback
+  await processFile();
+});
+
+// ✅ RICHTIG - Sync callback mit Promise
+uploadMiddleware(req, res, (err) => {
+  void (async () => {
+    await processFile();
+  })();
+});
+```
+
+---
+
+## 🌐 5. API Standards (Workshop Decisions)
+
+### 5.1 REST URL Patterns
+
+```typescript
+// ✅ RICHTIG - RESTful URLs
+const API_ENDPOINTS = {
+  // Collection Endpoints (Plural)
+  USERS: "/api/v2/users",
+  TEAMS: "/api/v2/teams",
+  DOCUMENTS: "/api/v2/documents",
+
+  // Resource Endpoints
+  USER: "/api/v2/users/:id",
+  TEAM: "/api/v2/teams/:id",
+  DOCUMENT: "/api/v2/documents/:id",
+
+  // Nested Resources (nur wenn sinnvoll)
+  TEAM_MEMBERS: "/api/v2/teams/:id/members",
+  USER_DOCUMENTS: "/api/v2/users/:id/documents",
+} as const;
+
+// ❌ FALSCH - Nicht RESTful
+"/api/v2/getUsers"         // Kein Verb in URL
+"/api/v2/user"            // Singular für Collection
+"/api/v2/User"            // Großschreibung
+"/api/v2/fetch-user-data" // Kebab-case mit Verb
+```
+
+### 5.2 API Response Types
+
+```typescript
+// ✅ RICHTIG - Standardisierte Response Types
 interface ApiSuccessResponse<T> {
   success: true;
   data: T;
@@ -236,16 +320,12 @@ interface ApiSuccessResponse<T> {
     };
   };
 }
-```
 
-**Error Response:**
-
-```typescript
 interface ApiErrorResponse {
   success: false;
   error: {
-    code: string;
-    message: string;
+    code: string;        // "VALIDATION_ERROR", "NOT_FOUND", etc.
+    message: string;     // User-friendly message
     details?: Array<{
       field: string;
       message: string;
@@ -256,475 +336,295 @@ interface ApiErrorResponse {
     requestId: string;
   };
 }
-```
 
-### 4.4 Field Naming Standards (Workshop Decision 24.07.2025)
+// Usage
+export async function getUsers(): Promise<User[]> {
+  const response = await fetch("/api/v2/users");
+  const data = await response.json() as ApiSuccessResponse<User[]>;
 
-```typescript
-// ✅ RICHTIG - camelCase für TypeScript/API
-interface CalendarEvent {
-  // Timestamps (ISO 8601)
-  createdAt: string; // "2024-07-24T10:30:00Z"
-  updatedAt: string;
-  deletedAt?: string;
+  if (!response.ok) {
+    const error = data as unknown as ApiErrorResponse;
+    throw new Error(error.error.message);
+  }
 
-  // Dates
-  startDate: string; // "2024-07-24"
-  endDate: string;
-
-  // Times
-  startTime: string; // "09:00:00"
-  endTime: string;
-
-  // Booleans
-  isActive: boolean;
-  hasReminder: boolean;
-
-  // IDs
-  userId: number;
-  tenantId: number;
-  departmentId?: number;
-}
-
-// ❌ FALSCH - snake_case nicht für API verwenden!
-interface WrongExample {
-  user_id: number; // ❌ snake_case
-  start_date: string; // ❌ snake_case
-  is_active: boolean; // ❌ snake_case
+  return data.data;
 }
 ```
 
-**Automatische Konvertierung:**
+### 5.3 Field Naming - IMMER camelCase
 
 ```typescript
-// Utility für DB ↔ API Konvertierung
-import { camelCase, snakeCase } from "lodash";
-
-// DB (snake_case) → API (camelCase)
-function dbToApi<T>(dbObject: any): T {
-  return Object.keys(dbObject).reduce((acc, key) => {
-    acc[camelCase(key)] = dbObject[key];
-    return acc;
-  }, {} as T);
-}
-
-// API (camelCase) → DB (snake_case)
-function apiToDb<T>(apiObject: any): T {
-  return Object.keys(apiObject).reduce((acc, key) => {
-    acc[snakeCase(key)] = apiObject[key];
-    return acc;
-  }, {} as T);
-}
-```
-
-### 4.5 Vermeidung von Duplikaten
-
-❌ **Falsch:**
-
-```typescript
-// admin.ts
-interface Admin {
+// ✅ RICHTIG - camelCase für alle API Fields
+interface User {
   id: number;
-  email: string;
+  firstName: string;        // NICHT first_name
+  lastName: string;         // NICHT last_name
+  createdAt: string;        // NICHT created_at
+  updatedAt: string;        // NICHT updated_at
+  isActive: boolean;        // NICHT is_active
+  hasPermission: boolean;   // NICHT has_permission
+  userId: number;           // NICHT user_id
+  tenantId: number;         // NICHT tenant_id
 }
 
-// manage-admins.ts
-interface Admin {
-  id: number | string;
-  email: string;
-  first_name?: string;
+// ❌ FALSCH - snake_case NIEMALS in API
+interface WrongUser {
+  user_id: number;         // ❌ snake_case
+  first_name: string;      // ❌ snake_case
+  created_at: string;      // ❌ snake_case
+  is_active: boolean;      // ❌ snake_case
 }
 ```
 
-✅ **Richtig:**
+---
+
+## 🛠️ 6. Template Strings und String Handling
+
+### 6.1 Template Literals bevorzugen
 
 ```typescript
-// types/models.types.ts
-export interface Admin {
-  id: number | string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  full_name?: string;
-}
+// ❌ FALSCH - ESLint Error: prefer-template
+const message = "Hello " + name + "!";
+const url = baseUrl + "/" + endpoint;
 
-// admin.ts & manage-admins.ts
-import { Admin } from "@/types/models.types";
+// ✅ RICHTIG - Template Literals
+const message = `Hello ${name}!`;
+const url = `${baseUrl}/${endpoint}`;
 ```
 
-## 🔄 5. Async/Promise Konsistenz
-
-### 5.1 Async Function Return Types
-
-❌ **Falsch:**
+### 6.2 Restrict Template Expressions
 
 ```typescript
-async function loadData() {
-  const data = await fetch("/api/data");
-  return data.json();
-}
+// ❌ FALSCH - ESLint Error: @typescript-eslint/restrict-template-expressions
+const debug = `User: ${user}`;  // Object to string
+const flag = `Active: ${isActive}`;  // Boolean to string
+
+// ✅ RICHTIG - Explizite Konvertierung
+const debug = `User: ${JSON.stringify(user)}`;
+const flag = `Active: ${isActive ? "Yes" : "No"}`;
+
+// ✅ RICHTIG - Numbers sind erlaubt
+const price = `Price: ${amount}€`;
 ```
 
-✅ **Richtig:**
+---
+
+## 🎨 7. Console und Error Handling
+
+### 7.1 Console Logs eingeschränkt
 
 ```typescript
-async function loadData(): Promise<DataType> {
-  const response = await fetch("/api/data");
-  return response.json() as Promise<DataType>;
-}
+// ❌ FALSCH - ESLint Error: no-console
+console.log("Debug info");  // Nicht erlaubt
+
+// ✅ RICHTIG - Erlaubte Console Methods
+console.warn("Warning: Deprecated API");
+console.error("Error:", error);
+console.info("Server started on port 3000");
+console.debug("Debug mode:", config);  // Backend only
 ```
 
-### 5.2 Void vs Promise<void>
-
-❌ **Falsch (inkonsistent):**
+### 7.2 Error Handling
 
 ```typescript
-interface Actions {
-  syncAction: () => void;
-  asyncAction: () => void; // Aber ist eigentlich async!
+// ❌ FALSCH - ESLint Error: prefer-promise-reject-errors
+return Promise.reject("Error occurred");  // String rejection
+
+// ✅ RICHTIG - Error Objects
+return Promise.reject(new Error("Error occurred"));
+
+// ✅ RICHTIG - Custom Error Classes
+class ValidationError extends Error {
+  constructor(public field: string, message: string) {
+    super(message);
+    this.name = "ValidationError";
+  }
 }
+
+throw new ValidationError("email", "Invalid email format");
 ```
 
-✅ **Richtig:**
+---
+
+## 🏗️ 8. Import/Export Standards
+
+### 8.1 Keine doppelten Imports
 
 ```typescript
-interface Actions {
-  syncAction: () => void;
-  asyncAction: () => Promise<void>;
-}
+// ❌ FALSCH - ESLint Error: no-duplicate-imports
+import { useState } from "react";
+import { useEffect } from "react";
+
+// ✅ RICHTIG - Combined Import
+import { useState, useEffect } from "react";
 ```
 
-## 🛠️ 6. Entwicklungs-Workflow
+### 8.2 Object Shorthand
 
-### 6.1 Pre-Commit Checkliste
+```typescript
+// ❌ FALSCH - ESLint Error: object-shorthand
+const user = {
+  name: name,
+  email: email,
+  save: function() { }
+};
 
-Vor jedem Commit MUSS ausgeführt werden:
+// ✅ RICHTIG - Shorthand
+const user = {
+  name,
+  email,
+  save() { }
+};
+```
+
+---
+
+## ✅ 9. Pre-Commit Checklist
+
+Vor JEDEM Commit MUSS durchlaufen:
 
 ```bash
-# TypeScript Type-Check
-npm run type-check
+# 1. Format Check
+pnpm run format
 
-# ESLint
-npm run lint
+# 2. Lint Check (MUSS 0 Errors zeigen)
+pnpm run lint
 
-# Format Check
-npm run format:check
+# 3. TypeScript Check (MUSS 0 Errors zeigen)
+pnpm run type-check
+
+# 4. Build Test
+pnpm run build
 ```
 
-### 6.2 Neue Features Workflow
-
-1. **Types First:** Erst Interfaces/Types definieren
-2. **Implementation:** Code schreiben mit definierten Types
-3. **Documentation:** JSDoc für öffentliche APIs
-4. **Testing:** Type-Tests mit `tsd` oder `dtslint`
-
-### 6.3 Code Review Checkliste
-
-- [ ] Keine `any` ohne `// eslint-disable-line` mit Begründung
-- [ ] Alle Funktionen haben explizite Return Types
-- [ ] Keine ungenutzten Variablen/Imports
-- [ ] Interfaces sind in zentralen Type-Files
-- [ ] Globale Erweiterungen in `.d.ts` Files
-- [ ] Async Funktionen returnen `Promise<T>`
-
-## 📊 7. ESLint Konfiguration
-
-**Erforderliche Rules in `.eslintrc.json`:**
+Automatisiert mit Git Hooks:
 
 ```json
+// package.json
 {
-  "rules": {
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/explicit-function-return-type": [
-      "warn",
-      {
-        "allowExpressions": true,
-        "allowTypedFunctionExpressions": true
-      }
-    ],
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
-      }
-    ],
-    "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
-    "@typescript-eslint/no-non-null-assertion": "error",
-    "@typescript-eslint/strict-boolean-expressions": "error"
+  "scripts": {
+    "pre-commit": "pnpm run format && pnpm run lint && pnpm run type-check"
   }
 }
 ```
 
-## 🚨 8. Häufige Fehler & Lösungen
+---
 
-### 8.1 "Cannot find name 'document'"
+## 🚨 10. Test File Ausnahmen
 
-**Problem:** Frontend-Code ohne DOM Types
-**Lösung:** `"lib": ["DOM"]` in tsconfig.json
-
-### 8.2 "Property does not exist on type 'Window'"
-
-**Problem:** Globale Funktion nicht deklariert
-**Lösung:** In `global.d.ts` hinzufügen
-
-### 8.3 "All declarations must have identical modifiers"
-
-**Problem:** Mehrfache inkonsistente Deklarationen
-**Lösung:** Eine zentrale Definition verwenden
-
-### 8.4 "Type 'void' is not assignable to type 'Promise<void>'"
-
-**Problem:** Sync/Async Inkonsistenz
-**Lösung:** Konsistente async/await Verwendung
-
-## 📚 9. Dokumentation
-
-### 9.1 JSDoc für öffentliche APIs
+NUR in Test-Dateien (`*.test.ts`, `*.spec.ts`) sind erlaubt:
 
 ```typescript
-/**
- * Lädt Benutzerdaten vom Server
- * @param userId - Die ID des Benutzers
- * @returns Promise mit Benutzerdaten
- * @throws {Error} Wenn Benutzer nicht gefunden
- * @example
- * const user = await loadUser(123);
- */
-export async function loadUser(userId: number): Promise<User> {
-  // Implementation
-}
-```
+// Test files only - Ausnahmen aktiviert
+describe("UserService", () => {
+  it("should handle any data", () => {
+    const mockData: any = { test: true };  // any erlaubt in Tests
+    console.log("Test output");  // console.log erlaubt in Tests
 
-### 9.2 Type Documentation
-
-```typescript
-/**
- * Repräsentiert einen Benutzer im System
- * @since 1.0.0
- */
-export interface User {
-  /** Eindeutige Benutzer-ID */
-  id: number;
-
-  /** Benutzername (3-50 Zeichen) */
-  username: string;
-
-  /** Benutzerrolle */
-  role: UserRole;
-
-  /** Zeitstempel der Erstellung */
-  created_at: Date;
-}
-```
-
-## 🔄 10. Migration Guidelines
-
-### 10.1 Bei Type-Änderungen
-
-1. **Deprecation Notice:** Alte Types mit `@deprecated` markieren
-2. **Migration Guide:** In CHANGELOG.md dokumentieren
-3. **Übergangszeit:** Mindestens 1 Sprint für Migration
-4. **Clean-up:** Alte Types nach Migration entfernen
-
-### 10.2 Breaking Changes
-
-```typescript
-/**
- * @deprecated Seit v2.0.0 - Verwende `AdminUser` statt `Admin`
- * @see AdminUser
- */
-export interface Admin {
-  // ...
-}
-
-/**
- * Neue Admin-Schnittstelle mit erweiterten Feldern
- * @since 2.0.0
- */
-export interface AdminUser extends Admin {
-  permissions: Permission[];
-  lastActivity: Date;
-}
-```
-
-## ✅ 11. Checkliste für neue Dateien
-
-Beim Erstellen neuer TypeScript-Dateien:
-
-- [ ] Passende `tsconfig.json` wird verwendet
-- [ ] Keine `any` Types
-- [ ] Explizite Return Types
-- [ ] Imports aus zentralen Type-Definitionen
-- [ ] JSDoc für exportierte Funktionen/Interfaces
-- [ ] ESLint zeigt keine Fehler
-- [ ] Type-Check läuft erfolgreich durch
-
-## 🚨 11.1 ESLint Best Practices (Neu: 24.07.2025)
-
-### Nullish Coalescing statt Logical OR
-
-❌ **Falsch:**
-
-```typescript
-const value = process.env.VALUE || "default"; // Problem bei "", 0, false
-```
-
-✅ **Richtig:**
-
-```typescript
-const value = process.env.VALUE ?? "default"; // Nur bei null/undefined
-```
-
-### Non-null Assertions vermeiden
-
-❌ **Falsch:**
-
-```typescript
-const tenantId = req.tenantId!; // Unsicher!
-```
-
-✅ **Richtig:**
-
-```typescript
-if (!req.tenantId) {
-  res.status(401).json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
-  return;
-}
-const tenantId = req.tenantId; // Jetzt sicher
-```
-
-### CommonJS Script Globals
-
-Für .cjs Dateien:
-
-```javascript
-/* eslint-env node */
-/* global process, __dirname, console */
-```
-
-### any Types richtig ersetzen
-
-❌ **Falsch:**
-
-```typescript
-function processData(data: any) {}
-```
-
-✅ **Richtig:**
-
-```typescript
-function processData(data: unknown) {}
-// oder
-function processData(data: Record<string, unknown>) {}
-// oder spezifischer Type
-```
-
-### Promise Callbacks
-
-❌ **Falsch:**
-
-```typescript
-uploadMiddleware(req, res, async (err) => {}); // async in void callback
-```
-
-✅ **Richtig:**
-
-```typescript
-uploadMiddleware(req, res, (err) => {
-  // async logic in Promise.resolve() wenn nötig
+    expect(mockData).toBeDefined();
+  });
 });
 ```
 
 ---
 
-## 🌐 12. API Standards (Workshop Decisions 24.07.2025)
+## 📊 11. ESLint Command Reference
 
-### 12.1 REST URL Patterns
+```bash
+# Zeige alle Errors
+pnpm run lint
 
-```typescript
-// ✅ RICHTIG - Plural, konsistent
-GET    /api/v2/users
-POST   /api/v2/users
-GET    /api/v2/users/:id
-PUT    /api/v2/users/:id
-DELETE /api/v2/users/:id
+# Auto-Fix was möglich
+pnpm run lint:fix
 
-// Nested Resources (nur wenn sinnvoll)
-GET    /api/v2/conversations/:id/messages
-POST   /api/v2/conversations/:id/messages
+# Nur TypeScript prüfen
+pnpm run type-check
 
-// Filtering via Query Parameters
-GET    /api/v2/teams?departmentId=123
+# Format mit Prettier
+pnpm run format
 
-// ❌ FALSCH
-GET    /api/v2/getUsers           // Kein Verb in URL
-GET    /api/v2/user               // Singular
-GET    /api/v2/User               // Großschreibung
-```
-
-### 12.2 API Versioning
-
-```typescript
-// URL-basierte Versionierung (Workshop Decision)
-const API_BASE_URL = "/api/v2";
-
-// Helper für versioned endpoints
-function apiUrl(endpoint: string): string {
-  return `${API_BASE_URL}${endpoint}`;
-}
-
-// Usage
-fetch(apiUrl("/users")); // → /api/v2/users
-fetch(apiUrl("/calendar/events")); // → /api/v2/calendar/events
-```
-
-### 12.3 Type-Safe API Calls
-
-```typescript
-// API Client mit TypeScript
-class ApiClient {
-  private baseUrl = "/api/v2";
-
-  async get<T>(endpoint: string): Promise<ApiSuccessResponse<T>> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw data as ApiErrorResponse;
-    }
-
-    return data as ApiSuccessResponse<T>;
-  }
-
-  async post<T, D>(endpoint: string, body: D): Promise<ApiSuccessResponse<T>> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw data as ApiErrorResponse;
-    }
-
-    return data as ApiSuccessResponse<T>;
-  }
-}
-
-// Usage mit Types
-const api = new ApiClient();
-
-// Type-safe!
-const usersResponse = await api.get<User[]>("/users");
-const users: User[] = usersResponse.data;
+# Check Format ohne Fix
+pnpm run format:check
 ```
 
 ---
 
-**Letzte Aktualisierung:** 24.07.2025 (API Workshop Integration)
-**Maintainer:** Assixx Development Team
+## 🔴 12. Absolute No-Gos
 
-Diese Standards sind verbindlich für alle TypeScript-Entwicklungen im Assixx-Projekt und werden regelmäßig überprüft und aktualisiert.
+Diese führen zu **sofortiger Ablehnung** im Code Review:
+
+1. **`any` Type ohne `// eslint-disable-next-line` mit Begründung**
+2. **`||` statt `??` für Defaults**
+3. **Fehlende Return Types bei exported Functions**
+4. **Non-null Assertions (`!`)**
+5. **Ungeawaitete Promises**
+6. **snake_case in API Fields**
+7. **`var` Keyword**
+8. **`console.log` oder(info) in Production Code**
+9. **String/Number in Boolean Conditions ohne explizite Checks**
+10. **Commits mit ESLint Errors**
+
+---
+
+## 📋 13. Neue Datei Checklist
+
+Beim Erstellen neuer TypeScript-Dateien:
+
+- [ ] Datei startet mit korrektem Import-Block
+- [ ] Alle Functions haben explizite Return Types
+- [ ] Keine `any` Types
+- [ ] Interfaces/Types sind exportiert und dokumentiert
+- [ ] camelCase für alle Variablen und Properties
+- [ ] PascalCase für Types/Interfaces/Classes
+- [ ] Prettier läuft ohne Änderungen
+- [ ] ESLint zeigt 0 Errors
+- [ ] TypeScript kompiliert ohne Fehler
+
+---
+
+## 🎯 14. Migration von Legacy Code
+
+Bei der Migration von altem Code:
+
+```typescript
+// Phase 1: Mark mit TODO
+// TODO: Migrate to TypeScript standards
+// @ts-expect-error - Legacy code, will be migrated
+const oldData: any = getLegacyData();
+
+// Phase 2: Schrittweise Migration
+interface LegacyData {
+  [key: string]: unknown;  // Besser als any
+}
+
+// Phase 3: Vollständige Typisierung
+interface UserData {
+  id: number;
+  name: string;
+  email: string;
+}
+```
+
+---
+
+## 📚 Quick Reference
+
+| Was | Verwenden | Nicht verwenden |
+|-----|-----------|-----------------|
+| Types | `unknown`, spezifische Types | `any` |
+| Defaults | `??` (nullish) | `||` (logical) |
+| Strings | Template Literals | String Concatenation |
+| Functions | Arrow Functions | function keyword |
+| Variables | `const`, `let` | `var` |
+| Async | `async/await` | `.then()` chains |
+| Loops | `for...of`, `.map()` | `for...in` |
+| Checks | Explizite Boolean | Truthy/Falsy |
+| Exports | Named Exports | Default Exports (meist) |
+
+---
+
+**Dieser Standard ist VERBINDLICH. Code, der diese Standards nicht erfüllt, wird NICHT gemerged.**
+
+**Letzte Aktualisierung:** 28.01.2025
+**Basiert auf:** eslint.config.js (Backend & Frontend) + .prettierrc.json
+**Maintainer:** Assixx Development Team
