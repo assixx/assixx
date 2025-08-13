@@ -1,5 +1,9 @@
 # TypeScript Architecture Guide
 
+An Claude: Korriegire und opitmiere diese Datei ständig, wenn du meinst, dass was geändert hat oder wir es besser machen können.
+
+Achte auf eslint config im backend und frontend. Wir wollen besten typescript code der möglich ist nach best practice und nach ultimatische strengen typsicheren Regeln!!!!!!!!!! This is most important file of all with together with code of cunduct TYPESCRIPTS-STANDARDS.md!!!
+
 ## Overview
 
 This document describes the TypeScript architecture implemented in the Assixx backend. It serves as the central reference for developers working with the type-safe route handlers and security middleware.

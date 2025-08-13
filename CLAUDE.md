@@ -16,8 +16,10 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 
 ## KRITISCHE REGELN
 
-- **NIEMALS committen oder pushen ohne Erlaubnis vom User**
+- **NIEMALS committen oder pushen ohne Erlaubnis vom User** immer um Freigabe bitten
+- **NIEMALS checkout ohne Erlaubnis vom User** immer um Freigabe bitten
 - **NIEMALS Fast-Forward merge durchführen**
+- **NIEMALS disable eslint kommentare benutzen, immer den besten Weg gehen um den bestmöglichen und sicheren strengen Code zu schreiben**
 - **IMMER existierende Dateien bearbeiten statt neue erstellen**
 - **IMMER Docker aus /home/scs/projects/Assixx/docker starten**
 - **IMMER langfristig denken - keine Quick-Fixes die später Probleme machen**

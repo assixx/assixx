@@ -27,19 +27,21 @@ document.addEventListener('DOMContentLoaded', () => {
   void loadEmployees();
 
   // Register form events
-  const uploadForm = document.getElementById('upload-form') as UploadForm;
-  if (uploadForm) {
+  const uploadForm = document.getElementById('upload-form') as UploadForm | null;
+  if (uploadForm !== null) {
     console.info('Upload form found');
-    uploadForm.addEventListener('submit', (e) => void uploadDocument(e));
+    uploadForm.addEventListener('submit', (e) => {
+      void uploadDocument(e);
+    });
   } else {
     console.error('Upload form not found');
   }
 
   // File selection event
-  const fileInput = document.getElementById('file-input') as HTMLInputElement;
-  const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
+  const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement | null;
 
-  if (fileInput && fileNameSpan) {
+  if (fileInput !== null && fileNameSpan !== null) {
     fileInput.addEventListener('change', () => {
       if (fileInput.files && fileInput.files.length > 0) {
         fileNameSpan.textContent = fileInput.files[0].name;
@@ -57,13 +59,13 @@ async function loadEmployees(): Promise<void> {
   console.info('Loading employees');
   const token = getAuthToken();
 
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No authentication token');
     return;
   }
 
   try {
-    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
     const endpoint = useV2Users ? '/api/v2/users' : '/api/users';
     const response = await fetch(endpoint, {
       headers: {
@@ -72,17 +74,18 @@ async function loadEmployees(): Promise<void> {
     });
 
     if (response.ok) {
-      const employees: User[] = await response.json();
-      const userSelect = document.getElementById('user-select') as HTMLSelectElement;
+      const employees = (await response.json()) as User[];
+      const userSelect = document.getElementById('user-select') as HTMLSelectElement | null;
 
-      if (userSelect) {
+      if (userSelect !== null) {
         // Add employees to dropdown
         userSelect.innerHTML = '<option value="">-- Mitarbeiter auswählen --</option>';
 
         employees.forEach((employee: User) => {
           const option = document.createElement('option');
           option.value = employee.id.toString();
-          option.textContent = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
+          const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+          option.textContent = fullName !== '' ? fullName : employee.username;
           userSelect.appendChild(option);
         });
 
@@ -109,7 +112,7 @@ async function uploadDocument(e: Event): Promise<void> {
   const formData = new FormData(form);
   const token = getAuthToken();
 
-  if (!token) {
+  if (token === null || token === '') {
     alert('Bitte melden Sie sich erneut an');
     return;
   }

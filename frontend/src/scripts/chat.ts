@@ -3,7 +3,7 @@
  * WebSocket-based real-time chat functionality
  */
 
-import type { User } from '../types/api.types';
+import type { User, JWTPayload } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 
 import { getAuthToken } from './auth';
@@ -90,22 +90,29 @@ class ChatClient {
   constructor() {
     this.ws = null;
     this.token = getAuthToken();
-    this.currentUser = JSON.parse(localStorage.getItem('user') ?? '{}');
+    // Parse user from localStorage with proper type safety
+    const storedUser = localStorage.getItem('user');
+    const parsedUser: Partial<ChatUser> = storedUser !== null ? (JSON.parse(storedUser) as Partial<ChatUser>) : {};
+    this.currentUser = parsedUser as ChatUser;
     this.apiClient = ApiClient.getInstance();
 
     // Import UnifiedNavigation type
     // Fallback für currentUserId wenn user object nicht komplett ist
-    if (!this.currentUser.id && this.token && this.token !== 'test-mode') {
+    if (parsedUser.id === undefined && this.token !== null && this.token !== '' && this.token !== 'test-mode') {
       try {
-        const payload = JSON.parse(atob(this.token.split('.')[1]));
-        this.currentUser.id = payload.userId ?? payload.id;
-        this.currentUser.username = this.currentUser.username ?? payload.username;
+        const payload = JSON.parse(atob(this.token.split('.')[1])) as JWTPayload;
+        parsedUser.id = payload.id;
+        this.currentUser.id = payload.id;
+        if (parsedUser.username === undefined || parsedUser.username === '') {
+          parsedUser.username = payload.username;
+          this.currentUser.username = payload.username;
+        }
       } catch (e) {
         console.error('Error parsing token:', e);
       }
     }
 
-    this.currentUserId = this.currentUser.id ?? null;
+    this.currentUserId = parsedUser.id ?? null;
     this.currentConversationId = null;
     this.conversations = [];
     this.availableUsers = [];
@@ -922,7 +929,7 @@ class ChatClient {
     }
 
     // Check if token exists
-    if (!this.token) {
+    if (this.token === null || this.token === '') {
       console.error('❌ No authentication token found');
       window.location.href = '/login';
       return;
@@ -969,25 +976,25 @@ class ChatClient {
         });
 
         // Auch ein leeres Array ist valide - keine Conversations vorhanden
-        this.conversations = (response.data ?? []).map((conv: Conversation) => ({
+        this.conversations = response.data.map((conv: Conversation) => ({
           ...conv,
-          participants: conv.participants ?? [],
+          participants: Array.isArray(conv.participants) ? conv.participants : [],
         }));
         this.renderConversationList();
       } else {
         // v1 API - legacy code
         const response = await fetch('/api/chat/conversations', {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.token ?? ''}`,
           },
         });
 
         if (response.ok) {
-          const conversations = await response.json();
+          const conversations = (await response.json()) as Conversation[];
           // Stelle sicher, dass jede Konversation ein participants Array hat
           this.conversations = conversations.map((conv: Conversation) => ({
             ...conv,
-            participants: conv.participants ?? [],
+            participants: Array.isArray(conv.participants) ? conv.participants : [],
           }));
           this.renderConversationList();
         } else {
@@ -1014,17 +1021,17 @@ class ChatClient {
         });
 
         // Auch eine leere User-Liste ist valide
-        this.availableUsers = response.users ?? [];
+        this.availableUsers = response.users;
       } else {
         // v1 API - legacy code
         const response = await fetch('/api/chat/users', {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.token ?? ''}`,
           },
         });
 
         if (response.ok) {
-          this.availableUsers = await response.json();
+          this.availableUsers = (await response.json()) as ChatUser[];
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -1062,7 +1069,7 @@ class ChatClient {
 
       this.ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
+          const message: WebSocketMessage = JSON.parse(event.data as string) as WebSocketMessage;
           this.handleWebSocketMessage(message);
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error);
@@ -1147,7 +1154,12 @@ class ChatClient {
       case 'error':
         // Handle error messages from WebSocket
         console.error('❌ WebSocket Error:', message.data);
-        if (message.data && typeof message.data === 'object' && 'message' in message.data) {
+        if (
+          message.data !== null &&
+          message.data !== undefined &&
+          typeof message.data === 'object' &&
+          'message' in message.data
+        ) {
           const errorMessage =
             typeof message.data.message === 'string' ? message.data.message : 'Fehler beim Senden der Nachricht';
           this.showNotification(errorMessage, 'error');
@@ -1174,7 +1186,7 @@ class ChatClient {
       profile_picture_url?: string;
     }
     const msgWithExtra = message as MessageWithExtra;
-    if (!message.sender && msgWithExtra.sender_id) {
+    if (!message.sender && msgWithExtra.sender_id !== 0) {
       message.sender = {
         id: msgWithExtra.sender_id,
         username: msgWithExtra.username ?? msgWithExtra.sender_name ?? 'Unknown',
@@ -1243,7 +1255,7 @@ class ChatClient {
       this.playNotificationSound();
 
       // Update the unread messages badge in the sidebar
-      if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
+      if (typeof window.unifiedNav.updateUnreadMessages === 'function') {
         void window.unifiedNav.updateUnreadMessages();
       }
     }
@@ -1292,7 +1304,7 @@ class ChatClient {
 
     // Re-render if affects current conversation
     const currentConv = this.conversations.find((c) => c.id === this.currentConversationId);
-    if (currentConv?.participants.some((p) => p.id === data.userId)) {
+    if (currentConv?.participants.some((p) => p.id === data.userId) === true) {
       this.renderChatHeader();
     }
   }
@@ -1382,7 +1394,7 @@ class ChatClient {
   async markConversationAsRead(conversationId: number): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (token === null || token === '') return;
 
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
@@ -1404,7 +1416,7 @@ class ChatClient {
       }
 
       // Update the navigation badge
-      if (window.unifiedNav) {
+      if (typeof window.unifiedNav.updateUnreadMessages === 'function') {
         void window.unifiedNav.updateUnreadMessages();
       }
     } catch (error) {
@@ -1426,17 +1438,17 @@ class ChatClient {
         });
 
         // Auch eine leere Nachrichtenliste ist valide
-        this.displayMessages(response.data ?? []);
+        this.displayMessages(response.data);
       } else {
         // v1 API - legacy code
         const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.token ?? ''}`,
           },
         });
 
         if (response.ok) {
-          const messages: Message[] = await response.json();
+          const messages = (await response.json()) as Message[];
           this.displayMessages(messages);
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -1460,12 +1472,10 @@ class ChatClient {
 
     messages.forEach((message) => {
       // Handle both camelCase and snake_case for created_at/createdAt
-      const createdAt =
-        message.created_at ??
-        ('createdAt' in message ? (message as Message & { createdAt: string }).createdAt : undefined);
+      const createdAt = message.created_at;
 
       // Check if we need to add a date separator
-      if (!createdAt) {
+      if (createdAt === '') {
         console.warn('Message without created date:', message);
         this.displayMessage(message);
         return;
@@ -1504,10 +1514,8 @@ class ChatClient {
     if (!messagesContainer) return;
 
     // Handle both camelCase and snake_case for created_at/createdAt
-    const createdAt =
-      message.created_at ??
-      ('createdAt' in message ? (message as Message & { createdAt: string }).createdAt : undefined);
-    if (!createdAt) {
+    const createdAt = message.created_at;
+    if (createdAt === '') {
       console.warn('Message without created date:', message);
       return;
     }
@@ -1519,35 +1527,30 @@ class ChatClient {
 
     // Check if a date separator for this date already exists
     const existingSeparators = messagesContainer.querySelectorAll('.date-separator');
-    let separatorExists = false;
-
-    existingSeparators.forEach((separator) => {
-      const separatorText = separator.textContent?.trim();
+    const separatorExists = Array.from(existingSeparators).some((separator) => {
+      const separatorText = separator.textContent !== '' ? separator.textContent.trim() : '';
       // Check if separator matches the date or "Heute" or "Gestern"
-      if (
+      return (
         separatorText === messageDate ||
         (separatorText === 'Heute' && this.isToday(messageDate)) ||
         (separatorText === 'Gestern' && this.isYesterday(messageDate))
-      ) {
-        separatorExists = true;
-      }
+      );
     });
 
     if (!separatorExists) {
-      if (lastMessage) {
+      if (messages.length > 0) {
         const lastMessageDate = lastMessage.getAttribute('data-date');
-        if (lastMessageDate && lastMessageDate !== messageDate) {
+        if (lastMessageDate !== null && lastMessageDate !== '' && lastMessageDate !== messageDate) {
           this.addDateSeparator(messageDate, messagesContainer);
         }
-      } else if (messages.length === 0) {
+      } else {
         // First message in conversation
         this.addDateSeparator(messageDate, messagesContainer);
       }
     }
 
     // Handle both snake_case and camelCase for sender_id/senderId
-    const senderId =
-      message.sender_id ?? ('senderId' in message ? (message as Message & { senderId: number }).senderId : undefined);
+    const senderId = message.sender_id;
     const isOwnMessage = senderId === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
@@ -1611,7 +1614,7 @@ class ChatClient {
     if (dateString.includes('.')) {
       // German format: dd.mm.yyyy
       const [day, month, year] = dateString.split('.');
-      messageDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      messageDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
     } else {
       // Assume ISO format or other parseable format
       messageDate = new Date(dateString);
@@ -1728,13 +1731,18 @@ class ChatClient {
     console.info('Is connected:', this.isConnected);
     console.info('WebSocket state:', this.ws?.readyState);
 
-    if (!messageContent || !this.currentConversationId) {
+    if (
+      messageContent === undefined ||
+      messageContent === '' ||
+      this.currentConversationId === null ||
+      this.currentConversationId === 0
+    ) {
       console.warn('No message content or conversation ID');
       return;
     }
 
     // Clear input
-    if (messageInput && !content) {
+    if (messageInput !== null && (content === undefined || content === '')) {
       messageInput.value = '';
       this.resizeTextarea();
     }
@@ -1783,7 +1791,7 @@ class ChatClient {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        if (this.currentConversationId) {
+        if (this.currentConversationId !== null && this.currentConversationId !== 0) {
           formData.append('conversationId', this.currentConversationId.toString());
         }
 
@@ -1799,7 +1807,7 @@ class ChatClient {
             },
           );
 
-          if (response.success && response.data) {
+          if (response.success) {
             attachmentIds.push(response.data.id);
           }
         } else {
@@ -1807,13 +1815,13 @@ class ChatClient {
           const response = await fetch('/api/chat/attachments', {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${this.token}`,
+              Authorization: `Bearer ${this.token ?? ''}`,
             },
             body: formData,
           });
 
           if (response.ok) {
-            const result = await response.json();
+            const result = (await response.json()) as { id: number };
             attachmentIds.push(result.id);
           }
         }
@@ -1829,8 +1837,7 @@ class ChatClient {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const validFiles: File[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    for (const file of files) {
       if (file.size > maxSize) {
         this.showNotification(`Datei "${file.name}" ist zu groß (max. 10MB)`, 'warning');
       } else {
@@ -1896,7 +1903,7 @@ class ChatClient {
 
       removeButton.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement | null;
-        const fileIndex = parseInt(target?.dataset.index ?? '0');
+        const fileIndex = parseInt(target?.dataset.index ?? '0', 10);
         this.removeFile(fileIndex);
       });
 
@@ -1924,7 +1931,7 @@ class ChatClient {
     const emojiPicker = document.getElementById('emojiPicker');
     if (!emojiPicker) return;
 
-    if (emojiPicker.style.display === 'none' || !emojiPicker.style.display) {
+    if (emojiPicker.style.display === 'none' || emojiPicker.style.display === '') {
       emojiPicker.style.display = 'block';
       this.showEmojiCategory('smileys');
     } else {
@@ -1994,7 +2001,7 @@ class ChatClient {
       }
 
       // Add unread class if conversation has unread messages
-      if (conversation.unread_count && conversation.unread_count > 0) {
+      if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
         item.classList.add('unread');
       }
 
@@ -2003,7 +2010,7 @@ class ChatClient {
         : this.getConversationDisplayName(conversation);
 
       let lastMessageText = 'Keine Nachrichten';
-      if (conversation.last_message?.content) {
+      if (conversation.last_message?.content !== undefined && conversation.last_message.content !== '') {
         // Truncate message to one line (max ~40 chars)
         const content = conversation.last_message.content;
         lastMessageText = content.length > 40 ? `${content.substring(0, 37)}...` : content;
@@ -2011,19 +2018,26 @@ class ChatClient {
 
       const lastMessageTime = conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
 
-      const unreadBadge = conversation.unread_count
-        ? `<span class="unread-count">${conversation.unread_count}</span>`
-        : '';
+      const unreadBadge =
+        conversation.unread_count !== undefined && conversation.unread_count > 0
+          ? `<span class="unread-count">${conversation.unread_count}</span>`
+          : '';
 
       // Get avatar HTML
       let avatarHtml = '';
-      if (!conversation.is_group && conversation.participants) {
+      if (!conversation.is_group) {
         const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
         if (otherParticipant) {
-          if (otherParticipant.profile_picture_url || otherParticipant.profile_image_url) {
-            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url;
-            avatarHtml = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName ?? '')}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-          } else if (otherParticipant.first_name || otherParticipant.last_name) {
+          if (
+            (otherParticipant.profile_picture_url !== undefined && otherParticipant.profile_picture_url !== '') ||
+            (otherParticipant.profile_image_url !== undefined && otherParticipant.profile_image_url !== '')
+          ) {
+            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? '';
+            avatarHtml = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+          } else if (
+            (otherParticipant.first_name !== undefined && otherParticipant.first_name !== '') ||
+            (otherParticipant.last_name !== undefined && otherParticipant.last_name !== '')
+          ) {
             const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
             avatarHtml = initials;
           } else {
@@ -2042,11 +2056,11 @@ class ChatClient {
           ${avatarHtml}
         </div>
         <div class="conversation-info">
-          <div class="conversation-name">${this.escapeHtml(displayName ?? 'Unbekannt')}</div>
+          <div class="conversation-name">${this.escapeHtml(displayName)}</div>
           <div class="conversation-last-message">${this.escapeHtml(lastMessageText)}</div>
         </div>
         <div class="conversation-meta">
-          <div class="conversation-time">${lastMessageTime ?? ''}</div>
+          <div class="conversation-time">${lastMessageTime}</div>
           ${unreadBadge}
         </div>
       `;
@@ -2064,7 +2078,7 @@ class ChatClient {
     const chatPartnerName = document.getElementById('chat-partner-name');
     const chatPartnerStatus = document.getElementById('chat-partner-status');
 
-    if (!this.currentConversationId) return;
+    if (this.currentConversationId === null || this.currentConversationId === 0) return;
 
     const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
     if (!conversation) return;
@@ -2080,15 +2094,21 @@ class ChatClient {
 
     // Update avatar and status
     if (chatAvatar) {
-      if (!conversation.is_group && conversation.participants) {
+      if (!conversation.is_group) {
         const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
         if (otherParticipant) {
           // Show profile picture if available
-          if (otherParticipant.profile_picture_url || otherParticipant.profile_image_url) {
-            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url;
+          if (
+            (otherParticipant.profile_picture_url !== undefined && otherParticipant.profile_picture_url !== '') ||
+            (otherParticipant.profile_image_url !== undefined && otherParticipant.profile_image_url !== '')
+          ) {
+            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? '';
             chatAvatar.innerHTML = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
             chatAvatar.style.display = 'flex';
-          } else if (otherParticipant.first_name || otherParticipant.last_name) {
+          } else if (
+            (otherParticipant.first_name !== undefined && otherParticipant.first_name !== '') ||
+            (otherParticipant.last_name !== undefined && otherParticipant.last_name !== '')
+          ) {
             // Show initials
             const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
             chatAvatar.textContent = initials;
@@ -2100,10 +2120,10 @@ class ChatClient {
 
           // Update status
           if (chatPartnerStatus) {
-            chatPartnerStatus.textContent = this.getRoleDisplayName(otherParticipant.role || '');
+            chatPartnerStatus.textContent = this.getRoleDisplayName(otherParticipant.role);
           }
         }
-      } else if (conversation.is_group) {
+      } else {
         // Group chat
         chatAvatar.innerHTML = '<i class="fas fa-users"></i>';
         chatAvatar.style.display = 'flex';
@@ -2115,9 +2135,10 @@ class ChatClient {
   }
 
   getInitials(firstName?: string, lastName?: string): string {
-    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
-    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
-    return `${firstInitial}${lastInitial}` || 'U';
+    const firstInitial = firstName !== undefined && firstName !== '' ? firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = lastName !== undefined && lastName !== '' ? lastName.charAt(0).toUpperCase() : '';
+    const initials = `${firstInitial}${lastInitial}`;
+    return initials !== '' ? initials : 'U';
   }
 
   getRoleDisplayName(role: string): string {
@@ -2126,7 +2147,7 @@ class ChatClient {
       employee: 'Mitarbeiter',
       root: 'Root',
     };
-    return roleMap[role] || role;
+    return roleMap[role] ?? role;
   }
 
   deleteConversationBtnHandler(): void {
@@ -2149,17 +2170,16 @@ class ChatClient {
     }
 
     // Für 1:1 Chats - nutze display_name wenn verfügbar
-    if (conversation.display_name) {
+    if (conversation.display_name !== undefined && conversation.display_name !== '') {
       return conversation.display_name;
     }
 
     // Fallback auf participants array
-    if (conversation.participants && conversation.participants.length > 0) {
+    if (conversation.participants.length > 0) {
       const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
       if (otherParticipant) {
-        return (
-          `${otherParticipant.first_name ?? ''} ${otherParticipant.last_name ?? ''}`.trim() || otherParticipant.username
-        );
+        const fullName = `${otherParticipant.first_name ?? ''} ${otherParticipant.last_name ?? ''}`.trim();
+        return fullName !== '' ? fullName : otherParticipant.username;
       }
     }
 
@@ -2167,7 +2187,7 @@ class ChatClient {
   }
 
   getParticipantStatus(conversation: Conversation): string {
-    if (!conversation.participants || conversation.participants.length === 0) {
+    if (conversation.participants.length === 0) {
       return '';
     }
     const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
@@ -2320,18 +2340,18 @@ class ChatClient {
         // v1 API - legacy code
         const response = await fetch('/api/departments', {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.token ?? ''}`,
           },
         });
 
         if (response.ok) {
-          const departments = await response.json();
+          const departments = (await response.json()) as { id: number; name: string }[];
           const dropdown = document.getElementById('departmentDropdown');
 
           if (dropdown) {
             dropdown.innerHTML = '';
 
-            departments.forEach((dept: { id: number; name: string }) => {
+            departments.forEach((dept) => {
               const option = document.createElement('div');
               option.className = 'dropdown-option';
               option.onclick = () => {
@@ -2360,7 +2380,7 @@ class ChatClient {
     try {
       // Filter employees by department
       const employees = this.availableUsers.filter(
-        (user) => user.role === 'employee' && user.department_id?.toString() === departmentId.toString(),
+        (user) => user.role === 'employee' && user.department_id?.toString() === departmentId,
       );
 
       const dropdown = document.getElementById('employeeDropdown');
@@ -2377,14 +2397,20 @@ class ChatClient {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
           option.onclick = () => {
-            const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
+            const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+            const name = fullName !== '' ? fullName : employee.username;
             if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
               window.selectChatDropdownOption('employee', employee.id, name, employee.department ?? '');
             }
           };
           option.innerHTML = `
             <div class="option-info">
-              <div class="option-name">${this.escapeHtml(`${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username)}</div>
+              <div class="option-name">${this.escapeHtml(
+                (() => {
+                  const n = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+                  return n !== '' ? n : employee.username;
+                })(),
+              )}</div>
               <div class="option-meta">${this.escapeHtml(employee.position ?? 'Mitarbeiter')}</div>
             </div>
           `;
@@ -2408,14 +2434,20 @@ class ChatClient {
         const option = document.createElement('div');
         option.className = 'dropdown-option';
         option.onclick = () => {
-          const name = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim() || admin.username;
+          const fullName = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim();
+          const name = fullName !== '' ? fullName : admin.username;
           if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
             window.selectChatDropdownOption('admin', admin.id, name, admin.role);
           }
         };
         option.innerHTML = `
           <div class="option-info">
-            <div class="option-name">${this.escapeHtml(`${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim() || admin.username)}</div>
+            <div class="option-name">${this.escapeHtml(
+              (() => {
+                const n = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim();
+                return n !== '' ? n : admin.username;
+              })(),
+            )}</div>
             <div class="option-meta">${this.escapeHtml(admin.role === 'root' ? 'Root Administrator' : 'Administrator')}</div>
           </div>
         `;
@@ -2444,19 +2476,21 @@ class ChatClient {
     try {
       // Get selected recipient based on active tab
       const activeTab = document.querySelector('.chat-type-tab.active');
-      const tabType = (activeTab as HTMLElement)?.dataset.type;
+      const tabType = (activeTab as HTMLElement | null)?.dataset.type;
 
       let selectedUserId: number | null = null;
 
       if (tabType === 'employee') {
         const employeeInput = document.getElementById('selectedEmployee') as HTMLInputElement | null;
-        selectedUserId = employeeInput?.value ? parseInt(employeeInput.value) : null;
+        selectedUserId =
+          employeeInput?.value !== undefined && employeeInput.value !== '' ? parseInt(employeeInput.value, 10) : null;
       } else if (tabType === 'admin') {
         const adminInput = document.getElementById('selectedAdmin') as HTMLInputElement | null;
-        selectedUserId = adminInput?.value ? parseInt(adminInput.value) : null;
+        selectedUserId =
+          adminInput?.value !== undefined && adminInput.value !== '' ? parseInt(adminInput.value, 10) : null;
       }
 
-      if (!selectedUserId) {
+      if (selectedUserId === null || selectedUserId === 0) {
         this.showNotification('Bitte wählen Sie einen Empfänger aus', 'warning');
         this.isCreatingConversation = false;
         return;
@@ -2465,14 +2499,14 @@ class ChatClient {
       // For now, we only support 1:1 chats
       const isGroup = false;
       const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement | null;
-      const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
+      const groupName = groupNameInput?.value.trim() ?? null;
       const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
         participantIds: [selectedUserId],
         isGroup,
       };
 
       // Only add name for group chats
-      if (isGroup && groupName) {
+      if (groupName !== null && groupName !== '') {
         requestBody.name = groupName;
       }
 
@@ -2485,7 +2519,7 @@ class ChatClient {
           body: JSON.stringify(requestBody),
         });
 
-        if (response.conversation?.id) {
+        if (response.conversation.id !== 0) {
           this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
           this.closeModal('newConversationModal');
 
@@ -2502,14 +2536,14 @@ class ChatClient {
         const response = await fetch('/api/chat/conversations', {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.token ?? ''}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(requestBody),
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = (await response.json()) as { id: number };
 
           this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
           this.closeModal('newConversationModal');
@@ -2520,7 +2554,7 @@ class ChatClient {
           // Select new conversation
           void this.selectConversation(result.id);
         } else {
-          const error = await response.json();
+          const error = (await response.json()) as { error?: string };
           throw new Error(error.error ?? `HTTP error! status: ${response.status}`);
         }
       }
@@ -2533,7 +2567,7 @@ class ChatClient {
   }
 
   async deleteCurrentConversation(): Promise<void> {
-    if (!this.currentConversationId) return;
+    if (this.currentConversationId === null || this.currentConversationId === 0) return;
 
     // Use custom confirm dialog instead of native confirm
     const userConfirmed = await this.showConfirmDialog('Möchten Sie diese Unterhaltung wirklich löschen?');
@@ -2553,7 +2587,7 @@ class ChatClient {
           },
         );
 
-        if (response.message) {
+        if (response.message !== '') {
           this.showNotification('Unterhaltung gelöscht', 'success');
 
           // Reload the page to refresh everything
@@ -2568,7 +2602,7 @@ class ChatClient {
         const response = await fetch(`/api/chat/conversations/${this.currentConversationId}`, {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.token ?? ''}`,
           },
         });
 
@@ -2664,7 +2698,7 @@ class ChatClient {
         const target = e.target as HTMLElement | null;
         if (!target) return;
         const categoryName = target.dataset.category;
-        if (categoryName) {
+        if (categoryName !== undefined && categoryName !== '') {
           this.showEmojiCategory(categoryName);
 
           // Update active state
@@ -2679,12 +2713,12 @@ class ChatClient {
     // Click outside to close emoji picker
     document.addEventListener('click', (e) => {
       const emojiPicker = document.getElementById('emojiPicker');
-      const emojiBtn = document.getElementById('emojiBtn');
+      const emojiBtnElement = document.getElementById('emojiBtn');
       if (
         emojiPicker &&
         !emojiPicker.contains(e.target as Node) &&
-        e.target !== emojiBtn &&
-        !emojiBtn?.contains(e.target as Node)
+        e.target !== emojiBtnElement &&
+        emojiBtnElement?.contains(e.target as Node) !== true
       ) {
         emojiPicker.style.display = 'none';
       }
@@ -2748,7 +2782,7 @@ class ChatClient {
   }
 
   handleTyping(): void {
-    if (!this.currentConversationId || !this.isConnected) return;
+    if (this.currentConversationId === null || this.currentConversationId === 0 || !this.isConnected) return;
 
     // Send typing start
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -2805,7 +2839,7 @@ class ChatClient {
 
     const typingUsers = conversation.typing_users
       .map((userId) => {
-        if (conversation.participants && Array.isArray(conversation.participants)) {
+        if (Array.isArray(conversation.participants)) {
           const participant = conversation.participants.find((p) => p.id === userId);
           return participant ? participant.username : 'Unknown';
         }
@@ -2850,7 +2884,7 @@ class ChatClient {
 
   playNotificationSound(): void {
     const audio = new Audio('/sounds/notification.mp3');
-    audio.play().catch((error) => {
+    audio.play().catch((error: unknown) => {
       console.info('Could not play notification sound:', error);
     });
   }
@@ -2894,7 +2928,7 @@ class ChatClient {
     if (!messageInput) return;
 
     messageInput.addEventListener('input', () => {
-      if (!isTyping && this.currentConversationId) {
+      if (!isTyping && this.currentConversationId !== null && this.currentConversationId !== 0) {
         isTyping = true;
         // Send typing started event
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -2914,7 +2948,7 @@ class ChatClient {
 
       // Set new timer to stop typing after 2 seconds
       typingTimer = setTimeout(() => {
-        if (isTyping && this.currentConversationId) {
+        if (isTyping && this.currentConversationId !== null && this.currentConversationId !== 0) {
           isTyping = false;
           // Send typing stopped event
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -3031,7 +3065,7 @@ class ChatClient {
   }
 
   escapeHtml(text: string | null | undefined): string {
-    if (!text) return '';
+    if (text === null || text === undefined || text === '') return '';
 
     const map: Record<string, string> = {
       '&': '&amp;',
@@ -3040,7 +3074,7 @@ class ChatClient {
       '"': '&quot;',
       "'": '&#039;',
     };
-    return String(text).replace(/[&<>"']/g, (m) => map[m]);
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   parseEmojis(text: string): string {

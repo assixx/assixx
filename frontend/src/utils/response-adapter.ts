@@ -2,11 +2,11 @@
  * Response Adapter for converting between v1 (snake_case) and v2 (camelCase) API formats
  */
 
-export class ResponseAdapter {
+const ResponseAdapterInternal = {
   /**
    * Convert v1 snake_case response to v2 camelCase format
    */
-  static toV2Format(v1Data: unknown): unknown {
+  toV2Format(v1Data: unknown): unknown {
     if (v1Data === null || v1Data === undefined) {
       return v1Data;
     }
@@ -32,12 +32,12 @@ export class ResponseAdapter {
     }
 
     return v1Data;
-  }
+  },
 
   /**
    * Convert v2 camelCase data to v1 snake_case format
    */
-  static toV1Format(v2Data: unknown): unknown {
+  toV1Format(v2Data: unknown): unknown {
     if (v2Data === null || v2Data === undefined) {
       return v2Data;
     }
@@ -63,12 +63,12 @@ export class ResponseAdapter {
     }
 
     return v2Data;
-  }
+  },
 
   /**
    * Convert snake_case to camelCase
    */
-  private static snakeToCamel(str: string): string {
+  snakeToCamel(str: string): string {
     // Special cases that should not be converted
     const specialCases: Record<string, string> = {
       _id: 'id',
@@ -259,12 +259,12 @@ export class ResponseAdapter {
     };
 
     return specialCases[str] ?? str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
-  }
+  },
 
   /**
    * Convert camelCase to snake_case
    */
-  private static camelToSnake(str: string): string {
+  camelToSnake(str: string): string {
     // Reverse mapping of special cases
     const specialCases: Record<string, string> = {
       id: '_id',
@@ -455,12 +455,12 @@ export class ResponseAdapter {
     };
 
     return specialCases[str] ?? str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-  }
+  },
 
   /**
    * Apply specific field conversions for v2 format
    */
-  private static applyV2FieldConversions(data: Record<string, unknown>): Record<string, unknown> {
+  applyV2FieldConversions(data: Record<string, unknown>): Record<string, unknown> {
     // Convert date strings to Date objects where appropriate
     const dateFields = [
       'createdAt',
@@ -598,12 +598,12 @@ export class ResponseAdapter {
     });
 
     return data;
-  }
+  },
 
   /**
    * Apply specific field conversions for v1 format
    */
-  private static applyV1FieldConversions(data: Record<string, unknown>): Record<string, unknown> {
+  applyV1FieldConversions(data: Record<string, unknown>): Record<string, unknown> {
     // Convert Date objects to strings for v1
     const dateFields = [
       'created_at',
@@ -674,12 +674,12 @@ export class ResponseAdapter {
     });
 
     return data;
-  }
+  },
 
   /**
    * Convert API endpoint from v1 to v2 format
    */
-  static convertEndpoint(v1Endpoint: string): string {
+  convertEndpoint(v1Endpoint: string): string {
     const endpointMap: Record<string, string> = {
       '/api/auth': '/api/v2/auth',
       '/api/users': '/api/v2/users',
@@ -722,12 +722,12 @@ export class ResponseAdapter {
     }
 
     return v1Endpoint;
-  }
+  },
 
   /**
    * Adapt pagination response format
    */
-  static adaptPaginationResponse(response: unknown, v2Format = true): unknown {
+  adaptPaginationResponse(response: unknown, v2Format = true): unknown {
     if (v2Format) {
       // Convert v1 pagination to v2 format
       const responseObj = response as Record<string, unknown>;
@@ -790,12 +790,12 @@ export class ResponseAdapter {
 
       return response;
     }
-  }
+  },
 
   /**
    * Adapt error response format
    */
-  static adaptErrorResponse(error: unknown, v2Format = true): unknown {
+  adaptErrorResponse(error: unknown, v2Format = true): unknown {
     if (v2Format) {
       // Convert v1 error to v2 format
       return {
@@ -822,12 +822,12 @@ export class ResponseAdapter {
       }
       return error;
     }
-  }
+  },
 
   /**
    * Convert from v2 format (camelCase) to v1 format (snake_case)
    */
-  static fromV2Format(data: unknown): unknown {
+  fromV2Format(data: unknown): unknown {
     if (data === null || data === undefined) return data;
 
     if (Array.isArray(data)) {
@@ -848,25 +848,28 @@ export class ResponseAdapter {
     }
 
     return data;
-  }
+  },
 
   /**
    * Adapt user response from v2 (camelCase) to v1 (snake_case) format
    */
-  static adaptUserResponse(v2User: unknown): unknown {
+  adaptUserResponse(v2User: unknown): unknown {
     if (v2User === null || v2User === undefined) return v2User;
 
     // Convert from v2 to v1 format
     return this.fromV2Format(v2User);
-  }
+  },
 
   /**
    * Adapt user request from v1 (snake_case) to v2 (camelCase) format
    */
-  static adaptUserRequest(v1User: unknown): unknown {
+  adaptUserRequest(v1User: unknown): unknown {
     if (v1User === null || v1User === undefined) return v1User;
 
     // Convert from v1 to v2 format
     return this.toV2Format(v1User);
-  }
-}
+  },
+};
+
+// Export as ResponseAdapter to maintain compatibility
+export const ResponseAdapter = ResponseAdapterInternal;
