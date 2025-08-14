@@ -126,8 +126,8 @@ router.get(
       const documents = await Document.countByTenant(req.user.tenant_id);
 
       const response: CountsResponse = {
-        employees: employees ?? 0,
-        documents: documents ?? 0,
+        employees,
+        documents,
         departments: 0,
         teams: 0,
       };
@@ -158,7 +158,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const departments = await Department.findAll(req.user.tenant_id);
-      res.json(successResponse(departments ?? []));
+      res.json(successResponse(departments));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -172,7 +172,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const teams = await Team.findAll(req.user.tenant_id);
-      res.json(successResponse(teams ?? []));
+      res.json(successResponse(teams));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }
@@ -203,7 +203,7 @@ router.get(
         role: "admin",
         tenant_id: req.user.tenant_id,
       });
-      res.json(successResponse(admins ?? []));
+      res.json(successResponse(admins));
     } catch (error: unknown) {
       console.error("Error fetching admins:", error);
       res.status(500).json(errorResponse("Server error", 500));
@@ -300,7 +300,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const documents = await Document.findByUserId(req.user.id);
-      res.json(successResponse(documents ?? []));
+      res.json(successResponse(documents));
     } catch {
       res.status(500).json(errorResponse("Server error", 500));
     }

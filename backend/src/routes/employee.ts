@@ -164,7 +164,7 @@ router.get(
       );
       res.json(successResponse(result.documents));
     } catch (error: unknown) {
-      const employeeId2 = req.user?.id ?? "unknown";
+      const employeeId2 = req.user.id;
       logger.error(
         `Error retrieving documents for Employee ${employeeId2}: ${getErrorMessage(error)}`,
       );
@@ -276,7 +276,7 @@ router.get(
       );
       res.json(successResponse(documents));
     } catch (error: unknown) {
-      const employeeId3 = req.user?.id ?? "unknown";
+      const employeeId3 = req.user.id;
       logger.error(
         `Error searching documents for Employee ${employeeId3}: ${getErrorMessage(error)}`,
       );
@@ -310,7 +310,7 @@ router.get(
       );
       res.json(successResponse(documents));
     } catch (error: unknown) {
-      const employeeId4 = req.user?.id ?? "unknown";
+      const employeeId4 = req.user.id;
       logger.error(
         `Error retrieving salary documents for Employee ${employeeId4}: ${getErrorMessage(error)}`,
       );
@@ -429,8 +429,8 @@ router.get(
       // Für alle Dateien einfach den gesamten Inhalt auf einmal senden
       res.end(document.file_content);
     } catch (error: unknown) {
-      const employeeId5 = req.user?.id ?? "unknown";
-      const documentId2 = req.params?.documentId ?? "unknown";
+      const employeeId5 = req.user.id;
+      const documentId2 = req.params.documentId;
       logger.error(
         `Error downloading document ${documentId2} for Employee ${employeeId5}: ${getErrorMessage(error)}`,
       );

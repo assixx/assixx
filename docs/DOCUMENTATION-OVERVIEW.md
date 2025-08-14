@@ -42,7 +42,7 @@
 
 ### 🔧 TECHNISCHE DOCS
 
-- **`/backend/TYPESCRIPT-STANDARDS.md`** - Backend Patterns
+- **`/docs/TYPESCRIPT-STANDARDS.md`** - Backend Patterns
 - **`/docs/DATABASE-MIGRATION-GUIDE.md`** - DB Änderungen
 - **`/docs/DESIGN-STANDARDS.md`** - UI/UX Standards
 

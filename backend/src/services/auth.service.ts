@@ -58,11 +58,7 @@ class AuthService {
       }
 
       // Validate tenant if subdomain is provided
-      if (
-        tenantSubdomain !== null &&
-        tenantSubdomain !== undefined &&
-        tenantSubdomain !== ""
-      ) {
+      if (tenantSubdomain !== undefined && tenantSubdomain !== "") {
         // Get tenant by subdomain
         const [tenantRows] = await execute<RowDataPacket[]>(
           "SELECT id FROM tenants WHERE subdomain = ?",
@@ -110,11 +106,7 @@ class AuthService {
       );
 
       // Store session info if fingerprint provided
-      if (
-        fingerprint !== null &&
-        fingerprint !== undefined &&
-        fingerprint !== ""
-      ) {
+      if (fingerprint !== undefined && fingerprint !== "") {
         try {
           await execute<ResultSetHeader>(
             "INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
@@ -301,7 +293,7 @@ class AuthService {
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone_number,
       landline: dbUser.landline ?? null,
-      employee_number: dbUser.employee_number ?? "",
+      employee_number: dbUser.employee_number || "",
       position: dbUser.position,
       hire_date: dbUser.hire_date,
       birth_date: dbUser.birth_date,
@@ -499,8 +491,10 @@ class AuthService {
       // Create a complete user object with all required fields
       const completeUser = {
         ...user,
+        first_name: user.first_name ?? "",
+        last_name: user.last_name ?? "",
         password: "", // Not needed for mapping
-        is_active: (validToken.is_active as boolean) ?? true,
+        is_active: validToken.is_active as boolean,
         is_archived: false,
         profile_picture: null,
         phone: null,

@@ -47,7 +47,7 @@ const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
     void (async () => {
       const authReq = req as AuthenticatedRequest;
-      const tenantId = authReq.user.tenant_id ?? 1;
+      const tenantId = authReq.user.tenant_id;
       const baseUploadDir = getUploadDirectory("blackboard");
       const uploadDir = path.join(baseUploadDir, tenantId.toString());
 
@@ -115,7 +115,7 @@ const updateEntryValidation = createValidation([]);
 
 // Helper function to get tenant ID from user object
 function getTenantId(user: AuthenticatedRequest["user"]): number {
-  return user.tenant_id ?? 1;
+  return user.tenant_id;
 }
 
 // Helper function to check if user can manage the entry
@@ -184,7 +184,7 @@ function canCreateForOrgLevel(
     const role = authReq.user.role;
     // Note: department_id exists on user, but teamId doesn't
     const departmentId = authReq.user.department_id;
-    const teamId: number | null = null; // Teams not implemented yet
+    const teamId = authReq.user.team_id; // Get team_id from user
 
     // Admins can create entries for any org level
     if (role === "admin" || role === "root") {
@@ -213,7 +213,7 @@ function canCreateForOrgLevel(
 
     if (org_level === "team") {
       // Check if user is team leader
-      if (role !== "team_leader" || teamId !== org_id) {
+      if (role !== "team_leader" || teamId == null || teamId !== org_id) {
         res.status(403).json({
           message: "You can only create team entries for your own team",
         });
@@ -338,19 +338,19 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const options: EntryQueryOptions = {
-        status: ((req.query.status as string) ?? "active") as
+        status: ((req.query.status as string) || "active") as
           | "active"
           | "archived",
-        filter: ((req.query.filter as string) ?? "all") as
+        filter: ((req.query.filter as string) || "all") as
           | "all"
           | "company"
           | "department"
           | "team",
-        search: (req.query.search as string) ?? "",
-        page: parseInt((req.query.page as string) ?? "1", 10),
-        limit: parseInt((req.query.limit as string) ?? "18", 10),
-        sortBy: (req.query.sortBy as string) ?? "created_at",
-        sortDir: ((req.query.sortDir as string) ?? "DESC") as "ASC" | "DESC",
+        search: (req.query.search as string) || "",
+        page: parseInt((req.query.page as string) || "1", 10),
+        limit: parseInt((req.query.limit as string) || "18", 10),
+        sortBy: (req.query.sortBy as string) || "created_at",
+        sortDir: ((req.query.sortDir as string) || "DESC") as "ASC" | "DESC",
       };
 
       const result = await blackboardModel.getAllEntries(
@@ -412,18 +412,18 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const options: EntryQueryOptions = {
-        status: ((req.query.status as string) ?? "active") as
+        status: ((req.query.status as string) || "active") as
           | "active"
           | "archived",
-        filter: ((req.query.filter as string) ?? "all") as
+        filter: ((req.query.filter as string) || "all") as
           | "all"
           | "company"
           | "department"
           | "team",
-        search: (req.query.search as string) ?? "",
-        page: parseInt((req.query.page as string) ?? "1", 10),
-        limit: parseInt((req.query.limit as string) ?? "18", 10),
-        sortBy: (req.query.sortBy as string) ?? "created_at",
+        search: (req.query.search as string) || "",
+        page: parseInt((req.query.page as string) || "1", 10),
+        limit: parseInt((req.query.limit as string) || "18", 10),
+        sortBy: (req.query.sortBy as string) || "created_at",
         sortDir: (((req.query.sortOrder ?? req.query.sortDir) as string) ||
           "DESC") as "ASC" | "DESC",
       };
@@ -656,12 +656,12 @@ router.post(
           // Don't try to manually set attachments here as it causes type issues
 
           logger.info(
-            `User ${req.user.id} created entry ${entry?.id} with direct attachment ${attachmentId}`,
+            `User ${req.user.id} created entry ${entry.id} with direct attachment ${attachmentId}`,
           );
         } catch (attachError: unknown) {
           // If attachment fails, still return the created entry
           logger.error(
-            `Failed to add attachment to entry ${entry?.id}:`,
+            `Failed to add attachment to entry ${entry.id}:`,
             attachError,
           );
         }

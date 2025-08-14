@@ -264,7 +264,7 @@ export function isAuthenticated(req: Request): req is AuthenticatedRequest {
 export function hasParams<P extends ParamsDictionary>(
   req: Request,
 ): req is ParamsRequest<P> {
-  return req.params != null;
+  return Object.keys(req.params).length > 0;
 }
 
 /**

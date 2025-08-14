@@ -156,10 +156,7 @@ router.post("/", authenticateToken, (req, res): void => {
 
   try {
     // Check admin permission
-    if (
-      authReq.user == null ||
-      !["admin", "root", "manager"].includes(authReq.user.role)
-    ) {
+    if (!["admin", "root", "manager"].includes(authReq.user.role)) {
       res.status(403).json({
         success: false,
         message: "Keine Berechtigung zum Erstellen von Bereichen",

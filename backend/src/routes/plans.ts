@@ -171,7 +171,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
-      const tenantId = req.user?.tenant_id;
+      const tenantId = req.user.tenant_id;
 
       const currentPlan = await Plan.getTenantPlan(tenantId);
       if (!currentPlan) {
@@ -259,7 +259,7 @@ router.post(
       // Validation is now handled by middleware
 
       // For admin, can only change own tenant's plan
-      const userTenantId = req.user?.tenant_id;
+      const userTenantId = req.user.tenant_id;
       if (req.user.role === "admin" && tenantId !== userTenantId) {
         res
           .status(403)
@@ -307,7 +307,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
-      const tenantId = req.user?.tenant_id;
+      const tenantId = req.user.tenant_id;
       const addons = await Plan.getTenantAddons(tenantId);
 
       res.json(successResponse(addons));
@@ -331,7 +331,7 @@ router.post(
       // Validation is now handled by middleware
 
       // For admin, can only update own tenant's addons
-      const userTenantId = req.user?.tenant_id;
+      const userTenantId = req.user.tenant_id;
       if (req.user.role === "admin" && tenantId !== userTenantId) {
         res
           .status(403)
@@ -386,7 +386,7 @@ router.get(
       const tenantId = parseInt(req.params.tenantId, 10);
 
       // Only root can view other tenants' costs, others can only see their own
-      const userTenantId = req.user?.tenant_id;
+      const userTenantId = req.user.tenant_id;
       if (req.user.role !== "root" && tenantId !== userTenantId) {
         res.status(403).json(errorResponse("Keine Berechtigung", 403));
         return;

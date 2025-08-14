@@ -538,7 +538,7 @@ router.get(
   typed.params<{ id: string }>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
-    const days = parseInt(req.query.days as string) ?? 0; // 0 bedeutet alle Logs
+    const days = parseInt(req.query.days as string) || 0; // 0 bedeutet alle Logs
 
     logger.info(
       `Root user ${rootUser} requesting logs for admin ${adminId} (days: ${days})`,
@@ -708,7 +708,7 @@ router.get(
   typed.auth(async (_req, res) => {
     try {
       const [deletions] = await executeQuery(
-        `SELECT 
+        `SELECT
           q.*,
           t.company_name,
           t.subdomain,
@@ -765,7 +765,7 @@ router.delete(
 
     // Security audit log
     await execute(
-      `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+      `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         rootUser.tenant_id,
@@ -807,14 +807,7 @@ router.delete(
       );
     } catch (error: unknown) {
       logger.error(`Error queueing tenant ${tenantId} for deletion:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Einplanen der Löschung",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -909,7 +902,7 @@ router.delete(
         );
 
         await execute(
-          `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+          `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
             rootUser.tenant_id,
@@ -967,14 +960,7 @@ router.delete(
       );
     } catch (error: unknown) {
       logger.error(`Error queueing tenant ${tenantId} for deletion:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Einplanen der Löschung",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -992,8 +978,8 @@ router.get(
     );
 
     try {
-      const [deletionQueue] = await query(
-        `SELECT 
+      const [deletionQueue] = await query<RowDataPacket[]>(
+        `SELECT
           dq.*,
           t.company_name,
           u.username as requested_by_username
@@ -1007,7 +993,7 @@ router.get(
         [tenantId],
       );
 
-      if (deletionQueue == null || deletionQueue.length === 0) {
+      if (deletionQueue.length === 0) {
         res
           .status(404)
           .json(errorResponse("Keine aktive Löschung gefunden", 404));
@@ -1088,14 +1074,7 @@ router.post(
       );
     } catch (error: unknown) {
       logger.error("Error cancelling deletion:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Abbrechen der Löschung",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1133,14 +1112,7 @@ router.post(
       );
     } catch (error: unknown) {
       logger.error(`Error cancelling deletion for tenant ${tenantId}:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Abbrechen der Löschung",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1173,14 +1145,7 @@ router.post(
         );
       } catch (error: unknown) {
         logger.error(`Error approving deletion ${queueId}:`, error);
-        res
-          .status(500)
-          .json(
-            errorResponse(
-              getErrorMessage(error) ?? "Fehler bei der Genehmigung",
-              500,
-            ),
-          );
+        res.status(500).json(errorResponse(getErrorMessage(error), 500));
       }
     },
   ),
@@ -1218,14 +1183,7 @@ router.post(
         );
       } catch (error: unknown) {
         logger.error(`Error rejecting deletion ${queueId}:`, error);
-        res
-          .status(500)
-          .json(
-            errorResponse(
-              getErrorMessage(error) ?? "Fehler bei der Ablehnung",
-              500,
-            ),
-          );
+        res.status(500).json(errorResponse(getErrorMessage(error), 500));
       }
     },
   ),
@@ -1245,8 +1203,8 @@ router.get(
     try {
       // Get pending approvals from view
       const [pendingApprovals] = await query(
-        `SELECT * FROM v_pending_deletion_approvals 
-         WHERE requester_id != ? 
+        `SELECT * FROM v_pending_deletion_approvals
+         WHERE requester_id != ?
          ORDER BY requested_at DESC`,
         [rootUser.id],
       );
@@ -1289,14 +1247,7 @@ router.post(
       );
     } catch (error: unknown) {
       logger.error(`Error triggering emergency stop ${queueId}:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Emergency Stop",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1356,14 +1307,7 @@ router.post(
       );
     } catch (error: unknown) {
       logger.error(`Error retrying deletion ${queueId}:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim erneuten Versuch",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1383,10 +1327,10 @@ router.get(
 
     try {
       const [rootUsers] = await executeQuery<RowDataPacket[]>(
-        `SELECT 
-          id, username, email, first_name, last_name, 
+        `SELECT
+          id, username, email, first_name, last_name,
           position, notes, is_active, employee_id, created_at, updated_at
-        FROM users 
+        FROM users
         WHERE role = 'root' AND tenant_id = ?
         ORDER BY created_at DESC`,
         [rootUser.tenant_id],
@@ -1412,10 +1356,10 @@ router.get(
 
     try {
       const [users] = await executeQuery<RowDataPacket[]>(
-        `SELECT 
-          id, username, email, first_name, last_name, 
+        `SELECT
+          id, username, email, first_name, last_name,
           position, notes, is_active, created_at, updated_at
-        FROM users 
+        FROM users
         WHERE id = ? AND role = 'root' AND tenant_id = ?`,
         [userId, rootUser.tenant_id],
       );
@@ -1488,7 +1432,7 @@ router.post(
       );
 
       const subdomain: string =
-        (tenantData[0]?.subdomain as string) ?? "DEFAULT";
+        (tenantData[0]?.subdomain as string) || "DEFAULT";
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -1496,7 +1440,7 @@ router.post(
       // Create root user (without employee_id first)
       const [result] = await executeQuery<ResultSetHeader>(
         `INSERT INTO users (
-          username, email, password, first_name, last_name, 
+          username, email, password, first_name, last_name,
           role, position, notes, is_active, tenant_id, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, NOW(), NOW())`,
         [
@@ -1525,7 +1469,7 @@ router.post(
 
       // Log the action
       await executeQuery(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           rootUser.tenant_id,
@@ -1596,8 +1540,8 @@ router.put(
 
       // Update user
       await executeQuery(
-        `UPDATE users SET 
-          first_name = ?, last_name = ?, email = ?, 
+        `UPDATE users SET
+          first_name = ?, last_name = ?, email = ?,
           position = ?, notes = ?, is_active = ?, updated_at = NOW()
         WHERE id = ?`,
         [first_name, last_name, email, position, notes, is_active, userId],
@@ -1605,7 +1549,7 @@ router.put(
 
       // Log the action
       await executeQuery(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           rootUser.tenant_id,
@@ -1688,7 +1632,7 @@ router.delete(
 
       // Log the action
       await executeQuery(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, old_values, ip_address, created_at) 
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, old_values, ip_address, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           rootUser.tenant_id,

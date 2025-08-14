@@ -184,11 +184,11 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
       [tenantId],
     );
 
-    const tenant = tenantRows[0];
-
-    if (tenant === undefined) {
+    if (tenantRows.length === 0) {
       return null;
     }
+
+    const tenant = tenantRows[0];
 
     const result = {
       isScheduledForDeletion: tenant.deletion_status !== "active",

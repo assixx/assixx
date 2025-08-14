@@ -171,14 +171,14 @@ export async function getAllEntries(
     }
 
     // Apply search filter
-    if (search !== null && search !== undefined && search !== "") {
+    if (search !== "") {
       query += " AND (e.title LIKE ? OR e.content LIKE ?)";
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm);
     }
 
     // Apply priority filter
-    if (priority !== null && priority !== undefined && priority !== "") {
+    if (priority !== undefined && priority !== "") {
       query += " AND e.priority = ?";
       queryParams.push(priority);
     }
@@ -218,13 +218,11 @@ export async function getAllEntries(
 
     // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
     for (const entry of entries) {
-      if (entry.content != null && Buffer.isBuffer(entry.content)) {
+      if (Buffer.isBuffer(entry.content)) {
         entry.content = entry.content.toString("utf8");
       } else if (
-        entry.content != null &&
         typeof entry.content === "object" &&
         "type" in entry.content &&
-        entry.content.type === "Buffer" &&
         Array.isArray(entry.content.data)
       ) {
         entry.content = Buffer.from(entry.content.data).toString("utf8");
@@ -262,7 +260,7 @@ export async function getAllEntries(
     }
 
     // Apply search filter for count
-    if (search !== null && search !== undefined && search !== "") {
+    if (search !== "") {
       countQuery += " AND (e.title LIKE ? OR e.content LIKE ?)";
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm);
@@ -330,13 +328,11 @@ export async function getEntryById(
     const entry = entries[0];
 
     // Konvertiere Buffer-Inhalte zu Strings
-    if (entry.content != null && Buffer.isBuffer(entry.content)) {
+    if (Buffer.isBuffer(entry.content)) {
       entry.content = entry.content.toString("utf8");
     } else if (
-      entry.content != null &&
       typeof entry.content === "object" &&
       "type" in entry.content &&
-      entry.content.type === "Buffer" &&
       Array.isArray(entry.content.data)
     ) {
       entry.content = Buffer.from(entry.content.data).toString("utf8");
@@ -389,7 +385,7 @@ export async function createEntry(
     } = entryData;
 
     // Validate required fields
-    if (!tenant_id || !title || !content || !org_level || !author_id) {
+    if (!tenant_id || !title || !content) {
       throw new Error("Missing required fields");
     }
 
@@ -421,7 +417,7 @@ export async function createEntry(
     ]);
 
     // Handle tags if provided
-    if (tags != null && tags.length > 0) {
+    if (tags.length > 0) {
       await addTagsToEntry(result.insertId, tags, tenant_id);
     }
 
@@ -524,7 +520,7 @@ export async function updateEntry(
       );
 
       // Add new tags if any
-      if (entryData.tags != null && entryData.tags.length > 0) {
+      if (entryData.tags.length > 0) {
         await addTagsToEntry(id, entryData.tags, tenant_id);
       }
     }
@@ -730,13 +726,11 @@ export async function getDashboardEntries(
 
     // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries) und load attachments for direct attachment entries
     for (const entry of entries) {
-      if (entry.content != null && Buffer.isBuffer(entry.content)) {
+      if (Buffer.isBuffer(entry.content)) {
         entry.content = entry.content.toString("utf8");
       } else if (
-        entry.content != null &&
         typeof entry.content === "object" &&
         "type" in entry.content &&
-        entry.content.type === "Buffer" &&
         Array.isArray(entry.content.data)
       ) {
         entry.content = Buffer.from(entry.content.data).toString("utf8");

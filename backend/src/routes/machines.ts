@@ -57,11 +57,7 @@ router.get("/", authenticateToken, (req, res): void => {
     const departmentId = req.query.department_id;
     let filteredMachines = machines;
 
-    if (
-      departmentId !== null &&
-      departmentId !== undefined &&
-      departmentId !== ""
-    ) {
+    if (departmentId !== undefined && departmentId !== "") {
       filteredMachines = machines.filter(
         (machine) =>
           machine.department_id ==

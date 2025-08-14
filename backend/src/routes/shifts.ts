@@ -231,7 +231,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       // Use default tenant ID 1 for now (can be improved later)
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
       const templates = await Shift.getShiftTemplates(tenantId);
       res.json(successResponse({ templates }));
     } catch (error: unknown) {
@@ -274,7 +274,7 @@ router.post(
 
       const templateData = {
         ...req.body,
-        tenant_id: req.user.tenant_id ?? 1,
+        tenant_id: req.user.tenant_id,
         created_by: req.user.id,
         duration_hours:
           duration_hours > 0 ? duration_hours : 24 + duration_hours, // Handle overnight shifts
@@ -474,7 +474,7 @@ router.get(
       };
 
       // Use the actual model function
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
       const userId = req.user.id;
       const result = await Shift.getShiftPlans(tenantId, userId, options);
       res.json(successResponse(result));
@@ -512,7 +512,7 @@ router.post(
 
       const planData = {
         ...req.body,
-        tenant_id: req.user.tenant_id ?? 1,
+        tenant_id: req.user.tenant_id,
         created_by: req.user.id,
       };
 
@@ -523,14 +523,7 @@ router.post(
         .json(successResponse(plan, "Schichtplan erfolgreich erstellt"));
     } catch (error: unknown) {
       console.error("Error creating shift plan:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Erstellen des Schichtplans",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -551,20 +544,13 @@ router.get(
       const planId = parseInt(req.params.planId);
       const shifts = await Shift.getShiftsByPlan(
         planId,
-        req.user.tenant_id ?? 1,
+        req.user.tenant_id,
         req.user.id,
       );
       res.json(successResponse({ shifts }));
     } catch (error: unknown) {
       console.error("Error fetching shifts for plan:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Laden der Schichten",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -611,7 +597,7 @@ router.get(
       const startStr = startDate.toISOString().split("T")[0];
       const endStr = endDate.toISOString().split("T")[0];
 
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
 
       try {
         // Build query based on user role
@@ -672,7 +658,7 @@ router.get(
 
         res.json(
           successResponse({
-            shifts: rows ?? [],
+            shifts: rows,
           }),
         );
       } catch (error: unknown) {
@@ -722,7 +708,7 @@ router.get(
       );
       const weekStart = weekDate.toISOString().split("T")[0];
 
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
 
       try {
         let departmentId: number | null = null;
@@ -740,11 +726,7 @@ router.get(
           ) {
             departmentId = userRows[0].department_id as number;
           }
-        } else if (
-          department_id !== null &&
-          department_id !== undefined &&
-          department_id !== ""
-        ) {
+        } else if (department_id !== undefined && department_id !== "") {
           // For admins, use the provided department_id
           departmentId = parseInt(
             typeof department_id === "string"
@@ -791,7 +773,7 @@ router.get(
         console.info("[SHIFTS NOTES] Query result rows:", rows);
 
         let notes = "";
-        if (rows != null && rows.length > 0 && rows[0].notes != null) {
+        if (rows.length > 0 && rows[0].notes != null) {
           // Convert Buffer to string if necessary
           if (Buffer.isBuffer(rows[0].notes)) {
             notes = rows[0].notes.toString("utf8");
@@ -821,7 +803,7 @@ router.get(
 
         res.json(
           successResponse({
-            notes: notes ?? "",
+            notes,
           }),
         );
       } catch (error: unknown) {
@@ -877,19 +859,12 @@ router.post(
         return;
       }
 
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
       const { week_start, week_end, assignments, notes } =
         req.body as WeeklyShiftBody;
 
       // Check if this is a weekly shift plan save
-      if (
-        week_start != null &&
-        week_start !== "" &&
-        week_end != null &&
-        week_end !== "" &&
-        assignments != null &&
-        assignments.length > 0
-      ) {
+      if (week_start !== "" && week_end !== "" && assignments.length > 0) {
         // Validate that all assignments have department_id
         const invalidAssignments = assignments.filter(
           (a) => a.department_id == null || a.department_id === 0,
@@ -945,9 +920,8 @@ router.post(
               late: { start: "14:00:00", end: "22:00:00" },
               night: { start: "22:00:00", end: "06:00:00" },
             };
-            const shiftTime = shiftTimes[
-              assignment.shift_type as keyof typeof shiftTimes
-            ] ?? { start: "08:00:00", end: "16:00:00" };
+            const shiftTime =
+              shiftTimes[assignment.shift_type as keyof typeof shiftTimes];
 
             // Convert date and time to datetime
             const startDateTime = `${assignment.shift_date} ${shiftTime.start}`;
@@ -990,7 +964,7 @@ router.post(
             assignments[0].department_id !== 0
           ) {
             // Ensure notes is a string
-            const notesString = notes ?? "";
+            const notesString = notes || "";
             console.info("[SHIFTS SAVE] Saving weekly notes:", {
               tenantId,
               departmentId: assignments[0].department_id,
@@ -1047,14 +1021,7 @@ router.post(
       }
     } catch (error: unknown) {
       console.error("Error creating shift:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Erstellen der Schicht",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1086,7 +1053,7 @@ router.post(
         const shiftId = parseInt(req.params.shiftId);
         const assignmentData = {
           ...req.body,
-          tenant_id: req.user.tenant_id ?? 1,
+          tenant_id: req.user.tenant_id,
           shift_id: shiftId,
           assigned_by: req.user.id,
         };
@@ -1099,14 +1066,7 @@ router.post(
           );
       } catch (error: unknown) {
         console.error("Error assigning employee to shift:", error);
-        res
-          .status(500)
-          .json(
-            errorResponse(
-              getErrorMessage(error) ?? "Fehler beim Zuweisen des Mitarbeiters",
-              500,
-            ),
-          );
+        res.status(500).json(errorResponse(getErrorMessage(error), 500));
       }
     },
   ),
@@ -1158,7 +1118,7 @@ router.get(
       }
 
       const availability = await Shift.getEmployeeAvailability(
-        req.user.tenant_id ?? 1,
+        req.user.tenant_id,
         targetUserId,
         typeof start_date === "string"
           ? start_date
@@ -1192,7 +1152,7 @@ router.post(
   typed.body<AvailabilityBody>(async (req, res) => {
     try {
       const availabilityData = {
-        tenant_id: req.user.tenant_id ?? 1,
+        tenant_id: req.user.tenant_id,
         user_id: req.body.user_id ?? req.user.id,
         date: req.body.date,
         availability_type: req.body.availability_type as
@@ -1227,14 +1187,7 @@ router.post(
       );
     } catch (error: unknown) {
       console.error("Error setting employee availability:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Setzen der Verfügbarkeit",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1281,7 +1234,7 @@ router.get(
       };
 
       const requests = await Shift.getShiftExchangeRequests(
-        req.user.tenant_id ?? 1,
+        req.user.tenant_id,
         req.user.id,
         options,
       );
@@ -1306,7 +1259,7 @@ router.post(
   typed.body<ShiftExchangeBody>(async (req, res) => {
     try {
       const requestData = {
-        tenant_id: req.user.tenant_id ?? 1,
+        tenant_id: req.user.tenant_id,
         shift_id: req.body.original_shift_id,
         requester_id: req.user.id,
         target_user_id: null as number | null,
@@ -1321,14 +1274,7 @@ router.post(
         .json(successResponse(request, "Tauschantrag erfolgreich erstellt"));
     } catch (error: unknown) {
       console.error("Error creating shift exchange request:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) ?? "Fehler beim Erstellen des Tauschantrags",
-            500,
-          ),
-        );
+      res.status(500).json(errorResponse(getErrorMessage(error), 500));
     }
   }),
 );
@@ -1356,7 +1302,7 @@ router.get(
       const { start_date, end_date } = req.query;
 
       const shifts = await Shift.getEmployeeShifts(
-        req.user.tenant_id ?? 1,
+        req.user.tenant_id,
         req.user.id,
         typeof start_date === "string"
           ? start_date
@@ -1389,7 +1335,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
       const userId = req.user.id;
 
       // Get upcoming shifts for this week
@@ -1466,7 +1412,7 @@ router.get(
     try {
       const { start_date, end_date } = req.query;
 
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
 
       // Get shifts with assignments for the week
       const sqlQuery = `
@@ -1547,7 +1493,7 @@ router.post(
     try {
       const { week, notes, department_id } = req.body;
 
-      const tenantId = req.user.tenant_id ?? 1;
+      const tenantId = req.user.tenant_id;
       const weekDate = new Date(week).toISOString().split("T")[0];
 
       let departmentId: number | null = null;
@@ -1636,7 +1582,7 @@ router.post(
         weekDate.setDate(weekDate.getDate() + (parseInt(week) - 1) * 7);
         const weekStart = weekDate.toISOString().split("T")[0];
 
-        const tenantId = req.user.tenant_id ?? 1;
+        const tenantId = req.user.tenant_id;
 
         // Insert or update notes
         const notesQuery = `

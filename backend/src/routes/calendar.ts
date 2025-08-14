@@ -73,7 +73,7 @@ interface CalendarQueryOptions {
 
 // Helper function to get tenant ID from user object
 function getTenantId(user: AuthenticatedRequest["user"]): number {
-  return user.tenant_id ?? 1;
+  return user.tenant_id;
 }
 
 // Validation schemas
@@ -142,7 +142,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
 
     // Get user role, department, and team info for permissions
     const userInfo = {
-      role: req.user.role ?? null,
+      role: req.user.role || null,
       departmentId: req.user.department_id ?? null,
       teamId: null as number | null,
     };
@@ -313,23 +313,41 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const options: CalendarQueryOptions = {
-        status: (req.query.status as "active" | "cancelled") ?? "active",
+        status:
+          req.query.status !== undefined
+            ? (req.query.status as "active" | "cancelled")
+            : "active",
         filter:
-          (req.query.filter as
-            | "all"
-            | "company"
-            | "department"
-            | "team"
-            | "personal") ?? "all",
-        search: (req.query.search as string) ?? "",
+          req.query.filter !== undefined
+            ? (req.query.filter as
+                | "all"
+                | "company"
+                | "department"
+                | "team"
+                | "personal")
+            : "all",
+        search:
+          req.query.search !== undefined ? (req.query.search as string) : "",
         start_date: (req.query.start ?? req.query.start_date) as
           | string
           | undefined,
         end_date: (req.query.end ?? req.query.end_date) as string | undefined,
-        page: parseInt((req.query.page as string) ?? "1", 10),
-        limit: parseInt((req.query.limit as string) ?? "50", 10),
-        sortBy: (req.query.sortBy as string) ?? "start_date",
-        sortDir: (req.query.sortDir as "ASC" | "DESC") ?? "ASC",
+        page:
+          req.query.page !== undefined
+            ? parseInt(req.query.page as string, 10)
+            : 1,
+        limit:
+          req.query.limit !== undefined
+            ? parseInt(req.query.limit as string, 10)
+            : 50,
+        sortBy:
+          req.query.sortBy !== undefined
+            ? (req.query.sortBy as string)
+            : "start_date",
+        sortDir:
+          req.query.sortDir !== undefined
+            ? (req.query.sortDir as "ASC" | "DESC")
+            : "ASC",
       };
 
       const result = await calendarModel.getAllEvents(
@@ -365,8 +383,8 @@ router.get(
     try {
       const tenantId = getTenantId(req.user);
 
-      const days = parseInt((req.query.days as string) ?? "7", 10);
-      const limit = parseInt((req.query.limit as string) ?? "5", 10);
+      const days = parseInt((req.query.days as string) || "7", 10);
+      const limit = parseInt((req.query.limit as string) || "5", 10);
 
       const events = await calendarModel.getDashboardEvents(
         tenantId,

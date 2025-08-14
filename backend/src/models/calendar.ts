@@ -160,7 +160,7 @@ export async function getAllEvents(
 
     // Build base query
     let query = `
-        SELECT e.*, 
+        SELECT e.*,
                u.username as creator_name,
                CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
         FROM calendar_events e
@@ -197,7 +197,7 @@ export async function getAllEvents(
     // Admins should not see private events between other users
     if (filter === "all") {
       query += ` AND (
-          e.org_level = 'company' OR 
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.department_id = ?) OR
           (e.org_level = 'team' AND e.team_id = ?) OR
           e.user_id = ? OR
@@ -207,18 +207,18 @@ export async function getAllEvents(
     }
 
     // Apply date range filter
-    if (start_date !== null && start_date !== undefined && start_date !== "") {
+    if (start_date !== undefined && start_date !== "") {
       query += " AND e.end_date >= ?";
       queryParams.push(start_date);
     }
 
-    if (end_date !== null && end_date !== undefined && end_date !== "") {
+    if (end_date !== undefined && end_date !== "") {
       query += " AND e.start_date <= ?";
       queryParams.push(end_date);
     }
 
     // Apply search filter
-    if (search !== null && search !== undefined && search !== "") {
+    if (search !== "") {
       query +=
         " AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
       const searchTerm = `%${search}%`;
@@ -254,7 +254,6 @@ export async function getAllEvents(
         event.description != null &&
         typeof event.description === "object" &&
         "type" in event.description &&
-        event.description.type === "Buffer" &&
         Array.isArray(event.description.data)
       ) {
         event.description = Buffer.from(event.description.data).toString(
@@ -265,7 +264,7 @@ export async function getAllEvents(
 
     // Count total events for pagination
     let countQuery = `
-        SELECT COUNT(*) as total 
+        SELECT COUNT(*) as total
         FROM calendar_events e
         WHERE e.tenant_id = ? AND e.status = ?
       `;
@@ -298,7 +297,7 @@ export async function getAllEvents(
     // Apply access control for non-admin users for count
     if (role !== "admin" && role !== "root") {
       countQuery += ` AND (
-          e.type IN ('meeting', 'training') OR 
+          e.type IN ('meeting', 'training') OR
           e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
@@ -306,18 +305,18 @@ export async function getAllEvents(
     }
 
     // Apply date range filter for count
-    if (start_date !== null && start_date !== undefined && start_date !== "") {
+    if (start_date !== undefined && start_date !== "") {
       countQuery += " AND e.end_date >= ?";
       countParams.push(start_date);
     }
 
-    if (end_date !== null && end_date !== undefined && end_date !== "") {
+    if (end_date !== undefined && end_date !== "") {
       countQuery += " AND e.start_date <= ?";
       countParams.push(end_date);
     }
 
     // Apply search filter for count
-    if (search !== null && search !== undefined && search !== "") {
+    if (search !== "") {
       countQuery +=
         " AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
       const searchTerm = `%${search}%`;
@@ -378,7 +377,7 @@ export async function getEventById(
 
     // Query the event with user response status
     const query = `
-        SELECT e.*, 
+        SELECT e.*,
                u.username as creator_name,
                CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
         FROM calendar_events e
@@ -415,7 +414,6 @@ export async function getEventById(
       event.description != null &&
       typeof event.description === "object" &&
       "type" in event.description &&
-      event.description.type === "Buffer" &&
       Array.isArray(event.description.data)
     ) {
       event.description = Buffer.from(event.description.data).toString("utf8");
@@ -499,16 +497,7 @@ export async function createEvent(
     } = eventData;
 
     // Validate required fields
-    if (
-      tenant_id == null ||
-      tenant_id === 0 ||
-      title == null ||
-      title === "" ||
-      start_time == null ||
-      end_time == null ||
-      created_by == null ||
-      created_by === 0
-    ) {
+    if (tenant_id === 0 || title === "" || created_by === 0) {
       throw new Error("Missing required fields");
     }
 
@@ -519,9 +508,9 @@ export async function createEvent(
 
     // Insert new event
     const query = `
-        INSERT INTO calendar_events 
-        (tenant_id, user_id, title, description, location, start_date, end_date, all_day, 
-         org_level, department_id, team_id, created_by_role, allow_attendees, requires_response, 
+        INSERT INTO calendar_events
+        (tenant_id, user_id, title, description, location, start_date, end_date, all_day,
+         org_level, department_id, team_id, created_by_role, allow_attendees, requires_response,
          type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
@@ -662,7 +651,7 @@ export async function updateEvent(
       const reminderValue =
         reminder_time === "" || reminder_time === null
           ? null
-          : (parseInt(reminder_time.toString()) ?? null);
+          : parseInt(reminder_time.toString());
       queryParams.push(reminderValue);
     }
 
@@ -878,7 +867,7 @@ export async function getDashboardEvents(
 
     // Build query for dashboard events
     let query = `
-        SELECT e.*, 
+        SELECT e.*,
                u.username as creator_name,
                CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
         FROM calendar_events e
@@ -893,7 +882,7 @@ export async function getDashboardEvents(
     // Apply access control for non-admin users (dashboard shows all accessible events)
     if (role !== "admin" && role !== "root") {
       query += ` AND (
-          e.org_level = 'company' OR 
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.department_id = ?) OR
           (e.org_level = 'team' AND e.team_id = ?) OR
           e.user_id = ? OR
@@ -929,7 +918,6 @@ export async function getDashboardEvents(
         event.description != null &&
         typeof event.description === "object" &&
         "type" in event.description &&
-        event.description.type === "Buffer" &&
         Array.isArray(event.description.data)
       ) {
         event.description = Buffer.from(event.description.data).toString(
@@ -972,7 +960,7 @@ export async function canManageEvent(
     // Get user role
     let role: string | null;
 
-    if (userRole !== null && userRole !== undefined && userRole !== "") {
+    if (userRole !== null && userRole !== "") {
       role = userRole;
     } else {
       // Otherwise get it from the database

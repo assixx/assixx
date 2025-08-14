@@ -134,19 +134,15 @@ class KvpPermissionService {
         );
       }
 
-      // Admin logic
-      if (role === "admin") {
-        // For company-wide suggestions, only the original sharer can edit
-        if (suggestion.org_level === "company") {
-          return suggestion.shared_by === userId;
-        }
-
-        // For department suggestions, check admin permissions
-        const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id as number);
+      // Admin logic - at this point role must be "admin"
+      // For company-wide suggestions, only the original sharer can edit
+      if (suggestion.org_level === "company") {
+        return suggestion.shared_by === userId;
       }
 
-      return false;
+      // For department suggestions, check admin permissions
+      const adminDepts = await this.getAdminDepartments(userId, tenantId);
+      return adminDepts.includes(suggestion.department_id as number);
     } catch (error: unknown) {
       logger.error("Error checking edit permission:", error);
       return false;
@@ -197,8 +193,8 @@ class KvpPermissionService {
         userDeptId ?? 0, // Use 0 as fallback for NULL department
         "company",
       );
-    } else if (role === "admin") {
-      // Get admin's managed departments
+    } else {
+      // Admin role - Get admin's managed departments
       const adminDepts = await this.getAdminDepartments(userId, tenantId);
 
       if (adminDepts.length > 0) {
@@ -381,7 +377,7 @@ class KvpPermissionService {
         total,
         byStatus,
         byPriority,
-        totalSavings: parseFloat(savings[0].total_savings as string) ?? 0,
+        totalSavings: parseFloat(savings[0].total_savings as string) || 0,
       };
     } catch (error: unknown) {
       logger.error("Error getting suggestion stats:", error);

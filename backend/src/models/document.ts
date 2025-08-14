@@ -352,7 +352,7 @@ export async function findAllDocuments(
 
   const params: unknown[] = [];
 
-  if (category !== null && category !== undefined && category !== "") {
+  if (category !== null && category !== "") {
     query += " WHERE d.category = ?";
     params.push(category);
   }
@@ -480,7 +480,7 @@ export async function countDocuments(
         "SELECT COUNT(*) as count FROM documents",
         [],
       );
-      return (rows[0] as { count?: number })?.count ?? 0;
+      return (rows[0] as { count?: number }).count ?? 0;
     } catch (error: unknown) {
       logger.error(`Error counting all documents: ${(error as Error).message}`);
       return 0;
@@ -704,7 +704,7 @@ export async function countDocumentsByTenant(
       "SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?",
       [tenant_id],
     );
-    return (rows[0] as { count?: number })?.count ?? 0;
+    return (rows[0] as { count?: number }).count ?? 0;
   } catch (error: unknown) {
     logger.error(
       `Error counting documents by tenant: ${(error as Error).message}`,
@@ -722,7 +722,7 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
       [tenant_id],
     );
     // MySQL SUM can return null or string, ensure we return a number
-    const totalSize = parseInt(String(rows[0]?.total_size ?? "0")) ?? 0;
+    const totalSize = parseInt(String(rows[0]?.total_size ?? "0")) || 0;
     logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
     return totalSize;
   } catch (error: unknown) {
@@ -975,7 +975,7 @@ export async function getUnreadDocumentCountForUser(
     tenant_id,
     userId,
   ]);
-  return (results[0] as { unread_count?: number })?.unread_count ?? 0;
+  return (results[0] as { unread_count?: number }).unread_count ?? 0;
 }
 
 // Get document counts by category for a user

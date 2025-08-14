@@ -292,8 +292,8 @@ export async function createShiftTemplate(
     }
 
     const query = `
-      INSERT INTO shift_templates 
-      (tenant_id, name, description, start_time, end_time, duration_hours, 
+      INSERT INTO shift_templates
+      (tenant_id, name, description, start_time, end_time, duration_hours,
        break_minutes, color, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -403,10 +403,8 @@ export async function getShiftPlans(
       queryParams.push(end_date);
     }
 
-    if (status) {
-      query += " AND sp.status = ?";
-      queryParams.push(status);
-    }
+    query += " AND sp.status = ?";
+    queryParams.push(status);
 
     // Apply pagination
     const offset = (page - 1) * limit;
@@ -458,10 +456,8 @@ export async function getShiftPlans(
       countParams.push(end_date);
     }
 
-    if (status) {
-      countQuery += " AND sp.status = ?";
-      countParams.push(status);
-    }
+    countQuery += " AND sp.status = ?";
+    countParams.push(status);
 
     const [countResult] = await executeQuery<CountResult[]>(
       countQuery,
@@ -503,18 +499,7 @@ export async function createShiftPlan(
     } = planData;
 
     // Validate required fields
-    if (
-      tenant_id == null ||
-      tenant_id === 0 ||
-      name == null ||
-      name === "" ||
-      start_date == null ||
-      start_date === "" ||
-      end_date == null ||
-      end_date === "" ||
-      created_by == null ||
-      created_by === 0
-    ) {
+    if (tenant_id === 0 || name === "" || created_by === 0) {
       throw new Error("Missing required fields");
     }
 
@@ -524,7 +509,7 @@ export async function createShiftPlan(
     }
 
     const query = `
-      INSERT INTO shift_plans 
+      INSERT INTO shift_plans
       (tenant_id, name, description, start_date, end_date, department_id, team_id, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -625,25 +610,18 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
 
     // Validate required fields
     if (
-      tenant_id == null ||
       tenant_id === 0 ||
-      plan_id == null ||
       plan_id === 0 ||
-      date == null ||
-      date === "" ||
-      start_time == null ||
       start_time === "" ||
-      end_time == null ||
       end_time === "" ||
-      created_by == null ||
       created_by === 0
     ) {
       throw new Error("Missing required fields");
     }
 
     const query = `
-      INSERT INTO shifts 
-      (tenant_id, plan_id, template_id, date, start_time, end_time, 
+      INSERT INTO shifts
+      (tenant_id, plan_id, template_id, date, start_time, end_time,
        required_employees, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -707,7 +685,7 @@ export async function assignEmployeeToShift(
 
       const [dayAssignments] = await executeQuery<RowDataPacket[]>(
         `
-        SELECT sa.*, s.start_time, s.end_time 
+        SELECT sa.*, s.start_time, s.end_time
         FROM shift_assignments sa
         JOIN shifts s ON sa.shift_id = s.id
         WHERE sa.user_id = ? AND s.date = ? AND s.tenant_id = ?
@@ -723,7 +701,7 @@ export async function assignEmployeeToShift(
     }
 
     const query = `
-      INSERT INTO shift_assignments 
+      INSERT INTO shift_assignments
       (tenant_id, shift_id, user_id, assigned_by)
       VALUES (?, ?, ?, ?)
     `;
@@ -765,7 +743,7 @@ export async function getEmployeeAvailability(
   try {
     const query = `
       SELECT * FROM employee_availability
-      WHERE tenant_id = ? AND user_id = ? 
+      WHERE tenant_id = ? AND user_id = ?
       AND date >= ? AND date <= ?
       ORDER BY date ASC
     `;
@@ -802,16 +780,7 @@ export async function setEmployeeAvailability(
     } = availabilityData;
 
     // Validate required fields
-    if (
-      tenant_id == null ||
-      tenant_id === 0 ||
-      user_id == null ||
-      user_id === 0 ||
-      date == null ||
-      date === "" ||
-      availability_type == null ||
-      availability_type === ""
-    ) {
+    if (tenant_id === 0 || user_id === 0) {
       throw new Error("Missing required fields");
     }
 
@@ -824,7 +793,7 @@ export async function setEmployeeAvailability(
     if (existing.length > 0) {
       // Update existing
       const query = `
-        UPDATE employee_availability 
+        UPDATE employee_availability
         SET availability_type = ?, start_time = ?, end_time = ?, notes = ?, updated_at = NOW()
         WHERE id = ?
       `;
@@ -847,7 +816,7 @@ export async function setEmployeeAvailability(
     } else {
       // Create new
       const query = `
-        INSERT INTO employee_availability 
+        INSERT INTO employee_availability
         (tenant_id, user_id, date, availability_type, start_time, end_time, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
@@ -887,7 +856,7 @@ export async function getShiftExchangeRequests(
     const { status = "pending", limit = 50 } = options;
 
     const query = `
-      SELECT ser.*, 
+      SELECT ser.*,
              s.date, s.start_time, s.end_time,
              st.name as shift_template_name,
              u1.first_name as requester_first_name, u1.last_name as requester_last_name,
@@ -935,12 +904,12 @@ export async function createShiftExchangeRequest(
     } = requestData;
 
     // Validate required fields
-    if (!tenant_id || !shift_id || !requester_id || !exchange_type) {
+    if (!tenant_id || !shift_id || !requester_id) {
       throw new Error("Missing required fields");
     }
 
     const query = `
-      INSERT INTO shift_exchange_requests 
+      INSERT INTO shift_exchange_requests
       (tenant_id, shift_id, requester_id, target_user_id, exchange_type, target_shift_id, message)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
@@ -1066,7 +1035,7 @@ async function getShiftsForDateRange(
 ): Promise<ShiftQueryResult[]> {
   try {
     const query = `
-      SELECT 
+      SELECT
         s.*,
         u.username as assigned_user_name,
         u.first_name,
@@ -1078,7 +1047,7 @@ async function getShiftsForDateRange(
       LEFT JOIN users u ON sa.user_id = u.id
       LEFT JOIN departments d ON s.department_id = d.id
       LEFT JOIN teams t ON s.team_id = t.id
-      WHERE s.tenant_id = ? 
+      WHERE s.tenant_id = ?
         AND s.date BETWEEN ? AND ?
         AND s.deleted_at IS NULL
       ORDER BY s.date, s.start_time
@@ -1104,11 +1073,11 @@ async function getWeekNotes(
 ): Promise<Record<string, string>> {
   try {
     const query = `
-      SELECT 
+      SELECT
         date,
         notes
       FROM shift_notes
-      WHERE tenant_id = ? 
+      WHERE tenant_id = ?
         AND date BETWEEN ? AND ?
       ORDER BY date
     `;
@@ -1248,7 +1217,7 @@ interface V2SwapRequestResult extends RowDataPacket {
 async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
   try {
     let query = `
-      SELECT s.*, 
+      SELECT s.*,
         st.name as template_name,
         st.color as template_color,
         u.username as user_name,
@@ -1349,7 +1318,7 @@ async function findById(
 ): Promise<V2ShiftData | null> {
   try {
     const query = `
-      SELECT s.*, 
+      SELECT s.*,
         st.name as template_name,
         st.color as template_color,
         u.username as user_name,
@@ -1379,9 +1348,9 @@ async function findById(
 async function create(data: Partial<V2ShiftData>): Promise<number> {
   try {
     const query = `
-      INSERT INTO shifts 
-      (tenant_id, user_id, plan_id, template_id, date, start_time, end_time, 
-       department_id, team_id, title, required_employees, break_minutes, 
+      INSERT INTO shifts
+      (tenant_id, user_id, plan_id, template_id, date, start_time, end_time,
+       department_id, team_id, title, required_employees, break_minutes,
        status, type, notes, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -1436,7 +1405,7 @@ async function update(
     // Get current shift data if we need date for time conversion
     let currentDate: string | undefined;
     if (
-      ((data.start_time != null && data.start_time !== "") ??
+      ((data.start_time != null && data.start_time !== "") ||
         (data.end_time != null && data.end_time !== "")) &&
       (data.date == null || data.date === "")
     ) {
@@ -1487,11 +1456,7 @@ async function update(
         ) {
           // Convert time to datetime by combining with date
           const dateToUse = data.date ?? currentDate;
-          if (
-            dateToUse !== null &&
-            dateToUse !== undefined &&
-            dateToUse !== ""
-          ) {
+          if (dateToUse !== undefined && dateToUse !== "") {
             values.push(formatDateForMysql(`${dateToUse} ${data.start_time}`));
           } else {
             values.push(data.start_time); // Fallback
@@ -1503,11 +1468,7 @@ async function update(
         ) {
           // Convert time to datetime by combining with date
           const dateToUse = data.date ?? currentDate;
-          if (
-            dateToUse !== null &&
-            dateToUse !== undefined &&
-            dateToUse !== ""
-          ) {
+          if (dateToUse !== undefined && dateToUse !== "") {
             values.push(formatDateForMysql(`${dateToUse} ${data.end_time}`));
           } else {
             values.push(data.end_time); // Fallback
@@ -1536,7 +1497,7 @@ async function update(
     }
 
     const query = `
-      UPDATE shifts 
+      UPDATE shifts
       SET ${updateFields.join(", ")}, updated_at = NOW()
       WHERE id = ? AND tenant_id = ?
     `;
@@ -1615,7 +1576,7 @@ async function getTemplateById(
 async function createTemplate(data: V2TemplateData): Promise<number> {
   try {
     const query = `
-      INSERT INTO shift_templates 
+      INSERT INTO shift_templates
       (tenant_id, name, start_time, end_time, break_minutes, color, is_night_shift, is_active)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -1695,7 +1656,7 @@ async function updateTemplate(
     }
 
     const query = `
-      UPDATE shift_templates 
+      UPDATE shift_templates
       SET ${updateFields.join(", ")}, updated_at = NOW()
       WHERE id = ? AND tenant_id = ?
     `;
@@ -1794,7 +1755,7 @@ async function createSwapRequest(data: V2SwapRequestData): Promise<number> {
     const assignmentId = assignments[0].id as number;
 
     const query = `
-      INSERT INTO shift_swap_requests 
+      INSERT INTO shift_swap_requests
       (tenant_id, assignment_id, requested_by, requested_with, reason, status)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
@@ -1805,7 +1766,7 @@ async function createSwapRequest(data: V2SwapRequestData): Promise<number> {
       data.requested_by,
       data.requested_with ?? null,
       data.reason ?? null,
-      data.status ?? "pending",
+      data.status,
     ]);
 
     return result.insertId;
@@ -1850,7 +1811,7 @@ async function updateSwapRequestStatus(
 ): Promise<void> {
   try {
     const query = `
-      UPDATE shift_swap_requests 
+      UPDATE shift_swap_requests
       SET status = ?, approved_by = ?, updated_at = NOW()
       WHERE id = ? AND tenant_id = ?
     `;
@@ -1893,28 +1854,28 @@ async function getOvertimeByUser(
 ): Promise<Record<string, unknown>> {
   try {
     const query = `
-      SELECT 
+      SELECT
         COUNT(*) as totalShifts,
         SUM(
-          CASE 
+          CASE
             WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
-              TIMESTAMPDIFF(MINUTE, 
-                CONCAT(date, ' ', actual_start), 
+              TIMESTAMPDIFF(MINUTE,
+                CONCAT(date, ' ', actual_start),
                 CONCAT(date, ' ', actual_end)
               ) / 60.0
             ELSE
-              TIMESTAMPDIFF(MINUTE, 
-                CONCAT(date, ' ', start_time), 
+              TIMESTAMPDIFF(MINUTE,
+                CONCAT(date, ' ', start_time),
                 CONCAT(date, ' ', end_time)
               ) / 60.0
           END
         ) as totalHours,
         SUM(
-          CASE 
+          CASE
             WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
               GREATEST(0,
-                TIMESTAMPDIFF(MINUTE, 
-                  CONCAT(date, ' ', end_time), 
+                TIMESTAMPDIFF(MINUTE,
+                  CONCAT(date, ' ', end_time),
                   CONCAT(date, ' ', actual_end)
                 ) / 60.0
               )
@@ -1923,7 +1884,7 @@ async function getOvertimeByUser(
         ) as overtimeHours,
         SUM(break_minutes) / 60.0 as breakHours
       FROM shifts
-      WHERE tenant_id = ? 
+      WHERE tenant_id = ?
         AND user_id = ?
         AND date BETWEEN ? AND ?
         AND status IN ('completed', 'in_progress')
@@ -1938,7 +1899,7 @@ async function getOvertimeByUser(
 
     // Get shift details
     const detailQuery = `
-      SELECT 
+      SELECT
         date,
         start_time,
         end_time,
@@ -1946,30 +1907,30 @@ async function getOvertimeByUser(
         actual_end,
         break_minutes,
         type,
-        CASE 
+        CASE
           WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
-            TIMESTAMPDIFF(MINUTE, 
-              CONCAT(date, ' ', actual_start), 
+            TIMESTAMPDIFF(MINUTE,
+              CONCAT(date, ' ', actual_start),
               CONCAT(date, ' ', actual_end)
             ) / 60.0
           ELSE
-            TIMESTAMPDIFF(MINUTE, 
-              CONCAT(date, ' ', start_time), 
+            TIMESTAMPDIFF(MINUTE,
+              CONCAT(date, ' ', start_time),
               CONCAT(date, ' ', end_time)
             ) / 60.0
         END as workedHours,
-        CASE 
+        CASE
           WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
             GREATEST(0,
-              TIMESTAMPDIFF(MINUTE, 
-                CONCAT(date, ' ', end_time), 
+              TIMESTAMPDIFF(MINUTE,
+                CONCAT(date, ' ', end_time),
                 CONCAT(date, ' ', actual_end)
               ) / 60.0
             )
           ELSE 0
         END as overtimeHours
       FROM shifts
-      WHERE tenant_id = ? 
+      WHERE tenant_id = ?
         AND user_id = ?
         AND date BETWEEN ? AND ?
         AND status IN ('completed', 'in_progress')
@@ -1985,13 +1946,13 @@ async function getOvertimeByUser(
 
     return {
       summary: {
-        totalShifts: (result[0].totalShifts as number) ?? 0,
-        totalHours: parseFloat(String(result[0].totalHours)) ?? 0,
-        overtimeHours: parseFloat(String(result[0].overtimeHours)) ?? 0,
-        breakHours: parseFloat(String(result[0].breakHours)) ?? 0,
+        totalShifts: (result[0].totalShifts as number) || 0,
+        totalHours: parseFloat(String(result[0].totalHours)) || 0,
+        overtimeHours: parseFloat(String(result[0].overtimeHours)) || 0,
+        breakHours: parseFloat(String(result[0].breakHours)) || 0,
         netHours:
-          (parseFloat(String(result[0].totalHours)) ?? 0) -
-          (parseFloat(String(result[0].breakHours)) ?? 0),
+          (parseFloat(String(result[0].totalHours)) || 0) -
+          (parseFloat(String(result[0].breakHours)) || 0),
       },
       shifts,
     };

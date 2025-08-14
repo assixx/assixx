@@ -292,10 +292,7 @@ class ChatService {
         tenantId,
         userId,
       });
-      console.info(
-        "DB pool status:",
-        db != null ? "exists" : "not initialized",
-      );
+      console.info("DB pool status:", "exists");
 
       // Ensure parameters are numbers
       const numericTenantId = parseInt(tenantId.toString());
@@ -402,7 +399,7 @@ class ChatService {
               display_name: conv.display_name,
               last_message: lastMessage,
               unread_count: conv.unread_count,
-              participants: participants ?? [],
+              participants: participants,
             },
           );
 
@@ -820,7 +817,7 @@ class ChatService {
         [conversationId, conversationId, userId],
       );
 
-      if (conversation[0] == null) {
+      if (conversation.length === 0) {
         throw new Error("Conversation not found or access denied");
       }
 

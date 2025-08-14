@@ -22,7 +22,7 @@ describe("Surveys API v2", () => {
   let adminToken: string;
   let employeeToken: string;
   let adminUserId: number;
-  let employeeUserId: number; // eslint-disable-line
+  let employeeUserId: number;
   let departmentId: number;
   let testSurveyId: number;
 
@@ -183,7 +183,7 @@ describe("Surveys API v2", () => {
     beforeEach(async () => {
       // Create test survey directly in DB
       const [surveyResult] = await testDb.execute<ResultSetHeader>(
-        `INSERT INTO surveys (tenant_id, title, description, status, is_anonymous, created_by) 
+        `INSERT INTO surveys (tenant_id, title, description, status, is_anonymous, created_by)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
@@ -198,7 +198,7 @@ describe("Surveys API v2", () => {
 
       // Add all_users assignment
       await testDb.execute(
-        `INSERT INTO survey_assignments (tenant_id, survey_id, assignment_type) 
+        `INSERT INTO survey_assignments (tenant_id, survey_id, assignment_type)
          VALUES (?, ?, ?)`,
         [tenantId, testSurveyId, "all_users"],
       );
@@ -240,7 +240,7 @@ describe("Surveys API v2", () => {
     beforeEach(async () => {
       // Create a test survey
       const [result] = await testDb.execute<ResultSetHeader>(
-        `INSERT INTO surveys (tenant_id, title, description, status, created_by) 
+        `INSERT INTO surveys (tenant_id, title, description, status, created_by)
          VALUES (?, ?, ?, ?, ?)`,
         [tenantId, "Test Survey", "To be updated", "draft", adminUserId],
       );
@@ -323,7 +323,7 @@ describe("Surveys API v2", () => {
       });
 
       const [result] = await testDb.execute<ResultSetHeader>(
-        `INSERT INTO surveys (tenant_id, title, status, created_by) 
+        `INSERT INTO surveys (tenant_id, title, status, created_by)
          VALUES (?, ?, ?, ?)`,
         [otherTenantId, "Other Tenant Survey", "active", otherUser.id],
       );

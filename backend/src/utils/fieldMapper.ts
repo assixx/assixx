@@ -13,7 +13,7 @@ export const fieldMapper = {
   /**
    * Convert database object (snake_case) to API object (camelCase)
    */
-  dbToApi(dbObject: Record<string, unknown>): unknown {
+  dbToApi(dbObject: Record<string, unknown> | null | undefined): unknown {
     if (dbObject == null) return dbObject;
 
     const result: Record<string, unknown> = {};
@@ -59,7 +59,7 @@ export const fieldMapper = {
   /**
    * Convert API object (camelCase) to database object (snake_case)
    */
-  apiToDb(apiObject: Record<string, unknown>): unknown {
+  apiToDb(apiObject: Record<string, unknown> | null | undefined): unknown {
     if (apiObject == null) return apiObject;
 
     const result: Record<string, unknown> = {};

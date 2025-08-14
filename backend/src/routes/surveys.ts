@@ -45,8 +45,9 @@ router.get(
         [userId, tenantId],
       );
 
-      const userDepartmentId: number | null =
-        (userInfo[0]?.department_id as number) ?? null;
+      const userDepartmentId: number | null = userInfo[0]?.department_id as
+        | number
+        | null;
 
       // Get all active surveys assigned to the employee
       const [surveys] = await execute<RowDataPacket[]>(
@@ -413,7 +414,10 @@ router.post(
         // Check each assignment
         for (const assignment of req.body.assignments) {
           if (assignment.type === "department") {
-            if (!authorizedDeptIds.includes(assignment.department_id)) {
+            if (
+              assignment.department_id === undefined ||
+              !authorizedDeptIds.includes(assignment.department_id)
+            ) {
               res.status(403).json({
                 error: "Sie haben keine Berechtigung für diese Abteilung",
               });
@@ -466,7 +470,7 @@ router.post(
     } catch (error: unknown) {
       console.error("Error creating survey:", error);
       const stack = getErrorStack(error);
-      if (stack !== null && stack !== undefined && stack !== "") {
+      if (stack !== "") {
         console.error("Error stack:", stack);
       }
       res
@@ -600,7 +604,7 @@ router.post(
         surveyId,
         userId,
         userIdType: typeof userId,
-        answersCount: answers != null ? answers.length : 0,
+        answersCount: answers.length,
         answers: JSON.stringify(answers, null, 2),
         tenantId: req.user.tenant_id,
       });
@@ -858,18 +862,15 @@ router.get(
           { property: "Status", value: survey.status },
           {
             property: "Anonym",
-            value:
-              survey.is_anonymous != null && survey.is_anonymous !== false
-                ? "Ja"
-                : "Nein",
+            value: survey.is_anonymous === true ? "Ja" : "Nein",
           },
           {
             property: "Anzahl Antworten",
-            value: statistics.total_responses ?? 0,
+            value: statistics.total_responses,
           },
           {
             property: "Abschlussrate",
-            value: `${statistics.completed_responses ?? 0} von ${statistics.total_responses ?? 0}`,
+            value: `${statistics.completed_responses} von ${statistics.total_responses}`,
           },
         ]);
 
@@ -921,7 +922,7 @@ router.get(
                       resp.answer_options as string,
                     ) as number[];
                     selectedOptions.forEach((optionId: number) => {
-                      if (optionCounts[optionId] !== undefined) {
+                      if (optionId in optionCounts) {
                         optionCounts[optionId]++;
                       }
                     });
@@ -947,7 +948,7 @@ router.get(
               responses.forEach((response) => {
                 questionsSheet.addRow([
                   "",
-                  survey.is_anonymous != null && survey.is_anonymous !== false
+                  survey.is_anonymous === true
                     ? "Anonym"
                     : `${String(response.first_name ?? "")} ${String(response.last_name ?? "")}`.trim() ||
                       "N/A",
@@ -959,8 +960,8 @@ router.get(
               question.question_type === "rating"
             ) {
               const numbers = responses
-                .map((r) => r.answer_number as number)
-                .filter((n) => n !== null);
+                .map((r) => r.answer_number as number | null | undefined)
+                .filter((n): n is number => n !== null && n !== undefined);
               if (numbers.length > 0) {
                 const avg =
                   numbers.reduce((a: number, b: number) => a + b, 0) /

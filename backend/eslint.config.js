@@ -94,7 +94,7 @@ export default [
         },
       ],
       "@typescript-eslint/no-unnecessary-condition": [
-        "warn",
+        "error",
         { allowConstantLoopConditions: true },
       ],
 
@@ -136,6 +136,19 @@ export default [
       "@typescript-eslint/prefer-reduce-type-parameter": "error",
       "@typescript-eslint/prefer-return-this-type": "error",
       "@typescript-eslint/prefer-string-starts-ends-with": "error",
+
+      // Code Complexity Rules
+      complexity: ["error", 60], // JavaScript complexity rule (cyclomatic complexity)
+      "@typescript-eslint/explicit-function-return-type": [
+        "error",
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+          allowDirectConstAssertionInArrowFunctions: true,
+          allowConciseArrowFunctionExpressionsStartingWithVoid: true,
+        },
+      ], // Warning for missing return types with sensible exceptions
       "@typescript-eslint/ban-ts-comment": [
         "error",
         {
@@ -204,6 +217,14 @@ export default [
       "prefer-promise-reject-errors": "error",
       "object-shorthand": "error",
       "no-duplicate-imports": "error",
+
+      // Import Rules (requires eslint-plugin-import)
+      // TODO: Add after installing eslint-plugin-import
+      // "import/no-cycle": "error", // Detect circular dependencies
+      // "import/order": ["error", {
+      //   "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+      //   "alphabetize": { "order": "asc", "caseInsensitive": true }
+      // }],
     },
   },
 

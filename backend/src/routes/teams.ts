@@ -228,11 +228,7 @@ router.post("/", async (req, res): Promise<void> => {
     }
 
     // If a department is specified, check if it exists
-    if (
-      department_id !== null &&
-      department_id !== undefined &&
-      department_id !== ""
-    ) {
+    if (department_id !== undefined) {
       const department = await Department.findById(
         department_id,
         authReq.user.tenant_id,
@@ -246,7 +242,7 @@ router.post("/", async (req, res): Promise<void> => {
     }
 
     // If a team leader is specified, check if they exist
-    if (leader_id !== null && leader_id !== undefined && leader_id !== "") {
+    if (leader_id !== undefined) {
       const leader = await User.findById(leader_id, authReq.user.tenant_id);
       if (!leader) {
         res
@@ -519,17 +515,13 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    if (name !== undefined && (name == null || name === "")) {
+    if (name !== undefined && name === "") {
       res.status(400).json({ message: "Teamname ist erforderlich" });
       return;
     }
 
     // If a department is specified, check if it exists
-    if (
-      department_id !== null &&
-      department_id !== undefined &&
-      department_id !== ""
-    ) {
+    if (department_id !== undefined) {
       const department = await Department.findById(
         department_id,
         authReq.user.tenant_id,
@@ -543,7 +535,7 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
     }
 
     // If a team leader is specified, check if they exist
-    if (leader_id !== null && leader_id !== undefined && leader_id !== "") {
+    if (leader_id !== undefined) {
       const leader = await User.findById(leader_id, authReq.user.tenant_id);
       if (!leader) {
         res

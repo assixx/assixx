@@ -20,7 +20,7 @@ interface Permission {
 interface DepartmentWithPermission {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   can_read: boolean;
   can_write: boolean;
   can_delete: boolean;
@@ -162,9 +162,9 @@ class AdminPermissionService {
         const existing = departmentMap.get(dept.id as number);
         if (existing) {
           // Take maximum permissions
-          existing.can_read = existing.can_read ?? dept.can_read === 1;
-          existing.can_write = existing.can_write ?? dept.can_write === 1;
-          existing.can_delete = existing.can_delete ?? dept.can_delete === 1;
+          existing.can_read = existing.can_read || dept.can_read === 1;
+          existing.can_write = existing.can_write || dept.can_write === 1;
+          existing.can_delete = existing.can_delete || dept.can_delete === 1;
         } else {
           departmentMap.set(dept.id as number, {
             id: dept.id as number,

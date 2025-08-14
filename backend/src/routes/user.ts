@@ -72,7 +72,7 @@ const fileFilter = (
   _req: unknown,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
-) => {
+): void => {
   // Accept only specific image formats
   const allowedMimeTypes = [
     "image/jpeg",
@@ -110,7 +110,7 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
     const authReq = req as AuthenticatedRequest;
 
     // Validate user ID exists
-    if (!authReq.user?.id || !authReq.user.tenant_id) {
+    if (!authReq.user.id || !authReq.user.tenant_id) {
       res.status(401).json({ message: "Nicht autorisiert" });
       return;
     }
@@ -368,8 +368,7 @@ router.post(
       }
 
       res.status(500).json({
-        message:
-          getErrorMessage(error) ?? "Fehler beim Hochladen des Profilbildes",
+        message: getErrorMessage(error),
       });
     }
   },

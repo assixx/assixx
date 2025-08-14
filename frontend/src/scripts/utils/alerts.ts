@@ -17,12 +17,42 @@ export function showAlert(message: string): void {
 /**
  * Show a confirmation dialog
  * @param message - The message to display
- * @returns True if user clicked OK, false otherwise
- * Note: This still uses native confirm as it requires synchronous user input
- * eslint-disable-next-line no-alert
+ * @returns Promise that resolves to true if user clicked OK, false otherwise
+ * Note: This uses async notification service instead of native confirm
  */
-export function showConfirm(message: string): boolean {
-  return window.confirm(message);
+export async function showConfirm(message: string): Promise<boolean> {
+  // Create a promise that resolves based on user action
+  return new Promise((resolve) => {
+    // Use notification service with action buttons
+    const confirmDiv = document.createElement('div');
+    confirmDiv.className = 'custom-confirm-dialog';
+    confirmDiv.innerHTML = `
+      <div class="confirm-overlay">
+        <div class="confirm-modal">
+          <p>${message}</p>
+          <div class="confirm-buttons">
+            <button class="btn-confirm-yes">Ja</button>
+            <button class="btn-confirm-no">Nein</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(confirmDiv);
+
+    const yesBtn = confirmDiv.querySelector('.btn-confirm-yes');
+    const noBtn = confirmDiv.querySelector('.btn-confirm-no');
+
+    yesBtn?.addEventListener('click', () => {
+      document.body.removeChild(confirmDiv);
+      resolve(true);
+    });
+
+    noBtn?.addEventListener('click', () => {
+      document.body.removeChild(confirmDiv);
+      resolve(false);
+    });
+  });
 }
 
 /**

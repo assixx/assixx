@@ -234,7 +234,7 @@ router.post(
         entity_type: "user",
         entity_id: req.user.id,
         new_values: {
-          from_role: req.user.activeRole ?? req.user.role ?? "unknown",
+          from_role: req.user.activeRole ?? req.user.role,
           to_role: "root",
           timestamp: new Date(),
         },

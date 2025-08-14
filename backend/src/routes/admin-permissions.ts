@@ -461,10 +461,7 @@ router.post(
       res.json({
         success: true,
         message: `${successCount} von ${adminIds?.length ?? 0} Admins erfolgreich bearbeitet`,
-        errors:
-          errors.length > 0
-            ? errors !== null && errors !== undefined
-            : undefined,
+        errors: errors.length > 0 ? errors : undefined,
       });
     } catch (error: unknown) {
       logger.error(

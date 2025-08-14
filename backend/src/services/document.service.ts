@@ -249,12 +249,12 @@ class DocumentService {
         size: 0, // Would need to be calculated
         file_size: 0,
         uploaded_by: doc.user_id,
-        category: doc.category ?? "other",
+        category: doc.category || "other",
         recipient_type: "user", // Default
         scope: "personal", // Default
-        created_at: doc.upload_date?.toISOString() ?? new Date().toISOString(),
-        updated_at: doc.upload_date?.toISOString() ?? new Date().toISOString(),
-        is_deleted: doc.is_archived ?? false,
+        created_at: doc.upload_date.toISOString(),
+        updated_at: doc.upload_date.toISOString(),
+        is_deleted: doc.is_archived,
       } as DocumentData;
     } catch (error: unknown) {
       logger.error("Error in document service getDocumentById:", error);
@@ -315,8 +315,7 @@ class DocumentService {
         fileName: updateData.name,
         description:
           updateData.description !== null ? updateData.description : undefined,
-        category:
-          updateData.category !== null ? updateData.category : undefined,
+        category: updateData.category ?? undefined,
       };
       await Document.update(documentId, modelUpdateData);
       return true;
@@ -395,12 +394,12 @@ class DocumentService {
             file_size: 0,
             uploaded_by: doc.user_id,
             description: doc.description ?? "",
-            category: doc.category ?? "other",
+            category: doc.category || "other",
             recipient_type: "user", // Default
             scope: "personal", // Default
             created_at: doc.upload_date.toISOString(),
             updated_at: doc.upload_date.toISOString(),
-            is_deleted: doc.is_archived ?? false,
+            is_deleted: doc.is_archived,
           }) as DocumentData,
       );
     } catch (error: unknown) {

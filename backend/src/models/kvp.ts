@@ -494,12 +494,7 @@ export async function getKvpUserPoints(
     }
 
     const result = rows[0];
-    return {
-      ...result,
-      total_points: result.total_points ?? 0,
-      total_awards: result.total_awards ?? 0,
-      suggestions_awarded: result.suggestions_awarded ?? 0,
-    } as DbPointsSummary;
+    return result;
   } finally {
     await connection.end();
   }
@@ -565,7 +560,7 @@ export async function getKvpDashboardStats(
         result.avg_savings != null && result.avg_savings !== 0
           ? result.avg_savings
           : null,
-    };
+    } as DbDashboardStats;
   } finally {
     await connection.end();
   }

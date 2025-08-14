@@ -305,7 +305,7 @@ async function loadTemplate(
     };
 
     const safeMessage = escapeHtml(
-      replacements.message ?? "Keine Nachricht verfügbar",
+      replacements.message || "Keine Nachricht verfügbar",
     );
     return `
       <html>
@@ -389,10 +389,16 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     };
 
     // Type assertion needed because nodemailer's sendMail returns any
+    interface SendMailResult {
+      messageId: string;
+      response?: string;
+      accepted?: string[];
+      rejected?: string[];
+    }
 
-    const info = await mailer.sendMail(mailOptions);
+    const info = (await mailer.sendMail(mailOptions)) as SendMailResult;
 
-    const messageId = String(info.messageId);
+    const messageId = info.messageId;
     logger.info(`E-Mail gesendet: ${messageId}`);
     return { success: true, messageId };
   } catch (error: unknown) {

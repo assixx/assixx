@@ -29,7 +29,7 @@ export async function query<T extends RowDataPacket[] | ResultSetHeader>(
     ).query(sql, params);
 
     // MySQL2 always returns [rows, fields] tuple
-    if (Array.isArray(result) && result.length === 2) {
+    if (Array.isArray(result)) {
       return result as [T, FieldPacket[]];
     }
 
@@ -57,7 +57,7 @@ export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
     ).execute(sql, params);
 
     // MySQL2 always returns [rows, fields] tuple
-    if (Array.isArray(result) && result.length === 2) {
+    if (Array.isArray(result)) {
       return result as [T, FieldPacket[]];
     }
 

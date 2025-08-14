@@ -479,7 +479,7 @@ export async function getSurveyById(
       try {
         question.options =
           typeof question.options === "string"
-            ? (JSON.parse(question.options) as unknown)
+            ? (JSON.parse(question.options) as DbSurveyQuestionOption[])
             : question.options;
       } catch (e: unknown) {
         console.error("Error parsing options for question:", question.id, e);
@@ -784,10 +784,7 @@ export async function getSurveyStatistics(
         questionStat.responses = textResponses.map((row) => ({
           answer_text: String(row.answer_text ?? ""),
         }));
-      } else if (
-        question.question_type === "rating" ||
-        question.question_type === "number"
-      ) {
+      } else if (question.question_type === "rating") {
         // Get numeric statistics
         const [numericStats] = await typedQuery<RowDataPacket[]>(
           `
@@ -803,10 +800,10 @@ export async function getSurveyStatistics(
         );
         const numStats = numericStats[0];
         questionStat.statistics = {
-          average: (numStats.average as number) ?? null,
-          min: (numStats.min as number) ?? null,
-          max: (numStats.max as number) ?? null,
-          total_responses: (numStats.total_responses as number) ?? 0,
+          average: numStats.average as number | null,
+          min: numStats.min as number | null,
+          max: numStats.max as number | null,
+          total_responses: (numStats.total_responses as number) || 0,
         };
       }
 
@@ -815,8 +812,8 @@ export async function getSurveyStatistics(
 
     return {
       survey_id: surveyId,
-      total_responses: parseInt(String(stats[0].total_responses)) ?? 0,
-      completed_responses: parseInt(String(stats[0].completed_responses)) ?? 0,
+      total_responses: parseInt(String(stats[0].total_responses)) || 0,
+      completed_responses: parseInt(String(stats[0].completed_responses)) || 0,
       completion_rate:
         (stats[0].total_responses as number) > 0
           ? Math.round(

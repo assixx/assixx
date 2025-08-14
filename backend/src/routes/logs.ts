@@ -88,9 +88,16 @@ router.get(
       authReq.query.user_id != null
         ? parseInt(authReq.query.user_id as string)
         : null;
-    const action = (authReq.query.action as string) ?? null;
-    const entityType = (authReq.query.entity_type as string) ?? null;
-    const timerange = (authReq.query.timerange as string) ?? null;
+    const action =
+      authReq.query.action != null ? (authReq.query.action as string) : null;
+    const entityType =
+      authReq.query.entity_type != null
+        ? (authReq.query.entity_type as string)
+        : null;
+    const timerange =
+      authReq.query.timerange != null
+        ? (authReq.query.timerange as string)
+        : null;
 
     try {
       // Build WHERE conditions
@@ -106,21 +113,17 @@ router.get(
         params.push(userId);
       }
 
-      if (action !== null && action !== undefined && action !== "") {
+      if (action !== null && action !== "") {
         conditions.push("al.action = ?");
         params.push(action);
       }
 
-      if (
-        entityType !== null &&
-        entityType !== undefined &&
-        entityType !== ""
-      ) {
+      if (entityType !== null && entityType !== "") {
         conditions.push("al.entity_type = ?");
         params.push(entityType);
       }
 
-      if (timerange !== null && timerange !== undefined && timerange !== "") {
+      if (timerange !== null && timerange !== "") {
         let dateCondition = "";
 
         switch (timerange) {
@@ -151,11 +154,7 @@ router.get(
             break;
         }
 
-        if (
-          dateCondition !== null &&
-          dateCondition !== undefined &&
-          dateCondition !== ""
-        ) {
+        if (dateCondition !== "") {
           conditions.push(`(${dateCondition})`);
         }
       }
@@ -204,9 +203,7 @@ router.get(
       const processedLogs = logs.map((log) => ({
         ...log,
         details:
-          log.details != null &&
-          typeof log.details === "object" &&
-          Buffer.isBuffer(log.details)
+          typeof log.details === "object" && Buffer.isBuffer(log.details)
             ? log.details.toString("utf8")
             : log.details,
         user_name:
@@ -214,7 +211,7 @@ router.get(
           typeof log.user_name === "object" &&
           Buffer.isBuffer(log.user_name)
             ? (log.user_name as Buffer).toString("utf8")
-            : (log.user_name ?? null),
+            : log.user_name,
       }));
 
       res.json({
@@ -285,14 +282,24 @@ router.delete(
       authReq.query.user_id != null
         ? parseInt(authReq.query.user_id as string)
         : null;
-    const action = (authReq.query.action as string) ?? null;
-    const entityType = (authReq.query.entity_type as string) ?? null;
-    const timerange = (authReq.query.timerange as string) ?? null;
+    const action =
+      authReq.query.action != null ? (authReq.query.action as string) : null;
+    const entityType =
+      authReq.query.entity_type != null
+        ? (authReq.query.entity_type as string)
+        : null;
+    const timerange =
+      authReq.query.timerange != null
+        ? (authReq.query.timerange as string)
+        : null;
     const password = (authReq.body as { password?: string }).password;
 
     // Check if no specific filters are provided (meaning "all actions" deletion)
     const noSpecificFilters =
-      (userId == null || userId === 0) && !action && !entityType && !timerange;
+      (userId == null || userId === 0) &&
+      (action === null || action === "") &&
+      (entityType === null || entityType === "") &&
+      (timerange === null || timerange === "");
 
     // If deleting all logs (no filters), require password verification
     if (noSpecificFilters) {
@@ -354,21 +361,17 @@ router.delete(
         params.push(userId);
       }
 
-      if (action !== null && action !== undefined && action !== "") {
+      if (action !== null && action !== "") {
         conditions.push("action = ?");
         params.push(action);
       }
 
-      if (
-        entityType !== null &&
-        entityType !== undefined &&
-        entityType !== ""
-      ) {
+      if (entityType !== null && entityType !== "") {
         conditions.push("entity_type = ?");
         params.push(entityType);
       }
 
-      if (timerange !== null && timerange !== undefined && timerange !== "") {
+      if (timerange !== null && timerange !== "") {
         let dateCondition = "";
 
         switch (timerange) {
@@ -396,11 +399,7 @@ router.delete(
             break;
         }
 
-        if (
-          dateCondition !== null &&
-          dateCondition !== undefined &&
-          dateCondition !== ""
-        ) {
+        if (dateCondition !== "") {
           conditions.push(`(${dateCondition})`);
         }
       }
@@ -417,7 +416,7 @@ router.delete(
         params,
       );
 
-      const deletedCount = result.affectedRows ?? 0;
+      const deletedCount = result.affectedRows;
 
       // Create a human-readable description of what was deleted
       const filterDescriptions: string[] = [];
@@ -431,7 +430,7 @@ router.delete(
           `Benutzer: ${userInfo[0]?.name ?? `ID ${userId}`}`,
         );
       }
-      if (action !== null && action !== undefined && action !== "") {
+      if (action !== null && action !== "") {
         const actionLabels: Record<string, string> = {
           login: "Anmeldungen",
           logout: "Abmeldungen",
@@ -446,14 +445,10 @@ router.delete(
         };
         filterDescriptions.push(`Aktion: ${actionLabels[action] ?? action}`);
       }
-      if (
-        entityType !== null &&
-        entityType !== undefined &&
-        entityType !== ""
-      ) {
+      if (entityType !== null && entityType !== "") {
         filterDescriptions.push(`Typ: ${entityType}`);
       }
-      if (timerange !== null && timerange !== undefined && timerange !== "") {
+      if (timerange !== null && timerange !== "") {
         const timeLabels: Record<string, string> = {
           today: "Heute",
           yesterday: "Gestern",

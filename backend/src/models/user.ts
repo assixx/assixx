@@ -154,8 +154,8 @@ export async function createUser(userData: UserCreateData): Promise<number> {
     );
 
     if (tenantResult.length > 0) {
-      const subdomain = (tenantResult[0].subdomain as string) ?? "DEFAULT";
-      const { tempId } = generateTempEmployeeId(subdomain, role ?? "employee");
+      const subdomain = (tenantResult[0].subdomain as string) || "DEFAULT";
+      const { tempId } = generateTempEmployeeId(subdomain, role || "employee");
       finalEmployeeId = tempId;
     }
   }
@@ -212,10 +212,10 @@ export async function createUser(userData: UserCreateData): Promise<number> {
       );
 
       if (tenantResult.length > 0) {
-        const subdomain = (tenantResult[0].subdomain as string) ?? "DEFAULT";
+        const subdomain = (tenantResult[0].subdomain as string) || "DEFAULT";
         const newEmployeeId = generateEmployeeId(
           subdomain,
-          role ?? "employee",
+          role || "employee",
           result.insertId,
         );
 
@@ -245,13 +245,14 @@ export async function findUserByUsername(
     );
     console.info("[DEBUG] Query completed, rows found:", rows.length);
 
-    if (rows[0] != null) {
+    if (rows.length > 0) {
       // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
       rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
       rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
+      return rows[0];
     }
 
-    return rows[0];
+    return undefined;
   } catch (error) {
     console.error("[DEBUG] findByUsername error:", error);
     logger.error(`Error finding user by username: ${(error as Error).message}`);
@@ -292,13 +293,14 @@ export async function findUserById(
       [id, tenant_id],
     );
 
-    if (rows[0] != null) {
+    if (rows.length > 0) {
       // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
       rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
       rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
+      return rows[0];
     }
 
-    return rows[0];
+    return undefined;
   } catch (error) {
     logger.error(`Error finding user by ID: ${(error as Error).message}`);
     throw error;
@@ -360,13 +362,14 @@ export async function findUserByEmail(
 
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
-    if (rows[0] != null) {
+    if (rows.length > 0) {
       // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
       rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
       rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
+      return rows[0];
     }
 
-    return rows[0];
+    return undefined;
   } catch (error) {
     logger.error(`Error finding user by email: ${(error as Error).message}`);
     throw error;
@@ -429,10 +432,7 @@ export async function updateUser(
     // Für jedes übergebene Feld Query vorbereiten
     Object.entries(userData).forEach(([key, value]) => {
       // SECURITY FIX: Only allow whitelisted fields to prevent SQL injection
-      if (
-        value !== undefined &&
-        allowedFields.includes(key as keyof UserCreateData)
-      ) {
+      if (allowedFields.includes(key as keyof UserCreateData)) {
         // Special handling for boolean fields
         if (key === "is_active" || key === "is_archived") {
           logger.info(
@@ -449,7 +449,7 @@ export async function updateUser(
           values.push(value);
           logger.info(`Updating field ${key} to value: ${String(value)}`);
         }
-      } else if (value !== undefined) {
+      } else {
         logger.warn(`Attempted to update non-allowed field: ${key}`);
       }
     });
@@ -558,8 +558,8 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
 
     // Pagination hinzufügen
     if (filters.limit != null && filters.limit !== 0) {
-      const limit = parseInt(filters.limit.toString()) ?? 20;
-      const page = parseInt((filters.page ?? 1).toString()) ?? 1;
+      const limit = parseInt(filters.limit.toString()) || 20;
+      const page = parseInt((filters.page ?? 1).toString()) || 1;
       const offset = (page - 1) * limit;
 
       query += ` LIMIT ? OFFSET ?`;
@@ -822,7 +822,7 @@ export async function changeUserPassword(
     // Aktuelles Passwort überprüfen
     const isValidPassword = await bcrypt.compare(
       currentPassword,
-      user.password ?? "",
+      user.password || "",
     );
     if (!isValidPassword) {
       return { success: false, message: "Aktuelles Passwort ist incorrect" };

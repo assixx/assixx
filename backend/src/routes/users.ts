@@ -168,7 +168,7 @@ router.get(
       // Debug logging
       logger.info("GET /api/users/me - req.user:", req.user);
 
-      if (!req.user?.id) {
+      if (!req.user.id) {
         logger.error("No user object or user.id in request");
         res.status(401).json({ message: "User not authenticated" });
         return;
@@ -391,14 +391,14 @@ router.get(
     try {
       // Debug logging
       console.info("[DEBUG] /api/users/profile - req.user:", req.user);
-      console.info("[DEBUG] /api/users/profile - req.user.id:", req.user?.id);
+      console.info("[DEBUG] /api/users/profile - req.user.id:", req.user.id);
       console.info(
         "[DEBUG] /api/users/profile - typeof req.user.id:",
-        typeof req.user?.id,
+        typeof req.user.id,
       );
 
       // Use the same logic as /me route which works
-      if (!req.user?.id) {
+      if (!req.user.id) {
         logger.error("No user object or user.id in request");
         res.status(401).json({ message: "User not authenticated" });
         return;

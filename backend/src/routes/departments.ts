@@ -28,7 +28,7 @@ router.use(authenticateToken);
 router.use((req: Request, res: Response, next: NextFunction): void => {
   const authReq = req as AuthenticatedRequest;
   console.info(
-    `Departments route - User: ${authReq.user?.username}, Role: ${authReq.user?.role}, Method: ${req.method}`,
+    `Departments route - User: ${authReq.user.username}, Role: ${authReq.user.role}, Method: ${req.method}`,
   );
 
   // Allow GET requests for all authenticated users

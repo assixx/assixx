@@ -245,7 +245,7 @@ router.post(
       }
 
       const { originalname } = uploadReq.file;
-      const filePath = uploadReq.file.path ?? "";
+      const filePath = uploadReq.file.path;
       const {
         userId,
         teamId,
@@ -300,14 +300,10 @@ router.post(
       let fileContent: Buffer;
 
       // Check if we're using memory storage (in tests)
-      if (uploadReq.file.buffer != null) {
+      if ("buffer" in uploadReq.file) {
         // Memory storage provides the buffer directly
         fileContent = uploadReq.file.buffer;
-      } else if (
-        filePath !== null &&
-        filePath !== undefined &&
-        filePath !== ""
-      ) {
+      } else if (filePath !== "") {
         // Disk storage - read from filesystem
         const uploadDir = getUploadDirectory("documents");
         const validatedPath = validatePath(path.basename(filePath), uploadDir);
@@ -347,11 +343,7 @@ router.post(
       });
 
       // Delete temporary file (only if using disk storage)
-      if (
-        uploadReq.file.buffer == null &&
-        filePath != null &&
-        filePath !== ""
-      ) {
+      if (!("buffer" in uploadReq.file) && filePath !== "") {
         try {
           // Use safeDeleteFile to prevent path injection attacks
           await safeDeleteFile(filePath);
@@ -386,7 +378,7 @@ router.post(
           switch (recipientType) {
             case "user":
               // Send to individual user
-              if (userId !== null && userId !== undefined && userId !== "") {
+              if (userId !== undefined && userId !== "") {
                 const user = await User.findById(
                   parseInt(userId, 10),
                   uploadReq.user.tenant_id,
@@ -443,17 +435,19 @@ router.post(
       logger.error(`Error details:`, error);
 
       // Clean up file if it was uploaded to disk
-      if (
-        uploadReq.file?.path != null &&
-        uploadReq.file?.path !== "" &&
-        uploadReq.file.buffer == null
-      ) {
-        try {
-          await safeDeleteFile(uploadReq.file.path);
-        } catch (unlinkError: unknown) {
-          logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
-          );
+      if (uploadReq.file != null && !("buffer" in uploadReq.file)) {
+        // For disk storage, check if path exists
+        const diskFile = uploadReq.file as Express.Multer.File & {
+          path: string;
+        };
+        if (diskFile.path !== "") {
+          try {
+            await safeDeleteFile(diskFile.path);
+          } catch (unlinkError: unknown) {
+            logger.error(
+              `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
+            );
+          }
         }
       }
 

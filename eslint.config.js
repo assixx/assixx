@@ -83,7 +83,7 @@ export default [
       "@typescript-eslint/prefer-optional-chain": "error",
       // Naming convention rules for camelCase enforcement
       "@typescript-eslint/naming-convention": [
-        "warn",
+        "error",
         // Default: prefer camelCase
         {
           selector: "default",

@@ -548,7 +548,7 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
     await safeDelete(
       connection,
       "DELETE FROM admin_logs WHERE admin_id IN (?)",
-      [userIds.length > 0 ? userIds !== null && userIds !== undefined : [0]],
+      [userIds.length > 0 ? userIds : [0]],
     );
 
     // Delete feature assignments
@@ -562,12 +562,12 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
     await safeDelete(
       connection,
       "DELETE FROM user_teams WHERE user_id IN (?)",
-      [userIds.length > 0 ? userIds !== null && userIds !== undefined : [0]],
+      [userIds.length > 0 ? userIds : [0]],
     );
     await safeDelete(
       connection,
       "DELETE FROM user_departments WHERE user_id IN (?)",
-      [userIds.length > 0 ? userIds !== null && userIds !== undefined : [0]],
+      [userIds.length > 0 ? userIds : [0]],
     );
 
     // Delete teams and departments
