@@ -29,7 +29,6 @@ function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
   const authHeader = req.headers.authorization;
   const bearerToken =
-    authHeader !== null &&
     authHeader !== undefined &&
     authHeader !== "" &&
     authHeader.startsWith("Bearer ")
@@ -37,7 +36,7 @@ function extractToken(req: PublicRequest): string | null {
       : null;
 
   // Check cookie as fallback
-  const cookieToken = req.cookies?.token as string | undefined;
+  const cookieToken = req.cookies.token as string | undefined;
 
   return bearerToken ?? cookieToken ?? null;
 }
@@ -46,7 +45,7 @@ function extractToken(req: PublicRequest): string | null {
 function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (typeof decoded === "string" || decoded == null) {
+    if (typeof decoded === "string") {
       return null;
     }
     return decoded as TokenPayload;
@@ -87,7 +86,7 @@ async function getUserDetails(
 ): Promise<Partial<AuthUser> | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
-      `SELECT 
+      `SELECT
         u.id, u.username, u.email, u.role, u.tenant_id,
         u.first_name as firstName, u.last_name as lastName,
         u.department_id,
@@ -141,7 +140,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     // Extract token
     const token = extractToken(req);
 
-    if (token === null || token === undefined || token === "") {
+    if (token === null || token === "") {
       res
         .status(401)
         .json(errorResponse("Authentication token required", 401, "NO_TOKEN"));
@@ -176,9 +175,9 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 --spacing-xl: 32px;
                 --radius-md: 12px;
               }
-              
+
               * { margin: 0; padding: 0; box-sizing: border-box; }
-              
+
               body {
                 font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: #000000;
@@ -190,7 +189,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 position: relative;
                 overflow-x: hidden;
               }
-              
+
               body::before {
                 content: '';
                 position: absolute;
@@ -199,10 +198,10 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 right: 0;
                 bottom: 0;
                 background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
-                opacity: 0.9;
+                opacity: 0%.9;
                 z-index: -1;
               }
-              
+
               body::after {
                 content: '';
                 position: absolute;
@@ -213,7 +212,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
                 z-index: -1;
               }
-              
+
               .session-expired-card {
                 width: 100%;
                 max-width: 450px;
@@ -227,33 +226,33 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 text-align: center;
                 animation: fadeInUp 0.6s ease-out;
               }
-              
+
               @keyframes fadeInUp {
-                from { opacity: 0; transform: translateY(30px); }
-                to { opacity: 1; transform: translateY(0); }
+                from { opacity: 0%; transform: translateY(30px); }
+                to { opacity: 100%; transform: translateY(0); }
               }
-              
+
               .icon {
                 font-size: 64px;
                 margin-bottom: var(--spacing-lg);
                 display: inline-block;
                 color: #ff9800;
               }
-              
+
               h1 {
                 color: var(--text-primary);
                 font-size: 28px;
                 font-weight: 700;
                 margin-bottom: var(--spacing-md);
               }
-              
+
               .message {
                 color: var(--text-secondary);
                 font-size: 16px;
                 line-height: 1.6;
                 margin-bottom: var(--spacing-xl);
               }
-              
+
               .security-info {
                 background: rgba(255, 152, 0, 0.1);
                 border: 1px solid rgba(255, 152, 0, 0.2);
@@ -261,24 +260,24 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 padding: var(--spacing-lg);
                 margin-bottom: var(--spacing-xl);
               }
-              
+
               .security-text {
                 color: #ff9800;
                 font-size: 14px;
                 font-weight: 500;
               }
-              
+
               .redirect-info {
                 color: var(--text-secondary);
                 font-size: 14px;
                 margin-bottom: var(--spacing-lg);
               }
-              
+
               .btn-primary {
                 display: inline-block;
                 padding: var(--spacing-md) var(--spacing-xl);
                 background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-                color: white;
+                color: #fff;
                 text-decoration: none;
                 border-radius: 8px;
                 font-weight: 500;
@@ -286,12 +285,12 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
               }
-              
+
               .btn-primary:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
               }
-              
+
               .countdown {
                 color: var(--primary-color);
                 font-weight: bold;
@@ -303,7 +302,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
               <div class="icon">🔒</div>
               <h1>Sitzung abgelaufen</h1>
               <p class="message">
-                Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. 
+                Ihre Sitzung ist aus Sicherheitsgründen abgelaufen.
                 Bitte melden Sie sich erneut an, um fortzufahren.
               </p>
               <div class="security-info">
@@ -314,31 +313,31 @@ export const authenticateToken: AuthenticationMiddleware = async function (
               </p>
               <a href="/login?timeout=true" class="btn-primary">Jetzt anmelden</a>
             </div>
-            
+
             <script>
               // Clear all local storage to ensure clean logout
               localStorage.clear();
               sessionStorage.clear();
-              
+
               // Clear all cookies
-              document.cookie.split(";").forEach(function(c) { 
-                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+              document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
               });
-              
+
               // Countdown and redirect
               let seconds = 5;
               const countdownEl = document.getElementById('countdown');
-              
+
               const interval = setInterval(() => {
                 seconds--;
                 if (countdownEl) countdownEl.textContent = seconds;
-                
+
                 if (seconds <= 0) {
                   clearInterval(interval);
                   window.location.href = '/login?timeout=true';
                 }
               }, 1000);
-              
+
               // Immediate redirect if user clicks anywhere
               document.body.addEventListener('click', () => {
                 window.location.href = '/login?timeout=true';
@@ -418,7 +417,7 @@ export async function optionalAuth(
 ): Promise<void> {
   const token = extractToken(req);
 
-  if (token === null || token === undefined || token === "") {
+  if (token === null || token === "") {
     // No token, but that's okay for optional auth
     next();
     return;
@@ -443,15 +442,6 @@ export function requireRole(allowedRoles: string | string[]) {
     res: Response,
     next: NextFunction,
   ): void => {
-    if (req.user === null || req.user === undefined) {
-      res
-        .status(401)
-        .json(
-          errorResponse("Authentication required", 401, "NOT_AUTHENTICATED"),
-        );
-      return;
-    }
-
     // Root has access to everything
     if (req.user.role === "root") {
       next();

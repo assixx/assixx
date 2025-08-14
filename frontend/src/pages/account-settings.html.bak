@@ -167,13 +167,13 @@
 
       @keyframes pulse {
         0% {
-          opacity: 1;
+          opacity: 100%;
         }
         50% {
-          opacity: 0.5;
+          opacity: 0%.5;
         }
         100% {
-          opacity: 1;
+          opacity: 100%;
         }
       }
 
@@ -218,7 +218,7 @@
       }
 
       .btn-danger:disabled {
-        opacity: 0.5;
+        opacity: 0%.5;
         cursor: not-allowed;
       }
 
@@ -247,20 +247,20 @@
       /* Animations */
       @keyframes fadeIn {
         from {
-          opacity: 0;
+          opacity: 0%;
         }
         to {
-          opacity: 1;
+          opacity: 100%;
         }
       }
 
       @keyframes fadeInUp {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(30px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }
@@ -268,11 +268,11 @@
       @keyframes slideInUp {
         from {
           transform: translateY(100px);
-          opacity: 0;
+          opacity: 0%;
         }
         to {
           transform: translateY(0);
-          opacity: 1;
+          opacity: 100%;
         }
       }
 
@@ -294,7 +294,7 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="settings-container">
           <!-- Danger Zone Card -->
           <div class="settings-card" style="border-color: rgba(244, 67, 54, 0.3)">

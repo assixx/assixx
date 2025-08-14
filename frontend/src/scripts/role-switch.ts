@@ -11,10 +11,10 @@ let currentView = localStorage.getItem('activeRole') ?? userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
-  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
+  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
   const roleIndicator = document.getElementById('role-indicator');
 
-  if (!switchBtn || !roleIndicator) return;
+  if (switchBtn === null || roleIndicator === null) return;
 
   // Disable button during switch
   switchBtn.disabled = true;
@@ -110,10 +110,10 @@ async function switchRole(): Promise<void> {
 // Update UI based on current role
 function updateRoleUI(): void {
   const roleIndicator = document.getElementById('role-indicator');
-  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-  const switchText = switchBtn?.querySelector('.role-switch-text');
+  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
+  const switchText = switchBtn !== null ? switchBtn.querySelector('.role-switch-text') : null;
 
-  if (!roleIndicator || !switchBtn) return;
+  if (roleIndicator === null || switchBtn === null) return;
 
   // Update currentView from localStorage
   currentView = localStorage.getItem('activeRole') ?? userRole;
@@ -234,12 +234,12 @@ if (!document.getElementById('toast-animations')) {
   style.id = 'toast-animations';
   style.textContent = `
     @keyframes slideInRight {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      from { transform: translateX(100%); opacity: 0%; }
+      to { transform: translateX(0); opacity: 100%; }
     }
     @keyframes slideOutRight {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(100%); opacity: 0; }
+      from { transform: translateX(0); opacity: 100%; }
+      to { transform: translateX(100%); opacity: 0%; }
     }
   `;
   document.head.appendChild(style);
@@ -248,21 +248,23 @@ if (!document.getElementById('toast-animations')) {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   // Handle for admins
-  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
+  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
 
-  if (userRole === 'admin' && switchBtn) {
+  if (userRole === 'admin' && switchBtn !== null) {
     switchBtn.style.display = 'flex';
-    switchBtn.addEventListener('click', () => void switchRole());
+    switchBtn.addEventListener('click', () => {
+      void switchRole();
+    });
     updateRoleUI();
-  } else if (switchBtn) {
+  } else if (switchBtn !== null) {
     // Hide button for non-admins
     switchBtn.style.display = 'none';
   }
 
   // Handle for root users with dropdown
-  const switchSelect = document.getElementById('role-switch-select') as HTMLSelectElement;
+  const switchSelect = document.getElementById('role-switch-select') as HTMLSelectElement | null;
 
-  if (userRole === 'root' && switchSelect) {
+  if (userRole === 'root' && switchSelect !== null) {
     switchSelect.style.display = 'block';
 
     // Set current value
@@ -277,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateRoleUI();
-  } else if (switchSelect) {
+  } else if (switchSelect !== null) {
     // Hide select for non-root users
     switchSelect.style.display = 'none';
   }
@@ -334,7 +336,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     if (targetRole === 'root' && currentActiveRole !== 'root') {
       // Zurück zu Root von Admin oder Employee
       endpoint = '/role-switch/to-original';
-      switchDescription = `${currentActiveRole} → Root (to-original)`;
+      switchDescription = `${currentActiveRole ?? 'unknown'} → Root (to-original)`;
     } else if (targetRole === 'admin') {
       if (currentActiveRole === 'root') {
         // Root → Admin
@@ -365,7 +367,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
       }
     }
 
-    if (!endpoint) {
+    if (endpoint === '') {
       console.error('[RoleSwitch] No valid endpoint for switch!', {
         from: currentActiveRole,
         to: targetRole,
@@ -416,7 +418,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
         window.location.href = '/root-dashboard';
       } else if (targetRole === 'admin') {
         window.location.href = '/admin-dashboard';
-      } else if (targetRole === 'employee') {
+      } else {
         window.location.href = '/employee-dashboard';
       }
     }, 1000);
@@ -520,7 +522,7 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
     setTimeout(() => {
       if (targetRole === 'admin') {
         window.location.href = '/admin-dashboard';
-      } else if (targetRole === 'employee') {
+      } else {
         window.location.href = '/employee-dashboard';
       }
     }, 1000);

@@ -132,9 +132,7 @@ export const security = {
     // Add rate limiter
     if (options.rateLimit != null) {
       const rateLimitMiddleware = rateLimiter[options.rateLimit];
-      if (rateLimitMiddleware != null) {
-        stack.push(rateLimitMiddleware);
-      }
+      stack.push(rateLimitMiddleware);
     }
 
     // Add authentication

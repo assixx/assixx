@@ -13,7 +13,7 @@ import { getAuthToken, parseJwt } from './auth';
  */
 async function loadHeaderUserInfo(): Promise<void> {
   const token = getAuthToken();
-  if (!token || token === 'test-mode') return;
+  if (token === null || token === '' || token === 'test-mode') return;
 
   try {
     // Get username from token for immediate display
@@ -22,12 +22,12 @@ async function loadHeaderUserInfo(): Promise<void> {
 
     const userNameElement = document.getElementById('user-name');
     if (userNameElement) {
-      userNameElement.textContent = payload.username ?? 'User';
+      userNameElement.textContent = payload.username;
     }
 
     // Update role badge based on user role
     const roleIndicator = document.getElementById('role-indicator');
-    if (roleIndicator && payload.role) {
+    if (roleIndicator && payload.role !== '') {
       roleIndicator.textContent = payload.role === 'admin' ? 'Admin' : payload.role === 'root' ? 'Root' : 'Mitarbeiter';
       roleIndicator.className = `role-badge ${payload.role}`;
     }
@@ -38,22 +38,27 @@ async function loadHeaderUserInfo(): Promise<void> {
       const user: User = userData;
 
       // Update with full name
-      if (userNameElement && (user.first_name || user.last_name)) {
+      if (userNameElement && (user.first_name !== undefined || user.last_name !== undefined)) {
         const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
-        userNameElement.textContent = fullName ?? (user.username || payload.username);
+        userNameElement.textContent = fullName !== '' ? fullName : user.username;
       }
 
       // Update avatar
-      const avatarElement = document.getElementById('user-avatar') as HTMLImageElement;
-      if (avatarElement) {
-        if (user.profile_picture || user.profile_picture_url) {
+      const avatarElement = document.getElementById('user-avatar') as HTMLImageElement | null;
+      if (avatarElement !== null) {
+        if (
+          (user.profile_picture !== undefined && user.profile_picture !== '') ||
+          (user.profile_picture_url !== undefined && user.profile_picture_url !== '')
+        ) {
           avatarElement.src = user.profile_picture ?? user.profile_picture_url ?? '';
           avatarElement.classList.remove('avatar-initials');
         } else {
           // Display initials if no profile picture
-          const firstInitial = user.first_name ? user.first_name.charAt(0).toUpperCase() : '';
-          const lastInitial = user.last_name ? user.last_name.charAt(0).toUpperCase() : '';
-          const initials = `${firstInitial}${lastInitial}` || 'U';
+          const firstInitial =
+            user.first_name !== undefined && user.first_name !== '' ? user.first_name.charAt(0).toUpperCase() : '';
+          const lastInitial =
+            user.last_name !== undefined && user.last_name !== '' ? user.last_name.charAt(0).toUpperCase() : '';
+          const initials = `${firstInitial}${lastInitial}` !== '' ? `${firstInitial}${lastInitial}` : 'U';
 
           // Convert img to div for initials display
           const initialsDiv = document.createElement('div');
@@ -82,7 +87,7 @@ async function loadHeaderUserInfo(): Promise<void> {
  */
 async function loadDepartmentBadge(): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     const data = await apiClient.get<{
@@ -111,7 +116,7 @@ async function loadDepartmentBadge(): Promise<void> {
     if (badgeContainer) {
       const badgeSpan = badgeContainer.querySelector('.badge');
       if (badgeSpan) {
-        if (data.hasAllAccess) {
+        if (data.hasAllAccess === true) {
           badgeSpan.className = 'badge badge-success';
           badgeSpan.textContent = 'Alle Abteilungen';
         } else if (data.departments && data.departments.length === 0) {

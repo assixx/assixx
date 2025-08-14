@@ -8,17 +8,19 @@
 }
 
 .profile-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
   overflow: hidden;
-  margin-bottom: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
+
+  width: 120px;
+  height: 120px;
+  margin-bottom: 15px;
   border: 2px solid #eee;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+
   background-color: #f9f9f9;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 10%);
 }
 
 .profile-image {
@@ -28,21 +30,25 @@
 }
 
 .profile-initials {
-  width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #1b8e01;
-  color: white;
+
+  width: 100%;
+  height: 100%;
+
   font-size: 40px;
-  font-weight: bold;
+  font-weight: 700;
+  color: #fff;
+
+  background-color: #1b8e01;
 }
 
 .picture-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
+
   width: 100%;
   max-width: 300px;
 }
@@ -54,23 +60,26 @@
 }
 
 .file-input {
+  box-sizing: border-box;
   width: 100%;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
-  box-sizing: border-box;
 }
 
 .upload-btn {
+  cursor: pointer;
+
   width: 100%;
+  margin-bottom: 10px;
   padding: 10px;
-  background-color: #1b8e01;
-  color: white;
   border: none;
   border-radius: 5px;
+
   font-size: 14px;
-  cursor: pointer;
-  margin-bottom: 10px;
+  color: #fff;
+
+  background-color: #1b8e01;
 }
 
 .upload-btn:hover {
@@ -78,19 +87,22 @@
 }
 
 .upload-btn:disabled {
-  background-color: #ccc;
   cursor: not-allowed;
+  background-color: #ccc;
 }
 
 .remove-btn {
+  cursor: pointer;
+
   width: 100%;
   padding: 10px;
-  background-color: #dc3545;
-  color: white;
   border: none;
   border-radius: 5px;
+
   font-size: 14px;
-  cursor: pointer;
+  color: #fff;
+
+  background-color: #dc3545;
 }
 
 .remove-btn:hover {
@@ -102,19 +114,22 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
   width: 100%;
   height: 100%;
 }
 
 .spinner {
   display: inline-block;
+
   width: 30px;
   height: 30px;
-  border: 3px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: #1b8e01;
+
   /* animation: spin 1s ease-in-out infinite; */
   margin-bottom: 10px;
+  border: 3px solid rgb(0 0 0 / 10%);
+  border-top-color: #1b8e01;
+  border-radius: 50%;
 }
 
 /* @keyframes spin {
@@ -124,7 +139,7 @@
 } */
 
 /* Responsive styles */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .profile-preview {
     width: 100px;
     height: 100px;
@@ -139,19 +154,22 @@
 .user-card {
   display: flex;
   align-items: center;
+
+  margin-bottom: 20px;
   padding: 15px;
   border-radius: 8px;
+
   background-color: #f9f9f9;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
 }
 
 .user-card-img {
+  overflow: hidden;
+
   width: 70px;
   height: 70px;
-  border-radius: 50%;
-  overflow: hidden;
   margin-right: 20px;
+  border-radius: 50%;
 }
 
 .user-card-info {
@@ -159,15 +177,15 @@
 }
 
 .user-card-name {
+  margin: 0 0 5px;
   font-size: 18px;
-  font-weight: bold;
-  margin: 0 0 5px 0;
+  font-weight: 700;
 }
 
 .user-card-position {
+  margin: 0 0 5px;
   font-size: 14px;
   color: #666;
-  margin: 0 0 5px 0;
 }
 
 .user-card-details {
@@ -177,10 +195,13 @@
 
 .user-card-badge {
   display: inline-block;
-  padding: 3px 7px;
-  font-size: 12px;
-  border-radius: 10px;
-  background-color: #1b8e01;
-  color: white;
+
   margin-left: 5px;
+  padding: 3px 7px;
+  border-radius: 10px;
+
+  font-size: 12px;
+  color: #fff;
+
+  background-color: #1b8e01;
 }

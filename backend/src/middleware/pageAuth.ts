@@ -23,7 +23,7 @@ interface DecodedToken {
 }
 
 // Define which pages are accessible by which roles
-const pagePermissions: Record<string, PageConfig> = {
+const pagePermissions: Partial<Record<string, PageConfig>> = {
   // Admin pages
   "/admin-dashboard": {
     allowedRoles: ["admin", "root"],
@@ -200,7 +200,7 @@ const pagePermissions: Record<string, PageConfig> = {
  */
 function getTokenFromRequest(req: Request): string | null {
   // Try cookie first
-  const cookieToken = req.cookies?.token as string | undefined;
+  const cookieToken = req.cookies.token as string | undefined;
   if (cookieToken != null && cookieToken !== "") return cookieToken;
 
   // Try Authorization header
@@ -240,7 +240,7 @@ export function protectPage(
   const pageConfig = pagePermissions[pagePath];
 
   // If page is not in our config, allow it (static assets, etc.)
-  if (pageConfig == null) {
+  if (pageConfig === undefined) {
     next();
     return;
   }

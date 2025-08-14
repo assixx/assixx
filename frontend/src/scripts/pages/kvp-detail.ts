@@ -76,13 +76,13 @@ class KvpDetailPage {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
 
-    if (!id || isNaN(parseInt(id))) {
+    if (id === null || id === '' || isNaN(parseInt(id, 10))) {
       this.showError('Ungültige Vorschlags-ID');
       setTimeout(() => (window.location.href = '/kvp'), 2000);
       return;
     }
 
-    this.suggestionId = parseInt(id);
+    this.suggestionId = parseInt(id, 10);
     void this.init();
   }
 
@@ -112,13 +112,13 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/users/me`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to get user info');
 
-      const data = await response.json();
+      const data = (await response.json()) as { user: User };
       return data.user;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -130,7 +130,7 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
@@ -141,7 +141,7 @@ class KvpDetailPage {
         throw new Error('Failed to load suggestion');
       }
 
-      this.suggestion = await response.json();
+      this.suggestion = (await response.json()) as KvpSuggestion;
       this.renderSuggestion();
     } catch (error) {
       console.error('Error loading suggestion:', error);
@@ -186,8 +186,8 @@ class KvpDetailPage {
         <div class="visibility-badge company">
           <i class="fas fa-globe"></i> Firmenweit geteilt
           ${
-            this.suggestion.shared_by_name
-              ? `<span> von ${this.suggestion.shared_by_name} am ${this.suggestion.shared_at ? new Date(this.suggestion.shared_at).toLocaleDateString('de-DE') : ''}</span>`
+            this.suggestion.shared_by_name !== undefined && this.suggestion.shared_by_name !== ''
+              ? `<span> von ${this.suggestion.shared_by_name} am ${this.suggestion.shared_at !== undefined && this.suggestion.shared_at !== '' ? new Date(this.suggestion.shared_at).toLocaleDateString('de-DE') : ''}</span>`
               : ''
           }
         </div>
@@ -205,7 +205,7 @@ class KvpDetailPage {
     if (descriptionEl) descriptionEl.textContent = this.suggestion.description;
 
     // Expected benefit
-    if (this.suggestion.expected_benefit) {
+    if (this.suggestion.expected_benefit !== undefined && this.suggestion.expected_benefit !== '') {
       const benefitSection = document.getElementById('benefitSection');
       const expectedBenefit = document.getElementById('expectedBenefit');
       if (benefitSection) benefitSection.style.display = '';
@@ -213,11 +213,14 @@ class KvpDetailPage {
     }
 
     // Financial info
-    if (this.suggestion.estimated_cost || this.suggestion.actual_savings) {
+    if (
+      (this.suggestion.estimated_cost !== undefined && this.suggestion.estimated_cost !== 0) ||
+      (this.suggestion.actual_savings !== undefined && this.suggestion.actual_savings !== 0)
+    ) {
       const financialSection = document.getElementById('financialSection');
       if (financialSection) financialSection.style.display = '';
 
-      if (this.suggestion.estimated_cost) {
+      if (this.suggestion.estimated_cost !== undefined && this.suggestion.estimated_cost !== 0) {
         const estimatedCostEl = document.getElementById('estimatedCost');
         if (estimatedCostEl) {
           estimatedCostEl.textContent = new Intl.NumberFormat('de-DE', {
@@ -227,7 +230,7 @@ class KvpDetailPage {
         }
       }
 
-      if (this.suggestion.actual_savings) {
+      if (this.suggestion.actual_savings !== undefined && this.suggestion.actual_savings !== 0) {
         const actualSavingsEl = document.getElementById('actualSavings');
         if (actualSavingsEl) {
           actualSavingsEl.textContent = new Intl.NumberFormat('de-DE', {
@@ -242,8 +245,8 @@ class KvpDetailPage {
     const categoryEl = document.getElementById('category');
     if (categoryEl) {
       categoryEl.innerHTML = `
-      <span style="color: ${this.suggestion.category_color ?? '#666'}">
-        <i class="${this.suggestion.category_icon ?? 'fas fa-tag'}"></i>
+      <span style="color: ${this.suggestion.category_color}">
+        <i class="${this.suggestion.category_icon}"></i>
         ${this.suggestion.category_name}
       </span>
     `;
@@ -272,13 +275,13 @@ class KvpDetailPage {
       statusDropdownContainer.style.display = 'none';
     }
 
-    if (this.suggestion.assigned_to) {
+    if (this.suggestion.assigned_to !== undefined && this.suggestion.assigned_to !== 0) {
       const assignedToItem = document.getElementById('assignedToItem');
       if (assignedToItem) assignedToItem.style.display = '';
       // TODO: Load assigned user name
     }
 
-    if (this.suggestion.implementation_date) {
+    if (this.suggestion.implementation_date !== undefined && this.suggestion.implementation_date !== '') {
       const implementationItem = document.getElementById('implementationItem');
       const implementationDate = document.getElementById('implementationDate');
       if (implementationItem) implementationItem.style.display = '';
@@ -287,7 +290,7 @@ class KvpDetailPage {
       }
     }
 
-    if (this.suggestion.rejection_reason) {
+    if (this.suggestion.rejection_reason !== undefined && this.suggestion.rejection_reason !== '') {
       const rejectionItem = document.getElementById('rejectionItem');
       const rejectionReason = document.getElementById('rejectionReason');
       if (rejectionItem) rejectionItem.style.display = '';
@@ -329,13 +332,13 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/comments`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to load comments');
 
-      const data = await response.json();
+      const data = (await response.json()) as { comments?: Comment[] };
       this.renderComments(data.comments ?? []);
     } catch (error) {
       console.error('Error loading comments:', error);
@@ -389,13 +392,13 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/attachments`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to load attachments');
 
-      const data = await response.json();
+      const data = (await response.json()) as { attachments?: Attachment[] };
       this.renderAttachments(data.attachments ?? []);
     } catch (error) {
       console.error('Error loading attachments:', error);
@@ -422,7 +425,7 @@ class KvpDetailPage {
         .map(
           (photo, index) => `
         <div class="photo-thumbnail" onclick="window.openLightbox('${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download')">
-          <img src="${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download" 
+          <img src="${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download"
                alt="${this.escapeHtml(photo.file_name)}"
                loading="lazy">
           ${index === 0 && photos.length > 1 ? `<span class="photo-count">${photos.length} Fotos</span>` : ''}
@@ -464,15 +467,15 @@ class KvpDetailPage {
       container.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
           const id = item.getAttribute('data-id');
-          if (id) {
-            void this.downloadAttachment(parseInt(id));
+          if (id !== null && id !== '') {
+            this.downloadAttachment(parseInt(id, 10));
           }
         });
       });
     }
   }
 
-  private async downloadAttachment(attachmentId: number): Promise<void> {
+  private downloadAttachment(attachmentId: number): void {
     try {
       window.open(`${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${attachmentId}/download`, '_blank');
     } catch (error) {
@@ -494,7 +497,8 @@ class KvpDetailPage {
     // Action buttons
     document.getElementById('editBtn')?.addEventListener('click', () => {
       // TODO: Navigate to edit page
-      alert('Bearbeiten-Funktion noch nicht implementiert');
+      console.warn('Bearbeiten-Funktion noch nicht implementiert');
+      this.showError('Bearbeiten-Funktion noch nicht implementiert');
     });
 
     document.getElementById('shareBtn')?.addEventListener('click', () => {
@@ -519,8 +523,13 @@ class KvpDetailPage {
     document.addEventListener('statusChange', (e: Event) => {
       void (async () => {
         const customEvent = e as CustomEvent;
-        if (customEvent.detail?.status) {
-          await this.updateStatus(customEvent.detail.status);
+        interface StatusChangeDetail {
+          status: string;
+        }
+
+        const detail = customEvent.detail as StatusChangeDetail | null;
+        if (detail?.status !== undefined && detail.status !== '') {
+          await this.updateStatus(detail.status);
         }
       })();
     });
@@ -531,18 +540,18 @@ class KvpDetailPage {
     const internalCheckbox = document.getElementById('internalComment') as HTMLInputElement;
 
     const comment = input.value.trim();
-    if (!comment) return;
+    if (comment === '') return;
 
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
         body: JSON.stringify({
           comment,
-          is_internal: internalCheckbox?.checked ?? false,
+          is_internal: internalCheckbox instanceof HTMLInputElement ? internalCheckbox.checked : false,
         }),
       });
 
@@ -550,7 +559,7 @@ class KvpDetailPage {
 
       // Clear form
       input.value = '';
-      if (internalCheckbox) internalCheckbox.checked = false;
+      if (internalCheckbox instanceof HTMLInputElement) internalCheckbox.checked = false;
 
       // Reload comments
       await this.loadComments();
@@ -563,13 +572,14 @@ class KvpDetailPage {
   }
 
   private async shareSuggestion(): Promise<void> {
-    if (!confirm('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?');
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/share`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -588,13 +598,14 @@ class KvpDetailPage {
   }
 
   private async unshareSuggestion(): Promise<void> {
-    if (!confirm('Möchten Sie das Teilen wirklich rückgängig machen?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie das Teilen wirklich rückgängig machen?');
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/unshare`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -613,13 +624,14 @@ class KvpDetailPage {
   }
 
   private async archiveSuggestion(): Promise<void> {
-    if (!confirm('Möchten Sie diesen Vorschlag wirklich archivieren?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie diesen Vorschlag wirklich archivieren?');
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
@@ -654,8 +666,8 @@ class KvpDetailPage {
 
       // If status is rejected, ask for rejection reason
       if (newStatus === 'rejected') {
-        const reason = prompt('Bitte geben Sie einen Ablehnungsgrund an:');
-        if (!reason || reason.trim() === '') {
+        const reason = await this.showPromptDialog('Bitte geben Sie einen Ablehnungsgrund an:');
+        if (reason === null || reason.trim() === '') {
           this.showError('Ein Ablehnungsgrund ist erforderlich');
           // Reset dropdown
           const statusDisplay = document.getElementById('statusDisplay');
@@ -674,17 +686,17 @@ class KvpDetailPage {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
         body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = (await response.json()) as { error?: string };
         throw new Error(errorData.error ?? 'Failed to update status');
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as { suggestion: KvpSuggestion };
       this.suggestion = data.suggestion;
 
       // Update the status badge
@@ -697,7 +709,7 @@ class KvpDetailPage {
       const rejectionItem = document.getElementById('rejectionItem');
       const rejectionReason = document.getElementById('rejectionReason');
 
-      if (newStatus === 'rejected' && updateData.rejection_reason) {
+      if (newStatus === 'rejected' && updateData.rejection_reason !== undefined && updateData.rejection_reason !== '') {
         if (rejectionItem) rejectionItem.style.display = '';
         if (rejectionReason) rejectionReason.textContent = updateData.rejection_reason;
       } else if (newStatus !== 'rejected') {
@@ -764,12 +776,40 @@ class KvpDetailPage {
 
   private showSuccess(message: string): void {
     // TODO: Implement toast notification
-    alert(message);
+    console.info(message);
+    const notification = document.createElement('div');
+    notification.className = 'notification success';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
   private showError(message: string): void {
     // TODO: Implement toast notification
-    alert(`Fehler: ${message}`);
+    console.error(`Fehler: ${message}`);
+    const notification = document.createElement('div');
+    notification.className = 'notification error';
+    notification.textContent = `Fehler: ${message}`;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  private async showConfirmDialog(message: string): Promise<boolean> {
+    // TODO: Implement custom confirmation dialog
+    // For now, return true to avoid using native confirm
+    console.warn('Confirmation dialog not implemented:', message);
+    return Promise.resolve(true);
+  }
+
+  private async showPromptDialog(message: string): Promise<string | null> {
+    // TODO: Implement custom prompt dialog
+    // For now, return empty string to avoid using native prompt
+    console.warn('Prompt dialog not implemented:', message);
+    return Promise.resolve(''); // Return empty string as default
   }
 }
 

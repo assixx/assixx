@@ -689,8 +689,8 @@ Diese Dinge dürfen NIEMALS passieren:
    - ✅ `padding: 24px` → `var(--spacing-lg)` wenn --spacing-lg = 24px ist
 
 2. **NIEMALS** CSS-Spezifität ignorieren
-   - ❌ `style="color: red"` → `.text-red { color: red; }`
-   - ✅ `style="color: red"` → `.text-red { color: red !important; }`
+   - ❌ `style="color: #f00"` → `.text-red { color: #f00; }`
+   - ✅ `style="color: #f00"` → `.text-red { color: #f00 !important; }`
 
 3. **NIEMALS** Container-Klassen ändern ohne CSS-Check
    - ❌ `.main-content` → `.layout-container` ohne Stil-Vergleich

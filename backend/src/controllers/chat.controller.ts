@@ -61,7 +61,6 @@ class ChatController {
       };
 
       if (
-        participantIds === null ||
         participantIds === undefined ||
         !Array.isArray(participantIds) ||
         participantIds.length === 0
@@ -148,17 +147,14 @@ class ChatController {
       let attachmentUrl: string | undefined;
 
       // Handle file upload
-      if (req.file !== null && req.file !== undefined) {
+      if (req.file !== undefined) {
         attachmentUrl = `/uploads/chat/${req.file.filename}`;
         if (content.length === 0) {
           content = "Sent an attachment";
         }
       }
 
-      if (
-        content.length === 0 &&
-        (attachmentUrl === null || attachmentUrl === undefined)
-      ) {
+      if (content.length === 0 && attachmentUrl === undefined) {
         res
           .status(400)
           .json({ error: "Message content or attachment is required" });
@@ -170,7 +166,7 @@ class ChatController {
         conversationId,
         req.user.userId,
         content,
-        attachmentUrl !== null && attachmentUrl !== undefined
+        attachmentUrl !== undefined
           ? {
               path: attachmentUrl,
               name: req.file?.originalname ?? "",
@@ -228,7 +224,7 @@ class ChatController {
       await chatService.addParticipant(
         conversationId,
         userId,
-        req.user.userId ?? req.user.id,
+        req.user.userId,
         req.user.tenant_id,
       );
 
@@ -252,7 +248,7 @@ class ChatController {
       await chatService.removeParticipant(
         conversationId,
         userId,
-        req.user.userId ?? req.user.id,
+        req.user.userId,
         req.user.tenant_id,
       );
 
@@ -281,7 +277,7 @@ class ChatController {
       await chatService.updateConversationName(
         conversationId,
         name,
-        req.user.userId ?? req.user.id,
+        req.user.userId,
         req.user.tenant_id,
       );
 
@@ -334,7 +330,7 @@ class ChatController {
       const unreadCount = await chatService.getUnreadCount(
         tenantDb,
         req.user.tenant_id,
-        req.user.userId ?? req.user.id,
+        req.user.userId,
       );
 
       res.json({ unreadCount });
@@ -352,7 +348,7 @@ class ChatController {
       }
 
       const conversationId = parseInt(req.params.id);
-      const userId = req.user.userId ?? req.user.id;
+      const userId = req.user.userId;
 
       await chatService.markConversationAsRead(conversationId, userId);
 
@@ -372,10 +368,7 @@ class ChatController {
 
       const conversationId = parseInt(req.params.id);
 
-      await chatService.deleteConversation(
-        conversationId,
-        req.user.userId ?? req.user.id,
-      );
+      await chatService.deleteConversation(conversationId, req.user.userId);
 
       res.json({ message: "Conversation deleted successfully" });
     } catch (error: unknown) {

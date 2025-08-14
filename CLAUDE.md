@@ -141,7 +141,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 **WENN TypeScript Error bei Route Handler**
 
 - typed.auth oder typed.body wrapper verwenden
-- Siehe backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md
+- Siehe backend/TYPESCRIPT-STANDARDS.md
 
 **WENN User will committen/pushen**
 
@@ -216,7 +216,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 **KERN-DOKUMENTE (Täglich relevant):**
 
 - docs/PROJEKTSTRUKTUR.md - Vollständige Verzeichnisstruktur
-- backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md - TypeScript Patterns (PFLICHT bei Backend)
+- backend/TYPESCRIPT-STANDARDS.md - TypeScript Patterns (PFLICHT bei Backend)
 - docs/DATABASE-MIGRATION-GUIDE.md - DB Änderungen (PFLICHT bei Migrationen)
 - docs/DESIGN-STANDARDS.md - Glassmorphismus UI/UX
 
@@ -369,7 +369,7 @@ weitere Notes:
 ## Aktuelle Notizen (26.06.2025)
 
 - **WICHTIG:** TypeScript Architecture Guide ist PFLICHTLEKTÜRE für Backend-Entwicklung
-- **NEU:** backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md muss IMMER beachtet werden
+- **NEU:** backend/TYPESCRIPT-STANDARDS.md muss IMMER beachtet werden
 - TypeScript Migration abgeschlossen: 426 → 0 Errors
 - Shift Planning Design wurde in FEATURES.md integriert
 - Reminder für Sub-Features wurde in TODO.md aufgenommen
@@ -385,7 +385,7 @@ weitere Notes:
 **PFLICHT bei Backend-Entwicklung:**
 
 ```bash
-cat /home/scs/projects/Assixx/backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md
+cat /home/scs/projects/Assixx/backend/TYPESCRIPT-STANDARDS.md
 ``
 Diese Dokumentation enthält:
 

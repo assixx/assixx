@@ -121,11 +121,11 @@
       @keyframes subtle-pulse {
         0%,
         100% {
-          opacity: 1;
+          opacity: 100%;
           transform: scale(1);
         }
         50% {
-          opacity: 0.95;
+          opacity: 0%.95;
           transform: scale(1.02);
         }
       }
@@ -173,7 +173,7 @@
 
       .btn-primary {
         background: none;
-        color: white;
+        color: #fff;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -224,11 +224,11 @@
 
       @keyframes fadeInUp {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(30px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }
@@ -514,7 +514,7 @@
       .success {
         background: rgba(76, 175, 80, 0.15);
         backdrop-filter: blur(10px);
-        color: white;
+        color: #fff;
         padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         margin-bottom: var(--spacing-md);
@@ -703,11 +703,11 @@
 
       @keyframes badge-intro {
         0% {
-          opacity: 0;
+          opacity: 0%;
           transform: translateX(-50%) translateY(-30px) scale(0.8);
         }
         100% {
-          opacity: 1;
+          opacity: 100%;
           transform: translateX(-50%) translateY(0) scale(1);
         }
       }
@@ -995,22 +995,22 @@
             <div>
               <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm)">✅</div>
               <p style="font-weight: 600">Eigene Server</p>
-              <p style="font-size: 0.9rem; opacity: 0.8">Installation in Ihrem Rechenzentrum</p>
+              <p style="font-size: 0.9rem; opacity: 0%.8">Installation in Ihrem Rechenzentrum</p>
             </div>
             <div>
               <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm)">✅</div>
               <p style="font-weight: 600">Volle Kontrolle</p>
-              <p style="font-size: 0.9rem; opacity: 0.8">Sie behalten alle Zugriffsrechte</p>
+              <p style="font-size: 0.9rem; opacity: 0%.8">Sie behalten alle Zugriffsrechte</p>
             </div>
             <div>
               <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm)">✅</div>
               <p style="font-weight: 600">Compliance</p>
-              <p style="font-size: 0.9rem; opacity: 0.8">Erfüllt strengste Auflagen</p>
+              <p style="font-size: 0.9rem; opacity: 0%.8">Erfüllt strengste Auflagen</p>
             </div>
             <div>
               <div style="font-size: 1.5rem; margin-bottom: var(--spacing-sm)">✅</div>
               <p style="font-weight: 600">Support</p>
-              <p style="font-size: 0.9rem; opacity: 0.8">Dediziertes Enterprise-Team</p>
+              <p style="font-size: 0.9rem; opacity: 0%.8">Dediziertes Enterprise-Team</p>
             </div>
           </div>
           <a
@@ -1042,7 +1042,7 @@
               align-items: center;
               gap: calc(var(--spacing-xl) * 1.5);
               flex-wrap: wrap;
-              opacity: 0.7;
+              opacity: 0%.7;
             "
           >
             <div style="font-size: 0.9rem">🔒 SSL-verschlüsselt</div>
@@ -1062,7 +1062,7 @@
           color: var(--text-secondary);
           margin-bottom: calc(var(--spacing-xl) * 1.5);
           font-size: 1.1rem;
-          opacity: 0.8;
+          opacity: 0%.8;
         "
       >
         Alle Pläne beinhalten 14 Tage kostenlose Testphase

@@ -57,7 +57,7 @@
       }
       button {
         background: #2196f3;
-        color: white;
+        color: #fff;
         border: none;
         padding: 10px 20px;
         border-radius: 4px;
@@ -89,15 +89,15 @@
       }
       .status-active {
         background: #4caf50;
-        color: white;
+        color: #fff;
       }
       .status-draft {
         background: #ff9800;
-        color: white;
+        color: #fff;
       }
       .status-completed {
         background: #9e9e9e;
-        color: white;
+        color: #fff;
       }
     </style>
   </head>

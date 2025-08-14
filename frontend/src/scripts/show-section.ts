@@ -105,7 +105,7 @@ export function initSectionFromURL(): void {
   const urlParams = new URLSearchParams(window.location.search);
   const section = urlParams.get('section');
 
-  if (section) {
+  if (section !== null) {
     showSection(section);
   }
 }

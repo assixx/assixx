@@ -5,12 +5,15 @@
 .u-hidden {
   display: none !important;
 }
+
 .u-block {
   display: block !important;
 }
+
 .u-flex {
   display: flex !important;
 }
+
 .u-inline-flex {
   display: inline-flex !important;
 }
@@ -19,13 +22,16 @@
 .u-m-0 {
   margin: 0 !important;
 }
+
 .u-mt-xs {
   margin-top: var(--spacing-xs) !important;
 }
+
 .u-mt-text {
   margin: 0;
   margin-top: var(--margin-text-top) !important;
 }
+
 .u-mr-icon {
   margin-right: var(--margin-icon-right) !important;
 }
@@ -33,12 +39,14 @@
 .u-p-0 {
   padding: 0 !important;
 }
+
 .u-p-container {
   padding: var(--spacing-lg) !important;
 }
+
 .u-px-lg {
-  padding-left: var(--spacing-lg) !important;
   padding-right: var(--spacing-lg) !important;
+  padding-left: var(--spacing-lg) !important;
 }
 
 /* === Flex Utilities === */
@@ -46,10 +54,12 @@
   display: flex;
   gap: var(--spacing-sm) !important;
 }
+
 .u-flex-gap-md {
   display: flex;
   gap: var(--spacing-md) !important;
 }
+
 .u-flex-center {
   display: flex;
   align-items: center;
@@ -60,6 +70,7 @@
 .u-max-w-modal {
   max-width: var(--modal-width) !important;
 }
+
 .u-w-full {
   width: 100% !important;
 }
@@ -68,6 +79,7 @@
 .u-visible {
   visibility: visible !important;
 }
+
 .u-invisible {
   visibility: hidden !important;
 }
@@ -76,12 +88,15 @@
 .u-relative {
   position: relative !important;
 }
+
 .u-absolute {
   position: absolute !important;
 }
+
 .u-fixed {
   position: fixed !important;
 }
+
 .u-sticky {
   position: sticky !important;
 }
@@ -90,9 +105,11 @@
 .u-text-left {
   text-align: left !important;
 }
+
 .u-text-center {
   text-align: center !important;
 }
+
 .u-text-right {
   text-align: right !important;
 }
@@ -101,9 +118,11 @@
 .u-z-dropdown {
   z-index: var(--z-dropdown) !important;
 }
+
 .u-z-modal {
   z-index: var(--z-modal) !important;
 }
+
 .u-z-notification {
   z-index: var(--z-notification) !important;
 }
@@ -112,9 +131,11 @@
 .u-overflow-hidden {
   overflow: hidden !important;
 }
+
 .u-overflow-auto {
   overflow: auto !important;
 }
+
 .u-overflow-visible {
   overflow: visible !important;
 }
@@ -123,9 +144,11 @@
 .u-cursor-pointer {
   cursor: pointer !important;
 }
+
 .u-cursor-default {
   cursor: default !important;
 }
+
 .u-cursor-not-allowed {
   cursor: not-allowed !important;
 }
@@ -134,30 +157,39 @@
 .u-fs-xs {
   font-size: 0.75rem !important;
 }
+
 .u-fs-sm {
   font-size: 0.875rem !important;
 }
+
 .u-fs-md {
   font-size: 1rem !important;
 }
+
 .u-fs-lg {
   font-size: 1.25rem !important;
 }
+
 .u-fs-xl {
   font-size: 1.5rem !important;
 }
+
 .u-fs-2xl {
   font-size: 2rem !important;
 }
+
 .u-fs-3xl {
   font-size: 3rem !important;
 }
+
 .u-fs-11 {
   font-size: 11px !important;
 }
+
 .u-fs-12 {
   font-size: 12px !important;
 }
+
 .u-fs-09rem {
   font-size: 0.9rem !important;
 }
@@ -166,12 +198,15 @@
 .u-fw-400 {
   font-weight: 400 !important;
 }
+
 .u-fw-500 {
   font-weight: 500 !important;
 }
+
 .u-fw-600 {
   font-weight: 600 !important;
 }
+
 .u-fw-700 {
   font-weight: 700 !important;
 }
@@ -180,39 +215,47 @@
 .u-color-primary {
   color: var(--primary-color) !important;
 }
+
 .u-color-text-primary {
   color: var(--text-primary) !important;
 }
+
 .u-color-text-secondary {
   color: var(--text-secondary) !important;
 }
 
 /* === Opacity Utilities === */
 .u-opacity-80 {
-  opacity: 0.8 !important;
+  opacity: 80% !important;
 }
+
 .u-opacity-100 {
-  opacity: 1 !important;
+  opacity: 100% !important;
 }
 
 /* === Additional Margin Utilities === */
 .u-mr-8 {
   margin-right: 8px !important;
 }
+
 .u-mb-8 {
   margin-bottom: 8px !important;
 }
+
 .u-mb-12 {
   margin-bottom: 12px !important;
 }
+
 .u-mb-sm {
   margin-bottom: var(--spacing-sm) !important;
 }
+
 .u-mb-md {
   margin-bottom: var(--spacing-md) !important;
 }
+
 .u-my-20-15 {
-  margin: 20px 0 15px 0 !important;
+  margin: 20px 0 15px !important;
 }
 
 /* === Flex Grow/Shrink === */

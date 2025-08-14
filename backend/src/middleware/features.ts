@@ -32,7 +32,7 @@ export const checkFeature =
 
       // Debug logging
       logger.info(
-        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${req.user != null ? JSON.stringify({ id: req.user.id, tenant_id: req.user.tenant_id }) : "null"}`,
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify({ id: req.user.id, tenant_id: req.user.tenant_id })}`,
       );
 
       if (req.tenantId != null) {
@@ -59,7 +59,7 @@ export const checkFeature =
 
           numericTenantId = tenantRows[0].id as number;
         }
-      } else if (req.user?.tenant_id) {
+      } else if (req.user.tenant_id) {
         // Fallback: Verwende tenant_id aus JWT Token
         numericTenantId = req.user.tenant_id;
       } else {
@@ -154,7 +154,7 @@ export const checkAnyFeature =
 
           numericTenantId = tenantRows[0].id as number;
         }
-      } else if (req.user?.tenant_id) {
+      } else if (req.user.tenant_id) {
         numericTenantId = req.user.tenant_id;
       } else {
         res.status(400).json({
@@ -241,7 +241,7 @@ export const checkAllFeatures =
 
           numericTenantId = tenantRows[0].id as number;
         }
-      } else if (req.user?.tenant_id) {
+      } else if (req.user.tenant_id) {
         numericTenantId = req.user.tenant_id;
       } else {
         res.status(400).json({

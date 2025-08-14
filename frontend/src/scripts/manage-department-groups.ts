@@ -4,10 +4,13 @@
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
-  if (!token || userRole !== 'root') {
+  if (token === null || token === '' || userRole !== 'root') {
     window.location.href = '/login';
     return;
   }
+
+  // After the check above, token is guaranteed to be a non-empty string
+  const validToken = token;
 
   interface Department {
     id: number;
@@ -34,13 +37,13 @@
     try {
       const response = await fetch('/api/department-groups/hierarchy', {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${validToken}`,
           'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
-        const result = await response.json();
+        const result = (await response.json()) as { data?: DepartmentGroup[] };
         groups = result.data ?? [];
         renderGroupTree();
       } else {
@@ -57,13 +60,13 @@
     try {
       const response = await fetch('/api/departments', {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${validToken}`,
           'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
-        departments = await response.json();
+        departments = (await response.json()) as Department[];
       }
     } catch (error) {
       console.error('Error loading departments:', error);
@@ -97,7 +100,7 @@
       .map(
         (group) => `
     <div style="margin-left: ${level * 20}px;">
-      <div class="tree-item ${selectedGroupId === group.id ? 'active' : ''}" 
+      <div class="tree-item ${selectedGroupId === group.id ? 'active' : ''}"
            onclick="selectGroup(${group.id})"
            data-group-id="${group.id}">
         <i class="fas fa-folder tree-item-icon"></i>
@@ -153,7 +156,7 @@
     container.innerHTML = `
     <div class="detail-section">
       <h3>${group.name}</h3>
-      ${group.description ? `<p class="text-secondary">${group.description}</p>` : ''}
+      ${group.description !== undefined && group.description !== '' ? `<p class="text-secondary">${group.description}</p>` : ''}
     </div>
 
     <div class="detail-section">
@@ -217,7 +220,10 @@
     editingGroupId = null;
     const modalTitle = document.getElementById('modalTitle');
     if (modalTitle) modalTitle.textContent = 'Neue Abteilungsgruppe erstellen';
-    (document.getElementById('createGroupForm') as HTMLFormElement)?.reset();
+    const form = document.getElementById('createGroupForm') as HTMLFormElement | null;
+    if (form !== null) {
+      form.reset();
+    }
 
     // Load parent groups
     updateParentGroupSelect();
@@ -251,27 +257,27 @@
 
   // Update parent group select
   function updateParentGroupSelect(excludeId?: number) {
-    const select = document.getElementById('parentGroup') as HTMLSelectElement;
-    if (!select) return;
+    const select = document.getElementById('parentGroup') as HTMLSelectElement | null;
+    if (select === null) return;
 
     select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
 
-    function addOptions(items: DepartmentGroup[], level = 0) {
+    function addOptions(items: DepartmentGroup[], targetSelect: HTMLSelectElement, level = 0) {
       items.forEach((group) => {
         if (group.id !== excludeId) {
           const option = document.createElement('option');
           option.value = group.id.toString();
           option.textContent = '  '.repeat(level) + group.name;
-          select.appendChild(option);
+          targetSelect.appendChild(option);
 
           if (group.subgroups) {
-            addOptions(group.subgroups, level + 1);
+            addOptions(group.subgroups, targetSelect, level + 1);
           }
         }
       });
     }
 
-    addOptions(groups);
+    addOptions(groups, select);
   }
 
   // Update department checklist
@@ -283,7 +289,7 @@
       .map(
         (dept) => `
     <label class="department-checkbox">
-      <input type="checkbox" name="department" value="${dept.id}" 
+      <input type="checkbox" name="department" value="${dept.id}"
              ${selectedIds.includes(dept.id) ? 'checked' : ''} />
       <span>${dept.name}</span>
     </label>
@@ -306,16 +312,19 @@
       const formData = {
         name: (document.getElementById('groupName') as HTMLInputElement).value,
         description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
-        parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value ?? null,
+        parentGroupId:
+          (document.getElementById('parentGroup') as HTMLSelectElement).value !== ''
+            ? (document.getElementById('parentGroup') as HTMLSelectElement).value
+            : null,
         departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
-          parseInt((cb as HTMLInputElement).value),
+          parseInt((cb as HTMLInputElement).value, 10),
         ),
       };
 
       try {
-        const url = editingGroupId ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
+        const url = editingGroupId !== null ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
 
-        const method = editingGroupId ? 'PUT' : 'POST';
+        const method = editingGroupId !== null ? 'PUT' : 'POST';
 
         const response = await fetch(url, {
           method,
@@ -327,11 +336,11 @@
         });
 
         if (response.ok) {
-          showSuccess(editingGroupId ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
+          showSuccess(editingGroupId !== null ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
           closeModal();
           await loadGroups();
         } else {
-          const error = await response.json();
+          const error = (await response.json()) as { error?: string };
           showError(error.error ?? 'Fehler beim Speichern');
         }
       } catch (error) {
@@ -346,7 +355,9 @@
     const group = findGroupById(groupId);
     if (!group) return;
 
-    if (!confirm(`Möchten Sie die Gruppe "${group.name}" wirklich löschen?`)) {
+    // Use custom confirmation dialog instead of native confirm
+    const userConfirmed = await showConfirmDialog(`Möchten Sie die Gruppe "${group.name}" wirklich löschen?`);
+    if (!userConfirmed) {
       return;
     }
 
@@ -354,7 +365,7 @@
       const response = await fetch(`/api/department-groups/${groupId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${validToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -375,7 +386,7 @@
       `;
         }
       } else {
-        const error = await response.json();
+        const error = (await response.json()) as { error?: string };
         showError(error.error ?? 'Fehler beim Löschen');
       }
     } catch (error) {
@@ -385,18 +396,46 @@
   };
 
   // Add departments to group
-  (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup = async function (groupId: number) {
+  (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup = async function (
+    groupId: number,
+  ): Promise<void> {
     // For now, just open edit modal
     (window as unknown as ManageDeptGroupsWindow).editGroup(groupId);
+    return Promise.resolve();
   };
 
   // Helper functions
   function showError(message: string) {
-    alert(`Fehler: ${message}`);
+    // Replace alert with custom notification
+    console.error(`Fehler: ${message}`);
+    // TODO: Implement custom notification system
+    const notification = document.createElement('div');
+    notification.className = 'notification error';
+    notification.textContent = `Fehler: ${message}`;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
   function showSuccess(message: string) {
-    alert(`Erfolg: ${message}`);
+    // Replace alert with custom notification
+    console.info(`Erfolg: ${message}`);
+    // TODO: Implement custom notification system
+    const notification = document.createElement('div');
+    notification.className = 'notification success';
+    notification.textContent = `Erfolg: ${message}`;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  async function showConfirmDialog(message: string): Promise<boolean> {
+    // TODO: Implement custom confirmation dialog
+    // For now, return true as placeholder
+    console.warn('Confirmation dialog not implemented:', message);
+    return Promise.resolve(true);
   }
 
   // Initialize

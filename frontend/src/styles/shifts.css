@@ -4,35 +4,41 @@
 .content-tabs {
   display: flex;
   gap: 0;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 4px;
+
   margin-bottom: 2rem;
+  padding: 4px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 10%);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tab-btn {
+  cursor: pointer;
+
   flex: 1;
+
   padding: 12px 20px;
-  background: transparent;
   border: none;
   border-radius: 8px;
-  color: var(--text-light);
-  font-weight: 500;
+
   font-size: 14px;
-  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-light);
+
+  background: transparent;
 }
 
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
 }
 
 .tab-btn.active {
-  background: rgba(52, 152, 219, 0.2);
   color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+  background: rgb(52 152 219 / 20%);
+  box-shadow: 0 2px 8px rgb(52 152 219 / 20%);
 }
 
 .tab-content {
@@ -41,6 +47,7 @@
 
 .tab-pane {
   display: none;
+
   /* animation: fadeIn 0.3s ease; */
 }
 
@@ -51,18 +58,19 @@
 /* Section Headers */
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .section-header h3 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: white;
+  color: #fff;
 }
 
 .section-actions {
@@ -74,27 +82,29 @@
 /* Filters */
 .filters {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
 }
 
 .filters select,
 .filters input[type="date"] {
-  padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: white;
-  backdrop-filter: blur(10px);
   min-width: 200px;
+  padding: 10px 15px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+
+  color: #fff;
+
+  background: rgb(255 255 255 / 10%);
+  backdrop-filter: blur(10px);
 }
 
 .filters select:focus,
 .filters input[type="date"]:focus {
-  outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
 }
 
 /* Overview Grid */
@@ -105,24 +115,25 @@
 }
 
 .overview-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
   padding: 2rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 16px;
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
 }
 
 .overview-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .overview-card h3 {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1.5rem;
   font-size: 1.25rem;
   font-weight: 600;
-  color: white;
+  color: #fff;
 }
 
 /* Plans Grid */
@@ -133,61 +144,64 @@
 }
 
 .plan-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.5rem;
   cursor: pointer;
+
+  padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 16px;
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
 }
 
 .plan-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .plan-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 1rem;
 }
 
 .plan-card-title {
+  margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: white;
-  margin: 0;
+  color: #fff;
 }
 
 .plan-status {
   padding: 4px 12px;
   border-radius: 20px;
+
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
 }
 
 .plan-status.draft {
-  background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
+  background: rgb(255 193 7 / 20%);
 }
 
 .plan-status.published {
-  background: rgba(40, 167, 69, 0.2);
   color: #28a745;
+  background: rgb(40 167 69 / 20%);
 }
 
 .plan-status.archived {
-  background: rgba(108, 117, 125, 0.2);
   color: #6c757d;
+  background: rgb(108 117 125 / 20%);
 }
 
 .plan-card-meta {
-  color: var(--text-light);
-  font-size: 14px;
   margin-bottom: 1rem;
+  font-size: 14px;
+  color: var(--text-light);
 }
 
 .plan-card-actions {
@@ -197,19 +211,23 @@
 }
 
 .plan-card-actions button {
-  flex: 1;
-  padding: 8px 12px;
-  background: rgba(52, 152, 219, 0.2);
-  border: 1px solid rgba(52, 152, 219, 0.3);
-  border-radius: 6px;
-  color: var(--primary-color);
-  font-size: 12px;
   cursor: pointer;
+
+  flex: 1;
+
+  padding: 8px 12px;
+  border: 1px solid rgb(52 152 219 / 30%);
+  border-radius: 6px;
+
+  font-size: 12px;
+  color: var(--primary-color);
+
+  background: rgb(52 152 219 / 20%);
 }
 
 .plan-card-actions button:hover {
-  background: rgba(52, 152, 219, 0.3);
   border-color: var(--primary-color);
+  background: rgb(52 152 219 / 30%);
 }
 
 /* Templates Grid */
@@ -220,47 +238,50 @@
 }
 
 .template-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.5rem;
   position: relative;
+
+  padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 16px;
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
 }
 
 .template-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .template-color-indicator {
   position: absolute;
   top: 1rem;
   right: 1rem;
+
   width: 20px;
   height: 20px;
+  border: 2px solid rgb(255 255 255 / 30%);
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .template-card-title {
+  margin: 0 0 0.5rem;
   font-size: 1.1rem;
   font-weight: 600;
-  color: white;
-  margin: 0 0 0.5rem 0;
+  color: #fff;
 }
 
 .template-time {
-  color: var(--text-light);
-  font-size: 14px;
   margin-bottom: 0.5rem;
+  font-size: 14px;
+  color: var(--text-light);
 }
 
 .template-duration {
-  color: var(--primary-color);
-  font-weight: 500;
   font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-color);
 }
 
 /* Shift List */
@@ -271,24 +292,26 @@
 }
 
 .shift-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
+  padding: 1rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 5%);
 }
 
 .shift-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .shift-item-left {
   display: flex;
-  align-items: center;
   gap: 1rem;
+  align-items: center;
 }
 
 .shift-time-indicator {
@@ -299,15 +322,15 @@
 }
 
 .shift-item-info h4 {
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.25rem;
   font-size: 1rem;
   font-weight: 500;
-  color: white;
+  color: #fff;
 }
 
 .shift-item-meta {
-  color: var(--text-light);
   font-size: 14px;
+  color: var(--text-light);
 }
 
 .shift-item-right {
@@ -315,22 +338,24 @@
 }
 
 .shift-status {
+  display: inline-block;
+
+  margin-bottom: 0.25rem;
   padding: 4px 8px;
   border-radius: 12px;
+
   font-size: 12px;
   font-weight: 500;
-  margin-bottom: 0.25rem;
-  display: inline-block;
 }
 
 .shift-status.assigned {
-  background: rgba(40, 167, 69, 0.2);
   color: #28a745;
+  background: rgb(40 167 69 / 20%);
 }
 
 .shift-status.pending {
-  background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
+  background: rgb(255 193 7 / 20%);
 }
 
 /* Availability Grid */
@@ -342,38 +367,41 @@
 }
 
 .availability-day {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1rem;
-  text-align: center;
   cursor: pointer;
+
+  padding: 1rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  text-align: center;
+
+  background: rgb(255 255 255 / 5%);
 }
 
 .availability-day:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .availability-day.available {
-  border-color: rgba(40, 167, 69, 0.5);
-  background: rgba(40, 167, 69, 0.1);
+  border-color: rgb(40 167 69 / 50%);
+  background: rgb(40 167 69 / 10%);
 }
 
 .availability-day.unavailable {
-  border-color: rgba(220, 53, 69, 0.5);
-  background: rgba(220, 53, 69, 0.1);
+  border-color: rgb(220 53 69 / 50%);
+  background: rgb(220 53 69 / 10%);
 }
 
 .availability-day-name {
-  font-weight: 600;
-  color: white;
   margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #fff;
 }
 
 .availability-day-date {
-  color: var(--text-light);
   font-size: 14px;
+  color: var(--text-light);
 }
 
 /* Exchange Grid */
@@ -384,45 +412,46 @@
 }
 
 .exchange-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 5%);
 }
 
 .exchange-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .exchange-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 1rem;
 }
 
 .exchange-type {
   padding: 4px 12px;
   border-radius: 20px;
+
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
 }
 
 .exchange-type.give_away {
-  background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
+  background: rgb(255 193 7 / 20%);
 }
 
 .exchange-type.swap {
-  background: rgba(52, 152, 219, 0.2);
   color: var(--primary-color);
+  background: rgb(52 152 219 / 20%);
 }
 
 .exchange-details {
-  color: var(--text-light);
   line-height: 1.5;
+  color: var(--text-light);
 }
 
 .exchange-actions {
@@ -432,32 +461,34 @@
 }
 
 .exchange-actions button {
+  cursor: pointer;
+
   padding: 8px 16px;
+  border: none;
   border-radius: 6px;
+
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  border: none;
 }
 
 .btn-accept {
-  background: rgba(40, 167, 69, 0.2);
+  border: 1px solid rgb(40 167 69 / 30%);
   color: #28a745;
-  border: 1px solid rgba(40, 167, 69, 0.3);
+  background: rgb(40 167 69 / 20%);
 }
 
 .btn-accept:hover {
-  background: rgba(40, 167, 69, 0.3);
+  background: rgb(40 167 69 / 30%);
 }
 
 .btn-decline {
-  background: rgba(220, 53, 69, 0.2);
+  border: 1px solid rgb(220 53 69 / 30%);
   color: #dc3545;
-  border: 1px solid rgba(220, 53, 69, 0.3);
+  background: rgb(220 53 69 / 20%);
 }
 
 .btn-decline:hover {
-  background: rgba(220, 53, 69, 0.3);
+  background: rgb(220 53 69 / 30%);
 }
 
 /* Assignments Grid */
@@ -468,70 +499,75 @@
 }
 
 .assignment-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   padding: 1rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 5%);
 }
 
 .assignment-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
 }
 
 .assignment-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 0.5rem;
 }
 
 .assignment-time {
   font-weight: 600;
-  color: white;
+  color: #fff;
 }
 
 .assignment-employee {
-  color: var(--text-light);
   font-size: 14px;
+  color: var(--text-light);
 }
 
 /* Calendar Grid */
 .calendar-grid {
+  overflow: hidden;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 1px;
-  background: rgba(255, 255, 255, 0.1);
+
   border-radius: 8px;
-  overflow: hidden;
+
+  background: rgb(255 255 255 / 10%);
 }
 
 .calendar-day {
-  background: rgba(30, 39, 46, 0.8);
-  padding: 1rem;
-  min-height: 120px;
+  cursor: pointer;
+
   display: flex;
   flex-direction: column;
-  cursor: pointer;
+
+  min-height: 120px;
+  padding: 1rem;
+
+  background: rgb(30 39 46 / 80%);
 }
 
 .calendar-day:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
 }
 
 .calendar-day-number {
-  font-weight: 600;
-  color: white;
   margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #fff;
 }
 
 .calendar-day.other-month {
-  opacity: 0.5;
+  opacity: 50%;
 }
 
 .calendar-day.today {
-  background: rgba(52, 152, 219, 0.2);
   border: 1px solid var(--primary-color);
+  background: rgb(52 152 219 / 20%);
 }
 
 /* Loading States */
@@ -539,19 +575,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
   min-height: 200px;
-  color: var(--text-light);
+
   font-size: 14px;
+  color: var(--text-light);
 }
 
 /* Animation */
 /* @keyframes fadeIn {
   from {
-    opacity: 0;
+    opacity: 0%;
     transform: translateY(10px);
   }
   to {
-    opacity: 1;
+    opacity: 100%;
     transform: translateY(0);
   }
 } */
@@ -571,7 +609,7 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: white;
+  color: #fff;
 }
 
 .form-group input[type="text"],
@@ -583,12 +621,14 @@
 .form-group select {
   width: 100%;
   padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 8px;
-  color: white;
-  backdrop-filter: blur(10px);
+
   font-family: inherit;
+  color: #fff;
+
+  background: rgb(255 255 255 / 10%);
+  backdrop-filter: blur(10px);
 }
 
 .form-group textarea {
@@ -597,79 +637,91 @@
 }
 
 .form-group input[type="color"] {
+  cursor: pointer;
   height: 45px;
   padding: 5px;
-  cursor: pointer;
 }
 
 .form-group input:focus {
-  outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
 }
 
 /* Modal Styles */
 .modal {
-  display: none;
   position: fixed;
   z-index: 1000;
-  left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
+  left: 0;
+
+  display: none;
   align-items: center;
   justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  background-color: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(5px);
 }
 
 .modal-content {
-  background: rgba(30, 39, 46, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 0;
+  position: relative;
+
+  overflow-y: auto;
+
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 16px;
+
+  background: rgb(30 39 46 / 95%);
+  backdrop-filter: blur(20px);
+
   /* animation: modalSlideIn 0.3s ease; */
 }
 
 .modal-header {
-  padding: 2rem 2rem 1rem 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
+  padding: 2rem 2rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .modal-header h3 {
   margin: 0;
-  color: white;
   font-size: 1.5rem;
   font-weight: 600;
+  color: #fff;
 }
 
 .modal-close {
-  background: none;
-  border: none;
-  color: var(--text-light);
-  font-size: 2rem;
   cursor: pointer;
-  padding: 0;
-  width: 40px;
-  height: 40px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
   border-radius: 50%;
+
+  font-size: 2rem;
+  color: var(--text-light);
+
+  background: none;
 }
 
 .modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
 }
 
 .modal form {
@@ -679,122 +731,126 @@
 .modal-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 2rem;
   justify-content: flex-end;
+  margin-top: 2rem;
 }
 
 .modal-actions button {
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 500;
   cursor: pointer;
+
+  padding: 12px 24px;
   border: none;
+  border-radius: 8px;
+
+  font-weight: 500;
 }
 
 .btn-primary {
+  color: #fff;
   background: var(--primary-color);
-  color: white;
 }
 
 .btn-primary:hover {
-  background: #2980b9;
   transform: translateY(-1px);
+  background: #2980b9;
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 20%);
   color: var(--text-light);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 10%);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  color: #fff;
+  background: rgb(255 255 255 / 20%);
 }
 
 /* @keyframes modalSlideIn {
   from {
-    opacity: 0;
+    opacity: 0%;
     transform: scale(0.9) translateY(-20px);
   }
   to {
-    opacity: 1;
+    opacity: 100%;
     transform: scale(1) translateY(0);
   }
 } */
 
 /* Employee Availability Status Styles */
 .employee-item.unavailable {
-  opacity: 0.7;
   cursor: not-allowed;
+  opacity: 70%;
 }
 
 .employee-item.status-vacation {
-  background: rgba(255, 193, 7, 0.1);
   border-left: 3px solid #ffc107;
+  background: rgb(255 193 7 / 10%);
 }
 
 .employee-item.status-sick {
-  background: rgba(220, 53, 69, 0.1);
   border-left: 3px solid #dc3545;
+  background: rgb(220 53 69 / 10%);
 }
 
 .employee-item.status-unavailable {
-  background: rgba(108, 117, 125, 0.1);
   border-left: 3px solid #6c757d;
+  background: rgb(108 117 125 / 10%);
 }
 
 /* Employee info container for name and badge */
 .employee-info {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 6px;
-  flex: 1;
 }
 
 .employee-info .employee-name {
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 14px;
 }
 
 /* Status badge styles within employee items */
 .employee-info .badge {
   display: inline-flex;
   align-items: center;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
+
   width: fit-content;
   margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Adjust badge colors for better visibility in employee list */
 .employee-info .badge-success {
-  color: rgba(76, 175, 80, 0.95);
-  background: rgba(76, 175, 80, 0.15);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  border: 1px solid rgb(76 175 80 / 30%);
+  color: rgb(76 175 80 / 95%);
+  background: rgb(76 175 80 / 15%);
 }
 
 .employee-info .badge-warning {
-  color: rgba(255, 193, 7, 0.95);
-  background: rgba(255, 193, 7, 0.15);
-  border: 1px solid rgba(255, 193, 7, 0.3);
+  border: 1px solid rgb(255 193 7 / 30%);
+  color: rgb(255 193 7 / 95%);
+  background: rgb(255 193 7 / 15%);
 }
 
 .employee-info .badge-danger {
-  color: rgba(220, 53, 69, 0.95);
-  background: rgba(220, 53, 69, 0.15);
-  border: 1px solid rgba(220, 53, 69, 0.3);
+  border: 1px solid rgb(220 53 69 / 30%);
+  color: rgb(220 53 69 / 95%);
+  background: rgb(220 53 69 / 15%);
 }
 
 .employee-info .badge-secondary {
-  color: rgba(108, 117, 125, 0.95);
-  background: rgba(108, 117, 125, 0.15);
-  border: 1px solid rgba(108, 117, 125, 0.3);
+  border: 1px solid rgb(108 117 125 / 30%);
+  color: rgb(108 117 125 / 95%);
+  background: rgb(108 117 125 / 15%);
 }
 
 /* Status icon positioning */
@@ -823,6 +879,7 @@
 /* Prevent dragging unavailable employees */
 .employee-item[draggable="false"] {
   user-select: none;
+
   -webkit-user-drag: none;
 }
 
@@ -831,7 +888,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .content-tabs {
     flex-wrap: wrap;
     gap: 4px;
@@ -839,8 +896,8 @@
 
   .tab-btn {
     flex: 1 1 calc(50% - 2px);
-    font-size: 12px;
     padding: 10px 8px;
+    font-size: 12px;
   }
 
   .overview-grid {
@@ -884,10 +941,10 @@
 }
 
 .shift-detail-modal h3 {
-  color: var(--primary-color);
   margin-bottom: var(--spacing-lg);
   font-size: 20px;
   font-weight: 600;
+  color: var(--primary-color);
 }
 
 .shift-detail-info {
@@ -899,16 +956,17 @@
 
 .detail-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
   padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .detail-label {
+  flex: 0 0 180px;
   font-weight: 500;
   color: var(--text-secondary);
-  flex: 0 0 180px;
 }
 
 .detail-value {
@@ -919,7 +977,7 @@
 
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
   gap: var(--spacing-md);
+  justify-content: flex-end;
   margin-top: var(--spacing-xl);
 }

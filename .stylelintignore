@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build directories
+dist/
+build/
+out/
+coverage/
+.next/
+.nuxt/
+
+# Vendor and third-party styles
+**/vendor/**
+**/lib/**
+**/*.min.css
+**/*.min.scss
+
+# Generated files
+*.generated.css
+*.generated.scss
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache
+.cache/
+.stylelintcache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+docker/volumes/
+
+# Backup files
+*.bak
+*.backup
+
+# Test files
+**/__tests__/**
+**/*.test.css
+**/*.spec.css
+
+# Documentation
+docs/**/*.css
+docs/**/*.scss
+
+# Migration files
+migrations/**/*.css
+migrations/**/*.scss
+
+# Archives
+*.zip
+*.tar
+*.gz

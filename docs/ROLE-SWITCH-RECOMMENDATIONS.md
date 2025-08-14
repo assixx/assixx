@@ -60,7 +60,7 @@ private showRoleSwitchIndicator(): void {
 
 .role-switch-warning button {
   background: #333;
-  color: white;
+  color: #fff;
   border: none;
   padding: 5px 15px;
   border-radius: 20px;

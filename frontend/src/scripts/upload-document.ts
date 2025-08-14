@@ -6,6 +6,7 @@
 import type { User } from '../types/api.types';
 
 import { getAuthToken } from './auth';
+import notificationService from './services/notification.service';
 
 interface UploadFormElements extends HTMLFormControlsCollection {
   userId: HTMLSelectElement;
@@ -113,21 +114,21 @@ async function uploadDocument(e: Event): Promise<void> {
   const token = getAuthToken();
 
   if (token === null || token === '') {
-    alert('Bitte melden Sie sich erneut an');
+    notificationService.error('Authentifizierung erforderlich', 'Bitte melden Sie sich erneut an');
     return;
   }
 
   // Check critical fields
   const userId = formData.get('userId') as string;
-  const file = formData.get('document') as File;
+  const file = formData.get('document') as File | null;
 
-  if (!userId) {
-    alert('Bitte wählen Sie einen Mitarbeiter aus');
+  if (userId === '') {
+    notificationService.error('Fehler', 'Bitte wählen Sie einen Mitarbeiter aus');
     return;
   }
 
-  if (!file || file.size === 0) {
-    alert('Bitte wählen Sie eine Datei aus');
+  if (file === null || file.size === 0) {
+    notificationService.error('Fehler', 'Bitte wählen Sie eine Datei aus');
     return;
   }
 
@@ -149,7 +150,7 @@ async function uploadDocument(e: Event): Promise<void> {
 
   try {
     console.info('Sending upload request');
-    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
     const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents';
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -159,7 +160,7 @@ async function uploadDocument(e: Event): Promise<void> {
       body: formData,
     });
 
-    const result = await response.json();
+    const result = (await response.json()) as { message?: string; error?: string };
 
     if (response.ok) {
       console.info('Upload successful:', result);
@@ -174,8 +175,8 @@ async function uploadDocument(e: Event): Promise<void> {
       form.reset();
 
       // Reset file name display
-      const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement;
-      if (fileNameSpan) {
+      const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement | null;
+      if (fileNameSpan !== null) {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
       }
 

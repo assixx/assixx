@@ -261,7 +261,7 @@ const createTenantRateLimiter = (
               right: 0;
               bottom: 0;
               background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
-              opacity: 0.9;
+              opacity: 0%.9;
               z-index: -1;
             }
 
@@ -291,8 +291,8 @@ const createTenantRateLimiter = (
             }
 
             @keyframes fadeInUp {
-              from { opacity: 0; transform: translateY(30px); }
-              to { opacity: 1; transform: translateY(0); }
+              from { opacity: 0%; transform: translateY(30px); }
+              to { opacity: 100%; transform: translateY(0); }
             }
 
             .icon {
@@ -303,8 +303,8 @@ const createTenantRateLimiter = (
             }
 
             @keyframes pulse {
-              0%, 100% { transform: scale(1); opacity: 1; }
-              50% { transform: scale(1.1); opacity: 0.8; }
+              0%, 100% { transform: scale(1); opacity: 100%; }
+              50% { transform: scale(1.1); opacity: 0%.8; }
             }
 
             h1 {
@@ -345,7 +345,7 @@ const createTenantRateLimiter = (
               display: inline-block;
               padding: var(--spacing-md) var(--spacing-xl);
               background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-              color: white;
+              color: #fff;
               text-decoration: none;
               border-radius: 8px;
               font-weight: 500;
@@ -474,8 +474,7 @@ export const suspiciousActivityLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     // Skip for authenticated users with valid sessions
-    const authReq = req as AuthenticatedRequest;
-    return authReq.headers.authorization != null || authReq.user != null;
+    return req.headers.authorization !== undefined || "user" in req;
   },
 });
 
@@ -495,12 +494,17 @@ export const validateTenantContext = (
   res: Response,
   next: NextFunction,
 ): void => {
-  const authReq = req as AuthenticatedRequest;
-  if (authReq.user != null && authReq.tenant != null) {
+  if ("user" in req && "tenant" in req) {
+    const authReq = req as AuthenticatedRequest;
     const userTenant = authReq.user.tenant_id;
-    const requestTenant = authReq.tenant.id;
+    const requestTenant = authReq.tenant?.id;
 
-    if (userTenant && requestTenant && userTenant !== requestTenant) {
+    if (
+      userTenant !== 0 &&
+      requestTenant !== undefined &&
+      requestTenant !== 0 &&
+      userTenant !== requestTenant
+    ) {
       console.error("Tenant access violation:", {
         user: authReq.user.id,
         userTenant,
@@ -571,7 +575,10 @@ export const auditLogger =
       const auditEntry: AuditEntry = {
         timestamp: new Date().toISOString(),
         tenant_id: authReq.tenant?.id ?? "public",
-        userId: authReq.user?.id ? authReq.user.id.toString() : "anonymous",
+        userId:
+          "user" in authReq && authReq.user.id
+            ? authReq.user.id.toString()
+            : "anonymous",
         action,
         resource,
         method: authReq.method,

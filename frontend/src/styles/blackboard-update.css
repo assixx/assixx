@@ -9,25 +9,28 @@
 .modal {
   position: fixed;
   z-index: 1000;
-  left: 0;
   top: 0;
+  left: 0;
+
+  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  opacity: 0;
-  visibility: hidden;
-  overflow-y: auto;
   padding: 40px 20px;
+
+  visibility: hidden;
+  opacity: 0%;
+  background-color: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .modal.active {
-  opacity: 1;
   visibility: visible;
+  opacity: 100%;
 }
 
 /* Form Controls gemäß Design Standards */
@@ -36,25 +39,27 @@
 .big-input {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-sm);
-  color: #fff;
-  font-size: 14px;
+
   font-family: inherit;
+  font-size: 14px;
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .form-control:focus,
 .form-input:focus,
 .big-input:focus {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(33, 150, 243, 0.5);
-  box-shadow:
-    0 0 0 3px rgba(33, 150, 243, 0.15),
-    inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(255 255 255 / 5%);
   outline: none;
+  box-shadow:
+    0 0 0 3px rgb(33 150 243 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 20%);
 }
 
 /* Native Select verstecken */
@@ -70,23 +75,27 @@ select.form-control {
 }
 
 .dropdown-display {
+  cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-sm);
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
+
   height: 42px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
 }
 
 .dropdown-display:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
 }
 
 .dropdown-display.active svg {
@@ -95,37 +104,42 @@ select.form-control {
 
 .dropdown-options {
   position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: rgba(18, 18, 18, 0.95);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-sm);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
   z-index: 1001;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  overflow-y: auto;
+
+  max-height: 200px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 95%);
+  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .dropdown-options.active {
-  opacity: 1;
-  visibility: visible;
   transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
 }
 
 .dropdown-option {
-  padding: 10px 12px;
-  color: var(--text-primary);
   cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  padding: 10px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
   font-size: 14px;
+  color: var(--text-primary);
 }
 
 .dropdown-option:last-child {
@@ -136,26 +150,33 @@ select.form-control {
 .form-label,
 .big-label {
   display: block;
+
   margin-bottom: var(--spacing-xs);
+
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
-  font-size: 14px;
 }
 
 /* Buttons gemäß Design Standards */
 .btn-primary,
 .primary-button,
 .big-button.primary-button {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
   cursor: pointer;
+
   position: relative;
+
   overflow: hidden;
+
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+
   font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
 .btn-primary:hover,
@@ -163,30 +184,33 @@ select.form-control {
 .big-button.primary-button:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 6px 20px rgba(33, 150, 243, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 6px 20px rgb(33 150 243 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 
 .btn-secondary,
 .secondary-button,
 .big-button.secondary-button {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--primary-color);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(5px);
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
   cursor: pointer;
+
+  padding: 10px 24px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--radius-sm);
+
   font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-color);
+
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
 }
 
 .btn-secondary:hover,
 .secondary-button:hover,
 .big-button.secondary-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--primary-color);
   transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
 }
 
 /* Color Picker Update */
@@ -197,30 +221,34 @@ select.form-control {
 }
 
 .color-option {
+  cursor: pointer;
+
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 4px;
-  padding: var(--spacing-2sm);
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: #000;
-  font-size: 12px;
+  align-items: center;
+
   min-height: 60px;
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-sm);
+
+  font-size: 12px;
+  color: #000;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(10px);
 }
 
 .color-option:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
 }
 
 .color-option.active {
   border-color: var(--primary-color);
-  background: rgba(33, 150, 243, 0.1);
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 0 0 2px rgb(33 150 243 / 30%);
 }
 
 .color-option span {
@@ -230,114 +258,124 @@ select.form-control {
 /* Checkbox Update */
 .simple-checkbox {
   display: flex;
-  align-items: flex-start;
   gap: var(--spacing-sm);
+  align-items: flex-start;
 }
 
 .simple-checkbox input[type="checkbox"] {
+  cursor: pointer;
+
   width: 18px;
   height: 18px;
   margin-top: 2px;
-  cursor: pointer;
+
   accent-color: var(--primary-color);
 }
 
 .simple-checkbox label {
-  font-size: 14px;
-  color: var(--text-primary);
   cursor: pointer;
+  font-size: 14px;
   line-height: 1.5;
+  color: var(--text-primary);
 }
 
 /* Attachment Upload Zone Update */
 .attachment-upload-zone {
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-xl);
-  text-align: center;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.01);
+
+  padding: var(--spacing-xl);
+  border: 2px dashed rgb(255 255 255 / 20%);
+  border-radius: var(--radius-sm);
+
+  text-align: center;
+
+  background: rgb(255 255 255 / 1%);
   backdrop-filter: blur(5px);
 }
 
 .attachment-upload-zone:hover {
-  border-color: rgba(33, 150, 243, 0.5);
-  background: rgba(33, 150, 243, 0.05);
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 5%);
 }
 
 .attachment-upload-zone.drag-active {
-  border-color: var(--primary-color);
-  background: rgba(33, 150, 243, 0.1);
   transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.2);
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 4px 20px rgb(33 150 243 / 20%);
 }
 
 .upload-icon {
-  font-size: 48px;
-  color: rgba(255, 255, 255, 0.4);
   margin-bottom: var(--spacing-md);
+  font-size: 48px;
+  color: rgb(255 255 255 / 40%);
 }
 
 .upload-text {
-  font-size: 16px;
-  color: var(--text-primary);
   margin-bottom: var(--spacing-xs);
+  font-size: 16px;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .upload-hint {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgb(255 255 255 / 60%);
 }
 
 /* Modal Content - Breiter und mit Scroll */
 .modal-content,
 #entryFormModal .modal-content {
-  background: #1a1a1a4a;
-  backdrop-filter: blur(20px) saturate(500%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-md);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  /* animation: fadeInUp 0.3s ease-out; */
+  display: flex;
+  flex-direction: column;
+
   width: 95%;
   max-width: 1200px;
   max-height: calc(100vh - 80px);
   margin: 40px auto;
-  /* animation: fadeInUp 0.3s ease-out; */
-  display: flex;
-  flex-direction: column;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  background: #1a1a1a4a;
+  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(500%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 /* Modal Header - Fixed */
 .modal-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 /* Modal Body/Form - Scrollable */
 #entryFormModal form {
-  padding: var(--spacing-lg);
   overflow-y: auto;
   flex: 1;
   max-height: calc(100vh - 250px);
+  padding: var(--spacing-lg);
 }
 
 /* Button Group - Fixed at bottom */
 .button-group {
   display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
   flex-shrink: 0;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+
+  background: rgb(0 0 0 / 20%);
+  backdrop-filter: blur(10px);
 }
 
 /* Custom Scrollbar */
@@ -346,49 +384,52 @@ select.form-control {
 }
 
 #entryFormModal form::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
   border-radius: 5px;
+  background: rgb(255 255 255 / 2%);
 }
 
 #entryFormModal form::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
   border: 2px solid transparent;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 10%);
   background-clip: padding-box;
 }
 
 #entryFormModal form::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 20%);
 }
 
 /* Firefox Scrollbar */
 #entryFormModal form {
+  scrollbar-color: rgb(255 255 255 / 10%) rgb(255 255 255 / 2%);
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.02);
 }
 
 /* Modal Footer Update */
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
   gap: var(--spacing-md);
+  justify-content: flex-end;
+
   padding: 0 var(--spacing-lg) var(--spacing-lg);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: var(--spacing-lg);
+  border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
 /* Form Hints */
 .simple-hint,
 .form-hint {
   display: block;
+
   margin-top: var(--spacing-xs);
+
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
   font-style: italic;
+  color: rgb(255 255 255 / 60%);
 }
 
 /* 2-Spalten Layout für breites Modal */
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
   #entryFormModal form {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -411,7 +452,7 @@ select.form-control {
 }
 
 /* Responsive */
-@media (max-width: 1023px) {
+@media (width <= 1023px) {
   .modal-content,
   #entryFormModal .modal-content {
     width: 95%;
@@ -419,7 +460,7 @@ select.form-control {
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .modal-content,
   #entryFormModal .modal-content {
     width: 95%;

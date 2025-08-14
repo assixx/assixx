@@ -205,16 +205,16 @@ export class TenantDeletionService {
 
             // Archiviere alle Rechnungen (wenn vorhanden)
             const result = await conn.query(
-              `INSERT INTO archived_tenant_invoices 
+              `INSERT INTO archived_tenant_invoices
                (original_tenant_id, tenant_name, tenant_tax_id, invoice_data, invoice_number, invoice_date, invoice_amount, delete_after)
-               SELECT 
-                 ?, ?, ?, 
+               SELECT
+                 ?, ?, ?,
                  JSON_OBJECT('invoice_id', id, 'data', invoice_data),
                  invoice_number,
                  invoice_date,
                  amount,
                  DATE_ADD(NOW(), INTERVAL 10 YEAR)
-               FROM invoices 
+               FROM invoices
                WHERE tenant_id = ?`,
               [
                 tenantId,
@@ -1828,9 +1828,9 @@ export class TenantDeletionService {
             : 24;
 
       const [result] = await connection.query<ResultSetHeader>(
-        `INSERT INTO tenant_deletion_queue 
-         (tenant_id, created_by, total_steps, grace_period_days, scheduled_deletion_date, 
-          status, approval_status, approval_required, approval_requested_at, cooling_off_hours) 
+        `INSERT INTO tenant_deletion_queue
+         (tenant_id, created_by, total_steps, grace_period_days, scheduled_deletion_date,
+          status, approval_status, approval_required, approval_requested_at, cooling_off_hours)
          VALUES (?, ?, ?, ?, ?, 'pending_approval', 'pending', TRUE, NOW(), ?)`,
         [
           tenantId,
@@ -1920,8 +1920,8 @@ export class TenantDeletionService {
 
       // Update queue status to approved and queued
       await connection.query(
-        `UPDATE tenant_deletion_queue 
-         SET second_approver_id = ?, approved_at = NOW(), 
+        `UPDATE tenant_deletion_queue
+         SET second_approver_id = ?, approved_at = NOW(),
              approval_status = 'approved', status = 'queued'
          WHERE id = ?`,
         [approverId, queueId],
@@ -1929,8 +1929,8 @@ export class TenantDeletionService {
 
       // Log approval
       await connection.query(
-        `INSERT INTO tenant_deletion_approvals 
-         (queue_id, approver_id, action, comment, created_at) 
+        `INSERT INTO tenant_deletion_approvals
+         (queue_id, approver_id, action, comment, created_at)
          VALUES (?, ?, 'approved', ?, NOW())`,
         [queueId, approverId, comment],
       );
@@ -2009,7 +2009,7 @@ export class TenantDeletionService {
 
       // Update queue status to rejected
       await connection.query(
-        `UPDATE tenant_deletion_queue 
+        `UPDATE tenant_deletion_queue
          SET approval_status = 'rejected', status = 'rejected',
              error_message = ?
          WHERE id = ?`,
@@ -2018,8 +2018,8 @@ export class TenantDeletionService {
 
       // Log rejection
       await connection.query(
-        `INSERT INTO tenant_deletion_approvals 
-         (queue_id, approver_id, action, comment, created_at) 
+        `INSERT INTO tenant_deletion_approvals
+         (queue_id, approver_id, action, comment, created_at)
          VALUES (?, ?, 'rejected', ?, NOW())`,
         [queueId, approverId, reason],
       );
@@ -2068,8 +2068,8 @@ export class TenantDeletionService {
     try {
       // Update the queue status
       await execute(
-        `UPDATE tenant_deletion_queue 
-         SET status = 'cancelled', 
+        `UPDATE tenant_deletion_queue
+         SET status = 'cancelled',
              emergency_stop = true,
              emergency_stopped_by = ?,
              emergency_stopped_at = NOW()
@@ -2084,7 +2084,7 @@ export class TenantDeletionService {
         company_name: string;
       }
       const [[queueItem]] = await query<QueueItemWithTenant[]>(
-        `SELECT q.*, t.company_name 
+        `SELECT q.*, t.company_name
          FROM tenant_deletion_queue q
          JOIN tenants t ON t.id = q.tenant_id
          WHERE q.id = ?`,
@@ -2117,12 +2117,12 @@ export class TenantDeletionService {
     try {
       // Get next queued item where grace period has expired and cooling-off is complete
       const [queueItems] = await query<RowDataPacket[]>(
-        `SELECT * FROM tenant_deletion_queue 
-         WHERE status = 'queued' 
+        `SELECT * FROM tenant_deletion_queue
+         WHERE status = 'queued'
          AND approval_status = 'approved'
          AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
          AND (approved_at IS NULL OR DATE_ADD(approved_at, INTERVAL cooling_off_hours HOUR) <= NOW())
-         ORDER BY created_at ASC 
+         ORDER BY created_at ASC
          LIMIT 1`,
       );
 
@@ -2241,8 +2241,8 @@ export class TenantDeletionService {
 
           // Log success
           await execute(
-            `INSERT INTO tenant_deletion_log 
-             (queue_id, step_name, table_name, records_deleted, duration_ms, status) 
+            `INSERT INTO tenant_deletion_log
+             (queue_id, step_name, table_name, records_deleted, duration_ms, status)
              VALUES (?, ?, ?, ?, ?, ?)`,
             [
               queueId,
@@ -2260,8 +2260,8 @@ export class TenantDeletionService {
 
           // Log failure
           await execute(
-            `INSERT INTO tenant_deletion_log 
-             (queue_id, step_name, table_name, duration_ms, status, error_message) 
+            `INSERT INTO tenant_deletion_log
+             (queue_id, step_name, table_name, duration_ms, status, error_message)
              VALUES (?, ?, ?, ?, ?, ?)`,
             [
               queueId,
@@ -2345,7 +2345,7 @@ export class TenantDeletionService {
   ): Promise<void> {
     // Set emergency stop flag
     await execute(
-      `UPDATE tenant_deletion_queue 
+      `UPDATE tenant_deletion_queue
        SET emergency_stop = TRUE, emergency_stopped_at = NOW(), emergency_stopped_by = ?
        WHERE id = ? AND status = 'processing'`,
       [stoppedBy, queueId],
@@ -2353,8 +2353,8 @@ export class TenantDeletionService {
 
     // Log emergency stop
     await execute(
-      `INSERT INTO tenant_deletion_log 
-       (queue_id, step_name, status, error_message) 
+      `INSERT INTO tenant_deletion_log
+       (queue_id, step_name, status, error_message)
        VALUES (?, 'EMERGENCY_STOP', 'triggered', ?)`,
       [queueId, `Emergency stop triggered by user ${stoppedBy}`],
     );
@@ -2392,8 +2392,8 @@ export class TenantDeletionService {
 
     // Update queue status
     await execute(
-      `UPDATE tenant_deletion_queue 
-       SET status = 'emergency_stopped', 
+      `UPDATE tenant_deletion_queue
+       SET status = 'emergency_stopped',
            error_message = 'Emergency stop requested by administrator'
        WHERE id = ?`,
       [queueId],
@@ -2407,8 +2407,8 @@ export class TenantDeletionService {
 
     // Log final status
     await execute(
-      `INSERT INTO tenant_deletion_log 
-       (queue_id, step_name, status, error_message) 
+      `INSERT INTO tenant_deletion_log
+       (queue_id, step_name, status, error_message)
        VALUES (?, 'EMERGENCY_STOP_COMPLETED', 'success', 'Deletion halted and tenant restored to active')`,
       [queueId],
     );
@@ -2439,7 +2439,7 @@ export class TenantDeletionService {
    */
   async getDeletionStatus(tenantId: number): Promise<DeletionStatusRow | null> {
     const [result] = await query<DeletionStatusRow[]>(
-      `SELECT 
+      `SELECT
         q.*,
         t.deletion_status,
         t.deletion_requested_at,
@@ -2503,8 +2503,8 @@ export class TenantDeletionService {
 
       // Log cancellation
       await connection.query(
-        `INSERT INTO tenant_deletion_log 
-         (queue_id, step_name, status, error_message) 
+        `INSERT INTO tenant_deletion_log
+         (queue_id, step_name, status, error_message)
          VALUES (?, ?, ?, ?)`,
         [
           (queueItem as unknown as QueueRow).id,
@@ -2608,8 +2608,8 @@ export class TenantDeletionService {
       const userCount = firstUserResult?.user_count ?? 0;
 
       await connection.query(
-        `INSERT INTO deletion_audit_trail 
-         (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata) 
+        `INSERT INTO deletion_audit_trail
+         (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
@@ -2642,8 +2642,8 @@ export class TenantDeletionService {
         const userCount = (userResults[0]?.user_count as number) ?? 0;
 
         await conn.query(
-          `INSERT INTO deletion_audit_trail 
-           (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata) 
+          `INSERT INTO deletion_audit_trail
+           (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             tenantId,
@@ -2782,8 +2782,8 @@ export class TenantDeletionService {
           <h3>Aktion erforderlich:</h3>
           <p>Als zweiter Root-User müssen Sie diese Löschung genehmigen oder ablehnen.</p>
           <p>
-            <a href="${process.env.APP_URL}/root/deletion-approvals/${queueId}" 
-               style="background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px;">
+            <a href="${process.env.APP_URL}/root/deletion-approvals/${queueId}"
+               style="background: #dc3545; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px;">
               Zur Genehmigung
             </a>
           </p>
@@ -2827,7 +2827,7 @@ export class TenantDeletionService {
     const statusText =
       status === "approved"
         ? `<p style="color: green;"><strong>✅ Genehmigt von ${approver.username}</strong></p>`
-        : `<p style="color: red;"><strong>❌ Abgelehnt von ${approver.username}</strong></p>`;
+        : `<p style="color: #f00;"><strong>❌ Abgelehnt von ${approver.username}</strong></p>`;
 
     await emailService.sendEmail({
       to: requester.email,
@@ -2857,7 +2857,7 @@ export class TenantDeletionService {
       'SELECT * FROM users WHERE role = "root" AND id != ?',
       [deletedBy]
     );
-    
+
     interface UsernameRow extends RowDataPacket {
       username: string;
     }
@@ -2865,7 +2865,7 @@ export class TenantDeletionService {
       'SELECT username FROM users WHERE id = ?',
       [deletedBy]
     );
-    
+
     for (const root of rootUsers) {
       await emailService.sendEmail({
         to: (root as unknown as DbUser).email,

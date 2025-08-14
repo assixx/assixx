@@ -1,7 +1,7 @@
 /* Assixx Dashboard Theme - Konsistentes Design für alle Dashboards */
 
 /* Import Utility Classes */
-@import url("./utilities.css");
+@import "./utilities.css";
 
 :root {
   /* Farben */
@@ -11,31 +11,28 @@
   --secondary-color: #1b1b1b;
   --background-dark: #121212;
   --background-light: #1e1e1e;
-  --text-primary: #ffffff;
-  --text-secondary: #ffffff;
+  --text-primary: #fff;
+  --text-secondary: #fff;
   --success-color: #4caf50;
   --error-color: #f44336;
   --warning-color: #ff9800;
 
   /* modals */
-  /* background: hsl(var(--default-modal));*/
+  /* background: hsl(var(--default-modal)); */
   --default-modal: 0, 4.3%, 9%, 0.65;
+
   /* border */
-  --border-color: hsl(0, 0%, 23.9%);
+  --border-color: hsl(0deg 0% 23.9%);
   --border-width: 1px;
+
   /* alert modal sizes */
   --alert-modal-max-width: 30rem;
   --alert-modal-min-height: 20rem;
 
   /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
-  --accent-color: rgba(255, 255, 255, 0.1);
-  --accent-gradient: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.15),
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.1)
-  );
-  --accent-glow: rgba(255, 255, 255, 0.6);
+  --accent-color: rgb(255 255 255 / 10%);
+  --accent-gradient: linear-gradient(135deg, rgb(255 255 255 / 15%), rgb(255 255 255 / 5%), rgb(255 255 255 / 10%));
+  --accent-glow: rgb(255 255 255 / 60%);
 
   /* Abstände - rem für zoom-freundlichkeit */
   --spacing-xs: 0.25rem; /* 4px */
@@ -52,9 +49,9 @@
   --radius-lg: 1rem; /* 16px */
 
   /* Schatten */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 4px rgb(0 0 0 / 20%);
+  --shadow-md: 0 4px 8px rgb(0 0 0 / 30%);
+  --shadow-lg: 0 8px 16px rgb(0 0 0 / 40%);
 
   /* Role Colors */
   --admin-color: #ff6b6b;
@@ -84,11 +81,11 @@
   --margin-icon-right: 8px;
 
   /* Glassmorphismus - Zentrale Design-Standards */
-  --glass-bg: rgba(255, 255, 255, 0.02);
-  --glass-bg-hover: rgba(255, 255, 255, 0.03);
-  --glass-bg-active: rgba(255, 255, 255, 0.05);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-  --glass-shadow: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgb(255 255 255 / 2%);
+  --glass-bg-hover: rgb(255 255 255 / 3%);
+  --glass-bg-active: rgb(255 255 255 / 5%);
+  --glass-border: 1px solid rgb(255 255 255 / 10%);
+  --glass-shadow: rgb(0 0 0 / 10%);
 
   /* Glassmorphismus - Komplette Pattern-Definitionen */
   --glass-backdrop: blur(20px) saturate(180%);
@@ -96,22 +93,22 @@
   --glass-backdrop-strong: blur(30px) saturate(200%);
 
   /* Standard Glass Card Pattern (wie stat-card in root-dashboard) */
-  --glass-card-bg: hsla(0, 0%, 100%, 0.02);
-  --glass-card-border: 1px solid hsla(0, 0%, 100%, 0.1);
+  --glass-card-bg: hsl(0deg 0% 100% / 2%);
+  --glass-card-border: 1px solid hsl(0deg 0% 100% / 10%);
   --glass-card-shadow: var(--shadow-sm);
   --glass-card-padding: var(--spacing-lg);
   --glass-card-radius: var(--radius-md);
 
   /* Glass Card Hover States */
-  --glass-card-bg-hover: hsla(0, 0%, 100%, 0.03);
+  --glass-card-bg-hover: hsl(0deg 0% 100% / 3%);
   --glass-card-shadow-hover: var(--shadow-md);
   --glass-card-transform-hover: translateY(-2px);
 
   /* Glass Form Elements Pattern */
-  --glass-form-bg: rgba(255, 255, 255, 0.04);
-  --glass-form-bg-hover: rgba(255, 255, 255, 0.06);
-  --glass-form-bg-focus: rgba(255, 255, 255, 0.08);
-  --glass-form-border: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-form-bg: rgb(255 255 255 / 4%);
+  --glass-form-bg-hover: rgb(255 255 255 / 6%);
+  --glass-form-bg-focus: rgb(255 255 255 / 8%);
+  --glass-form-border: 1px solid rgb(255 255 255 / 12%);
   --glass-form-border-focus: 1px solid var(--primary-color);
   --glass-form-backdrop: blur(5px);
 
@@ -134,7 +131,7 @@
   --danger-color: #e74c3c;
   --info-color: #3498db;
   --text-muted: #b0b0b0;
-  --text-dark: #333333;
+  --text-dark: #333;
   --bg-primary: #1a1a2e;
   --bg-secondary: #16213e;
   --bg-light: #f8f9fa;
@@ -144,7 +141,7 @@
   --radius-round: 50%;
 
   /* Erweiterte Shadows */
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px rgb(0 0 0 / 15%);
 
   /* Transitions (aus variables.css) */
 }
@@ -164,35 +161,40 @@ body {
     Roboto,
     Arial,
     sans-serif;
-  color: var(--text-primary);
-  line-height: 1.6;
   font-size: 0.875rem; /* 14px - rem für zoom scaling */
+  line-height: 1.6;
+  color: var(--text-primary);
 }
 
 /* Header mit Logo */
 .header {
-  padding: 0.5rem 1rem; /* 8px 16px */
-  box-shadow: var(--shadow-sm);
   position: sticky;
-  top: 0;
   z-index: 1000;
+  top: 0;
+
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
   min-height: 3.5rem; /* 56px - min-height statt height für flexibilität */
+  padding: 0.5rem 1rem; /* 8px 16px */
+
+  box-shadow: var(--shadow-sm);
 }
 
 .logo-container {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
   cursor: pointer;
+
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+
   text-decoration: none;
 }
 
 .logo {
-  height: 2.5rem; /* 40px */
   width: auto;
+  height: 2.5rem; /* 40px */
   filter: none;
 }
 
@@ -210,7 +212,7 @@ body {
 
 /* Container */
 .container {
-  /*max-width: 1200px;*/ /* Commented out - width handled by parent containers */
+  /* max-width: 1200px; */ /* Commented out - width handled by parent containers */
   margin: 0 auto;
   padding: var(--spacing-lg);
 }
@@ -225,14 +227,15 @@ body {
 
 /* Cards */
 .card {
-  border-radius: var(--glass-card-radius);
-  padding: var(--glass-card-padding);
   margin-bottom: var(--spacing-lg);
-  box-shadow: var(--glass-card-shadow);
+  padding: var(--glass-card-padding);
   border: var(--glass-card-border);
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: var(--glass-card-radius);
+
   background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--glass-card-shadow);
 }
 
 .card-header {
@@ -250,42 +253,45 @@ body {
 
 /* Buttons */
 .btn {
+  cursor: pointer;
+
+  display: inline-flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+
+  min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
   padding: var(--spacing-sm) var(--spacing-md);
   border: none;
   border-radius: var(--radius-sm);
+
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
 }
 
 .btn-primary {
+  color: #fff;
   background-color: var(--primary-color);
-  color: white;
 }
 
 .btn-primary:hover {
-  /*background-color: var(--primary-dark);*/
+  /* background-color: var(--primary-dark); */
   box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
-  background-color: transparent;
-  color: var(--primary-color);
   border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background-color: transparent;
 }
 
 .btn-secondary:hover {
+  color: #fff;
   background-color: var(--primary-color);
-  color: white;
 }
 
 .btn-danger {
+  color: #fff;
   background-color: var(--error-color);
-  color: white;
 }
 
 .btn-danger:hover {
@@ -293,25 +299,29 @@ body {
 }
 
 .btn-warning {
-  background: rgba(255, 152, 0, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 152, 0, 0.3);
-  color: #ff9800;
   position: relative;
+
   overflow: hidden;
+
+  border: 1px solid rgb(255 152 0 / 30%);
+
+  color: #ff9800;
+
+  background: rgb(255 152 0 / 15%);
+  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .btn-warning:hover {
-  background: rgba(255, 152, 0, 0.25);
-  border-color: rgba(255, 152, 0, 0.5);
-  box-shadow: 0 4px 20px rgba(255, 152, 0, 0.3);
+  border-color: rgb(255 152 0 / 50%);
   color: #ffa726;
+  background: rgb(255 152 0 / 25%);
+  box-shadow: 0 4px 20px rgb(255 152 0 / 30%);
 }
 
 .btn-warning:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(255, 152, 0, 0.2);
+  box-shadow: 0 2px 10px rgb(255 152 0 / 20%);
 }
 
 /* Small button variant */
@@ -328,32 +338,34 @@ body {
 .form-label {
   display: block;
   margin-bottom: var(--spacing-xs);
-  color: var(--text-secondary);
   font-size: 0.8125rem; /* 13px */
+  color: var(--text-secondary);
 }
 
 .form-control {
   width: 100%;
   padding: var(--spacing-2sm);
-  background: var(--glass-form-bg);
-  backdrop-filter: var(--glass-form-backdrop);
-  -webkit-backdrop-filter: var(--glass-form-backdrop);
   border: var(--glass-form-border);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+
   font-size: 0.875rem; /* 14px */
+  color: var(--text-primary);
+
+  background: var(--glass-form-bg);
+  backdrop-filter: var(--glass-form-backdrop);
+  backdrop-filter: var(--glass-form-backdrop);
 }
 
 .form-control:hover {
+  border-color: rgb(255 255 255 / 15%);
   background: var(--glass-form-bg-hover);
-  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .form-control:focus {
-  outline: none;
   border-color: var(--primary-color);
   background: var(--glass-form-bg-focus);
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 15%);
 }
 
 /* Fix für Browser Autofill */
@@ -361,37 +373,40 @@ body {
 .form-control:-webkit-autofill:hover,
 .form-control:-webkit-autofill:focus,
 .form-control:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.04) inset !important;
-  -webkit-text-fill-color: var(--text-primary) !important;
+  box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
   caret-color: var(--text-primary) !important;
+
+  -webkit-text-fill-color: var(--text-primary) !important;
 }
 
 /* Tables */
 .table {
-  width: 100%;
-  border-collapse: collapse;
-  /*background-color: var(--background-light);*/ /* Commented - tables inherit background */
-  border-radius: var(--radius-md);
   overflow: hidden;
+  border-collapse: collapse;
+  width: 100%;
+  border-radius: var(--radius-md);
+
+  /* background-color: var(--background-light); */ /* Commented - tables inherit background */
 }
 
 .table th,
 .table td {
   padding: var(--spacing-2sm);
-  text-align: left;
   border-bottom: 1px solid var(--border-color);
+  text-align: left;
 }
 
 .table th {
-  background-color: var(--background-dark);
+  font-size: 13px;
   font-weight: 600;
   color: var(--primary-color);
-  font-size: 13px;
   text-transform: uppercase;
+
+  background-color: var(--background-dark);
 }
 
 .table tr:hover {
-  background-color: rgba(33, 150, 243, 0.05);
+  background-color: rgb(33 150 243 / 5%);
 }
 
 .table tr:last-child td {
@@ -401,35 +416,37 @@ body {
 /* Status Badges */
 .badge {
   display: inline-block;
+
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
+
   font-size: 12px;
   font-weight: 500;
 }
 
 .badge-success {
+  color: #fff;
   background-color: var(--success-color);
-  color: white;
 }
 
 .badge-warning {
+  color: #fff;
   background-color: var(--warning-color);
-  color: white;
 }
 
 .badge-error {
+  color: #fff;
   background-color: var(--error-color);
-  color: white;
 }
 
 .badge-secondary {
+  color: #fff;
   background-color: #6c757d;
-  color: white;
 }
 
 .table-row-archived {
-  background-color: rgba(108, 117, 125, 0.1);
   color: #6c757d;
+  background-color: rgb(108 117 125 / 10%);
 }
 
 /* Dashboard Grid */
@@ -440,43 +457,45 @@ body {
   margin-bottom: var(--spacing-xl);
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
 }
 
 .stat-card {
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  background: var(--glass-card-bg);
+  padding: var(--glass-card-padding);
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
-  box-shadow: var(--glass-card-shadow);
-  padding: var(--glass-card-padding);
+
   text-align: center;
+
+  background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--glass-card-shadow);
 }
 
 .stat-value {
+  margin-bottom: var(--spacing-xs);
   font-size: 2rem; /* 32px */
   font-weight: 700;
   color: var(--primary-color);
-  margin-bottom: var(--spacing-xs);
 }
 
 .stat-label {
-  color: var(--text-secondary);
   font-size: 0.875rem; /* 14px */
+  color: var(--text-secondary);
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .container {
     padding: var(--spacing-2sm);
   }
@@ -502,11 +521,11 @@ body {
 /* Animations */
 /* @keyframes fadeIn {
   from {
-    opacity: 0;
+    opacity: 0%;
     transform: translateY(10px);
   }
   to {
-    opacity: 1;
+    opacity: 100%;
     transform: translateY(0);
   }
 } */
@@ -515,44 +534,46 @@ body {
 
 /* Glassmorphismus Utility Classes */
 .glass-card {
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  background: var(--glass-card-bg);
+  padding: var(--glass-card-padding);
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
+
+  background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
-  padding: var(--glass-card-padding);
 }
 
 .glass-card:hover {
+  transform: var(--glass-card-transform-hover);
   background: var(--glass-card-bg-hover);
   box-shadow: var(--glass-card-shadow-hover);
-  transform: var(--glass-card-transform-hover);
 }
 
 /* Zusätzliche Glass Patterns */
 .glass-widget {
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  background: var(--glass-card-bg);
+  padding: var(--glass-card-padding);
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
+
+  background: var(--glass-card-bg);
+  backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
-  padding: var(--glass-card-padding);
 }
 
 .glass-form {
-  backdrop-filter: var(--glass-form-backdrop);
-  -webkit-backdrop-filter: var(--glass-form-backdrop);
-  background: var(--glass-form-bg);
   border: var(--glass-form-border);
+  background: var(--glass-form-bg);
+  backdrop-filter: var(--glass-form-backdrop);
+  backdrop-filter: var(--glass-form-backdrop);
 }
 
 .glass-subtle {
-  backdrop-filter: var(--glass-backdrop-subtle);
-  -webkit-backdrop-filter: var(--glass-backdrop-subtle);
-  background: var(--glass-bg);
   border: var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop-subtle);
+  backdrop-filter: var(--glass-backdrop-subtle);
 }
 
 /* Utility Classes */
@@ -563,15 +584,19 @@ body {
 .mt-1 {
   margin-top: var(--spacing-xs);
 }
+
 .mt-2 {
   margin-top: var(--spacing-sm);
 }
+
 .mt-3 {
   margin-top: var(--spacing-md);
 }
+
 .mt-4 {
   margin-top: var(--spacing-lg);
 }
+
 .mt-5 {
   margin-top: var(--spacing-xl);
 }
@@ -579,12 +604,15 @@ body {
 .mb-1 {
   margin-bottom: var(--spacing-xs);
 }
+
 .mb-2 {
   margin-bottom: var(--spacing-sm);
 }
+
 .mb-3 {
   margin-bottom: var(--spacing-md);
 }
+
 /* REDUNDANT - Empty class with no function
 .mb-4 {
   margin-bottom: var(--spacing-lg);
@@ -604,22 +632,26 @@ body {
 }
 
 .flex-center {
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .gap-1 {
   gap: var(--spacing-xs);
 }
+
 .gap-2 {
   gap: var(--spacing-sm);
 }
+
 .gap-3 {
   gap: var(--spacing-md);
 }
+
 .gap-4 {
   gap: var(--spacing-lg);
 }
+
 .gap-5 {
   gap: var(--spacing-xl);
 }
@@ -628,20 +660,24 @@ body {
 .tab-navigation {
   display: flex;
   gap: var(--spacing-xs);
-  border-bottom: 2px solid var(--border-color);
+
   margin-bottom: var(--spacing-md);
   padding: 0 var(--spacing-lg);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .tab-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
-  font-size: 14px;
-  border-bottom: 2px solid transparent;
+
   margin-bottom: -2px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-bottom: 2px solid transparent;
+
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  background: none;
 }
 
 .tab-btn:hover {
@@ -649,8 +685,8 @@ body {
 }
 
 .tab-btn.active {
-  color: var(--primary-color);
   border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .tab-content {
@@ -671,30 +707,32 @@ body {
 }
 
 .compact-card {
-  height: 400px;
   display: flex;
   flex-direction: column;
+  height: 400px;
 }
 
 .compact-content {
-  padding: var(--spacing-lg);
   overflow-y: auto;
   flex-grow: 1;
+  padding: var(--spacing-lg);
 }
 
 .compact-list {
-  list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .compact-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   padding: var(--spacing-2sm);
   border-bottom: 1px solid var(--border-color);
+
   font-size: 13px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .compact-list-item:last-child {
@@ -703,11 +741,13 @@ body {
 
 .view-all-link {
   display: block;
-  text-align: center;
+
   margin-top: var(--spacing-md);
-  color: var(--primary-color);
-  text-decoration: none;
+
   font-weight: 500;
+  color: var(--primary-color);
+  text-align: center;
+  text-decoration: none;
 }
 
 .view-all-link:hover {
@@ -727,15 +767,15 @@ body {
 }
 
 .recent-section h3 {
+  margin-bottom: var(--spacing-md);
   font-size: 16px;
   color: var(--primary-color);
-  margin-bottom: var(--spacing-md);
 }
 
 .recent-list {
-  list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .recent-list li {
@@ -831,9 +871,10 @@ body {
 
 .main-content {
   flex: 1;
-  padding: var(--spacing-lg);
+
   /* Use CSS custom properties for dynamic layout */
   margin-left: var(--content-margin, 250px);
+  padding: var(--spacing-lg);
 }
 
 /* REDUNDANT - content-section not actively used
@@ -845,55 +886,61 @@ body {
 
 /* Employee deletion dialog styles */
 .alert {
-  padding: 12px 16px;
   margin: 16px 0;
+  padding: 12px 16px;
   border-radius: 4px;
   font-weight: 500;
 }
 
 .alert-warning {
-  background-color: rgba(255, 165, 0, 0.15);
   border-left: 4px solid orange;
   color: #d68000;
+  background-color: rgb(255 165 0 / 15%);
 }
 
 .option-description {
-  color: var(--text-secondary);
-  font-size: 0.9em;
   margin-top: 4px;
   margin-left: 24px;
+  font-size: 0.9em;
+  color: var(--text-secondary);
 }
 
 /* General modal footer - but not for logout modal */
 .modal-footer:not(#logoutModal .logout-modal .modal-footer) {
-  justify-content: center;
+  display: flex;
   gap: var(--spacing-md);
+  justify-content: center;
+
+  margin-top: var(--spacing-lg);
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
-  margin-top: var(--spacing-lg);
-  display: flex;
 }
 
 /* Role Switch Button Styles */
 .btn-role-switch {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.021);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 0.8rem;
   cursor: pointer;
+
   position: relative;
+
   overflow: hidden;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  padding: 6px 10px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-md);
+
+  font-size: 0.8rem;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 2.1%);
 }
 
 .btn-role-switch:hover {
-  background: rgba(255, 255, 255, 0.15);
   border-color: var(--employee-color);
-  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+  background: rgb(255 255 255 / 15%);
+  box-shadow: 0 4px 12px rgb(78 205 196 / 30%);
 }
 
 .btn-role-switch i {
@@ -913,30 +960,35 @@ body {
 /* Role Switch Custom Dropdown for Root Users */
 .role-switch-dropdown {
   position: relative;
+
   /* Inherits width: 100% from .custom-dropdown */
   margin-right: 12px; /* Add space between dropdown and user-info */
 }
 
 .role-switch-dropdown .dropdown-display {
+  cursor: pointer;
+
   display: flex;
+  gap: 16px; /* Add space between text and arrow */
   align-items: center;
   justify-content: space-between;
+
   padding: 6px 15px;
-  background: rgba(255, 255, 255, 0.021);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
-  color: var(--text-primary);
+
   font-size: 0.8rem;
-  cursor: pointer;
-  gap: 16px; /* Add space between text and arrow */
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 2.1%);
+  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .role-switch-dropdown .dropdown-display:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+  box-shadow: 0 4px 12px rgb(52 152 219 / 30%);
 }
 
 .role-switch-dropdown .dropdown-display.active svg {
@@ -944,48 +996,56 @@ body {
 }
 
 .role-switch-dropdown .dropdown-display svg {
+  flex-shrink: 0; /* Prevent arrow from shrinking */
   width: 12px;
   height: 8px;
   margin-left: 8px; /* Additional spacing for the arrow */
-  flex-shrink: 0; /* Prevent arrow from shrinking */
 }
 
 .role-switch-dropdown .dropdown-options {
   position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: rgba(18, 18, 18, 0.9);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
   z-index: 1001;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  overflow-y: auto;
+
+  max-height: 200px;
   margin-right: -14px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-lg);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 90%);
+  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
 .role-switch-dropdown .dropdown-options.active {
-  display: block !important;
-  opacity: 1;
-  visibility: visible;
   transform: translateY(0);
+
+  display: block !important;
+
   margin-right: -15px;
+
+  visibility: visible;
+  opacity: 100%;
 }
 
 .role-switch-dropdown .dropdown-option {
-  padding: 8px 12px;
-  color: var(--text-primary);
-  font-size: 0.8rem;
   cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  padding: 8px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+  font-size: 0.8rem;
+  color: var(--text-primary);
 }
 
 .role-switch-dropdown .dropdown-option:last-child {
@@ -993,14 +1053,15 @@ body {
 }
 
 .role-switch-dropdown .dropdown-option:hover {
-  background: rgba(33, 150, 243, 0.2);
-  color: white;
-  /*padding-left: 16px;*/
+  color: #fff;
+  background: rgb(33 150 243 / 20%);
+
+  /* padding-left: 16px; */
 }
 
 .role-switch-dropdown .dropdown-option.active {
-  background: rgba(33, 150, 243, 0.1);
   color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
 }
 
 /* Role Badge Indicator */
@@ -1050,29 +1111,36 @@ body {
 .btn-logout,
 .logout-btn,
 .header .header-actions #logout-btn {
-  background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 6px !important;
-  font-size: 0.9rem !important;
-  font-weight: 500 !important;
   cursor: pointer !important;
+
+  position: relative !important;
+
+  overflow: hidden !important;
   display: inline-flex !important;
+  flex-shrink: 0 !important;
+  gap: 0.3rem !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.3rem !important;
-  text-decoration: none !important;
-  position: relative !important;
-  overflow: hidden !important;
-  box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4) !important;
-  padding: 0.5rem 1rem !important;
-  min-height: 2.25rem !important;
-  white-space: nowrap !important;
-  transition: all 0.3s ease !important;
+
+  width: 44px !important;
+
   /* Fix width consistency across all dashboards */
   min-width: 44px !important;
-  width: 44px !important;
-  flex-shrink: 0 !important;
+  min-height: 2.25rem !important;
+  padding: 0.5rem 1rem !important;
+  border: none !important;
+  border-radius: 6px !important;
+
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+
+  background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
+  box-shadow: 0 2px 8px rgb(198 40 40 / 40%) !important;
+
+  transition: all 0.3s ease !important;
 }
 
 /* Shine effect on hover */
@@ -1080,12 +1148,16 @@ body {
 .logout-btn::before,
 .btn-logout::before {
   content: "";
+
   position: absolute;
   top: 0;
   left: -100%;
+
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 30%), transparent);
+
   transition: left 0.5s ease;
 }
 
@@ -1093,8 +1165,8 @@ body {
 .logout-btn:hover,
 .btn-logout:hover {
   box-shadow:
-    0 3px 12px rgba(244, 67, 54, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    0 3px 12px rgb(244 67 54 / 35%),
+    inset 0 1px 0 rgb(255 255 255 / 20%) !important;
 }
 
 #logout-btn:hover::before,
@@ -1129,7 +1201,7 @@ body {
 }
 
 /* Hide text on small screens */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .logout-text {
     display: none !important;
   }
@@ -1137,9 +1209,9 @@ body {
   #logout-btn,
   .logout-btn,
   .btn-logout {
+    min-width: auto !important;
     padding: 0.4rem 1rem !important;
     font-size: 0.8rem !important;
-    min-width: auto !important;
   }
 
   #logout-btn i,
@@ -1152,48 +1224,55 @@ body {
 /* Logout Modal Styles - Cleaned up and unified */
 #logoutModal.modal {
   position: fixed;
+  z-index: 1000;
   top: 0;
   left: 0;
+
+  display: none;
+
   width: 100%;
   height: 100%;
-  z-index: 1000;
-  display: none;
 }
 
 #logoutModal .modal-overlay {
   position: absolute;
+  z-index: 1000; /* Ensure overlay is above page content */
   top: 0;
   left: 0;
+
   width: 100%;
   height: 100%;
-  /*background-color: rgba(0, 0, 0, 0.7);*/
+
+  /* background-color: rgba(0, 0, 0, 0.7); */
+  backdrop-filter: blur(5px);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(5px);
-  z-index: 1000; /* Ensure overlay is above page content */
 }
 
 #logoutModal .logout-modal {
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: var(--border-width) solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-md);
+  position: absolute;
+  z-index: 1001;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
   display: flex;
   flex-direction: column;
-  left: 50%;
-  max-height: calc(100vh - 80px);
+
+  width: 100%;
   max-width: var(--alert-modal-max-width);
   min-height: var(--alert-modal-min-height);
-  position: absolute;
-  top: 35%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  z-index: 1001;
+  max-height: calc(100vh - 80px);
+  border: var(--border-width) solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: hsl(0deg 0% 100% / 2%);
   backdrop-filter: blur(20px) saturate(180%);
-  background: hsla(0, 0%, 100%, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
 }
 
 #logoutModal .logout-modal .modal-header {
   padding: var(--spacing-lg);
-  border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
+  border-bottom: 1px solid hsl(0deg 0% 100% / 10%);
 }
 
 #logoutModal .logout-modal .modal-header h2 {
@@ -1208,37 +1287,42 @@ body {
 }
 
 #logoutModal .logout-modal .logout-message {
-  color: var(--text-primary);
-  font-size: 1rem;
   margin-top: var(--spacing-md);
   margin-bottom: var(--spacing-md);
+
+  font-size: 1rem;
+  color: var(--text-primary);
   text-align: center;
 }
 
 #logoutModal .logout-modal .logout-info {
-  align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-2sm);
-  background: rgba(33, 150, 243, 0.1);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  align-items: center;
+
   margin-left: -6px;
+  padding: var(--spacing-2sm);
+  border-radius: var(--radius-sm);
+
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   text-align: center;
+
+  background: rgb(33 150 243 / 10%);
 }
 
 #logoutModal .logout-modal .logout-info i {
-  color: var(--primary-color);
   font-size: 1rem;
+  color: var(--primary-color);
 }
 
 #logoutModal .logout-modal .modal-footer {
-  justify-content: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  border-top: 1px solid hsla(0, 0%, 100%, 0.1);
-  margin: 0; /* Override general modal-footer margin */
   display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+
+  margin: 0; /* Override general modal-footer margin */
+  padding: var(--spacing-lg);
+  border-top: 1px solid hsl(0deg 0% 100% / 10%);
 }
 
 #logoutModal .logout-modal .btn {
@@ -1251,5 +1335,5 @@ body {
 
 #logoutModal .logout-modal .btn-danger:hover {
   background: linear-gradient(135deg, #ef5350, #f44336);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  box-shadow: 0 4px 12px rgb(244 67 54 / 30%);
 }

@@ -20,23 +20,40 @@ export function validateTenantIsolation(
 ): void {
   try {
     // Check if user is authenticated
-    if (!req.user?.tenant_id) {
+    if (!req.user.tenant_id) {
       logger.warn("Tenant isolation: No user or tenant_id in request");
       res.status(401).json(errorResponse("Nicht authentifiziert", 401));
       return;
     }
 
     // Get the requested tenant ID from various sources
-    const requestedTenantId =
-      req.headers["x-tenant-id"] ?? req.params.tenantId ?? req.query.tenant_id;
+    const headerTenantId = req.headers["x-tenant-id"];
+    const paramTenantId = req.params.tenantId;
+    const queryTenantId = req.query.tenant_id;
+
+    // Check each source and convert to string
+    let tenantIdStr: string | undefined;
+
+    if (headerTenantId !== undefined) {
+      tenantIdStr = Array.isArray(headerTenantId)
+        ? headerTenantId[0]
+        : headerTenantId;
+    } else if (paramTenantId) {
+      tenantIdStr = paramTenantId;
+    } else if (queryTenantId !== undefined) {
+      if (Array.isArray(queryTenantId)) {
+        tenantIdStr = queryTenantId[0] as string;
+      } else if (typeof queryTenantId === "string") {
+        tenantIdStr = queryTenantId;
+      } else {
+        // ParsedQs object - skip complex objects
+        tenantIdStr = undefined;
+      }
+    }
 
     // If a specific tenant is requested, validate access
-    if (
-      requestedTenantId !== null &&
-      requestedTenantId !== undefined &&
-      requestedTenantId !== ""
-    ) {
-      const requestedId = parseInt(requestedTenantId.toString(), 10);
+    if (tenantIdStr !== undefined && tenantIdStr !== "") {
+      const requestedId = parseInt(tenantIdStr, 10);
       const userTenantId = req.user.tenant_id;
 
       // Check if user is trying to access a different tenant

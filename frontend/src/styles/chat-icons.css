@@ -1,12 +1,16 @@
 /* Chat Icons - Fallback wenn Font Awesome nicht verfügbar */
 .chat-icon::before {
   content: "";
+
   display: inline-block;
+
   width: 1em;
   height: 1em;
-  background-size: contain;
-  vertical-align: middle;
   margin-right: 0.25em;
+
+  vertical-align: middle;
+
+  background-size: contain;
 }
 
 .chat-icon.send::before {

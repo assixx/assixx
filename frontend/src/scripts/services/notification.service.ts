@@ -53,7 +53,7 @@ export class NotificationService {
     this.render(fullNotification);
 
     // Auto-dismiss if duration is set
-    if (fullNotification.duration && fullNotification.duration > 0) {
+    if (fullNotification.duration !== undefined && fullNotification.duration > 0) {
       setTimeout(() => {
         this.dismiss(id);
       }, fullNotification.duration);
@@ -168,8 +168,8 @@ export class NotificationService {
           ${notification.actions
             .map(
               (action) => `
-            <button 
-              class="notification-action-btn" 
+            <button
+              class="notification-action-btn"
               data-action="${action.label}"
               style="
                 background: none;
@@ -191,8 +191,8 @@ export class NotificationService {
     }
 
     element.innerHTML = `
-      <button 
-        class="notification-close" 
+      <button
+        class="notification-close"
         style="
           position: absolute;
           top: 8px;
@@ -224,7 +224,7 @@ export class NotificationService {
           <h4 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #333;">
             ${notification.title}
           </h4>
-          ${notification.message ? `<p style="margin: 0; font-size: 14px; color: #666;">${notification.message}</p>` : ''}
+          ${notification.message !== undefined && notification.message !== '' ? `<p style="margin: 0; font-size: 14px; color: #666;">${notification.message}</p>` : ''}
           ${actionsHtml}
         </div>
       </div>
@@ -271,7 +271,7 @@ export class NotificationService {
    * Generate unique ID
    */
   private generateId(): string {
-    return `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `notif-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**
@@ -288,25 +288,25 @@ style.textContent = `
   @keyframes slideInRight {
     from {
       transform: translateX(100%);
-      opacity: 0;
+      opacity: 0%;
     }
     to {
       transform: translateX(0);
-      opacity: 1;
+      opacity: 100%;
     }
   }
-  
+
   .notification-fade-out {
     /* animation: fadeOut 0.3s ease-out forwards; */
   }
-  
+
   @keyframes fadeOut {
     to {
-      opacity: 0;
+      opacity: 0%;
       transform: translateX(100%);
     }
   }
-  
+
   @media (max-width: 768px) {
     #notification-container {
       left: 20px !important;

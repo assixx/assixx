@@ -118,17 +118,17 @@ function initTabs(): void {
  */
 async function setupUserAndLogout(): Promise<void> {
   const userInfo = document.getElementById('user-info');
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
+  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null;
 
   if (userInfo) {
     // Lade Benutzerdaten
     const token = getAuthToken();
-    if (token) {
+    if (token !== null && token !== '') {
       try {
         const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
         let userData: User | null = null;
 
-        if (useV2Users) {
+        if (useV2Users === true) {
           // Use API v2 with apiClient
           userData = await apiClient.get<User>('/users/profile');
         } else {
@@ -143,16 +143,15 @@ async function setupUserAndLogout(): Promise<void> {
             throw new Error('Fehler beim Laden der Benutzerdaten');
           }
 
-          userData = await response.json();
+          userData = (await response.json()) as User;
         }
 
-        if (userData) {
-          // Anzeigename setzen (Name oder Username)
-          const displayName = userData.first_name
+        // Anzeigename setzen (Name oder Username)
+        const displayName =
+          userData.first_name !== undefined && userData.first_name !== ''
             ? `${userData.first_name} ${userData.last_name ?? ''}`
             : userData.username;
-          userInfo.textContent = displayName;
-        }
+        userInfo.textContent = displayName;
       } catch (error) {
         console.error('Fehler beim Laden der Benutzerdaten:', error);
         // Bei Fehler zur Login-Seite weiterleiten
@@ -163,7 +162,7 @@ async function setupUserAndLogout(): Promise<void> {
     }
   }
 
-  if (logoutBtn) {
+  if (logoutBtn !== null) {
     logoutBtn.addEventListener('click', () => {
       removeAuthToken();
       window.location.href = '/login';
@@ -175,7 +174,7 @@ async function setupUserAndLogout(): Promise<void> {
  * Hilfsfunktion zum Formatieren eines Datums
  */
 function formatDate(dateString: string): string {
-  if (!dateString) return '-';
+  if (dateString === '') return '-';
 
   const date = new Date(dateString);
   return date.toLocaleDateString('de-DE', {

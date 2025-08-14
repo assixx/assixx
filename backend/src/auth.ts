@@ -206,112 +206,114 @@ export async function authenticateToken(
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
-    if (err || !decoded || typeof decoded === "string") {
-      // Check if client expects HTML (browser page request) or JSON (API request)
-      const acceptHeader = req.headers.accept ?? "";
-      if (acceptHeader.includes("text/html")) {
-        // Browser request - redirect to login with expired session message
-        res.redirect("/login?session=expired");
-      } else {
-        // API request - return JSON error
-        res.status(403).json({
-          error: "Invalid or expired token",
-          details: err?.message,
-        });
-      }
-      return;
-    }
-
-    const user = decoded as TokenPayload & {
-      activeRole?: string;
-      isRoleSwitched?: boolean;
-    };
-
-    // Best Practice Session Security (wie Google, Facebook, etc.)
-    if (user.sessionId) {
-      try {
-        // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
-        const requestFingerprint = req.headers[
-          "x-browser-fingerprint"
-        ] as string;
-        // const requestIP = req.ip  ?? req.connection.remoteAddress;
-        // const userAgent = req.headers['user-agent'];
-
-        // Log Security-relevante Änderungen für Monitoring
-        if (
-          user.fingerprint &&
-          requestFingerprint &&
-          requestFingerprint !== user.fingerprint
-        ) {
-          console.info(
-            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
-          );
-
-          // Nur bei verdächtigen Mustern warnen/blockieren:
-          // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
-          // - Rapid fingerprint changes (> 10 pro Stunde)
-          // - Known malicious patterns
-
-          // Für jetzt: Nur loggen, nicht blockieren
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    void (async () => {
+      if (err || !decoded || typeof decoded === "string") {
+        // Check if client expects HTML (browser page request) or JSON (API request)
+        const acceptHeader = req.headers.accept ?? "";
+        if (acceptHeader.includes("text/html")) {
+          // Browser request - redirect to login with expired session message
+          res.redirect("/login?session=expired");
+        } else {
+          // API request - return JSON error
+          res.status(403).json({
+            error: "Invalid or expired token",
+            details: err?.message,
+          });
         }
+        return;
+      }
 
-        // Optionally validate session in database
-        if (process.env.VALIDATE_SESSIONS === "true") {
-          const [sessions] = await executeQuery<RowDataPacket[]>(
-            "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
-            [user.id, user.sessionId],
-          );
+      const user = decoded as TokenPayload & {
+        activeRole?: string;
+        isRoleSwitched?: boolean;
+      };
 
-          if (sessions.length === 0) {
-            // Check if client expects HTML (browser page request) or JSON (API request)
-            const acceptHeader = req.headers.accept ?? "";
-            if (acceptHeader.includes("text/html")) {
-              // Browser request - redirect to login with session expired message
-              res.redirect("/login?session=expired");
-            } else {
-              // API request - return JSON error
-              res.status(403).json({
-                error: "Session expired or not found",
-              });
-            }
-            return;
+      // Best Practice Session Security (wie Google, Facebook, etc.)
+      if (user.sessionId) {
+        try {
+          // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
+          const requestFingerprint = req.headers[
+            "x-browser-fingerprint"
+          ] as string;
+          // const requestIP = req.ip  ?? req.connection.remoteAddress;
+          // const userAgent = req.headers['user-agent'];
+
+          // Log Security-relevante Änderungen für Monitoring
+          if (
+            user.fingerprint &&
+            requestFingerprint &&
+            requestFingerprint !== user.fingerprint
+          ) {
+            console.info(
+              `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
+            );
+
+            // Nur bei verdächtigen Mustern warnen/blockieren:
+            // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
+            // - Rapid fingerprint changes (> 10 pro Stunde)
+            // - Known malicious patterns
+
+            // Für jetzt: Nur loggen, nicht blockieren
           }
+
+          // Optionally validate session in database
+          if (process.env.VALIDATE_SESSIONS === "true") {
+            const [sessions] = await executeQuery<RowDataPacket[]>(
+              "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
+              [user.id, user.sessionId],
+            );
+
+            if (sessions.length === 0) {
+              // Check if client expects HTML (browser page request) or JSON (API request)
+              const acceptHeader = req.headers.accept ?? "";
+              if (acceptHeader.includes("text/html")) {
+                // Browser request - redirect to login with session expired message
+                res.redirect("/login?session=expired");
+              } else {
+                // API request - return JSON error
+                res.status(403).json({
+                  error: "Session expired or not found",
+                });
+              }
+              return;
+            }
+          }
+        } catch (error: unknown) {
+          console.error("[AUTH] Session validation error:", error);
+          // Continue anyway in case of database issues
         }
-      } catch (error: unknown) {
-        console.error("[AUTH] Session validation error:", error);
-        // Continue anyway in case of database issues
       }
-    }
 
-    // Normalize user object for consistency and ensure IDs are numbers
-    const authenticatedUser: AuthUser & {
-      activeRole?: string;
-      isRoleSwitched?: boolean;
-    } = {
-      id: parseInt(user.id.toString(), 10),
-      userId: parseInt(user.id.toString(), 10),
-      username: user.username,
-      email: "", // Will be filled from database if needed
-      first_name: "",
-      last_name: "",
-      role: user.role,
-      activeRole: user.activeRole ?? user.role, // Support für Dual-Role
-      isRoleSwitched: user.isRoleSwitched ?? false,
-      tenant_id: user.tenant_id
-        ? parseInt(user.tenant_id.toString(), 10)
-        : user.tenantId
-          ? parseInt(user.tenantId.toString(), 10)
-          : 0,
-      department_id: null,
-      position: null,
-    };
+      // Normalize user object for consistency and ensure IDs are numbers
+      const authenticatedUser: AuthUser & {
+        activeRole?: string;
+        isRoleSwitched?: boolean;
+      } = {
+        id: parseInt(user.id.toString(), 10),
+        userId: parseInt(user.id.toString(), 10),
+        username: user.username,
+        email: "", // Will be filled from database if needed
+        first_name: "",
+        last_name: "",
+        role: user.role,
+        activeRole: user.activeRole ?? user.role, // Support für Dual-Role
+        isRoleSwitched: user.isRoleSwitched ?? false,
+        tenant_id: user.tenant_id
+          ? parseInt(user.tenant_id.toString(), 10)
+          : user.tenantId
+            ? parseInt(user.tenantId.toString(), 10)
+            : 0,
+        department_id: null,
+        position: null,
+      };
 
-    req.user = authenticatedUser;
-    // Set tenant_id directly on req for backwards compatibility
-    (req as Request & { tenant_id: number }).tenant_id =
-      authenticatedUser.tenant_id;
-    next();
+      req.user = authenticatedUser;
+      // Set tenant_id directly on req for backwards compatibility
+      (req as Request & { tenant_id: number }).tenant_id =
+        authenticatedUser.tenant_id;
+      next();
+    })();
   });
 }
 

@@ -126,13 +126,13 @@ export class DocumentBase {
     if (sortDropdown) {
       sortDropdown.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
-        if (target?.classList.contains('dropdown-option')) {
-          const sortValue = target.dataset.sort as SortOption;
-          if (sortValue) {
+        if (target?.classList.contains('dropdown-option') === true) {
+          const sortValue = target.dataset.sort as SortOption | undefined;
+          if (sortValue !== undefined) {
             this.currentSort = sortValue;
             this.sortDocuments();
             this.renderDocuments();
-            this.updateSortDisplay(target.textContent ?? '');
+            this.updateSortDisplay(target.textContent !== '' ? target.textContent : 'Sortierung');
           }
         }
       });
@@ -153,14 +153,14 @@ export class DocumentBase {
   protected async loadDocuments(): Promise<void> {
     try {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents/v2';
+      const endpoint = useV2Documents === true ? '/api/v2/documents' : '/api/documents/v2';
       const response = await fetchWithAuth(endpoint);
 
       if (!response.ok) {
         throw new Error('Failed to load documents');
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as { data?: Document[]; documents?: Document[] };
 
       // Backend returns {data: Document[], pagination: {...}}
       this.allDocuments = result.data ?? result.documents ?? [];
@@ -189,9 +189,9 @@ export class DocumentBase {
 
     // Filter by view mode
     if (this.currentViewMode === 'active') {
-      filtered = filtered.filter((doc) => !doc.is_archived);
+      filtered = filtered.filter((doc) => doc.is_archived !== true);
     } else if (this.currentViewMode === 'archived') {
-      filtered = filtered.filter((doc) => doc.is_archived);
+      filtered = filtered.filter((doc) => doc.is_archived === true);
     }
     // 'all' mode shows everything
 
@@ -202,7 +202,7 @@ export class DocumentBase {
    * Perform search across all documents
    */
   protected async performSearch(): Promise<void> {
-    if (!this.currentSearch.trim()) {
+    if (this.currentSearch.trim() === '') {
       this.filteredDocuments = [];
       this.renderDocuments();
       return;
@@ -217,9 +217,9 @@ export class DocumentBase {
       // Search across all documents
       this.filteredDocuments = this.allDocuments.filter(
         (doc) =>
-          (doc.file_name.toLowerCase().includes(this.currentSearch) ||
-            doc.description?.toLowerCase().includes(this.currentSearch)) ??
-          doc.uploaded_by_name?.toLowerCase().includes(this.currentSearch),
+          doc.file_name.toLowerCase().includes(this.currentSearch) ||
+          doc.description?.toLowerCase().includes(this.currentSearch) === true ||
+          doc.uploaded_by_name?.toLowerCase().includes(this.currentSearch) === true,
       );
 
       // Sort results
@@ -238,7 +238,7 @@ export class DocumentBase {
    */
   protected updateStats(): void {
     const totalDocs = this.filteredDocuments.length;
-    const unreadDocs = this.filteredDocuments.filter((doc) => !doc.is_read).length;
+    const unreadDocs = this.filteredDocuments.filter((doc) => doc.is_read !== true).length;
 
     // Calculate documents from this week
     const oneWeekAgo = new Date();
@@ -276,7 +276,7 @@ export class DocumentBase {
         this.filteredDocuments.sort((a, b) => a.file_name.localeCompare(b.file_name));
         break;
       case 'size':
-        this.filteredDocuments.sort((a, b) => (b.file_size || 0) - (a.file_size || 0));
+        this.filteredDocuments.sort((a, b) => b.file_size - a.file_size);
         break;
     }
   }
@@ -290,7 +290,7 @@ export class DocumentBase {
 
     if (this.filteredDocuments.length === 0) {
       const emptyMessage =
-        this.currentScope === 'all' && this.currentSearch
+        this.currentScope === 'all' && this.currentSearch !== ''
           ? 'Keine Dokumente gefunden. Versuchen Sie eine andere Suche.'
           : 'Keine Dokumente in dieser Kategorie vorhanden.';
 
@@ -321,11 +321,13 @@ export class DocumentBase {
   protected createDocumentCard(doc: Document): HTMLElement {
     const card = document.createElement('div');
     card.className = 'document-card';
-    card.onclick = async () => this.viewDocument(doc.id);
+    card.onclick = () => {
+      this.viewDocument(doc.id);
+    };
 
     const icon = this.getFileIcon(doc.mime_type ?? doc.file_name);
-    const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
-    const archivedBadge = doc.is_archived ? '<span class="document-badge archived">ARCHIVIERT</span>' : '';
+    const readBadge = doc.is_read !== true ? '<span class="document-badge unread">NEU</span>' : '';
+    const archivedBadge = doc.is_archived === true ? '<span class="document-badge archived">ARCHIVIERT</span>' : '';
     const scopeInfo =
       this.currentScope === 'all' ? `<div class="document-scope">${this.getScopeLabel(doc.scope)}</div>` : '';
     const isFavorite = this.favoriteDocIds.has(doc.id);
@@ -353,7 +355,7 @@ export class DocumentBase {
           <span>${this.escapeHtml(doc.uploaded_by_name ?? 'System')}</span>
         </div>
         ${
-          doc.file_size
+          doc.file_size !== 0
             ? `
           <div class="document-meta-item">
             <i class="fas fa-weight"></i>
@@ -371,7 +373,7 @@ export class DocumentBase {
   /**
    * View document in modal
    */
-  protected async viewDocument(documentId: number): Promise<void> {
+  protected viewDocument(documentId: number): void {
     try {
       const doc = this.allDocuments.find((d) => d.id === documentId);
       if (!doc) {
@@ -381,7 +383,8 @@ export class DocumentBase {
 
       // Mark as read
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint = useV2Documents ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
+      const endpoint =
+        useV2Documents === true ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
       fetchWithAuth(endpoint, { method: 'POST' })
         .then(() => {
           // Update local state
@@ -407,9 +410,9 @@ export class DocumentBase {
     if (!modal) return;
 
     // Update modal content
-    this.updateElement('modalDocumentTitle', doc.file_name || 'Dokument');
+    this.updateElement('modalDocumentTitle', doc.file_name !== '' ? doc.file_name : 'Dokument');
     this.updateElement('modalFileName', doc.file_name);
-    this.updateElement('modalFileSize', this.formatFileSize(doc.file_size || 0));
+    this.updateElement('modalFileSize', this.formatFileSize(doc.file_size));
     this.updateElement('modalUploadedBy', doc.uploaded_by_name ?? 'System');
     this.updateElement('modalUploadDate', this.formatDate(doc.created_at));
 
@@ -419,7 +422,8 @@ export class DocumentBase {
 
     if (previewFrame && previewError) {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint = useV2Documents ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
+      const endpoint =
+        useV2Documents === true ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
       fetchWithAuth(endpoint)
         .then(async (response) => {
           if (!response.ok) throw new Error('Preview failed');
@@ -432,7 +436,7 @@ export class DocumentBase {
           previewError.style.display = 'none';
           previewFrame.dataset.blobUrl = blobUrl;
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           console.error('Preview error:', error);
           previewFrame.style.display = 'none';
           previewError.style.display = 'block';
@@ -556,9 +560,9 @@ export class DocumentBase {
    */
   protected loadFavorites(): void {
     const stored = localStorage.getItem('favoriteDocuments');
-    if (stored) {
+    if (stored !== null && stored !== '') {
       try {
-        const favorites = JSON.parse(stored);
+        const favorites = JSON.parse(stored) as number[];
         this.favoriteDocIds = new Set(favorites);
       } catch (e) {
         console.error('Error loading favorites:', e);
@@ -609,7 +613,7 @@ window.closeDocumentModal = function (): void {
     const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
     if (previewFrame) {
       const blobUrl = previewFrame.dataset.blobUrl;
-      if (blobUrl) {
+      if (blobUrl !== undefined && blobUrl !== '') {
         URL.revokeObjectURL(blobUrl);
         delete previewFrame.dataset.blobUrl;
       }
@@ -623,7 +627,7 @@ window.downloadDocument = function (docId?: string | number): void {
   void (async () => {
     let documentId: string;
 
-    if (docId) {
+    if (docId !== undefined) {
       documentId = String(docId);
     } else {
       const downloadBtn = document.getElementById('downloadButton');
@@ -632,7 +636,7 @@ window.downloadDocument = function (docId?: string | number): void {
         return;
       }
       const dataId = downloadBtn.getAttribute('data-document-id');
-      if (!dataId) {
+      if (dataId === null || dataId === '') {
         console.error('No document ID found');
         return;
       }
@@ -641,9 +645,8 @@ window.downloadDocument = function (docId?: string | number): void {
 
     try {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint = useV2Documents
-        ? `/api/v2/documents/download/${documentId}`
-        : `/api/documents/download/${documentId}`;
+      const endpoint =
+        useV2Documents === true ? `/api/v2/documents/download/${documentId}` : `/api/documents/download/${documentId}`;
       const response = await fetchWithAuth(endpoint);
 
       if (!response.ok) {

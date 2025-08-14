@@ -3027,7 +3027,7 @@ class ChatClient {
         <p style="margin: 0 0 20px; color: #333;">${this.escapeHtml(message)}</p>
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
           <button id="confirmCancel" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">Abbrechen</button>
-          <button id="confirmOk" style="padding: 8px 16px; border: none; background: #dc3545; color: white; border-radius: 4px; cursor: pointer;">Löschen</button>
+          <button id="confirmOk" style="padding: 8px 16px; border: none; background: #dc3545; color: #fff; border-radius: 4px; cursor: pointer;">Löschen</button>
         </div>
       `;
 

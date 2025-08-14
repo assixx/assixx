@@ -127,7 +127,8 @@ app.use(
   (req: Request, res: Response, next: NextFunction) => {
     // lgtm[js/missing-rate-limiting]
     if (req.path.endsWith(".html")) {
-      return protectPage(req, res, next);
+      protectPage(req, res, next);
+      return;
     }
     next();
   },
@@ -550,7 +551,8 @@ app.post(
 // Role Switch Routes - BEFORE CSRF Protection
 // Swagger API Documentation - BEFORE CSRF Protection
 // TEMPORARY: Enable Swagger in all modes for API documentation
-if (true || process.env.NODE_ENV === "development") {
+const enableSwagger = true; // Set to false to disable in production
+if (enableSwagger || process.env.NODE_ENV === "development") {
   console.info("[DEBUG] Mounting Swagger UI at /api-docs");
 
   // Serve OpenAPI JSON spec

@@ -20,7 +20,7 @@ const connectionCache: Record<string, Pool> = {};
  */
 export async function createTenantConnection(tenantId: string): Promise<Pool> {
   // Prüfe ob Verbindung bereits im Cache
-  if (connectionCache[tenantId] != null) {
+  if (tenantId in connectionCache) {
     return connectionCache[tenantId];
   }
 

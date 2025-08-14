@@ -70,7 +70,7 @@ class DocumentController {
         if (Array.isArray(userTeams) && userTeams.length > 0) {
           // Use the first team for now
           const firstTeam = userTeams[0];
-          userTeamId = firstTeam?.id;
+          userTeamId = firstTeam.id;
         }
       } catch (error: unknown) {
         logger.warn(`Failed to fetch teams for user ${req.user.id}:`, error);

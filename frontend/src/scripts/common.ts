@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners(): void {
   document.addEventListener('click', (e: MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target && target.id === 'logoutBtn') {
+    if (target.id === 'logoutBtn') {
       void logout();
     }
   });
@@ -54,17 +54,17 @@ async function loadNavigation(): Promise<void> {
     let userRole: string | null = null;
     let userData: User | null = null;
 
-    if (token) {
+    if (token !== null && token !== '') {
       // Check if v2 API should be used
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
 
       try {
-        if (useV2) {
+        if (useV2 === true) {
           // Use API client for v2
           const response = await apiClient.get<User>('/users/me');
           // Convert v2 response to v1 format
           userData = ResponseAdapter.adaptUserResponse(response) as User;
-          userRole = userData?.role ?? 'employee';
+          userRole = userData.role;
         } else {
           // Use traditional fetch for v1
           const userResponse = await fetch('/api/user/profile', {
@@ -74,8 +74,8 @@ async function loadNavigation(): Promise<void> {
           });
 
           if (userResponse.ok) {
-            userData = await userResponse.json();
-            userRole = userData?.role ?? 'employee';
+            userData = (await userResponse.json()) as User;
+            userRole = userData.role;
           } else {
             navPlaceholder.innerHTML = createGuestNavigation();
             return;
@@ -92,9 +92,9 @@ async function loadNavigation(): Promise<void> {
     }
 
     // Load proper navigation based on role
-    if (userData && (userRole === 'admin' || userRole === 'root')) {
+    if (userRole === 'admin' || userRole === 'root') {
       navPlaceholder.innerHTML = createAdminNavigation(userData);
-    } else if (userData) {
+    } else {
       navPlaceholder.innerHTML = createEmployeeNavigation(userData);
     }
 
@@ -270,12 +270,12 @@ function createGuestNavigation(): string {
 async function checkUnreadNotifications(): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
     // Check if v2 API should be used
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_NOTIFICATIONS;
 
-    if (useV2) {
+    if (useV2 === true) {
       try {
         // Use API client for v2
         const response = await apiClient.get<{ count?: number }>('/notifications/unread-count');
@@ -293,8 +293,8 @@ async function checkUnreadNotifications(): Promise<void> {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        const count = data.count ?? 0;
+        const data = (await response.json()) as { count: number };
+        const count = data.count;
         updateNotificationBadge(count);
       }
     }
@@ -378,12 +378,12 @@ export function createBlackboardWidget(): string {
 export async function loadBlackboardPreview(): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
     // Check if v2 API should be used
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
 
-    if (useV2) {
+    if (useV2 === true) {
       try {
         // Use API client for v2
         const response = await apiClient.get<
@@ -408,7 +408,7 @@ export async function loadBlackboardPreview(): Promise<void> {
       });
 
       if (response.ok) {
-        const entries = await response.json();
+        const entries = (await response.json()) as BlackboardEntry[];
         displayBlackboardItems(entries);
       }
     }
@@ -450,7 +450,7 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
  */
 function checkTokenExpiry(): void {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     const payload = parseJwt(token);
@@ -531,10 +531,12 @@ export function showSection(sectionId: string): void {
 
 /**
  * Logout user
+ * Must be async to match interface definition in auth.ts
  */
 export async function logout(): Promise<void> {
   removeAuthToken();
   window.location.href = '/login';
+  await Promise.resolve(); // Keep async for interface consistency
 }
 
 // Extend window for common functions
@@ -547,7 +549,7 @@ declare global {
     formatDateTime: typeof formatDateTime;
     escapeHtml: typeof escapeHtml;
     showSection: typeof showSection;
-    logout: typeof logout;
+    logout: () => Promise<void>;
   }
 }
 

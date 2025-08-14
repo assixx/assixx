@@ -1360,9 +1360,9 @@ class UnifiedNavigation {
     } else if (item.badge === 'pending-surveys') {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 15px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-documents') {
-      badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'new-kvp-suggestions') {
-      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'lean-management-parent') {
       badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-calendar-events') {
@@ -1378,11 +1378,11 @@ class UnifiedNavigation {
                 // Support both badgeId and badge properties
                 let childBadgeHtml = '';
                 if (child.badgeId !== null && child.badgeId !== undefined && child.badgeId !== '') {
-                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
                 } else if (child.badge === 'pending-surveys') {
                   childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
                 } else if (child.badge === 'new-kvp-suggestions') {
-                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
                 }
 
                 return `
@@ -2780,7 +2780,7 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
         font-weight: 600;
         font-size: 0.9rem;
     }
@@ -2939,11 +2939,11 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-title:hover .pin-head {
-        opacity: 0;
+        opacity: 0%;
     }
 
     .sidebar-title:hover .pin-needle {
-        opacity: 1;
+        opacity: 100%;
         top: -18px;
     }
 
@@ -2991,7 +2991,7 @@ const unifiedNavigationCSS = `
         top: -10px;
         left: 50%;
         transform: translateX(-50%);
-        opacity: 0;
+        opacity: 0%;
         /* transition: all 0.3s ease; */
         z-index: 2;
     }
@@ -3057,7 +3057,7 @@ const unifiedNavigationCSS = `
         border-radius: 8px;
         cursor: pointer;
         /* transition: all 0.3s ease; */
-        color: white;
+        color: #fff;
         margin-right: 15px;
         margin-left: -6px;
     }
@@ -3068,7 +3068,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-toggle:hover .toggle-icon {
-        opacity: 0.8;
+        opacity: 0%.8;
     }
 
     .toggle-icon {
@@ -3100,7 +3100,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .title-text {
-        opacity: 0;
+        opacity: 0%;
         width: 0;
         display: none;
     }
@@ -3251,19 +3251,19 @@ const unifiedNavigationCSS = `
         margin-left: 10px;
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.9);
-        color: white;
+        color: #fff;
         border-radius: 6px;
         font-size: 14px;
         white-space: nowrap;
         z-index: 1000;
         pointer-events: none;
-        opacity: 0;
+        opacity: 0%;
         /*animation: tooltipFadeIn 0.3s ease forwards;*/
     }
 
     @keyframes tooltipFadeIn {
         to {
-            opacity: 1;
+            opacity: 100%;
         }
     }
 
@@ -3324,7 +3324,7 @@ const unifiedNavigationCSS = `
         background:
             radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
             radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-        opacity: 1;
+        opacity: 100%;
         z-index: 0;
     }
 
@@ -3386,7 +3386,7 @@ const unifiedNavigationCSS = `
         align-items: center !important;
         justify-content: center !important;
         background: linear-gradient(135deg, #2196F3, #42a5f5) !important;
-        color: white !important;
+        color: #fff !important;
         font-weight: 600 !important;
         font-size: 0.85rem !important;
         text-transform: uppercase !important;
@@ -3614,7 +3614,7 @@ const unifiedNavigationCSS = `
         to {
             width: 200px;
             height: 200px;
-            opacity: 0;
+            opacity: 0%;
         }
     }
 
@@ -3631,7 +3631,7 @@ const unifiedNavigationCSS = `
     .submenu-arrow {
         margin-left: auto;
         /* transition: transform 0.3s ease; */
-        opacity: 0.6;
+        opacity: 0%.6;
     }
 
     .sidebar-item.has-submenu.open .submenu-arrow {
@@ -3808,7 +3808,7 @@ const unifiedNavigationCSS = `
         width: 100%;
         padding: var(--spacing-sm) var(--spacing-md);
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         border: none;
         border-radius: var(--radius-sm);
         font-size: 13px;

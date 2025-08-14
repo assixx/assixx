@@ -111,7 +111,7 @@ router.get(
       }
 
       // Remove sensitive data
-      const { password, ...userWithoutPassword } = user;
+      const { password: _password, ...userWithoutPassword } = user;
 
       res.json(successResponse(userWithoutPassword));
     } catch (error: unknown) {
@@ -348,7 +348,7 @@ router.get(
             tenantName = (tenantRows[0] as { company_name: string })
               .company_name;
             // Remove TEST_DATA_PREFIX if present for test compatibility
-            if (tenantName?.startsWith("__AUTOTEST__")) {
+            if (tenantName.startsWith("__AUTOTEST__")) {
               tenantName = tenantName.substring("__AUTOTEST__".length);
             }
           }

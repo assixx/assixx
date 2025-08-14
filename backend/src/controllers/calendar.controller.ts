@@ -142,7 +142,7 @@ class CalendarController {
    */
   getById(req: CalendarEventGetRequest, res: Response): void {
     try {
-      if (req.tenantDb === null || req.tenantDb === undefined) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -183,7 +183,7 @@ class CalendarController {
    */
   async create(req: CalendarEventCreateRequest, res: Response): Promise<void> {
     try {
-      if (req.tenantDb === null || req.tenantDb === undefined) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -215,7 +215,7 @@ class CalendarController {
    */
   update(req: CalendarEventUpdateRequest, res: Response): void {
     try {
-      if (req.tenantDb === null || req.tenantDb === undefined) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }
@@ -256,7 +256,7 @@ class CalendarController {
    */
   delete(req: CalendarEventGetRequest, res: Response): void {
     try {
-      if (req.tenantDb === null || req.tenantDb === undefined) {
+      if (req.tenantDb === undefined) {
         res.status(400).json({ error: "Tenant database not available" });
         return;
       }

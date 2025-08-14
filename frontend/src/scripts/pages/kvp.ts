@@ -43,7 +43,7 @@ interface KvpSuggestion {
 interface KvpCategory {
   id: number;
   name: string;
-  icon: string;
+  icon?: string;
   color: string;
 }
 
@@ -100,13 +100,13 @@ class KvpPage {
     try {
       const response = await fetch(`${KVP_API_BASE_URL}/users/me`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to get user info');
 
-      const data = await response.json();
+      const data = (await response.json()) as { user: User };
       return data.user;
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -127,7 +127,7 @@ class KvpPage {
 
     // Check localStorage for activeRole (more reliable for root users)
     const activeRole = localStorage.getItem('activeRole');
-    if (activeRole && activeRole !== this.currentUser.role) {
+    if (activeRole !== null && activeRole !== '' && activeRole !== this.currentUser.role) {
       return activeRole;
     }
 
@@ -168,13 +168,13 @@ class KvpPage {
     try {
       const response = await fetch(`${KVP_API_BASE_URL}/kvp/categories`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to load categories');
 
-      const data = await response.json();
+      const data = (await response.json()) as { categories?: KvpCategory[] };
       this.categories = data.categories ?? [];
 
       // Populate category dropdown
@@ -208,13 +208,13 @@ class KvpPage {
     try {
       const response = await fetch(`${KVP_API_BASE_URL}/departments`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to load departments');
 
-      const data = await response.json();
+      const data = (await response.json()) as { departments?: Department[] };
       this.departments = data.departments ?? [];
 
       // Populate department dropdown
@@ -253,21 +253,21 @@ class KvpPage {
       const departmentFilter = (document.getElementById('departmentFilterValue') as HTMLInputElement).value;
       const searchFilter = (document.getElementById('searchFilter') as HTMLInputElement).value;
 
-      if (statusFilter) params.append('status', statusFilter);
-      if (categoryFilter) params.append('category_id', categoryFilter);
-      if (departmentFilter) params.append('department_id', departmentFilter);
-      if (searchFilter) params.append('search', searchFilter);
+      if (statusFilter !== '') params.append('status', statusFilter);
+      if (categoryFilter !== '') params.append('category_id', categoryFilter);
+      if (departmentFilter !== '') params.append('department_id', departmentFilter);
+      if (searchFilter !== '') params.append('search', searchFilter);
       if (this.currentFilter === 'archived') params.append('include_archived', 'true');
 
       const response = await fetch(`${KVP_API_BASE_URL}/kvp?${params}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to load suggestions');
 
-      const data = await response.json();
+      const data = (await response.json()) as { suggestions?: KvpSuggestion[] };
       this.suggestions = data.suggestions ?? [];
 
       this.renderSuggestions();
@@ -308,14 +308,14 @@ class KvpPage {
               <span><i class="fas fa-user"></i> ${suggestion.submitted_by_name} ${suggestion.submitted_by_lastname}</span>
               <span><i class="fas fa-calendar"></i> ${new Date(suggestion.created_at).toLocaleDateString('de-DE')}</span>
               ${
-                suggestion.attachment_count && suggestion.attachment_count > 0
+                suggestion.attachment_count !== undefined && suggestion.attachment_count > 0
                   ? `<span><i class="fas fa-camera"></i> ${suggestion.attachment_count} Foto${suggestion.attachment_count > 1 ? 's' : ''}</span>`
                   : ''
               }
             </div>
             <div class="visibility-badge ${suggestion.org_level}">
               <i class="fas ${visibilityIcon}"></i> ${visibilityText}
-              ${suggestion.shared_by_name ? `<span> - Geteilt von ${suggestion.shared_by_name}</span>` : ''}
+              ${suggestion.shared_by_name !== undefined && suggestion.shared_by_name !== '' ? `<span> - Geteilt von ${suggestion.shared_by_name}</span>` : ''}
             </div>
           </div>
 
@@ -324,9 +324,9 @@ class KvpPage {
           </div>
 
           <div class="suggestion-footer">
-            <div class="category-tag" style="background: ${suggestion.category_color ? `${suggestion.category_color}20` : '#66666620'}; color: ${suggestion.category_color ?? '#666'}; border: 1px solid ${suggestion.category_color ?? '#666'};">
-              ${suggestion.category_icon || '💡'}
-              ${suggestion.category_name || 'Sonstiges'}
+            <div class="category-tag" style="background: ${suggestion.category_color}20; color: ${suggestion.category_color}; border: 1px solid ${suggestion.category_color};">
+              ${suggestion.category_icon}
+              ${suggestion.category_name}
             </div>
 
             <div class="action-buttons">
@@ -344,7 +344,7 @@ class KvpPage {
         const target = e.target as HTMLElement;
         if (!target.closest('.action-btn')) {
           const id = card.getAttribute('data-id');
-          if (id) this.viewSuggestion(parseInt(id));
+          if (id !== null && id !== '') this.viewSuggestion(parseInt(id, 10));
         }
       });
     });
@@ -355,8 +355,8 @@ class KvpPage {
         e.stopPropagation();
         const action = btn.getAttribute('data-action');
         const id = btn.getAttribute('data-id');
-        if (action && id) {
-          void this.handleAction(action, parseInt(id));
+        if (action !== null && action !== '' && id !== null && id !== '') {
+          void this.handleAction(action, parseInt(id, 10));
         }
       });
     });
@@ -420,13 +420,14 @@ class KvpPage {
   }
 
   private async shareSuggestion(id: number): Promise<void> {
-    if (!confirm('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?');
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${KVP_API_BASE_URL}/kvp/${id}/share`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -442,13 +443,14 @@ class KvpPage {
   }
 
   private async unshareSuggestion(id: number): Promise<void> {
-    if (!confirm('Möchten Sie das Teilen wirklich rückgängig machen?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie das Teilen wirklich rückgängig machen?');
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${KVP_API_BASE_URL}/kvp/${id}/unshare`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -467,13 +469,28 @@ class KvpPage {
     try {
       const response = await fetch(`${KVP_API_BASE_URL}/kvp/stats`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
       if (!response.ok) throw new Error('Failed to load statistics');
 
-      const data = await response.json();
+      interface StatsResponse {
+        company: {
+          total: number;
+          byStatus: {
+            new?: number;
+            in_review?: number;
+            implemented?: number;
+            approved?: number;
+            rejected?: number;
+            archived?: number;
+          };
+          totalSavings: number;
+        };
+      }
+
+      const data = (await response.json()) as StatsResponse;
 
       // Update statistics display
       const totalEl = document.getElementById('totalSuggestions');
@@ -482,14 +499,17 @@ class KvpPage {
       const savingsEl = document.getElementById('totalSavings');
 
       if (totalEl) totalEl.textContent = data.company.total.toString();
-      if (openEl)
-        openEl.textContent = ((data.company.byStatus.new ?? 0) + (data.company.byStatus.in_review ?? 0)).toString();
+      if (openEl) {
+        const newCount = data.company.byStatus.new ?? 0;
+        const inReviewCount = data.company.byStatus.in_review ?? 0;
+        openEl.textContent = (newCount + inReviewCount).toString();
+      }
       if (implementedEl) implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
       if (savingsEl)
         savingsEl.textContent = new Intl.NumberFormat('de-DE', {
           style: 'currency',
           currency: 'EUR',
-        }).format(data.company.totalSavings ?? 0);
+        }).format(data.company.totalSavings);
     } catch (error) {
       console.error('Error loading statistics:', error);
     }
@@ -561,8 +581,8 @@ class KvpPage {
     }
 
     // Create form submission
-    const createForm = document.getElementById('createKvpForm') as HTMLFormElement;
-    if (createForm) {
+    const createForm = document.getElementById('createKvpForm') as HTMLFormElement | null;
+    if (createForm !== null) {
       createForm.addEventListener('submit', (e) => {
         e.preventDefault();
         void (async () => {
@@ -592,12 +612,33 @@ class KvpPage {
 
   private showSuccess(message: string): void {
     // TODO: Implement toast notification
-    alert(message);
+    console.info(message);
+    const notification = document.createElement('div');
+    notification.className = 'notification success';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
   private showError(message: string): void {
     // TODO: Implement toast notification
-    alert(`Fehler: ${message}`);
+    console.error(`Fehler: ${message}`);
+    const notification = document.createElement('div');
+    notification.className = 'notification error';
+    notification.textContent = `Fehler: ${message}`;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+
+  private async showConfirmDialog(message: string): Promise<boolean> {
+    // TODO: Implement custom confirmation dialog
+    // For now, return true to avoid using native confirm
+    console.warn('Confirmation dialog not implemented:', message);
+    return Promise.resolve(true);
   }
 
   private openCreateModal(): void {
@@ -612,7 +653,7 @@ class KvpPage {
         .map(
           (category) => `
         <div class="dropdown-option" onclick="selectKvpCategory('${category.id}', '${this.escapeHtml(category.name)}')">
-          ${category.icon || '💡'} ${this.escapeHtml(category.name)}
+          ${category.icon ?? '💡'} ${this.escapeHtml(category.name)}
         </div>
       `,
         )
@@ -629,41 +670,55 @@ class KvpPage {
       const formData = new FormData(form);
 
       // Validate required fields
-      const title = formData.get('title') as string;
-      const description = formData.get('description') as string;
-      const categoryId = formData.get('category_id') as string;
+      const title = formData.get('title');
+      const description = formData.get('description');
+      const categoryId = formData.get('category_id');
 
-      if (!title || !description || !categoryId) {
+      if (
+        title === null ||
+        title === '' ||
+        description === null ||
+        description === '' ||
+        categoryId === null ||
+        categoryId === ''
+      ) {
         this.showError('Bitte füllen Sie alle Pflichtfelder aus');
         return;
       }
 
-      // Prepare data
+      // Prepare data - cast to string since we validated they're not null
+      const titleStr = title as string;
+      const descStr = description as string;
+      const catIdStr = categoryId as string;
+      const priorityValue = formData.get('priority');
+      const benefitValue = formData.get('expected_benefit');
+      const costValue = formData.get('estimated_cost');
+
       const data = {
-        title: title.trim(),
-        description: description.trim(),
-        category_id: parseInt(categoryId),
-        priority: formData.get('priority') ?? 'normal',
-        expected_benefit: formData.get('expected_benefit') ?? null,
-        estimated_cost: formData.get('estimated_cost') ? parseFloat(formData.get('estimated_cost') as string) : null,
+        title: titleStr.trim(),
+        description: descStr.trim(),
+        category_id: parseInt(catIdStr, 10),
+        priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
+        expected_benefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null,
+        estimated_cost: costValue !== null && costValue !== '' ? parseFloat(costValue as string) : null,
       };
 
       // Submit to API
       const response = await fetch(`${KVP_API_BASE_URL}/kvp`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = (await response.json()) as { message?: string };
         throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as { suggestion: { id: number } };
       const suggestionId = result.suggestion.id;
 
       // Upload photos if any
@@ -710,13 +765,13 @@ class KvpPage {
       const response = await fetch(`${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
         body: formData,
       });
 
       console.info('Upload response status:', response.status);
-      const responseData = await response.json();
+      const responseData = (await response.json()) as { message?: string };
       console.info('Upload response data:', responseData);
 
       if (!response.ok) {

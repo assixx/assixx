@@ -56,7 +56,7 @@ router.post(
 
 ### Documentation
 
-- [TypeScript Architecture Guide](./TYPESCRIPT-ARCHITECTURE-GUIDE.md) - Complete guide to the TypeScript architecture
+- [TypeScript Architecture Guide](./TYPESCRIPT-STANDARDS.md) - Complete guide to the TypeScript architecture
 - [API Documentation](../docs/API.md) - API endpoints reference
 - [Database Schema](../docs/DATABASE-SETUP-README.md) - Database structure and migrations
 
@@ -107,4 +107,4 @@ See `.env.example` for required environment variables.
 
 ## Contributing
 
-Please read [TYPESCRIPT-ARCHITECTURE-GUIDE.md](./TYPESCRIPT-ARCHITECTURE-GUIDE.md) before making changes to ensure consistency with the established patterns.
+Please read [TYPESCRIPT-STANDARDS.md](./TYPESCRIPT-STANDARDS.md) before making changes to ensure consistency with the established patterns.

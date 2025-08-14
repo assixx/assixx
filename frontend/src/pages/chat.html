@@ -174,7 +174,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
         font-weight: 600;
         font-size: 0.9rem;
         flex-shrink: 0;
@@ -238,7 +238,7 @@
 
       .unread-badge {
         background: var(--primary-color);
-        color: white;
+        color: #fff;
         border-radius: 50%;
         min-width: 18px;
         height: 18px;
@@ -263,7 +263,7 @@
       /* Unread count badge in conversation list */
       .unread-count {
         background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76));
-        color: white;
+        color: #fff;
         border-radius: 50px;
         min-width: 30px;
         height: 20px;
@@ -327,7 +327,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
         font-weight: 600;
         font-size: 0.85rem;
       }
@@ -371,7 +371,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
         font-size: 1rem;
         overflow: hidden;
       }
@@ -440,11 +440,11 @@
         min-height: 0; /* Wichtig für Firefox */
         max-height: 100%;
         scroll-behavior: auto; /* Disable smooth scrolling for instant positioning */
-        opacity: 0;
+        opacity: 0%;
       }
 
       .messages-container.loaded {
-        opacity: 1;
+        opacity: 100%;
       }
 
       .message {
@@ -541,7 +541,7 @@
 
       .message-time {
         font-size: 0.7rem;
-        opacity: 0.7;
+        opacity: 0%.7;
         margin-left: auto;
       }
 
@@ -599,7 +599,7 @@
       }
 
       .message-time {
-        opacity: 0.7;
+        opacity: 0%.7;
       }
 
       .message-status {
@@ -659,7 +659,7 @@
       }
 
       .message.archived {
-        opacity: 0.5;
+        opacity: 0%.5;
       }
 
       /* Message Input Area */
@@ -707,7 +707,7 @@
 
       .message-input::placeholder {
         color: var(--text-secondary);
-        opacity: 0.7;
+        opacity: 0%.7;
       }
 
       .input-actions {
@@ -738,7 +738,7 @@
 
       .send-btn {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        color: white;
+        color: #fff;
         border: none;
         border-radius: 50%;
         width: 32px;
@@ -756,7 +756,7 @@
       }
 
       .send-btn:disabled {
-        opacity: 0.5;
+        opacity: 0%.5;
         cursor: not-allowed;
         transform: none;
       }
@@ -791,7 +791,7 @@
 
       .delivery-option.active {
         background: var(--primary-color);
-        color: white;
+        color: #fff;
         border-color: var(--primary-color);
       }
 
@@ -830,7 +830,7 @@
 
       .dropdown-arrow {
         font-size: 0.6rem;
-        opacity: 0.6;
+        opacity: 0%.6;
       }
 
       .custom-delivery-select.active .dropdown-arrow {
@@ -848,7 +848,7 @@
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: 12px;
         overflow: hidden;
-        opacity: 0;
+        opacity: 0%;
         visibility: hidden;
         transform: translateY(10px);
         z-index: 1000;
@@ -858,7 +858,7 @@
       }
 
       .custom-delivery-select.active .delivery-dropdown {
-        opacity: 1;
+        opacity: 100%;
         visibility: visible;
         transform: translateY(0);
       }
@@ -904,7 +904,7 @@
       .empty-chat-icon {
         font-size: 4rem;
         margin-bottom: var(--spacing-lg);
-        opacity: 0.5;
+        opacity: 0%.5;
       }
 
       .empty-chat h3 {
@@ -921,11 +921,11 @@
       /* Animations */
       @keyframes messageSlideIn {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(20px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }
@@ -1010,7 +1010,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
       }
 
       .attachment-info {
@@ -1128,7 +1128,7 @@
       }
 
       .user-role {
-        opacity: 0.7;
+        opacity: 0%.7;
         font-size: 0.85rem;
       }
 
@@ -1146,7 +1146,7 @@
 
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        color: white;
+        color: #fff;
       }
 
       .btn-primary:hover {
@@ -1184,11 +1184,11 @@
 
       @keyframes slideUp {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(20px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }
@@ -1284,21 +1284,21 @@
         60%,
         100% {
           transform: translateY(0);
-          opacity: 0.4;
+          opacity: 0%.4;
         }
         30% {
           transform: translateY(-10px);
-          opacity: 1;
+          opacity: 100%;
         }
       }
 
       @keyframes fadeIn {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(10px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }
@@ -1472,7 +1472,7 @@
 
       .chat-type-tab.active {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        color: white;
+        color: #fff;
         box-shadow: 0 4px 15px rgba(0, 142, 255, 0.3);
       }
 
@@ -1527,14 +1527,14 @@
         box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
-        opacity: 0;
+        opacity: 0%;
         visibility: hidden;
         transform: translateY(-10px);
         z-index: 1001;
       }
 
       .dropdown-options.active {
-        opacity: 1;
+        opacity: 100%;
         visibility: visible;
         transform: translateY(0);
       }
@@ -1590,7 +1590,7 @@
         gap: 8px;
         padding: 5px 12px;
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        color: white;
+        color: #fff;
         border-radius: 20px;
         font-size: 0.9rem;
         /* animation: fadeInUp 0.3s ease-out; */
@@ -1599,15 +1599,15 @@
       .selected-recipient-chip button {
         background: none;
         border: none;
-        color: white;
+        color: #fff;
         cursor: pointer;
         padding: 0;
         font-size: 1rem;
-        opacity: 0.8;
+        opacity: 0%.8;
       }
 
       .selected-recipient-chip button:hover {
-        opacity: 1;
+        opacity: 100%;
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />

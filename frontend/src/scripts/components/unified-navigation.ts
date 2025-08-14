@@ -33,6 +33,12 @@ interface TokenPayload {
   email?: string;
 }
 
+interface RoleSwitchMessage {
+  type: string;
+  newRole?: string;
+  token?: string;
+}
+
 interface UserProfileResponse extends User {
   user?: User;
   // Company/Tenant related properties
@@ -165,9 +171,9 @@ class UnifiedNavigation {
     this.navigationItems = this.getNavigationItems();
     // Load last KVP click timestamp and count from localStorage
     const savedTimestamp = localStorage.getItem('lastKvpClickTimestamp');
-    this.lastKvpClickTimestamp = savedTimestamp ? parseInt(savedTimestamp, 10) : null;
+    this.lastKvpClickTimestamp = savedTimestamp !== null ? parseInt(savedTimestamp, 10) : null;
     const savedCount = localStorage.getItem('lastKnownKvpCount');
-    this.lastKnownKvpCount = savedCount ? parseInt(savedCount, 10) : 0;
+    this.lastKnownKvpCount = savedCount !== null ? parseInt(savedCount, 10) : 0;
     this.init();
   }
 
@@ -178,9 +184,9 @@ class UnifiedNavigation {
     // Normalisiere den Pfad (entferne Query-Parameter und Hash)
     const normalizedPath = path.split('?')[0].split('#')[0];
 
-    // Prüfe exakten Pfad
-    const allowedRoles = accessControlMap[normalizedPath];
-    if (allowedRoles) {
+    // Prüfe ob der Pfad in der Map existiert
+    if (normalizedPath in accessControlMap) {
+      const allowedRoles = accessControlMap[normalizedPath];
       return allowedRoles.includes(role);
     }
 
@@ -274,15 +280,15 @@ class UnifiedNavigation {
 
     // Listen for BroadcastChannel messages to update navigation
     const roleChannel = new BroadcastChannel('role_switch_channel');
-    roleChannel.onmessage = (event) => {
+    roleChannel.onmessage = (event: MessageEvent<RoleSwitchMessage>) => {
       if (event.data.type === 'ROLE_SWITCHED') {
         console.info('[UnifiedNav] Received role switch notification from another tab');
 
         // Update local storage with new role data
-        if (event.data.newRole) {
+        if (event.data.newRole !== undefined) {
           localStorage.setItem('activeRole', event.data.newRole);
         }
-        if (event.data.token) {
+        if (event.data.token !== undefined) {
           localStorage.setItem('token', event.data.token);
         }
 
@@ -314,7 +320,7 @@ class UnifiedNavigation {
           }
 
           // Check if we need to redirect based on current page
-          const currentPath = window.location.pathname;
+          const currentPagePath = window.location.pathname;
           const userRole = localStorage.getItem('userRole');
           const newActiveRole = event.newValue;
 
@@ -335,7 +341,7 @@ class UnifiedNavigation {
           const targetPath = getDashboardPath(newActiveRole);
 
           // Only redirect if we're not already on the correct dashboard
-          if (targetPath && !currentPath.includes(targetPath)) {
+          if (targetPath !== '' && !currentPagePath.includes(targetPath)) {
             // Check if user has permission for the target role
             if (newActiveRole === 'root' && userRole !== 'root') {
               console.info('[UnifiedNav] User does not have root permission, skipping redirect');
@@ -360,7 +366,7 @@ class UnifiedNavigation {
   private loadUserInfo(): void {
     // User-Info aus Token oder Session laden
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token !== null) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload & {
           activeRole?: string;
@@ -390,11 +396,11 @@ class UnifiedNavigation {
           localStorage.setItem('activeRole', 'employee');
         } else {
           // Not on a dashboard page, use token or localStorage
-          if (payload.activeRole) {
+          if (payload.activeRole !== undefined) {
             this.currentRole = payload.activeRole as 'root' | 'admin' | 'employee';
           } else {
             const activeRole = localStorage.getItem('activeRole');
-            if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
+            if (activeRole !== null && ['root', 'admin', 'employee'].includes(activeRole)) {
               this.currentRole = activeRole as 'root' | 'admin' | 'employee';
             } else {
               this.currentRole = payload.role;
@@ -434,7 +440,7 @@ class UnifiedNavigation {
   private async loadFullUserProfile(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === 'test-mode') return;
 
       // Make direct API call to get full user data including company_name
       console.info('[UnifiedNav] Fetching full user profile with company data');
@@ -444,42 +450,39 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] useV2 flag:', useV2); // DEBUG
 
       try {
-        if (useV2) {
+        if (useV2 === true) {
           // Use v2 API - /users/me endpoint
           console.info('[UnifiedNav] Calling apiClient.get for /users/me'); // DEBUG
           const userData = await apiClient.get<UserProfileResponse>('/users/me');
           console.info('[UnifiedNav] Full user data from v2 API:', userData); // DEBUG
 
-          if (!userData) {
-            console.error('[UnifiedNav] No user data received from v2 API');
-            return;
-          }
+          // userData is always defined from apiClient.get, no need to check
 
           // Update company info - check tenant and fallback properties
           const companyElement = document.getElementById('sidebar-company-name');
           const companyName = userData.tenant?.company_name ?? userData.companyName;
-          if (companyElement && companyName) {
+          if (companyElement && companyName !== undefined) {
             console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
             companyElement.textContent = companyName;
           }
 
           const domainElement = document.getElementById('sidebar-domain');
           const subdomain = userData.tenant?.subdomain ?? userData.subdomain;
-          if (domainElement && subdomain) {
+          if (domainElement && subdomain !== undefined) {
             domainElement.textContent = `${subdomain}.assixx.de`;
           }
 
           // Update user info card with full details
           const sidebarUserName = document.getElementById('sidebar-user-name');
           if (sidebarUserName) {
-            sidebarUserName.textContent = userData.email ?? this.currentUser?.email ?? 'User';
+            sidebarUserName.textContent = userData.email;
           }
 
           const sidebarFullName = document.getElementById('sidebar-user-fullname');
           if (sidebarFullName) {
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
             const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-            if (firstName || lastName) {
+            if (firstName !== '' || lastName !== '') {
               const fullName = `${firstName} ${lastName}`.trim();
               sidebarFullName.textContent = fullName;
             }
@@ -502,11 +505,11 @@ class UnifiedNavigation {
             userDataTyped.employee_number ??
             userData.data?.employeeNumber ??
             userDataTyped.data?.employee_number;
-          if (sidebarEmployeeNumber && employeeNumber) {
+          if (sidebarEmployeeNumber && employeeNumber !== undefined) {
             console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
             if (employeeNumber !== '000001') {
               sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
-            } else if (employeeNumber === '000001') {
+            } else {
               sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
               sidebarEmployeeNumber.style.color = 'var(--warning-color)';
             }
@@ -520,16 +523,14 @@ class UnifiedNavigation {
             const lastName = userData.lastName ?? userData.data?.lastName ?? '';
             console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
-            if (firstName || lastName) {
+            if (firstName !== '' || lastName !== '') {
               const fullName = `${firstName} ${lastName}`.trim();
               headerUserName.textContent = fullName;
               console.info('[UnifiedNav] Set header name to:', fullName);
             } else {
               // Fallback auf Email oder Username wenn keine Namen vorhanden
-              const email = userData.email ?? this.currentUser?.email;
-              const username = userData.username ?? this.currentUser?.username;
-              headerUserName.textContent = email ?? username ?? 'User';
-              console.info('[UnifiedNav] Fallback to email/username:', email ?? username);
+              headerUserName.textContent = userData.email;
+              console.info('[UnifiedNav] Fallback to email:', userData.email);
             }
           }
 
@@ -1011,14 +1012,15 @@ class UnifiedNavigation {
   }
 
   private getNavigationForRole(role: 'admin' | 'employee' | 'root' | null): NavItem[] {
-    if (!role) return [];
-    return this.navigationItems[role] ?? [];
+    if (role === null) return [];
+    return this.navigationItems[role];
   }
 
   private getInitials(firstName?: string, lastName?: string): string {
-    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
-    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
-    return `${firstInitial}${lastInitial}` || 'U';
+    const firstInitial = firstName !== undefined && firstName !== '' ? firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = lastName !== undefined && lastName !== '' ? lastName.charAt(0).toUpperCase() : '';
+    const initials = `${firstInitial}${lastInitial}`;
+    return initials !== '' ? initials : 'U';
   }
 
   private updateAvatarElement(
@@ -1027,12 +1029,10 @@ class UnifiedNavigation {
     firstName?: string,
     lastName?: string,
   ): void {
-    if (!element) return;
-
     // Clear existing content
     element.innerHTML = '';
 
-    if (profilePicUrl) {
+    if (profilePicUrl !== null) {
       // Show profile picture
       const img = document.createElement('img');
       img.src = profilePicUrl;
@@ -1098,7 +1098,7 @@ class UnifiedNavigation {
     const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
     const firstName = this.userProfileData?.firstName ?? this.userProfileData?.first_name ?? '';
     const lastName = this.userProfileData?.lastName ?? this.userProfileData?.last_name ?? '';
-    const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
+    const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : userName;
     // API v2 uses profilePictureUrl
     const profilePicture =
       this.userProfileData?.profilePictureUrl ??
@@ -1119,7 +1119,8 @@ class UnifiedNavigation {
 
     // Check if user has switched roles and banner hasn't been dismissed
     const isRoleSwitched = storedUserRole !== activeRole && activeRole !== null;
-    const bannerDismissedKey = `roleSwitchBannerDismissed_${activeRole}`;
+    const bannerDismissedKey =
+      activeRole !== null ? `roleSwitchBannerDismissed_${activeRole}` : 'roleSwitchBannerDismissed_default';
     const isBannerDismissed = localStorage.getItem(bannerDismissedKey) === 'true';
 
     const warningBanner =
@@ -1196,8 +1197,8 @@ class UnifiedNavigation {
             }
 
             <div id="user-info">
-              <div id="user-avatar" class="user-avatar ${profilePicture ? '' : 'avatar-initials'}">${
-                profilePicture
+              <div id="user-avatar" class="user-avatar ${profilePicture !== null ? '' : 'avatar-initials'}">${
+                profilePicture !== null
                   ? `<img src="${profilePicture}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
                   : this.getInitials(firstName, lastName)
               }</div>
@@ -1331,7 +1332,7 @@ class UnifiedNavigation {
   private createMenuItem(item: NavItem, isActive = false): string {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
-    const hasSubmenu = item.hasSubmenu && item.submenu && item.submenu.length > 0;
+    const hasSubmenu = item.hasSubmenu === true && item.submenu !== undefined && item.submenu.length > 0;
     // Remove onclick handler - use normal navigation instead
     const clickHandler = '';
 
@@ -1342,9 +1343,9 @@ class UnifiedNavigation {
     } else if (item.badge === 'pending-surveys') {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 15px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-documents') {
-      badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'new-kvp-suggestions') {
-      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'lean-management-parent') {
       badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-calendar-events') {
@@ -1359,17 +1360,17 @@ class UnifiedNavigation {
               .map((child) => {
                 // Support both badgeId and badge properties
                 let childBadgeHtml = '';
-                if (child.badgeId) {
-                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                if (child.badgeId !== undefined) {
+                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
                 } else if (child.badge === 'pending-surveys') {
                   childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
                 } else if (child.badge === 'new-kvp-suggestions') {
-                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
                 }
 
                 return `
               <li class="submenu-item" style="position: relative;">
-                <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
+                <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">
                   <span class="submenu-label">${child.label}</span>
                   ${childBadgeHtml}
                 </a>
@@ -1381,8 +1382,8 @@ class UnifiedNavigation {
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
-            <span class="icon">${item.icon}</span>
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">"
+            <span class="icon">${item.icon ?? ''}</span>
             <span class="label">${item.label}</span>
             <span class="nav-indicator"></span>
             <span class="submenu-arrow">
@@ -1400,14 +1401,14 @@ class UnifiedNavigation {
     }
 
     // If has children, create a dropdown (old style)
-    if (hasChildren) {
+    if (hasChildren === true) {
       const submenuItems =
         item.children && item.children.length > 0
           ? item.children
               .map(
                 (child) => `
         <li class="submenu-item">
-          <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
+          <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">"
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
@@ -1418,8 +1419,8 @@ class UnifiedNavigation {
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
-            <span class="icon">${item.icon}</span>
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">"
+            <span class="icon">${item.icon ?? ''}</span>
             <span class="label">${item.label}</span>
             <span class="nav-indicator"></span>
             <span class="submenu-arrow">
@@ -1438,8 +1439,8 @@ class UnifiedNavigation {
 
     return `
             <li class="sidebar-item ${activeClass}" style="position: relative;">
-                <a href="${item.url}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">
-                    <span class="icon">${item.icon}</span>
+                <a href="${item.url ?? '#'}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">"
+                    <span class="icon">${item.icon ?? ''}</span>
                     <span class="label">${item.label}</span>
                     <span class="nav-indicator"></span>
                     ${badgeHtml}
@@ -1477,7 +1478,7 @@ class UnifiedNavigation {
         const parentItem = parentSubmenu?.closest('.sidebar-item');
         if (parentItem) {
           const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
-          if (parentId) {
+          if (parentId !== null && parentId !== undefined) {
             localStorage.setItem('openSubmenu', parentId);
           }
         }
@@ -1496,7 +1497,7 @@ class UnifiedNavigation {
       if (logoutBtn) {
         e.preventDefault();
         e.stopPropagation(); // Stop event from bubbling
-        this.handleLogout().catch((error) => {
+        this.handleLogout().catch((error: unknown) => {
           console.error('Logout error:', error);
           // Fallback: redirect to login even if logout fails
           window.location.href = '/login';
@@ -1514,7 +1515,7 @@ class UnifiedNavigation {
       logoutBtnCheck.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.handleLogout().catch((error) => {
+        this.handleLogout().catch((error: unknown) => {
           console.error('Logout error from direct listener:', error);
           window.location.href = '/login';
         });
@@ -1617,8 +1618,8 @@ class UnifiedNavigation {
       this.updateToggleIcon();
 
       // Update logo based on collapsed state
-      const headerLogo = document.getElementById('header-logo') as HTMLImageElement;
-      if (headerLogo) {
+      const headerLogo = document.getElementById('header-logo') as HTMLImageElement | null;
+      if (headerLogo !== null) {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
 
@@ -1629,10 +1630,10 @@ class UnifiedNavigation {
 
     // Hover effect for toggle button
     toggleBtn.addEventListener('mouseenter', () => {
-      const isCollapsed = sidebar.classList.contains('collapsed');
+      const isSidebarCollapsed = sidebar.classList.contains('collapsed');
       const iconPath = toggleBtn.querySelector('.toggle-icon-path');
       if (iconPath) {
-        if (isCollapsed) {
+        if (isSidebarCollapsed) {
           // Show menu-close icon (menu with arrow right) when collapsed
           iconPath.setAttribute(
             'd',
@@ -1674,8 +1675,9 @@ class UnifiedNavigation {
 
     const navItems = sidebar.querySelectorAll('.sidebar-link');
     navItems.forEach((item) => {
-      const label = item.querySelector('.label')?.textContent;
-      if (label) {
+      const labelElement = item.querySelector('.label');
+      if (labelElement !== null && labelElement.textContent !== '') {
+        const label = labelElement.textContent;
         item.setAttribute('title', '');
 
         // Show tooltip only when sidebar is collapsed
@@ -1805,8 +1807,9 @@ class UnifiedNavigation {
 
               // Update display text
               const displayText = dropdownDisplay.querySelector('span');
-              if (displayText) {
-                displayText.textContent = (e.target as HTMLElement).textContent ?? '';
+              if (displayText && e.target instanceof HTMLElement) {
+                // After instanceof check, textContent is always string
+                displayText.textContent = e.target.textContent;
               }
 
               // Close dropdown
@@ -1814,8 +1817,8 @@ class UnifiedNavigation {
               dropdownOptions.classList.remove('active');
 
               // Update hidden input
-              const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement;
-              if (hiddenInput) {
+              const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement | null;
+              if (hiddenInput !== null) {
                 hiddenInput.value = selectedRole;
               }
 
@@ -1886,8 +1889,9 @@ class UnifiedNavigation {
           option.addEventListener('click', (e) => {
             void (async () => {
               e.stopPropagation();
-              const selectedRole = (option as HTMLElement).dataset.value as 'root' | 'admin' | 'employee';
-              if (selectedRole) {
+              const roleValue = (option as HTMLElement).dataset.value;
+              if (roleValue === 'root' || roleValue === 'admin' || roleValue === 'employee') {
+                const selectedRole = roleValue;
                 console.info('[UnifiedNav] Admin view switching to role:', selectedRole);
 
                 // Close dropdown
@@ -1919,7 +1923,7 @@ class UnifiedNavigation {
 
     // Store active navigation
     const navId = link.dataset.navId;
-    if (navId) {
+    if (navId !== undefined && navId !== '') {
       localStorage.setItem('activeNavigation', navId);
 
       // If user clicked on documents, mark all as read
@@ -1929,7 +1933,7 @@ class UnifiedNavigation {
 
       // If admin/root clicked on KVP, reset the badge
       if (navId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
-        this.resetKvpBadge().catch((error) => {
+        this.resetKvpBadge().catch((error: unknown) => {
           console.error('Error resetting KVP badge:', error);
         });
       }
@@ -1959,13 +1963,13 @@ class UnifiedNavigation {
 
     // If on dashboard page
     if (isMainDashboard) {
-      if (currentHash && currentHash !== 'dashboard') {
+      if (currentHash !== '' && currentHash !== 'dashboard') {
         // Use hash to determine active section
         const hashLink = document.querySelector(`[data-nav-id="${currentHash}"]`);
         if (hashLink) {
           hashLink.closest('.sidebar-item')?.classList.add('active');
         }
-      } else if (!activeNav || activeNav === 'dashboard') {
+      } else if (activeNav === null || activeNav === '' || activeNav === 'dashboard') {
         // Default to overview only if no hash and no stored nav
         const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
         if (dashboardLink) {
@@ -1974,7 +1978,7 @@ class UnifiedNavigation {
         // Clear any stored navigation to prevent last selected from being active
         localStorage.removeItem('activeNavigation');
       }
-    } else if (activeNav && activeNav !== 'dashboard') {
+    } else if (activeNav !== null && activeNav !== '' && activeNav !== 'dashboard') {
       // Only use stored navigation if it's not the dashboard
       const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
       if (activeLink) {
@@ -2021,12 +2025,15 @@ class UnifiedNavigation {
 
     // Check if we're on a dashboard page with a section that has a submenu
     const isDashboard = currentPath.includes('dashboard');
-    if (isDashboard && section) {
+    if (isDashboard && section !== null && section !== '') {
       // Check if this section corresponds to a menu item with submenu
       const menuItems = this.getNavigationForRole(this.currentRole);
       const menuItem = menuItems.find((item) => item.id === section);
 
-      if (menuItem && (menuItem.hasSubmenu || menuItem.children)) {
+      if (
+        menuItem !== undefined &&
+        (menuItem.hasSubmenu === true || (menuItem.children !== undefined && menuItem.children.length > 0))
+      ) {
         // Open the submenu for this section
         const submenu = document.getElementById(`submenu-${section}`);
         const parentItem = submenu?.closest('.sidebar-item.has-submenu');
@@ -2082,7 +2089,7 @@ class UnifiedNavigation {
 
               // Store the open submenu state
               const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
-              if (parentId) {
+              if (parentId !== null && parentId !== undefined && parentId !== '') {
                 localStorage.setItem('openSubmenu', parentId);
               }
             }
@@ -2101,7 +2108,7 @@ class UnifiedNavigation {
 
     // Restore previously open submenu if we're still on the same parent section
     const storedSubmenu = localStorage.getItem('openSubmenu');
-    if (storedSubmenu && !foundActiveSubmenu) {
+    if (storedSubmenu !== null && storedSubmenu !== '' && !foundActiveSubmenu) {
       const submenu = document.getElementById(`submenu-${storedSubmenu}`);
       const parentItem = submenu?.closest('.sidebar-item.has-submenu');
 
@@ -2118,7 +2125,7 @@ class UnifiedNavigation {
   private autoDetectActivePage(currentPath: string): boolean {
     const menuItems = this.getNavigationForRole(this.currentRole);
     const matchingItem = menuItems.find((item) => {
-      if (!item.url || item.url.startsWith('#')) return false;
+      if (item.url === undefined || item.url === '' || item.url.startsWith('#')) return false;
       return currentPath.includes(item.url.replace('/', ''));
     });
 
@@ -2198,7 +2205,7 @@ class UnifiedNavigation {
   public async updateUnreadMessages(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === '' || token === 'test-mode') return;
 
       // Use v2 API endpoint with camelCase response
       // Note: apiClient automatically adds /api/v2 prefix for v2 endpoints
@@ -2215,7 +2222,7 @@ class UnifiedNavigation {
       const badge = document.getElementById('chat-unread-badge');
       if (badge) {
         // v2 API uses totalUnread (camelCase)
-        const count = data.totalUnread ?? 0;
+        const count = data.totalUnread;
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count.toString();
           badge.style.display = 'inline-block';
@@ -2232,7 +2239,7 @@ class UnifiedNavigation {
   public async updateUnreadCalendarEvents(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === '' || token === 'test-mode') return;
 
       const data = await apiClient.get<{
         totalUnread: number;
@@ -2247,7 +2254,7 @@ class UnifiedNavigation {
       const badge = document.getElementById('calendar-unread-badge');
       if (badge) {
         // Nur Events mit Statusanfrage zählen
-        const count = data.totalUnread ?? 0;
+        const count = data.totalUnread;
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count.toString();
           badge.style.display = 'inline-block';
@@ -2264,7 +2271,7 @@ class UnifiedNavigation {
   public async updateNewKvpSuggestions(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === '' || token === 'test-mode') return;
 
       // Only show badge for admin/root users
       if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
@@ -2282,8 +2289,8 @@ class UnifiedNavigation {
         avgSavings: number | null;
       }>('/kvp/dashboard/stats');
       const badge = document.getElementById('kvp-badge');
-      if (badge && data) {
-        const currentCount = data.newSuggestions ?? 0;
+      if (badge !== null) {
+        const currentCount = data.newSuggestions;
 
         // Check if user has clicked on KVP before
         const hasClickedKvp = this.lastKvpClickTimestamp !== null;
@@ -2315,8 +2322,8 @@ class UnifiedNavigation {
   public async updatePendingSurveys(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      console.info('[UnifiedNav] updatePendingSurveys - Token exists:', !!token);
-      if (!token || token === 'test-mode') return;
+      console.info('[UnifiedNav] updatePendingSurveys - Token exists:', token !== null && token !== '');
+      if (token === null || token === '' || token === 'test-mode') return;
 
       // Nur für Employees
       const role = localStorage.getItem('userRole');
@@ -2336,7 +2343,7 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
       console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
 
-      const count = data.pendingCount ?? 0;
+      const count = data.pendingCount;
 
       // Update child badge (in submenu)
       if (badge) {
@@ -2375,7 +2382,7 @@ class UnifiedNavigation {
   public async updateUnreadDocuments(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === '' || token === 'test-mode') return;
 
       // Für Employees und Admins
       const role = localStorage.getItem('userRole') ?? this.currentRole;
@@ -2387,9 +2394,9 @@ class UnifiedNavigation {
         pagination?: { total: number; page: number; perPage: number };
       }>('/documents');
       // Backend returns {documents: Document[], pagination: {...}}
-      const documents = result.documents ?? [];
+      const documents = result.documents;
 
-      if (documents && documents.length > 0) {
+      if (documents.length > 0) {
         // Count unread documents by category
         const unreadCounts = {
           company: 0,
@@ -2407,13 +2414,13 @@ class UnifiedNavigation {
         }
 
         documents.forEach((doc: DocumentResponse) => {
-          if (!doc.is_read) {
+          if (doc.is_read === false) {
             unreadCounts.total++;
 
             // Special case for payroll documents
             if (doc.category === 'salary') {
               unreadCounts.payroll++;
-            } else if (doc.scope) {
+            } else if (doc.scope !== undefined) {
               // Count by scope
               unreadCounts[doc.scope as keyof typeof unreadCounts]++;
             }
@@ -2459,7 +2466,7 @@ class UnifiedNavigation {
   private async markAllDocumentsAsRead(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === '' || token === 'test-mode') return;
 
       await apiClient.post('/documents/mark-all-read');
 
@@ -2490,7 +2497,7 @@ class UnifiedNavigation {
     // Get the current count from the API to save as baseline
     try {
       const token = localStorage.getItem('token');
-      if (token && token !== 'test-mode') {
+      if (token !== null && token !== '' && token !== 'test-mode') {
         const data = await apiClient.get<{
           totalSuggestions: number;
           newSuggestions: number;
@@ -2499,11 +2506,10 @@ class UnifiedNavigation {
           rejected: number;
           avgSavings: number | null;
         }>('/kvp/dashboard/stats');
-        if (data) {
-          this.lastKnownKvpCount = data.newSuggestions ?? 0;
-          localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
-          console.info('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
-        }
+        // data is always returned from apiClient.get
+        this.lastKnownKvpCount = data.newSuggestions;
+        localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
+        console.info('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
       }
     } catch (error) {
       console.error('Error fetching KVP count for baseline:', error);
@@ -2626,7 +2632,7 @@ class UnifiedNavigation {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
+      if (token === null || token === '' || token === 'test-mode') return;
 
       const data = await apiClient.get<{
         used: number;
@@ -2746,7 +2752,7 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #fff;
         font-weight: 600;
         font-size: 0.9rem;
     }
@@ -2905,11 +2911,11 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-title:hover .pin-head {
-        opacity: 0;
+        opacity: 0%;
     }
 
     .sidebar-title:hover .pin-needle {
-        opacity: 1;
+        opacity: 100%;
         top: -18px;
     }
 
@@ -2957,7 +2963,7 @@ const unifiedNavigationCSS = `
         top: -10px;
         left: 50%;
         transform: translateX(-50%);
-        opacity: 0;
+        opacity: 0%;
         /* transition: all 0.3s ease; */
         z-index: 2;
     }
@@ -3023,7 +3029,7 @@ const unifiedNavigationCSS = `
         border-radius: 8px;
         cursor: pointer;
         /* transition: all 0.3s ease; */
-        color: white;
+        color: #fff;
         margin-right: 15px;
         margin-left: -6px;
     }
@@ -3034,7 +3040,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-toggle:hover .toggle-icon {
-        opacity: 0.8;
+        opacity: 0%.8;
     }
 
     .toggle-icon {
@@ -3066,7 +3072,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .title-text {
-        opacity: 0;
+        opacity: 0%;
         width: 0;
         display: none;
     }
@@ -3217,19 +3223,19 @@ const unifiedNavigationCSS = `
         margin-left: 10px;
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.9);
-        color: white;
+        color: #fff;
         border-radius: 6px;
         font-size: 14px;
         white-space: nowrap;
         z-index: 1000;
         pointer-events: none;
-        opacity: 0;
+        opacity: 0%;
         /*animation: tooltipFadeIn 0.3s ease forwards;*/
     }
 
     @keyframes tooltipFadeIn {
         to {
-            opacity: 1;
+            opacity: 100%;
         }
     }
 
@@ -3290,7 +3296,7 @@ const unifiedNavigationCSS = `
         background:
             radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
             radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-        opacity: 1;
+        opacity: 100%;
         z-index: 0;
     }
 
@@ -3352,7 +3358,7 @@ const unifiedNavigationCSS = `
         align-items: center !important;
         justify-content: center !important;
         background: linear-gradient(135deg, #2196F3, #42a5f5) !important;
-        color: white !important;
+        color: #fff !important;
         font-weight: 600 !important;
         font-size: 0.85rem !important;
         text-transform: uppercase !important;
@@ -3580,7 +3586,7 @@ const unifiedNavigationCSS = `
         to {
             width: 200px;
             height: 200px;
-            opacity: 0;
+            opacity: 0%;
         }
     }
 
@@ -3597,7 +3603,7 @@ const unifiedNavigationCSS = `
     .submenu-arrow {
         margin-left: auto;
         /* transition: transform 0.3s ease; */
-        opacity: 0.6;
+        opacity: 0%.6;
     }
 
     .sidebar-item.has-submenu.open .submenu-arrow {
@@ -3774,7 +3780,7 @@ const unifiedNavigationCSS = `
         width: 100%;
         padding: var(--spacing-sm) var(--spacing-md);
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         border: none;
         border-radius: var(--radius-sm);
         font-size: 13px;
@@ -3891,35 +3897,30 @@ if (document.readyState === 'loading') {
 
 // Setup periodic updates
 const setupPeriodicUpdates = () => {
+  // window.unifiedNav is always set before this is called (via setTimeout)
+  const nav = window.unifiedNav;
+
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
-  if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
-    void window.unifiedNav.updateUnreadMessages();
+  if (typeof nav.updateUnreadMessages === 'function') {
+    void nav.updateUnreadMessages();
     setInterval(() => {
-      void window.unifiedNav?.updateUnreadMessages();
+      void nav.updateUnreadMessages();
     }, 30000); // Alle 30 Sekunden
   }
 
   // Offene Umfragen beim Start und periodisch aktualisieren
-  if (
-    window.unifiedNav &&
-    'updatePendingSurveys' in window.unifiedNav &&
-    typeof window.unifiedNav.updatePendingSurveys === 'function'
-  ) {
-    void window.unifiedNav.updatePendingSurveys();
+  if ('updatePendingSurveys' in nav && typeof nav.updatePendingSurveys === 'function') {
+    void nav.updatePendingSurveys();
     setInterval(() => {
-      void window.unifiedNav?.updatePendingSurveys?.();
+      void nav.updatePendingSurveys();
     }, 30000); // Alle 30 Sekunden
   }
 
   // Storage-Informationen für Root User beim Start und periodisch aktualisieren
-  if (
-    window.unifiedNav &&
-    'updateStorageInfo' in window.unifiedNav &&
-    typeof window.unifiedNav.updateStorageInfo === 'function'
-  ) {
-    void window.unifiedNav.updateStorageInfo();
+  if ('updateStorageInfo' in nav && typeof nav.updateStorageInfo === 'function') {
+    void nav.updateStorageInfo();
     setInterval(() => {
-      void window.unifiedNav?.updateStorageInfo?.();
+      void nav.updateStorageInfo();
     }, 60000); // Alle 60 Sekunden
   }
 };
@@ -3946,7 +3947,7 @@ window.dismissRoleSwitchBanner = function () {
 
     // Save dismissal state
     const activeRole = localStorage.getItem('activeRole');
-    if (activeRole) {
+    if (activeRole !== null && activeRole !== '') {
       const bannerDismissedKey = `roleSwitchBannerDismissed_${activeRole}`;
       localStorage.setItem(bannerDismissedKey, 'true');
     }

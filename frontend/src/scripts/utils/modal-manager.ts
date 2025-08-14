@@ -38,11 +38,11 @@ class ModalManager {
 
     // Check if modal already exists in activeModals
     let modal = this.activeModals.get(modalId);
-    console.info(`[ModalManager] Existing modal in map: ${!!modal}`);
+    console.info(`[ModalManager] Existing modal in map: ${String(modal !== undefined)}`);
 
     // Also check if it's in the DOM
     const modalInDom = document.getElementById(modalId);
-    console.info(`[ModalManager] Modal in DOM: ${!!modalInDom}`);
+    console.info(`[ModalManager] Modal in DOM: ${String(modalInDom !== null)}`);
 
     // If modal exists in map but not in DOM, remove from map
     if (modal && !modalInDom) {
@@ -99,7 +99,6 @@ class ModalManager {
 
     // Use requestAnimationFrame to ensure smooth animation
     window.requestAnimationFrame(() => {
-      if (!modal) return;
       modal.classList.add('active');
       console.info(`[ModalManager] Modal classes after show: ${modal.className}`);
 
@@ -121,7 +120,6 @@ class ModalManager {
 
       // Double-check visibility after a frame
       window.requestAnimationFrame(() => {
-        if (!modal) return;
         const styles = window.getComputedStyle(modal);
         console.info(`[ModalManager] Modal computed style visibility:`, styles.visibility);
         console.info(`[ModalManager] Modal computed style opacity:`, styles.opacity);
@@ -129,9 +127,8 @@ class ModalManager {
 
         // If still not visible, force it (also check for empty string)
         if (
-          !styles.opacity ||
-          styles.opacity === '0' ||
           styles.opacity === '' ||
+          styles.opacity === '0' ||
           styles.visibility === 'hidden' ||
           styles.visibility === '' ||
           styles.display === 'none'
@@ -193,14 +190,14 @@ class ModalManager {
 
     // Try to get template first
     const template = this.templates.get(modalId);
-    console.info(`[ModalManager] Template found: ${!!template}`);
+    console.info(`[ModalManager] Template found: ${String(template !== undefined)}`);
 
-    if (template) {
+    if (template !== undefined && template !== '') {
       console.info(`[ModalManager] Creating modal from template...`);
       const div = document.createElement('div');
       div.innerHTML = template;
       const modal = div.firstElementChild as HTMLElement;
-      console.info(`[ModalManager] Modal element created:`, modal?.tagName, modal?.id);
+      console.info(`[ModalManager] Modal element created:`, modal.tagName, modal.id);
       return modal;
     }
 
@@ -215,7 +212,7 @@ class ModalManager {
       <div class="modal-overlay" id="${modalId}">
         <div class="modal-container modal-${config.size ?? 'md'}">
           ${
-            config.title
+            config.title !== undefined && config.title !== ''
               ? `
             <div class="modal-header">
               <h2 class="modal-title">${config.title}</h2>
@@ -245,9 +242,9 @@ class ModalManager {
       const target = e.target as HTMLElement;
 
       // Close button clicked
-      if (target.matches('[data-action="close"]') ?? target.closest('[data-action="close"]')) {
+      if (target.matches('[data-action="close"]') || target.closest('[data-action="close"]') !== null) {
         const modal = target.closest('.modal-overlay');
-        if (modal?.id) {
+        if (modal !== null && modal.id !== '') {
           this.hide(modal.id);
         }
       }
@@ -255,7 +252,7 @@ class ModalManager {
       // Overlay clicked (outside modal content)
       if (target.classList.contains('modal-overlay')) {
         const modalId = target.id;
-        if (modalId) {
+        if (modalId !== '') {
           this.hide(modalId);
         }
       }
@@ -266,7 +263,7 @@ class ModalManager {
       if (e.key === 'Escape' && this.activeModals.size > 0) {
         // Get the last added modal
         const lastModalId = Array.from(this.activeModals.keys()).pop();
-        if (lastModalId) {
+        if (lastModalId !== undefined && lastModalId !== '') {
           this.hide(lastModalId);
         }
       }
@@ -287,7 +284,7 @@ export function openModal(content: string, config?: Partial<ModalConfig>): void 
 }
 
 export function closeModal(modalId?: string): void {
-  if (modalId) {
+  if (modalId !== undefined && modalId !== '') {
     modalManager.hide(modalId);
   } else {
     modalManager.hideAll();

@@ -426,14 +426,14 @@ function generateBreadcrumbsFromURL() {
         currentPage === '/pages/storage-upgrade'
       ) {
         // Diese Seiten können von verschiedenen Dashboards aus erreicht werden
-        const userRole = localStorage.getItem('userRole');
-        if (userRole === 'root') {
+        const currentUserRole = localStorage.getItem('userRole');
+        if (currentUserRole === 'root') {
           items.push({
             label: 'Root Dashboard',
             href: '/root-dashboard',
             icon: 'fa-shield-alt',
           });
-        } else if (userRole === 'admin') {
+        } else if (currentUserRole === 'admin') {
           items.push({
             label: 'Admin Dashboard',
             href: '/admin-dashboard',

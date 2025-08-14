@@ -280,8 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Update DashboardUI functions
   if (window.DashboardUI) {
-    window.DashboardUI.openModal = showModal;
-    window.DashboardUI.closeModal = hideModal;
+    window.DashboardUI.openModal = window.showModal;
+    window.DashboardUI.closeModal = window.hideModal;
   }
 });
 
@@ -289,6 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
 window.BlackboardModalUpdate = {
   convertSelectsToDropdowns,
   updateModalStructure,
-  showModal,
-  hideModal,
+  showModal: window.showModal,
+  hideModal: window.hideModal,
 };

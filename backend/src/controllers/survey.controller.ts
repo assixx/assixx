@@ -199,7 +199,7 @@ class SurveyController {
         | "number";
       const surveyData = {
         ...req.body,
-        questions: req.body.questions?.map((q) => ({
+        questions: req.body.questions.map((q) => ({
           ...q,
           question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),

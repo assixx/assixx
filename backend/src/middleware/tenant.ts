@@ -75,7 +75,7 @@ export async function tenantMiddleware(
     const reqWithBody = req as RequestWithBody;
     if (
       (tenantSubdomain == null || tenantSubdomain === "") &&
-      reqWithBody.body?.subdomain != null &&
+      reqWithBody.body.subdomain != null &&
       reqWithBody.body.subdomain !== ""
     ) {
       tenantSubdomain = reqWithBody.body.subdomain;

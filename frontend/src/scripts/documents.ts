@@ -47,16 +47,16 @@ function setupEventListeners(): void {
   filterPills.forEach((pill) => {
     pill.addEventListener('click', (e) => {
       const target = e.currentTarget as HTMLElement;
-      const filter = target.dataset.filter as DocumentScope;
-      if (filter) {
+      const filter = target.dataset.filter as DocumentScope | undefined;
+      if (filter !== undefined) {
         setActiveFilter(filter);
       }
     });
   });
 
   // Search input
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-  if (searchInput) {
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
+  if (searchInput !== null) {
     searchInput.addEventListener(
       'input',
       debounce((e) => {
@@ -83,14 +83,14 @@ function setupEventListeners(): void {
 async function loadDocuments(): Promise<void> {
   try {
     const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents/v2';
+    const endpoint = useV2Documents === true ? '/api/v2/documents' : '/api/documents/v2';
     const response = await fetchWithAuth(endpoint);
 
     if (!response.ok) {
       throw new Error('Failed to load documents');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { documents?: Document[] };
     allDocuments = data.documents ?? [];
 
     // Update document counts
@@ -118,7 +118,7 @@ function updateCounts(): void {
     if (doc.scope === 'company') counts.company++;
     else if (doc.scope === 'department') counts.department++;
     else if (doc.scope === 'team') counts.team++;
-    else if (doc.scope === 'personal') counts.personal++;
+    else counts.personal++;
 
     // Count payroll documents (Gehaltsabrechnungen) based on category
     if (doc.category === 'salary') counts.payroll++;
@@ -148,7 +148,7 @@ function updateCount(elementId: string, count: number): void {
  */
 function updateStats(): void {
   const totalDocs = allDocuments.length;
-  const unreadDocs = allDocuments.filter((doc) => !doc.is_read).length;
+  const unreadDocs = allDocuments.filter((doc) => doc.is_read !== true).length;
 
   // Calculate documents from this week
   const oneWeekAgo = new Date();
@@ -197,12 +197,12 @@ function applyFilters(): void {
   }
 
   // Apply search filter
-  if (currentSearch) {
+  if (currentSearch !== '') {
     filteredDocuments = filteredDocuments.filter(
       (doc) =>
-        (doc.file_name.toLowerCase().includes(currentSearch) ||
-          doc.description?.toLowerCase().includes(currentSearch)) ??
-        doc.uploaded_by_name?.toLowerCase().includes(currentSearch),
+        doc.file_name.toLowerCase().includes(currentSearch) ||
+        doc.description?.toLowerCase().includes(currentSearch) === true ||
+        doc.uploaded_by_name?.toLowerCase().includes(currentSearch) === true,
     );
   }
 
@@ -228,7 +228,7 @@ function sortDocuments(): void {
       filteredDocuments.sort((a, b) => a.file_name.localeCompare(b.file_name));
       break;
     case 'size':
-      filteredDocuments.sort((a, b) => (b.file_size || 0) - (a.file_size || 0));
+      filteredDocuments.sort((a, b) => b.file_size - a.file_size);
       break;
   }
 }
@@ -273,7 +273,7 @@ function createDocumentCard(doc: Document): HTMLElement {
   };
 
   const icon = getFileIcon(doc.mime_type ?? doc.file_name);
-  const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
+  const readBadge = doc.is_read !== true ? '<span class="document-badge unread">NEU</span>' : '';
 
   card.innerHTML = `
     ${readBadge}
@@ -293,7 +293,7 @@ function createDocumentCard(doc: Document): HTMLElement {
         <span>${escapeHtml(doc.uploaded_by_name ?? 'System')}</span>
       </div>
       ${
-        doc.file_size
+        doc.file_size !== 0
           ? `
         <div class="document-meta-item">
           <i class="fas fa-weight"></i>
@@ -368,7 +368,8 @@ function viewDocument(documentId: number): void {
 
     // Mark as read
     const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const endpoint = useV2Documents ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
+    const endpoint =
+      useV2Documents === true ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
     fetchWithAuth(endpoint, { method: 'POST' })
       .then(() => {
         // Update local state
@@ -395,20 +396,20 @@ function showDocumentModal(doc: Document): void {
   if (!modal) return;
 
   // Update info
-  updateElement('modalDocumentTitle', doc.file_name || 'Dokument');
+  updateElement('modalDocumentTitle', doc.file_name !== '' ? doc.file_name : 'Dokument');
   updateElement('modalFileName', doc.file_name);
-  updateElement('modalFileSize', formatFileSize(doc.file_size || 0));
+  updateElement('modalFileSize', formatFileSize(doc.file_size));
   updateElement('modalUploadedBy', doc.uploaded_by_name ?? 'System');
   updateElement('modalUploadDate', formatDate(doc.created_at));
 
   // Setup preview
-  const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement;
+  const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
   const previewError = document.getElementById('previewError');
 
-  if (previewFrame && previewError) {
+  if (previewFrame !== null && previewError !== null) {
     // Create preview URL with authentication token
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (token === null || token === '') {
       previewFrame.style.display = 'none';
       previewError.style.display = 'block';
       return;
@@ -416,7 +417,8 @@ function showDocumentModal(doc: Document): void {
 
     // Try to show PDF preview with authentication
     const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const previewUrl = useV2Documents ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
+    const previewUrl =
+      useV2Documents === true ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
 
     // For iframe, we need to handle authentication differently
     // First, try to fetch the document
@@ -435,7 +437,7 @@ function showDocumentModal(doc: Document): void {
         // Clean up blob URL when modal closes
         previewFrame.dataset.blobUrl = blobUrl;
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Preview error:', error);
         previewFrame.style.display = 'none';
         previewError.style.display = 'block';
@@ -461,11 +463,11 @@ function closeDocumentModal(): void {
     modal.style.display = 'none';
 
     // Clear iframe and clean up blob URL
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement;
-    if (previewFrame) {
+    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
+    if (previewFrame !== null) {
       // Clean up blob URL if exists
       const blobUrl = previewFrame.dataset.blobUrl;
-      if (blobUrl) {
+      if (blobUrl !== undefined && blobUrl !== '') {
         URL.revokeObjectURL(blobUrl);
         delete previewFrame.dataset.blobUrl;
       }
@@ -482,7 +484,7 @@ function closeDocumentModal(): void {
 async function downloadDocument(docId?: string | number): Promise<void> {
   let documentId: string;
 
-  if (docId) {
+  if (docId !== undefined) {
     // Called with parameter from employee-dashboard
     documentId = String(docId);
   } else {
@@ -494,7 +496,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     }
 
     const dataId = downloadBtn.getAttribute('data-document-id');
-    if (!dataId) {
+    if (dataId === null || dataId === '') {
       console.error('No document ID found');
       return;
     }
@@ -506,7 +508,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
 
     // Check if we have a token
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (token === null || token === '') {
       showError('Nicht angemeldet. Bitte melden Sie sich erneut an.');
       window.location.href = '/login';
       return;
@@ -514,9 +516,8 @@ async function downloadDocument(docId?: string | number): Promise<void> {
 
     // Fetch with authentication
     const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const endpoint = useV2Documents
-      ? `/api/v2/documents/download/${documentId}`
-      : `/api/documents/download/${documentId}`;
+    const endpoint =
+      useV2Documents === true ? `/api/v2/documents/download/${documentId}` : `/api/documents/download/${documentId}`;
     const response = await fetchWithAuth(endpoint);
 
     if (!response.ok) {
@@ -597,9 +598,9 @@ window.selectSort = function (value: SortOption, text: string): void {
 
   const display = document.getElementById('sortDisplay');
   const dropdown = document.getElementById('sortDropdown');
-  const input = document.getElementById('sortValue') as HTMLInputElement;
+  const input = document.getElementById('sortValue') as HTMLInputElement | null;
 
-  if (display && dropdown && input) {
+  if (display !== null && dropdown !== null && input !== null) {
     const span = display.querySelector('span');
     if (span) {
       span.textContent = text;
@@ -687,6 +688,8 @@ declare global {
 
 // Make functions available globally
 window.closeDocumentModal = closeDocumentModal;
-window.downloadDocument = (docId?: string | number) => void downloadDocument(docId);
+window.downloadDocument = (docId?: string | number) => {
+  void downloadDocument(docId);
+};
 
 export { loadDocuments, setActiveFilter, viewDocument };

@@ -96,11 +96,11 @@ class FeatureController {
               ? false
               : undefined,
         page:
-          req.query.page !== null && req.query.page !== undefined
+          req.query.page !== undefined
             ? parseInt(req.query.page, 10)
             : undefined,
         limit:
-          req.query.limit !== null && req.query.limit !== undefined
+          req.query.limit !== undefined
             ? parseInt(req.query.limit, 10)
             : undefined,
       };

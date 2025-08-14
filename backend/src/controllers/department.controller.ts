@@ -168,7 +168,7 @@ class DepartmentController {
         id,
         tenantId,
       );
-      if (result === null || result === undefined) {
+      if (result === null) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
       }

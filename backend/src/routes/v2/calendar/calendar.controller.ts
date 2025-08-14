@@ -100,12 +100,6 @@ export async function listEvents(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
@@ -168,12 +162,6 @@ export async function getEvent(
   try {
     const eventId = parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
@@ -263,12 +251,6 @@ export async function createEvent(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
@@ -391,12 +373,6 @@ export async function updateEvent(
   try {
     const eventId = parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
@@ -513,12 +489,6 @@ export async function deleteEvent(
   try {
     const eventId = parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
@@ -627,12 +597,6 @@ export async function updateAttendeeResponse(
   try {
     const eventId = parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const { response } = req.body as {
@@ -713,12 +677,6 @@ export async function exportEvents(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
@@ -799,17 +757,11 @@ export async function getDashboardEvents(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
 
-    const days = parseInt((req.query.days as string) ?? "7", 10);
-    const limit = parseInt((req.query.limit as string) ?? "5", 10);
+    const days = parseInt((req.query.days ?? "7") as string, 10);
+    const limit = parseInt((req.query.limit ?? "5") as string, 10);
 
     const events = await CalendarModel.getDashboardEvents(
       tenantId,
@@ -864,12 +816,6 @@ export async function getUnreadEvents(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
 

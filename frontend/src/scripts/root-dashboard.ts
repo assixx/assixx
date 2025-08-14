@@ -8,6 +8,19 @@ import { ApiClient } from '../utils/api-client';
 
 import { getAuthToken } from './auth';
 
+// Notification helper
+function showNotification(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {
+  console.info(`[${type}] ${message}`);
+  // TODO: Implement toast notification UI
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
 interface AdminUser extends User {
   company?: string;
   position?: string;
@@ -43,9 +56,9 @@ interface CreateAdminForm extends HTMLFormElement {
 document.addEventListener('DOMContentLoaded', () => {
   console.info('Root dashboard script loaded');
   const token = getAuthToken();
-  console.info('Stored token:', token ? 'Token vorhanden' : 'Kein Token gefunden');
+  console.info('Stored token:', token !== null && token !== '' ? 'Token vorhanden' : 'Kein Token gefunden');
 
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No token found. Redirecting to login...');
     // Hide all content immediately
     document.body.style.display = 'none';
@@ -55,13 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Elemente aus dem DOM holen
-  const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm;
+  const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm | null;
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
   const dashboardContent = document.getElementById('dashboard-data');
 
   // Event-Listener hinzufügen
-  if (createAdminForm) {
-    createAdminForm.addEventListener('submit', (e) => void createAdmin(e));
+  if (createAdminForm !== null) {
+    createAdminForm.addEventListener('submit', (e) => {
+      void createAdmin(e);
+    });
   }
 
   // Logout Button - DISABLED: Handled by unified-navigation.ts
@@ -114,10 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show employee number modal
   function showEmployeeNumberModal(): void {
     const modal = document.getElementById('employeeNumberModal');
-    const form = document.getElementById('employeeNumberForm') as HTMLFormElement;
-    const input = document.getElementById('employeeNumberInput') as HTMLInputElement;
+    const form = document.getElementById('employeeNumberForm') as HTMLFormElement | null;
+    const input = document.getElementById('employeeNumberInput') as HTMLInputElement | null;
 
-    if (!modal || !form || !input) return;
+    if (modal === null || form === null || input === null) return;
 
     modal.style.display = 'flex';
     input.focus();
@@ -135,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const employeeNumber = input.value;
 
         if (employeeNumber.length < 1 || employeeNumber.length > 10) {
-          alert('Die Personalnummer muss zwischen 1 und 10 Zeichen lang sein.');
+          console.error('Die Personalnummer muss zwischen 1 und 10 Zeichen lang sein.');
+          showNotification('Die Personalnummer muss zwischen 1 und 10 Zeichen lang sein.', 'error');
           return;
         }
 
@@ -145,13 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ employee_number: employeeNumber }),
           });
 
-          alert('Personalnummer erfolgreich gespeichert.');
+          showNotification('Personalnummer erfolgreich gespeichert.', 'success');
           modal.style.display = 'none';
           // Reload to update UI
           window.location.reload();
         } catch (error) {
           console.error('Error updating employee number:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showNotification('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', 'error');
         }
       })();
     });
@@ -162,20 +178,20 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     console.info('Creating admin...');
 
-    if (!createAdminForm) return;
+    if (createAdminForm === null) return;
 
     const elements = createAdminForm.elements;
 
     // Validate email match
     if (elements.email.value !== elements.email_confirm.value) {
-      alert('Die E-Mail-Adressen stimmen nicht überein!');
+      showNotification('Die E-Mail-Adressen stimmen nicht überein!', 'error');
       elements.email_confirm.focus();
       return;
     }
 
     // Validate password match
     if (elements.password.value !== elements.password_confirm.value) {
-      alert('Die Passwörter stimmen nicht überein!');
+      showNotification('Die Passwörter stimmen nicht überein!', 'error');
       elements.password_confirm.focus();
       return;
     }
@@ -196,13 +212,13 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(adminData),
       });
 
-      alert('Admin erfolgreich erstellt');
+      showNotification('Admin erfolgreich erstellt', 'success');
       createAdminForm.reset();
       void loadAdmins();
     } catch (error) {
       console.error('Fehler beim Erstellen des Admins:', error);
 
-      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      showNotification('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', 'error');
     }
   }
 
@@ -229,18 +245,18 @@ document.addEventListener('DOMContentLoaded', () => {
         apiClient.request<{ data: User[] }>('/users'),
       ]);
 
-      const admins = adminsResponse.admins || [];
-      const users = usersResponse.data || [];
+      const admins = adminsResponse.admins;
+      const users = usersResponse.data;
 
       // Update counters
       const adminCount = document.getElementById('admin-count');
       const userCount = document.getElementById('user-count');
       const tenantCount = document.getElementById('tenant-count');
 
-      if (adminCount && Array.isArray(admins)) {
+      if (adminCount !== null) {
         adminCount.textContent = admins.length.toString();
       }
-      if (userCount && Array.isArray(users)) {
+      if (userCount !== null) {
         userCount.textContent = users.length.toString();
       }
       if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
@@ -254,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       console.info('Loading admins...');
       const response = await apiClient.request<{ admins: AdminUser[] }>('/root/admins');
-      const admins = response.admins || [];
+      const admins = response.admins;
       console.info('Loaded admins:', admins);
       displayAdmins(admins);
 
@@ -294,15 +310,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load user info in header
   async function loadHeaderUserInfo(): Promise<void> {
     try {
-      const token = getAuthToken();
+      const authToken = getAuthToken();
       const userNameElement = document.getElementById('user-name');
-      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement | null;
 
-      if (!token || !userNameElement) return;
+      if (authToken === null || authToken === '' || userNameElement === null) return;
 
       // Parse JWT token to get basic user info
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = JSON.parse(atob(authToken.split('.')[1])) as { userName?: string };
         userNameElement.textContent = payload.userName ?? 'Root';
       } catch (e) {
         console.error('Error parsing JWT token:', e);
@@ -313,15 +329,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = await apiClient.request<User>('/users/me');
 
         // Update username with full name if available
-        if (user.first_name || user.last_name) {
+        if (
+          (user.first_name !== undefined && user.first_name !== '') ||
+          (user.last_name !== undefined && user.last_name !== '')
+        ) {
           const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
-          userNameElement.textContent = fullName ?? (user.username || 'Root');
+          userNameElement.textContent = fullName !== '' ? fullName : user.username;
         } else {
-          userNameElement.textContent = user.username ?? 'Root';
+          userNameElement.textContent = user.username;
         }
 
         // Update avatar if available
-        if (userAvatar && user.profile_picture_url) {
+        if (userAvatar !== null && user.profile_picture_url !== undefined && user.profile_picture_url !== '') {
           userAvatar.src = user.profile_picture_url;
           userAvatar.onerror = function () {
             this.src = '/images/default-avatar.svg';
@@ -333,10 +352,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Error loading user info:', error);
       // Fallback to local storage
-      const user = JSON.parse(localStorage.getItem('user') ?? '{}');
+      const userStr = localStorage.getItem('user');
+      const userData = userStr !== null && userStr !== '' ? (JSON.parse(userStr) as { userName?: string }) : {};
       const userName = document.getElementById('user-name');
-      if (userName) {
-        userName.textContent = user.userName ?? 'Root';
+      if (userName !== null) {
+        userName.textContent = userData.userName ?? 'Root';
       }
     }
   }
@@ -363,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }>('/logs?limit=20');
       const logsContainer = document.getElementById('activity-logs');
 
-      if (logsContainer && result) {
+      if (logsContainer !== null) {
         // Handle both response formats (direct logs array or nested in data)
         const logs = result.logs ?? result.data?.logs ?? [];
 
@@ -392,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="log-details">
                   <span class="log-user">${log.userName}</span>
                   <span class="role-badge role-${log.userRole}">${getuserRoleLabel(log.userRole)}</span>
-                  ${log.details ? ` - ${log.details}` : ''}
+                  ${log.details !== undefined && log.details !== '' ? ` - ${log.details}` : ''}
                 </div>
               </div>
             `;

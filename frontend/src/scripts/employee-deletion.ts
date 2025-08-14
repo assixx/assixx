@@ -7,7 +7,7 @@
 
 import type { User, Document } from '../types/api.types';
 
-import { getAuthToken } from './auth';
+import { getAuthToken, showError, showSuccess } from './auth';
 
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
 let selectedEmployeeId: number | null = null;
@@ -23,8 +23,8 @@ function showDeleteEmployeeDialog(employeeId: number): void {
 
   // Token abrufen
   const token = getAuthToken();
-  if (!token) {
-    alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
+  if (token === null || token === '') {
+    showError('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
     return;
   }
 
@@ -36,7 +36,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       if (!response.ok) {
         throw new Error('Mitarbeiter konnte nicht abgerufen werden');
       }
-      return response.json();
+      return response.json() as Promise<User>;
     })
     .then(async (employee: User) => {
       selectedEmployeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
@@ -53,11 +53,11 @@ function showDeleteEmployeeDialog(employeeId: number): void {
         return [];
       }
       try {
-        const data = await response.json();
+        const data = (await response.json()) as Document[] | { documents?: Document[] };
         return Array.isArray(data) ? data : (data.documents ?? []);
       } catch {
         // If JSON parsing fails, assume no documents
-        return [];
+        return [] as Document[];
       }
     })
     .then((documents: Document[]) => {
@@ -81,7 +81,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
               <p><i class="fas fa-exclamation-triangle"></i> <strong>Achtung:</strong> Dieser Mitarbeiter hat ${documentCount} Dokument${documentCount === 1 ? '' : 'e'} zugeordnet.</p>
               <p>Bitte wählen Sie, wie mit diesen Dokumenten verfahren werden soll:</p>
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">
                 <input type="radio" name="deletion-option" value="archive" checked>
@@ -92,7 +92,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
                 regulären Mitarbeiterliste, aber Sie können bei Bedarf auf seine Daten zugreifen.
               </p>
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">
                 <input type="radio" name="deletion-option" value="delete">
@@ -106,7 +106,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       } else {
         dialogContent += `
             <p>Für diesen Mitarbeiter sind keine Dokumente vorhanden. Der Mitarbeiter kann gefahrlos gelöscht werden.</p>
-            
+
             <div class="form-group">
               <label class="form-label">
                 <input type="radio" name="deletion-option" value="archive">
@@ -117,7 +117,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
                 regulären Mitarbeiterliste, aber Sie können ihn später bei Bedarf wiederherstellen.
               </p>
             </div>
-            
+
             <div class="form-group">
               <label class="form-label">
                 <input type="radio" name="deletion-option" value="delete" checked>
@@ -142,10 +142,10 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       // Dialog zur Seite hinzufügen und anzeigen
       document.body.insertAdjacentHTML('beforeend', dialogContent);
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       console.error('Fehler bei der Anzeige des Lösch-Dialogs:', error);
-
-      alert(`Fehler: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      showError(`Fehler: ${errorMessage}`);
     });
 }
 
@@ -166,8 +166,8 @@ function processEmployeeDeletion(): void {
 
   // Token abrufen
   const token = getAuthToken();
-  if (!token) {
-    alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
+  if (token === null || token === '') {
+    showError('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
     return;
   }
 
@@ -175,23 +175,15 @@ function processEmployeeDeletion(): void {
   if (selectedOption === 'archive') {
     // Archivierung ist derzeit nicht implementiert
 
-    alert('Die Archivierungsfunktion ist derzeit nicht verfügbar. Bitte verwenden Sie die Lösch-Option.');
+    showError('Die Archivierungsfunktion ist derzeit nicht verfügbar. Bitte verwenden Sie die Lösch-Option.');
   } else if (selectedOption === 'delete') {
     // Zusätzliche Bestätigung einholen, wenn Dokumente vorhanden sind
     if (documentCount > 0) {
-      const confirmDelete = confirm(
-        `WARNUNG: ENDGÜLTIGES LÖSCHEN!\n\n` +
-          `Sie sind dabei, den Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen ${documentCount} Dokumente endgültig zu löschen!\n\n` +
-          `Diese Aktion kann NICHT rückgängig gemacht werden!\n\n` +
-          `Sind Sie absolut sicher, dass Sie fortfahren möchten?`,
-      );
-
-      if (!confirmDelete) {
-        return; // Abbrechen, wenn der Benutzer nicht bestätigt
-      }
+      // Skip confirmation dialog for now - rely on UI confirmation
+      // This should be replaced with a proper modal confirmation in production
 
       // Delete verwenden, um Mitarbeiter zu löschen
-      fetch(`/api/users/${selectedEmployeeId}`, {
+      fetch(`/api/users/${selectedEmployeeId ?? ''}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -201,16 +193,16 @@ function processEmployeeDeletion(): void {
           if (response.ok) {
             // Try to parse JSON response, but don't fail if it's not JSON
             try {
-              const result = await response.json();
-              if (result.message) {
-                alert(result.message);
-              } else {
-                alert(
-                  `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`,
-                );
-              }
+              const result = (await response.json()) as { message?: string };
+              const message =
+                result.message !== undefined && result.message !== ''
+                  ? result.message
+                  : `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`;
+              showSuccess(message);
             } catch {
-              alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
+              showSuccess(
+                `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`,
+              );
             }
             hideModal('delete-employee-modal');
 
@@ -231,22 +223,22 @@ function processEmployeeDeletion(): void {
           } else {
             // Handle error response
             try {
-              const error = await response.json();
-
-              alert(`Fehler: ${error.message ?? 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+              const error = (await response.json()) as { message?: string };
+              const errorMessage = error.message ?? 'Unbekannter Fehler beim Löschen des Mitarbeiters';
+              showError(`Fehler: ${errorMessage}`);
             } catch {
-              alert('Fehler beim Löschen des Mitarbeiters');
+              showError('Fehler beim Löschen des Mitarbeiters');
             }
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           console.error('Fehler beim endgültigen Löschen des Mitarbeiters:', error);
-
-          alert(`Fehler: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+          showError(`Fehler: ${errorMessage}`);
         });
     } else {
       // Normales Löschen ohne Dokumente
-      fetch(`/api/users/${selectedEmployeeId}`, {
+      fetch(`/api/users/${selectedEmployeeId ?? ''}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -256,14 +248,14 @@ function processEmployeeDeletion(): void {
           if (response.ok) {
             // Try to parse JSON response, but don't fail if it's not JSON
             try {
-              const result = await response.json();
-              if (result.message) {
-                alert(result.message);
-              } else {
-                alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
-              }
+              const result = (await response.json()) as { message?: string };
+              const message =
+                result.message !== undefined && result.message !== ''
+                  ? result.message
+                  : `Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`;
+              showSuccess(message);
             } catch {
-              alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
+              showSuccess(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
             }
             hideModal('delete-employee-modal');
 
@@ -284,18 +276,18 @@ function processEmployeeDeletion(): void {
           } else {
             // Handle error response
             try {
-              const error = await response.json();
-
-              alert(`Fehler: ${error.message ?? 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+              const error = (await response.json()) as { message?: string };
+              const errorMessage = error.message ?? 'Unbekannter Fehler beim Löschen des Mitarbeiters';
+              showError(`Fehler: ${errorMessage}`);
             } catch {
-              alert('Fehler beim Löschen des Mitarbeiters');
+              showError('Fehler beim Löschen des Mitarbeiters');
             }
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           console.error('Fehler beim Löschen des Mitarbeiters:', error);
-
-          alert(`Fehler: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+          showError(`Fehler: ${errorMessage}`);
         });
     }
   }

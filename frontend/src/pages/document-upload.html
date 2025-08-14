@@ -82,12 +82,12 @@
         right: 0;
         height: 3px;
         background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        opacity: 0;
+        opacity: 0%;
         transition: opacity 0.3s ease;
       }
 
       .upload-section:hover::before {
-        opacity: 1;
+        opacity: 100%;
       }
 
       .upload-section:hover {
@@ -231,7 +231,7 @@
         box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
-        opacity: 0;
+        opacity: 0%;
         visibility: hidden;
         transform: translateY(-10px);
         transition: all 0.3s ease;
@@ -239,7 +239,7 @@
       }
 
       .dropdown-options.active {
-        opacity: 1;
+        opacity: 100%;
         visibility: visible;
         transform: translateY(0);
       }
@@ -355,7 +355,7 @@
         top: 0;
         height: 100%;
         width: 100%;
-        opacity: 0;
+        opacity: 0%;
         cursor: pointer;
       }
 
@@ -467,7 +467,7 @@
       /* Second-Level Button für Upload (mit Gradient) */
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         position: relative;
         overflow: hidden;
         box-shadow:
@@ -542,11 +542,11 @@
       /* Animationen */
       @keyframes fadeInUp {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(20px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }

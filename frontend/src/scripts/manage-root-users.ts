@@ -29,7 +29,7 @@ async function loadRootUsers() {
       throw new Error('Fehler beim Laden der Root-Benutzer');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { data?: { users?: RootUser[] }; users?: RootUser[] };
     // successResponse wraps data in data property
     const rootUsers = data.data?.users ?? data.users ?? [];
 
@@ -122,7 +122,8 @@ async function handleFormSubmit(event: Event) {
   const passwordConfirm = (document.getElementById('rootPasswordConfirm') as HTMLInputElement).value;
   const position = (document.getElementById('positionDropdownValue') as HTMLInputElement).value;
   const notes = (document.getElementById('rootNotes') as HTMLTextAreaElement).value;
-  const isActive = (document.getElementById('rootIsActive') as HTMLInputElement)?.checked ?? true;
+  const activeCheckbox = document.getElementById('rootIsActive') as HTMLInputElement | null;
+  const isActive = activeCheckbox !== null ? activeCheckbox.checked : true;
 
   // Validation
   if (email !== emailConfirm) {
@@ -130,12 +131,12 @@ async function handleFormSubmit(event: Event) {
     return;
   }
 
-  if (!currentEditId && password !== passwordConfirm) {
+  if (currentEditId === null && password !== passwordConfirm) {
     showError('Passwörter stimmen nicht überein');
     return;
   }
 
-  if (!currentEditId && password.length < 8) {
+  if (currentEditId === null && password.length < 8) {
     showError('Passwort muss mindestens 8 Zeichen lang sein');
     return;
   }
@@ -157,31 +158,31 @@ async function handleFormSubmit(event: Event) {
     email,
     position,
     notes,
-    is_active: currentEditId ? isActive : true, // New users are always active
+    is_active: currentEditId !== null ? isActive : true, // New users are always active
   };
 
-  if (!currentEditId) {
+  if (currentEditId === null) {
     userData.password = password;
     userData.username = email; // Username is email for root users
   }
 
   try {
-    const url = currentEditId ? `/api/root/users/${currentEditId}` : '/api/root/users';
+    const url = currentEditId !== null ? `/api/root/users/${currentEditId}` : '/api/root/users';
 
-    const method = currentEditId ? 'PUT' : 'POST';
+    const method = currentEditId !== null ? 'PUT' : 'POST';
 
     const response = await fetchWithAuth(url, {
       method,
       body: JSON.stringify(userData),
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as { error?: string };
 
     if (!response.ok) {
       throw new Error(data.error ?? 'Fehler beim Speichern');
     }
 
-    showSuccess(currentEditId ? 'Root-Benutzer aktualisiert' : 'Root-Benutzer erstellt');
+    showSuccess(currentEditId !== null ? 'Root-Benutzer aktualisiert' : 'Root-Benutzer erstellt');
     closeRootModal();
     void loadRootUsers();
   } catch (error) {
@@ -227,8 +228,8 @@ window.showAddRootModal = () => {
   const modalTitle = document.getElementById('modalTitle');
   if (modalTitle) modalTitle.textContent = 'Root User hinzufügen';
 
-  const rootForm = document.getElementById('rootForm') as HTMLFormElement;
-  if (rootForm) rootForm.reset();
+  const rootForm = document.getElementById('rootForm') as HTMLFormElement | null;
+  if (rootForm !== null) rootForm.reset();
 
   const positionDropdown = document.getElementById('positionDropdownDisplay');
   const positionSpan = positionDropdown?.querySelector('span');

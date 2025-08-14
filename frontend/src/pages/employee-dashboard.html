@@ -61,7 +61,7 @@
         box-shadow: var(--shadow-sm);
         border-radius: var(--radius-md);
         padding: var(--spacing-lg) var(--spacing-xl);
-        color: white;
+        color: #fff;
         margin-bottom: var(--spacing-xl);
         position: relative;
         overflow: hidden;
@@ -82,7 +82,7 @@
         background:
           radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
           radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
-        opacity: 1;
+        opacity: 100%;
       }
 
       .welcome-hero::after {
@@ -100,14 +100,14 @@
       @keyframes shimmer {
         0% {
           transform: translateX(-100px) translateY(-100px) rotate(45deg);
-          opacity: 0;
+          opacity: 0%;
         }
         50% {
-          opacity: 1;
+          opacity: 100%;
         }
         100% {
           transform: translateX(100px) translateY(100px) rotate(45deg);
-          opacity: 0;
+          opacity: 0%;
         }
       }
 
@@ -130,7 +130,7 @@
 
       .welcome-subtitle {
         font-size: 1rem;
-        opacity: 0.95;
+        opacity: 0%.95;
         margin: 0;
         font-weight: 300;
       }
@@ -172,7 +172,7 @@
 
       .welcome-stat-label {
         font-size: 0.8rem;
-        opacity: 0.9;
+        opacity: 0%.9;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -361,11 +361,11 @@
         0%,
         100% {
           transform: translateY(0px) rotate(0deg);
-          opacity: 0.6;
+          opacity: 0%.6;
         }
         50% {
           transform: translateY(-10px) rotate(180deg);
-          opacity: 1;
+          opacity: 100%;
         }
       }
 
@@ -419,7 +419,7 @@
         justify-content: center;
         margin-bottom: var(--spacing-md);
         font-size: 1.5rem;
-        color: white;
+        color: #fff;
       }
 
       .feature-title {
@@ -439,7 +439,7 @@
       .feature-badge {
         background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         /*background: linear-gradient(0deg, rgba(33, 125, 243, 0.41), rgba(33, 150, 243, 0.47));*/
-        color: white;
+        color: #fff;
         padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         font-size: 0.8rem;
@@ -508,7 +508,7 @@
         background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         backdrop-filter: blur(10px);
         border: 1px solid rgba(0, 142, 255, 0.3);
-        color: white;
+        color: #fff;
         border-radius: var(--radius-sm);
         padding: var(--spacing-sm) var(--spacing-md);
         cursor: pointer;
@@ -575,7 +575,7 @@
         justify-content: center;
         margin-right: var(--spacing-md);
         font-size: 1.2rem;
-        color: white;
+        color: #fff;
       }
 
       .activity-icon.document {
@@ -658,24 +658,24 @@
 
       @keyframes pulse {
         0% {
-          opacity: 1;
+          opacity: 100%;
         }
         50% {
-          opacity: 0.5;
+          opacity: 0%.5;
         }
         100% {
-          opacity: 1;
+          opacity: 100%;
         }
       }
 
       /* Zusätzliche Glassmorphismus-Animationen */
       @keyframes fadeInUp {
         from {
-          opacity: 0;
+          opacity: 0%;
           transform: translateY(30px);
         }
         to {
-          opacity: 1;
+          opacity: 100%;
           transform: translateY(0);
         }
       }

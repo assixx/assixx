@@ -32,9 +32,9 @@ export const checkDocumentAccess = (
     // Type assertion - we know auth middleware has run
     const docReq = req as DocumentRequest;
     try {
-      const userId = docReq.user?.id;
-      const userRole = docReq.user?.role;
-      const tenantId = docReq.user?.tenant_id ?? docReq.tenantId;
+      const userId = docReq.user.id;
+      const userRole = docReq.user.role;
+      const tenantId = docReq.user.tenant_id;
       const { documentId } = docReq.params;
 
       if (!userId || !userRole) {

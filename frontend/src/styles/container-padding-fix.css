@@ -48,7 +48,7 @@
 }
 
 /* Mobile Anpassung */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .container,
   .profile-container,
   .survey-container,

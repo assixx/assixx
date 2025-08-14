@@ -32,11 +32,11 @@ export class ApiService {
    */
   setToken(token: string | null, refreshToken?: string | null): void {
     this.token = token;
-    if (token) {
+    if (token !== null && token !== '') {
       // Store in both formats for compatibility
       localStorage.setItem('token', token);
       localStorage.setItem('accessToken', token);
-      if (refreshToken) {
+      if (refreshToken !== null && refreshToken !== undefined && refreshToken !== '') {
         localStorage.setItem('refreshToken', refreshToken);
       }
     } else {
@@ -59,10 +59,17 @@ export class ApiService {
   private getHeaders(customHeaders?: HeadersInit): Headers {
     const headers = new Headers({
       'Content-Type': 'application/json',
-      ...customHeaders,
     });
 
-    if (this.token) {
+    // Add custom headers if provided
+    if (customHeaders) {
+      const customHeadersObj = new Headers(customHeaders);
+      customHeadersObj.forEach((value, key) => {
+        headers.set(key, value);
+      });
+    }
+
+    if (this.token !== null && this.token !== '') {
       headers.set('Authorization', `Bearer ${this.token}`);
     }
 
@@ -81,9 +88,7 @@ export class ApiService {
 
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
+      searchParams.append(key, String(value));
     });
 
     return `${url}?${searchParams.toString()}`;
@@ -150,7 +155,7 @@ export class ApiService {
         ...fetchOptions,
       };
 
-      if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
+      if (data !== undefined && data !== null && ['POST', 'PUT', 'PATCH'].includes(method)) {
         if (data instanceof FormData) {
           // Remove Content-Type header for FormData
           requestOptions.headers = new Headers(requestOptions.headers);
@@ -177,7 +182,7 @@ export class ApiService {
         }
 
         // Parse JSON response
-        const responseData = await response.json();
+        const responseData = (await response.json()) as { error?: string; message?: string } & T;
 
         if (!response.ok) {
           throw new Error(responseData.error ?? responseData.message ?? `HTTP error! status: ${response.status}`);
@@ -225,7 +230,12 @@ export class ApiService {
       }>('/auth/login', credentials);
 
       // v2 response format has accessToken and refreshToken
-      if (response.accessToken && response.refreshToken) {
+      if (
+        response.accessToken !== undefined &&
+        response.accessToken !== '' &&
+        response.refreshToken !== undefined &&
+        response.refreshToken !== ''
+      ) {
         this.setToken(response.accessToken, response.refreshToken);
 
         // Convert v2 response to v1 format for compatibility
@@ -241,7 +251,7 @@ export class ApiService {
     } else {
       // Use v1 implementation
       const response = await this.post<LoginResponse>('/auth/login', credentials);
-      if (response.token) {
+      if (response.token !== '') {
         this.setToken(response.token);
       }
       return response;
@@ -283,7 +293,7 @@ export class ApiService {
         return {
           success: false,
           data: { authenticated: false },
-          message: (error as Error).message ?? 'Authentication check failed',
+          message: (error as Error).message,
         };
       }
     } else {
@@ -322,7 +332,7 @@ export class ApiService {
       } catch (error) {
         return {
           success: false,
-          message: (error as Error).message ?? 'Failed to update profile',
+          message: (error as Error).message,
         };
       }
     } else {
