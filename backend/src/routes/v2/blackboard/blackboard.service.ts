@@ -24,6 +24,30 @@ export interface BlackboardFilters {
   requiresConfirmation?: boolean;
 }
 
+export interface BlackboardEntry {
+  id: number;
+  title: string;
+  content: string;
+  status: string;
+  priority: string;
+  isConfirmed?: boolean;
+  requiresConfirmation?: boolean;
+  authorFullName?: string;
+  authorFirstName?: string;
+  authorLastName?: string;
+  [key: string]: unknown;
+}
+
+export interface BlackboardListResult {
+  entries: BlackboardEntry[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface BlackboardCreateData {
   title: string;
   content: string;
@@ -66,7 +90,7 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
     filters: BlackboardFilters = {},
-  ) {
+  ): Promise<BlackboardListResult> {
     try {
       const options: EntryQueryOptions = {
         status: filters.status,
@@ -80,10 +104,24 @@ export class BlackboardService {
         requiresConfirmation: filters.requiresConfirmation,
       };
 
-      const result = await Blackboard.getAllEntries(tenantId, userId, options);
+      const result = (await Blackboard.getAllEntries(
+        tenantId,
+        userId,
+        options,
+      )) as unknown as {
+        entries: unknown[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      };
 
       return {
-        entries: result.entries.map((entry) => this.transformEntry(entry)),
+        entries: result.entries.map((entry) =>
+          this.transformEntry(entry as DbBlackboardEntry),
+        ),
         pagination: result.pagination,
       };
     } catch (error: unknown) {
@@ -312,7 +350,7 @@ export class BlackboardService {
   /**
    * Transform database entry to API format
    */
-  private transformEntry(entry: DbBlackboardEntry) {
+  private transformEntry(entry: DbBlackboardEntry): BlackboardEntry {
     const transformed = dbToApi(entry) as Record<string, unknown>;
 
     // Handle special transformations
@@ -342,7 +380,7 @@ export class BlackboardService {
     // Remove raw database fields
     delete transformed.is_confirmed;
 
-    return transformed;
+    return transformed as BlackboardEntry;
   }
 }
 

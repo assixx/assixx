@@ -9,7 +9,7 @@
 
 import path from "path";
 
-import express, { Router, Request, Response, NextFunction } from "express";
+import express, { Router, Request, Response } from "express";
 import multer from "multer";
 
 import { authenticateToken } from "../auth.js";
@@ -131,7 +131,7 @@ router.use(authenticateToken);
  *               $ref: '#/components/schemas/Error'
  */
 // KVP Routes
-router.get("/", async (req, res, next) => kvpController.getAll(req, res, next));
+router.get("/", async (req, res) => kvpController.getAll(req, res));
 
 /**
  * @swagger
@@ -159,8 +159,8 @@ router.get("/", async (req, res, next) => kvpController.getAll(req, res, next));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/categories", async (req, res, next) =>
-  kvpController.getCategories(req, res, next),
+router.get("/categories", async (req, res) =>
+  kvpController.getCategories(req, res),
 );
 
 /**
@@ -208,9 +208,7 @@ router.get("/categories", async (req, res, next) =>
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/stats", async (req, res, next) =>
-  kvpController.getStatistics(req, res, next),
-);
+router.get("/stats", async (req, res) => kvpController.getStatistics(req, res));
 
 /**
  * @swagger
@@ -252,9 +250,7 @@ router.get("/stats", async (req, res, next) =>
  *                   type: string
  *                   example: Vorschlag nicht gefunden
  */
-router.get("/:id", async (req, res, next) =>
-  kvpController.getById(req, res, next),
-);
+router.get("/:id", async (req, res) => kvpController.getById(req, res));
 
 /**
  * @swagger
@@ -326,23 +322,17 @@ router.get("/:id", async (req, res, next) =>
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/", async (req, res, next) =>
-  kvpController.create(req, res, next),
-);
+router.post("/", async (req, res) => kvpController.create(req, res));
 
-router.put("/:id", async (req, res, next) =>
-  kvpController.update(req, res, next),
-);
-router.delete("/:id", async (req, res, next) =>
-  kvpController.delete(req, res, next),
-);
+router.put("/:id", async (req, res) => kvpController.update(req, res));
+router.delete("/:id", async (req, res) => kvpController.delete(req, res));
 
 // Share/unshare routes
-router.post("/:id/share", async (req, res, next) =>
-  kvpController.shareSuggestion(req, res, next),
+router.post("/:id/share", async (req, res) =>
+  kvpController.shareSuggestion(req, res),
 );
-router.post("/:id/unshare", async (req, res, next) =>
-  kvpController.unshareSuggestion(req, res, next),
+router.post("/:id/unshare", async (req, res) =>
+  kvpController.unshareSuggestion(req, res),
 );
 
 /**
@@ -466,25 +456,31 @@ router.post("/:id/unshare", async (req, res, next) =>
  *         description: Suggestion not found
  */
 // Comments
-router.get("/:id/comments", async (req, res, next) =>
-  kvpController.getComments(req, res, next),
+router.get("/:id/comments", async (req, res) =>
+  kvpController.getComments(req, res),
 );
-router.post("/:id/comments", async (req, res, next) =>
-  kvpController.addComment(req, res, next),
+router.post("/:id/comments", async (req, res) =>
+  kvpController.addComment(req, res),
 );
 
 // Attachments
-router.get("/:id/attachments", async (req, res, next) =>
-  kvpController.getAttachments(req, res, next),
+router.get("/:id/attachments", async (req, res) =>
+  kvpController.getAttachments(req, res),
 );
 router.post(
   "/:id/attachments",
   upload.array("photos", 5),
-  async (req: Request, res: Response, next: NextFunction) =>
-    kvpController.uploadAttachment(req, res, next), // Multer adds files to request
+  async (req: Request, res: Response) =>
+    kvpController.uploadAttachment(
+      req as Request & {
+        params: { id: string };
+        files?: Express.Multer.File[];
+      },
+      res,
+    ), // Multer adds files to request
 ); // Max 5 photos
-router.get("/attachments/:attachmentId/download", async (req, res, next) =>
-  kvpController.downloadAttachment(req, res, next),
+router.get("/attachments/:attachmentId/download", async (req, res) =>
+  kvpController.downloadAttachment(req, res),
 );
 
 export default router;

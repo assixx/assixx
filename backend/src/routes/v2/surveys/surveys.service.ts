@@ -59,12 +59,12 @@ export interface SurveyUpdateData {
 
 export interface ResponseSubmitData {
   surveyId: number;
-  answers: Array<{
+  answers: {
     questionId: number;
     answerText?: string;
     answerNumber?: number;
     selectedOptions?: number[];
-  }>;
+  }[];
 }
 
 export class SurveysService {
@@ -76,7 +76,7 @@ export class SurveysService {
     userId: number,
     userRole: string,
     filters: SurveyFilters = {},
-  ) {
+  ): Promise<unknown[]> {
     try {
       let surveys;
 
@@ -101,7 +101,7 @@ export class SurveysService {
 
       // Transform to API format
       return surveys.map((survey) => {
-        const apiSurvey = dbToApi<Record<string, unknown>>(survey);
+        const apiSurvey = dbToApi(survey);
         return {
           ...apiSurvey,
           responseCount: survey.response_count ?? 0,
@@ -124,7 +124,7 @@ export class SurveysService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown> {
     try {
       const survey = await Survey.getById(surveyId, tenantId);
 
@@ -166,13 +166,13 @@ export class SurveysService {
       }
 
       // Transform to API format
-      const apiSurvey = dbToApi<Record<string, unknown>>(survey);
+      const apiSurvey = dbToApi(survey);
 
       // Transform questions
       if (survey.questions) {
         apiSurvey.questions = survey.questions.map(
           (q: Record<string, unknown>) => {
-            const apiQuestion = dbToApi<Record<string, unknown>>(q);
+            const apiQuestion = dbToApi(q);
             return {
               ...apiQuestion,
               orderPosition: q.order_position ?? q.order_index,
@@ -184,7 +184,7 @@ export class SurveysService {
       // Transform assignments
       if (survey.assignments) {
         apiSurvey.assignments = survey.assignments.map(
-          (a: Record<string, unknown>) => dbToApi<Record<string, unknown>>(a),
+          (a: Record<string, unknown>) => dbToApi(a),
         );
       }
 
@@ -205,7 +205,7 @@ export class SurveysService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<unknown> {
     try {
       // Transform API data to DB format
       const surveyData = {
@@ -246,7 +246,7 @@ export class SurveysService {
       });
 
       // Return the created survey
-      return this.getSurveyById(surveyId, tenantId, userId, "admin");
+      return await this.getSurveyById(surveyId, tenantId, userId, "admin");
     } catch (error: unknown) {
       console.error("Error creating survey:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to create survey");
@@ -264,7 +264,7 @@ export class SurveysService {
     userRole: string,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<unknown> {
     try {
       // Check if survey exists and user has access
       const existingSurvey = await this.getSurveyById(
@@ -275,9 +275,11 @@ export class SurveysService {
       );
 
       // Type assertions for existingSurvey properties
-      const existingTitle = existingSurvey.title as string;
-      const existingStatus = existingSurvey.status as string;
-      const responseCount = (existingSurvey.responseCount as number) ?? 0;
+      const surveyData = existingSurvey as Record<string, unknown>;
+      const existingTitle = surveyData.title as string;
+      const existingStatus = surveyData.status as string;
+      const responseCount =
+        (surveyData.responseCount as number | undefined) ?? 0;
 
       if (userRole === "employee") {
         throw new ServiceError("FORBIDDEN", "Only admins can update surveys");
@@ -331,7 +333,7 @@ export class SurveysService {
       });
 
       // Return the updated survey
-      return this.getSurveyById(surveyId, tenantId, userId, userRole);
+      return await this.getSurveyById(surveyId, tenantId, userId, userRole);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error("Error updating survey:", error);
@@ -349,7 +351,7 @@ export class SurveysService {
     userRole: string,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<{ message: string }> {
     try {
       // Check if survey exists and user has access
       const existingSurvey = await this.getSurveyById(
@@ -360,9 +362,11 @@ export class SurveysService {
       );
 
       // Type assertions for existingSurvey properties
-      const existingTitle = existingSurvey.title as string;
-      const existingStatus = existingSurvey.status as string;
-      const responseCount = (existingSurvey.responseCount as number) ?? 0;
+      const surveyData = existingSurvey as Record<string, unknown>;
+      const existingTitle = surveyData.title as string;
+      const existingStatus = surveyData.status as string;
+      const responseCount =
+        (surveyData.responseCount as number | undefined) ?? 0;
 
       if (userRole === "employee") {
         throw new ServiceError("FORBIDDEN", "Only admins can delete surveys");
@@ -408,12 +412,10 @@ export class SurveysService {
   /**
    * Get survey templates
    */
-  async getSurveyTemplates(tenantId: number) {
+  async getSurveyTemplates(tenantId: number): Promise<unknown[]> {
     try {
       const templates = await Survey.getTemplates(tenantId);
-      return templates.map((template) =>
-        dbToApi<Record<string, unknown>>(template),
-      );
+      return templates.map((template) => dbToApi(template));
     } catch (error: unknown) {
       console.error("Error getting templates:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get survey templates");
@@ -429,7 +431,7 @@ export class SurveysService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<unknown> {
     try {
       const surveyId = await Survey.createFromTemplate(
         templateId,
@@ -450,7 +452,7 @@ export class SurveysService {
       });
 
       // Return the created survey
-      return this.getSurveyById(surveyId, tenantId, userId, "admin");
+      return await this.getSurveyById(surveyId, tenantId, userId, "admin");
     } catch (error: unknown) {
       console.error("Error creating from template:", error);
       throw new ServiceError(
@@ -468,7 +470,7 @@ export class SurveysService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown> {
     try {
       // Check if survey exists and user has access
       await this.getSurveyById(surveyId, tenantId, userId, userRole);

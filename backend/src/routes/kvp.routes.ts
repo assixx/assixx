@@ -3,7 +3,7 @@
  * Routes for KVP (Kontinuierlicher Verbesserungsprozess) system with department-based visibility
  */
 
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response } from "express";
 import type { Router as ExpressRouter } from "express";
 
 import kvpController from "../controllers/kvp.controller";
@@ -22,34 +22,46 @@ router.get(
   "/",
   rateLimiter.authenticated,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
-  async (req, res, next) => kvpController.getAll(req, res, next),
+  async (req, res) => kvpController.getAll(req, res),
 );
-router.get("/categories", rateLimiter.authenticated, async (req, res, next) =>
-  kvpController.getCategories(req, res, next),
+router.get("/categories", rateLimiter.authenticated, async (req, res) =>
+  kvpController.getCategories(req, res),
 );
 router.get(
   "/stats",
   rateLimiter.admin,
   checkRole(["admin", "root"]),
-  async (req, res, next) => kvpController.getStatistics(req, res, next),
+  async (req, res) => kvpController.getStatistics(req, res),
 );
-router.get("/:id", rateLimiter.authenticated, async (req, res, next) =>
-  kvpController.getById(req, res, next),
+router.get("/:id", rateLimiter.authenticated, async (req, res) =>
+  kvpController.getById(
+    req as unknown as Parameters<typeof kvpController.getById>[0],
+    res,
+  ),
 );
 
 // Creation (employees and admins in employee mode)
-router.post("/", rateLimiter.authenticated, async (req, res, next) =>
-  kvpController.create(req, res, next),
+router.post("/", rateLimiter.authenticated, async (req, res) =>
+  kvpController.create(
+    req as unknown as Parameters<typeof kvpController.create>[0],
+    res,
+  ),
 );
 
 // Updates (based on permissions)
-router.put("/:id", rateLimiter.authenticated, async (req, res, next) =>
-  kvpController.update(req, res, next),
+router.put("/:id", rateLimiter.authenticated, async (req, res) =>
+  kvpController.update(
+    req as unknown as Parameters<typeof kvpController.update>[0],
+    res,
+  ),
 );
 
 // Archive (soft delete)
-router.delete("/:id", rateLimiter.authenticated, async (req, res, next) =>
-  kvpController.delete(req, res, next),
+router.delete("/:id", rateLimiter.authenticated, async (req, res) =>
+  kvpController.delete(
+    req as unknown as Parameters<typeof kvpController.delete>[0],
+    res,
+  ),
 );
 
 // Admin-only share/unshare functions
@@ -57,36 +69,52 @@ router.post(
   "/:id/share",
   rateLimiter.admin,
   checkRole(["admin", "root"]),
-  async (req, res, next) => kvpController.shareSuggestion(req, res, next),
+  async (req, res) =>
+    kvpController.shareSuggestion(
+      req as unknown as Parameters<typeof kvpController.shareSuggestion>[0],
+      res,
+    ),
 );
 router.post(
   "/:id/unshare",
   rateLimiter.admin,
   checkRole(["admin", "root"]),
-  async (req, res, next) => kvpController.unshareSuggestion(req, res, next),
+  async (req, res) =>
+    kvpController.unshareSuggestion(
+      req as unknown as Parameters<typeof kvpController.unshareSuggestion>[0],
+      res,
+    ),
 );
 
 // Comments
-router.get("/:id/comments", rateLimiter.authenticated, async (req, res, next) =>
-  kvpController.getComments(req, res, next),
+router.get("/:id/comments", rateLimiter.authenticated, async (req, res) =>
+  kvpController.getComments(
+    req as unknown as Parameters<typeof kvpController.getComments>[0],
+    res,
+  ),
 );
-router.post(
-  "/:id/comments",
-  rateLimiter.authenticated,
-  async (req, res, next) => kvpController.addComment(req, res, next),
+router.post("/:id/comments", rateLimiter.authenticated, async (req, res) =>
+  kvpController.addComment(
+    req as unknown as Parameters<typeof kvpController.addComment>[0],
+    res,
+  ),
 );
 
 // Attachments
-router.get(
-  "/:id/attachments",
-  rateLimiter.authenticated,
-  async (req, res, next) => kvpController.getAttachments(req, res, next),
+router.get("/:id/attachments", rateLimiter.authenticated, async (req, res) =>
+  kvpController.getAttachments(
+    req as unknown as Parameters<typeof kvpController.getAttachments>[0],
+    res,
+  ),
 );
 router.post(
   "/:id/attachments",
   rateLimiter.upload,
-  async (req: Request, res: Response, next: NextFunction) =>
-    kvpController.uploadAttachment(req, res, next),
+  async (req: Request, res: Response) =>
+    kvpController.uploadAttachment(
+      req as unknown as Parameters<typeof kvpController.uploadAttachment>[0],
+      res,
+    ),
 );
 
 // Download attachment - with explicit rate limiting for file operations
@@ -97,8 +125,11 @@ router.get(
   rateLimiter.download,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
   // Controller handler that performs file system access
-  async (req: Request, res: Response, next: NextFunction) =>
-    kvpController.downloadAttachment(req, res, next),
+  async (req: Request, res: Response) =>
+    kvpController.downloadAttachment(
+      req as unknown as Parameters<typeof kvpController.downloadAttachment>[0],
+      res,
+    ),
 );
 
 export default router;

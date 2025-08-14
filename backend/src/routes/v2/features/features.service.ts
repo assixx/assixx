@@ -34,7 +34,7 @@ export class FeaturesService {
       );
 
       return rows.map((row) => {
-        const mapped = fieldMapper.dbToApi<Feature>(row);
+        const mapped = fieldMapper.dbToApi(row) as Feature;
         // Map base_price to price
         if ("base_price" in row) {
           mapped.price = row.base_price
@@ -44,7 +44,7 @@ export class FeaturesService {
         return mapped;
       });
     } catch (error: unknown) {
-      logger.error(`Error fetching features: ${error}`);
+      logger.error(`Error fetching features: ${String(error)}`);
       throw error;
     }
   }
@@ -56,7 +56,7 @@ export class FeaturesService {
     try {
       const features = await this.getAllFeatures(includeInactive);
 
-      const categorized = features.reduce((acc, feature) => {
+      const categorized = features.reduce<FeatureCategory[]>((acc, feature) => {
         const category = acc.find((c) => c.category === feature.category);
         if (category) {
           category.features.push(feature);
@@ -67,11 +67,11 @@ export class FeaturesService {
           });
         }
         return acc;
-      }, [] as FeatureCategory[]);
+      }, []);
 
       return categorized;
     } catch (error: unknown) {
-      logger.error(`Error fetching features by category: ${error}`);
+      logger.error(`Error fetching features by category: ${String(error)}`);
       throw error;
     }
   }
@@ -85,9 +85,9 @@ export class FeaturesService {
       );
 
       if (rows.length === 0) return null;
-      return fieldMapper.dbToApi<Feature>(rows[0]);
+      return fieldMapper.dbToApi(rows[0]) as Feature;
     } catch (error: unknown) {
-      logger.error(`Error fetching feature by code: ${error}`);
+      logger.error(`Error fetching feature by code: ${String(error)}`);
       throw error;
     }
   }
@@ -97,7 +97,7 @@ export class FeaturesService {
     try {
       const [rows] = await query<DbTenantFeature[]>(
         `
-        SELECT 
+        SELECT
           tf.*,
           f.code as feature_code,
           f.name as feature_name,
@@ -112,7 +112,7 @@ export class FeaturesService {
       );
 
       return rows.map((row) => {
-        const mapped = fieldMapper.dbToApi<TenantFeature>(row);
+        const mapped = fieldMapper.dbToApi(row) as TenantFeature;
         // Parse custom_config if it's a string
         if (row.custom_config && typeof row.custom_config === "string") {
           try {
@@ -135,7 +135,7 @@ export class FeaturesService {
         return mapped;
       });
     } catch (error: unknown) {
-      logger.error(`Error fetching tenant features: ${error}`);
+      logger.error(`Error fetching tenant features: ${String(error)}`);
       throw error;
     }
   }
@@ -147,12 +147,12 @@ export class FeaturesService {
     try {
       const [rows] = await query<(DbFeature & Partial<DbTenantFeature>)[]>(
         `
-        SELECT 
+        SELECT
           f.*,
           tf.is_active as tf_is_active,
           tf.activated_at,
           tf.expires_at,
-          CASE 
+          CASE
             WHEN tf.is_active = TRUE AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 'active'
             WHEN tf.is_active = TRUE AND tf.expires_at < NOW() THEN 'expired'
             WHEN tf.is_active = FALSE THEN 'disabled'
@@ -167,7 +167,7 @@ export class FeaturesService {
       );
 
       return rows.map((row) => {
-        const feature = fieldMapper.dbToApi<Feature>({
+        const feature = fieldMapper.dbToApi({
           id: row.id,
           code: row.code,
           name: row.name,
@@ -177,9 +177,19 @@ export class FeaturesService {
           is_active: row.is_active,
           created_at: row.created_at,
           updated_at: row.updated_at,
-        });
+        }) as Feature;
 
-        const result: FeatureWithTenantInfo = { ...feature };
+        const result: FeatureWithTenantInfo = {
+          id: feature.id,
+          code: feature.code,
+          name: feature.name,
+          description: feature.description,
+          category: feature.category,
+          price: feature.price,
+          isActive: feature.isActive,
+          createdAt: feature.createdAt,
+          updatedAt: feature.updatedAt,
+        };
 
         if (row.tf_is_active !== null && row.tf_is_active !== undefined) {
           result.tenantFeature = {
@@ -197,7 +207,9 @@ export class FeaturesService {
         return result;
       });
     } catch (error: unknown) {
-      logger.error(`Error fetching features with tenant info: ${error}`);
+      logger.error(
+        `Error fetching features with tenant info: ${String(error)}`,
+      );
       throw error;
     }
   }
@@ -284,7 +296,7 @@ export class FeaturesService {
         `Feature ${request.featureCode} activated for tenant ${request.tenantId}`,
       );
     } catch (error: unknown) {
-      logger.error(`Error activating feature: ${error}`);
+      logger.error(`Error activating feature: ${String(error)}`);
       throw error;
     }
   }
@@ -307,7 +319,7 @@ export class FeaturesService {
 
       const [result] = await execute<ResultSetHeader>(
         `
-        UPDATE tenant_features 
+        UPDATE tenant_features
         SET is_active = false, updated_at = NOW()
         WHERE tenant_id = ? AND feature_id = ?
       `,
@@ -331,7 +343,7 @@ export class FeaturesService {
 
       logger.info(`Feature ${featureCode} deactivated for tenant ${tenantId}`);
     } catch (error: unknown) {
-      logger.error(`Error deactivating feature: ${error}`);
+      logger.error(`Error deactivating feature: ${String(error)}`);
       throw error;
     }
   }
@@ -355,12 +367,12 @@ export class FeaturesService {
 
       const [rows] = await query<DbFeatureUsageStats[]>(
         `
-        SELECT 
+        SELECT
           DATE(created_at) as date,
           COUNT(*) as usage_count,
           COUNT(DISTINCT user_id) as unique_users
         FROM feature_usage_logs
-        WHERE tenant_id = ? 
+        WHERE tenant_id = ?
         AND feature_id = ?
         AND DATE(created_at) BETWEEN ? AND ?
         GROUP BY DATE(created_at)
@@ -376,7 +388,7 @@ export class FeaturesService {
         uniqueUsers: row.unique_users,
       }));
     } catch (error: unknown) {
-      logger.error(`Error fetching usage stats: ${error}`);
+      logger.error(`Error fetching usage stats: ${String(error)}`);
       throw error;
     }
   }
@@ -410,7 +422,7 @@ export class FeaturesService {
 
       return summary;
     } catch (error: unknown) {
-      logger.error(`Error fetching tenant features summary: ${error}`);
+      logger.error(`Error fetching tenant features summary: ${String(error)}`);
       throw error;
     }
   }
@@ -423,10 +435,10 @@ export class FeaturesService {
     try {
       const [rows] = await query<RowDataPacket[]>(
         `
-        SELECT tf.* 
+        SELECT tf.*
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ? 
+        WHERE tf.tenant_id = ?
         AND f.code = ?
         AND tf.is_active = 1
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
@@ -436,7 +448,7 @@ export class FeaturesService {
 
       return rows.length > 0;
     } catch (error: unknown) {
-      logger.error(`Error checking tenant feature access: ${error}`);
+      logger.error(`Error checking tenant feature access: ${String(error)}`);
       return false;
     }
   }
@@ -468,7 +480,7 @@ export class FeaturesService {
 
       // Note: current_usage tracking would go here if the column existed
     } catch (error: unknown) {
-      logger.error(`Error logging feature usage: ${error}`);
+      logger.error(`Error logging feature usage: ${String(error)}`);
       // Don't throw - we don't want to break the app if usage logging fails
     }
   }
@@ -477,8 +489,8 @@ export class FeaturesService {
   static async getAllTenantsWithFeatures(): Promise<TenantWithFeatures[]> {
     try {
       const [tenants] = await query<RowDataPacket[]>(`
-        SELECT id, subdomain, company_name, status 
-        FROM tenants 
+        SELECT id, subdomain, company_name, status
+        FROM tenants
         ORDER BY company_name
       `);
 
@@ -503,7 +515,9 @@ export class FeaturesService {
 
       return result;
     } catch (error: unknown) {
-      logger.error(`Error fetching all tenants with features: ${error}`);
+      logger.error(
+        `Error fetching all tenants with features: ${String(error)}`,
+      );
       throw error;
     }
   }

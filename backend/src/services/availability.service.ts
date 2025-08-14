@@ -22,7 +22,7 @@ class AvailabilityService {
   async getAll(filter: AvailabilityFilter): Promise<EmployeeAvailability[]> {
     try {
       let query = `
-        SELECT 
+        SELECT
           ea.*,
           u.username as employee_name,
           u.first_name,
@@ -66,7 +66,7 @@ class AvailabilityService {
       query += " ORDER BY ea.start_date DESC";
 
       const [rows] = await execute<RowDataPacket[]>(query, params);
-      return rows.map((row) => snakeToCamel(row));
+      return rows.map((row) => snakeToCamel(row)) as EmployeeAvailability[];
     } catch (error: unknown) {
       console.error("Error in AvailabilityService.getAll:", error);
       throw error;
@@ -79,7 +79,7 @@ class AvailabilityService {
   async getCurrentStatus(tenantId: number): Promise<RowDataPacket[]> {
     try {
       const query = `
-        SELECT 
+        SELECT
           u.id as employee_id,
           u.username,
           u.first_name,
@@ -96,7 +96,7 @@ class AvailabilityService {
       `;
 
       const [rows] = await execute<RowDataPacket[]>(query, [tenantId]);
-      return rows.map((row) => snakeToCamel(row));
+      return rows.map((row) => snakeToCamel(row)) as RowDataPacket[];
     } catch (error: unknown) {
       console.error("Error in AvailabilityService.getCurrentStatus:", error);
       throw error;
@@ -112,7 +112,7 @@ class AvailabilityService {
   ): Promise<EmployeeAvailability | null> {
     try {
       const query = `
-        SELECT * FROM employee_availability 
+        SELECT * FROM employee_availability
         WHERE id = ? AND tenant_id = ?
       `;
       const [rows] = await execute<RowDataPacket[]>(query, [id, tenantId]);
@@ -121,7 +121,9 @@ class AvailabilityService {
         return null;
       }
 
-      return await Promise.resolve(snakeToCamel(rows[0]));
+      return await Promise.resolve(
+        snakeToCamel(rows[0]) as EmployeeAvailability,
+      );
     } catch (error: unknown) {
       console.error("Error in AvailabilityService.getById:", error);
       throw error;
@@ -133,10 +135,10 @@ class AvailabilityService {
    */
   async create(data: Partial<EmployeeAvailability>): Promise<number> {
     try {
-      const dbData = camelToSnake<Record<string, unknown>>(data);
+      const dbData = camelToSnake(data) as Record<string, unknown>;
 
       const query = `
-        INSERT INTO employee_availability 
+        INSERT INTO employee_availability
         (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
@@ -171,7 +173,7 @@ class AvailabilityService {
     data: Partial<EmployeeAvailability>,
   ): Promise<boolean> {
     try {
-      const dbData = camelToSnake<Record<string, unknown>>(data);
+      const dbData = camelToSnake(data) as Record<string, unknown>;
 
       const fields = [];
       const values = [];
@@ -204,7 +206,7 @@ class AvailabilityService {
       values.push(id, tenantId);
 
       const query = `
-        UPDATE employee_availability 
+        UPDATE employee_availability
         SET ${fields.join(", ")}
         WHERE id = ? AND tenant_id = ?
       `;
@@ -230,7 +232,7 @@ class AvailabilityService {
   async delete(id: number, tenantId: number): Promise<boolean> {
     try {
       const query = `
-        DELETE FROM employee_availability 
+        DELETE FROM employee_availability
         WHERE id = ? AND tenant_id = ?
       `;
       const [result] = await execute<ResultSetHeader>(query, [id, tenantId]);
@@ -270,14 +272,14 @@ class AvailabilityService {
   ): Promise<RowDataPacket[]> {
     try {
       const query = `
-        SELECT 
+        SELECT
           ea.status,
           COUNT(DISTINCT ea.employee_id) as employee_count,
           GROUP_CONCAT(DISTINCT CONCAT(u.first_name, ' ', u.last_name) SEPARATOR ', ') as employees
         FROM employee_availability ea
         JOIN users u ON ea.employee_id = u.id
         WHERE ea.tenant_id = ?
-          AND ((ea.start_date BETWEEN ? AND ?) OR (ea.end_date BETWEEN ? AND ?) 
+          AND ((ea.start_date BETWEEN ? AND ?) OR (ea.end_date BETWEEN ? AND ?)
                OR (ea.start_date <= ? AND ea.end_date >= ?))
         GROUP BY ea.status
       `;
@@ -292,7 +294,7 @@ class AvailabilityService {
         endDate,
       ]);
 
-      return rows.map((row) => snakeToCamel(row));
+      return rows.map((row) => snakeToCamel(row)) as RowDataPacket[];
     } catch (error: unknown) {
       console.error(
         "Error in AvailabilityService.getAvailabilitySummary:",

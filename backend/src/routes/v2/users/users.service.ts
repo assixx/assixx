@@ -27,8 +27,8 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     public message: string,
-    public statusCode: number = 500,
-    public details?: Array<{ field: string; message: string }>,
+    public statusCode = 500,
+    public details?: { field: string; message: string }[],
   ) {
     super(message);
     this.name = "ServiceError";
@@ -68,9 +68,9 @@ export class UsersService {
   /**
    * List users with pagination and filters
    */
-  async listUsers(tenantId: number, query: ListUsersQuery) {
-    const page = parseInt(query.page ?? "1");
-    const limit = parseInt(query.limit ?? "20");
+  async listUsers(tenantId: number, query: ListUsersQuery): Promise<unknown> {
+    const page = parseInt(query.page ?? "1", 10);
+    const limit = parseInt(query.limit ?? "20", 10);
     const search = query.search;
     const role = query.role;
     const isActive =
@@ -93,7 +93,7 @@ export class UsersService {
       tenant_id: tenantId,
     };
 
-    if (role) filters.role = role;
+    if (role !== undefined && role !== "") filters.role = role;
     if (isActive !== undefined) filters.is_active = isActive;
     if (isArchived !== undefined) filters.is_archived = isArchived;
 
@@ -107,7 +107,7 @@ export class UsersService {
       limit,
       page,
       sort_by: sortBy,
-      sort_dir: sortOrder as "asc" | "desc",
+      sort_dir: sortOrder,
     };
     const users = await User.search(searchFilters);
 
@@ -128,7 +128,7 @@ export class UsersService {
   /**
    * Get user by ID
    */
-  async getUserById(userId: number, tenantId: number) {
+  async getUserById(userId: number, tenantId: number): Promise<unknown> {
     const user = await User.findById(userId, tenantId);
 
     if (!user) {
@@ -141,7 +141,10 @@ export class UsersService {
   /**
    * Create new user
    */
-  async createUser(userData: CreateUserBody, tenantId: number) {
+  async createUser(
+    userData: CreateUserBody,
+    tenantId: number,
+  ): Promise<unknown> {
     // Check if email already exists within the same tenant
     const existingUser = await User.findByEmail(userData.email, tenantId);
     if (existingUser) {
@@ -170,7 +173,7 @@ export class UsersService {
     try {
       // Create user - returns the new user ID
       const userId = await User.create(
-        dbUserData as Parameters<typeof User.create>[0],
+        dbUserData as unknown as Parameters<typeof User.create>[0],
       );
 
       // Fetch complete user data
@@ -192,7 +195,7 @@ export class UsersService {
         "code" in error &&
         (error as { code: string }).code === "ER_DUP_ENTRY"
       ) {
-        const message = error.message ?? "";
+        const message = error.message;
         const field = message.includes("email")
           ? "Email"
           : message.includes("username")
@@ -216,7 +219,7 @@ export class UsersService {
     userId: number,
     updateData: UpdateUserBody,
     tenantId: number,
-  ) {
+  ): Promise<unknown> {
     // Check if user exists
     const user = await User.findById(userId, tenantId);
     if (!user) {
@@ -224,9 +227,7 @@ export class UsersService {
     }
 
     // Convert from camelCase to snake_case
-    const dbUpdateData = apiToDb(
-      updateData as Record<string, unknown>,
-    ) as Record<string, unknown>;
+    const dbUpdateData = apiToDb(updateData as Record<string, unknown>);
 
     // Remove fields that shouldn't be updated this way
     delete dbUpdateData.password;
@@ -256,7 +257,7 @@ export class UsersService {
         "code" in error &&
         (error as { code: string }).code === "ER_DUP_ENTRY"
       ) {
-        const message = error.message ?? "";
+        const message = error.message;
         const field = message.includes("email")
           ? "Email"
           : message.includes("employee_number")
@@ -276,11 +277,9 @@ export class UsersService {
     userId: number,
     profileData: UpdateProfileBody,
     tenantId: number,
-  ) {
+  ): Promise<unknown> {
     // Convert from camelCase to snake_case
-    const dbUpdateData = apiToDb(
-      profileData as Record<string, unknown>,
-    ) as Record<string, unknown>;
+    const dbUpdateData = apiToDb(profileData as Record<string, unknown>);
 
     // Only allow specific fields to be updated
     const allowedFields = [
@@ -348,7 +347,7 @@ export class UsersService {
     tenantId: number,
     currentPassword: string,
     newPassword: string,
-  ) {
+  ): Promise<{ message: string }> {
     // Verify current password and change it
     const result = await User.changePassword(
       userId,
@@ -365,13 +364,17 @@ export class UsersService {
       );
     }
 
-    return true;
+    return { message: "Password changed successfully" };
   }
 
   /**
    * Delete user
    */
-  async deleteUser(userId: number, currentUserId: number, tenantId: number) {
+  async deleteUser(
+    userId: number,
+    currentUserId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     // Check if user exists
     const user = await User.findById(userId, tenantId);
     if (!user) {
@@ -389,13 +392,16 @@ export class UsersService {
 
     // Delete user
     await User.delete(userId);
-    return true;
+    return { message: "User deleted successfully" };
   }
 
   /**
    * Archive user
    */
-  async archiveUser(userId: number, tenantId: number) {
+  async archiveUser(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     // Check if user exists
     const user = await User.findById(userId, tenantId);
     if (!user) {
@@ -404,13 +410,16 @@ export class UsersService {
 
     // Archive user
     await User.archiveUser(userId, tenantId);
-    return true;
+    return { message: "User archived successfully" };
   }
 
   /**
    * Unarchive user
    */
-  async unarchiveUser(userId: number, tenantId: number) {
+  async unarchiveUser(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     // Check if user exists (including archived)
     const user = await User.findById(userId, tenantId);
     if (!user) {
@@ -419,16 +428,23 @@ export class UsersService {
 
     // Unarchive user
     await User.unarchiveUser(userId, tenantId);
-    return true;
+    return { message: "User unarchived successfully" };
   }
 
   /**
    * Get profile picture path
    */
-  async getProfilePicturePath(userId: number, tenantId: number) {
+  async getProfilePicturePath(
+    userId: number,
+    tenantId: number,
+  ): Promise<string | null> {
     const user = await User.findById(userId, tenantId);
 
-    if (!user?.profile_picture) {
+    if (!user) {
+      throw new ServiceError("NOT_FOUND", "User not found", 404);
+    }
+
+    if (user.profile_picture === undefined || user.profile_picture === "") {
       throw new ServiceError("NOT_FOUND", "Profile picture not found", 404);
     }
 
@@ -455,7 +471,7 @@ export class UsersService {
     userId: number,
     filePath: string,
     tenantId: number,
-  ) {
+  ): Promise<{ picturePath: string }> {
     const relativePath = path.relative(process.cwd(), filePath);
 
     // Update user profile picture
@@ -472,16 +488,23 @@ export class UsersService {
       );
     }
 
-    return dbToApi(sanitizeUser(updatedUser));
+    return { picturePath: relativePath };
   }
 
   /**
    * Delete profile picture
    */
-  async deleteProfilePicture(userId: number, tenantId: number) {
+  async deleteProfilePicture(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ message: string }> {
     const user = await User.findById(userId, tenantId);
 
-    if (!user?.profile_picture) {
+    if (!user) {
+      throw new ServiceError("NOT_FOUND", "User not found", 404);
+    }
+
+    if (user.profile_picture === undefined || user.profile_picture === "") {
       throw new ServiceError("NOT_FOUND", "No profile picture to delete", 404);
     }
 
@@ -495,7 +518,7 @@ export class UsersService {
 
     // Update database
     await User.updateProfilePicture(userId, "", tenantId);
-    return true;
+    return { message: "Profile picture deleted successfully" };
   }
 
   /**
@@ -505,7 +528,7 @@ export class UsersService {
     userId: number,
     availabilityData: UpdateAvailabilityBody,
     tenantId: number,
-  ) {
+  ): Promise<{ message: string }> {
     // Check if user exists
     const user = await User.findById(userId, tenantId);
     if (!user) {
@@ -531,7 +554,7 @@ export class UsersService {
       );
     }
 
-    return dbToApi(sanitizeUser(updatedUser));
+    return { message: "Availability updated successfully" };
   }
 }
 

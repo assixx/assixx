@@ -59,7 +59,7 @@ interface UserDetails {
  */
 function extractBearerToken(req: PublicRequest): string | null {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
     return null;
   }
   return authHeader.substring(7);
@@ -68,7 +68,7 @@ function extractBearerToken(req: PublicRequest): string | null {
 /**
  * Verify JWT token and return payload
  */
-async function verifyAccessToken(token: string): Promise<JWTPayload | null> {
+function verifyAccessToken(token: string): JWTPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
 
@@ -130,7 +130,7 @@ async function getUserDetails(
     }
 
     // Convert to camelCase for API v2
-    return dbToApi(users[0]);
+    return dbToApi(users[0]) as unknown as UserDetails;
   } catch (error: unknown) {
     console.error("[AUTH v2] User lookup error:", error);
     return null;
@@ -157,7 +157,7 @@ export async function authenticateV2(
     }
 
     // Verify token
-    const decoded = await verifyAccessToken(token);
+    const decoded = verifyAccessToken(token);
 
     if (!decoded) {
       res

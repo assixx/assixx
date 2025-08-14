@@ -125,7 +125,7 @@ export class KVPService {
   /**
    * Get all categories for a tenant
    */
-  async getCategories(_tenantId: number) {
+  async getCategories(_tenantId: number): Promise<unknown[]> {
     try {
       const categories = await KVPModel.getCategories();
       return categories.map((category) => dbToApi(category));
@@ -142,7 +142,15 @@ export class KVPService {
     userId: number,
     userRole: string,
     filters: KVPFilters = {},
-  ) {
+  ): Promise<{
+    suggestions: unknown[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      pageSize: number;
+      totalItems: number;
+    };
+  }> {
     try {
       const offset = ((filters.page ?? 1) - 1) * (filters.limit ?? 20);
 
@@ -160,7 +168,7 @@ export class KVPService {
 
       // Apply search filter if provided
       let filteredSuggestions = suggestions;
-      if (filters.search) {
+      if (filters.search !== undefined && filters.search !== "") {
         const searchLower = filters.search.toLowerCase();
         filteredSuggestions = suggestions.filter(
           (s) =>
@@ -217,7 +225,7 @@ export class KVPService {
       throw new ServiceError("NOT_FOUND", "Suggestion not found");
     }
 
-    return dbToApi(suggestion);
+    return dbToApi(suggestion) as unknown as KVPSuggestion;
   }
 
   /**
@@ -227,7 +235,7 @@ export class KVPService {
     data: KVPCreateData,
     tenantId: number,
     userId: number,
-  ) {
+  ): Promise<KVPSuggestion> {
     try {
       const suggestionData = {
         tenant_id: tenantId,
@@ -259,7 +267,7 @@ export class KVPService {
         );
       }
 
-      return dbToApi(suggestion);
+      return dbToApi(suggestion) as unknown as KVPSuggestion;
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
@@ -278,7 +286,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<KVPSuggestion> {
     // First, check if the suggestion exists and user has access
     const existing = await this.getSuggestionById(
       id,
@@ -356,7 +364,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<{ message: string }> {
     // Check if suggestion exists and user has access
     const suggestion = await this.getSuggestionById(
       id,
@@ -378,6 +386,7 @@ export class KVPService {
       if (!result) {
         throw new ServiceError("SERVER_ERROR", "Failed to delete suggestion");
       }
+      return { message: "Suggestion deleted successfully" };
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
@@ -395,7 +404,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown[]> {
     // Verify access to the suggestion first
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
@@ -416,7 +425,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown> {
     // Verify access to the suggestion first
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
@@ -448,7 +457,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown[]> {
     // Verify access to the suggestion first
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
@@ -473,7 +482,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown> {
     // Verify access to the suggestion first
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
@@ -500,7 +509,7 @@ export class KVPService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<unknown> {
     const attachment = await KVPModel.getAttachment(
       attachmentId,
       tenantId,
@@ -512,7 +521,7 @@ export class KVPService {
       throw new ServiceError("NOT_FOUND", "Attachment not found");
     }
 
-    return dbToApi(attachment);
+    return dbToApi(attachment) as unknown;
   }
 
   /**
@@ -523,7 +532,7 @@ export class KVPService {
     tenantId: number,
     awardedBy: number,
     userRole: string,
-  ) {
+  ): Promise<unknown> {
     // Only admins can award points
     if (userRole !== "admin" && userRole !== "root") {
       throw new ServiceError("FORBIDDEN", "Only admins can award points");
@@ -556,10 +565,10 @@ export class KVPService {
   /**
    * Get user points summary
    */
-  async getUserPoints(tenantId: number, userId: number) {
+  async getUserPoints(tenantId: number, userId: number): Promise<unknown> {
     try {
       const points = await KVPModel.getUserPoints(tenantId, userId);
-      return dbToApi(points);
+      return dbToApi(points) as unknown;
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
@@ -572,10 +581,10 @@ export class KVPService {
   /**
    * Get dashboard statistics
    */
-  async getDashboardStats(tenantId: number) {
+  async getDashboardStats(tenantId: number): Promise<unknown> {
     try {
       const stats = await KVPModel.getDashboardStats(tenantId);
-      return dbToApi(stats);
+      return dbToApi(stats) as unknown;
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",

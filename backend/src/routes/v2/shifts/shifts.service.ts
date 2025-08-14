@@ -146,7 +146,7 @@ interface DbShiftData extends RowDataPacket {
 
 // Helper function to convert DB shift to API format
 function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
-  const apiShift = dbToApi<ShiftApiResponse>(dbShift);
+  const apiShift = dbToApi(dbShift) as unknown as ShiftApiResponse;
 
   // Extract time from datetime fields
   if (dbShift.start_time) {
@@ -195,9 +195,12 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
 export class ShiftsService {
   // ============= SHIFTS CRUD =============
 
-  async listShifts(tenantId: number, filters: ShiftFilters) {
+  async listShifts(
+    tenantId: number,
+    filters: ShiftFilters,
+  ): Promise<ShiftApiResponse[]> {
     try {
-      const convertedFilters = apiToDb<Record<string, unknown>>(
+      const convertedFilters = apiToDb(
         filters as unknown as Record<string, unknown>,
       );
       const dbFilters = {
@@ -213,7 +216,7 @@ export class ShiftsService {
     }
   }
 
-  async getShiftById(id: number, tenantId: number) {
+  async getShiftById(id: number, tenantId: number): Promise<ShiftApiResponse> {
     try {
       const shift = await Shift.findById(id, tenantId);
       if (!shift) {
@@ -233,11 +236,9 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<ShiftApiResponse> {
     try {
-      const convertedData = apiToDb<Record<string, unknown>>(
-        data as unknown as Record<string, unknown>,
-      );
+      const convertedData = apiToDb(data as unknown as Record<string, unknown>);
       const dbData = {
         ...convertedData,
         tenant_id: tenantId,
@@ -258,7 +259,7 @@ export class ShiftsService {
         user_agent: userAgent,
       });
 
-      return this.getShiftById(shiftId, tenantId);
+      return await this.getShiftById(shiftId, tenantId);
     } catch (error: unknown) {
       logger.error("Error creating shift:", error);
       throw new ServiceError("CREATE_SHIFT_ERROR", "Failed to create shift");
@@ -272,7 +273,7 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<ShiftApiResponse> {
     try {
       // Check if shift exists
       const oldShift = await this.getShiftById(id, tenantId);
@@ -293,7 +294,7 @@ export class ShiftsService {
         user_agent: userAgent,
       });
 
-      return this.getShiftById(id, tenantId);
+      return await this.getShiftById(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating shift:", error);
@@ -307,7 +308,7 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<{ message: string }> {
     try {
       const shift = await this.getShiftById(id, tenantId);
 
@@ -335,7 +336,7 @@ export class ShiftsService {
 
   // ============= TEMPLATES =============
 
-  async listTemplates(tenantId: number) {
+  async listTemplates(tenantId: number): Promise<unknown[]> {
     try {
       const templates = await Shift.getTemplates(tenantId);
       return templates.map((template) => dbToApi(template));
@@ -348,7 +349,7 @@ export class ShiftsService {
     }
   }
 
-  async getTemplateById(id: number, tenantId: number) {
+  async getTemplateById(id: number, tenantId: number): Promise<unknown> {
     try {
       const template = await Shift.getTemplateById(id, tenantId);
       if (!template) {
@@ -367,11 +368,9 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<unknown> {
     try {
-      const convertedData = apiToDb<Record<string, unknown>>(
-        data as unknown as Record<string, unknown>,
-      );
+      const convertedData = apiToDb(data as unknown as Record<string, unknown>);
       const dbData = {
         ...convertedData,
         tenant_id: tenantId,
@@ -403,7 +402,7 @@ export class ShiftsService {
         user_agent: userAgent,
       });
 
-      return this.getTemplateById(templateId, tenantId);
+      return await this.getTemplateById(templateId, tenantId);
     } catch (error: unknown) {
       logger.error("Error creating template:", error);
       throw new ServiceError(
@@ -420,7 +419,7 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<unknown> {
     try {
       const oldTemplate = await this.getTemplateById(id, tenantId);
 
@@ -452,7 +451,7 @@ export class ShiftsService {
         user_agent: userAgent,
       });
 
-      return this.getTemplateById(id, tenantId);
+      return await this.getTemplateById(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating template:", error);
@@ -469,7 +468,7 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<{ message: string }> {
     try {
       const template = await this.getTemplateById(id, tenantId);
 
@@ -503,7 +502,7 @@ export class ShiftsService {
   async listSwapRequests(
     tenantId: number,
     filters: { userId?: number; status?: string },
-  ) {
+  ): Promise<unknown[]> {
     try {
       const requests = await Shift.getSwapRequests(tenantId, filters);
       return requests.map((request) => dbToApi(request));
@@ -522,11 +521,11 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<{ id: number; message: string; [key: string]: unknown }> {
     try {
       // Verify shift exists and belongs to user
       const shift = await this.getShiftById(data.shiftId, tenantId);
-      if ((shift as ShiftApiResponse).userId !== userId) {
+      if (shift.userId !== userId) {
         throw new ServiceError(
           "FORBIDDEN",
           "You can only request swaps for your own shifts",
@@ -556,7 +555,7 @@ export class ShiftsService {
         user_agent: userAgent,
       });
 
-      const convertedResult = dbToApi<Record<string, unknown>>(
+      const convertedResult = dbToApi(
         dbData as unknown as Record<string, unknown>,
       );
       return {
@@ -581,7 +580,7 @@ export class ShiftsService {
     userId: number,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<{ message: string }> {
     try {
       const request = await Shift.getSwapRequestById(id, tenantId);
       if (!request) {
@@ -619,7 +618,10 @@ export class ShiftsService {
 
   // ============= OVERTIME =============
 
-  async getOvertimeReport(data: OverTimeData, tenantId: number) {
+  async getOvertimeReport(
+    data: OverTimeData,
+    tenantId: number,
+  ): Promise<unknown> {
     try {
       const overtime = await Shift.getOvertimeByUser(
         data.userId,
@@ -643,7 +645,7 @@ export class ShiftsService {
     filters: ShiftFilters,
     tenantId: number,
     format: "csv" | "excel" = "csv",
-  ) {
+  ): Promise<string> {
     try {
       const shifts = await this.listShifts(tenantId, {
         ...filters,
@@ -651,7 +653,7 @@ export class ShiftsService {
       });
 
       if (format === "csv") {
-        return this.generateCSV(shifts as ShiftApiResponse[]);
+        return this.generateCSV(shifts);
       } else {
         // TODO: Implement Excel export
         throw new ServiceError(

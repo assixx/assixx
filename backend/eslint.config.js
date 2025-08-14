@@ -83,6 +83,7 @@ export default [
       "@typescript-eslint/promise-function-async": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
+      "@typescript-eslint/non-nullable-type-assertion-style": "off", // Konflikt mit no-non-null-assertion - wir bevorzugen explizite Checks!
 
       // Code Quality - MAXIMUM
       "@typescript-eslint/prefer-nullish-coalescing": [

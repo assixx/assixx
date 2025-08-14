@@ -21,6 +21,7 @@ import {
   type EventQueryOptions,
   type EventCreateData as ModelEventCreateData,
   type EventUpdateData as ModelEventUpdateData,
+  type EventsListResponse,
 } from "../models/calendar";
 
 // UserInfo is defined below
@@ -38,15 +39,8 @@ type EventCreateData = ModelEventCreateData;
 // EventUpdateData is currently the same as ModelEventUpdateData
 type EventUpdateData = ModelEventUpdateData;
 
-interface EventsResponse {
-  events: CalendarEvent[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+// Use the EventsListResponse from the model
+type EventsResponse = EventsListResponse;
 
 interface EventAttendee {
   user_id: number;

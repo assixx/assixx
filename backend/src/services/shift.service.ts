@@ -37,7 +37,7 @@ interface ShiftEntry {
   end_time: string;
   position?: string | null;
   required_employees: number;
-  assigned_employees?: number;
+  assigned_employees?: { name: string; status: string }[] | number[];
   created_at: Date;
   updated_at: Date;
 }
@@ -314,7 +314,7 @@ class ShiftService {
         end_time: shift.end_time,
         position: null as string | null,
         required_employees: shift.required_employees,
-        assigned_employees: shift.assigned_employees as number[],
+        assigned_employees: shift.assignedEmployees,
         created_at: shift.created_at,
         updated_at: shift.updated_at,
       }));
@@ -354,7 +354,7 @@ class ShiftService {
         end_time: shift.end_time,
         position: shiftData.position ?? null,
         required_employees: shift.required_employees,
-        assigned_employees: 0,
+        assigned_employees: [],
         created_at: shift.created_at,
         updated_at: shift.updated_at,
       };

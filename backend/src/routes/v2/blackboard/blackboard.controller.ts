@@ -65,7 +65,10 @@ interface BlackboardEntry {
   [key: string]: unknown;
 }
 
-export async function listEntries(req: AuthenticatedRequest, res: Response) {
+export async function listEntries(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const filters = {
       status: req.query.status as "active" | "archived" | undefined,
@@ -76,8 +79,14 @@ export async function listEntries(req: AuthenticatedRequest, res: Response) {
         | "team"
         | undefined,
       search: req.query.search as string | undefined,
-      page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 10,
+      page:
+        req.query.page !== undefined
+          ? parseInt(req.query.page as string, 10)
+          : 1,
+      limit:
+        req.query.limit !== undefined
+          ? parseInt(req.query.limit as string, 10)
+          : 10,
       sortBy: req.query.sortBy as string | undefined,
       sortDir: req.query.sortDir as "ASC" | "DESC" | undefined,
       priority: req.query.priority as string | undefined,
@@ -87,11 +96,22 @@ export async function listEntries(req: AuthenticatedRequest, res: Response) {
           : undefined,
     };
 
-    const result = await blackboardService.listEntries(
+    const serviceResult = await blackboardService.listEntries(
       req.user.tenant_id,
       req.user.id,
       filters,
     );
+
+    // Type assertion to satisfy ESLint
+    const result = serviceResult as {
+      entries: BlackboardEntry[];
+      pagination: {
+        page: number;
+        totalPages: number;
+        limit: number;
+        total: number;
+      };
+    };
 
     res.json(
       paginatedResponse(result.entries, {
@@ -115,7 +135,10 @@ export async function listEntries(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-export async function getEntryById(req: AuthenticatedRequest, res: Response) {
+export async function getEntryById(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const entryId = parseInt(req.params.id, 10);
     const entry = await blackboardService.getEntryById(
@@ -565,7 +588,7 @@ export async function downloadAttachment(
     const attachment = (await blackboardService.getAttachmentById(
       attachmentId,
       req.user.tenant_id,
-    )) as AttachmentResponse;
+    )) as unknown as AttachmentResponse;
 
     // Send file
     res.download(attachment.filePath, attachment.originalName);

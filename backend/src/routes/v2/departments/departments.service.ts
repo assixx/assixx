@@ -218,7 +218,7 @@ export class DepartmentService {
 
       // Validate manager if specified
       if (data.managerId !== undefined && data.managerId !== null) {
-        const { User } = await import("../../../models/user.js");
+        const User = (await import("../../../models/user.js")).default;
         const manager = await User.findById(data.managerId, tenantId);
         if (!manager) {
           throw new ServiceError(400, "Manager not found");

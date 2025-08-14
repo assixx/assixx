@@ -33,9 +33,9 @@ export interface AuthenticatedRequest
   user: AuthUser;
   tenant?: TenantInfo | null;
   tenant_id?: number | null;
-  tenantId?: number | null; // v2 API camelCase version
+  tenantId?: number; // v2 API camelCase version - only undefined or number, never null
   subdomain?: string;
-  userId?: number; // Convenience property
+  userId?: number; // Convenience property - only undefined or number, never null
 }
 
 // Use Express.Multer.File from express-extensions.d.ts

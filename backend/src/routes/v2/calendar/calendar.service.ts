@@ -6,6 +6,7 @@
 import CalendarModel from "../../../models/calendar.js";
 import type {
   CalendarEvent,
+  DbCalendarEvent,
   EventCreateData,
   EventUpdateData,
   EventAttendee,
@@ -104,11 +105,14 @@ export class CalendarService {
     };
 
     try {
-      const result = await CalendarModel.getAllEvents(
+      const result = (await CalendarModel.getAllEvents(
         tenantId,
         userId,
         queryOptions,
-      );
+      )) as unknown as {
+        events: CalendarEvent[];
+        pagination: { total: number };
+      };
 
       // Map events to API format
       const events = result.events.map((event: CalendarEvent) =>
@@ -567,11 +571,13 @@ export class CalendarService {
     format: "ics" | "csv",
   ) {
     try {
-      const result = await CalendarModel.getAllEvents(
+      const result = (await CalendarModel.getAllEvents(
         tenantId,
         userId,
         { limit: 1000 }, // Export up to 1000 events
-      );
+      )) as unknown as {
+        events: DbCalendarEvent[];
+      };
 
       if (format === "csv") {
         return this.generateCSV(result.events);

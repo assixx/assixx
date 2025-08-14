@@ -164,7 +164,7 @@ class DepartmentGroupService {
         departments.set(dept.id as number, {
           id: dept.id as number,
           name: dept.name as string,
-          description: dept.description as string | null,
+          description: (dept.description as string | null) ?? undefined,
         });
       });
 
@@ -250,7 +250,7 @@ class DepartmentGroupService {
         assignmentMap.get(row.group_id as number)?.push({
           id: row.dept_id as number,
           name: row.dept_name as string,
-          description: row.dept_desc as string | null,
+          description: (row.dept_desc as string | null) ?? undefined,
         });
       });
 
@@ -263,8 +263,8 @@ class DepartmentGroupService {
         const group: DepartmentGroup = {
           id: row.id as number,
           name: row.name as string,
-          description: row.description as string | null,
-          parent_group_id: row.parent_group_id as number | null,
+          description: (row.description as string | null) ?? undefined,
+          parent_group_id: (row.parent_group_id as number | null) ?? undefined,
           departments: assignmentMap.get(row.id as number) ?? [],
           subgroups: [],
         };

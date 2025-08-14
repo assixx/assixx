@@ -129,6 +129,16 @@ interface UserInfo {
   teamId: number | null;
 }
 
+export interface EventsListResponse {
+  events: DbCalendarEvent[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 /**
  * Get all calendar events visible to the user
  */
@@ -136,7 +146,7 @@ export async function getAllEvents(
   tenant_id: number,
   userId: number,
   options: EventQueryOptions = {},
-): Promise<unknown> {
+): Promise<EventsListResponse> {
   try {
     const {
       status = "active",
