@@ -8,7 +8,15 @@ import { Router } from "express";
 import { security } from "../../../middleware/security.js";
 import { typed } from "../../../utils/routeHandlers.js";
 
-import { AreasController } from "./areas.controller.js";
+import {
+  getAreasController,
+  getAreaHierarchyController,
+  getAreaByIdController,
+  createAreaController,
+  updateAreaController,
+  deleteAreaController,
+  getAreaStatsController,
+} from "./areas.controller.js";
 import {
   getAreasValidation,
   getAreaByIdValidation,
@@ -24,29 +32,25 @@ router.get(
   "/",
   ...security.user(),
   getAreasValidation,
-  typed.auth(AreasController.getAreas),
+  typed.auth(getAreasController),
 );
 
 // Get area hierarchy (all authenticated users)
 router.get(
   "/hierarchy",
   ...security.user(),
-  typed.auth(AreasController.getAreaHierarchy),
+  typed.auth(getAreaHierarchyController),
 );
 
 // Get area statistics (all authenticated users)
-router.get(
-  "/stats",
-  ...security.user(),
-  typed.auth(AreasController.getAreaStats),
-);
+router.get("/stats", ...security.user(), typed.auth(getAreaStatsController));
 
 // Get area by ID (all authenticated users)
 router.get(
   "/:id",
   ...security.user(),
   getAreaByIdValidation,
-  typed.auth(AreasController.getAreaById),
+  typed.auth(getAreaByIdController),
 );
 
 // Create new area (admin/root only)
@@ -54,7 +58,7 @@ router.post(
   "/",
   ...security.admin(),
   createAreaValidation,
-  typed.auth(AreasController.createArea),
+  typed.auth(createAreaController),
 );
 
 // Update area (admin/root only)
@@ -62,7 +66,7 @@ router.put(
   "/:id",
   ...security.admin(),
   updateAreaValidation,
-  typed.auth(AreasController.updateArea),
+  typed.auth(updateAreaController),
 );
 
 // Delete area (admin/root only)
@@ -70,7 +74,7 @@ router.delete(
   "/:id",
   ...security.admin(),
   deleteAreaValidation,
-  typed.auth(AreasController.deleteArea),
+  typed.auth(deleteAreaController),
 );
 
 export default router;

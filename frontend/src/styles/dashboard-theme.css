@@ -510,6 +510,18 @@ body {
   box-shadow: var(--glass-card-shadow);
 }
 
+.stat-card:hover {
+  background: hsla(0, 0%, 100%, 0.03);
+  border-color: rgba(0, 142, 255, 0.5);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.15);
+  transform: translateY(-8px);
+  transition: all 0.3s ease;
+  position: relative; /* Neuer stacking context */
+  z-index: 1; /* Unter der Sidebar bleiben */
+}
+
 .stat-value {
   margin-bottom: var(--spacing-xs);
   font-size: 2rem; /* 32px */

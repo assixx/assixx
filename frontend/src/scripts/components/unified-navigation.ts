@@ -3452,6 +3452,8 @@ const unifiedNavigationCSS = `
         align-items: baseline;
         gap: 6px;
         margin-bottom: 4px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .company-name {
@@ -3463,15 +3465,17 @@ const unifiedNavigationCSS = `
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: normal;
         margin-top: 8px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .company-domain {
         font-size: 12px;
         color: rgba(255, 255, 255, 0.5);
-        white-space: nowrap;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         text-overflow: ellipsis;
     }
 
@@ -3585,7 +3589,6 @@ const unifiedNavigationCSS = `
     /* Hover/Active nur wenn NICHT collapsed */
     .sidebar:not(.collapsed) .sidebar-link:hover {
         background: rgba(33, 150, 243, 0.1);
-        color: var(--primary-color);
     }
 
     .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {

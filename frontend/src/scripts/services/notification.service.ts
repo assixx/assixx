@@ -27,10 +27,10 @@ export class NotificationService {
       this.container.className = 'notification-container';
       this.container.style.cssText = `
         position: fixed;
-        top: 20px;
+        top: 80px;
         right: 20px;
-        z-index: 9999;
-        max-width: 400px;
+        z-index: 10000;
+        pointer-events: none;
       `;
       document.body.appendChild(this.container);
     } else {
@@ -116,7 +116,8 @@ export class NotificationService {
   dismiss(id: string): void {
     const element = document.getElementById(`notification-${id}`);
     if (element) {
-      element.classList.add('notification-fade-out');
+      // Apply slideOutRight animation like role-switch toast
+      element.style.animation = 'slideOutRight 0.3s ease-in';
       setTimeout(() => {
         element.remove();
         this.notifications.delete(id);
@@ -142,24 +143,48 @@ export class NotificationService {
     const element = document.createElement('div');
     element.id = `notification-${notification.id}`;
     element.className = `notification notification-${notification.type}`;
-    element.style.cssText = `
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-      margin-bottom: 12px;
-      padding: 16px;
-      position: relative;
-      /* animation: slideInRight 0.3s ease-out; */
-      border-left: 4px solid ${this.getTypeColor(notification.type)};
-    `;
 
-    const iconMap = {
-      success: '✓',
-      error: '✕',
-      warning: '⚠',
-      info: 'ℹ',
-    };
+    // Define colors based on type (matching role-switch toast style)
+    let bgColor, borderColor, textColor;
+    if (notification.type === 'success') {
+      bgColor = 'rgba(76, 175, 80, 0.1)';
+      borderColor = 'rgba(76, 175, 80, 0.2)';
+      textColor = 'rgba(76, 175, 80, 0.9)';
+    } else if (notification.type === 'warning') {
+      bgColor = 'rgba(255, 152, 0, 0.1)';
+      borderColor = 'rgba(255, 152, 0, 0.2)';
+      textColor = 'rgba(255, 152, 0, 0.9)';
+    } else if (notification.type === 'error') {
+      bgColor = 'rgba(244, 67, 54, 0.1)';
+      borderColor = 'rgba(244, 67, 54, 0.2)';
+      textColor = 'rgba(244, 67, 54, 0.9)';
+    } else {
+      // info
+      bgColor = 'rgba(33, 150, 243, 0.1)';
+      borderColor = 'rgba(33, 150, 243, 0.2)';
+      textColor = 'rgba(33, 150, 243, 0.9)';
+    }
+
+    element.style.cssText = `
+      position: relative;
+      padding: 16px 24px;
+      background: ${bgColor};
+      border: 1px solid ${borderColor};
+      color: ${textColor};
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      animation: slideInRight 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      pointer-events: auto;
+      width: max-content;
+      max-width: 400px;
+    `;
 
     let actionsHtml = '';
     if (notification.actions && notification.actions.length > 0) {
@@ -190,53 +215,40 @@ export class NotificationService {
       `;
     }
 
+    // Create icon HTML (matching role-switch toast)
+    let iconHtml = '';
+    if (notification.type === 'success') {
+      iconHtml =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+    } else if (notification.type === 'warning') {
+      iconHtml =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
+    } else if (notification.type === 'error') {
+      iconHtml =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+    } else {
+      // info
+      iconHtml =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>';
+    }
+
+    // Combine title and message into one text
+    const displayText =
+      notification.message !== undefined && notification.message !== ''
+        ? `${notification.title}: ${notification.message}`
+        : notification.title;
+
     element.innerHTML = `
-      <button
-        class="notification-close"
-        style="
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          background: none;
-          border: none;
-          font-size: 20px;
-          cursor: pointer;
-          color: #666;
-          padding: 0;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        "
-      >
-        ✕
-      </button>
-      <div style="display: flex; align-items: flex-start;">
-        <span style="
-          font-size: 24px;
-          margin-right: 12px;
-          color: ${this.getTypeColor(notification.type)};
-        ">
-          ${iconMap[notification.type]}
-        </span>
-        <div style="flex: 1;">
-          <h4 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #333;">
-            ${notification.title}
-          </h4>
-          ${notification.message !== undefined && notification.message !== '' ? `<p style="margin: 0; font-size: 14px; color: #666;">${notification.message}</p>` : ''}
-          ${actionsHtml}
-        </div>
-      </div>
+      <span style="color: ${textColor}; display: flex; align-items: center;">
+        ${iconHtml}
+      </span>
+      <span style="flex: 1; color: ${textColor};">
+        ${displayText}
+      </span>
+      ${actionsHtml}
     `;
 
-    // Add event listeners
-    const closeBtn = element.querySelector('.notification-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        this.dismiss(notification.id);
-      });
-    }
+    // No close button anymore - notifications auto-dismiss
 
     // Add action listeners
     if (notification.actions) {
@@ -252,19 +264,6 @@ export class NotificationService {
     }
 
     this.container.appendChild(element);
-  }
-
-  /**
-   * Get color for notification type
-   */
-  private getTypeColor(type: Notification['type']): string {
-    const colors = {
-      success: '#4caf50',
-      error: '#f44336',
-      warning: '#ff9800',
-      info: '#2196f3',
-    };
-    return colors[type];
   }
 
   /**
@@ -304,6 +303,17 @@ style.textContent = `
     to {
       opacity: 0%;
       transform: translateX(100%);
+    }
+  }
+
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+      opacity: 100%;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0%;
     }
   }
 

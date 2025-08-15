@@ -133,18 +133,6 @@
   display: block !important;
 }
 
-/* User name styling */
-#user-name,
-.user-name,
-.header .header-actions #user-info #user-name {
-  margin: 0 !important;
-
-  font-size: 0.8rem !important;
-  font-weight: 700 !important;
-  color: rgb(255 255 255) !important;
-  letter-spacing: 0.3px !important;
-}
-
 /* Logout button styles moved to dashboard-theme.css to prevent conflicts */
 
 /* Header actions container */
