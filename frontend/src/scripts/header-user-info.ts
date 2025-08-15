@@ -50,7 +50,10 @@ async function loadHeaderUserInfo(): Promise<void> {
           (user.profile_picture !== undefined && user.profile_picture !== '') ||
           (user.profile_picture_url !== undefined && user.profile_picture_url !== '')
         ) {
-          avatarElement.src = user.profile_picture ?? user.profile_picture_url ?? '';
+          const picUrl = user.profile_picture ?? user.profile_picture_url ?? null;
+          if (picUrl !== null && picUrl !== '') {
+            avatarElement.src = picUrl;
+          }
           avatarElement.classList.remove('avatar-initials');
         } else {
           // Display initials if no profile picture

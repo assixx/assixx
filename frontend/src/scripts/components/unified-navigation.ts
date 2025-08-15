@@ -1046,7 +1046,7 @@ class UnifiedNavigation {
     // Clear existing content
     element.innerHTML = '';
 
-    if (profilePicUrl !== null) {
+    if (profilePicUrl !== null && profilePicUrl !== '') {
       // Show profile picture
       const img = document.createElement('img');
       img.src = profilePicUrl;
@@ -1114,11 +1114,16 @@ class UnifiedNavigation {
     const lastName = this.userProfileData?.lastName ?? this.userProfileData?.last_name ?? '';
     const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : userName;
     // API v2 uses profilePictureUrl
-    const profilePicture =
+    let profilePicture =
       this.userProfileData?.profilePictureUrl ??
       this.userProfileData?.profilePicture ??
       this.userProfileData?.profile_picture ??
       null;
+
+    // Convert empty strings to null for proper avatar display
+    if (profilePicture === '') {
+      profilePicture = null;
+    }
 
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =
@@ -1211,8 +1216,8 @@ class UnifiedNavigation {
             }
 
             <div id="user-info">
-              <div id="user-avatar" class="user-avatar ${profilePicture !== null ? '' : 'avatar-initials'}">${
-                profilePicture !== null
+              <div id="user-avatar" class="user-avatar ${profilePicture !== null && profilePicture !== '' ? '' : 'avatar-initials'}">${
+                profilePicture !== null && profilePicture !== ''
                   ? `<img src="${profilePicture}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
                   : this.getInitials(firstName, lastName)
               }</div>
@@ -3390,7 +3395,6 @@ const unifiedNavigationCSS = `
         border: none !important;
         flex-shrink: 0 !important;
         /* transition: all 0.3s ease; */
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         margin-left: 0px;
         overflow: hidden;
         position: relative;
@@ -3404,14 +3408,14 @@ const unifiedNavigationCSS = `
 
     /* Avatar with initials */
     .avatar-initials {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background: linear-gradient(135deg, #2196F3, #42a5f5) !important;
-        color: #fff !important;
-        font-weight: 600 !important;
-        font-size: 0.85rem !important;
-        text-transform: uppercase !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #2196F3, #42a5f5);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
     }
 
     /* Avatar padding when sidebar is collapsed */

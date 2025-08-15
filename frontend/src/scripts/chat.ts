@@ -2032,8 +2032,13 @@ class ChatClient {
             (otherParticipant.profile_picture_url !== undefined && otherParticipant.profile_picture_url !== '') ||
             (otherParticipant.profile_image_url !== undefined && otherParticipant.profile_image_url !== '')
           ) {
-            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? '';
-            avatarHtml = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? null;
+            if (imgUrl !== null && imgUrl !== '') {
+              avatarHtml = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+              const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
+              avatarHtml = initials;
+            }
           } else if (
             (otherParticipant.first_name !== undefined && otherParticipant.first_name !== '') ||
             (otherParticipant.last_name !== undefined && otherParticipant.last_name !== '')
@@ -2102,8 +2107,14 @@ class ChatClient {
             (otherParticipant.profile_picture_url !== undefined && otherParticipant.profile_picture_url !== '') ||
             (otherParticipant.profile_image_url !== undefined && otherParticipant.profile_image_url !== '')
           ) {
-            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? '';
-            chatAvatar.innerHTML = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? null;
+            if (imgUrl !== null && imgUrl !== '') {
+              chatAvatar.innerHTML = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+              // Show initials as fallback
+              const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
+              chatAvatar.textContent = initials;
+            }
             chatAvatar.style.display = 'flex';
           } else if (
             (otherParticipant.first_name !== undefined && otherParticipant.first_name !== '') ||

@@ -94,13 +94,13 @@
 
       .chat-sidebar-header {
         padding: var(--spacing-2sm);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 8px;
         display: flex;
         align-items: center;
         gap: var(--spacing-md);
-        background: rgba(33, 145, 243, 0.88);
-        border-radius: 10px 10px 0 0;
+        background: rgba(0, 98, 183, 0.32);
+        border-top: 1px solid rgba(0, 0, 0, 0.41);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.84);
       }
 
       .chat-title {
@@ -157,7 +157,6 @@
       .conversation-item:hover {
         background: rgba(33, 150, 243, 0.1);
         border-color: rgba(33, 150, 243, 0.2);
-        transform: translateX(2px);
       }
 
       .conversation-item.active {
@@ -251,7 +250,7 @@
 
       /* Unread conversation styling */
       .conversation-item.unread {
-        background: linear-gradient(90deg, rgba(33, 150, 243, 0.25), rgba(33, 149, 243, 0));
+        background: #00f3ff0d;
         border-left: 3px solid var(--primary-color);
         padding-left: 7px; /* Adjust padding to compensate for border */
       }

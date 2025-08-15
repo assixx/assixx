@@ -65,13 +65,9 @@
         z-index: -1;
       }
 
-      /* Content sections alignment wird jetzt über breadcrumb-alignment.css gesteuert */
+      /* Styles von breadcrumb-alignment.css und dashboard-theme.css */
 
-      /* Stat-Cards nutzen jetzt die Standard-Styles aus dashboard-theme.css */
-
-      /* Glassmorphismus für Cards */
-      /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-      /* .card und .compact-card verwenden die zentralen CSS-Variablen */
+      /* Glassmorphismus für Cards - definiert in dashboard-theme.css */
 
       /* Ansprechendere Compact-Cards */
       .compact-card {
@@ -1760,12 +1756,6 @@
     <script>
       // Funktionstabelle direkt definieren
 
-      // Departments-Tabelle wurde nach departments.html verschoben
-
-      // Department-Funktionen wurden nach departments.html verschoben
-
-      // Department-Funktionen wurden nach departments.html verschoben
-
       // Load documents table
       async function loadDocumentsTable() {
         console.info('Loading documents table');
@@ -2928,8 +2918,7 @@
       #employee-modal .modal-content,
       #document-modal .modal-content,
       #edit-employee-modal .modal-content {
-        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-        /* Verwendet die CSS-Variablen aus dem zentralen Theme */
+        /* Verwendet CSS-Variablen aus dashboard-theme.css */
         padding: var(--spacing-lg);
         width: 90%;
         max-width: 500px;
