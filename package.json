@@ -38,7 +38,9 @@
     "check:all": "pnpm run format && pnpm run lint:fix && pnpm run type-check && pnpm run stylelint",
     "stylelint": "stylelint \"**/*.{css,scss}\" --cache --cache-location .stylelintcache",
     "stylelint:fix": "stylelint \"**/*.{css,scss}\" --fix --cache --cache-location .stylelintcache",
-    "stylelint:report": "stylelint \"**/*.{css,scss}\" --formatter json > stylelint-report.json"
+    "stylelint:report": "stylelint \"**/*.{css,scss}\" --formatter json > stylelint-report.json",
+    "css:analyze": "npx purgecss --config ./purgecss.config.cjs --output ./frontend/dist/css/",
+    "css:check-unused": "npx purgecss --config ./purgecss.config.cjs --rejected --output /tmp/unused.css"
   },
   "keywords": [
     "assixx",

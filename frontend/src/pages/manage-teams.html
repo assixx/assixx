@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bereiche verwalten - Assixx</title>
+    <title>Teams verwalten - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Google Fonts - Open Sans -->
@@ -263,6 +263,23 @@
         min-width: auto;
       }
 
+      /* Filter and Search */
+      .filter-buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      .search-container {
+        display: flex;
+        gap: 8px;
+      }
+
+      .flex-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
       /* Empty state */
       .empty-state {
         text-align: center;
@@ -317,7 +334,6 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(5px);
         z-index: 9999;
         align-items: center;
@@ -329,18 +345,15 @@
       }
 
       .modal-content {
-        overflow-y: auto;
-        backdrop-filter: blur(20px) saturate(180%);
-        background: #121212c4;
-        border: 1px solid hsla(0,0%,100%,.1);
-        border-radius: var(--radius-md);
-        box-shadow: 0 8px 32px #0006,inset 0 1px #ffffff1a;
-        display: flex;
-        flex-direction: column;
-        max-height: 85vh !important;
-        max-width: 600px;
-        transform: translateY(0);
+        background: hsla(0, 0%, 8.2%, 0.84);
+        backdrop-filter: var(--glass-backdrop);
+        border: var(--glass-border);
+        border-radius: var(--radius-lg);
         width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
       }
 
       .modal-header {
@@ -402,6 +415,7 @@
         color: var(--text-secondary);
         font-size: 0.875rem;
         font-weight: 500;
+        text-transform: uppercase;
         letter-spacing: 0.5px;
       }
 
@@ -461,7 +475,7 @@
       }
 
       /* Floating Add Button - wie bei departments */
-      .add-area-btn {
+      .add-team-btn {
         position: fixed;
         bottom: 30px;
         right: 30px;
@@ -480,7 +494,7 @@
         transition: all 0.3s ease;
       }
 
-      .add-area-btn:hover {
+      .add-team-btn:hover {
         background: rgba(33, 150, 243, 0.3);
         transform: scale(1.1);
         box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
@@ -556,38 +570,50 @@
           <div class="card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
               <div>
-                <h2 class="card-title">Bereichsübersicht</h2>
-                <p class="text-secondary">Verwalten Sie alle Bereiche, Standorte und Zonen</p>
+                <h2 class="card-title">Teamübersicht</h2>
+                <p class="text-secondary">Alle Teams verwalten und bearbeiten</p>
+              </div>
+            </div>
+
+            <div class="flex-between mb-3">
+              <div class="filter-buttons">
+                <button id="show-all-teams" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                <button id="filter-teams-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                <button id="filter-teams-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+              </div>
+              <div class="search-container">
+                <input type="text" id="team-search" class="search-input" placeholder="Name, Abteilung oder Team-Lead..." />
+                <button id="team-search-btn" class="btn btn-secondary">Suchen</button>
               </div>
             </div>
 
             <div class="table-responsive">
-              <div id="areas-loading" class="loading u-hidden">
+              <div id="teams-loading" class="loading u-hidden">
                 <div class="spinner"></div>
-                <p>Bereiche werden geladen...</p>
+                <p>Teams werden geladen...</p>
               </div>
 
-              <table class="admin-table" id="areas-table">
+              <table class="admin-table" id="teams-table">
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Beschreibung</th>
-                    <th>Typ</th>
-                    <th>Kapazität</th>
-                    <th>Adresse</th>
+                    <th>Abteilung</th>
+                    <th>Team-Lead</th>
+                    <th>Mitglieder</th>
                     <th>Status</th>
+                    <th>Erstellt am</th>
                     <th>Aktionen</th>
                   </tr>
                 </thead>
-                <tbody id="areas-table-body">
+                <tbody id="teams-table-body">
                   <!-- Wird dynamisch gefüllt -->
                 </tbody>
               </table>
 
-              <div id="areas-empty" class="empty-state u-hidden">
-                <div class="empty-state-icon">📍</div>
-                <div class="empty-state-title">Keine Bereiche gefunden</div>
-                <div class="empty-state-text">Erstellen Sie Ihren ersten Bereich, um Standorte und Zonen zu verwalten.</div>
+              <div id="teams-empty" class="empty-state u-hidden">
+                <div class="empty-state-icon">👥</div>
+                <div class="empty-state-title">Keine Teams vorhanden</div>
+                <div class="empty-state-text">Fügen Sie das erste Team hinzu, um zu beginnen.</div>
               </div>
             </div>
           </div>
@@ -597,70 +623,82 @@
       </main>
     </div>
 
-    <!-- Add/Edit Area Modal -->
-    <div id="area-modal" class="modal">
+    <!-- Add/Edit Team Modal -->
+    <div id="team-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title" id="area-modal-title">Neuer Bereich</h3>
-          <button class="modal-close" id="close-area-modal">&times;</button>
+          <h3 class="modal-title" id="team-modal-title">Neues Team</h3>
+          <button class="modal-close" id="close-team-modal">&times;</button>
         </div>
-        <form id="area-form">
+        <form id="team-form">
           <div class="modal-body">
-            <input type="hidden" id="area-id" />
+            <input type="hidden" id="team-id" />
 
             <div class="form-group">
-              <label class="form-label" for="area-name">Name *</label>
-              <input type="text" id="area-name" name="name" class="form-control" required />
+              <label class="form-label" for="team-name">Name *</label>
+              <input type="text" id="team-name" name="name" class="form-control" required />
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="area-description">Beschreibung</label>
-              <textarea id="area-description" name="description" class="form-control" rows="3"></textarea>
+              <label class="form-label" for="team-description">Beschreibung</label>
+              <textarea id="team-description" name="description" class="form-control" rows="3"></textarea>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="area-type">Typ *</label>
-              <select id="area-type" name="type" class="form-control" required>
-                <option value="">Bitte wählen...</option>
-                <option value="building">Gebäude</option>
-                <option value="warehouse">Lager</option>
-                <option value="office">Büro</option>
-                <option value="production">Produktion</option>
-                <option value="outdoor">Außenbereich</option>
-                <option value="other">Sonstiges</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-capacity">Kapazität</label>
-              <input type="number" id="area-capacity" name="capacity" class="form-control" min="0" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-address">Adresse</label>
-              <input type="text" id="area-address" name="address" class="form-control" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-parent">Übergeordneter Bereich</label>
-              <select id="area-parent" name="parent_id" class="form-control">
-                <option value="">Kein übergeordneter Bereich</option>
+              <label class="form-label" for="team-department">Abteilung</label>
+              <select id="team-department" name="departmentId" class="form-control">
+                <option value="">Keine Abteilung</option>
                 <!-- Wird dynamisch gefüllt -->
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="area-status">Status</label>
-              <select id="area-status" name="status" class="form-control">
+              <label class="form-label" for="team-lead">Team-Leiter (Admin)</label>
+              <select id="team-lead" name="teamLeadId" class="form-control">
+                <option value="">Kein Team-Leiter</option>
+                <!-- Wird dynamisch mit Admins gefüllt -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Team-Mitglieder</label>
+              <div class="dropdown-container" style="position: relative;">
+                <div class="form-control" style="cursor: pointer;" onclick="window.toggleDropdown('team-members')">
+                  <span id="team-members-display">Keine Mitglieder zugewiesen</span>
+                  <i class="fas fa-chevron-down" style="float: right;"></i>
+                </div>
+                <div id="team-members-dropdown" class="dropdown-options" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                  <!-- Wird dynamisch mit Checkboxen gefüllt -->
+                </div>
+                <input type="hidden" name="userIds" id="team-members-select" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Zugewiesene Maschinen</label>
+              <div class="dropdown-container" style="position: relative;">
+                <div class="form-control" style="cursor: pointer;" onclick="window.toggleDropdown('team-machines')">
+                  <span id="team-machines-display">Keine Maschinen zugewiesen</span>
+                  <i class="fas fa-chevron-down" style="float: right;"></i>
+                </div>
+                <div id="team-machines-dropdown" class="dropdown-options" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                  <!-- Wird dynamisch mit Checkboxen gefüllt -->
+                </div>
+                <input type="hidden" name="machineIds" id="team-machines-select" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="team-status">Status</label>
+              <select id="team-status" name="status" class="form-control">
                 <option value="active">Aktiv</option>
                 <option value="inactive">Inaktiv</option>
-                <option value="maintenance">Wartung</option>
               </select>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="cancel-area-modal">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" id="cancel-team-modal">Abbrechen</button>
             <button type="submit" class="btn btn-primary">Speichern</button>
           </div>
         </form>
@@ -668,26 +706,26 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="delete-area-modal" class="modal">
+    <div id="delete-team-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">Bereich löschen</h3>
+          <h3 class="modal-title">Team löschen</h3>
           <button class="modal-close" id="close-delete-modal">&times;</button>
         </div>
         <div class="modal-body">
-          <p>Möchten Sie diesen Bereich wirklich löschen?</p>
+          <p>Möchten Sie dieses Team wirklich löschen?</p>
           <p class="text-secondary">Diese Aktion kann nicht rückgängig gemacht werden.</p>
-          <input type="hidden" id="delete-area-id" />
+          <input type="hidden" id="delete-team-id" />
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-primary" id="confirm-delete-area">Löschen</button>
+          <button type="button" class="btn btn-primary" id="confirm-delete-team">Löschen</button>
         </div>
       </div>
     </div>
 
     <!-- Floating Add Button -->
-    <button id="add-area-btn" class="add-area-btn">+</button>
+    <button id="add-team-btn" class="add-team-btn">+</button>
 
     <!-- Navigation Components -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -696,6 +734,6 @@
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
 
     <!-- Page Script -->
-    <script type="module" src="/scripts/manage-areas.js"></script>
+    <script type="module" src="/scripts/manage-teams.ts"></script>
   </body>
 </html>

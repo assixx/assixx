@@ -108,7 +108,7 @@
   --glass-form-bg: rgb(255 255 255 / 4%);
   --glass-form-bg-hover: rgb(255 255 255 / 6%);
   --glass-form-bg-focus: rgb(255 255 255 / 8%);
-  --glass-form-border: 1px solid rgb(255 255 255 / 12%);
+  --glass-form-border: 1px solid hsla(0, 0%, 100%, 0.2);
   --glass-form-border-focus: 1px solid var(--primary-color);
   --glass-form-backdrop: blur(5px);
 
@@ -377,10 +377,8 @@ body {
   padding: var(--spacing-2sm);
   border: var(--glass-form-border);
   border-radius: var(--radius-sm);
-
   font-size: 0.875rem; /* 14px */
   color: var(--text-primary);
-
   background: var(--glass-form-bg);
   backdrop-filter: var(--glass-form-backdrop);
   backdrop-filter: var(--glass-form-backdrop);
@@ -825,79 +823,6 @@ body {
   min-height: calc(100vh - 56px);
 }
 
-/* SIDEBAR STYLES MOVED TO unified-navigation.ts */
-/* All sidebar-related CSS has been moved to unified-navigation.ts to avoid conflicts */
-/*
-.sidebar {
-  width: 250px;
-  background-color: rgba(30, 30, 30, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  overflow-y: auto;
-  position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
-  box-shadow: var(--shadow-sm);
-}
-
-.sidebar-title {
-  padding: var(--spacing-lg);
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.sidebar-menu {
-  list-style: none;
-  padding: var(--spacing-2sm);
-  margin: 0;
-}
-
-.sidebar-item {
-  margin-bottom: var(--spacing-xs);
-}
-
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: var(--radius-sm);
-  position: relative;
-}
-
-.sidebar-link:hover {
-  color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.sidebar-item.active .sidebar-link {
-  color: var(--primary-color);
-  background-color: rgba(33, 150, 243, 0.1);
-}
-
-.sidebar-item.active .sidebar-link::before {
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 70%;
-  border-radius: 0 2px 2px 0;
-}
-
-.sidebar-link .icon {
-  font-size: 20px;
-  width: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-*/
 
 .main-content {
   flex: 1;
@@ -907,12 +832,6 @@ body {
   padding: var(--spacing-lg);
 }
 
-/* REDUNDANT - content-section not actively used
-.content-section {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-*/
 
 /* Employee deletion dialog styles */
 .alert {
@@ -936,7 +855,7 @@ body {
 }
 
 /* General modal footer - but not for logout modal */
-.modal-footer:not(#logoutModal .logout-modal .modal-footer) {
+.modal-footer:not(#logoutModal .logout-modal ) {
   display: flex;
   gap: var(--spacing-md);
   justify-content: center;
@@ -1094,38 +1013,6 @@ body {
   background: rgb(33 150 243 / 10%);
 }
 
-/* Role Badge Indicator */
-/* AUSKOMMENTIERT - Wird jetzt in unified-navigation.ts definiert für konsistentes Design mit logs.html
-.role-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-left: 8px;
-}
-
-.role-badge.admin {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
-  color: rgb(0, 0, 0);
-  font-weight: 800;
-}
-
-.role-badge.employee {
-  background: linear-gradient(135deg, #4ecdc4, #44a8b3);
-  color: rgb(0, 0, 0);
-  font-weight: 800;
-}
-
-.role-badge.root {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: rgb(0, 0, 0);
-  font-weight:800
-}
-*/
 
 /* Header actions adjustment */
 .header-actions {

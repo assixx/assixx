@@ -248,6 +248,13 @@ router.get(
   servePage("manage-areas"),
 );
 router.get(
+  "/manage-teams",
+  rateLimiter.admin,
+  authenticateToken,
+  authorizeRole("admin"),
+  servePage("manage-teams"),
+);
+router.get(
   "/admin-profile",
   rateLimiter.admin,
   authenticateToken,

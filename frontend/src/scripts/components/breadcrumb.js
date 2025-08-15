@@ -75,6 +75,8 @@ const urlMappings = {
   '/pages/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
   '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-map-marker-alt' },
   '/pages/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-map-marker-alt' },
+  '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
+  '/pages/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
   '/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
   '/pages/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
   '/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },
@@ -153,7 +155,6 @@ function injectStyles() {
         align-items: center;
         gap: 8px;
         /*backdrop-filter: blur(20px) saturate(180%);*/
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border-radius: 12px;
         /*box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);*/
         color: #fff;

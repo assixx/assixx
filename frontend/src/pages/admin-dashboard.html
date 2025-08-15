@@ -75,7 +75,6 @@
 
       /* Ansprechendere Compact-Cards */
       .compact-card {
-        -webkit-backdrop-filter: var(--glass-backdrop);
         backdrop-filter: var(--glass-backdrop);
         background: var(--glass-bg);
         border: var(--glass-border);
@@ -784,47 +783,7 @@
           <!-- Departments Section -->
           <!-- Departments Section wurde nach departments.html verschoben -->
 
-          <!-- Teams Section -->
-          <section id="teams-section" class="content-section" class="u-hidden">
-            <div class="card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-                <div>
-                  <h2 class="card-title">Teamübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Alle Teams verwalten und bearbeiten</p>
-                </div>
-              </div>
-              <div class="flex-between mb-3">
-                <div class="filter-buttons">
-                  <button id="show-all-teams" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                  <button id="filter-teams-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-                  <button id="filter-teams-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
-                </div>
-                <div class="search-container">
-                  <input type="text" id="team-search" class="search-input" placeholder="Name, Abteilung oder Team-Lead..." />
-                  <button id="team-search-btn" class="btn btn-secondary">Suchen</button>
-                </div>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Abteilung</th>
-                      <th>Team-Lead</th>
-                      <th>Mitglieder</th>
-                      <th>Status</th>
-                      <th>Erstellt am</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="teams-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+          <!-- Teams Section moved to /manage-teams -->
 
           <!-- Machines Section -->
           <section id="machines-section" class="content-section" class="u-hidden">
@@ -886,33 +845,7 @@
     <!-- Modals -->
     <!-- Department Modal wurde nach departments.html verschoben -->
 
-    <!-- Team Modal -->
-    <div id="team-modal" class="modal" class="u-hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Neues Team</h3>
-          <button class="modal-close" onclick="hideTeamModal()">&times;</button>
-        </div>
-        <form id="team-form">
-          <div class="form-group">
-            <label class="form-label">Name</label>
-            <input type="text" name="name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Beschreibung</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Abteilung</label>
-            <select name="department_id" class="form-control">
-              <option value="">Keine Abteilung</option>
-              <!-- Wird dynamisch gefüllt -->
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Team erstellen</button>
-        </form>
-      </div>
-    </div>
+    <!-- Team Modal moved to /manage-teams -->
 
     <!-- Employee Status Modal -->
     <div id="employee-status-modal" class="modal">
@@ -1017,29 +950,13 @@
         top: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(10px);
         display: flex;
         justify-content: center;
         align-items: center;
       }
 
-      #team-modal .modal-content,
-      #employee-status-modal .modal-content,
-      #employee-modal .modal-content,
-      #document-modal .modal-content,
-      #edit-employee-modal .modal-content {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-      }
+
 
       .modal-header {
         display: flex;
@@ -1167,7 +1084,6 @@
         padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: #fff;
@@ -1205,7 +1121,6 @@
         right: 0;
         background: rgba(18, 18, 18, 0.8);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow:
@@ -3241,7 +3156,6 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(5px);
         display: none;
         align-items: center;
@@ -3376,7 +3290,6 @@
         padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: #fff;

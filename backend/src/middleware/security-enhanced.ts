@@ -281,7 +281,6 @@ const createTenantRateLimiter = (
               max-width: 450px;
               background: rgba(255, 255, 255, 0.02);
               backdrop-filter: blur(20px) saturate(180%);
-              -webkit-backdrop-filter: blur(20px) saturate(180%);
               padding: var(--spacing-xl);
               border-radius: var(--radius-md);
               box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);

@@ -46,7 +46,6 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 12px;
   box-shadow:
     0 0px 4px rgba(33, 150, 243, 0.3),

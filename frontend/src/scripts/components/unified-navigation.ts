@@ -625,7 +625,7 @@ class UnifiedNavigation {
           id: 'teams',
           icon: this.getSVGIcon('team'),
           label: 'Teams',
-          url: this.getSectionUrl('teams'),
+          url: '/manage-teams',
           section: 'teams',
         },
         {
@@ -3314,7 +3314,6 @@ const unifiedNavigationCSS = `
         padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         /*border: 1px solid rgba(115, 115, 115, 0.36);*/
         border-radius: var(--radius-md);
         margin-bottom: 20px;
@@ -3720,7 +3719,6 @@ const unifiedNavigationCSS = `
         margin-top: 40px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-md);
         padding: var(--spacing-md);
