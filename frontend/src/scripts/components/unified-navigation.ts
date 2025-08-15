@@ -596,10 +596,17 @@ class UnifiedNavigation {
             {
               id: 'employees-list',
               label: 'Mitarbeiterliste',
-              url: this.getSectionUrl('employees'),
+              url: '/manage-employees',
               section: 'employees',
             },
           ],
+        },
+        {
+          id: 'areas',
+          icon: this.getSVGIcon('sitemap'),
+          label: 'Bereiche',
+          url: '/manage-areas',
+          section: 'areas',
         },
         {
           id: 'departments',
@@ -1382,7 +1389,7 @@ class UnifiedNavigation {
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">"
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
             <span class="icon">${item.icon ?? ''}</span>
             <span class="label">${item.label}</span>
             <span class="nav-indicator"></span>
@@ -1408,7 +1415,7 @@ class UnifiedNavigation {
               .map(
                 (child) => `
         <li class="submenu-item">
-          <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">"
+          <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
@@ -1419,7 +1426,7 @@ class UnifiedNavigation {
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">"
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
             <span class="icon">${item.icon ?? ''}</span>
             <span class="label">${item.label}</span>
             <span class="nav-indicator"></span>
@@ -1439,7 +1446,7 @@ class UnifiedNavigation {
 
     return `
             <li class="sidebar-item ${activeClass}" style="position: relative;">
-                <a href="${item.url ?? '#'}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">"
+                <a href="${item.url ?? '#'}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">
                     <span class="icon">${item.icon ?? ''}</span>
                     <span class="label">${item.label}</span>
                     <span class="nav-indicator"></span>
@@ -1978,21 +1985,27 @@ class UnifiedNavigation {
         // Clear any stored navigation to prevent last selected from being active
         localStorage.removeItem('activeNavigation');
       }
-    } else if (activeNav !== null && activeNav !== '' && activeNav !== 'dashboard') {
-      // Only use stored navigation if it's not the dashboard
-      const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
-      if (activeLink) {
-        activeLink.closest('.sidebar-item')?.classList.add('active');
-      }
     } else {
-      // For other pages, auto-detect or default to dashboard
+      // For non-dashboard pages, first try to auto-detect based on URL
       const detected = this.autoDetectActivePage(currentPath);
+
       if (!detected) {
-        // If no match found, default to dashboard
-        const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
-        if (dashboardLink) {
-          dashboardLink.closest('.sidebar-item')?.classList.add('active');
+        // Only if auto-detect failed, check localStorage
+        if (activeNav !== null && activeNav !== '' && activeNav !== 'dashboard') {
+          const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
+          if (activeLink) {
+            activeLink.closest('.sidebar-item')?.classList.add('active');
+          }
+        } else {
+          // If no match found and no stored nav, default to dashboard
+          const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
+          if (dashboardLink) {
+            dashboardLink.closest('.sidebar-item')?.classList.add('active');
+          }
         }
+      } else {
+        // Clear localStorage if we successfully auto-detected
+        localStorage.removeItem('activeNavigation');
       }
     }
 
@@ -2124,8 +2137,39 @@ class UnifiedNavigation {
 
   private autoDetectActivePage(currentPath: string): boolean {
     const menuItems = this.getNavigationForRole(this.currentRole);
+
+    // First check children/submenu items for exact match
+    for (const item of menuItems) {
+      if (item.children !== undefined && item.children.length > 0) {
+        for (const child of item.children) {
+          if (child.url !== undefined && child.url !== '' && !child.url.startsWith('#')) {
+            // For absolute URLs like /manage-employees, check if current path matches
+            if (child.url.startsWith('/') && currentPath === child.url) {
+              // Mark the parent item as active
+              const parentLink = document.querySelector(`[data-nav-id="${item.id}"]`);
+              if (parentLink) {
+                parentLink.closest('.sidebar-item')?.classList.add('active');
+                // Also mark the child as active if it has a link element
+                const childLink = document.querySelector(`[data-nav-id="${child.id}"]`);
+                if (childLink) {
+                  childLink.closest('.submenu-item')?.classList.add('active');
+                }
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Then check top-level items
     const matchingItem = menuItems.find((item) => {
       if (item.url === undefined || item.url === '' || item.url.startsWith('#')) return false;
+      // For absolute URLs, do exact match
+      if (item.url.startsWith('/')) {
+        return currentPath === item.url;
+      }
+      // For relative URLs or query params, use includes
       return currentPath.includes(item.url.replace('/', ''));
     });
 

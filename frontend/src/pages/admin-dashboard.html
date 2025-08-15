@@ -660,7 +660,7 @@
                   <div class="compact-list" id="recent-employees">
                     <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
                   </div>
-                  <a href="/pages/manage-employees.html" class="view-all-link" id="manage-employees-link">
+                  <a href="/manage-employees" class="view-all-link" id="manage-employees-link">
                     Alle anzeigen
                     <span class="arrow">→</span>
                   </a>
@@ -780,95 +780,6 @@
           <!-- Employees Section moved to /manage-employees -->
 
           <!-- Departments Section -->
-          <section id="departments-section" class="content-section u-hidden">
-            <div class="card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-                <div>
-                  <h2 class="card-title">Abteilungsübersicht</h2>
-                  <p class="text-secondary u-mt-text">Alle Abteilungen verwalten und bearbeiten</p>
-                </div>
-              </div>
-              <div class="flex-between mb-3">
-                <div class="filter-buttons">
-                  <button id="show-all-departments" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                  <button id="filter-departments-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-                  <button id="filter-departments-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
-                  <button id="filter-departments-restructuring" class="btn btn-sm btn-secondary">Umstrukturierung</button>
-                </div>
-                <div class="search-container">
-                  <input type="text" id="department-search" class="search-input" placeholder="Name oder Manager..." />
-                  <button id="department-search-btn" class="btn btn-secondary">Suchen</button>
-                </div>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Manager</th>
-                      <th>Bereich</th>
-                      <th>Übergeordnet</th>
-                      <th>Status</th>
-                      <th>Mitarbeiter</th>
-                      <th>Teams</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="departments-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <!-- Documents Section -->
-          <section id="documents-section" class="content-section u-hidden">
-            <div class="flex-between mb-3">
-              <div>
-                <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
-                  <i class="fas fa-upload me-2"></i>
-                  Dokument hochladen
-                </button>
-                <a href="/documents" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
-              </div>
-              <div class="search-container">
-                <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
-                <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <button id="show-all-documents" class="btn btn-sm btn-secondary">Alle anzeigen</button>
-              <button id="filter-documents-archived" class="btn btn-sm btn-secondary">Archivierte anzeigen</button>
-              <button id="filter-documents-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-            </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h2 class="card-title">Dokumentenübersicht</h2>
-                <p class="text-secondary" class="u-mt-text">Alle Dokumente verwalten und durchsuchen</p>
-              </div>
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Dateiname</th>
-                      <th>Mitarbeiter</th>
-                      <th>Kategorie</th>
-                      <th>Hochgeladen am</th>
-                      <th>Status</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="documents-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
 
           <!-- Departments Section -->
           <!-- Departments Section wurde nach departments.html verschoben -->
@@ -952,49 +863,6 @@
                     </tr>
                   </thead>
                   <tbody id="machines-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <!-- Areas Section -->
-          <section id="areas-section" class="content-section" class="u-hidden">
-            <div class="card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-                <div>
-                  <h2 class="card-title">Bereichsübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Alle Bereiche und Standorte verwalten</p>
-                </div>
-              </div>
-              <div class="flex-between mb-3">
-                <div class="filter-buttons">
-                  <button id="show-all-areas" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                  <button id="filter-areas-production" class="btn btn-sm btn-secondary">Produktion</button>
-                  <button id="filter-areas-warehouse" class="btn btn-sm btn-secondary">Lager</button>
-                  <button id="filter-areas-office" class="btn btn-sm btn-secondary">Büro</button>
-                </div>
-                <div class="search-container">
-                  <input type="text" id="area-search" class="search-input" placeholder="Name, Adresse oder Typ..." />
-                  <button id="area-search-btn" class="btn btn-secondary">Suchen</button>
-                </div>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Beschreibung</th>
-                      <th>Typ</th>
-                      <th>Kapazität</th>
-                      <th>Adresse</th>
-                      <th>Status</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="areas-table-body">
                     <!-- Wird dynamisch gefüllt -->
                   </tbody>
                 </table>
@@ -2865,7 +2733,6 @@
       document.addEventListener('DOMContentLoaded', () => {
         window.loadEmployeesTable = loadEmployeesTable;
         window.editEmployee = editEmployee;
-        window.updateEmployee = updateEmployee;
         window.deleteEmployee = deleteEmployee;
         window.loadDocumentsTable = loadDocumentsTable || (() => console.info('loadDocumentsTable not implemented'));
         // loadPayslipsTable removed - now using documents-payroll.html
@@ -3233,7 +3100,6 @@
 
       .table-responsive {
         overflow-x: auto;
-        margin-top: var(--spacing-md);
       }
 
       .btn-group {

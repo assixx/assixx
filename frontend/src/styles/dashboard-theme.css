@@ -226,17 +226,16 @@ body {
 */
 
 /* Cards */
-.card {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--glass-card-padding);
-  border: var(--glass-card-border);
-  border-radius: var(--glass-card-radius);
-
-  background: var(--glass-card-bg);
-  backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--glass-card-shadow);
-}
+ .card {
+        background: hsla(0, 0%, 100%, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+        overflow: hidden;
+        padding: var(--glass-card-padding);
+      }
 
 .card-header {
   margin-bottom: var(--spacing-md);
@@ -247,9 +246,40 @@ body {
 
 .card-title {
   font-size: 1.125rem; /* 18px */
-  font-weight: 600;
   color: var(--primary-color);
+  font-weight: 600;
+  margin: 0;
 }
+
+/* table */
+ .table-responsive {
+        overflow-x: auto;
+      }
+
+      .admin-table {
+  border-collapse: collapse;
+  margin-top: 20px;
+  width: 100%;
+}
+
+ .admin-table th {
+        background: rgba(33, 150, 243, 0.1);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .admin-table td {
+        padding: 12px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .admin-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
 
 /* Buttons */
 .btn {

@@ -73,6 +73,8 @@ const urlMappings = {
   '/pages/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
   '/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
   '/pages/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
+  '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-map-marker-alt' },
+  '/pages/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-map-marker-alt' },
   '/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
   '/pages/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
   '/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },

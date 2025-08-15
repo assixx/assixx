@@ -5,6 +5,7 @@
 
 import type { User, Document } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
+import { mapUsers, type MappedUser } from '../utils/api-mappers';
 
 import { getAuthToken, showSuccess, showError } from './auth';
 import { showSection } from './show-section';
@@ -320,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
       void loadRecentDocuments();
       void loadDepartments();
       void loadTeams();
-      void loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
+      // loadDepartmentsForEmployeeSelect wird beim Öffnen des Modals aufgerufen
       void loadBlackboardPreview(); // Laden der Blackboard-Einträge
       console.info('[Admin Dashboard] Calling loadBlackboardWidget...');
       void loadBlackboardWidget(); // Laden des Blackboard-Widgets
@@ -1042,11 +1043,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (employees.length === 0) {
           employeeCard.innerHTML = '<p class="text-muted">Keine neuen Mitarbeiter</p>';
         } else {
-          employees.slice(0, 5).forEach((emp: User) => {
+          const mappedEmployees = mapUsers(employees.slice(0, 5));
+          mappedEmployees.forEach((emp: MappedUser) => {
             const item = document.createElement('div');
             item.className = 'compact-item';
             item.innerHTML = `
-              <span class="compact-item-name">${emp.first_name ?? ''} ${emp.last_name ?? ''}</span>
+              <span class="compact-item-name">${emp.fullName}</span>
               <span class="compact-item-count">${emp.position ?? 'Mitarbeiter'}</span>
             `;
             employeeCard.appendChild(item);
@@ -1062,11 +1064,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (employees.length === 0) {
           employeeDetailList.innerHTML = '<li class="text-muted">Keine neuen Mitarbeiter</li>';
         } else {
-          employees.slice(0, 10).forEach((emp: User) => {
+          const mappedEmployees = mapUsers(employees.slice(0, 10));
+          mappedEmployees.forEach((emp: MappedUser) => {
             const listItem = document.createElement('li');
             listItem.innerHTML = `
-              <strong>${emp.first_name ?? ''} ${emp.last_name ?? ''}</strong> - ${emp.position ?? 'Mitarbeiter'}
-              <span class="text-muted">(${emp.department ?? 'Keine Abteilung'})</span>
+              <strong>${emp.fullName}</strong> - ${emp.position ?? 'Mitarbeiter'}
+              <span class="text-muted">(${emp.departmentName ?? 'Keine Abteilung'})</span>
             `;
             employeeDetailList.appendChild(listItem);
           });

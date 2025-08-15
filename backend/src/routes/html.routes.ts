@@ -241,6 +241,13 @@ router.get(
   servePage("manage-employees"),
 );
 router.get(
+  "/manage-areas",
+  rateLimiter.admin,
+  authenticateToken,
+  authorizeRole("admin"),
+  servePage("manage-areas"),
+);
+router.get(
   "/admin-profile",
   rateLimiter.admin,
   authenticateToken,
