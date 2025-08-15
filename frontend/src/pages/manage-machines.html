@@ -6,9 +6,9 @@
     <title>Maschinen verwalten - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
-    <!-- Google Fonts - Open Sans -->
+    <!-- Google Fonts - Geist -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
 
@@ -221,7 +221,6 @@
         width: 250px;
       }
 
-
       /* Badge styles */
       .badge {
         display: inline-block;
@@ -271,9 +270,9 @@
       }
 
       .empty-state-icon {
-        font-size: 3rem;
-        margin-bottom: var(--spacing-md);
-        opacity: 0.5;
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0%.5;
       }
 
       .empty-state-title {
@@ -332,9 +331,11 @@
         overflow-y: auto;
         backdrop-filter: blur(20px) saturate(180%);
         background: #121212c4;
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
-        box-shadow: 0 8px 32px #0006,inset 0 1px #ffffff1a;
+        box-shadow:
+          0 8px 32px #0006,
+          inset 0 1px #ffffff1a;
         display: flex;
         flex-direction: column;
         max-height: 85vh !important;
@@ -452,8 +453,6 @@
           width: 100%;
         }
 
-
-
         .modal-content {
           width: 95%;
           margin: var(--spacing-md);
@@ -487,9 +486,6 @@
       }
 
       /* admin-table styles */
-
-
-
 
       /* Action Buttons - wie bei departments */
       .action-btn {
@@ -560,7 +556,7 @@
                 <p class="text-secondary">Alle Maschinen verwalten und bearbeiten</p>
               </div>
             </div>
-            
+
             <div class="flex-between mb-3">
               <div class="filter-buttons">
                 <button id="show-all-machines" class="btn btn-sm btn-primary">Alle anzeigen</button>
@@ -599,9 +595,9 @@
               </table>
 
               <div id="machines-empty" class="empty-state u-hidden">
-                <div class="empty-state-icon">⚙️</div>
-                <div class="empty-state-title">Keine Maschinen vorhanden</div>
-                <div class="empty-state-text">Fügen Sie die erste Maschine hinzu, um zu beginnen.</div>
+                <div class="empty-state-icon">🏭</div>
+                <div class="empty-state-text">Keine Maschinen gefunden</div>
+                <div class="empty-state-subtext">Fügen Sie Ihre erste Maschine hinzu</div>
               </div>
             </div>
           </div>

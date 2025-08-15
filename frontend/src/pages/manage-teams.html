@@ -6,9 +6,9 @@
     <title>Teams verwalten - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
-    <!-- Google Fonts - Open Sans -->
+    <!-- Google Fonts - Geist -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100;200;300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
 
@@ -221,7 +221,6 @@
         width: 250px;
       }
 
-
       /* Badge styles */
       .badge {
         display: inline-block;
@@ -288,9 +287,9 @@
       }
 
       .empty-state-icon {
-        font-size: 3rem;
-        margin-bottom: var(--spacing-md);
-        opacity: 0.5;
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0%.5;
       }
 
       .empty-state-title {
@@ -466,8 +465,6 @@
           width: 100%;
         }
 
-
-
         .modal-content {
           width: 95%;
           margin: var(--spacing-md);
@@ -501,9 +498,6 @@
       }
 
       /* admin-table styles */
-
-
-
 
       /* Action Buttons - wie bei departments */
       .action-btn {
@@ -612,8 +606,8 @@
 
               <div id="teams-empty" class="empty-state u-hidden">
                 <div class="empty-state-icon">👥</div>
-                <div class="empty-state-title">Keine Teams vorhanden</div>
-                <div class="empty-state-text">Fügen Sie das erste Team hinzu, um zu beginnen.</div>
+                <div class="empty-state-text">Keine Teams gefunden</div>
+                <div class="empty-state-subtext">Fügen Sie Ihr erstes Team hinzu</div>
               </div>
             </div>
           </div>
@@ -662,12 +656,28 @@
 
             <div class="form-group">
               <label class="form-label">Team-Mitglieder</label>
-              <div class="dropdown-container" style="position: relative;">
-                <div class="form-control" style="cursor: pointer;" onclick="window.toggleDropdown('team-members')">
+              <div class="dropdown-container" style="position: relative">
+                <div class="form-control" style="cursor: pointer" onclick="window.toggleDropdown('team-members')">
                   <span id="team-members-display">Keine Mitglieder zugewiesen</span>
-                  <i class="fas fa-chevron-down" style="float: right;"></i>
+                  <i class="fas fa-chevron-down" style="float: right"></i>
                 </div>
-                <div id="team-members-dropdown" class="dropdown-options" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                <div
+                  id="team-members-dropdown"
+                  class="dropdown-options"
+                  style="
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    right: 0;
+                    background: rgba(0, 0, 0, 0.9);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 4px;
+                    max-height: 200px;
+                    overflow-y: auto;
+                    z-index: 1000;
+                  "
+                >
                   <!-- Wird dynamisch mit Checkboxen gefüllt -->
                 </div>
                 <input type="hidden" name="userIds" id="team-members-select" />
@@ -676,12 +686,28 @@
 
             <div class="form-group">
               <label class="form-label">Zugewiesene Maschinen</label>
-              <div class="dropdown-container" style="position: relative;">
-                <div class="form-control" style="cursor: pointer;" onclick="window.toggleDropdown('team-machines')">
+              <div class="dropdown-container" style="position: relative">
+                <div class="form-control" style="cursor: pointer" onclick="window.toggleDropdown('team-machines')">
                   <span id="team-machines-display">Keine Maschinen zugewiesen</span>
-                  <i class="fas fa-chevron-down" style="float: right;"></i>
+                  <i class="fas fa-chevron-down" style="float: right"></i>
                 </div>
-                <div id="team-machines-dropdown" class="dropdown-options" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                <div
+                  id="team-machines-dropdown"
+                  class="dropdown-options"
+                  style="
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    right: 0;
+                    background: rgba(0, 0, 0, 0.9);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 4px;
+                    max-height: 200px;
+                    overflow-y: auto;
+                    z-index: 1000;
+                  "
+                >
                   <!-- Wird dynamisch mit Checkboxen gefüllt -->
                 </div>
                 <input type="hidden" name="machineIds" id="team-machines-select" />

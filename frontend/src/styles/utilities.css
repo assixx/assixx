@@ -262,3 +262,27 @@
 .u-flex-1 {
   flex: 1 !important;
 }
+
+/* === Empty State Styles === */
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0%.5;
+}
+
+.empty-state-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+}
+
+.empty-state-subtext {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}

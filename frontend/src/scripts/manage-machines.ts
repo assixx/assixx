@@ -69,6 +69,8 @@ class MachinesManager {
   constructor() {
     this.apiClient = ApiClient.getInstance();
     this.initializeEventListeners();
+    // Load machines initially
+    void this.loadMachines();
   }
 
   private initializeEventListeners() {
@@ -112,6 +114,7 @@ class MachinesManager {
 
   async loadMachines(): Promise<void> {
     try {
+      console.info('[MachinesManager] Loading machines...');
       const params: Record<string, string> = {};
 
       if (this.currentFilter !== 'all') {
@@ -128,24 +131,51 @@ class MachinesManager {
 
       // v2 API: apiClient.request already extracts the data array
       this.machines = response;
+      console.info('[MachinesManager] Loaded machines:', this.machines);
       this.renderMachinesTable();
     } catch (error) {
       console.error('Error loading machines:', error);
       showError('Fehler beim Laden der Maschinen');
+      // Still show empty state on error
+      this.machines = [];
+      this.renderMachinesTable();
     }
   }
 
   private renderMachinesTable(): void {
     const tbody = document.getElementById('machines-table-body');
+    const machinesTable = document.getElementById('machines-table');
+    const machinesEmpty = document.getElementById('machines-empty');
+
+    console.info('[MachinesManager] Rendering table, machines count:', this.machines.length);
+    console.info('[MachinesManager] Elements found:', {
+      tbody: tbody !== null,
+      machinesTable: machinesTable !== null,
+      machinesEmpty: machinesEmpty !== null,
+    });
+
     if (tbody === null) return;
 
     if (this.machines.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="text-center text-muted">Keine Maschinen gefunden</td>
-        </tr>
-      `;
+      // Hide table and show empty state
+      console.info('[MachinesManager] No machines, showing empty state');
+      if (machinesTable !== null) {
+        machinesTable.classList.add('u-hidden');
+      }
+      if (machinesEmpty !== null) {
+        machinesEmpty.classList.remove('u-hidden');
+      }
+      tbody.innerHTML = '';
       return;
+    }
+
+    // Show table and hide empty state
+    console.info('[MachinesManager] Has machines, showing table');
+    if (machinesTable !== null) {
+      machinesTable.classList.remove('u-hidden');
+    }
+    if (machinesEmpty !== null) {
+      machinesEmpty.classList.add('u-hidden');
     }
 
     tbody.innerHTML = this.machines

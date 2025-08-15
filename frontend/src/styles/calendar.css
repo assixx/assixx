@@ -465,12 +465,9 @@
   /* animation: fadeInUp 0.3s ease-out; */
 }
 
-
-
 .modal-sm {
   max-width: 500px;
 }
-
 
 .modal-header {
   display: flex;
@@ -931,8 +928,6 @@
   margin-right: 0.5rem;
   color: var(--primary-color);
 }
-
-
 
 .form-control:focus {
   border-color: var(--primary-color);

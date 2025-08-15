@@ -76,6 +76,8 @@ class TeamsManager {
   constructor() {
     this.apiClient = ApiClient.getInstance();
     this.initializeEventListeners();
+    // Load teams initially
+    void this.loadTeams();
   }
 
   async loadDepartments(): Promise<Department[] | null> {
@@ -188,15 +190,29 @@ class TeamsManager {
 
   private renderTeamsTable() {
     const tbody = document.getElementById('teams-table-body');
+    const teamsTable = document.getElementById('teams-table');
+    const teamsEmpty = document.getElementById('teams-empty');
+
     if (tbody === null) return;
 
     if (this.teams.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="text-center text-muted">Keine Teams gefunden</td>
-        </tr>
-      `;
+      // Hide table and show empty state
+      if (teamsTable !== null) {
+        teamsTable.classList.add('u-hidden');
+      }
+      if (teamsEmpty !== null) {
+        teamsEmpty.classList.remove('u-hidden');
+      }
+      tbody.innerHTML = '';
       return;
+    }
+
+    // Show table and hide empty state
+    if (teamsTable !== null) {
+      teamsTable.classList.remove('u-hidden');
+    }
+    if (teamsEmpty !== null) {
+      teamsEmpty.classList.add('u-hidden');
     }
 
     tbody.innerHTML = this.teams
@@ -403,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const admins = usersResponse;
             const teamLeadSelect = document.getElementById('team-lead') as HTMLSelectElement | null;
 
-            if (teamLeadSelect !== null && admins !== undefined) {
+            if (teamLeadSelect !== null) {
               // Clear existing options and add placeholder
               teamLeadSelect.innerHTML = '<option value="">Kein Team-Leiter</option>';
 
@@ -581,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = checkbox as HTMLInputElement;
         selectedIds.push(input.value);
         const label = checkbox.parentElement?.querySelector('span');
-        if (label && label.textContent !== null && label.textContent.length > 0) {
+        if (label && label.textContent.length > 0) {
           selectedNames.push(label.textContent.split(' (')[0]);
         }
       });
@@ -589,15 +605,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update hidden input
       memberInput.value = selectedIds.join(',');
 
-      // Update display
-      if (memberDisplay !== null) {
-        if (selectedNames.length === 0) {
-          memberDisplay.textContent = 'Keine Mitglieder zugewiesen';
-        } else if (selectedNames.length <= 3) {
-          memberDisplay.textContent = selectedNames.join(', ');
-        } else {
-          memberDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
-        }
+      // Update display - memberDisplay already checked above
+      if (selectedNames.length === 0) {
+        memberDisplay.textContent = 'Keine Mitglieder zugewiesen';
+      } else if (selectedNames.length <= 3) {
+        memberDisplay.textContent = selectedNames.join(', ');
+      } else {
+        memberDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
       }
     };
 
@@ -627,15 +641,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update hidden input
       machineInput.value = selectedIds.join(',');
 
-      // Update display
-      if (machineDisplay !== null) {
-        if (selectedNames.length === 0) {
-          machineDisplay.textContent = 'Keine Maschinen zugewiesen';
-        } else if (selectedNames.length <= 3) {
-          machineDisplay.textContent = selectedNames.join(', ');
-        } else {
-          machineDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
-        }
+      // Update display - machineDisplay already checked above
+      if (selectedNames.length === 0) {
+        machineDisplay.textContent = 'Keine Maschinen zugewiesen';
+      } else if (selectedNames.length <= 3) {
+        machineDisplay.textContent = selectedNames.join(', ');
+      } else {
+        machineDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
       }
     };
 
@@ -729,16 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Add window-level functions for onclick handlers
-    const extWindow = window as WindowWithTeamHandlers & {
-      updateMemberSelection?: () => void;
-      updateMachineSelection?: () => void;
-      toggleDropdown?: (id: string) => void;
-    } & Window;
-
-    extWindow.updateMemberSelection = extWindow.updateMemberSelection;
-    extWindow.updateMachineSelection = extWindow.updateMachineSelection;
-    extWindow.toggleDropdown = extWindow.toggleDropdown;
+    // Window-level functions for onclick handlers are already defined above
 
     // Function to check if teams section is visible
     const checkTeamsVisibility = () => {
