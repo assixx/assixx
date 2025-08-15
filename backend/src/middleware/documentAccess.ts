@@ -28,7 +28,11 @@ export const checkDocumentAccess = (
     requireOwnership: true,
   },
 ): RequestHandler => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     // Type assertion - we know auth middleware has run
     const docReq = req as DocumentRequest;
     try {
@@ -38,11 +42,13 @@ export const checkDocumentAccess = (
       const { documentId } = docReq.params;
 
       if (!userId || !userRole) {
-        return res.status(401).json({ error: "Nicht authentifiziert" });
+        res.status(401).json({ error: "Nicht authentifiziert" });
+        return;
       }
 
       if (!tenantId) {
-        return res.status(400).json({ error: "Tenant nicht gefunden" });
+        res.status(400).json({ error: "Tenant nicht gefunden" });
+        return;
       }
 
       logger.info(
@@ -53,9 +59,10 @@ export const checkDocumentAccess = (
       const document = await Document.findById(parseInt(documentId, 10));
       if (!document) {
         logger.warn(`Document ${documentId} not found`);
-        return res.status(404).json({
+        res.status(404).json({
           error: "Dokument nicht gefunden",
         });
+        return;
       }
 
       // Admin-Zugriff prüfen
@@ -165,14 +172,16 @@ export const checkDocumentAccess = (
       logger.warn(
         `Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`,
       );
-      return res.status(403).json({
+      res.status(403).json({
         error: "Keine Berechtigung für dieses Dokument",
       });
+      return;
     } catch (error: unknown) {
       logger.error("Error in checkDocumentAccess middleware:", error);
-      return res.status(500).json({
+      res.status(500).json({
         error: "Fehler bei der Überprüfung der Dokumentenberechtigung",
       });
+      return;
     }
   };
 };
