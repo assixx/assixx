@@ -227,11 +227,11 @@ router.get(
   servePage("archived-employees"),
 );
 router.get(
-  "/departments",
+  "/manage-departments",
   rateLimiter.admin,
   authenticateToken,
   authorizeRole("admin"),
-  servePage("departments"),
+  servePage("manage-departments"),
 );
 router.get(
   "/manage-employees",
@@ -253,6 +253,13 @@ router.get(
   authenticateToken,
   authorizeRole("admin"),
   servePage("manage-teams"),
+);
+router.get(
+  "/manage-machines",
+  rateLimiter.admin,
+  authenticateToken,
+  authorizeRole("admin"),
+  servePage("manage-machines"),
 );
 router.get(
   "/admin-profile",

@@ -691,7 +691,7 @@
                   <p class="text-secondary" class="u-mt-text">Abteilungsstruktur organisieren</p>
                 </div>
                 <div class="compact-content">
-                  <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
+                  <a href="/manage-departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
                   <div class="compact-list" id="department-list">
                     <!-- Wird dynamisch gefüllt -->
                   </div>
@@ -785,49 +785,7 @@
 
           <!-- Teams Section moved to /manage-teams -->
 
-          <!-- Machines Section -->
-          <section id="machines-section" class="content-section" class="u-hidden">
-            <div class="card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-                <div>
-                  <h2 class="card-title">Maschinenübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Alle Maschinen verwalten und bearbeiten</p>
-                </div>
-              </div>
-              <div class="flex-between mb-3">
-                <div class="filter-buttons">
-                  <button id="show-all-machines" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                  <button id="filter-machines-operational" class="btn btn-sm btn-secondary">Betriebsbereit</button>
-                  <button id="filter-machines-maintenance" class="btn btn-sm btn-secondary">In Wartung</button>
-                  <button id="filter-machines-repair" class="btn btn-sm btn-secondary">In Reparatur</button>
-                </div>
-                <div class="search-container">
-                  <input type="text" id="machine-search" class="search-input" placeholder="Name, Modell, Hersteller oder Abteilung..." />
-                  <button id="machine-search-btn" class="btn btn-secondary">Suchen</button>
-                </div>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Modell</th>
-                      <th>Hersteller</th>
-                      <th>Abteilung</th>
-                      <th>Status</th>
-                      <th>Betriebsstunden</th>
-                      <th>Nächste Wartung</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="machines-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+          <!-- Machines Section moved to /manage-machines -->
 
           <!-- Settings Section -->
           <section id="settings-section" class="content-section" class="u-hidden">
@@ -1674,7 +1632,7 @@
 
             if (href === '#departments') {
               e.preventDefault();
-              window.location.href = '/departments';
+              window.location.href = '/manage-departments';
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
@@ -2833,7 +2791,7 @@
       }
 
       function showAllDepartments() {
-        window.location.href = '/departments';
+        window.location.href = '/manage-departments';
       }
 
       function showAllTeams() {

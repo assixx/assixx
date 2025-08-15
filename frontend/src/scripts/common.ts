@@ -140,7 +140,7 @@ function createAdminNavigation(user: User): string {
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/departments">
+              <a class="nav-link" href="/manage-departments">
                 <i class="fas fa-building me-1"></i> Abteilungen
               </a>
             </li>

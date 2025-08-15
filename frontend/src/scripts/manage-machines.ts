@@ -394,8 +394,8 @@ class MachinesManager {
 let machinesManager: MachinesManager | null = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Only initialize if we're on the admin dashboard
-  if (window.location.pathname === '/admin-dashboard') {
+  // Only initialize if we're on the manage-machines page
+  if (window.location.pathname === '/manage-machines' || window.location.pathname.includes('manage-machines')) {
     machinesManager = new MachinesManager();
 
     // Export loadMachinesTable function to window for show-section.ts

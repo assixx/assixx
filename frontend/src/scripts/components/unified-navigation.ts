@@ -96,8 +96,8 @@ const accessControlMap: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/manage-admins': ['admin', 'root'],
   '/manage-users': ['admin', 'root'],
   '/pages/manage-users': ['admin', 'root'],
-  '/departments': ['admin', 'root'],
-  '/pages/departments': ['admin', 'root'],
+  '/manage-departments': ['admin', 'root'],
+  '/pages/manage-departments': ['admin', 'root'],
   '/manage-department-groups': ['admin', 'root'],
   '/pages/manage-department-groups': ['admin', 'root'],
   '/blackboard': ['admin', 'root'],
@@ -612,12 +612,12 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '/departments',
+          url: '/manage-departments',
           children: [
             {
               id: 'departments-all',
               label: 'Alle Abteilungen',
-              url: '/departments',
+              url: '/manage-departments',
             },
           ],
         },
@@ -627,6 +627,13 @@ class UnifiedNavigation {
           label: 'Teams',
           url: '/manage-teams',
           section: 'teams',
+        },
+        {
+          id: 'machines',
+          icon: this.getSVGIcon('cog'),
+          label: 'Maschinen',
+          url: '/manage-machines',
+          section: 'machines',
         },
         {
           id: 'documents',
@@ -917,7 +924,7 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '/departments',
+          url: '/manage-departments',
         },
         {
           id: 'department-groups',

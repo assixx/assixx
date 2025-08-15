@@ -71,12 +71,14 @@ const urlMappings = {
   '/pages/feature-management': { label: 'Feature Management', icon: 'fa-toggle-on' },
   '/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
   '/pages/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
-  '/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
-  '/pages/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
+  '/manage-departments': { label: 'Abteilungen verwalten', icon: 'fa-sitemap' },
+  '/pages/manage-departments': { label: 'Abteilungen verwalten', icon: 'fa-sitemap' },
   '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-map-marker-alt' },
   '/pages/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-map-marker-alt' },
   '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
   '/pages/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
+  '/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-cogs' },
+  '/pages/manage-machines': { label: 'Maschinen verwalten', icon: 'fa-cogs' },
   '/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
   '/pages/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
   '/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },
@@ -418,8 +420,8 @@ function generateBreadcrumbsFromURL() {
           icon: 'fa-tachometer-alt',
         });
         items.push({
-          label: 'Abteilungen',
-          href: '/departments',
+          label: 'Abteilungen verwalten',
+          href: '/manage-departments',
           icon: 'fa-sitemap',
         });
       } else if (
