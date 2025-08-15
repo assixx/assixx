@@ -226,16 +226,16 @@ body {
 */
 
 /* Cards */
- .card {
-        background: hsla(0, 0%, 100%, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 24px;
-        overflow: hidden;
-        padding: var(--glass-card-padding);
-      }
+.card {
+  background: hsla(0, 0%, 100%, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  overflow: hidden;
+  padding: var(--glass-card-padding);
+}
 
 .card-header {
   margin-bottom: var(--spacing-md);
@@ -252,34 +252,34 @@ body {
 }
 
 /* table */
- .table-responsive {
-        overflow-x: auto;
-      }
+.table-responsive {
+  overflow-x: auto;
+}
 
-      .admin-table {
+.admin-table {
   border-collapse: collapse;
   margin-top: 20px;
   width: 100%;
 }
 
- .admin-table th {
-        background: rgba(33, 150, 243, 0.1);
-        padding: 12px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--text-primary);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
+.admin-table th {
+  background: rgba(33, 150, 243, 0.1);
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-      .admin-table td {
-        padding: 12px;
-        color: var(--text-secondary);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
+.admin-table td {
+  padding: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-      .admin-table tr:hover {
-        background: rgba(255, 255, 255, 0.02);
-      }
+.admin-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
 
 /* Buttons */
 .btn {
@@ -823,7 +823,6 @@ body {
   min-height: calc(100vh - 56px);
 }
 
-
 .main-content {
   flex: 1;
 
@@ -831,7 +830,6 @@ body {
   margin-left: var(--content-margin, 250px);
   padding: var(--spacing-lg);
 }
-
 
 /* Employee deletion dialog styles */
 .alert {
@@ -855,7 +853,7 @@ body {
 }
 
 /* General modal footer - but not for logout modal */
-.modal-footer:not(#logoutModal .logout-modal ) {
+.modal-footer:not(#logoutModal .logout-modal) {
   display: flex;
   gap: var(--spacing-md);
   justify-content: center;
@@ -1012,7 +1010,6 @@ body {
   color: var(--primary-color);
   background: rgb(33 150 243 / 10%);
 }
-
 
 /* Header actions adjustment */
 .header-actions {
