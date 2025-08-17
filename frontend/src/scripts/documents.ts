@@ -55,7 +55,7 @@ function setupEventListeners(): void {
   });
 
   // Search input
-  const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
+  const searchInput = document.querySelector('#searchInput');
   if (searchInput !== null) {
     searchInput.addEventListener(
       'input',
@@ -403,7 +403,7 @@ function showDocumentModal(doc: Document): void {
   updateElement('modalUploadDate', formatDate(doc.created_at));
 
   // Setup preview
-  const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
+  const previewFrame = document.querySelector('#documentPreviewFrame');
   const previewError = document.querySelector('#previewError');
 
   if (previewFrame !== null && previewError !== null) {
@@ -447,7 +447,7 @@ function showDocumentModal(doc: Document): void {
   // Store document ID for download
   const downloadBtn = document.querySelector('#downloadButton');
   if (downloadBtn) {
-    downloadBtn.setAttribute('data-document-id', doc.id.toString());
+    downloadBtn.dataset.documentId = doc.id.toString();
   }
 
   // Show modal
@@ -463,7 +463,7 @@ function closeDocumentModal(): void {
     modal.style.display = 'none';
 
     // Clear iframe and clean up blob URL
-    const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
+    const previewFrame = document.querySelector('#documentPreviewFrame');
     if (previewFrame !== null) {
       // Clean up blob URL if exists
       const blobUrl = previewFrame.dataset.blobUrl;
@@ -495,7 +495,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
       return;
     }
 
-    const dataId = downloadBtn.getAttribute('data-document-id');
+    const dataId = downloadBtn.dataset.documentId;
     if (dataId === null || dataId === '') {
       console.error('No document ID found');
       return;
@@ -598,7 +598,7 @@ window.selectSort = function (value: SortOption, text: string): void {
 
   const display = document.querySelector('#sortDisplay');
   const dropdown = document.querySelector('#sortDropdown');
-  const input = document.querySelector('#sortValue') as HTMLInputElement | null;
+  const input = document.querySelector('#sortValue');
 
   if (display !== null && dropdown !== null && input !== null) {
     const span = display.querySelector('span');

@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show role indicator for admins
   if (isAdminAsEmployee) {
     const roleIndicator = document.querySelector('#role-indicator');
-    const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
+    const switchBtn = document.querySelector('#role-switch-btn');
 
     if (roleIndicator) {
       roleIndicator.style.display = 'inline-flex';
@@ -81,10 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // DOM elements
-  const documentTableBody = document.querySelector('#recent-documents') as HTMLTableSectionElement | null;
-  const logoutBtn = document.querySelector('#logout-btn') as HTMLButtonElement | null;
-  const searchForm = document.querySelector('#search-form') as HTMLFormElement | null;
-  const searchInput = document.querySelector('#search-input') as HTMLInputElement | null;
+  const documentTableBody = document.querySelector('#recent-documents');
+  const logoutBtn = document.querySelector('#logout-btn');
+  const searchForm = document.querySelector('#search-form');
+  const searchInput = document.querySelector('#search-input');
 
   // Search functionality - only add if search form exists
   if (searchForm !== null && searchInput !== null) {

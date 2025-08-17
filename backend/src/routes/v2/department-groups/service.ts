@@ -498,7 +498,7 @@ export class DepartmentGroupsService {
   async getGroupDepartments(
     groupId: number,
     tenantId: number,
-    includeSubgroups: boolean = true,
+    includeSubgroups = true,
   ): Promise<GroupDepartment[]> {
     try {
       const departments = new Map<number, GroupDepartment>();

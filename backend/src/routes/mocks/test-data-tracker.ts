@@ -5,10 +5,10 @@
 
 export class TestDataTracker {
   private static instance: TestDataTracker;
-  private createdTenantIds: Set<number> = new Set();
-  private createdUserIds: Set<number> = new Set();
-  private createdDepartmentIds: Set<number> = new Set();
-  private createdTeamIds: Set<number> = new Set();
+  private createdTenantIds = new Set<number>();
+  private createdUserIds = new Set<number>();
+  private createdDepartmentIds = new Set<number>();
+  private createdTeamIds = new Set<number>();
 
   private constructor() {}
 

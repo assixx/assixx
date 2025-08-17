@@ -62,10 +62,10 @@ async function initializePage(): Promise<void> {
 
 // Initialize DOM elements
 function initializeDOMElements(): void {
-  addAreaBtn = document.querySelector('#add-area-btn') as HTMLButtonElement;
+  addAreaBtn = document.querySelector('#add-area-btn')!;
   areaModal = document.querySelector('#area-modal');
   deleteModal = document.querySelector('#delete-area-modal');
-  areaForm = document.querySelector('#area-form') as HTMLFormElement;
+  areaForm = document.querySelector('#area-form')!;
   areasTableBody = document.querySelector('#areas-table-body');
   loadingDiv = document.querySelector('#areas-loading');
   emptyDiv = document.querySelector('#areas-empty');
@@ -93,7 +93,7 @@ function attachEventListeners(): void {
 
   // Delete confirmation
   document.querySelector('#confirm-delete-area')?.addEventListener('click', () => {
-    const deleteInput = document.querySelector('#delete-area-id') as HTMLInputElement | null;
+    const deleteInput = document.querySelector('#delete-area-id');
     if (deleteInput !== null && deleteInput.value !== '') {
       void deleteArea(Number.parseInt(deleteInput.value, 10));
     }
@@ -264,20 +264,19 @@ function openAreaModal(areaId?: number): void {
     // Load area data for editing
     const area = areas.find((a) => a.id === areaId);
     if (area) {
-      (document.querySelector('#area-id') as HTMLInputElement).value = area.id.toString();
-      (document.querySelector('#area-name') as HTMLInputElement).value = area.name;
-      (document.querySelector('#area-description') as HTMLTextAreaElement).value = area.description ?? '';
-      (document.querySelector('#area-type') as HTMLSelectElement).value = area.type;
-      (document.querySelector('#area-capacity') as HTMLInputElement).value = area.capacity?.toString() ?? '';
-      (document.querySelector('#area-address') as HTMLInputElement).value = area.address ?? '';
-      (document.querySelector('#area-parent') as HTMLSelectElement).value = area.parent_id?.toString() ?? '';
-      (document.querySelector('#area-status') as HTMLSelectElement).value =
-        area.is_active === 1 ? 'active' : 'inactive';
+      document.querySelector('#area-id')!.value = area.id.toString();
+      document.querySelector('#area-name')!.value = area.name;
+      document.querySelector('#area-description')!.value = area.description ?? '';
+      document.querySelector('#area-type')!.value = area.type;
+      document.querySelector('#area-capacity')!.value = area.capacity?.toString() ?? '';
+      document.querySelector('#area-address')!.value = area.address ?? '';
+      document.querySelector('#area-parent')!.value = area.parent_id?.toString() ?? '';
+      document.querySelector('#area-status')!.value = area.is_active === 1 ? 'active' : 'inactive';
     }
   } else {
     // Reset form for new area
     areaForm?.reset();
-    (document.querySelector('#area-id') as HTMLInputElement).value = '';
+    document.querySelector('#area-id')!.value = '';
   }
 
   areaModal?.classList.add('active');
@@ -285,7 +284,7 @@ function openAreaModal(areaId?: number): void {
 
 // Load parent areas for dropdown
 function loadParentAreas(excludeId?: number): void {
-  const parentSelect = document.querySelector('#area-parent') as HTMLSelectElement | null;
+  const parentSelect = document.querySelector('#area-parent');
   if (parentSelect === null) return;
 
   // Keep first option
@@ -357,14 +356,14 @@ function confirmDelete(areaId: number): void {
   const area = areas.find((a) => a.id === areaId);
   if (!area) return;
 
-  (document.querySelector('#delete-area-id') as HTMLInputElement).value = areaId.toString();
+  document.querySelector('#delete-area-id')!.value = areaId.toString();
   deleteModal?.classList.add('active');
 }
 
 // Close delete modal
 function closeDeleteModal(): void {
   deleteModal?.classList.remove('active');
-  (document.querySelector('#delete-area-id') as HTMLInputElement).value = '';
+  document.querySelector('#delete-area-id')!.value = '';
 }
 
 // Delete area

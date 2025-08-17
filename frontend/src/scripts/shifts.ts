@@ -394,7 +394,7 @@ class ShiftPlanningSystem {
 
   setupContextEvents(): void {
     // Department selection
-    const departmentSelect = document.querySelector('#departmentSelect') as HTMLSelectElement | null;
+    const departmentSelect = document.querySelector('#departmentSelect');
     if (departmentSelect !== null) {
       departmentSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
@@ -405,7 +405,7 @@ class ShiftPlanningSystem {
     }
 
     // Machine selection
-    const machineSelect = document.querySelector('#machineSelect') as HTMLSelectElement | null;
+    const machineSelect = document.querySelector('#machineSelect');
     if (machineSelect !== null) {
       machineSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
@@ -417,7 +417,7 @@ class ShiftPlanningSystem {
   setupNotesEvents(): void {
     const notesToggle = document.querySelector('#notesToggle');
     const notesPanel = document.querySelector('#notesPanel');
-    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+    const notesTextarea = document.querySelector('#weeklyNotes');
 
     if (notesToggle !== null) {
       notesToggle.addEventListener('click', () => {
@@ -1313,7 +1313,7 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Get notes from textarea
-      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+      const notesTextarea = document.querySelector('#weeklyNotes');
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
       // Prepare shift assignments
@@ -1444,7 +1444,7 @@ class ShiftPlanningSystem {
           this.weeklyNotes = '';
         }
 
-        const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+        const notesTextarea = document.querySelector('#weeklyNotes');
         if (notesTextarea !== null) {
           // If notes are empty, show placeholder by clearing value
           notesTextarea.value = this.weeklyNotes;
@@ -1453,7 +1453,7 @@ class ShiftPlanningSystem {
       } else {
         console.info('[SHIFTS DEBUG] Notes API error response');
         // If error, clear the notes
-        const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+        const notesTextarea = document.querySelector('#weeklyNotes');
         if (notesTextarea !== null) {
           notesTextarea.value = '';
         }
@@ -1462,7 +1462,7 @@ class ShiftPlanningSystem {
     } catch (error) {
       console.error('[SHIFTS ERROR] Error loading weekly notes:', error);
       // Clear notes on error
-      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+      const notesTextarea = document.querySelector('#weeklyNotes');
       if (notesTextarea !== null) {
         notesTextarea.value = '';
       }
@@ -1474,7 +1474,7 @@ class ShiftPlanningSystem {
     if (!this.isAdmin) return;
 
     try {
-      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+      const notesTextarea = document.querySelector('#weeklyNotes');
       if (notesTextarea === null) return;
 
       const newNotes = notesTextarea.value;
@@ -1518,7 +1518,7 @@ class ShiftPlanningSystem {
     const adminActions = document.querySelector('#adminActions');
     const employeeSidebar = document.querySelector('.employee-sidebar');
     const mainPlanningArea = document.querySelector('.main-planning-area');
-    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+    const notesTextarea = document.querySelector('#weeklyNotes');
     const infoRow = document.querySelector('.shift-info-row');
 
     if (this.isAdmin) {

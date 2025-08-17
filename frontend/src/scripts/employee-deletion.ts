@@ -154,7 +154,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
  */
 function processEmployeeDeletion(): void {
   // Gewählte Option ermitteln
-  const options = document.querySelectorAll('[name="deletion-option"]') as NodeListOf<HTMLInputElement>;
+  const options = document.querySelectorAll('[name="deletion-option"]');
   let selectedOption = '';
 
   for (const option of options) {

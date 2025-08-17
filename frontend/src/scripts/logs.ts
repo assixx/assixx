@@ -331,8 +331,8 @@ import { ApiClient } from '../utils/api-client';
 
   function updatePagination(pagination: Pagination) {
     const container = document.querySelector('#pagination-container');
-    const prevBtn = document.querySelector('#prev-btn') as HTMLButtonElement | null;
-    const nextBtn = document.querySelector('#next-btn') as HTMLButtonElement | null;
+    const prevBtn = document.querySelector('#prev-btn');
+    const nextBtn = document.querySelector('#next-btn');
     const info = document.querySelector('#pagination-info');
 
     if (!container) return;
@@ -357,10 +357,10 @@ import { ApiClient } from '../utils/api-client';
 
   // Apply filters
   function applyFilters() {
-    const userFilter = (document.querySelector('#filter-user') as HTMLInputElement | null)?.value;
-    const actionFilter = (document.querySelector('#filter-action') as HTMLInputElement | null)?.value;
-    const entityFilter = (document.querySelector('#filter-entity') as HTMLInputElement | null)?.value;
-    const timerangeFilter = (document.querySelector('#filter-timerange') as HTMLInputElement | null)?.value;
+    const userFilter = document.querySelector('#filter-user')?.value;
+    const actionFilter = document.querySelector('#filter-action')?.value;
+    const entityFilter = document.querySelector('#filter-entity')?.value;
+    const timerangeFilter = document.querySelector('#filter-timerange')?.value;
 
     console.info('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
 
@@ -384,10 +384,10 @@ import { ApiClient } from '../utils/api-client';
 
   // Reset filters
   function resetFilters() {
-    const userInput = document.querySelector('#filter-user') as HTMLInputElement | null;
-    const actionInput = document.querySelector('#filter-action') as HTMLInputElement | null;
-    const entityInput = document.querySelector('#filter-entity') as HTMLInputElement | null;
-    const timerangeInput = document.querySelector('#filter-timerange') as HTMLInputElement | null;
+    const userInput = document.querySelector('#filter-user');
+    const actionInput = document.querySelector('#filter-action');
+    const entityInput = document.querySelector('#filter-entity');
+    const timerangeInput = document.querySelector('#filter-timerange');
 
     if (userInput !== null) userInput.value = '';
     if (actionInput !== null) actionInput.value = 'all';
@@ -489,9 +489,9 @@ import { ApiClient } from '../utils/api-client';
       modal.classList.add('active');
 
       // Reset confirmation input
-      const confirmInput = document.querySelector('#deleteLogsConfirmation') as HTMLInputElement | null;
+      const confirmInput = document.querySelector('#deleteLogsConfirmation');
       const passwordSection = document.querySelector('#passwordConfirmSection');
-      const passwordInput = document.querySelector('#deleteLogsPassword') as HTMLInputElement | null;
+      const passwordInput = document.querySelector('#deleteLogsPassword');
 
       if (confirmInput !== null) {
         confirmInput.value = '';
@@ -509,8 +509,8 @@ import { ApiClient } from '../utils/api-client';
 
   // Confirm delete logs (called from modal)
   async function confirmDeleteLogs() {
-    const confirmBtn = document.querySelector('#confirmDeleteLogsBtn') as HTMLButtonElement | null;
-    const passwordInput = document.querySelector('#deleteLogsPassword') as HTMLInputElement | null;
+    const confirmBtn = document.querySelector('#confirmDeleteLogsBtn');
+    const passwordInput = document.querySelector('#deleteLogsPassword');
 
     // v2 API requires password for ALL delete operations
     if (passwordInput === null || passwordInput.value === '') {

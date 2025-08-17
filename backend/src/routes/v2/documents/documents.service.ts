@@ -27,7 +27,7 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     public message: string,
-    public statusCode: number = 500,
+    public statusCode = 500,
     public details?: unknown,
   ) {
     super(message);
@@ -142,7 +142,7 @@ export class DocumentsService {
       const documentsWithStatus = await Promise.all(
         documents.map(async (doc) => {
           const isRead = await Document.isReadByUser(doc.id, userId, tenantId);
-          const apiDoc = dbToApi(doc) as Record<string, unknown>;
+          const apiDoc = dbToApi(doc);
 
           // Map recipient IDs to proper names
           if (apiDoc.userId === null) apiDoc.userId = undefined;
@@ -227,7 +227,7 @@ export class DocumentsService {
       // Get read status
       const isRead = await Document.isReadByUser(id, userId, tenantId);
 
-      const apiDoc = dbToApi(document) as Record<string, unknown>;
+      const apiDoc = dbToApi(document);
 
       // Map recipient IDs
       if (apiDoc.userId === null) apiDoc.userId = undefined;

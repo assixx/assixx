@@ -1273,7 +1273,7 @@ export async function getAuthToken(
 export async function createTestFile(
   filename: string,
   content: string | Buffer,
-  mimeType: string = "text/plain",
+  mimeType = "text/plain",
 ): Promise<{ buffer: Buffer; originalname: string; mimetype: string }> {
   const buffer = typeof content === "string" ? Buffer.from(content) : content;
 

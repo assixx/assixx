@@ -138,16 +138,16 @@ function populateProfileForm(profile: UserProfile): void {
   const companyName = extProfile.companyName ?? profile.company_name;
 
   // Editable fields
-  (document.querySelector('#first_name') as HTMLInputElement).value = firstName ?? '';
-  (document.querySelector('#last_name') as HTMLInputElement).value = lastName ?? '';
+  document.querySelector('#first_name')!.value = firstName ?? '';
+  document.querySelector('#last_name')!.value = lastName ?? '';
 
   // Read-only fields
-  (document.querySelector('#email') as HTMLInputElement).value = profile.email;
-  (document.querySelector('#position') as HTMLInputElement).value =
+  document.querySelector('#email')!.value = profile.email;
+  document.querySelector('#position')!.value =
     profile.position !== undefined && profile.position.length > 0
       ? (positionMap[profile.position] ?? profile.position)
       : '-';
-  (document.querySelector('#company') as HTMLInputElement).value = companyName ?? '-';
+  document.querySelector('#company')!.value = companyName ?? '-';
 }
 
 /**
@@ -155,7 +155,7 @@ function populateProfileForm(profile: UserProfile): void {
  */
 function updateProfilePicture(url?: string, firstName?: string, lastName?: string): void {
   const display = document.querySelector('#profile-picture-display');
-  const removeBtn = document.querySelector('#remove-picture-btn') as HTMLButtonElement | null;
+  const removeBtn = document.querySelector('#remove-picture-btn');
 
   if (!display) {
     console.error('Profile picture display element not found!');
@@ -222,13 +222,13 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
  */
 function setupFormHandlers(): void {
   // Profile form
-  const profileForm = document.querySelector('#profile-form') as HTMLFormElement;
+  const profileForm = document.querySelector('#profile-form')!;
   profileForm.addEventListener('submit', (e) => {
     void handleProfileUpdate(e);
   });
 
   // Password form
-  const passwordForm = document.querySelector('#password-form') as HTMLFormElement;
+  const passwordForm = document.querySelector('#password-form')!;
   passwordForm.addEventListener('submit', (e) => {
     void handlePasswordChange(e);
   });
@@ -262,8 +262,8 @@ function setupFormHandlers(): void {
  * Setup profile picture handlers
  */
 function setupProfilePictureHandlers(): void {
-  const fileInput = document.querySelector('#profile-picture-input') as HTMLInputElement;
-  const removeBtn = document.querySelector('#remove-picture-btn') as HTMLButtonElement | null;
+  const fileInput = document.querySelector('#profile-picture-input')!;
+  const removeBtn = document.querySelector('#remove-picture-btn');
 
   // File upload
   fileInput.addEventListener('change', (e) => {
@@ -365,9 +365,9 @@ async function handlePasswordChange(event: Event): Promise<void> {
   event.preventDefault();
 
   const form = event.target as HTMLFormElement;
-  const currentPassword = (document.querySelector('#current_password') as HTMLInputElement).value;
-  const newPassword = (document.querySelector('#new_password') as HTMLInputElement).value;
-  const confirmPassword = (document.querySelector('#confirm_password') as HTMLInputElement).value;
+  const currentPassword = document.querySelector('#current_password')!.value;
+  const newPassword = document.querySelector('#new_password')!.value;
+  const confirmPassword = document.querySelector('#confirm_password')!.value;
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
@@ -438,8 +438,8 @@ async function uploadProfilePicture(file: File): Promise<void> {
         const pictureUrl =
           result.data?.profilePictureUrl ?? result.data?.profilePicture ?? result.data?.profile_picture;
         console.info('Upload response:', result);
-        const firstName = (document.querySelector('#first_name') as HTMLInputElement).value;
-        const lastName = (document.querySelector('#last_name') as HTMLInputElement).value;
+        const firstName = document.querySelector('#first_name')!.value;
+        const lastName = document.querySelector('#last_name')!.value;
         updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
         showMessage('Profilbild erfolgreich hochgeladen', 'success');
         // Reload page to update header
@@ -470,8 +470,8 @@ async function uploadProfilePicture(file: File): Promise<void> {
         };
         const pictureUrl =
           result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
-        const firstName = (document.querySelector('#first_name') as HTMLInputElement).value;
-        const lastName = (document.querySelector('#last_name') as HTMLInputElement).value;
+        const firstName = document.querySelector('#first_name')!.value;
+        const lastName = document.querySelector('#last_name')!.value;
         updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
         showMessage('Profilbild erfolgreich hochgeladen', 'success');
         // Reload page to update header

@@ -48,13 +48,13 @@ export interface LogsStatsResponse {
   todayLogs: number;
   uniqueUsers: number;
   uniqueTenants: number;
-  topActions: Array<{
+  topActions: {
     action: string;
     count: number;
-  }>;
-  topUsers: Array<{
+  }[];
+  topUsers: {
     userId: number;
     userName: string;
     count: number;
-  }>;
+  }[];
 }

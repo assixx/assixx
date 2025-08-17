@@ -126,10 +126,10 @@ export class RolesService {
    * Get role hierarchy (for display purposes)
    */
   async getRoleHierarchy(): Promise<{
-    hierarchy: Array<{
+    hierarchy: {
       role: Role;
       canManage: RoleName[];
-    }>;
+    }[];
   }> {
     return {
       hierarchy: [

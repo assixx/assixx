@@ -69,7 +69,7 @@ class BlackboardWidget {
 
   async loadEntries() {
     this.loading = true;
-    const contentElement = document.getElementById('blackboard-widget-content');
+    const contentElement = document.querySelector('#blackboard-widget-content');
 
     try {
       // Use pre-determined sidebar state
@@ -101,7 +101,7 @@ class BlackboardWidget {
   }
 
   renderEntries() {
-    const contentElement = document.getElementById('blackboard-widget-content');
+    const contentElement = document.querySelector('#blackboard-widget-content');
     const widgetElement = this.container.querySelector('.blackboard-widget');
 
     if (this.entries.length === 0) {
@@ -150,7 +150,7 @@ class BlackboardWidget {
           if (entry.isIntersecting) {
             const img = entry.target;
             img.src = img.dataset.src;
-            img.removeAttribute('data-src');
+            delete img.dataset.src;
             observer.unobserve(img);
           }
         });
@@ -161,7 +161,7 @@ class BlackboardWidget {
       // Fallback for browsers without IntersectionObserver
       lazyImages.forEach((img) => {
         img.src = img.dataset.src;
-        img.removeAttribute('data-src');
+        delete img.dataset.src;
       });
     }
   }
@@ -290,7 +290,7 @@ class BlackboardWidget {
 
 // Auto-initialize if container exists
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('blackboard-widget-container')) {
+  if (document.querySelector('#blackboard-widget-container')) {
     window.blackboardWidget = new BlackboardWidget('blackboard-widget-container');
   }
 });

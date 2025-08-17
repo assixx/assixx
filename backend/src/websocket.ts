@@ -26,12 +26,12 @@ interface WebSocketMessage {
 interface SendMessageData {
   conversationId: number;
   content: string;
-  attachments?: Array<{
+  attachments?: {
     filename: string;
     content?: string | Buffer;
     path?: string;
     contentType?: string;
-  }>;
+  }[];
 }
 
 interface TypingData {
@@ -118,7 +118,9 @@ export class ChatWebSocketServer {
       // Event-Handler registrieren
       ws.on("message", (data) => void this.handleMessage(ws, data));
       ws.on("close", () => void this.handleDisconnection(ws));
-      ws.on("error", (error) => this.handleError(ws, error));
+      ws.on("error", (error) => {
+        this.handleError(ws, error);
+      });
       ws.on("pong", () => {
         ws.isAlive = true;
       });
@@ -577,12 +579,12 @@ export class ChatWebSocketServer {
           delivery_status: "delivered",
           is_read: false,
           is_scheduled: true,
-          attachments: [] as Array<{
+          attachments: [] as {
             filename: string;
             content?: string | Buffer;
             path?: string;
             contentType?: string;
-          }>,
+          }[],
         };
 
         for (const participant of participants) {
@@ -656,12 +658,12 @@ export class ChatWebSocketServer {
             created_at: message.created_at,
             delivery_status: "delivered",
             is_read: false,
-            attachments: [] as Array<{
+            attachments: [] as {
               filename: string;
               content?: string | Buffer;
               path?: string;
               contentType?: string;
-            }>,
+            }[],
           };
 
           // An Empfänger senden wenn online

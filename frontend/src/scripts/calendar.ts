@@ -267,7 +267,7 @@ let calendarView = 'dayGridMonth'; // Default view
  */
 function selectOrgId(id: number, name: string): void {
   const selectedOrgIdElement = document.querySelector('#selectedOrgId');
-  const eventOrgIdElement = document.querySelector('#eventOrgId') as HTMLInputElement | null;
+  const eventOrgIdElement = document.querySelector('#eventOrgId');
 
   if (selectedOrgIdElement) {
     selectedOrgIdElement.textContent = name;
@@ -294,7 +294,7 @@ function initializeApp() {
         isAdmin = userData.role === 'admin' || userData.role === 'root';
 
         // Show/hide "New Event" button based on permissions
-        const newEventBtn = document.querySelector('#newEventBtn') as HTMLButtonElement | null;
+        const newEventBtn = document.querySelector('#newEventBtn');
         console.info('Calendar: newEventBtn found:', newEventBtn !== null);
         if (newEventBtn !== null) {
           newEventBtn.style.display = isAdmin ? 'block' : 'none';
@@ -763,8 +763,8 @@ function setupEventListeners(): void {
   });
 
   // Search button
-  const searchButton = document.querySelector('#searchButton') as HTMLButtonElement | null;
-  const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
+  const searchButton = document.querySelector('#searchButton');
+  const searchInput = document.querySelector('#searchInput');
 
   if (searchButton !== null && searchInput !== null) {
     searchButton.addEventListener('click', () => {
@@ -781,7 +781,7 @@ function setupEventListeners(): void {
   }
 
   // New event button (in filter bar) - only for admins and root
-  const newEventBtn = document.querySelector('#newEventBtn') as HTMLButtonElement | null;
+  const newEventBtn = document.querySelector('#newEventBtn');
   console.info('Calendar: Looking for newEventBtn:', newEventBtn);
 
   // Get user role
@@ -819,7 +819,7 @@ function setupEventListeners(): void {
   }
 
   // New event button in calendar card header - only for admins and root
-  const newCalendarEventBtn = document.querySelector('#newCalendarEventBtn') as HTMLButtonElement | null;
+  const newCalendarEventBtn = document.querySelector('#newCalendarEventBtn');
   console.info('Calendar: Looking for newCalendarEventBtn:', newCalendarEventBtn);
 
   // Check user role
@@ -855,7 +855,7 @@ function setupEventListeners(): void {
   }
 
   // Save event button
-  const saveEventBtn = document.querySelector('#saveEventBtn') as HTMLButtonElement | null;
+  const saveEventBtn = document.querySelector('#saveEventBtn');
   if (saveEventBtn !== null) {
     saveEventBtn.addEventListener('click', () => {
       void saveEvent();
@@ -863,7 +863,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const eventOrgLevel = document.querySelector('#eventOrgLevel') as HTMLSelectElement | null;
+  const eventOrgLevel = document.querySelector('#eventOrgLevel');
   if (eventOrgLevel !== null) {
     eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -873,7 +873,7 @@ function setupEventListeners(): void {
   // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
-  const allDayCheckbox = document.querySelector('#eventAllDay') as HTMLInputElement | null;
+  const allDayCheckbox = document.querySelector('#eventAllDay');
   if (allDayCheckbox !== null) {
     allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
@@ -891,7 +891,7 @@ function setupEventListeners(): void {
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
       // Only open modal if button is visible (for personal events)
-      const orgLevelInput = document.querySelector('#orgLevelInput') as HTMLInputElement | null;
+      const orgLevelInput = document.querySelector('#orgLevelInput');
       if (orgLevelInput !== null && orgLevelInput.value === 'personal') {
         modalManager.show('attendeesModal');
         void loadEmployeesForAttendees();
@@ -1263,7 +1263,7 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
 
     const eventItem = document.createElement('div');
     eventItem.className = 'event-item';
-    eventItem.setAttribute('data-id', event.id.toString());
+    eventItem.dataset.id = event.id.toString();
 
     eventItem.innerHTML = `
       <div class="event-date">
@@ -1696,7 +1696,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   }
 
   // Reset form
-  const form = document.querySelector('#eventForm') as HTMLFormElement | null;
+  const form = document.querySelector('#eventForm');
   form?.reset();
 
   // No color selection needed anymore - color is determined by org_level
@@ -1708,7 +1708,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   selectedAttendees = [];
 
   // Set default org level and show info message
-  const orgLevelInput = document.querySelector('#eventOrgLevel') as HTMLInputElement | null;
+  const orgLevelInput = document.querySelector('#eventOrgLevel');
   const selectedOrgLevelSpan = document.querySelector('#selectedOrgLevel');
 
   if (eventId === undefined || eventId === null) {
@@ -1721,7 +1721,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       // Show attendees section with company info by default
       const attendeesGroup = document.querySelector('#attendeesGroup');
       const attendeesContainer = document.querySelector('#attendeesContainer');
-      const addAttendeeBtn = document.querySelector('#addAttendeeBtn') as HTMLButtonElement | null;
+      const addAttendeeBtn = document.querySelector('#addAttendeeBtn');
 
       if (attendeesGroup) attendeesGroup.style.display = 'block';
       if (addAttendeeBtn) addAttendeeBtn.style.display = 'none'; // Hide for company events
@@ -1759,8 +1759,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
     // New event
     if (startDate) {
-      const startInput = document.querySelector('#eventStartDate') as HTMLInputElement | null;
-      const startTimeInput = document.querySelector('#eventStartTime') as HTMLInputElement | null;
+      const startInput = document.querySelector('#eventStartDate');
+      const startTimeInput = document.querySelector('#eventStartTime');
 
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
@@ -1772,8 +1772,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
 
     if (endDate) {
-      const endInput = document.querySelector('#eventEndDate') as HTMLInputElement | null;
-      const endTimeInput = document.querySelector('#eventEndTime') as HTMLInputElement | null;
+      const endInput = document.querySelector('#eventEndDate');
+      const endTimeInput = document.querySelector('#eventEndTime');
 
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
@@ -1784,7 +1784,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
     }
 
-    const allDayCheckbox = document.querySelector('#eventAllDay') as HTMLInputElement | null;
+    const allDayCheckbox = document.querySelector('#eventAllDay');
     if (allDayCheckbox && allDay !== undefined) {
       allDayCheckbox.checked = allDay;
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
@@ -1832,7 +1832,7 @@ function updateOrgIdDropdown(level: string): void {
 
   // Handle attendees section
   const attendeesGroup = document.querySelector('#attendeesGroup');
-  const addAttendeeBtn = document.querySelector('#addAttendeeBtn') as HTMLButtonElement;
+  const addAttendeeBtn = document.querySelector('#addAttendeeBtn')!;
   const attendeesContainer = document.querySelector('#attendeesContainer');
 
   // Clear dropdowns
@@ -1935,7 +1935,7 @@ function updateOrgIdDropdown(level: string): void {
  */
 function selectDepartment(departmentId: number, departmentName: string): void {
   const selectedElement = document.querySelector('#selectedDepartment');
-  const inputElement = document.querySelector('#eventDepartmentId') as HTMLInputElement | null;
+  const inputElement = document.querySelector('#eventDepartmentId');
 
   if (selectedElement) selectedElement.textContent = departmentName;
   if (inputElement) inputElement.value = departmentId.toString();
@@ -1946,7 +1946,7 @@ function selectDepartment(departmentId: number, departmentName: string): void {
  */
 function selectTeam(teamId: number, teamName: string): void {
   const selectedElement = document.querySelector('#selectedTeam');
-  const inputElement = document.querySelector('#eventTeamId') as HTMLInputElement | null;
+  const inputElement = document.querySelector('#eventTeamId');
 
   if (selectedElement) selectedElement.textContent = teamName;
   if (inputElement) inputElement.value = teamId.toString();
@@ -1984,7 +1984,7 @@ function loadTeamsForDepartment(departmentId: number): void {
   // Reset team selection
   const selectedTeam = document.querySelector('#selectedTeam');
   if (selectedTeam) selectedTeam.textContent = '-- Team wählen --';
-  const teamInput = document.querySelector('#eventTeamId') as HTMLInputElement | null;
+  const teamInput = document.querySelector('#eventTeamId');
   if (teamInput) teamInput.value = '';
 }
 
@@ -1994,7 +1994,7 @@ function loadTeamsForDepartment(departmentId: number): void {
 async function saveEvent(): Promise<void> {
   console.info('saveEvent called');
 
-  const form = document.querySelector('#eventForm') as HTMLFormElement | null;
+  const form = document.querySelector('#eventForm');
   if (form === null) {
     console.error('Form not found');
     return;
@@ -2007,19 +2007,19 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get form values directly from elements
-  const titleInput = document.querySelector('#eventTitle') as HTMLInputElement | null;
-  const descriptionInput = document.querySelector('#eventDescription') as HTMLTextAreaElement | null;
-  const startDateInput = document.querySelector('#eventStartDate') as HTMLInputElement | null;
-  const startTimeInput = document.querySelector('#eventStartTime') as HTMLInputElement | null;
-  const endDateInput = document.querySelector('#eventEndDate') as HTMLInputElement | null;
-  const endTimeInput = document.querySelector('#eventEndTime') as HTMLInputElement | null;
-  const allDayInput = document.querySelector('#eventAllDay') as HTMLInputElement | null;
-  const locationInput = document.querySelector('#eventLocation') as HTMLInputElement | null;
-  const orgLevelInput = document.querySelector('#eventOrgLevel') as HTMLInputElement | null;
-  const departmentIdInput = document.querySelector('#eventDepartmentId') as HTMLInputElement | null;
-  const teamIdInput = document.querySelector('#eventTeamId') as HTMLInputElement | null;
-  const reminderTimeInput = document.querySelector('#eventReminderTime') as HTMLInputElement | null;
-  const eventIdInput = document.querySelector('#eventId') as HTMLInputElement | null;
+  const titleInput = document.querySelector('#eventTitle');
+  const descriptionInput = document.querySelector('#eventDescription');
+  const startDateInput = document.querySelector('#eventStartDate');
+  const startTimeInput = document.querySelector('#eventStartTime');
+  const endDateInput = document.querySelector('#eventEndDate');
+  const endTimeInput = document.querySelector('#eventEndTime');
+  const allDayInput = document.querySelector('#eventAllDay');
+  const locationInput = document.querySelector('#eventLocation');
+  const orgLevelInput = document.querySelector('#eventOrgLevel');
+  const departmentIdInput = document.querySelector('#eventDepartmentId');
+  const teamIdInput = document.querySelector('#eventTeamId');
+  const reminderTimeInput = document.querySelector('#eventReminderTime');
+  const eventIdInput = document.querySelector('#eventId');
 
   // Validate required fields
   if (titleInput?.value === undefined || titleInput.value === '') {
@@ -2091,14 +2091,14 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get recurrence data
-  const recurrenceType = (document.querySelector('#eventRecurrence') as HTMLInputElement | null)?.value;
+  const recurrenceType = document.querySelector('#eventRecurrence')?.value;
   let recurrenceRule = '';
 
   if (recurrenceType !== undefined && recurrenceType !== '') {
     // Build recurrence rule based on selection
     const recurrenceEnd = document.querySelector('#selectedRecurrenceEnd')?.textContent;
-    const recurrenceCount = (document.querySelector('#recurrenceCount') as HTMLInputElement | null)?.value;
-    const recurrenceEndDate = (document.querySelector('#recurrenceEndDate') as HTMLInputElement | null)?.value;
+    const recurrenceCount = document.querySelector('#recurrenceCount')?.value;
+    const recurrenceEndDate = document.querySelector('#recurrenceEndDate')?.value;
 
     // Build simplified recurrence rule
     recurrenceRule = recurrenceType;
@@ -2137,7 +2137,7 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get requires response checkbox
-  const requiresResponseInput = document.querySelector('#eventRequiresResponse') as HTMLInputElement | null;
+  const requiresResponseInput = document.querySelector('#eventRequiresResponse');
   const requiresResponse = requiresResponseInput?.checked ?? false;
 
   const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
@@ -2321,7 +2321,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Fill form with event data
-      const form = document.querySelector('#eventForm') as HTMLFormElement | null;
+      const form = document.querySelector('#eventForm');
       if (form === null) return;
 
       // Set event ID
@@ -2397,13 +2397,13 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
-      const reminderSelect = document.querySelector('#eventReminderTime') as HTMLSelectElement | null;
+      const reminderSelect = document.querySelector('#eventReminderTime');
       if (reminderSelect !== null && event.reminder_time !== undefined) {
         reminderSelect.value = event.reminder_time.toString();
       }
 
       // Set requires response checkbox
-      const requiresResponseInput = document.querySelector('#eventRequiresResponse') as HTMLInputElement | null;
+      const requiresResponseInput = document.querySelector('#eventRequiresResponse');
       if (requiresResponseInput !== null) {
         // Check both camelCase and snake_case fields
         const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
@@ -2567,7 +2567,7 @@ function addAttendee(userId: number, _name: string): void {
     updateSelectedAttendees();
 
     // Clear search
-    const searchInput = document.querySelector('#attendeeSearch') as HTMLInputElement | null;
+    const searchInput = document.querySelector('#attendeeSearch');
     const searchResults = document.querySelector('#attendeeSearchResults');
     if (searchInput !== null) searchInput.value = '';
     if (searchResults !== null) searchResults.innerHTML = '';
@@ -2735,7 +2735,7 @@ declare global {
  */
 function setupModalEventListeners(): void {
   // Save event button
-  const saveEventBtn = document.querySelector('#saveEventBtn') as HTMLButtonElement | null;
+  const saveEventBtn = document.querySelector('#saveEventBtn');
   if (saveEventBtn !== null) {
     // Remove existing listeners by cloning
     const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
@@ -2764,7 +2764,7 @@ function setupModalEventListeners(): void {
   }
 
   // All day checkbox
-  const allDayCheckbox = document.querySelector('#eventAllDay') as HTMLInputElement | null;
+  const allDayCheckbox = document.querySelector('#eventAllDay');
   if (allDayCheckbox !== null) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
@@ -2803,7 +2803,7 @@ function toggleOrgLevelDropdown(): void {
 
 function selectOrgLevel(value: string, text: string): void {
   const selectedElement = document.querySelector('#selectedOrgLevel');
-  const inputElement = document.querySelector('#eventOrgLevel') as HTMLInputElement;
+  const inputElement = document.querySelector('#eventOrgLevel')!;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   inputElement.value = value;
@@ -2848,7 +2848,7 @@ function toggleReminderDropdown(): void {
 
 function selectReminder(value: string, text: string): void {
   const selectedElement = document.querySelector('#selectedReminder');
-  const inputElement = document.querySelector('#eventReminderTime') as HTMLInputElement;
+  const inputElement = document.querySelector('#eventReminderTime')!;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   inputElement.value = value;
@@ -2905,7 +2905,7 @@ function toggleTeamDropdown(): void {
 
 function selectRecurrence(value: string, text: string): void {
   const selectedElement = document.querySelector('#selectedRecurrence');
-  const inputElement = document.querySelector('#eventRecurrence') as HTMLInputElement;
+  const inputElement = document.querySelector('#eventRecurrence')!;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   inputElement.value = value;
@@ -3085,7 +3085,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
       }
 
       // Also re-attach the search functionality
-      const attendeeSearch = document.querySelector('#attendeeSearch') as HTMLInputElement | null;
+      const attendeeSearch = document.querySelector('#attendeeSearch');
       if (attendeeSearch !== null) {
         const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
         attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);

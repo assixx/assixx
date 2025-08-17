@@ -378,7 +378,7 @@ export class MachinesService {
    */
   async getUpcomingMaintenance(
     tenantId: number,
-    days: number = 30,
+    days = 30,
   ): Promise<MachineResponse[]> {
     const machines = await MachineModel.getUpcomingMaintenance(tenantId, days);
     return machines.map((machine) => this.formatMachineResponse(machine));

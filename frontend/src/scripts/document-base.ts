@@ -106,7 +106,7 @@ export class DocumentBase {
   protected setupEventListeners(): void {
     // Search input (only for search page)
     if (this.currentScope === 'all') {
-      const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#searchInput');
       if (searchInput) {
         searchInput.addEventListener('input', (e: Event) => {
           const target = e.target as HTMLInputElement | null;
@@ -417,7 +417,7 @@ export class DocumentBase {
     this.updateElement('modalUploadDate', this.formatDate(doc.created_at));
 
     // Setup preview
-    const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
+    const previewFrame = document.querySelector('#documentPreviewFrame');
     const previewError = document.querySelector('#previewError');
 
     if (previewFrame && previewError) {
@@ -446,7 +446,7 @@ export class DocumentBase {
     // Store document ID for download
     const downloadBtn = document.querySelector('#downloadButton');
     if (downloadBtn) {
-      downloadBtn.setAttribute('data-document-id', doc.id.toString());
+      downloadBtn.dataset.documentId = doc.id.toString();
     }
 
     // Show modal
@@ -546,7 +546,7 @@ export class DocumentBase {
 
     // Update toggle buttons
     document.querySelectorAll('.view-mode-toggle .toggle-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+      btn.classList.toggle('active', btn.dataset.mode === mode);
     });
 
     // Re-filter and render
@@ -610,7 +610,7 @@ window.closeDocumentModal = function (): void {
     modal.style.display = 'none';
 
     // Clean up blob URL
-    const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
+    const previewFrame = document.querySelector('#documentPreviewFrame');
     if (previewFrame) {
       const blobUrl = previewFrame.dataset.blobUrl;
       if (blobUrl !== undefined && blobUrl !== '') {
@@ -635,7 +635,7 @@ window.downloadDocument = function (docId?: string | number): void {
         console.error('Download button not found');
         return;
       }
-      const dataId = downloadBtn.getAttribute('data-document-id');
+      const dataId = downloadBtn.dataset.documentId;
       if (dataId === null || dataId === '') {
         console.error('No document ID found');
         return;

@@ -27,7 +27,7 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     public message: string,
-    public statusCode: number = 500,
+    public statusCode = 500,
     public details?: unknown,
   ) {
     super(message);
@@ -89,7 +89,7 @@ export class TeamsService {
 
       // Convert to API format
       return filteredTeams.map((team) => {
-        const apiTeam = dbToApi(team) as Record<string, unknown>;
+        const apiTeam = dbToApi(team);
 
         // Map team_lead_id to leaderId
         if ("teamLeadId" in apiTeam) {
@@ -138,7 +138,7 @@ export class TeamsService {
       // Get team members
       const members = await Team.getTeamMembers(id);
 
-      const apiTeam = dbToApi(team) as Record<string, unknown>;
+      const apiTeam = dbToApi(team);
 
       // Map team_lead_id to leaderId
       if ("teamLeadId" in apiTeam) {

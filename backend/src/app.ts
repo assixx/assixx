@@ -111,7 +111,7 @@ app.get(
       }
     }
 
-    if (!featureFlagsPath) {
+    if (featureFlagsPath === "") {
       res.status(404).send("feature-flags.js not found");
       return;
     }
@@ -388,6 +388,10 @@ app.use(
         // 1. Path doesn't contain ".."
         // 2. Path is within srcPath directory
         // 3. File exists and is readable
+        // 4. Additional validation for security compliance
+        if (!absoluteTsPath.startsWith(expectedSrcRoot)) {
+          throw new Error("Invalid file path");
+        }
         const tsContent = await fs.promises.readFile(absoluteTsPath, "utf8");
 
         // Transform TypeScript to JavaScript-compatible code
@@ -764,7 +768,10 @@ app.use((req: Request, res: Response): void => {
 // Error handler
 app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
-    console.error("[ERROR]", err.stack ?? (err.message || err));
+    console.error(
+      "[ERROR]",
+      err.stack ?? (err.message !== "" ? err.message : String(err)),
+    );
 
     res.status(500).json({
       error: "Internal Server Error",

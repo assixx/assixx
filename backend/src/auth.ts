@@ -144,7 +144,7 @@ export function generateToken(
     const payload: TokenPayload = {
       id: Number.parseInt(user.id.toString(), 10), // Ensure ID is a number
       username: user.username,
-      role: user.role as TokenPayload["role"],
+      role: user.role,
       tenant_id: user.tenant_id
         ? Number.parseInt(user.tenant_id.toString(), 10)
         : null,
@@ -171,7 +171,7 @@ export async function authenticateToken(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const authHeader = req.headers["authorization"];
+  const authHeader = req.headers.authorization;
 
   // Try to get token from Authorization header first
   let token = authHeader?.split(" ")[1];

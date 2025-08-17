@@ -69,7 +69,7 @@ class AreasManager {
 
     // Search
     document.querySelector('#area-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#area-search') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#area-search');
       this.searchTerm = searchInput ? searchInput.value : '';
       void this.loadAreas();
     });
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('active');
 
         // Reset form
-        const form = document.querySelector('#areaForm') as HTMLFormElement | null;
+        const form = document.querySelector('#areaForm');
         if (form) form.reset();
       }
     };
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save area handler
     w.saveArea = async (): Promise<void> => {
-      const form = document.querySelector('#areaForm') as HTMLFormElement | null;
+      const form = document.querySelector('#areaForm');
       if (!form) return;
 
       const formData = new FormData(form);

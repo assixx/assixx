@@ -99,8 +99,8 @@ class MachinesManager {
       const option = target.closest('.dropdown-option');
 
       if (option !== null) {
-        const value = option.getAttribute('data-value') ?? '';
-        const text = option.getAttribute('data-text') ?? '';
+        const value = option.dataset.value ?? '';
+        const text = option.dataset.text ?? '';
 
         // Call the global selectDropdownOption function safely
         // Using window extension interface for type safety
@@ -139,7 +139,7 @@ class MachinesManager {
 
     // Search
     document.querySelector('#machine-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#machine-search') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#machine-search');
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadMachines();
     });
@@ -155,7 +155,7 @@ class MachinesManager {
 
     // Delete modal event listeners
     document.querySelector('#confirm-delete-machine')?.addEventListener('click', () => {
-      const deleteInput = document.querySelector('#delete-machine-id') as HTMLInputElement | null;
+      const deleteInput = document.querySelector('#delete-machine-id');
       if (deleteInput !== null && deleteInput.value !== '') {
         void this.confirmDeleteMachine(Number.parseInt(deleteInput.value, 10));
       }
@@ -372,7 +372,7 @@ class MachinesManager {
   async deleteMachine(id: number): Promise<void> {
     // Show delete confirmation modal
     const modal = document.querySelector('#delete-machine-modal');
-    const deleteInput = document.querySelector('#delete-machine-id') as HTMLInputElement | null;
+    const deleteInput = document.querySelector('#delete-machine-id');
 
     if (modal !== null && deleteInput !== null) {
       deleteInput.value = id.toString();
@@ -447,8 +447,8 @@ class MachinesManager {
       // Add placeholder option
       const defaultOption = document.createElement('div');
       defaultOption.className = 'dropdown-option';
-      defaultOption.setAttribute('data-value', '');
-      defaultOption.setAttribute('data-text', 'Keine Abteilung');
+      defaultOption.dataset.value = '';
+      defaultOption.dataset.text = 'Keine Abteilung';
       defaultOption.textContent = 'Keine Abteilung';
       dropdownOptions.append(defaultOption);
 
@@ -456,8 +456,8 @@ class MachinesManager {
       departments.forEach((dept: Department) => {
         const optionDiv = document.createElement('div');
         optionDiv.className = 'dropdown-option';
-        optionDiv.setAttribute('data-value', dept.id.toString());
-        optionDiv.setAttribute('data-text', dept.name);
+        optionDiv.dataset.value = dept.id.toString();
+        optionDiv.dataset.text = dept.name;
         optionDiv.textContent = dept.name;
         dropdownOptions.append(optionDiv);
       });
@@ -492,8 +492,8 @@ class MachinesManager {
       // Add placeholder option
       const defaultOption = document.createElement('div');
       defaultOption.className = 'dropdown-option';
-      defaultOption.setAttribute('data-value', '');
-      defaultOption.setAttribute('data-text', 'Kein Bereich');
+      defaultOption.dataset.value = '';
+      defaultOption.dataset.text = 'Kein Bereich';
       defaultOption.textContent = 'Kein Bereich';
       dropdownOptions.append(defaultOption);
 
@@ -501,8 +501,8 @@ class MachinesManager {
       areas.forEach((area: Area) => {
         const optionDiv = document.createElement('div');
         optionDiv.className = 'dropdown-option';
-        optionDiv.setAttribute('data-value', area.id.toString());
-        optionDiv.setAttribute('data-text', area.name);
+        optionDiv.dataset.value = area.id.toString();
+        optionDiv.dataset.text = area.name;
         optionDiv.textContent = area.name;
         dropdownOptions.append(optionDiv);
       });
@@ -563,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('active');
 
         // Reset form
-        const form = document.querySelector('#machineForm') as HTMLFormElement | null;
+        const form = document.querySelector('#machineForm');
         if (form !== null) form.reset();
 
         // Load departments and areas for dropdowns
@@ -584,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save machine handler
     w.saveMachine = async () => {
-      const form = document.querySelector('#machineForm') as HTMLFormElement | null;
+      const form = document.querySelector('#machineForm');
       if (form === null) return;
 
       const formData = new FormData(form);

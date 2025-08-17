@@ -11,7 +11,7 @@ let currentView = localStorage.getItem('activeRole') ?? userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
-  const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
+  const switchBtn = document.querySelector('#role-switch-btn');
   const roleIndicator = document.querySelector('#role-indicator');
 
   if (switchBtn === null || roleIndicator === null) return;
@@ -110,7 +110,7 @@ async function switchRole(): Promise<void> {
 // Update UI based on current role
 function updateRoleUI(): void {
   const roleIndicator = document.querySelector('#role-indicator');
-  const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
+  const switchBtn = document.querySelector('#role-switch-btn');
   const switchText = switchBtn !== null ? switchBtn.querySelector('.role-switch-text') : null;
 
   if (roleIndicator === null || switchBtn === null) return;
@@ -248,7 +248,7 @@ if (!document.querySelector('#toast-animations')) {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   // Handle for admins
-  const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
+  const switchBtn = document.querySelector('#role-switch-btn');
 
   if (userRole === 'admin' && switchBtn !== null) {
     switchBtn.style.display = 'flex';
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Handle for root users with dropdown
-  const switchSelect = document.querySelector('#role-switch-select') as HTMLSelectElement | null;
+  const switchSelect = document.querySelector('#role-switch-select');
 
   if (userRole === 'root' && switchSelect !== null) {
     switchSelect.style.display = 'block';

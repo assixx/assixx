@@ -39,10 +39,10 @@ interface AdminUpdateForm extends HTMLFormElement {
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
-  const updateAdminForm = document.querySelector('#update-admin-form') as AdminUpdateForm | null;
+  const updateAdminForm = document.querySelector('#update-admin-form');
   const adminDetailsContainer = document.querySelector('#admin-details');
   const adminUsernameTitle = document.querySelector('#admin-username');
-  const backBtn = document.querySelector('#back-btn') as HTMLButtonElement | null;
+  const backBtn = document.querySelector('#back-btn');
   const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
 
   // Get URL parameters
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Store admin ID in form
-  const adminIdInput = document.querySelector('#admin-id') as HTMLInputElement | null;
+  const adminIdInput = document.querySelector('#admin-id');
   if (adminIdInput !== null) {
     adminIdInput.value = adminId;
   }
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
       button.classList.add('active');
 
       // Set active tab content
-      const tabId = button.getAttribute('data-tab');
+      const tabId = button.dataset.tab;
       if (tabId === null || tabId.length === 0) return;
 
       document.querySelectorAll<HTMLElement>('.tab-content').forEach((tab) => {
@@ -156,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
    * Populate admin form with data
    */
   function populateAdminForm(admin: AdminUser): void {
-    const usernameInput = document.querySelector('#username') as HTMLInputElement | null;
-    const emailInput = document.querySelector('#email') as HTMLInputElement | null;
-    const companyInput = document.querySelector('#company') as HTMLInputElement | null;
-    const notesInput = document.querySelector('#notes') as HTMLTextAreaElement | null;
+    const usernameInput = document.querySelector('#username');
+    const emailInput = document.querySelector('#email');
+    const companyInput = document.querySelector('#company');
+    const notesInput = document.querySelector('#notes');
 
     if (usernameInput !== null) usernameInput.value = admin.username;
     if (emailInput !== null) emailInput.value = admin.email;

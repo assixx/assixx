@@ -33,7 +33,7 @@ export function showSection(sectionName: string): void {
     navItems.forEach((item: HTMLElement) => {
       item.classList.remove('active');
       // Compare with original sectionName (without -section)
-      const itemSection = item.getAttribute('data-section');
+      const itemSection = item.dataset.section;
       if (itemSection === sectionName || itemSection === sectionId) {
         item.classList.add('active');
       }

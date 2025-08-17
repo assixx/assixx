@@ -213,7 +213,7 @@ import { showError, showSuccess } from './auth';
 
   // Tenant Dropdown aktualisieren
   function updateTenantDropdown() {
-    const select = document.querySelector('#adminTenant') as HTMLSelectElement | null;
+    const select = document.querySelector('#adminTenant');
     if (select === null) {
       console.info('Tenant dropdown not found - skipping update');
       return;
@@ -316,7 +316,7 @@ import { showError, showSuccess } from './auth';
     editButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         console.info('Edit button clicked!');
-        const adminId = Number.parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0', 10);
+        const adminId = Number.parseInt((e.target as HTMLElement.dataset.adminId) ?? '0', 10);
         console.info('Admin ID:', adminId);
         if (adminId > 0) {
           void editAdminHandler(adminId);
@@ -329,7 +329,7 @@ import { showError, showSuccess } from './auth';
     deleteButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         console.info('Delete button clicked!');
-        const adminId = Number.parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0', 10);
+        const adminId = Number.parseInt((e.target as HTMLElement.dataset.adminId) ?? '0', 10);
         console.info('Admin ID:', adminId);
         if (adminId > 0) {
           void deleteAdminHandler(adminId);
@@ -389,14 +389,14 @@ import { showError, showSuccess } from './auth';
     if (title) title.textContent = 'Admin bearbeiten';
 
     // Formular mit Admin-Daten füllen
-    (document.querySelector('#adminFirstName') as HTMLInputElement).value = admin.first_name ?? '';
-    (document.querySelector('#adminLastName') as HTMLInputElement).value = admin.last_name ?? '';
-    (document.querySelector('#adminEmail') as HTMLInputElement).value = admin.email;
-    (document.querySelector('#adminEmailConfirm') as HTMLInputElement).value = admin.email;
+    document.querySelector('#adminFirstName')!.value = admin.first_name ?? '';
+    document.querySelector('#adminLastName')!.value = admin.last_name ?? '';
+    document.querySelector('#adminEmail')!.value = admin.email;
+    document.querySelector('#adminEmailConfirm')!.value = admin.email;
 
     // Custom dropdown for position
     const positionValue = admin.position ?? '';
-    (document.querySelector('#positionDropdownValue') as HTMLInputElement).value = positionValue;
+    document.querySelector('#positionDropdownValue')!.value = positionValue;
     const displayText = positionValue !== '' ? getPositionDisplay(positionValue) : 'Position auswählen...';
     const positionDropdown = document.querySelector('#positionDropdownDisplay');
     if (positionDropdown) {
@@ -404,13 +404,13 @@ import { showError, showSuccess } from './auth';
       if (span) span.textContent = displayText;
     }
 
-    (document.querySelector('#adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
+    document.querySelector('#adminNotes')!.value = admin.notes ?? '';
 
     // Show active status checkbox when editing
     const activeStatusGroup = document.querySelector('#activeStatusGroup');
     if (activeStatusGroup) activeStatusGroup.style.display = 'block';
 
-    const isActiveCheckbox = document.querySelector('#adminIsActive') as HTMLInputElement;
+    const isActiveCheckbox = document.querySelector('#adminIsActive')!;
     const isActive = admin.is_active;
     console.info('Setting checkbox for edit - admin.is_active:', admin.is_active, 'checkbox will be:', isActive);
     isActiveCheckbox.checked = isActive;
@@ -456,7 +456,7 @@ import { showError, showSuccess } from './auth';
           await loadAndPopulateDepartments();
 
           // Select current departments
-          const deptSelect = document.querySelector('#departmentSelect') as HTMLSelectElement | null;
+          const deptSelect = document.querySelector('#departmentSelect');
           if (deptSelect !== null) {
             // Clear all selections first
             [...deptSelect.options].forEach((option) => (option.selected = false));
@@ -481,8 +481,8 @@ import { showError, showSuccess } from './auth';
     }
 
     // Passwort-Felder als optional setzen beim Bearbeiten
-    const passwordField = document.querySelector('#adminPassword') as HTMLInputElement;
-    const passwordConfirmField = document.querySelector('#adminPasswordConfirm') as HTMLInputElement;
+    const passwordField = document.querySelector('#adminPassword')!;
+    const passwordConfirmField = document.querySelector('#adminPasswordConfirm')!;
     passwordField.required = false;
     passwordConfirmField.required = false;
     passwordField.value = '';
@@ -582,13 +582,13 @@ import { showError, showSuccess } from './auth';
     currentAdminId = null;
     const modal = document.querySelector('#adminModal');
     const title = document.querySelector('#modalTitle');
-    const form = document.querySelector('#adminForm') as HTMLFormElement;
+    const form = document.querySelector('#adminForm')!;
 
     if (title) title.textContent = 'Admin hinzufügen';
     form.reset();
 
     // Reset custom dropdown
-    (document.querySelector('#positionDropdownValue') as HTMLInputElement).value = '';
+    document.querySelector('#positionDropdownValue')!.value = '';
     const positionDropdown = document.querySelector('#positionDropdownDisplay');
     if (positionDropdown) {
       const span = positionDropdown.querySelector('span');
@@ -600,8 +600,8 @@ import { showError, showSuccess } from './auth';
     if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
     // Passwort-Felder als required setzen für neue Admins
-    const passwordField = document.querySelector('#adminPassword') as HTMLInputElement;
-    const passwordConfirmField = document.querySelector('#adminPasswordConfirm') as HTMLInputElement;
+    const passwordField = document.querySelector('#adminPassword')!;
+    const passwordConfirmField = document.querySelector('#adminPasswordConfirm')!;
     passwordField.required = true;
     passwordConfirmField.required = true;
 
@@ -728,7 +728,7 @@ import { showError, showSuccess } from './auth';
   // Load and populate departments
   async function loadAndPopulateDepartments() {
     const departments = await loadDepartments();
-    const select = document.querySelector('#departmentSelect') as HTMLSelectElement | null;
+    const select = document.querySelector('#departmentSelect');
 
     if (select !== null) {
       select.innerHTML = '';
@@ -874,8 +874,8 @@ import { showError, showSuccess } from './auth';
       // Set permission levels
       if (currentPerms.departments.length > 0) {
         const firstDept = currentPerms.departments[0];
-        (document.querySelector('#permCanWrite') as HTMLInputElement).checked = firstDept.can_write ?? false;
-        (document.querySelector('#permCanDelete') as HTMLInputElement).checked = firstDept.can_delete ?? false;
+        document.querySelector('#permCanWrite')!.checked = firstDept.can_write ?? false;
+        document.querySelector('#permCanDelete')!.checked = firstDept.can_delete ?? false;
       }
     } catch (error) {
       console.error('Error loading permissions modal data:', error);
@@ -913,8 +913,8 @@ import { showError, showSuccess } from './auth';
       // Get permission levels
       const permissions = {
         can_read: true,
-        can_write: (document.querySelector('#permCanWrite') as HTMLInputElement).checked,
-        can_delete: (document.querySelector('#permCanDelete') as HTMLInputElement).checked,
+        can_write: document.querySelector('#permCanWrite')!.checked,
+        can_delete: document.querySelector('#permCanDelete')!.checked,
       };
 
       console.info('Permissions:', permissions);
@@ -995,16 +995,16 @@ import { showError, showSuccess } from './auth';
       e.preventDefault();
 
       // Validate email match
-      const email = (document.querySelector('#adminEmail') as HTMLInputElement).value;
-      const emailConfirm = (document.querySelector('#adminEmailConfirm') as HTMLInputElement).value;
+      const email = document.querySelector('#adminEmail')!.value;
+      const emailConfirm = document.querySelector('#adminEmailConfirm')!.value;
       if (email !== emailConfirm) {
         showError('Die E-Mail-Adressen stimmen nicht überein!');
         return;
       }
 
       // Validate password match (only for new admins or if password is being changed)
-      const password = (document.querySelector('#adminPassword') as HTMLInputElement).value;
-      const passwordConfirm = (document.querySelector('#adminPasswordConfirm') as HTMLInputElement).value;
+      const password = document.querySelector('#adminPassword')!.value;
+      const passwordConfirm = document.querySelector('#adminPasswordConfirm')!.value;
       if (password !== '' && password !== passwordConfirm) {
         showError('Die Passwörter stimmen nicht überein!');
         return;
@@ -1022,18 +1022,18 @@ import { showError, showSuccess } from './auth';
       }
 
       const formData: AdminFormData = {
-        first_name: (document.querySelector('#adminFirstName') as HTMLInputElement).value,
-        last_name: (document.querySelector('#adminLastName') as HTMLInputElement).value,
+        first_name: document.querySelector('#adminFirstName')!.value,
+        last_name: document.querySelector('#adminLastName')!.value,
         email,
         password,
-        position: (document.querySelector('#positionDropdownValue') as HTMLInputElement).value,
-        notes: (document.querySelector('#adminNotes') as HTMLTextAreaElement).value,
+        position: document.querySelector('#positionDropdownValue')!.value,
+        notes: document.querySelector('#adminNotes')!.value,
         role: 'admin',
       };
 
       // Include is_active only when updating
       if (currentAdminId !== null && currentAdminId !== 0) {
-        const checkbox = document.querySelector('#adminIsActive') as HTMLInputElement;
+        const checkbox = document.querySelector('#adminIsActive')!;
         console.info('Checkbox element:', checkbox);
         console.info('Checkbox checked state:', checkbox.checked);
         formData.is_active = checkbox.checked;
@@ -1085,7 +1085,7 @@ import { showError, showSuccess } from './auth';
               let groupIds: number[] = [];
 
               if (permissionType === 'specific') {
-                const select = document.querySelector('#departmentSelect') as HTMLSelectElement;
+                const select = document.querySelector('#departmentSelect')!;
                 departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
               } else if (permissionType === 'groups') {
                 const checkboxes = document.querySelectorAll('input[name="groupSelect"]:checked');

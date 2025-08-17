@@ -1506,7 +1506,7 @@ class UnifiedNavigation {
         }
 
         // Check if admin/root clicked on KVP submenu item
-        const submenuNavId = submenuLink.getAttribute('data-nav-id');
+        const submenuNavId = submenuLink.dataset.navId;
         if (submenuNavId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
           void this.resetKvpBadge();
         }
@@ -1640,7 +1640,7 @@ class UnifiedNavigation {
       this.updateToggleIcon();
 
       // Update logo based on collapsed state
-      const headerLogo = document.querySelector('#header-logo') as HTMLImageElement | null;
+      const headerLogo = document.querySelector('#header-logo');
       if (headerLogo !== null) {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
@@ -1787,12 +1787,12 @@ class UnifiedNavigation {
 
       if (dropdownDisplay && dropdownOptions) {
         // Check if already initialized
-        if (dropdownDisplay.hasAttribute('data-initialized')) {
+        if (Object.hasOwn(dropdownDisplay.dataset, 'initialized')) {
           return;
         }
 
         // Mark as initialized
-        dropdownDisplay.setAttribute('data-initialized', 'true');
+        dropdownDisplay.dataset.initialized = 'true';
 
         // Toggle dropdown on click
         dropdownDisplay.addEventListener('click', (e) => {
@@ -1821,10 +1821,7 @@ class UnifiedNavigation {
             void (async () => {
               e.stopPropagation();
 
-              const selectedRole = (e.target as HTMLElement).getAttribute('data-value') as
-                | 'root'
-                | 'admin'
-                | 'employee';
+              const selectedRole = e.target as HTMLElement.dataset.value as 'root' | 'admin' | 'employee';
               console.info('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
 
               // Update display text
@@ -1839,7 +1836,7 @@ class UnifiedNavigation {
               dropdownOptions.classList.remove('active');
 
               // Update hidden input
-              const hiddenInput = document.querySelector('#role-switch-value') as HTMLInputElement | null;
+              const hiddenInput = document.querySelector('#role-switch-value');
               if (hiddenInput !== null) {
                 hiddenInput.value = selectedRole;
               }
@@ -1879,12 +1876,12 @@ class UnifiedNavigation {
 
       if (dropdownDisplay && dropdownOptions) {
         // Check if already initialized
-        if (dropdownDisplay.hasAttribute('data-initialized')) {
+        if (Object.hasOwn(dropdownDisplay.dataset, 'initialized')) {
           return;
         }
 
         // Mark as initialized
-        dropdownDisplay.setAttribute('data-initialized', 'true');
+        dropdownDisplay.dataset.initialized = 'true';
 
         // Toggle dropdown on click
         dropdownDisplay.addEventListener('click', (e) => {

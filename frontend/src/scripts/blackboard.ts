@@ -202,7 +202,7 @@ function initializeBlackboard() {
           console.info('[Blackboard] User role:', userData.role);
 
           // Show/hide "New Entry" button based on permissions
-          const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
+          const newEntryBtn = document.querySelector('#newEntryBtn');
           if (newEntryBtn) {
             console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
             newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -224,7 +224,7 @@ function initializeBlackboard() {
               console.info('[Blackboard] isAdmin after API call:', isAdmin);
               console.info('[Blackboard] User role from API:', userData.role);
 
-              const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
+              const newEntryBtn = document.querySelector('#newEntryBtn');
               if (newEntryBtn) {
                 console.info('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
                 newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -249,7 +249,7 @@ function initializeBlackboard() {
             console.info('[Blackboard] No localStorage - isAdmin:', isAdmin);
             console.info('[Blackboard] No localStorage - User role:', userData.role);
 
-            const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
+            const newEntryBtn = document.querySelector('#newEntryBtn');
             if (newEntryBtn) {
               console.info(
                 '[Blackboard] No localStorage - Setting newEntryBtn display:',
@@ -289,13 +289,13 @@ function initializeBlackboard() {
       });
 
       // Hide the load entries button since entries are loaded automatically
-      const loadEntriesBtn = document.querySelector('#loadEntriesBtn') as HTMLButtonElement | null;
+      const loadEntriesBtn = document.querySelector('#loadEntriesBtn');
       if (loadEntriesBtn) {
         loadEntriesBtn.style.display = 'none';
       }
 
       // Retry-Button Ereignisbehandlung
-      const retryLoadBtn = document.querySelector('#retryLoadBtn') as HTMLButtonElement | null;
+      const retryLoadBtn = document.querySelector('#retryLoadBtn');
       if (retryLoadBtn) {
         retryLoadBtn.addEventListener('click', () => {
           entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
@@ -373,7 +373,7 @@ function setupEventListeners(): void {
   });
 
   // Sort entries
-  const sortFilter = document.querySelector('#sortFilter') as HTMLSelectElement | null;
+  const sortFilter = document.querySelector('#sortFilter');
   if (sortFilter) {
     sortFilter.addEventListener('change', function (this: HTMLSelectElement) {
       currentSort = this.value;
@@ -388,8 +388,8 @@ function setupEventListeners(): void {
   }
 
   // Search button
-  const searchButton = document.querySelector('#searchButton') as HTMLButtonElement | null;
-  const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
+  const searchButton = document.querySelector('#searchButton');
+  const searchInput = document.querySelector('#searchInput');
 
   if (searchButton && searchInput) {
     searchButton.addEventListener('click', () => {
@@ -418,7 +418,7 @@ function setupEventListeners(): void {
   }
 
   // New entry button
-  const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
+  const newEntryBtn = document.querySelector('#newEntryBtn');
   if (newEntryBtn) {
     newEntryBtn.addEventListener('click', () => {
       openEntryForm();
@@ -428,7 +428,7 @@ function setupEventListeners(): void {
   }
 
   // Direct attachment button
-  const directAttachBtn = document.querySelector('#directAttachBtn') as HTMLButtonElement | null;
+  const directAttachBtn = document.querySelector('#directAttachBtn');
   if (directAttachBtn) {
     directAttachBtn.addEventListener('click', () => {
       openDirectAttachModal();
@@ -438,7 +438,7 @@ function setupEventListeners(): void {
   }
 
   // Save entry button
-  const saveEntryBtn = document.querySelector('#saveEntryBtn') as HTMLButtonElement | null;
+  const saveEntryBtn = document.querySelector('#saveEntryBtn');
   if (saveEntryBtn) {
     saveEntryBtn.addEventListener('click', () => {
       void saveEntry();
@@ -448,7 +448,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const entryOrgLevel = document.querySelector('#entryOrgLevel') as HTMLSelectElement | null;
+  const entryOrgLevel = document.querySelector('#entryOrgLevel');
   if (entryOrgLevel) {
     entryOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -483,8 +483,8 @@ function setupEventListeners(): void {
  * Setup file upload handlers for attachments
  */
 function setupFileUploadHandlers(): void {
-  const dropZone = document.querySelector('#attachmentDropZone') as HTMLDivElement | null;
-  const fileInput = document.querySelector('#attachmentInput') as HTMLInputElement | null;
+  const dropZone = document.querySelector('#attachmentDropZone');
+  const fileInput = document.querySelector('#attachmentInput');
 
   if (!dropZone || !fileInput) return;
 
@@ -559,8 +559,8 @@ function handleFileSelection(files: File[]): void {
  * Update attachment preview display
  */
 function updateAttachmentPreview(): void {
-  const preview = document.querySelector('#attachmentPreview') as HTMLDivElement | null;
-  const list = document.querySelector('#attachmentList') as HTMLDivElement | null;
+  const preview = document.querySelector('#attachmentPreview');
+  const list = document.querySelector('#attachmentList');
 
   if (!preview || !list) return;
 
@@ -604,7 +604,7 @@ function removeAttachment(index: number): void {
   updateAttachmentPreview();
 
   // Reset file input
-  const fileInput = document.querySelector('#attachmentInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#attachmentInput');
   if (fileInput) {
     fileInput.value = '';
   }
@@ -1136,7 +1136,7 @@ function openEntryForm(entryId?: number): void {
   if (!modal) return;
 
   // Reset form
-  const form = document.querySelector('#entryForm') as HTMLFormElement | null;
+  const form = document.querySelector('#entryForm');
   if (form) form.reset();
 
   // Reset color selection
@@ -1148,7 +1148,7 @@ function openEntryForm(entryId?: number): void {
   // Reset file selection
   selectedFiles = [];
   updateAttachmentPreview();
-  const fileInput = document.querySelector('#attachmentInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#attachmentInput');
   if (fileInput) {
     fileInput.value = '';
   }
@@ -1159,7 +1159,7 @@ function openEntryForm(entryId?: number): void {
   } else {
     // New entry - reset org dropdown
     updateOrgIdDropdown('all');
-    const entryOrgLevel = document.querySelector('#entryOrgLevel') as HTMLSelectElement | null;
+    const entryOrgLevel = document.querySelector('#entryOrgLevel');
     if (entryOrgLevel) {
       entryOrgLevel.value = 'company';
       updateOrgIdDropdown('company');
@@ -1175,7 +1175,7 @@ function openEntryForm(entryId?: number): void {
  */
 function updateOrgIdDropdown(level: string): void {
   const orgIdContainer = document.querySelector('#orgIdContainer');
-  const orgIdSelect = document.querySelector('#entryOrgId') as HTMLSelectElement | null;
+  const orgIdSelect = document.querySelector('#entryOrgId');
 
   if (!orgIdContainer || !orgIdSelect) return;
 
@@ -1212,7 +1212,7 @@ function updateOrgIdDropdown(level: string): void {
  * Save entry
  */
 async function saveEntry(): Promise<void> {
-  const form = document.querySelector('#entryForm') as HTMLFormElement | null;
+  const form = document.querySelector('#entryForm');
   if (!form) return;
 
   const formData = new FormData(form);
@@ -1330,7 +1330,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
     }
 
     // Fill form with entry data
-    const form = document.querySelector('#entryForm') as HTMLFormElement | null;
+    const form = document.querySelector('#entryForm');
     if (!form) return;
 
     (form.elements.namedItem('entry_id') as HTMLInputElement).value = entry.id.toString();
@@ -1712,9 +1712,9 @@ async function viewEntry(entryId: number): Promise<void> {
 
         attachmentItems.forEach((item, index) => {
           const htmlItem = item as HTMLElement;
-          const attachmentId = Number.parseInt(htmlItem.getAttribute('data-attachment-id') ?? '0', 10);
-          const mimeType = htmlItem.getAttribute('data-mime-type') ?? '';
-          const filename = htmlItem.getAttribute('data-filename') ?? '';
+          const attachmentId = Number.parseInt(htmlItem.dataset.attachmentId ?? '0', 10);
+          const mimeType = htmlItem.dataset.mimeType ?? '';
+          const filename = htmlItem.dataset.filename ?? '';
 
           console.info(`[Blackboard] Setting up attachment ${index}:`, {
             attachmentId,
@@ -1885,7 +1885,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
   if (titleElement) titleElement.textContent = `Vorschau: ${fileName}`;
 
   // Update download link
-  const downloadLink = document.querySelector('#downloadLink') as HTMLAnchorElement | null;
+  const downloadLink = document.querySelector('#downloadLink');
   if (downloadLink) {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
     const endpoint = `/blackboard/attachments/${attachmentId}?download=true`;
@@ -2115,11 +2115,11 @@ function openDirectAttachModal(): void {
   if (!modal) return;
 
   // Reset form
-  const form = document.querySelector('#directAttachForm') as HTMLFormElement | null;
+  const form = document.querySelector('#directAttachForm');
   if (form) form.reset();
 
   // Reset file input and global file
-  const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#directAttachInput');
   if (fileInput) {
     console.info('[DirectAttach] Resetting file input');
     fileInput.value = '';
@@ -2154,9 +2154,9 @@ function openDirectAttachModal(): void {
  */
 function setupDirectAttachHandlers(): void {
   console.info('[DirectAttach] Setting up handlers');
-  const dropZone = document.querySelector('#directAttachDropZone') as HTMLDivElement | null;
-  const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
-  const saveBtn = document.querySelector('#saveDirectAttachBtn') as HTMLButtonElement | null;
+  const dropZone = document.querySelector('#directAttachDropZone');
+  const fileInput = document.querySelector('#directAttachInput');
+  const saveBtn = document.querySelector('#saveDirectAttachBtn');
 
   if (!dropZone || !fileInput) {
     console.error('[DirectAttach] Missing required elements');
@@ -2226,7 +2226,7 @@ function setupDirectAttachHandlers(): void {
   // Size selection buttons - use event delegation
   document.querySelectorAll('.size-option').forEach((btn) => {
     btn.addEventListener('click', function (this: HTMLElement) {
-      console.info('[DirectAttach] Size button clicked:', this.getAttribute('data-size'));
+      console.info('[DirectAttach] Size button clicked:', this.dataset.size);
       document.querySelectorAll('.size-option').forEach((b) => {
         b.classList.remove('active');
       });
@@ -2279,7 +2279,7 @@ function handleDirectAttachFile(file: File): void {
   fileSize.textContent = formatFileSize(file.size);
 
   // Set title from filename if empty
-  const titleInput = document.querySelector('#directAttachTitle') as HTMLInputElement | null;
+  const titleInput = document.querySelector('#directAttachTitle');
   if (titleInput && titleInput.value.length === 0) {
     titleInput.value = file.name.replace(/\.[^./]+$/, ''); // Remove extension
   }
@@ -2307,7 +2307,7 @@ function handleDirectAttachFile(file: File): void {
  */
 function clearDirectAttachment(): void {
   console.info('[DirectAttach] Clearing attachment');
-  const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#directAttachInput');
   const preview = document.querySelector('#directAttachPreview');
 
   if (fileInput) fileInput.value = '';
@@ -2324,9 +2324,9 @@ async function saveDirectAttachment(): Promise<void> {
   console.info('[DirectAttach] saveDirectAttachment called');
   console.info('[DirectAttach] Global file:', directAttachmentFile?.name ?? 'none');
 
-  const titleInput = document.querySelector('#directAttachTitle') as HTMLInputElement | null;
-  const orgLevelSelect = document.querySelector('#directAttachOrgLevel') as HTMLSelectElement | null;
-  const prioritySelect = document.querySelector('#directAttachPriority') as HTMLSelectElement | null;
+  const titleInput = document.querySelector('#directAttachTitle');
+  const orgLevelSelect = document.querySelector('#directAttachOrgLevel');
+  const prioritySelect = document.querySelector('#directAttachPriority');
   const sizeOption = document.querySelector('.size-option.active');
 
   console.info('[DirectAttach] Elements found:', {
@@ -2404,10 +2404,10 @@ async function saveDirectAttachment(): Promise<void> {
     directAttachmentFile = null;
 
     // Reset the form and file input for next use
-    const form = document.querySelector('#directAttachForm') as HTMLFormElement | null;
+    const form = document.querySelector('#directAttachForm');
     if (form) form.reset();
 
-    const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
+    const fileInput = document.querySelector('#directAttachInput');
     if (fileInput) fileInput.value = '';
 
     const preview = document.querySelector('#directAttachPreview');

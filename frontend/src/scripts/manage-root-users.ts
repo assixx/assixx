@@ -114,15 +114,15 @@ function displayRootUsers(users: RootUser[]) {
 async function handleFormSubmit(event: Event) {
   event.preventDefault();
 
-  const firstName = (document.querySelector('#rootFirstName') as HTMLInputElement).value;
-  const lastName = (document.querySelector('#rootLastName') as HTMLInputElement).value;
-  const email = (document.querySelector('#rootEmail') as HTMLInputElement).value;
-  const emailConfirm = (document.querySelector('#rootEmailConfirm') as HTMLInputElement).value;
-  const password = (document.querySelector('#rootPassword') as HTMLInputElement).value;
-  const passwordConfirm = (document.querySelector('#rootPasswordConfirm') as HTMLInputElement).value;
-  const position = (document.querySelector('#positionDropdownValue') as HTMLInputElement).value;
-  const notes = (document.querySelector('#rootNotes') as HTMLTextAreaElement).value;
-  const activeCheckbox = document.querySelector('#rootIsActive') as HTMLInputElement | null;
+  const firstName = document.querySelector('#rootFirstName')!.value;
+  const lastName = document.querySelector('#rootLastName')!.value;
+  const email = document.querySelector('#rootEmail')!.value;
+  const emailConfirm = document.querySelector('#rootEmailConfirm')!.value;
+  const password = document.querySelector('#rootPassword')!.value;
+  const passwordConfirm = document.querySelector('#rootPasswordConfirm')!.value;
+  const position = document.querySelector('#positionDropdownValue')!.value;
+  const notes = document.querySelector('#rootNotes')!.value;
+  const activeCheckbox = document.querySelector('#rootIsActive');
   const isActive = activeCheckbox !== null ? activeCheckbox.checked : true;
 
   // Validation
@@ -199,7 +199,7 @@ function closeRootModal() {
     modal.classList.remove('active');
   }
   currentEditId = null;
-  (document.querySelector('#rootForm') as HTMLFormElement).reset();
+  document.querySelector('#rootForm')!.reset();
 }
 
 // Initialize when DOM is loaded
@@ -228,7 +228,7 @@ window.showAddRootModal = () => {
   const modalTitle = document.querySelector('#modalTitle');
   if (modalTitle) modalTitle.textContent = 'Root User hinzufügen';
 
-  const rootForm = document.querySelector('#rootForm') as HTMLFormElement | null;
+  const rootForm = document.querySelector('#rootForm');
   if (rootForm !== null) rootForm.reset();
 
   const positionDropdown = document.querySelector('#positionDropdownDisplay');

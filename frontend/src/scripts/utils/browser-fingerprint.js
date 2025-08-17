@@ -122,8 +122,7 @@ export class BrowserFingerprint {
     }
 
     // Generate hash from components
-    const fingerprint = await this.hashComponents(components.join('|||'));
-    return fingerprint;
+    return await this.hashComponents(components.join('|||'));
   }
 
   /**
@@ -136,9 +135,8 @@ export class BrowserFingerprint {
     if (crypto.subtle && crypto.subtle.digest) {
       const msgBuffer = new TextEncoder().encode(components);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-      return hashHex;
+      const hashArray = [...new Uint8Array(hashBuffer)];
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     }
 
     // Fallback to simple hash

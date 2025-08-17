@@ -16,8 +16,8 @@ function escapeHtml(unsafe) {
 // Konvertiere native selects zu custom dropdowns
 function convertSelectsToDropdowns() {
   // Org Level Dropdown
-  const orgLevelSelect = document.getElementById('entryOrgLevel');
-  if (orgLevelSelect && !document.getElementById('orgLevelDropdown')) {
+  const orgLevelSelect = document.querySelector('#entryOrgLevel');
+  if (orgLevelSelect && !document.querySelector('#orgLevelDropdown')) {
     const customDropdown = createCustomDropdown(
       'orgLevel',
       [
@@ -28,13 +28,13 @@ function convertSelectsToDropdowns() {
       'Bitte wählen',
     );
 
-    orgLevelSelect.parentNode.appendChild(customDropdown);
+    orgLevelSelect.parentNode.append(customDropdown);
     orgLevelSelect.style.display = 'none';
   }
 
   // Priority Dropdown
-  const prioritySelect = document.getElementById('entryPriority');
-  if (prioritySelect && !document.getElementById('priorityDropdown')) {
+  const prioritySelect = document.querySelector('#entryPriority');
+  if (prioritySelect && !document.querySelector('#priorityDropdown')) {
     const customDropdown = createCustomDropdown(
       'priority',
       [
@@ -46,7 +46,7 @@ function convertSelectsToDropdowns() {
       'Normal',
     );
 
-    prioritySelect.parentNode.appendChild(customDropdown);
+    prioritySelect.parentNode.append(customDropdown);
     prioritySelect.style.display = 'none';
   }
 }
@@ -96,13 +96,13 @@ window.toggleDropdown = function (type) {
 
 // Selection handlers
 window.selectOrgLevel = function (value, text) {
-  document.getElementById('orgLevelDisplay').querySelector('span').textContent = text;
-  document.getElementById('orgLevelValue').value = value;
-  document.getElementById('orgLevelDisplay').classList.remove('active');
-  document.getElementById('orgLevelDropdown').classList.remove('active');
+  document.querySelector('#orgLevelDisplay').querySelector('span').textContent = text;
+  document.querySelector('#orgLevelValue').value = value;
+  document.querySelector('#orgLevelDisplay').classList.remove('active');
+  document.querySelector('#orgLevelDropdown').classList.remove('active');
 
   // Show/Hide org ID container
-  const orgIdContainer = document.getElementById('orgIdContainer');
+  const orgIdContainer = document.querySelector('#orgIdContainer');
   if (value === 'department' || value === 'team') {
     orgIdContainer.style.display = 'block';
     loadOrgOptions(value);
@@ -112,25 +112,25 @@ window.selectOrgLevel = function (value, text) {
 };
 
 window.selectPriority = function (value, text) {
-  document.getElementById('priorityDisplay').querySelector('span').textContent = text;
-  document.getElementById('priorityValue').value = value;
-  document.getElementById('priorityDisplay').classList.remove('active');
-  document.getElementById('priorityDropdown').classList.remove('active');
+  document.querySelector('#priorityDisplay').querySelector('span').textContent = text;
+  document.querySelector('#priorityValue').value = value;
+  document.querySelector('#priorityDisplay').classList.remove('active');
+  document.querySelector('#priorityDropdown').classList.remove('active');
 };
 
 window.selectOrgId = function (value, text) {
-  document.getElementById('orgIdDisplay').querySelector('span').textContent = text;
-  document.getElementById('orgIdValue').value = value;
-  document.getElementById('orgIdDisplay').classList.remove('active');
-  document.getElementById('orgIdDropdown').classList.remove('active');
+  document.querySelector('#orgIdDisplay').querySelector('span').textContent = text;
+  document.querySelector('#orgIdValue').value = value;
+  document.querySelector('#orgIdDisplay').classList.remove('active');
+  document.querySelector('#orgIdDropdown').classList.remove('active');
 };
 
 // Load org options
 async function loadOrgOptions(type) {
-  const dropdown = document.getElementById('orgIdDropdown');
+  const dropdown = document.querySelector('#orgIdDropdown');
   if (!dropdown) {
     // Create org ID dropdown if it doesn't exist
-    const orgIdSelect = document.getElementById('entryOrgId');
+    const orgIdSelect = document.querySelector('#entryOrgId');
     if (orgIdSelect) {
       const customDropdown = document.createElement('div');
       customDropdown.className = 'custom-dropdown';
@@ -146,12 +146,12 @@ async function loadOrgOptions(type) {
         </div>
         <input type="hidden" name="org_id" id="orgIdValue" />
       `;
-      orgIdSelect.parentNode.appendChild(customDropdown);
+      orgIdSelect.parentNode.append(customDropdown);
       orgIdSelect.style.display = 'none';
     }
   }
 
-  const dropdownOptions = document.getElementById('orgIdDropdown');
+  const dropdownOptions = document.querySelector('#orgIdDropdown');
   dropdownOptions.innerHTML = '<div class="dropdown-option">Laden...</div>';
 
   try {
@@ -173,7 +173,7 @@ async function loadOrgOptions(type) {
 
 // Update modal structure
 function updateModalStructure() {
-  const modal = document.getElementById('entryFormModal');
+  const modal = document.querySelector('#entryFormModal');
   if (modal && modal.classList.contains('modal-overlay')) {
     // Change class from modal-overlay to modal
     modal.className = 'modal';

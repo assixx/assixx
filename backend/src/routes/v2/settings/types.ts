@@ -46,12 +46,12 @@ export interface GeneralSettings {
 
 export interface BulkUpdateRequest {
   type: "system" | "tenant" | "user";
-  settings: Array<{
+  settings: {
     setting_key: string;
     setting_value: string | number | boolean | Record<string, unknown>;
     value_type?: "string" | "number" | "boolean" | "json";
     category?: string;
     is_public?: boolean;
     description?: string;
-  }>;
+  }[];
 }

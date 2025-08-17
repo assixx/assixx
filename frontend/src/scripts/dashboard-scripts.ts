@@ -118,7 +118,7 @@ function initTabs(): void {
  */
 async function setupUserAndLogout(): Promise<void> {
   const userInfo = document.querySelector('#user-info');
-  const logoutBtn = document.querySelector('#logout-btn') as HTMLButtonElement | null;
+  const logoutBtn = document.querySelector('#logout-btn');
 
   if (userInfo) {
     // Lade Benutzerdaten

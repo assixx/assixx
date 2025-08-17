@@ -1230,7 +1230,7 @@ class ChatClient {
           const tempMessages = messagesContainer.querySelectorAll('.message.own');
           tempMessages.forEach((msg) => {
             const msgText = msg.querySelector('.message-text')?.textContent;
-            if (msgText === message.content && (msg.getAttribute('data-message-id')?.length ?? 0) > 10) {
+            if (msgText === message.content && (msg.dataset.messageId?.length ?? 0) > 10) {
               // Remove temporary message (IDs > 10 chars are timestamps)
               msg.remove();
             }
@@ -1539,7 +1539,7 @@ class ChatClient {
 
     if (!separatorExists) {
       if (messages.length > 0) {
-        const lastMessageDate = lastMessage.getAttribute('data-date');
+        const lastMessageDate = lastMessage.dataset.date;
         if (lastMessageDate !== null && lastMessageDate !== '' && lastMessageDate !== messageDate) {
           this.addDateSeparator(messageDate, messagesContainer);
         }
@@ -1554,8 +1554,8 @@ class ChatClient {
     const isOwnMessage = senderId === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
-    messageDiv.setAttribute('data-message-id', message.id.toString());
-    messageDiv.setAttribute('data-date', messageDate);
+    messageDiv.dataset.messageId = message.id.toString();
+    messageDiv.dataset.date = messageDate;
 
     // Use same createdAt variable that handles both formats
     const time = new Date(createdAt).toLocaleTimeString('de-DE', {
@@ -1647,7 +1647,7 @@ class ChatClient {
 
     const separator = document.createElement('div');
     separator.className = 'date-separator';
-    separator.setAttribute('data-date', dateString);
+    separator.dataset.date = dateString;
     separator.innerHTML = `<span>${displayDate}</span>`;
     container.append(separator);
   }
@@ -1723,7 +1723,7 @@ class ChatClient {
 
   async sendMessage(content?: string): Promise<void> {
     console.info('sendMessage called');
-    const messageInput = document.querySelector('#messageInput') as HTMLTextAreaElement | null;
+    const messageInput = document.querySelector('#messageInput');
     const messageContent = content ?? messageInput?.value.trim();
 
     console.info('Message content:', messageContent);
@@ -1958,7 +1958,7 @@ class ChatClient {
   }
 
   insertEmoji(emoji: string): void {
-    const messageInput = document.querySelector('#messageInput') as HTMLTextAreaElement | null;
+    const messageInput = document.querySelector('#messageInput');
     if (!messageInput) return;
 
     const start = messageInput.selectionStart;
@@ -1994,7 +1994,7 @@ class ChatClient {
     this.conversations.forEach((conversation) => {
       const item = document.createElement('div');
       item.className = 'conversation-item';
-      item.setAttribute('data-conversation-id', conversation.id.toString());
+      item.dataset.conversationId = conversation.id.toString();
 
       if (conversation.id === this.currentConversationId) {
         item.classList.add('active');
@@ -2492,13 +2492,13 @@ class ChatClient {
       let selectedUserId: number | null = null;
 
       if (tabType === 'employee') {
-        const employeeInput = document.querySelector('#selectedEmployee') as HTMLInputElement | null;
+        const employeeInput = document.querySelector('#selectedEmployee');
         selectedUserId =
           employeeInput?.value !== undefined && employeeInput.value !== ''
             ? Number.parseInt(employeeInput.value, 10)
             : null;
       } else if (tabType === 'admin') {
-        const adminInput = document.querySelector('#selectedAdmin') as HTMLInputElement | null;
+        const adminInput = document.querySelector('#selectedAdmin');
         selectedUserId =
           adminInput?.value !== undefined && adminInput.value !== '' ? Number.parseInt(adminInput.value, 10) : null;
       }
@@ -2511,7 +2511,7 @@ class ChatClient {
 
       // For now, we only support 1:1 chats
       const isGroup = false;
-      const groupNameInput = document.querySelector('#groupChatName') as HTMLInputElement | null;
+      const groupNameInput = document.querySelector('#groupChatName');
       const groupName = groupNameInput?.value.trim() ?? null;
       const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
         participantIds: [selectedUserId],
@@ -2645,7 +2645,7 @@ class ChatClient {
 
   initializeEventListeners(): void {
     // Message input
-    const messageInput = document.querySelector('#messageInput') as HTMLTextAreaElement | null;
+    const messageInput = document.querySelector('#messageInput');
     if (messageInput) {
       // Enter key to send
       messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
@@ -2674,7 +2674,7 @@ class ChatClient {
     }
 
     // File upload handler
-    const fileInput = document.querySelector('#fileInput') as HTMLInputElement | null;
+    const fileInput = document.querySelector('#fileInput');
     const attachmentBtn = document.querySelector('#attachmentBtn');
 
     if (attachmentBtn && fileInput) {
@@ -2880,7 +2880,7 @@ class ChatClient {
   }
 
   resizeTextarea(): void {
-    const textarea = document.querySelector('#messageInput') as HTMLTextAreaElement | null;
+    const textarea = document.querySelector('#messageInput');
     if (!textarea) return;
 
     textarea.style.height = 'auto';
@@ -2937,7 +2937,7 @@ class ChatClient {
     let typingTimer: NodeJS.Timeout | null = null;
     let isTyping = false;
 
-    const messageInput = document.querySelector('#message-input') as HTMLTextAreaElement | null;
+    const messageInput = document.querySelector('#message-input');
     if (!messageInput) return;
 
     messageInput.addEventListener('input', () => {

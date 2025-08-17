@@ -35,7 +35,9 @@ const storage = multer.diskStorage({
     const uploadDir = path.join(baseUploadDir, tenantId.toString());
 
     fs.mkdir(uploadDir, { recursive: true })
-      .then(() => cb(null, uploadDir))
+      .then(() => {
+        cb(null, uploadDir);
+      })
       .catch((error) => {
         // When there's an error, pass null as the second argument
         cb(error as Error, "");

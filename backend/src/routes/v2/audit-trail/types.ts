@@ -40,7 +40,7 @@ export interface AuditStats {
   totalEntries: number;
   byAction: Record<string, number>;
   byResourceType: Record<string, number>;
-  byUser: Array<{ userId: number; userName: string; count: number }>;
+  byUser: { userId: number; userName: string; count: number }[];
   byStatus: { success: number; failure: number };
   timeRange: { from: string; to: string };
 }

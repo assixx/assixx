@@ -44,7 +44,7 @@ async function loadHeaderUserInfo(): Promise<void> {
       }
 
       // Update avatar
-      const avatarElement = document.querySelector('#user-avatar') as HTMLImageElement | null;
+      const avatarElement = document.querySelector('#user-avatar');
       if (avatarElement !== null) {
         if (
           (user.profile_picture !== undefined && user.profile_picture !== '') ||

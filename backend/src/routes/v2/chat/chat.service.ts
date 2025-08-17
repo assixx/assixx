@@ -120,12 +120,12 @@ export interface SendMessageData {
 
 export interface UnreadCountSummary {
   totalUnread: number;
-  conversations: Array<{
+  conversations: {
     conversationId: number;
     conversationName: string | null;
     unreadCount: number;
     lastMessageTime: Date;
-  }>;
+  }[];
 }
 
 // Type definitions for database results
@@ -371,7 +371,7 @@ export class ChatService {
       // Get participants for each conversation
       const conversationIds = conversations.map((c) => c.id);
       let participants: RowDataPacket[] = [];
-      let unreadCounts: Map<number, number> = new Map();
+      let unreadCounts = new Map<number, number>();
 
       if (conversationIds.length > 0) {
         const participantsQuery = `

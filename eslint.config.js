@@ -21,11 +21,18 @@ export default [
   // Prettier configuration
   prettierConfig,
 
+  // Disable core no-useless-escape since we use regexp/no-useless-escape
+  {
+    rules: {
+      "no-useless-escape": "off", // Using regexp/no-useless-escape instead
+    },
+  },
+
   // Global complexity rules for code quality
   {
     rules: {
-      complexity: ["warn", 15], // Cognitive complexity max 15
-      "max-depth": ["warn", 4], // Max nesting depth 4
+      // complexity: ["warn", 15], // Deaktiviert - nutzen sonarjs/cognitive-complexity stattdessen
+      // "max-depth": ["warn", 4], // Deaktiviert - nutzen sonarjs/no-collapsible-if stattdessen
       "max-lines": [
         "warn",
         { max: 500, skipBlankLines: true, skipComments: true },
@@ -49,6 +56,7 @@ export default [
         ecmaVersion: 2021,
         sourceType: "module",
         project: "./backend/tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         console: "readonly",
@@ -75,9 +83,33 @@ export default [
       prettier,
       "import-x": importPlugin,
     },
+    settings: {
+      "import-x/resolver": {
+        typescript: {
+          project: "./backend/tsconfig.json",
+          alwaysTryTypes: true,
+        },
+        node: {
+          extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+        },
+      },
+      "import-x/parsers": {
+        "@typescript-eslint/parser": [".ts", ".tsx"],
+      },
+      "import-x/external-module-folders": [
+        "node_modules",
+        "node_modules/@types",
+      ],
+    },
     rules: {
-      ...typescriptPlugin.configs.recommended.rules,
+      // VOLLE STRENGE - strict-type-checked + stylistic-type-checked (wie in Backend Original)
+      ...typescriptPlugin.configs["strict-type-checked"].rules,
+      ...typescriptPlugin.configs["stylistic-type-checked"].rules,
+
       "prettier/prettier": "error",
+
+      // Complexity rule aus original Backend Config
+      complexity: ["error", 60],
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -87,8 +119,19 @@ export default [
         },
       ],
       "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/explicit-function-return-type": [
+        "error",
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+          allowDirectConstAssertionInArrowFunctions: true,
+          allowConciseArrowFunctionExpressionsStartingWithVoid: true,
+        },
+      ],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/non-nullable-type-assertion-style": "off", // Konflikt mit no-non-null-assertion
       "no-console": ["warn", { allow: ["warn", "error", "info"] }], // Log nur für debugging
       // Additional type safety rules
       "@typescript-eslint/no-floating-promises": "error",
@@ -101,9 +144,14 @@ export default [
       "@typescript-eslint/strict-boolean-expressions": [
         "error",
         {
-          allowString: false,
-          allowNumber: false,
-          allowNullableObject: false,
+          // TODO: Backend und Frontend haben unterschiedliche Einstellungen
+          allowString: true, // Backend: true, Frontend: false
+          allowNumber: true, // Backend: true, Frontend: false
+          allowNullableObject: true, // Beide: true
+          allowNullableBoolean: false,
+          allowNullableString: false,
+          allowNullableNumber: false,
+          allowAny: false,
         },
       ],
       "@typescript-eslint/no-unsafe-assignment": "error",
@@ -120,7 +168,7 @@ export default [
 
       // Error Handling
       "no-unsafe-finally": "error",
-      "require-atomic-updates": "error",
+      "require-atomic-updates": "warn", // Auf warn wegen False-Positives
       // Naming convention rules for camelCase enforcement
       "@typescript-eslint/naming-convention": [
         "error",
@@ -375,14 +423,11 @@ export default [
     },
     rules: {
       // SICHERHEIT & BUGS (als error)
-      "unicorn/no-instanceof-array": "error", // instanceof Array ist falsch
+      "unicorn/no-instanceof-builtins": "error", // instanceof Array/Object/Function ist falsch
       "unicorn/no-new-buffer": "error", // Buffer() deprecated, use Buffer.from()
 
-      // MODERNE DOM APIs (als warn - nicht disruptiv)
-      "unicorn/prefer-modern-dom-apis": "warn", // .append() statt .appendChild()
-      "unicorn/prefer-query-selector": "warn", // querySelector statt getElementById
-      "unicorn/prefer-dom-node-remove": "warn", // node.remove() statt parent.removeChild()
-      "unicorn/prefer-dom-node-append": "warn", // append() statt appendChild()
+      // DOM APIs entfernt - nur für Frontend relevant, nicht für Backend!
+      // Siehe Frontend-spezifischer Block weiter unten
 
       // BESSERE ERROR HANDLING (als warn)
       "unicorn/catch-error-name": ["warn", { name: "error" }], // catch(error) nicht catch(e)
@@ -498,6 +543,7 @@ export default [
         ecmaVersion: 2021,
         sourceType: "module",
         project: "./frontend/tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         console: "readonly",
@@ -539,8 +585,29 @@ export default [
       prettier,
       "import-x": importPlugin,
     },
+    settings: {
+      "import-x/resolver": {
+        typescript: {
+          project: "./frontend/tsconfig.json",
+          alwaysTryTypes: true,
+        },
+        node: {
+          extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+        },
+      },
+      "import-x/parsers": {
+        "@typescript-eslint/parser": [".ts", ".tsx"],
+      },
+      "import-x/external-module-folders": [
+        "node_modules",
+        "node_modules/@types",
+      ],
+    },
     rules: {
-      ...typescriptPlugin.configs.recommended.rules,
+      // VOLLE STRENGE - strict-type-checked + stylistic-type-checked (wie in Frontend Original)
+      ...typescriptPlugin.configs["strict-type-checked"].rules,
+      ...typescriptPlugin.configs["stylistic-type-checked"].rules,
+
       "prettier/prettier": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -561,13 +628,18 @@ export default [
       "@typescript-eslint/prefer-nullish-coalescing": "error",
       "@typescript-eslint/prefer-optional-chain": "error",
 
-      // STRICT MODE - Maximum Type Safety
+      // STRICT MODE - Maximum Type Safety (Frontend ist STRENGER!)
       "@typescript-eslint/strict-boolean-expressions": [
         "error",
         {
-          allowString: false,
-          allowNumber: false,
-          allowNullableObject: false,
+          // Frontend ist strenger als Backend (wie in Original Frontend Config)
+          allowString: false, // Frontend: KEINE strings in conditions!
+          allowNumber: false, // Frontend: KEINE numbers in conditions!
+          allowNullableObject: true, // Beide: true
+          allowNullableBoolean: false,
+          allowNullableString: false,
+          allowNullableNumber: false,
+          allowAny: false,
         },
       ],
       "@typescript-eslint/no-unsafe-assignment": "error",
@@ -584,7 +656,7 @@ export default [
 
       // Error Handling
       "no-unsafe-finally": "error",
-      "require-atomic-updates": "error",
+      "require-atomic-updates": "warn", // Auf warn wegen False-Positives
       // Naming convention rules for camelCase enforcement
       "@typescript-eslint/naming-convention": [
         "warn",
@@ -694,6 +766,20 @@ export default [
       // 'max-lines': ['warn', { max: 3000, skipBlankLines: true, skipComments: true }],
       // complexity: ['warn', { max: 15 }],
       // 'max-depth': ['warn', { max: 5 }],
+    },
+  },
+
+  // Frontend-specific DOM rules (nur für Browser-Code!)
+  {
+    files: ["frontend/**/*.ts", "frontend/**/*.tsx", "frontend/**/*.js"],
+    rules: {
+      // MODERNE DOM APIs - nur im Frontend relevant
+      "unicorn/prefer-modern-dom-apis": "warn", // .append() statt .appendChild()
+      "unicorn/prefer-query-selector": "warn", // querySelector statt getElementById
+      "unicorn/prefer-dom-node-remove": "warn", // node.remove() statt parent.removeChild()
+      "unicorn/prefer-dom-node-append": "warn", // append() statt appendChild()
+      "unicorn/prefer-dom-node-text-content": "warn", // textContent statt innerText
+      "unicorn/prefer-dom-node-dataset": "warn", // dataset statt getAttribute('data-')
     },
   },
 
@@ -966,7 +1052,6 @@ export default [
 
       // Compiled JS from TypeScript (aber nicht frontend/dist)
       "backend/**/*.js",
-      "frontend/**/*.js",
       "!frontend/dist/**/*.js",
       "!scripts/fix-esm-imports.js",
 

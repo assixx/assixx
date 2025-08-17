@@ -577,7 +577,7 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
     }));
 
     const results = await settingsService.bulkUpdateSettings(
-      type as "system" | "tenant" | "user",
+      type,
       settingsData,
       contextId,
       req.user.id,

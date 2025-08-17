@@ -102,7 +102,7 @@ class EmployeesManager {
 
     // Search
     document.querySelector('#employee-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#employee-search') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#employee-search');
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadEmployees();
     });
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveEmployee = async () => {
-      const form = document.querySelector('#employee-form') as HTMLFormElement | null;
+      const form = document.querySelector('#employee-form');
       if (form === null) return;
 
       const formData = new FormData(form);
@@ -581,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadDepartmentsForEmployeeSelect = async () => {
       const departments = await employeesManager?.loadDepartments();
-      const selectElement = document.querySelector('#employee-department-select') as HTMLSelectElement | null;
+      const selectElement = document.querySelector('#employee-department-select');
 
       if (selectElement !== null && departments !== undefined) {
         // Clear existing options and add default
@@ -601,8 +601,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadTeamsForEmployeeSelect = async () => {
       const teams = await employeesManager?.loadTeams();
-      const selectedDeptId = (document.querySelector('#employee-department-select') as HTMLSelectElement | null)?.value;
-      const selectElement = document.querySelector('#employee-team-select') as HTMLSelectElement | null;
+      const selectedDeptId = document.querySelector('#employee-department-select')?.value;
+      const selectElement = document.querySelector('#employee-team-select');
 
       if (selectElement !== null && teams !== undefined) {
         // Filter teams by department if one is selected
@@ -627,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Add form submit handler
-    const employeeForm = document.querySelector('#employee-form') as HTMLFormElement | null;
+    const employeeForm = document.querySelector('#employee-form');
     if (employeeForm !== null) {
       employeeForm.addEventListener('submit', (e) => {
         e.preventDefault();

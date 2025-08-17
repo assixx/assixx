@@ -50,10 +50,10 @@ export interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: Array<{
+    details?: {
       field: string;
       message: string;
-    }>;
+    }[];
   };
 }
 

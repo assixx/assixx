@@ -248,10 +248,10 @@ class KvpPage {
       });
 
       // Add additional filters
-      const statusFilter = (document.querySelector('#statusFilterValue') as HTMLInputElement).value;
-      const categoryFilter = (document.querySelector('#categoryFilterValue') as HTMLInputElement).value;
-      const departmentFilter = (document.querySelector('#departmentFilterValue') as HTMLInputElement).value;
-      const searchFilter = (document.querySelector('#searchFilter') as HTMLInputElement).value;
+      const statusFilter = document.querySelector('#statusFilterValue')!.value;
+      const categoryFilter = document.querySelector('#categoryFilterValue')!.value;
+      const departmentFilter = document.querySelector('#departmentFilterValue')!.value;
+      const searchFilter = document.querySelector('#searchFilter')!.value;
 
       if (statusFilter !== '') params.append('status', statusFilter);
       if (categoryFilter !== '') params.append('category_id', categoryFilter);
@@ -343,7 +343,7 @@ class KvpPage {
       card.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
         if (!target.closest('.action-btn')) {
-          const id = card.getAttribute('data-id');
+          const id = card.dataset.id;
           if (id !== null && id !== '') this.viewSuggestion(Number.parseInt(id, 10));
         }
       });
@@ -353,8 +353,8 @@ class KvpPage {
     container.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const action = btn.getAttribute('data-action');
-        const id = btn.getAttribute('data-id');
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
         if (action !== null && action !== '' && id !== null && id !== '') {
           void this.handleAction(action, Number.parseInt(id, 10));
         }
@@ -547,7 +547,7 @@ class KvpPage {
           b.classList.remove('active');
         });
         btn.classList.add('active');
-        this.currentFilter = btn.getAttribute('data-filter') ?? 'all';
+        this.currentFilter = btn.dataset.filter ?? 'all';
         void this.loadSuggestions();
       });
     });
@@ -564,7 +564,7 @@ class KvpPage {
 
     // Search filter with debounce
     let searchTimeout: number;
-    const searchInput = document.querySelector('#searchFilter') as HTMLInputElement;
+    const searchInput = document.querySelector('#searchFilter')!;
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimeout);
       searchTimeout = window.setTimeout(() => {
@@ -581,7 +581,7 @@ class KvpPage {
     }
 
     // Create form submission
-    const createForm = document.querySelector('#createKvpForm') as HTMLFormElement | null;
+    const createForm = document.querySelector('#createKvpForm');
     if (createForm !== null) {
       createForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -643,7 +643,7 @@ class KvpPage {
 
   private openCreateModal(): void {
     // Reset form
-    const form = document.querySelector('#createKvpForm') as HTMLFormElement;
+    const form = document.querySelector('#createKvpForm')!;
     form.reset();
 
     // Load categories into dropdown
@@ -666,7 +666,7 @@ class KvpPage {
 
   private async createSuggestion(): Promise<void> {
     try {
-      const form = document.querySelector('#createKvpForm') as HTMLFormElement;
+      const form = document.querySelector('#createKvpForm')!;
       const formData = new FormData(form);
 
       // Validate required fields

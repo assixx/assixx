@@ -220,7 +220,7 @@
     editingGroupId = null;
     const modalTitle = document.querySelector('#modalTitle');
     if (modalTitle) modalTitle.textContent = 'Neue Abteilungsgruppe erstellen';
-    const form = document.querySelector('#createGroupForm') as HTMLFormElement | null;
+    const form = document.querySelector('#createGroupForm');
     if (form !== null) {
       form.reset();
     }
@@ -244,9 +244,9 @@
     if (modalTitle) modalTitle.textContent = 'Gruppe bearbeiten';
 
     // Fill form
-    (document.querySelector('#groupName') as HTMLInputElement).value = group.name;
-    (document.querySelector('#groupDescription') as HTMLTextAreaElement).value = group.description ?? '';
-    (document.querySelector('#parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() ?? '';
+    document.querySelector('#groupName')!.value = group.name;
+    document.querySelector('#groupDescription')!.value = group.description ?? '';
+    document.querySelector('#parentGroup')!.value = group.parent_group_id?.toString() ?? '';
 
     // Update selects
     updateParentGroupSelect(groupId);
@@ -257,7 +257,7 @@
 
   // Update parent group select
   function updateParentGroupSelect(excludeId?: number) {
-    const select = document.querySelector('#parentGroup') as HTMLSelectElement | null;
+    const select = document.querySelector('#parentGroup');
     if (select === null) return;
 
     select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
@@ -310,12 +310,10 @@
       e.preventDefault();
 
       const formData = {
-        name: (document.querySelector('#groupName') as HTMLInputElement).value,
-        description: (document.querySelector('#groupDescription') as HTMLTextAreaElement).value,
+        name: document.querySelector('#groupName')!.value,
+        description: document.querySelector('#groupDescription')!.value,
         parentGroupId:
-          (document.querySelector('#parentGroup') as HTMLSelectElement).value !== ''
-            ? (document.querySelector('#parentGroup') as HTMLSelectElement).value
-            : null,
+          document.querySelector('#parentGroup')!.value !== '' ? document.querySelector('#parentGroup')!.value : null,
         departmentIds: [...document.querySelectorAll('input[name="department"]:checked')].map((cb) =>
           Number.parseInt((cb as HTMLInputElement).value, 10),
         ),

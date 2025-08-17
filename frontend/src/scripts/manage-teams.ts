@@ -109,7 +109,7 @@ class TeamsManager {
 
     // Delete modal
     document.querySelector('#confirm-delete-team')?.addEventListener('click', () => {
-      const deleteInput = document.querySelector('#delete-team-id') as HTMLInputElement | null;
+      const deleteInput = document.querySelector('#delete-team-id');
       if (deleteInput !== null && deleteInput.value !== '') {
         void this.confirmDeleteTeam(Number.parseInt(deleteInput.value, 10));
       }
@@ -141,7 +141,7 @@ class TeamsManager {
 
     // Search
     document.querySelector('#team-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#team-search') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#team-search');
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadTeams();
     });
@@ -310,7 +310,7 @@ class TeamsManager {
   deleteTeam(id: number): void {
     // Show confirmation modal
     const modal = document.querySelector('#delete-team-modal');
-    const deleteInput = document.querySelector('#delete-team-id') as HTMLInputElement | null;
+    const deleteInput = document.querySelector('#delete-team-id');
 
     if (modal === null || deleteInput === null) {
       showErrorAlert('Löschbestätigungs-Modal nicht gefunden');
@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (teamsManager !== null) {
           try {
             const departments = await teamsManager.loadDepartments();
-            const departmentSelect = document.querySelector('#team-department') as HTMLSelectElement | null;
+            const departmentSelect = document.querySelector('#team-department');
 
             if (departmentSelect && departments) {
               // Clear existing options and add placeholder
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
               method: 'GET',
             });
             const admins = mapUsers(usersResponse);
-            const teamLeadSelect = document.querySelector('#team-lead') as HTMLSelectElement | null;
+            const teamLeadSelect = document.querySelector('#team-lead');
 
             if (teamLeadSelect !== null) {
               // Clear existing options and add placeholder
@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Reset form
-        const form = document.querySelector('#team-form') as HTMLFormElement | null;
+        const form = document.querySelector('#team-form');
         if (form !== null) {
           form.reset();
         }
@@ -604,7 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as WindowWithTeamHandlers & { updateMemberSelection?: () => void }).updateMemberSelection = () => {
       const memberDropdown = document.querySelector('#team-members-dropdown');
       const memberDisplay = document.querySelector('#team-members-display');
-      const memberInput = document.querySelector('#team-members-select') as HTMLInputElement | null;
+      const memberInput = document.querySelector('#team-members-select');
 
       if (memberDropdown === null || memberDisplay === null || memberInput === null) {
         return;
@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
       const machineDropdown = document.querySelector('#team-machines-dropdown');
       const machineDisplay = document.querySelector('#team-machines-display');
-      const machineInput = document.querySelector('#team-machines-select') as HTMLInputElement | null;
+      const machineInput = document.querySelector('#team-machines-select');
 
       if (machineDropdown === null || machineDisplay === null || machineInput === null) {
         return;
@@ -674,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save team handler
     w.saveTeam = async () => {
-      const form = document.querySelector('#team-form') as HTMLFormElement | null;
+      const form = document.querySelector('#team-form');
       if (form === null) {
         return;
       }

@@ -25,7 +25,7 @@ import {
  */
 function mapValidationErrors(
   errors: ValidationError[],
-): Array<{ field: string; message: string }> {
+): { field: string; message: string }[] {
   return errors.map((error) => ({
     field: error.type === "field" ? error.path : "general",
     message: error.msg,
@@ -88,9 +88,7 @@ export const machinesController = {
             errorResponse(
               error.code,
               error.message,
-              error.details as
-                | Array<{ field: string; message: string }>
-                | undefined,
+              error.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
@@ -188,9 +186,7 @@ export const machinesController = {
             errorResponse(
               error.code,
               error.message,
-              error.details as
-                | Array<{ field: string; message: string }>
-                | undefined,
+              error.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
@@ -255,9 +251,7 @@ export const machinesController = {
             errorResponse(
               error.code,
               error.message,
-              error.details as
-                | Array<{ field: string; message: string }>
-                | undefined,
+              error.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
@@ -410,9 +404,7 @@ export const machinesController = {
             errorResponse(
               error.code,
               error.message,
-              error.details as
-                | Array<{ field: string; message: string }>
-                | undefined,
+              error.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {

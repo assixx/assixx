@@ -30,12 +30,12 @@ interface SearchResponse {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Bestehende Elemente
-  const employeeTableBody = document.querySelector('#employee-table-body') as HTMLTableSectionElement | null;
+  const employeeTableBody = document.querySelector('#employee-table-body');
 
   // Neue Elemente für die erweiterte Suche
-  const searchForm = document.querySelector('#employee-search-form') as HTMLFormElement | null;
-  const searchInput = document.querySelector('#employee-search-input') as HTMLInputElement | null;
-  const departmentFilter = document.querySelector('#department-filter') as HTMLSelectElement | null;
+  const searchForm = document.querySelector('#employee-search-form');
+  const searchInput = document.querySelector('#employee-search-input');
+  const departmentFilter = document.querySelector('#department-filter');
   const paginationContainer = document.querySelector('#pagination-container');
 
   // Event-Listener hinzufügen
@@ -296,8 +296,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Funktion zum Löschen eines Mitarbeiters
   function deleteEmployee(e: Event): void {
     const button = e.target as HTMLButtonElement;
-    const employeeId = button.getAttribute('data-id');
-    const employeeName = button.getAttribute('data-name');
+    const employeeId = button.dataset.id;
+    const employeeName = button.dataset.name;
 
     if (employeeId === null || employeeId.length === 0 || employeeName === null || employeeName.length === 0) return;
 
@@ -335,8 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Funktion zum Bearbeiten eines Mitarbeiters
   function editEmployee(e: Event): void {
     const button = e.target as HTMLButtonElement;
-    const employeeId = button.getAttribute('data-id');
-    const employeeName = button.getAttribute('data-name');
+    const employeeId = button.dataset.id;
+    const employeeName = button.dataset.name;
 
     if (employeeId === null || employeeId.length === 0 || employeeName === null || employeeName.length === 0) return;
 

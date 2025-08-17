@@ -181,7 +181,7 @@ class BlackboardWidget {
     // Add event listeners for confirmation buttons
     this.container.querySelectorAll('.confirm-entry-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const entryId = e.target.getAttribute('data-id');
+        const entryId = e.target.dataset.id;
         this.confirmEntry(entryId);
       });
     });
@@ -235,7 +235,7 @@ class BlackboardWidget {
     // Add event listeners for confirmation buttons
     this.container.querySelectorAll('.confirm-entry-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const entryId = e.target.getAttribute('data-id');
+        const entryId = e.target.dataset.id;
         this.confirmEntry(entryId);
       });
     });
@@ -277,7 +277,7 @@ class BlackboardWidget {
    */
   truncateText(text, maxLength) {
     // Remove HTML tags
-    const plainText = text.replace(/<\/?[^>]+(>|$)/g, '');
+    const plainText = text.replace(/<[^>]+(>|$)/g, '');
 
     if (plainText.length <= maxLength) {
       return plainText;

@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Elemente aus dem DOM holen
-  const createAdminForm = document.querySelector('#create-admin-form') as CreateAdminForm | null;
+  const createAdminForm = document.querySelector('#create-admin-form');
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
   const dashboardContent = document.querySelector('#dashboard-data');
 
@@ -129,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show employee number modal
   function showEmployeeNumberModal(): void {
     const modal = document.querySelector('#employeeNumberModal');
-    const form = document.querySelector('#employeeNumberForm') as HTMLFormElement | null;
-    const input = document.querySelector('#employeeNumberInput') as HTMLInputElement | null;
+    const form = document.querySelector('#employeeNumberForm');
+    const input = document.querySelector('#employeeNumberInput');
 
     if (modal === null || form === null || input === null) return;
 
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const authToken = getAuthToken();
       const userNameElement = document.querySelector('#user-name');
-      const userAvatar = document.querySelector('#user-avatar') as HTMLImageElement | null;
+      const userAvatar = document.querySelector('#user-avatar');
 
       if (authToken === null || authToken === '' || userNameElement === null) return;
 

@@ -58,7 +58,7 @@ router.put(
       body("isActive").optional().isBoolean(),
     ]),
   ),
-  typed.paramsBody<{ id: string }, unknown>(rootController.updateAdmin),
+  typed.paramsBody<{ id: string }>(rootController.updateAdmin),
 );
 
 router.delete(
@@ -135,7 +135,7 @@ router.put(
       body("isActive").optional().isBoolean(),
     ]),
   ),
-  typed.paramsBody<{ id: string }, unknown>(rootController.updateRootUser),
+  typed.paramsBody<{ id: string }>(rootController.updateRootUser),
 );
 
 router.delete(

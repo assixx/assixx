@@ -163,7 +163,7 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       console.info('[loadDepartmentsForEmployeeSelect] Adding department:', dept);
       const optionDiv = document.createElement('div');
       optionDiv.className = 'dropdown-option';
-      optionDiv.setAttribute('data-value', dept.id.toString());
+      optionDiv.dataset.value = dept.id.toString();
       optionDiv.textContent = dept.name;
       // Set onclick as an attribute so it shows in HTML and works correctly
       optionDiv.setAttribute('onclick', `selectDropdownOption('employee-department', '${dept.id}', '${dept.name}')`);
@@ -181,7 +181,7 @@ const showNewEmployeeModal = function (): void {
   const modal = document.querySelector('#employee-modal');
   if (modal) {
     // Formular zurücksetzen, falls es bereits benutzt wurde
-    const form = document.querySelector('#create-employee-form') as HTMLFormElement | null;
+    const form = document.querySelector('#create-employee-form');
     if (form !== null) {
       form.reset();
 
@@ -222,15 +222,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // loadHeaderUserInfo(); // Removed to avoid redundancy
 
   // Event Listeners for forms
-  const createEmployeeForm = document.querySelector('#create-employee-form') as CreateEmployeeForm | null;
+  const createEmployeeForm = document.querySelector('#create-employee-form');
   // const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
-  const departmentForm = document.querySelector('#department-form') as HTMLFormElement | null;
-  const teamForm = document.querySelector('#team-form') as HTMLFormElement | null;
+  const departmentForm = document.querySelector('#department-form');
+  const teamForm = document.querySelector('#team-form');
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null; // Not used - handled by unified-navigation
 
   // Buttons für Mitarbeiter-Modal
-  const newEmployeeBtn = document.querySelector('#new-employee-button') as HTMLButtonElement | null;
-  const employeesSectionNewBtn = document.querySelector('#employees-section-new-button') as HTMLButtonElement | null;
+  const newEmployeeBtn = document.querySelector('#new-employee-button');
+  const employeesSectionNewBtn = document.querySelector('#employees-section-new-button');
 
   // Event-Listener für Formulare
   if (createEmployeeForm) {
@@ -239,12 +239,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Live-Validierung für E-Mail und Passwort hinzufügen
-    const emailInput = document.querySelector('#email') as HTMLInputElement | null;
-    const emailConfirmInput = document.querySelector('#email_confirm') as HTMLInputElement | null;
+    const emailInput = document.querySelector('#email');
+    const emailConfirmInput = document.querySelector('#email_confirm');
     const emailError = document.querySelector('#email-error');
 
-    const passwordInput = document.querySelector('#password') as HTMLInputElement | null;
-    const passwordConfirmInput = document.querySelector('#password_confirm') as HTMLInputElement | null;
+    const passwordInput = document.querySelector('#password');
+    const passwordConfirmInput = document.querySelector('#password_confirm');
     const passwordError = document.querySelector('#password-error');
 
     // E-Mail-Validierung

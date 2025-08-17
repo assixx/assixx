@@ -160,7 +160,7 @@ export async function getEmployeeReport(filters: ReportFilters) {
       teamId: filters.teamId,
     },
     headcount: {
-      trend: (headcountTrend as Array<Record<string, unknown>>).map((row) =>
+      trend: (headcountTrend as Record<string, unknown>[]).map((row) =>
         dbToApi(row),
       ),
     },
@@ -224,7 +224,7 @@ export async function getDepartmentReport(filters: {
   // executeQuery returns [rows, fields], we need just the rows
   const rows = departmentData[0] || [];
 
-  const result = (rows as Array<Record<string, unknown>>).map(
+  const result = (rows as Record<string, unknown>[]).map(
     (dept: Record<string, unknown>) => ({
       departmentId: dept.department_id,
       departmentName: dept.department_name,
@@ -322,7 +322,7 @@ export async function getShiftReport(filters: ReportFilters) {
   );
   const peakHours = peakHoursRows || [];
 
-  const summary = (shiftSummary as Array<Record<string, unknown>>)[0] ?? {};
+  const summary = (shiftSummary as Record<string, unknown>[])[0] ?? {};
 
   return {
     period: {
@@ -338,12 +338,12 @@ export async function getShiftReport(filters: ReportFilters) {
     overtime: {
       totalHours: Number.parseFloat(String(summary.total_overtime_hours)) ?? 0,
       totalCost: Number.parseFloat(String(summary.total_overtime_cost)) ?? 0,
-      byDepartment: (overtimeByDept as Array<Record<string, unknown>>).map(
-        (row) => dbToApi(row),
+      byDepartment: (overtimeByDept as Record<string, unknown>[]).map((row) =>
+        dbToApi(row),
       ),
     },
     patterns: {
-      peakHours: (peakHours as Array<Record<string, unknown>>).map((row) =>
+      peakHours: (peakHours as Record<string, unknown>[]).map((row) =>
         dbToApi(row),
       ),
       understaffedShifts:
@@ -441,7 +441,7 @@ export async function getKvpReport(filters: {
     );
     const topPerformers = topPerformersRows || [];
 
-    const summary = (kvpSummary as Array<Record<string, unknown>>)[0] ?? {};
+    const summary = (kvpSummary as Record<string, unknown>[])[0] ?? {};
     const roi =
       Number(summary.total_cost) > 0
         ? (Number(summary.total_savings) - Number(summary.total_cost)) /
@@ -461,11 +461,11 @@ export async function getKvpReport(filters: {
         totalSavings: Number.parseFloat(String(summary.total_savings)) ?? 0,
         roi: roi,
       },
-      byCategory: (byCategory as Array<Record<string, unknown>>).map((row) =>
+      byCategory: (byCategory as Record<string, unknown>[]).map((row) =>
         dbToApi(row),
       ),
-      topPerformers: (topPerformers as Array<Record<string, unknown>>).map(
-        (row) => dbToApi(row),
+      topPerformers: (topPerformers as Record<string, unknown>[]).map((row) =>
+        dbToApi(row),
       ),
     };
   } catch (error: unknown) {
@@ -758,7 +758,7 @@ export async function exportReport(params: ExportReportParams) {
       return Buffer.from(JSON.stringify(reportData, null, 2));
     case "csv":
       // Would convert to CSV format
-      return convertToCSV(reportData as Record<string, unknown>);
+      return convertToCSV(reportData);
     default:
       throw new ServiceError(
         "Invalid export format",
@@ -810,7 +810,7 @@ async function getEmployeeMetrics(
     [tenantId],
   );
 
-  const metrics = (resultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (resultRows as Record<string, unknown>[])[0] ?? {};
   return {
     total: Number.parseInt(String(metrics.total)) ?? 0,
     active: Number.parseInt(String(metrics.active)) ?? 0,
@@ -846,7 +846,7 @@ async function getDepartmentMetrics(
     [tenantId, tenantId],
   );
 
-  const metrics = (deptResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (deptResultRows as Record<string, unknown>[])[0] ?? {};
   return {
     total: Number.parseInt(String(metrics.total)) ?? 0,
     avgEmployeesPerDept: Number.parseFloat(String(metrics.avg_employees)) ?? 0,
@@ -877,7 +877,7 @@ async function getShiftMetrics(
     [tenantId, dateFrom, dateTo],
   );
 
-  const metrics = (shiftResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (shiftResultRows as Record<string, unknown>[])[0] ?? {};
   return {
     totalScheduled: Number.parseInt(String(metrics.total_scheduled)) ?? 0,
     overtimeHours: Number.parseFloat(String(metrics.overtime_hours)) ?? 0,
@@ -911,7 +911,7 @@ async function getKvpMetrics(
     [tenantId, dateFrom, dateTo],
   );
 
-  const metrics = (kvpResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (kvpResultRows as Record<string, unknown>[])[0] ?? {};
   return {
     totalSuggestions: Number.parseInt(String(metrics.total_suggestions)) ?? 0,
     implemented: Number.parseInt(String(metrics.implemented)) ?? 0,
@@ -954,7 +954,7 @@ async function getSurveyMetrics(
     [tenantId, dateFrom, dateTo, tenantId],
   );
 
-  const metrics = (surveyResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (surveyResultRows as Record<string, unknown>[])[0] ?? {};
   return {
     active: Number.parseInt(String(metrics.active_surveys)) ?? 0,
     avgResponseRate: Number.parseFloat(String(metrics.avg_response_rate)) ?? 0,
@@ -1011,7 +1011,7 @@ async function getPerformanceMetrics(
     [tenantId, tenantId, dateFrom, dateTo],
   );
 
-  const kvpData = (kvpResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const kvpData = (kvpResultRows as Record<string, unknown>[])[0] ?? {};
   const kvpParticipation =
     Number(kvpData.total_employees) > 0
       ? Number(kvpData.participants) / Number(kvpData.total_employees)

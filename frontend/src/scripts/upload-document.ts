@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   void loadEmployees();
 
   // Register form events
-  const uploadForm = document.querySelector('#upload-form') as UploadForm | null;
+  const uploadForm = document.querySelector('#upload-form');
   if (uploadForm !== null) {
     console.info('Upload form found');
     uploadForm.addEventListener('submit', (e) => {
@@ -39,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // File selection event
-  const fileInput = document.querySelector('#file-input') as HTMLInputElement | null;
-  const fileNameSpan = document.querySelector('#file-name') as HTMLSpanElement | null;
+  const fileInput = document.querySelector('#file-input');
+  const fileNameSpan = document.querySelector('#file-name');
 
   if (fileInput !== null && fileNameSpan !== null) {
     fileInput.addEventListener('change', () => {
@@ -76,7 +76,7 @@ async function loadEmployees(): Promise<void> {
 
     if (response.ok) {
       const employees = (await response.json()) as User[];
-      const userSelect = document.querySelector('#user-select') as HTMLSelectElement | null;
+      const userSelect = document.querySelector('#user-select');
 
       if (userSelect !== null) {
         // Add employees to dropdown
@@ -175,7 +175,7 @@ async function uploadDocument(e: Event): Promise<void> {
       form.reset();
 
       // Reset file name display
-      const fileNameSpan = document.querySelector('#file-name') as HTMLSpanElement | null;
+      const fileNameSpan = document.querySelector('#file-name');
       if (fileNameSpan !== null) {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
       }

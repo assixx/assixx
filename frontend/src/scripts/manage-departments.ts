@@ -97,8 +97,8 @@ class DepartmentsManager {
       const option = target.closest('.dropdown-option');
 
       if (option !== null) {
-        const value = option.getAttribute('data-value') ?? '';
-        const text = option.getAttribute('data-text') ?? '';
+        const value = option.dataset.value ?? '';
+        const text = option.dataset.text ?? '';
 
         // Call the global selectDropdownOption function safely
         // Using window extension interface for type safety
@@ -144,7 +144,7 @@ class DepartmentsManager {
 
     // Search
     document.querySelector('#department-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#department-search') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#department-search');
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadDepartments();
     });
@@ -386,8 +386,8 @@ class DepartmentsManager {
         // Add default option
         const defaultOption = document.createElement('div');
         defaultOption.className = 'dropdown-option';
-        defaultOption.setAttribute('data-value', '');
-        defaultOption.setAttribute('data-text', 'Kein Bereich');
+        defaultOption.dataset.value = '';
+        defaultOption.dataset.text = 'Kein Bereich';
         defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Bereich')}`;
         dropdown.append(defaultOption);
 
@@ -395,8 +395,8 @@ class DepartmentsManager {
         response.forEach((area) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
-          optionDiv.setAttribute('data-value', area.id.toString());
-          optionDiv.setAttribute('data-text', area.name);
+          optionDiv.dataset.value = area.id.toString();
+          optionDiv.dataset.text = area.name;
           optionDiv.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(area.name)}`;
           dropdown.append(optionDiv);
         });
@@ -427,8 +427,8 @@ class DepartmentsManager {
         // Add default option
         const defaultOption = document.createElement('div');
         defaultOption.className = 'dropdown-option';
-        defaultOption.setAttribute('data-value', '');
-        defaultOption.setAttribute('data-text', 'Kein Manager');
+        defaultOption.dataset.value = '';
+        defaultOption.dataset.text = 'Kein Manager';
         defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Manager')}`;
         dropdown.append(defaultOption);
 
@@ -436,12 +436,12 @@ class DepartmentsManager {
         managers.forEach((manager) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
-          optionDiv.setAttribute('data-value', manager.id.toString());
+          optionDiv.dataset.value = manager.id.toString();
           const name =
             manager.firstName !== undefined && manager.lastName !== undefined
               ? `${manager.firstName} ${manager.lastName}`
               : manager.username;
-          optionDiv.setAttribute('data-text', name);
+          optionDiv.dataset.text = name;
           optionDiv.innerHTML = `<i class="fas fa-user-tie"></i> ${this.escapeHtml(name)}`;
           dropdown.append(optionDiv);
         });
@@ -469,8 +469,8 @@ class DepartmentsManager {
         // Add default option
         const defaultOption = document.createElement('div');
         defaultOption.className = 'dropdown-option';
-        defaultOption.setAttribute('data-value', '');
-        defaultOption.setAttribute('data-text', 'Keine übergeordnete Abteilung');
+        defaultOption.dataset.value = '';
+        defaultOption.dataset.text = 'Keine übergeordnete Abteilung';
         defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Keine übergeordnete Abteilung')}`;
         dropdown.append(defaultOption);
 
@@ -478,8 +478,8 @@ class DepartmentsManager {
         response.map(mapDepartment).forEach((dept) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
-          optionDiv.setAttribute('data-value', dept.id.toString());
-          optionDiv.setAttribute('data-text', dept.name);
+          optionDiv.dataset.value = dept.id.toString();
+          optionDiv.dataset.text = dept.name;
           optionDiv.innerHTML = `<i class="fas fa-sitemap"></i> ${this.escapeHtml(dept.name)}`;
           dropdown.append(optionDiv);
         });
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveDepartment = async () => {
-      const form = document.querySelector('#department-form') as HTMLFormElement | null;
+      const form = document.querySelector('#department-form');
       if (form === null) return;
 
       const formData = new FormData(form);

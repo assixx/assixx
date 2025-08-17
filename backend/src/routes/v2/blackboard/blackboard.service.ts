@@ -114,7 +114,7 @@ export class BlackboardService {
         tenantId,
         userId,
         options,
-      )) as unknown as {
+      )) as {
         entries: unknown[];
         pagination: {
           total: number;
@@ -393,7 +393,7 @@ export class BlackboardService {
    * @param entry
    */
   private transformEntry(entry: DbBlackboardEntry): BlackboardEntry {
-    const transformed = dbToApi(entry) as Record<string, unknown>;
+    const transformed = dbToApi(entry);
 
     // Handle special transformations
     transformed.isConfirmed = Boolean(entry.is_confirmed);

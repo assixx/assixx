@@ -140,7 +140,7 @@ const sectionMappings = {
 // CSS einmal einfügen
 function injectStyles() {
   // Prüfen ob Styles bereits eingefügt wurden
-  if (document.getElementById('breadcrumb-styles')) {
+  if (document.querySelector('#breadcrumb-styles')) {
     return;
   }
 
@@ -255,11 +255,11 @@ function generateBreadcrumbDOM(items, config) {
       if (config.showIcons && item.icon) {
         const icon = document.createElement('i');
         icon.className = `fas ${escapeHtml(item.icon)} breadcrumb-icon`;
-        span.appendChild(icon);
-        span.appendChild(document.createTextNode(' '));
+        span.append(icon);
+        span.append(document.createTextNode(' '));
       }
-      span.appendChild(document.createTextNode(item.label));
-      breadcrumbItem.appendChild(span);
+      span.append(document.createTextNode(item.label));
+      breadcrumbItem.append(span);
     } else {
       // Klickbarer Link
       const link = document.createElement('a');
@@ -269,14 +269,14 @@ function generateBreadcrumbDOM(items, config) {
       if (config.showIcons && item.icon) {
         const icon = document.createElement('i');
         icon.className = `fas ${escapeHtml(item.icon)} breadcrumb-icon`;
-        link.appendChild(icon);
-        link.appendChild(document.createTextNode(' '));
+        link.append(icon);
+        link.append(document.createTextNode(' '));
       }
-      link.appendChild(document.createTextNode(item.label));
-      breadcrumbItem.appendChild(link);
+      link.append(document.createTextNode(item.label));
+      breadcrumbItem.append(link);
     }
 
-    nav.appendChild(breadcrumbItem);
+    nav.append(breadcrumbItem);
 
     // Separator (nicht nach dem letzten Item)
     if (index < items.length - 1) {
@@ -284,8 +284,8 @@ function generateBreadcrumbDOM(items, config) {
       separator.className = 'breadcrumb-separator';
       const sepIcon = document.createElement('i');
       sepIcon.className = `fas ${escapeHtml(config.separator)}`;
-      separator.appendChild(sepIcon);
-      nav.appendChild(separator);
+      separator.append(sepIcon);
+      nav.append(separator);
     }
   });
 
@@ -465,7 +465,7 @@ function generateBreadcrumbsFromURL() {
         } else {
           // Fallback für unbekannte Sections - sicher escapen
           items.push({
-            label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^a-zA-Z0-9-_\s]/g, ''),
+            label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^\s\w\-]/g, ''),
             current: true,
           });
         }
@@ -482,7 +482,7 @@ function generateBreadcrumbsFromURL() {
         .split('/')
         .pop()
         .replace(/-/g, ' ')
-        .replace(/[^a-zA-Z0-9\s]/g, '');
+        .replace(/[^\s0-9A-Za-z]/g, '');
       items.push({
         label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
         current: true,
@@ -514,7 +514,7 @@ export function initBreadcrumb(customItems = null, customConfig = {}) {
   // DOM sicher generieren und einfügen
   const breadcrumbElement = generateBreadcrumbDOM(items, config);
   container.innerHTML = '';
-  container.appendChild(breadcrumbElement);
+  container.append(breadcrumbElement);
 
   // Event für debugging
   console.info('Breadcrumb initialisiert:', items);

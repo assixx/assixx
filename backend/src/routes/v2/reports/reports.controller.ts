@@ -360,7 +360,7 @@ export const exportReport = async (
 
     const exportData = await reportsService.exportReport({
       tenantId: req.user.tenant_id,
-      reportType: type as string,
+      reportType: type,
       format: format as "pdf" | "excel" | "csv",
       filters: {
         dateFrom: filters.dateFrom as string | undefined,

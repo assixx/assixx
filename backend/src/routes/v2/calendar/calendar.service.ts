@@ -691,8 +691,8 @@ export class CalendarService {
       return {
         totalUnread,
         eventsRequiringResponse: events.map((event) => ({
-          id: event.id as number,
-          title: event.title as string,
+          id: event.id,
+          title: event.title,
           startTime: event.startTime as string,
           requiresResponse: true,
         })),

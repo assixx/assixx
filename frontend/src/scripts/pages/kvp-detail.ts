@@ -466,7 +466,7 @@ class KvpDetailPage {
       // Add click handlers
       container.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
-          const id = item.getAttribute('data-id');
+          const id = item.dataset.id;
           if (id !== null && id !== '') {
             this.downloadAttachment(Number.parseInt(id, 10));
           }
@@ -486,7 +486,7 @@ class KvpDetailPage {
 
   private setupEventListeners(): void {
     // Comment form
-    const commentForm = document.querySelector('#commentForm') as HTMLFormElement;
+    const commentForm = document.querySelector('#commentForm')!;
     commentForm.addEventListener('submit', (e) => {
       e.preventDefault();
       void (async () => {
@@ -536,8 +536,8 @@ class KvpDetailPage {
   }
 
   private async addComment(): Promise<void> {
-    const input = document.querySelector('#commentInput') as HTMLTextAreaElement;
-    const internalCheckbox = document.querySelector('#internalComment') as HTMLInputElement;
+    const input = document.querySelector('#commentInput')!;
+    const internalCheckbox = document.querySelector('#internalComment')!;
 
     const comment = input.value.trim();
     if (comment === '') return;
