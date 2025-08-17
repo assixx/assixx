@@ -126,7 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Fehler:', error.message);
 
         if (employeeTableBody !== null) {
-          employeeTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Fehler beim Laden der Mitarbeiter: ${error.message ?? 'Unbekannter Fehler'}</td></tr>`;
+          employeeTableBody.innerHTML = ''; // Clear existing content
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.setAttribute('colspan', '5');
+          cell.className = 'text-center';
+          cell.textContent = `Fehler beim Laden der Mitarbeiter: ${error.message ?? 'Unbekannter Fehler'}`;
+          row.appendChild(cell);
+          employeeTableBody.appendChild(row);
         }
       }
     } catch (error) {

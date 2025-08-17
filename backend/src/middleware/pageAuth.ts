@@ -237,7 +237,14 @@ export function protectPage(
   next: NextFunction,
 ): void {
   const pagePath = req.path;
-  const pageConfig = pagePermissions[pagePath];
+
+  // Use Object.prototype.hasOwnProperty for safe property access
+  const pageConfig = Object.prototype.hasOwnProperty.call(
+    pagePermissions,
+    pagePath,
+  )
+    ? pagePermissions[pagePath]
+    : undefined;
 
   // If page is not in our config, allow it (static assets, etc.)
   if (pageConfig === undefined) {

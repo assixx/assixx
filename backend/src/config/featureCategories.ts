@@ -154,13 +154,19 @@ export function getFeatureCategory(
   featureCode: string,
 ): FeatureCategoryInfo | null {
   for (const [categoryKey, category] of Object.entries(featureCategories)) {
-    if (featureCode in category.features) {
-      return {
-        categoryKey,
-        categoryName: category.name,
-        categoryIcon: category.icon,
-        feature: category.features[featureCode],
-      };
+    // Use Object.prototype.hasOwnProperty to prevent prototype pollution
+    if (Object.prototype.hasOwnProperty.call(category.features, featureCode)) {
+      // Use Map for safe property access
+      const featuresMap = new Map(Object.entries(category.features));
+      const feature = featuresMap.get(featureCode);
+      if (feature !== undefined) {
+        return {
+          categoryKey,
+          categoryName: category.name,
+          categoryIcon: category.icon,
+          feature,
+        };
+      }
     }
   }
   return null;
@@ -171,20 +177,20 @@ export function getFeatureCategory(
  * @returns Features organized by category
  */
 export function getFeaturesByCategory(): Record<string, CategoryWithFeatures> {
-  const result: Record<string, CategoryWithFeatures> = {};
+  const result = new Map<string, CategoryWithFeatures>();
 
   for (const [categoryKey, category] of Object.entries(featureCategories)) {
-    result[categoryKey] = {
+    result.set(categoryKey, {
       name: category.name,
       icon: category.icon,
       features: Object.entries(category.features).map(([code, feature]) => ({
         code,
         ...feature,
       })),
-    };
+    });
   }
 
-  return result;
+  return Object.fromEntries(result);
 }
 
 /**
@@ -193,6 +199,13 @@ export function getFeaturesByCategory(): Record<string, CategoryWithFeatures> {
  * @returns Array of feature codes
  */
 export function getFeatureCodesForCategory(categoryKey: string): string[] {
-  const category = featureCategories[categoryKey];
+  // Use Map for safe property access to prevent object injection
+  const categoriesMap = new Map(Object.entries(featureCategories));
+  const category = categoriesMap.get(categoryKey);
+
+  if (category === undefined) {
+    return [];
+  }
+
   return Object.keys(category.features);
 }

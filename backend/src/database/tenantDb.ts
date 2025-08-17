@@ -12,16 +12,17 @@ import * as mysql from "mysql2/promise";
 // Get project root directory
 const projectRoot = process.cwd();
 
-// Cache für Datenbankverbindungen
-const connectionCache: Record<string, Pool> = {};
+// Cache für Datenbankverbindungen - Use Map for safe access
+const connectionCache = new Map<string, Pool>();
 
 /**
  * Erstellt eine Datenbankverbindung für einen spezifischen Tenant
  */
 export async function createTenantConnection(tenantId: string): Promise<Pool> {
   // Prüfe ob Verbindung bereits im Cache
-  if (tenantId in connectionCache) {
-    return connectionCache[tenantId];
+  const cachedConnection = connectionCache.get(tenantId);
+  if (cachedConnection !== undefined) {
+    return cachedConnection;
   }
 
   try {
@@ -49,7 +50,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     connection.release();
 
     // Im Cache speichern
-    connectionCache[tenantId] = pool;
+    connectionCache.set(tenantId, pool);
 
     console.info(`Datenbankverbindung für Tenant ${tenantId} erstellt`);
     return pool;
@@ -130,7 +131,7 @@ export async function initializeTenantDatabase(
  * Sollte beim Herunterfahren der Anwendung aufgerufen werden
  */
 export async function closeAllConnections(): Promise<void> {
-  for (const [tenantId, pool] of Object.entries(connectionCache)) {
+  for (const [tenantId, pool] of connectionCache.entries()) {
     try {
       await pool.end();
       console.info(`Verbindung für Tenant ${tenantId} geschlossen`);

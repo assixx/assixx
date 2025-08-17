@@ -1083,7 +1083,15 @@
               // Bild-Element
               const imgElem = document.createElement('div');
               if (member.profile_picture) {
-                imgElem.innerHTML = `<img src="/${member.profile_picture}" alt="${member.first_name}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">`;
+                // Sicher: DOM-Methoden verwenden
+                const img = document.createElement('img');
+                img.src = `/${member.profile_picture}`;
+                img.alt = member.first_name || '';
+                img.style.width = '30px';
+                img.style.height = '30px';
+                img.style.borderRadius = '50%';
+                img.style.objectFit = 'cover';
+                imgElem.appendChild(img);
               } else {
                 imgElem.className = 'team-member-img';
                 imgElem.textContent = initials;

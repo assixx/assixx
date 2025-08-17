@@ -4,6 +4,8 @@ import prettierConfig from "eslint-config-prettier";
 import typescript from "@typescript-eslint/parser";
 import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 import importPlugin from "eslint-plugin-import-x";
+import securityPlugin from "eslint-plugin-security";
+import noUnsanitizedPlugin from "eslint-plugin-no-unsanitized";
 
 export default [
   // Base JavaScript configuration
@@ -190,6 +192,44 @@ export default [
       // 'max-lines': ['warn', { max: 3000, skipBlankLines: true, skipComments: true }],
       // complexity: ['warn', { max: 15 }],
       // 'max-depth': ['warn', { max: 5 }],
+    },
+  },
+
+  // Security configuration for all TypeScript/JavaScript files
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    plugins: {
+      security: securityPlugin,
+      "no-unsanitized": noUnsanitizedPlugin,
+    },
+    rules: {
+      // Security plugin rules
+      "security/detect-eval-with-expression": "error",
+      "security/detect-non-literal-fs-filename": "error",
+      "security/detect-non-literal-regexp": "error",
+      "security/detect-unsafe-regex": "error",
+      "security/detect-buffer-noassert": "error",
+      "security/detect-child-process": "warn",
+      "security/detect-disable-mustache-escape": "error",
+      "security/detect-no-csrf-before-method-override": "error",
+      "security/detect-possible-timing-attacks": "warn",
+      "security/detect-pseudoRandomBytes": "error",
+      "security/detect-object-injection": "error",
+
+      // No-unsanitized plugin rules for DOM XSS prevention
+      "no-unsanitized/method": "error",
+      "no-unsanitized/property": "error",
+
+      // Custom rule to prevent onclick attributes
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.property.name='setAttribute'][arguments.0.value='onclick']",
+          message:
+            "Use addEventListener instead of onclick attributes to prevent XSS",
+        },
+      ],
     },
   },
 

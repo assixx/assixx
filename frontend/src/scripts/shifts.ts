@@ -1237,7 +1237,10 @@ class ShiftPlanningSystem {
                 // Show at least the ID if employee data not found
                 const tempCard = document.createElement('div');
                 tempCard.className = 'employee-card';
-                tempCard.innerHTML = `<div class="employee-name">Mitarbeiter #${employeeId}</div>`;
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'employee-name';
+                nameDiv.textContent = `Mitarbeiter #${employeeId}`;
+                tempCard.appendChild(nameDiv);
                 assignmentDiv.appendChild(tempCard);
               }
             });
