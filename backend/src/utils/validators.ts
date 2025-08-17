@@ -44,7 +44,7 @@ export function isValidEmail(email: string): boolean {
  */
 export function isValidPhone(phone: string): boolean {
   // Remove spaces and special characters
-  const cleaned = phone.replace(/[\s()\-]/g, "");
+  const cleaned = phone.replace(/[\s()-]/g, "");
   // Check for German phone number format
   const phoneRegex = /^(\+49|0049|0)[1-9]\d{1,14}$/;
   return phoneRegex.test(cleaned);

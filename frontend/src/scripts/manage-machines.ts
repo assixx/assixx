@@ -98,7 +98,7 @@ class MachinesManager {
       const target = event.target as HTMLElement;
       const option = target.closest('.dropdown-option');
 
-      if (option !== null) {
+      if (option instanceof HTMLElement) {
         const value = option.dataset.value ?? '';
         const text = option.dataset.text ?? '';
 
@@ -139,24 +139,24 @@ class MachinesManager {
 
     // Search
     document.querySelector('#machine-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#machine-search');
-      this.searchTerm = searchInput !== null ? searchInput.value : '';
+      const searchInput = document.querySelector<HTMLInputElement>('#machine-search');
+      this.searchTerm = searchInput?.value ?? '';
       void this.loadMachines();
     });
 
     // Enter key on search
-    document.querySelector('#machine-search')?.addEventListener('keypress', (e) => {
+    const searchInputElement = document.querySelector<HTMLInputElement>('#machine-search');
+    searchInputElement?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        const searchInput = e.target as HTMLInputElement;
-        this.searchTerm = searchInput.value;
+        this.searchTerm = searchInputElement.value;
         void this.loadMachines();
       }
     });
 
     // Delete modal event listeners
     document.querySelector('#confirm-delete-machine')?.addEventListener('click', () => {
-      const deleteInput = document.querySelector('#delete-machine-id');
-      if (deleteInput !== null && deleteInput.value !== '') {
+      const deleteInput = document.querySelector<HTMLInputElement>('#delete-machine-id');
+      if (deleteInput?.value !== undefined && deleteInput.value !== '') {
         void this.confirmDeleteMachine(Number.parseInt(deleteInput.value, 10));
       }
     });
@@ -253,7 +253,7 @@ class MachinesManager {
       <tr>
         <td>
           <strong>${machine.name}</strong>
-          ${machine.qrCode !== undefined && machine.qrCode.length > 0 ? `<i class="fas fa-qrcode ms-2" title="QR-Code verfügbar"></i>` : ''}
+          ${machine.qrCode !== undefined && machine.qrCode !== '' ? `<i class="fas fa-qrcode ms-2" title="QR-Code verfügbar"></i>` : ''}
         </td>
         <td>${machine.model ?? '-'}</td>
         <td>${machine.manufacturer ?? '-'}</td>
@@ -372,7 +372,7 @@ class MachinesManager {
   async deleteMachine(id: number): Promise<void> {
     // Show delete confirmation modal
     const modal = document.querySelector('#delete-machine-modal');
-    const deleteInput = document.querySelector('#delete-machine-id');
+    const deleteInput = document.querySelector<HTMLInputElement>('#delete-machine-id');
 
     if (modal !== null && deleteInput !== null) {
       deleteInput.value = id.toString();
@@ -563,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('active');
 
         // Reset form
-        const form = document.querySelector('#machineForm');
+        const form = document.querySelector<HTMLFormElement>('#machineForm');
         if (form !== null) form.reset();
 
         // Load departments and areas for dropdowns
@@ -584,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save machine handler
     w.saveMachine = async () => {
-      const form = document.querySelector('#machineForm');
+      const form = document.querySelector<HTMLFormElement>('#machineForm');
       if (form === null) return;
 
       const formData = new FormData(form);
