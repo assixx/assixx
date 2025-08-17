@@ -67,6 +67,52 @@ class DepartmentsManager {
     this.initializeEventListeners();
   }
 
+  /**
+   * Escapes HTML to prevent XSS attacks
+   * @param text - The text to escape
+   * @returns Escaped HTML string
+   */
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Sets up event delegation for dropdown clicks
+   * @param dropdownId - The dropdown container ID
+   * @param selectId - The select input ID prefix
+   */
+  private setupDropdownEventDelegation(dropdownId: string, selectId: string): void {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+
+    // Remove any existing listeners to prevent duplicates
+    const newDropdown = dropdown.cloneNode(true) as HTMLElement;
+    dropdown.parentNode?.replaceChild(newDropdown, dropdown);
+
+    // Add event delegation
+    newDropdown.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      const option = target.closest('.dropdown-option');
+
+      if (option !== null) {
+        const value = option.getAttribute('data-value') ?? '';
+        const text = option.getAttribute('data-text') ?? '';
+
+        // Call the global selectDropdownOption function safely
+        // Using window extension interface for type safety
+        const windowWithSelect = window as Window & {
+          selectDropdownOption?: (dropdownId: string, value: string, text: string) => void;
+        };
+
+        if (typeof windowWithSelect.selectDropdownOption === 'function') {
+          windowWithSelect.selectDropdownOption(selectId, value, text);
+        }
+      }
+    });
+  }
+
   private async confirmAction(message: string): Promise<boolean> {
     // TODO: Implement custom confirmation modal
     // For now, show error and block action for safety
@@ -336,23 +382,28 @@ class DepartmentsManager {
 
       const dropdown = document.getElementById('department-area-dropdown');
       if (dropdown !== null) {
-        dropdown.innerHTML = `
-          <div class="dropdown-option" data-value="" onclick="selectDropdownOption('department-area', '', 'Kein Bereich')">
-            <i class="fas fa-times-circle"></i> Kein Bereich
-          </div>
-        `;
+        dropdown.innerHTML = '';
 
+        // Add default option
+        const defaultOption = document.createElement('div');
+        defaultOption.className = 'dropdown-option';
+        defaultOption.setAttribute('data-value', '');
+        defaultOption.setAttribute('data-text', 'Kein Bereich');
+        defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Bereich')}`;
+        dropdown.appendChild(defaultOption);
+
+        // Add area options
         response.forEach((area) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
           optionDiv.setAttribute('data-value', area.id.toString());
-          optionDiv.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${area.name}`;
-          optionDiv.setAttribute(
-            'onclick',
-            `selectDropdownOption('department-area', '${area.id}', '${area.name.replace(/'/g, "\\'")}')`,
-          );
+          optionDiv.setAttribute('data-text', area.name);
+          optionDiv.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(area.name)}`;
           dropdown.appendChild(optionDiv);
         });
+
+        // Setup event delegation
+        this.setupDropdownEventDelegation('department-area-dropdown', 'department-area');
 
         console.info('[DepartmentsManager] Loaded areas:', response.length);
       }
@@ -372,12 +423,17 @@ class DepartmentsManager {
 
       const dropdown = document.getElementById('department-manager-dropdown');
       if (dropdown !== null) {
-        dropdown.innerHTML = `
-          <div class="dropdown-option" data-value="" onclick="selectDropdownOption('department-manager', '', 'Kein Manager')">
-            <i class="fas fa-times-circle"></i> Kein Manager
-          </div>
-        `;
+        dropdown.innerHTML = '';
 
+        // Add default option
+        const defaultOption = document.createElement('div');
+        defaultOption.className = 'dropdown-option';
+        defaultOption.setAttribute('data-value', '');
+        defaultOption.setAttribute('data-text', 'Kein Manager');
+        defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Manager')}`;
+        dropdown.appendChild(defaultOption);
+
+        // Add manager options
         managers.forEach((manager) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
@@ -386,13 +442,13 @@ class DepartmentsManager {
             manager.firstName !== undefined && manager.lastName !== undefined
               ? `${manager.firstName} ${manager.lastName}`
               : manager.username;
-          optionDiv.innerHTML = `<i class="fas fa-user-tie"></i> ${name}`;
-          optionDiv.setAttribute(
-            'onclick',
-            `selectDropdownOption('department-manager', '${manager.id}', '${name.replace(/'/g, "\\'")}')`,
-          );
+          optionDiv.setAttribute('data-text', name);
+          optionDiv.innerHTML = `<i class="fas fa-user-tie"></i> ${this.escapeHtml(name)}`;
           dropdown.appendChild(optionDiv);
         });
+
+        // Setup event delegation
+        this.setupDropdownEventDelegation('department-manager-dropdown', 'department-manager');
 
         console.info('[DepartmentsManager] Loaded managers:', managers.length);
       }
@@ -409,23 +465,28 @@ class DepartmentsManager {
 
       const dropdown = document.getElementById('department-parent-dropdown');
       if (dropdown !== null) {
-        dropdown.innerHTML = `
-          <div class="dropdown-option" data-value="" onclick="selectDropdownOption('department-parent', '', 'Keine übergeordnete Abteilung')">
-            <i class="fas fa-times-circle"></i> Keine übergeordnete Abteilung
-          </div>
-        `;
+        dropdown.innerHTML = '';
 
+        // Add default option
+        const defaultOption = document.createElement('div');
+        defaultOption.className = 'dropdown-option';
+        defaultOption.setAttribute('data-value', '');
+        defaultOption.setAttribute('data-text', 'Keine übergeordnete Abteilung');
+        defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Keine übergeordnete Abteilung')}`;
+        dropdown.appendChild(defaultOption);
+
+        // Add department options
         response.map(mapDepartment).forEach((dept) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
           optionDiv.setAttribute('data-value', dept.id.toString());
-          optionDiv.innerHTML = `<i class="fas fa-sitemap"></i> ${dept.name}`;
-          optionDiv.setAttribute(
-            'onclick',
-            `selectDropdownOption('department-parent', '${dept.id}', '${dept.name.replace(/'/g, "\\'")}')`,
-          );
+          optionDiv.setAttribute('data-text', dept.name);
+          optionDiv.innerHTML = `<i class="fas fa-sitemap"></i> ${this.escapeHtml(dept.name)}`;
           dropdown.appendChild(optionDiv);
         });
+
+        // Setup event delegation
+        this.setupDropdownEventDelegation('department-parent-dropdown', 'department-parent');
 
         console.info('[DepartmentsManager] Loaded parent departments:', response.length);
       }

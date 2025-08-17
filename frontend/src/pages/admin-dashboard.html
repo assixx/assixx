@@ -2241,13 +2241,31 @@
               const optionDiv = document.createElement('div');
               optionDiv.className = 'dropdown-option';
               optionDiv.setAttribute('data-value', dept.id.toString());
-              optionDiv.innerHTML = `<i class="fas fa-building"></i> ${dept.name}`;
-              optionDiv.setAttribute(
-                'onclick',
-                `selectDropdownOption('employeeDepartment', '${dept.id}', '${dept.name.replace(/'/g, "\\'")}')`,
-              );
+              optionDiv.setAttribute('data-text', dept.name);
+              // Escape HTML to prevent XSS
+              const textNode = document.createTextNode(dept.name);
+              const iconElement = document.createElement('i');
+              iconElement.className = 'fas fa-building';
+              optionDiv.appendChild(iconElement);
+              optionDiv.appendChild(document.createTextNode(' '));
+              optionDiv.appendChild(textNode);
               dropdown.appendChild(optionDiv);
             });
+
+            // Setup event delegation for dropdown clicks
+            const dropdownEl = document.getElementById('employee-department-dropdown');
+            if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
+              dropdownEl.setAttribute('data-listener-attached', 'true');
+              dropdownEl.addEventListener('click', (event) => {
+                const target = event.target;
+                const option = target.closest('.dropdown-option');
+                if (option) {
+                  const value = option.getAttribute('data-value') || '';
+                  const text = option.getAttribute('data-text') || '';
+                  selectDropdownOption('employeeDepartment', value, text);
+                }
+              });
+            }
 
             console.info('Loaded departments for employee select:', departments.length);
           } else {
@@ -2304,13 +2322,31 @@
               optionDiv.className = 'dropdown-option';
               optionDiv.setAttribute('data-value', team.id.toString());
               const teamDisplay = team.departmentName ? `${team.name} (${team.departmentName})` : team.name;
-              optionDiv.innerHTML = `<i class="fas fa-users"></i> ${teamDisplay}`;
-              optionDiv.setAttribute(
-                'onclick',
-                `selectDropdownOption('employeeTeam', '${team.id}', '${teamDisplay.replace(/'/g, "\\'")}')`,
-              );
+              optionDiv.setAttribute('data-text', teamDisplay);
+              // Escape HTML to prevent XSS
+              const textNode = document.createTextNode(teamDisplay);
+              const iconElement = document.createElement('i');
+              iconElement.className = 'fas fa-users';
+              optionDiv.appendChild(iconElement);
+              optionDiv.appendChild(document.createTextNode(' '));
+              optionDiv.appendChild(textNode);
               dropdown.appendChild(optionDiv);
             });
+
+            // Setup event delegation for dropdown clicks
+            const dropdownEl = document.getElementById('employee-team-dropdown');
+            if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
+              dropdownEl.setAttribute('data-listener-attached', 'true');
+              dropdownEl.addEventListener('click', (event) => {
+                const target = event.target;
+                const option = target.closest('.dropdown-option');
+                if (option) {
+                  const value = option.getAttribute('data-value') || '';
+                  const text = option.getAttribute('data-text') || '';
+                  selectDropdownOption('employeeTeam', value, text);
+                }
+              });
+            }
 
             console.info(
               `Loaded teams for employee select: ${teams.length} teams ${selectedDeptId ? 'for department ' + selectedDeptId : '(all)'}`,

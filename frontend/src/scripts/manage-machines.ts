@@ -80,6 +80,41 @@ class MachinesManager {
     void this.loadMachines();
   }
 
+  /**
+   * Sets up event delegation for dropdown clicks
+   * @param dropdownId - The dropdown container ID
+   * @param selectId - The select input ID prefix
+   */
+  private setupDropdownEventDelegation(dropdownId: string, selectId: string): void {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+
+    // Remove any existing listeners to prevent duplicates
+    const newDropdown = dropdown.cloneNode(true) as HTMLElement;
+    dropdown.parentNode?.replaceChild(newDropdown, dropdown);
+
+    // Add event delegation
+    newDropdown.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      const option = target.closest('.dropdown-option');
+
+      if (option !== null) {
+        const value = option.getAttribute('data-value') ?? '';
+        const text = option.getAttribute('data-text') ?? '';
+
+        // Call the global selectDropdownOption function safely
+        // Using window extension interface for type safety
+        const windowWithSelect = window as Window & {
+          selectDropdownOption?: (dropdownId: string, value: string, text: string) => void;
+        };
+
+        if (typeof windowWithSelect.selectDropdownOption === 'function') {
+          windowWithSelect.selectDropdownOption(selectId, value, text);
+        }
+      }
+    });
+  }
+
   private initializeEventListeners() {
     // Filter buttons
     document.getElementById('show-all-machines')?.addEventListener('click', () => {
@@ -408,25 +443,29 @@ class MachinesManager {
         return;
       }
 
-      // Clear existing options and add placeholder
-      dropdownOptions.innerHTML = `
-        <div class="dropdown-option" data-value="" onclick="selectDropdownOption('machine-department', '', 'Keine Abteilung')">
-          Keine Abteilung
-        </div>
-      `;
+      // Clear existing options
+      dropdownOptions.innerHTML = '';
+
+      // Add placeholder option
+      const defaultOption = document.createElement('div');
+      defaultOption.className = 'dropdown-option';
+      defaultOption.setAttribute('data-value', '');
+      defaultOption.setAttribute('data-text', 'Keine Abteilung');
+      defaultOption.textContent = 'Keine Abteilung';
+      dropdownOptions.appendChild(defaultOption);
 
       // Add department options
       departments.forEach((dept: Department) => {
         const optionDiv = document.createElement('div');
         optionDiv.className = 'dropdown-option';
         optionDiv.setAttribute('data-value', dept.id.toString());
+        optionDiv.setAttribute('data-text', dept.name);
         optionDiv.textContent = dept.name;
-        optionDiv.setAttribute(
-          'onclick',
-          `selectDropdownOption('machine-department', '${dept.id}', '${dept.name.replace(/'/g, "\\'")}')`,
-        );
         dropdownOptions.appendChild(optionDiv);
       });
+
+      // Setup event delegation
+      this.setupDropdownEventDelegation('machine-department-dropdown', 'machine-department');
 
       console.info('[MachinesManager] Loaded departments:', departments.length);
     } catch (error) {
@@ -449,25 +488,29 @@ class MachinesManager {
         return;
       }
 
-      // Clear existing options and add placeholder
-      dropdownOptions.innerHTML = `
-        <div class="dropdown-option" data-value="" onclick="selectDropdownOption('machine-area', '', 'Kein Bereich')">
-          Kein Bereich
-        </div>
-      `;
+      // Clear existing options
+      dropdownOptions.innerHTML = '';
+
+      // Add placeholder option
+      const defaultOption = document.createElement('div');
+      defaultOption.className = 'dropdown-option';
+      defaultOption.setAttribute('data-value', '');
+      defaultOption.setAttribute('data-text', 'Kein Bereich');
+      defaultOption.textContent = 'Kein Bereich';
+      dropdownOptions.appendChild(defaultOption);
 
       // Add area options
       areas.forEach((area: Area) => {
         const optionDiv = document.createElement('div');
         optionDiv.className = 'dropdown-option';
         optionDiv.setAttribute('data-value', area.id.toString());
+        optionDiv.setAttribute('data-text', area.name);
         optionDiv.textContent = area.name;
-        optionDiv.setAttribute(
-          'onclick',
-          `selectDropdownOption('machine-area', '${area.id}', '${area.name.replace(/'/g, "\\'")}')`,
-        );
         dropdownOptions.appendChild(optionDiv);
       });
+
+      // Setup event delegation
+      this.setupDropdownEventDelegation('machine-area-dropdown', 'machine-area');
 
       console.info('[MachinesManager] Loaded areas:', areas.length);
     } catch (error) {
