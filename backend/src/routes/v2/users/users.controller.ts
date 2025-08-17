@@ -38,6 +38,10 @@ interface User {
 }
 
 // Helper to map validation errors to our error response format
+/**
+ *
+ * @param errors
+ */
 function mapValidationErrors(
   errors: ValidationError[],
 ): { field: string; message: string }[] {
@@ -140,7 +144,7 @@ export const usersController = {
         return;
       }
 
-      const userId = parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
         res
           .status(401)
@@ -242,7 +246,7 @@ export const usersController = {
         return;
       }
 
-      const userId = parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.id, 10);
       const body = req.body as UpdateUserBody;
       if (req.tenantId === undefined) {
         res
@@ -415,7 +419,7 @@ export const usersController = {
         return;
       }
 
-      const userId = parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.id, 10);
       if (req.userId === undefined || req.tenantId === undefined) {
         res
           .status(401)
@@ -490,7 +494,7 @@ export const usersController = {
       }
       */
 
-      const userId = parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
         res
           .status(401)
@@ -531,7 +535,7 @@ export const usersController = {
         return;
       }
 
-      const userId = parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
         res
           .status(401)
@@ -701,7 +705,7 @@ export const usersController = {
         return;
       }
 
-      const userId = parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.id, 10);
       const body = req.body as UpdateAvailabilityBody;
       if (req.tenantId === undefined) {
         res

@@ -282,7 +282,7 @@ app.use("/js", rateLimiter.public, (req: Request, res: Response): void => {
   // Fallback - return empty module
   // Escape filename to prevent XSS
   const escapedFileName = jsFileName
-    .replace(/['"\\]/g, "\\$&")
+    .replace(/["'\\]/g, "\\$&")
     .replace(/[<>]/g, "");
   res
     .type("application/javascript")
@@ -394,17 +394,17 @@ app.use(
         let transformedContent = tsContent
           // Remove TypeScript-only import type statements
           .replace(
-            /import\s+type\s+\{[^}]+\}\s+from\s+['""][^'""]+['""];?\s*/g,
+            /import\s+type\s+\{[^}]+\}\s+from\s+[""'][^""']+[""'];?\s*/g,
             "",
           )
           // Remove declare global blocks - Security: Simplified regex to prevent ReDoS
           .replace(/declare\s+global\s*\{[^}]*\}/g, "")
           // Handle nested braces with multiple passes if needed
-          .replace(/declare\s+global\s*\{[^}]*\{[^}]*\}[^}]*\}/g, "")
+          .replace(/declare\s+global\s*\{[^{}]*\{[^}]*\}[^}]*\}/g, "")
           // Transform regular imports to add .ts extension
-          .replace(/from\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g, "from '$1.ts'")
+          .replace(/from\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "from '$1.ts'")
           .replace(
-            /import\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g,
+            /import\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g,
             "import '$1.ts'",
           );
 
@@ -492,7 +492,7 @@ app.use("/api", (req: Request, res: Response, next: NextFunction): void => {
   const contentLength = req.get("Content-Length");
   if (
     contentLength !== undefined &&
-    parseInt(contentLength) > 50 * 1024 * 1024
+    Number.parseInt(contentLength) > 50 * 1024 * 1024
   ) {
     // 50MB max
     res.status(413).json({ error: "Request entity too large" });

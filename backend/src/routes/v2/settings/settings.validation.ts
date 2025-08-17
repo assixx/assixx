@@ -11,7 +11,7 @@ const settingKeyValidation = param("key")
   .isString()
   .trim()
   .isLength({ min: 1, max: 100 })
-  .matches(/^[a-zA-Z0-9_.-]+$/)
+  .matches(/^[\w\-.]+$/)
   .withMessage(
     "Setting key must be alphanumeric with underscores, dots, or hyphens",
   );
@@ -71,7 +71,7 @@ export const createSystemSettingValidation = [
     .isString()
     .trim()
     .isLength({ min: 1, max: 100 })
-    .matches(/^[a-zA-Z0-9_.-]+$/)
+    .matches(/^[\w\-.]+$/)
     .withMessage(
       "Setting key must be alphanumeric with underscores, dots, or hyphens",
     ),
@@ -147,7 +147,7 @@ export const createTenantSettingValidation = [
     .isString()
     .trim()
     .isLength({ min: 1, max: 100 })
-    .matches(/^[a-zA-Z0-9_.-]+$/)
+    .matches(/^[\w\-.]+$/)
     .withMessage(
       "Setting key must be alphanumeric with underscores, dots, or hyphens",
     ),
@@ -203,7 +203,7 @@ export const createUserSettingValidation = [
     .isString()
     .trim()
     .isLength({ min: 1, max: 100 })
-    .matches(/^[a-zA-Z0-9_.-]+$/)
+    .matches(/^[\w\-.]+$/)
     .withMessage(
       "Setting key must be alphanumeric with underscores, dots, or hyphens",
     ),
@@ -244,7 +244,7 @@ export const bulkUpdateValidation = [
     .isString()
     .trim()
     .isLength({ min: 1, max: 100 })
-    .matches(/^[a-zA-Z0-9_.-]+$/)
+    .matches(/^[\w\-.]+$/)
     .withMessage(
       "Setting key must be alphanumeric with underscores, dots, or hyphens",
     ),

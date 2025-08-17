@@ -99,7 +99,7 @@ import { showError, showSuccess } from './auth';
         // Load permissions for each admin
         for (const admin of admins) {
           try {
-            const perms = await loadAdminPermissions(parseInt(admin.id.toString(), 10));
+            const perms = await loadAdminPermissions(Number.parseInt(admin.id.toString(), 10));
             console.info(`Permissions for admin ${admin.id}:`, perms);
             admin.departments = perms.departments;
             admin.hasAllAccess = perms.hasAllAccess;
@@ -213,7 +213,7 @@ import { showError, showSuccess } from './auth';
 
   // Tenant Dropdown aktualisieren
   function updateTenantDropdown() {
-    const select = document.getElementById('adminTenant') as HTMLSelectElement | null;
+    const select = document.querySelector('#adminTenant') as HTMLSelectElement | null;
     if (select === null) {
       console.info('Tenant dropdown not found - skipping update');
       return;
@@ -230,14 +230,14 @@ import { showError, showSuccess } from './auth';
       const option = document.createElement('option');
       option.value = tenant.id.toString();
       option.textContent = `${tenant.company_name ?? tenant.name ?? 'Unnamed'} (${tenant.subdomain})`;
-      select.appendChild(option);
+      select.append(option);
     });
   }
 
   // Admin-Tabelle rendern
   function renderAdminTable() {
     console.info('renderAdminTable called');
-    const container = document.getElementById('adminTableContent');
+    const container = document.querySelector('#adminTableContent');
 
     if (!container) {
       console.error('Container adminTableContent not found!');
@@ -316,7 +316,7 @@ import { showError, showSuccess } from './auth';
     editButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         console.info('Edit button clicked!');
-        const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0', 10);
+        const adminId = Number.parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0', 10);
         console.info('Admin ID:', adminId);
         if (adminId > 0) {
           void editAdminHandler(adminId);
@@ -329,7 +329,7 @@ import { showError, showSuccess } from './auth';
     deleteButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         console.info('Delete button clicked!');
-        const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0', 10);
+        const adminId = Number.parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0', 10);
         console.info('Admin ID:', adminId);
         if (adminId > 0) {
           void deleteAdminHandler(adminId);
@@ -344,7 +344,7 @@ import { showError, showSuccess } from './auth';
         console.info('🔵 Permission button clicked!');
         const target = e.target as HTMLElement;
         const button = target.closest('.action-btn.permissions');
-        const adminId = parseInt(button?.getAttribute('data-admin-id') ?? '0', 10);
+        const adminId = Number.parseInt(button?.getAttribute('data-admin-id') ?? '0', 10);
         console.info('Admin ID from button:', adminId);
         if (adminId > 0) {
           e.preventDefault();
@@ -383,41 +383,41 @@ import { showError, showSuccess } from './auth';
 
     if (!admin) return;
 
-    const modal = document.getElementById('adminModal');
-    const title = document.getElementById('modalTitle');
+    const modal = document.querySelector('#adminModal');
+    const title = document.querySelector('#modalTitle');
 
     if (title) title.textContent = 'Admin bearbeiten';
 
     // Formular mit Admin-Daten füllen
-    (document.getElementById('adminFirstName') as HTMLInputElement).value = admin.first_name ?? '';
-    (document.getElementById('adminLastName') as HTMLInputElement).value = admin.last_name ?? '';
-    (document.getElementById('adminEmail') as HTMLInputElement).value = admin.email;
-    (document.getElementById('adminEmailConfirm') as HTMLInputElement).value = admin.email;
+    (document.querySelector('#adminFirstName') as HTMLInputElement).value = admin.first_name ?? '';
+    (document.querySelector('#adminLastName') as HTMLInputElement).value = admin.last_name ?? '';
+    (document.querySelector('#adminEmail') as HTMLInputElement).value = admin.email;
+    (document.querySelector('#adminEmailConfirm') as HTMLInputElement).value = admin.email;
 
     // Custom dropdown for position
     const positionValue = admin.position ?? '';
-    (document.getElementById('positionDropdownValue') as HTMLInputElement).value = positionValue;
+    (document.querySelector('#positionDropdownValue') as HTMLInputElement).value = positionValue;
     const displayText = positionValue !== '' ? getPositionDisplay(positionValue) : 'Position auswählen...';
-    const positionDropdown = document.getElementById('positionDropdownDisplay');
+    const positionDropdown = document.querySelector('#positionDropdownDisplay');
     if (positionDropdown) {
       const span = positionDropdown.querySelector('span');
       if (span) span.textContent = displayText;
     }
 
-    (document.getElementById('adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
+    (document.querySelector('#adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
 
     // Show active status checkbox when editing
-    const activeStatusGroup = document.getElementById('activeStatusGroup');
+    const activeStatusGroup = document.querySelector('#activeStatusGroup');
     if (activeStatusGroup) activeStatusGroup.style.display = 'block';
 
-    const isActiveCheckbox = document.getElementById('adminIsActive') as HTMLInputElement;
+    const isActiveCheckbox = document.querySelector('#adminIsActive') as HTMLInputElement;
     const isActive = admin.is_active;
     console.info('Setting checkbox for edit - admin.is_active:', admin.is_active, 'checkbox will be:', isActive);
     isActiveCheckbox.checked = isActive;
 
     // Hide password fields when editing (optional password change)
-    const passwordGroup = document.getElementById('passwordGroup');
-    const passwordConfirmGroup = document.getElementById('passwordConfirmGroup');
+    const passwordGroup = document.querySelector('#passwordGroup');
+    const passwordConfirmGroup = document.querySelector('#passwordConfirmGroup');
     if (passwordGroup) passwordGroup.style.display = 'none';
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'none';
 
@@ -432,8 +432,8 @@ import { showError, showSuccess } from './auth';
     });
 
     // Hide all containers first
-    const deptContainer = document.getElementById('departmentSelectContainer');
-    const groupContainer = document.getElementById('groupSelectContainer');
+    const deptContainer = document.querySelector('#departmentSelectContainer');
+    const groupContainer = document.querySelector('#groupSelectContainer');
     if (deptContainer) deptContainer.style.display = 'none';
     if (groupContainer) groupContainer.style.display = 'none';
 
@@ -456,14 +456,14 @@ import { showError, showSuccess } from './auth';
           await loadAndPopulateDepartments();
 
           // Select current departments
-          const deptSelect = document.getElementById('departmentSelect') as HTMLSelectElement | null;
+          const deptSelect = document.querySelector('#departmentSelect') as HTMLSelectElement | null;
           if (deptSelect !== null) {
             // Clear all selections first
-            Array.from(deptSelect.options).forEach((option) => (option.selected = false));
+            [...deptSelect.options].forEach((option) => (option.selected = false));
 
             // Select assigned departments
             admin.departments.forEach((dept) => {
-              const option = Array.from(deptSelect.options).find((opt) => opt.value === dept.id.toString());
+              const option = [...deptSelect.options].find((opt) => opt.value === dept.id.toString());
               if (option) {
                 option.selected = true;
                 console.info('✅ Selected department:', dept.name);
@@ -481,8 +481,8 @@ import { showError, showSuccess } from './auth';
     }
 
     // Passwort-Felder als optional setzen beim Bearbeiten
-    const passwordField = document.getElementById('adminPassword') as HTMLInputElement;
-    const passwordConfirmField = document.getElementById('adminPasswordConfirm') as HTMLInputElement;
+    const passwordField = document.querySelector('#adminPassword') as HTMLInputElement;
+    const passwordConfirmField = document.querySelector('#adminPasswordConfirm') as HTMLInputElement;
     passwordField.required = false;
     passwordConfirmField.required = false;
     passwordField.value = '';
@@ -526,7 +526,7 @@ import { showError, showSuccess } from './auth';
           </div>
         </div>
       `;
-      document.body.appendChild(modal);
+      document.body.append(modal);
 
       const confirmBtn = modal.querySelector('#confirm-delete');
       const cancelBtn = modal.querySelector('#cancel-delete');
@@ -580,34 +580,34 @@ import { showError, showSuccess } from './auth';
   // Admin hinzufügen Modal anzeigen
   (window as unknown as ManageAdminsWindow).showAddAdminModal = function () {
     currentAdminId = null;
-    const modal = document.getElementById('adminModal');
-    const title = document.getElementById('modalTitle');
-    const form = document.getElementById('adminForm') as HTMLFormElement;
+    const modal = document.querySelector('#adminModal');
+    const title = document.querySelector('#modalTitle');
+    const form = document.querySelector('#adminForm') as HTMLFormElement;
 
     if (title) title.textContent = 'Admin hinzufügen';
     form.reset();
 
     // Reset custom dropdown
-    (document.getElementById('positionDropdownValue') as HTMLInputElement).value = '';
-    const positionDropdown = document.getElementById('positionDropdownDisplay');
+    (document.querySelector('#positionDropdownValue') as HTMLInputElement).value = '';
+    const positionDropdown = document.querySelector('#positionDropdownDisplay');
     if (positionDropdown) {
       const span = positionDropdown.querySelector('span');
       if (span) span.textContent = 'Position auswählen...';
     }
 
     // Hide active status checkbox for new admins (they are always active)
-    const activeStatusGroup = document.getElementById('activeStatusGroup');
+    const activeStatusGroup = document.querySelector('#activeStatusGroup');
     if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
     // Passwort-Felder als required setzen für neue Admins
-    const passwordField = document.getElementById('adminPassword') as HTMLInputElement;
-    const passwordConfirmField = document.getElementById('adminPasswordConfirm') as HTMLInputElement;
+    const passwordField = document.querySelector('#adminPassword') as HTMLInputElement;
+    const passwordConfirmField = document.querySelector('#adminPasswordConfirm') as HTMLInputElement;
     passwordField.required = true;
     passwordConfirmField.required = true;
 
     // Show password fields for new admin
-    const passwordGroup = document.getElementById('passwordGroup');
-    const passwordConfirmGroup = document.getElementById('passwordConfirmGroup');
+    const passwordGroup = document.querySelector('#passwordGroup');
+    const passwordConfirmGroup = document.querySelector('#passwordConfirmGroup');
     if (passwordGroup) passwordGroup.style.display = 'block';
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
 
@@ -616,7 +616,7 @@ import { showError, showSuccess } from './auth';
 
   // Modal schließen
   (window as unknown as ManageAdminsWindow).closeAdminModal = function () {
-    const modal = document.getElementById('adminModal');
+    const modal = document.querySelector('#adminModal');
     modal?.classList.remove('active');
     currentAdminId = null;
   };
@@ -624,7 +624,7 @@ import { showError, showSuccess } from './auth';
   // Permissions Modal schließen
   (window as unknown as ManageAdminsWindow).closePermissionsModal = function () {
     console.info('🔵 closePermissionsModal called');
-    const modal = document.getElementById('permissionsModal');
+    const modal = document.querySelector('#permissionsModal');
     if (modal) {
       modal.classList.remove('active');
       currentPermissionAdminId = null;
@@ -712,8 +712,8 @@ import { showError, showSuccess } from './auth';
   function handlePermissionTypeChange() {
     const radioElement = document.querySelector('input[name="permissionType"]:checked');
     const type = (radioElement as HTMLInputElement | null)?.value;
-    const departmentContainer = document.getElementById('departmentSelectContainer');
-    const groupContainer = document.getElementById('groupSelectContainer');
+    const departmentContainer = document.querySelector('#departmentSelectContainer');
+    const groupContainer = document.querySelector('#groupSelectContainer');
 
     if (departmentContainer) departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
     if (groupContainer) groupContainer.style.display = type === 'groups' ? 'block' : 'none';
@@ -728,7 +728,7 @@ import { showError, showSuccess } from './auth';
   // Load and populate departments
   async function loadAndPopulateDepartments() {
     const departments = await loadDepartments();
-    const select = document.getElementById('departmentSelect') as HTMLSelectElement | null;
+    const select = document.querySelector('#departmentSelect') as HTMLSelectElement | null;
 
     if (select !== null) {
       select.innerHTML = '';
@@ -736,7 +736,7 @@ import { showError, showSuccess } from './auth';
         const option = document.createElement('option');
         option.value = dept.id.toString();
         option.textContent = dept.name;
-        select.appendChild(option);
+        select.append(option);
       });
     }
   }
@@ -744,7 +744,7 @@ import { showError, showSuccess } from './auth';
   // Load and populate groups
   async function loadAndPopulateGroups() {
     const groups = await loadDepartmentGroups();
-    const container = document.getElementById('groupTreeView');
+    const container = document.querySelector('#groupTreeView');
 
     if (container) {
       container.innerHTML = renderGroupTree(groups);
@@ -780,7 +780,7 @@ import { showError, showSuccess } from './auth';
   async function showPermissionsModal(adminId: number) {
     console.info('🔵 showPermissionsModal called for admin ID:', adminId);
     currentPermissionAdminId = adminId;
-    const admin = admins.find((a) => parseInt(a.id.toString(), 10) === adminId);
+    const admin = admins.find((a) => Number.parseInt(a.id.toString(), 10) === adminId);
 
     if (!admin) {
       console.error('Admin not found for ID:', adminId);
@@ -790,8 +790,8 @@ import { showError, showSuccess } from './auth';
     console.info('Found admin:', admin);
 
     // Set admin info
-    const nameEl = document.getElementById('permAdminName');
-    const emailEl = document.getElementById('permAdminEmail');
+    const nameEl = document.querySelector('#permAdminName');
+    const emailEl = document.querySelector('#permAdminEmail');
 
     if (nameEl) nameEl.textContent = `${admin.first_name ?? ''} ${admin.last_name ?? ''} (${admin.username})`.trim();
     if (emailEl) emailEl.textContent = admin.email;
@@ -802,8 +802,8 @@ import { showError, showSuccess } from './auth';
     // Ensure departments tab is active by default
     const deptTab = document.querySelector('[data-tab="departments"]');
     const groupTab = document.querySelector('[data-tab="groups"]');
-    const deptContent = document.getElementById('departmentsTab');
-    const groupContent = document.getElementById('groupsTab');
+    const deptContent = document.querySelector('#departmentsTab');
+    const groupContent = document.querySelector('#groupsTab');
 
     if (deptTab && groupTab && deptContent && groupContent) {
       // Reset all tabs
@@ -821,7 +821,7 @@ import { showError, showSuccess } from './auth';
     }
 
     // Show modal
-    const modal = document.getElementById('permissionsModal');
+    const modal = document.querySelector('#permissionsModal');
     if (modal) {
       modal.classList.add('active');
       console.info('✅ Permissions modal opened with departments tab active');
@@ -845,7 +845,7 @@ import { showError, showSuccess } from './auth';
       console.info('Current permissions:', currentPerms);
 
       // Render departments
-      const deptList = document.getElementById('permissionDepartmentList');
+      const deptList = document.querySelector('#permissionDepartmentList');
       if (deptList) {
         deptList.innerHTML = departments
           .map((dept) => {
@@ -866,7 +866,7 @@ import { showError, showSuccess } from './auth';
       }
 
       // Render groups
-      const groupList = document.getElementById('permissionGroupList');
+      const groupList = document.querySelector('#permissionGroupList');
       if (groupList) {
         groupList.innerHTML = renderGroupTree(groups);
       }
@@ -874,8 +874,8 @@ import { showError, showSuccess } from './auth';
       // Set permission levels
       if (currentPerms.departments.length > 0) {
         const firstDept = currentPerms.departments[0];
-        (document.getElementById('permCanWrite') as HTMLInputElement).checked = firstDept.can_write ?? false;
-        (document.getElementById('permCanDelete') as HTMLInputElement).checked = firstDept.can_delete ?? false;
+        (document.querySelector('#permCanWrite') as HTMLInputElement).checked = firstDept.can_write ?? false;
+        (document.querySelector('#permCanDelete') as HTMLInputElement).checked = firstDept.can_delete ?? false;
       }
     } catch (error) {
       console.error('Error loading permissions modal data:', error);
@@ -897,24 +897,24 @@ import { showError, showSuccess } from './auth';
       console.info('🔵 Saving permissions for admin:', currentPermissionAdminId);
 
       // Get selected departments
-      const selectedDepts = Array.from(
-        document.querySelectorAll('#permissionDepartmentList input[name="deptPermission"]:checked'),
-      ).map((cb) => parseInt((cb as HTMLInputElement).value, 10));
+      const selectedDepts = [
+        ...document.querySelectorAll('#permissionDepartmentList input[name="deptPermission"]:checked'),
+      ].map((cb) => Number.parseInt((cb as HTMLInputElement).value, 10));
 
       console.info('Selected departments:', selectedDepts);
 
       // Get selected groups
-      const selectedGroups = Array.from(
-        document.querySelectorAll('#permissionGroupList input[name="groupSelect"]:checked'),
-      ).map((cb) => parseInt((cb as HTMLInputElement).value, 10));
+      const selectedGroups = [
+        ...document.querySelectorAll('#permissionGroupList input[name="groupSelect"]:checked'),
+      ].map((cb) => Number.parseInt((cb as HTMLInputElement).value, 10));
 
       console.info('Selected groups:', selectedGroups);
 
       // Get permission levels
       const permissions = {
         can_read: true,
-        can_write: (document.getElementById('permCanWrite') as HTMLInputElement).checked,
-        can_delete: (document.getElementById('permCanDelete') as HTMLInputElement).checked,
+        can_write: (document.querySelector('#permCanWrite') as HTMLInputElement).checked,
+        can_delete: (document.querySelector('#permCanDelete') as HTMLInputElement).checked,
       };
 
       console.info('Permissions:', permissions);
@@ -990,21 +990,21 @@ import { showError, showSuccess } from './auth';
   };
 
   // Admin-Formular submit
-  document.getElementById('adminForm')?.addEventListener('submit', (e) => {
+  document.querySelector('#adminForm')?.addEventListener('submit', (e) => {
     void (async () => {
       e.preventDefault();
 
       // Validate email match
-      const email = (document.getElementById('adminEmail') as HTMLInputElement).value;
-      const emailConfirm = (document.getElementById('adminEmailConfirm') as HTMLInputElement).value;
+      const email = (document.querySelector('#adminEmail') as HTMLInputElement).value;
+      const emailConfirm = (document.querySelector('#adminEmailConfirm') as HTMLInputElement).value;
       if (email !== emailConfirm) {
         showError('Die E-Mail-Adressen stimmen nicht überein!');
         return;
       }
 
       // Validate password match (only for new admins or if password is being changed)
-      const password = (document.getElementById('adminPassword') as HTMLInputElement).value;
-      const passwordConfirm = (document.getElementById('adminPasswordConfirm') as HTMLInputElement).value;
+      const password = (document.querySelector('#adminPassword') as HTMLInputElement).value;
+      const passwordConfirm = (document.querySelector('#adminPasswordConfirm') as HTMLInputElement).value;
       if (password !== '' && password !== passwordConfirm) {
         showError('Die Passwörter stimmen nicht überein!');
         return;
@@ -1022,18 +1022,18 @@ import { showError, showSuccess } from './auth';
       }
 
       const formData: AdminFormData = {
-        first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
-        last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
+        first_name: (document.querySelector('#adminFirstName') as HTMLInputElement).value,
+        last_name: (document.querySelector('#adminLastName') as HTMLInputElement).value,
         email,
         password,
-        position: (document.getElementById('positionDropdownValue') as HTMLInputElement).value,
-        notes: (document.getElementById('adminNotes') as HTMLTextAreaElement).value,
+        position: (document.querySelector('#positionDropdownValue') as HTMLInputElement).value,
+        notes: (document.querySelector('#adminNotes') as HTMLTextAreaElement).value,
         role: 'admin',
       };
 
       // Include is_active only when updating
       if (currentAdminId !== null && currentAdminId !== 0) {
-        const checkbox = document.getElementById('adminIsActive') as HTMLInputElement;
+        const checkbox = document.querySelector('#adminIsActive') as HTMLInputElement;
         console.info('Checkbox element:', checkbox);
         console.info('Checkbox checked state:', checkbox.checked);
         formData.is_active = checkbox.checked;
@@ -1085,11 +1085,11 @@ import { showError, showSuccess } from './auth';
               let groupIds: number[] = [];
 
               if (permissionType === 'specific') {
-                const select = document.getElementById('departmentSelect') as HTMLSelectElement;
-                departmentIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
+                const select = document.querySelector('#departmentSelect') as HTMLSelectElement;
+                departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
               } else if (permissionType === 'groups') {
                 const checkboxes = document.querySelectorAll('input[name="groupSelect"]:checked');
-                groupIds = Array.from(checkboxes).map((cb) => parseInt((cb as HTMLInputElement).value, 10));
+                groupIds = [...checkboxes].map((cb) => Number.parseInt((cb as HTMLInputElement).value, 10));
               } else if (permissionType === 'all') {
                 // Get all departments
                 const allDepts = await loadDepartments();
@@ -1183,7 +1183,7 @@ import { showError, showSuccess } from './auth';
 
   // Modal schließen bei Klick außerhalb
   window.addEventListener('click', (e) => {
-    const modal = document.getElementById('adminModal');
+    const modal = document.querySelector('#adminModal');
     if (e.target === modal) {
       const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
       if (closeModal) closeModal();

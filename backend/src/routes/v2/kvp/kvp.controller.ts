@@ -67,6 +67,8 @@ interface AwardPointsBody {
 
 /**
  * Get all KVP categories
+ * @param req
+ * @param res
  */
 export async function getCategories(
   req: AuthenticatedRequest,
@@ -91,6 +93,8 @@ export async function getCategories(
 
 /**
  * List KVP suggestions with pagination and filters
+ * @param req
+ * @param res
  */
 export async function listSuggestions(
   req: AuthenticatedRequest,
@@ -101,18 +105,18 @@ export async function listSuggestions(
       status: req.query.status as string,
       categoryId:
         req.query.categoryId !== undefined
-          ? parseInt(req.query.categoryId as string, 10)
+          ? Number.parseInt(req.query.categoryId as string, 10)
           : undefined,
       priority: req.query.priority as string,
       orgLevel: req.query.orgLevel as string,
       search: req.query.search as string,
       page:
         req.query.page !== undefined
-          ? parseInt(req.query.page as string, 10)
+          ? Number.parseInt(req.query.page as string, 10)
           : 1,
       limit:
         req.query.limit !== undefined
-          ? parseInt(req.query.limit as string, 10)
+          ? Number.parseInt(req.query.limit as string, 10)
           : 20,
     };
 
@@ -147,13 +151,15 @@ export async function listSuggestions(
 
 /**
  * Get a specific KVP suggestion by ID
+ * @param req
+ * @param res
  */
 export async function getSuggestionById(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
     const suggestion = await kvpService.getSuggestionById(
       suggestionId,
       req.user.tenant_id,
@@ -178,6 +184,8 @@ export async function getSuggestionById(
 
 /**
  * Create a new KVP suggestion
+ * @param req
+ * @param res
  */
 export async function createSuggestion(
   req: AuthenticatedRequest,
@@ -242,13 +250,15 @@ export async function createSuggestion(
 
 /**
  * Update a KVP suggestion
+ * @param req
+ * @param res
  */
 export async function updateSuggestion(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
     const body = req.body as UpdateSuggestionBody;
     const data: KVPUpdateData = {
       title: body.title,
@@ -324,13 +334,15 @@ export async function updateSuggestion(
 
 /**
  * Delete a KVP suggestion
+ * @param req
+ * @param res
  */
 export async function deleteSuggestion(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
 
     // Get suggestion data before deletion for logging
     const deletedSuggestion = await kvpService.getSuggestionById(
@@ -384,13 +396,15 @@ export async function deleteSuggestion(
 
 /**
  * Get comments for a suggestion
+ * @param req
+ * @param res
  */
 export async function getComments(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
     const comments = await kvpService.getComments(
       suggestionId,
       req.user.tenant_id,
@@ -415,13 +429,15 @@ export async function getComments(
 
 /**
  * Add a comment to a suggestion
+ * @param req
+ * @param res
  */
 export async function addComment(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
     const body = req.body as AddCommentBody;
     const data: CommentData = {
       comment: body.comment,
@@ -470,13 +486,15 @@ export async function addComment(
 
 /**
  * Get attachments for a suggestion
+ * @param req
+ * @param res
  */
 export async function getAttachments(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
     const attachments = await kvpService.getAttachments(
       suggestionId,
       req.user.tenant_id,
@@ -501,13 +519,15 @@ export async function getAttachments(
 
 /**
  * Upload attachments to a suggestion
+ * @param req
+ * @param res
  */
 export async function uploadAttachments(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const suggestionId = parseInt(req.params.id, 10);
+    const suggestionId = Number.parseInt(req.params.id, 10);
     const files = req.files;
 
     // Type guard: Ensure files is an array with items
@@ -572,13 +592,15 @@ export async function uploadAttachments(
 
 /**
  * Download an attachment
+ * @param req
+ * @param res
  */
 export async function downloadAttachment(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const attachmentId = parseInt(req.params.attachmentId, 10);
+    const attachmentId = Number.parseInt(req.params.attachmentId, 10);
     const attachment = await kvpService.getAttachment(
       attachmentId,
       req.user.tenant_id,
@@ -605,6 +627,8 @@ export async function downloadAttachment(
 
 /**
  * Award points to a user (Admin only)
+ * @param req
+ * @param res
  */
 export async function awardPoints(
   req: AuthenticatedRequest,
@@ -662,6 +686,8 @@ export async function awardPoints(
 
 /**
  * Get user points summary
+ * @param req
+ * @param res
  */
 export async function getUserPoints(
   req: AuthenticatedRequest,
@@ -669,7 +695,7 @@ export async function getUserPoints(
 ): Promise<void> {
   try {
     const userId = req.params.userId
-      ? parseInt(req.params.userId, 10)
+      ? Number.parseInt(req.params.userId, 10)
       : req.user.id;
 
     // Users can only see their own points, admins can see all
@@ -702,6 +728,8 @@ export async function getUserPoints(
 
 /**
  * Get KVP dashboard statistics
+ * @param req
+ * @param res
  */
 export async function getDashboardStats(
   req: AuthenticatedRequest,

@@ -20,6 +20,8 @@ import {
 } from "./surveys.service";
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys:
  *   get:
@@ -56,8 +58,8 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
 
     const filters = {
       status: status as "draft" | "active" | "closed" | undefined,
-      page: parseInt(page as string, 10) ?? 1,
-      limit: parseInt(limit as string, 10) ?? 20,
+      page: Number.parseInt(page as string, 10) ?? 1,
+      limit: Number.parseInt(limit as string, 10) ?? 20,
     };
 
     const surveys = await surveysService.listSurveys(
@@ -91,6 +93,8 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys/{id}:
  *   get:
@@ -108,7 +112,7 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
  */
 export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
   try {
-    const surveyId = parseInt(req.params.id, 10);
+    const surveyId = Number.parseInt(req.params.id, 10);
 
     if (isNaN(surveyId)) {
       res.status(400).json(errorResponse("INVALID_ID", "Invalid survey ID"));
@@ -138,6 +142,8 @@ export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys:
  *   post:
@@ -186,6 +192,8 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys/{id}:
  *   put:
@@ -209,7 +217,7 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
  */
 export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
   try {
-    const surveyId = parseInt(req.params.id, 10);
+    const surveyId = Number.parseInt(req.params.id, 10);
 
     if (isNaN(surveyId)) {
       res.status(400).json(errorResponse("INVALID_ID", "Invalid survey ID"));
@@ -242,6 +250,8 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys/{id}:
  *   delete:
@@ -259,7 +269,7 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
  */
 export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
   try {
-    const surveyId = parseInt(req.params.id, 10);
+    const surveyId = Number.parseInt(req.params.id, 10);
 
     if (isNaN(surveyId)) {
       res.status(400).json(errorResponse("INVALID_ID", "Invalid survey ID"));
@@ -291,6 +301,8 @@ export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys/templates:
  *   get:
@@ -320,6 +332,8 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys/templates/{templateId}:
  *   post:
@@ -340,7 +354,7 @@ export async function createFromTemplate(
   res: Response,
 ) {
   try {
-    const templateId = parseInt(req.params.templateId, 10);
+    const templateId = Number.parseInt(req.params.templateId, 10);
 
     if (isNaN(templateId)) {
       res.status(400).json(errorResponse("INVALID_ID", "Invalid template ID"));
@@ -371,6 +385,8 @@ export async function createFromTemplate(
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/surveys/{id}/statistics:
  *   get:
@@ -388,7 +404,7 @@ export async function createFromTemplate(
  */
 export async function getStatistics(req: AuthenticatedRequest, res: Response) {
   try {
-    const surveyId = parseInt(req.params.id, 10);
+    const surveyId = Number.parseInt(req.params.id, 10);
 
     if (isNaN(surveyId)) {
       res.status(400).json(errorResponse("INVALID_ID", "Invalid survey ID"));

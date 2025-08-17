@@ -40,6 +40,8 @@ interface AreaRow extends RowDataPacket {
 
 /**
  * Get all areas for a tenant
+ * @param tenantId
+ * @param filters
  */
 export async function getAreas(
   tenantId: number,
@@ -107,6 +109,8 @@ export async function getAreas(
 
 /**
  * Get area by ID
+ * @param id
+ * @param tenantId
  */
 export async function getAreaById(
   id: number,
@@ -150,6 +154,7 @@ export async function getAreaById(
 
 /**
  * Get area hierarchy (tree structure)
+ * @param tenantId
  */
 export async function getAreaHierarchy(tenantId: number): Promise<Area[]> {
   const query = `
@@ -204,6 +209,9 @@ export async function getAreaHierarchy(tenantId: number): Promise<Area[]> {
 
 /**
  * Create new area
+ * @param data
+ * @param tenantId
+ * @param userId
  */
 export async function createArea(
   data: CreateAreaRequest,
@@ -247,6 +255,9 @@ export async function createArea(
 
 /**
  * Update area
+ * @param id
+ * @param data
+ * @param tenantId
  */
 export async function updateArea(
   id: number,
@@ -329,6 +340,8 @@ export async function updateArea(
 
 /**
  * Delete area (hard delete)
+ * @param id
+ * @param tenantId
  */
 export async function deleteArea(id: number, tenantId: number): Promise<void> {
   // Check if area exists
@@ -360,6 +373,7 @@ export async function deleteArea(id: number, tenantId: number): Promise<void> {
 
 /**
  * Get area statistics
+ * @param tenantId
  */
 export async function getAreaStats(tenantId: number): Promise<{
   totalAreas: number;

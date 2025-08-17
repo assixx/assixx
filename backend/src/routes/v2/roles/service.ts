@@ -11,6 +11,9 @@ import { ServiceError } from "../../../utils/ServiceError.js";
 
 import { Role, RoleName, RoleCheckRequest } from "./types.js";
 
+/**
+ *
+ */
 export class RolesService {
   /**
    * Static role definitions
@@ -71,6 +74,7 @@ export class RolesService {
 
   /**
    * Get a single role by ID
+   * @param roleId
    */
   async getRoleById(roleId: RoleName): Promise<Role> {
     const role = RolesService.ROLES[roleId];
@@ -82,6 +86,7 @@ export class RolesService {
 
   /**
    * Check if a user has a specific role
+   * @param request
    */
   async checkUserRole(request: RoleCheckRequest): Promise<{
     hasRole: boolean;
@@ -146,6 +151,7 @@ export class RolesService {
 
   /**
    * Get roles available for assignment by current user role
+   * @param currentUserRole
    */
   async getAssignableRoles(currentUserRole: RoleName): Promise<Role[]> {
     switch (currentUserRole) {

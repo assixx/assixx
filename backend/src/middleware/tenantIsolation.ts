@@ -53,7 +53,7 @@ export function validateTenantIsolation(
 
     // If a specific tenant is requested, validate access
     if (tenantIdStr !== undefined && tenantIdStr !== "") {
-      const requestedId = parseInt(tenantIdStr, 10);
+      const requestedId = Number.parseInt(tenantIdStr, 10);
       const userTenantId = req.user.tenant_id;
 
       // Check if user is trying to access a different tenant

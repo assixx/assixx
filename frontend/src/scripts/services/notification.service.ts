@@ -5,11 +5,17 @@
 
 import type { Notification } from '../../types/utils.types';
 
+/**
+ *
+ */
 export class NotificationService {
   private container: HTMLElement | null = null;
   private notifications = new Map<string, Notification>();
   private defaultDuration = 5000; // 5 seconds
 
+  /**
+   *
+   */
   constructor() {
     this.init();
   }
@@ -21,7 +27,7 @@ export class NotificationService {
     if (typeof document === 'undefined') return;
 
     // Create container if it doesn't exist
-    if (!document.getElementById('notification-container')) {
+    if (!document.querySelector('#notification-container')) {
       this.container = document.createElement('div');
       this.container.id = 'notification-container';
       this.container.className = 'notification-container';
@@ -32,14 +38,15 @@ export class NotificationService {
         z-index: 10000;
         pointer-events: none;
       `;
-      document.body.appendChild(this.container);
+      document.body.append(this.container);
     } else {
-      this.container = document.getElementById('notification-container');
+      this.container = document.querySelector('#notification-container');
     }
   }
 
   /**
    * Show notification
+   * @param notification
    */
   show(notification: Omit<Notification, 'id'>): string {
     const id = this.generateId();
@@ -64,6 +71,9 @@ export class NotificationService {
 
   /**
    * Show success notification
+   * @param title
+   * @param message
+   * @param duration
    */
   success(title: string, message?: string, duration?: number): string {
     return this.show({
@@ -76,6 +86,9 @@ export class NotificationService {
 
   /**
    * Show error notification
+   * @param title
+   * @param message
+   * @param duration
    */
   error(title: string, message?: string, duration?: number): string {
     return this.show({
@@ -88,6 +101,9 @@ export class NotificationService {
 
   /**
    * Show warning notification
+   * @param title
+   * @param message
+   * @param duration
    */
   warning(title: string, message?: string, duration?: number): string {
     return this.show({
@@ -100,6 +116,9 @@ export class NotificationService {
 
   /**
    * Show info notification
+   * @param title
+   * @param message
+   * @param duration
    */
   info(title: string, message?: string, duration?: number): string {
     return this.show({
@@ -112,6 +131,7 @@ export class NotificationService {
 
   /**
    * Dismiss notification
+   * @param id
    */
   dismiss(id: string): void {
     const element = document.getElementById(`notification-${id}`);
@@ -136,6 +156,7 @@ export class NotificationService {
 
   /**
    * Render notification
+   * @param notification
    */
   private render(notification: Notification): void {
     if (!this.container) return;
@@ -263,7 +284,7 @@ export class NotificationService {
       });
     }
 
-    this.container.appendChild(element);
+    this.container.append(element);
   }
 
   /**
@@ -275,6 +296,7 @@ export class NotificationService {
 
   /**
    * Set default duration
+   * @param duration
    */
   setDefaultDuration(duration: number): void {
     this.defaultDuration = duration;
@@ -325,7 +347,7 @@ style.textContent = `
     }
   }
 `;
-document.head.appendChild(style);
+document.head.append(style);
 
 // Create default instance
 const notificationService = new NotificationService();

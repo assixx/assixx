@@ -171,9 +171,9 @@ class UnifiedNavigation {
     this.navigationItems = this.getNavigationItems();
     // Load last KVP click timestamp and count from localStorage
     const savedTimestamp = localStorage.getItem('lastKvpClickTimestamp');
-    this.lastKvpClickTimestamp = savedTimestamp !== null ? parseInt(savedTimestamp, 10) : null;
+    this.lastKvpClickTimestamp = savedTimestamp !== null ? Number.parseInt(savedTimestamp, 10) : null;
     const savedCount = localStorage.getItem('lastKnownKvpCount');
-    this.lastKnownKvpCount = savedCount !== null ? parseInt(savedCount, 10) : 0;
+    this.lastKnownKvpCount = savedCount !== null ? Number.parseInt(savedCount, 10) : 0;
     this.init();
   }
 
@@ -459,26 +459,26 @@ class UnifiedNavigation {
           // userData is always defined from apiClient.get, no need to check
 
           // Update company info - check tenant and fallback properties
-          const companyElement = document.getElementById('sidebar-company-name');
+          const companyElement = document.querySelector('#sidebar-company-name');
           const companyName = userData.tenant?.company_name ?? userData.companyName;
           if (companyElement && companyName !== undefined) {
             console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
             companyElement.textContent = companyName;
           }
 
-          const domainElement = document.getElementById('sidebar-domain');
+          const domainElement = document.querySelector('#sidebar-domain');
           const subdomain = userData.tenant?.subdomain ?? userData.subdomain;
           if (domainElement && subdomain !== undefined) {
             domainElement.textContent = `${subdomain}.assixx.de`;
           }
 
           // Update user info card with full details
-          const sidebarUserName = document.getElementById('sidebar-user-name');
+          const sidebarUserName = document.querySelector('#sidebar-user-name');
           if (sidebarUserName) {
             sidebarUserName.textContent = userData.email;
           }
 
-          const sidebarFullName = document.getElementById('sidebar-user-fullname');
+          const sidebarFullName = document.querySelector('#sidebar-user-fullname');
           if (sidebarFullName) {
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
             const lastName = userData.lastName ?? userData.data?.lastName ?? '';
@@ -491,7 +491,7 @@ class UnifiedNavigation {
           // Birthdate removed as requested
 
           // Update employee number
-          const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
+          const sidebarEmployeeNumber = document.querySelector('#sidebar-employee-number');
           interface UserDataWithEmployeeNumber extends UserProfileResponse {
             employee_number?: string;
             data?: {
@@ -516,7 +516,7 @@ class UnifiedNavigation {
           }
 
           // Update header user name with full name
-          const headerUserName = document.getElementById('user-name');
+          const headerUserName = document.querySelector('#user-name');
           if (headerUserName) {
             // Same logic as sidebar-user-fullname which works correctly
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
@@ -535,7 +535,7 @@ class UnifiedNavigation {
           }
 
           // Update avatar if we have profile picture
-          const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+          const sidebarAvatar = document.querySelector('#sidebar-user-avatar');
           if (sidebarAvatar) {
             // API v2 uses profilePictureUrl
             const profilePic =
@@ -550,7 +550,7 @@ class UnifiedNavigation {
           }
 
           // Also update header avatar
-          const headerAvatar = document.getElementById('user-avatar');
+          const headerAvatar = document.querySelector('#user-avatar');
           if (headerAvatar) {
             // API v2 uses profilePictureUrl
             const profilePic =
@@ -1058,7 +1058,7 @@ class UnifiedNavigation {
       img.style.height = '100%';
       img.style.objectFit = 'cover';
       img.style.borderRadius = 'inherit';
-      element.appendChild(img);
+      element.append(img);
       element.classList.remove('avatar-initials');
     } else {
       // Show initials
@@ -1072,7 +1072,7 @@ class UnifiedNavigation {
     const navigation = this.createNavigationHTML();
 
     // Check for navigation-container first (new approach)
-    const navigationContainer = document.getElementById('navigation-container');
+    const navigationContainer = document.querySelector('#navigation-container');
     if (navigationContainer) {
       // Create full navigation structure with header and sidebar
       const fullNavigation = this.createFullNavigationStructure();
@@ -1278,7 +1278,7 @@ class UnifiedNavigation {
       '"': '&quot;',
       "'": '&#039;',
     };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
+    return text.replace(/["&'<>]/g, (m) => map[m]);
   }
 
   private createSidebarStructure(): void {
@@ -1300,16 +1300,16 @@ class UnifiedNavigation {
       const mainContent = document.createElement('main');
       mainContent.className = 'main-content';
       if (container) {
-        mainContent.appendChild(container);
+        mainContent.append(container);
       }
 
-      layoutContainer.appendChild(sidebar);
-      layoutContainer.appendChild(mainContent);
+      layoutContainer.append(sidebar);
+      layoutContainer.append(mainContent);
 
       if (header) {
         body.insertBefore(layoutContainer, header.nextSibling);
       } else {
-        body.appendChild(layoutContainer);
+        body.append(layoutContainer);
       }
     }
   }
@@ -1532,7 +1532,7 @@ class UnifiedNavigation {
     this.isEventListenerAttached = true;
 
     // Add direct listener as fallback for logout button
-    const logoutBtnCheck = document.getElementById('logout-btn');
+    const logoutBtnCheck = document.querySelector('#logout-btn');
     if (logoutBtnCheck) {
       logoutBtnCheck.onclick = (e) => {
         e.preventDefault();
@@ -1555,7 +1555,7 @@ class UnifiedNavigation {
   }
 
   private attachSidebarToggle(): void {
-    const toggleBtn = document.getElementById('sidebar-toggle');
+    const toggleBtn = document.querySelector('#sidebar-toggle');
 
     // Debug: Check how many sidebars exist
     const allSidebars = document.querySelectorAll('.sidebar');
@@ -1566,7 +1566,7 @@ class UnifiedNavigation {
     });
 
     // Try to find the navigation sidebar specifically
-    const navContainer = document.getElementById('navigation-container');
+    const navContainer = document.querySelector('#navigation-container');
     const sidebar = navContainer ? navContainer.querySelector('.sidebar') : document.querySelector('.sidebar');
     const mainContent = document.querySelector('.main-content');
     const chatMain = document.querySelector('.chat-main');
@@ -1640,7 +1640,7 @@ class UnifiedNavigation {
       this.updateToggleIcon();
 
       // Update logo based on collapsed state
-      const headerLogo = document.getElementById('header-logo') as HTMLImageElement | null;
+      const headerLogo = document.querySelector('#header-logo') as HTMLImageElement | null;
       if (headerLogo !== null) {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
@@ -1716,7 +1716,7 @@ class UnifiedNavigation {
 
   private async handleLogout(): Promise<void> {
     // Show logout confirmation modal instead of direct logout
-    const modal = document.getElementById('logoutModal');
+    const modal = document.querySelector('#logoutModal');
 
     if (modal) {
       // Ensure modal is visible with proper z-index and positioning
@@ -1733,8 +1733,8 @@ class UnifiedNavigation {
       modal.classList.add('active');
 
       // Setup modal event handlers
-      const confirmBtn = document.getElementById('confirmLogout');
-      const cancelBtn = document.getElementById('cancelLogout');
+      const confirmBtn = document.querySelector('#confirmLogout');
+      const cancelBtn = document.querySelector('#cancelLogout');
       const overlay = modal.querySelector('.modal-overlay');
 
       const closeModal = () => {
@@ -1782,8 +1782,8 @@ class UnifiedNavigation {
     // Simplified: Root users always get root handlers, admin users always get admin handlers
     // The dropdown HTML already shows the correct options based on userRole
     if (userRole === 'root') {
-      const dropdownDisplay = document.getElementById('roleSwitchDisplay');
-      const dropdownOptions = document.getElementById('roleSwitchDropdown');
+      const dropdownDisplay = document.querySelector('#roleSwitchDisplay');
+      const dropdownOptions = document.querySelector('#roleSwitchDropdown');
 
       if (dropdownDisplay && dropdownOptions) {
         // Check if already initialized
@@ -1839,7 +1839,7 @@ class UnifiedNavigation {
               dropdownOptions.classList.remove('active');
 
               // Update hidden input
-              const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement | null;
+              const hiddenInput = document.querySelector('#role-switch-value') as HTMLInputElement | null;
               if (hiddenInput !== null) {
                 hiddenInput.value = selectedRole;
               }
@@ -1874,8 +1874,8 @@ class UnifiedNavigation {
 
     // Handle admin users (but not root users, they already have their handler)
     else if (userRole === 'admin') {
-      const dropdownDisplay = document.getElementById('roleSwitchDisplay');
-      const dropdownOptions = document.getElementById('roleSwitchDropdown');
+      const dropdownDisplay = document.querySelector('#roleSwitchDisplay');
+      const dropdownOptions = document.querySelector('#roleSwitchDropdown');
 
       if (dropdownDisplay && dropdownOptions) {
         // Check if already initialized
@@ -2202,11 +2202,11 @@ class UnifiedNavigation {
     // Add ripple effect
     const ripple = document.createElement('span');
     ripple.className = 'nav-ripple';
-    link.appendChild(ripple);
+    link.append(ripple);
 
     setTimeout(() => {
       if (ripple.parentNode) {
-        ripple.parentNode.removeChild(ripple);
+        ripple.remove();
       }
     }, 600);
   }
@@ -2219,7 +2219,7 @@ class UnifiedNavigation {
     this.loadUserInfo();
 
     // Get the navigation container
-    const navigationContainer = document.getElementById('navigation-container');
+    const navigationContainer = document.querySelector('#navigation-container');
     if (navigationContainer) {
       // Clear and recreate entire navigation structure
       const fullNavigation = this.createFullNavigationStructure();
@@ -2278,7 +2278,7 @@ class UnifiedNavigation {
         }[];
       }>('/chat/unread-count');
 
-      const badge = document.getElementById('chat-unread-badge');
+      const badge = document.querySelector('#chat-unread-badge');
       if (badge) {
         // v2 API uses totalUnread (camelCase)
         const count = data.totalUnread;
@@ -2310,7 +2310,7 @@ class UnifiedNavigation {
         }[];
       }>('/calendar/unread-events');
 
-      const badge = document.getElementById('calendar-unread-badge');
+      const badge = document.querySelector('#calendar-unread-badge');
       if (badge) {
         // Nur Events mit Statusanfrage zählen
         const count = data.totalUnread;
@@ -2334,7 +2334,7 @@ class UnifiedNavigation {
 
       // Only show badge for admin/root users
       if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
-        const badge = document.getElementById('kvp-badge');
+        const badge = document.querySelector('#kvp-badge');
         if (badge) badge.style.display = 'none';
         return;
       }
@@ -2347,7 +2347,7 @@ class UnifiedNavigation {
         rejected: number;
         avgSavings: number | null;
       }>('/kvp/dashboard/stats');
-      const badge = document.getElementById('kvp-badge');
+      const badge = document.querySelector('#kvp-badge');
       if (badge !== null) {
         const currentCount = data.newSuggestions;
 
@@ -2397,8 +2397,8 @@ class UnifiedNavigation {
 
       const data = await apiClient.get<{ pendingCount: number }>('/surveys/pending-count');
       console.info('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
-      const badge = document.getElementById('surveys-pending-badge');
-      const parentBadge = document.getElementById('lean-management-badge');
+      const badge = document.querySelector('#surveys-pending-badge');
+      const parentBadge = document.querySelector('#lean-management-badge');
       console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
       console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
 
@@ -2430,7 +2430,7 @@ class UnifiedNavigation {
     } catch (error) {
       console.error('[UnifiedNav] updatePendingSurveys - Exception:', error);
       // Silently handle errors for pending surveys
-      const badge = document.getElementById('surveys-pending-badge');
+      const badge = document.querySelector('#surveys-pending-badge');
       if (badge) {
         badge.style.display = 'none';
       }
@@ -2487,7 +2487,7 @@ class UnifiedNavigation {
         });
 
         // Update main documents badge
-        const mainBadge = document.getElementById('documents-unread-badge');
+        const mainBadge = document.querySelector('#documents-unread-badge');
         if (mainBadge) {
           if (unreadCounts.total > 0) {
             mainBadge.textContent = unreadCounts.total > 99 ? '99+' : unreadCounts.total.toString();
@@ -2530,7 +2530,7 @@ class UnifiedNavigation {
       await apiClient.post('/documents/mark-all-read');
 
       // Hide the badge immediately
-      const badge = document.getElementById('documents-unread-badge');
+      const badge = document.querySelector('#documents-unread-badge');
       if (badge) {
         badge.style.display = 'none';
       }
@@ -2542,7 +2542,7 @@ class UnifiedNavigation {
   // Reset KVP badge when admin/root clicks on KVP
   private async resetKvpBadge(): Promise<void> {
     console.info('[UnifiedNav] Resetting KVP badge');
-    const badge = document.getElementById('kvp-badge');
+    const badge = document.querySelector('#kvp-badge');
     if (badge) {
       badge.style.display = 'none';
       badge.textContent = '0';
@@ -2647,7 +2647,7 @@ class UnifiedNavigation {
       const styleSheet = document.createElement('style');
       styleSheet.id = 'unified-navigation-styles';
       styleSheet.textContent = unifiedNavigationCSS;
-      document.head.appendChild(styleSheet);
+      document.head.append(styleSheet);
 
       // Force style recalculation
       void document.body.offsetHeight;
@@ -2703,10 +2703,10 @@ class UnifiedNavigation {
       const { used, total, percentage } = data;
 
       // Update UI
-      const usedElement = document.getElementById('storage-used');
-      const totalElement = document.getElementById('storage-total');
-      const progressBar = document.getElementById('storage-progress-bar');
-      const percentageElement = document.getElementById('storage-percentage');
+      const usedElement = document.querySelector('#storage-used');
+      const totalElement = document.querySelector('#storage-total');
+      const progressBar = document.querySelector('#storage-progress-bar');
+      const percentageElement = document.querySelector('#storage-percentage');
 
       if (usedElement) usedElement.textContent = this.formatBytes(used);
       if (totalElement) totalElement.textContent = this.formatBytes(total);
@@ -2734,7 +2734,7 @@ class UnifiedNavigation {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   }
 
   // Toast notification helper - Removed as it was unused
@@ -3899,7 +3899,7 @@ if (!document.querySelector('#unified-navigation-styles')) {
   const styleSheet = document.createElement('style');
   styleSheet.id = 'unified-navigation-styles';
   styleSheet.textContent = unifiedNavigationCSS;
-  document.head.appendChild(styleSheet);
+  document.head.append(styleSheet);
 } else {
   console.info('[UnifiedNav] CSS styles already present');
 }
@@ -4001,7 +4001,7 @@ window.UnifiedNavigation = UnifiedNavigation;
 
 // Global function to dismiss role switch banner
 window.dismissRoleSwitchBanner = function () {
-  const banner = document.getElementById('role-switch-warning-banner');
+  const banner = document.querySelector('#role-switch-warning-banner');
   if (banner) {
     banner.style.display = 'none';
 

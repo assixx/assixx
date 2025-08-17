@@ -64,9 +64,14 @@ interface UpdateUserData {
   role?: never;
 }
 
+/**
+ *
+ */
 class UserService {
   /**
    * Get user by ID
+   * @param userId
+   * @param tenantId
    */
   async getUserById(
     userId: number,
@@ -106,6 +111,7 @@ class UserService {
 
   /**
    * Get user by username
+   * @param username
    */
   async getUserByUsername(username: string): Promise<UserData | null> {
     try {
@@ -130,6 +136,7 @@ class UserService {
 
   /**
    * Get all users with pagination
+   * @param options
    */
   async getUsers(options: GetUsersOptions = {}): Promise<UsersResponse> {
     try {
@@ -177,6 +184,9 @@ class UserService {
 
   /**
    * Update user profile
+   * @param userId
+   * @param tenantId
+   * @param updateData
    */
   async updateUser(
     userId: number,
@@ -202,6 +212,9 @@ class UserService {
 
   /**
    * Update user password
+   * @param userId
+   * @param tenantId
+   * @param newPassword
    */
   async updatePassword(
     userId: number,
@@ -221,6 +234,7 @@ class UserService {
 
   /**
    * Delete user (soft delete)
+   * @param userId
    */
   async deleteUser(userId: number): Promise<boolean> {
     try {
@@ -234,6 +248,9 @@ class UserService {
 
   /**
    * Archive/Unarchive user
+   * @param userId
+   * @param tenantId
+   * @param archived
    */
   async archiveUser(
     userId: number,

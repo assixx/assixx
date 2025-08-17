@@ -194,7 +194,7 @@ if (USE_MOCK_DB) {
     },
     async getConnection() {
       // Mock connection object
-      const mockConnection = {
+      return {
         async query<
           T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
         >(sql: string, params?: unknown[]): Promise<[T, FieldPacket[]]> {
@@ -220,7 +220,6 @@ if (USE_MOCK_DB) {
           // Mock release - do nothing
         },
       };
-      return mockConnection;
     },
   };
 
@@ -244,7 +243,7 @@ if (USE_MOCK_DB) {
   const defaultDatabase = process.env.NODE_ENV === "test" ? "main" : "main";
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(process.env.DB_PORT ?? defaultPort),
+    port: Number.parseInt(process.env.DB_PORT ?? defaultPort),
     user: process.env.DB_USER ?? "assixx_user",
     password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
     database: process.env.DB_NAME ?? defaultDatabase,
@@ -283,8 +282,11 @@ if (USE_MOCK_DB) {
         console.info("[DEBUG] Database connection test successful");
         conn.release();
       })
-      .catch((err) => {
-        console.error("[DEBUG] Database connection test failed:", err.message);
+      .catch((error) => {
+        console.error(
+          "[DEBUG] Database connection test failed:",
+          error.message,
+        );
       });
   } catch (error: unknown) {
     console.error("Fehler beim Verbinden mit der Datenbank:", error);

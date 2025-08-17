@@ -119,10 +119,15 @@ interface SurveyTemplateRequest extends AuthenticatedRequest {
   };
 }
 
+/**
+ *
+ */
 class SurveyController {
   /**
    * Holt alle Survey Einträge für einen Tenant
    * GET /api/surveys
+   * @param req
+   * @param res
    */
   async getAll(req: SurveyQueryRequest, res: Response): Promise<void> {
     try {
@@ -133,15 +138,15 @@ class SurveyController {
         status: req.query.status === "archived" ? "closed" : req.query.status,
         page:
           req.query.page != null && req.query.page !== ""
-            ? parseInt(req.query.page, 10)
+            ? Number.parseInt(req.query.page, 10)
             : undefined,
         limit:
           req.query.limit != null && req.query.limit !== ""
-            ? parseInt(req.query.limit, 10)
+            ? Number.parseInt(req.query.limit, 10)
             : undefined,
         created_by:
           req.query.created_by != null && req.query.created_by !== ""
-            ? parseInt(req.query.created_by, 10)
+            ? Number.parseInt(req.query.created_by, 10)
             : undefined,
       };
       const result = await surveyService.getAllByTenant(tenantId, filters);
@@ -158,13 +163,15 @@ class SurveyController {
   /**
    * Holt einen Survey Eintrag per ID mit Fragen und Optionen
    * GET /api/surveys/:id
+   * @param req
+   * @param res
    */
   async getById(req: SurveyByIdRequest, res: Response): Promise<void> {
     try {
       const tenantId = req.user.tenant_id;
       // Using direct model import since the original controller does this
       const result = await Survey.getById(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
       );
       if (!result) {
@@ -184,6 +191,8 @@ class SurveyController {
   /**
    * Erstellt einen neuen Survey
    * POST /api/surveys
+   * @param req
+   * @param res
    */
   async create(req: SurveyCreateRequest, res: Response): Promise<void> {
     try {
@@ -224,6 +233,8 @@ class SurveyController {
   /**
    * Aktualisiert einen Survey
    * PUT /api/surveys/:id
+   * @param req
+   * @param res
    */
   async update(req: SurveyUpdateRequest, res: Response): Promise<void> {
     try {
@@ -259,7 +270,7 @@ class SurveyController {
       };
 
       const result = await Survey.update(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         surveyDataForUpdate,
         tenantId,
       );
@@ -280,12 +291,17 @@ class SurveyController {
   /**
    * Löscht einen Survey
    * DELETE /api/surveys/:id
+   * @param req
+   * @param res
    */
   async delete(req: SurveyByIdRequest, res: Response): Promise<void> {
     try {
       const tenantId = req.user.tenant_id;
       // Using direct model import since the original controller does this
-      const result = await Survey.delete(parseInt(req.params.id, 10), tenantId);
+      const result = await Survey.delete(
+        Number.parseInt(req.params.id, 10),
+        tenantId,
+      );
       if (!result) {
         res.status(404).json({ error: "Umfrage nicht gefunden" });
         return;
@@ -303,6 +319,8 @@ class SurveyController {
   /**
    * Holt Templates
    * GET /api/surveys/templates
+   * @param req
+   * @param res
    */
   async getTemplates(req: SurveyQueryRequest, res: Response): Promise<void> {
     try {
@@ -321,6 +339,8 @@ class SurveyController {
   /**
    * Erstellt Survey aus Template
    * POST /api/surveys/from-template/:templateId
+   * @param req
+   * @param res
    */
   async createFromTemplate(
     req: SurveyTemplateRequest,
@@ -330,7 +350,7 @@ class SurveyController {
       const tenantId = req.user.tenant_id;
       const createdBy = req.user.id;
       const surveyId = await surveyService.createFromTemplate(
-        parseInt(req.params.templateId, 10),
+        Number.parseInt(req.params.templateId, 10),
         tenantId,
         createdBy,
       );
@@ -349,12 +369,14 @@ class SurveyController {
   /**
    * Holt Survey Statistiken
    * GET /api/surveys/:id/statistics
+   * @param req
+   * @param res
    */
   async getStatistics(req: SurveyByIdRequest, res: Response): Promise<void> {
     try {
       const tenantId = req.user.tenant_id;
       const statistics = await surveyService.getStatistics(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
       );
       res.json(statistics);

@@ -121,9 +121,13 @@ export interface AttachmentData {
   uploadedBy: number;
 }
 
+/**
+ *
+ */
 export class KVPService {
   /**
    * Get all categories for a tenant
+   * @param _tenantId
    */
   async getCategories(_tenantId: number): Promise<unknown[]> {
     try {
@@ -136,6 +140,10 @@ export class KVPService {
 
   /**
    * List KVP suggestions with filters
+   * @param tenantId
+   * @param userId
+   * @param userRole
+   * @param filters
    */
   async listSuggestions(
     tenantId: number,
@@ -207,6 +215,10 @@ export class KVPService {
 
   /**
    * Get a specific suggestion by ID
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async getSuggestionById(
     id: number,
@@ -230,6 +242,9 @@ export class KVPService {
 
   /**
    * Create a new KVP suggestion
+   * @param data
+   * @param tenantId
+   * @param userId
    */
   async createSuggestion(
     data: KVPCreateData,
@@ -279,6 +294,11 @@ export class KVPService {
 
   /**
    * Update a KVP suggestion
+   * @param id
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async updateSuggestion(
     id: number,
@@ -340,13 +360,7 @@ export class KVPService {
       }
 
       // Return the updated suggestion
-      const updated = await this.getSuggestionById(
-        id,
-        tenantId,
-        userId,
-        userRole,
-      );
-      return updated;
+      return await this.getSuggestionById(id, tenantId, userId, userRole);
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
@@ -358,6 +372,10 @@ export class KVPService {
 
   /**
    * Delete a KVP suggestion
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async deleteSuggestion(
     id: number,
@@ -398,6 +416,10 @@ export class KVPService {
 
   /**
    * Get comments for a suggestion
+   * @param suggestionId
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async getComments(
     suggestionId: number,
@@ -418,6 +440,11 @@ export class KVPService {
 
   /**
    * Add a comment to a suggestion
+   * @param suggestionId
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async addComment(
     suggestionId: number,
@@ -451,6 +478,10 @@ export class KVPService {
 
   /**
    * Get attachments for a suggestion
+   * @param suggestionId
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async getAttachments(
     suggestionId: number,
@@ -475,6 +506,11 @@ export class KVPService {
 
   /**
    * Add an attachment to a suggestion
+   * @param suggestionId
+   * @param attachmentData
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async addAttachment(
     suggestionId: number,
@@ -503,6 +539,10 @@ export class KVPService {
 
   /**
    * Get attachment details for download
+   * @param attachmentId
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async getAttachment(
     attachmentId: number,
@@ -526,6 +566,10 @@ export class KVPService {
 
   /**
    * Award points to a user
+   * @param data
+   * @param tenantId
+   * @param awardedBy
+   * @param userRole
    */
   async awardPoints(
     data: PointsData,
@@ -564,6 +608,8 @@ export class KVPService {
 
   /**
    * Get user points summary
+   * @param tenantId
+   * @param userId
    */
   async getUserPoints(tenantId: number, userId: number): Promise<unknown> {
     try {
@@ -580,6 +626,7 @@ export class KVPService {
 
   /**
    * Get dashboard statistics
+   * @param tenantId
    */
   async getDashboardStats(tenantId: number): Promise<unknown> {
     try {

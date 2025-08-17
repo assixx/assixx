@@ -198,7 +198,7 @@ router.put(
         return;
       }
 
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       const { name, description } = req.body;
 
       try {
@@ -253,7 +253,7 @@ router.delete(
       return;
     }
 
-    const groupId = parseInt(req.params.id);
+    const groupId = Number.parseInt(req.params.id);
 
     try {
       const success = await departmentGroupService.deleteGroup(
@@ -326,7 +326,7 @@ router.post(
         return;
       }
 
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       const { departmentIds } = req.body;
 
       try {
@@ -375,8 +375,8 @@ router.delete(
       return;
     }
 
-    const groupId = parseInt(req.params.id);
-    const departmentId = parseInt(req.params.deptId);
+    const groupId = Number.parseInt(req.params.id);
+    const departmentId = Number.parseInt(req.params.deptId);
 
     try {
       const success = await departmentGroupService.removeDepartmentsFromGroup(
@@ -421,7 +421,7 @@ router.get(
       return;
     }
 
-    const groupId = parseInt(req.params.id);
+    const groupId = Number.parseInt(req.params.id);
     const includeSubgroups = req.query.includeSubgroups !== "false";
 
     try {

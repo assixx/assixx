@@ -141,9 +141,9 @@ class KvpPage {
 
     // Show/hide admin elements
     const adminElements = document.querySelectorAll('.admin-only');
-    const adminInfoBox = document.getElementById('adminInfoBox');
-    const statsOverview = document.getElementById('statsOverview');
-    const createBtn = document.getElementById('createNewBtn');
+    const adminInfoBox = document.querySelector('#adminInfoBox');
+    const statsOverview = document.querySelector('#statsOverview');
+    const createBtn = document.querySelector('#createNewBtn');
 
     // Check effective role instead of actual role
     if (effectiveRole === 'admin' || effectiveRole === 'root') {
@@ -178,12 +178,12 @@ class KvpPage {
       this.categories = data.categories ?? [];
 
       // Populate category dropdown
-      const categoryDropdown = document.getElementById('categoryDropdown');
+      const categoryDropdown = document.querySelector('#categoryDropdown');
       if (categoryDropdown) {
         // Keep the first "Alle Kategorien" option
         const firstOption = categoryDropdown.querySelector('.dropdown-option');
         categoryDropdown.innerHTML = '';
-        if (firstOption) categoryDropdown.appendChild(firstOption);
+        if (firstOption) categoryDropdown.append(firstOption);
 
         // Add categories
         this.categories.forEach((category) => {
@@ -193,7 +193,7 @@ class KvpPage {
             (window as unknown as KvpWindow).selectCategory(category.id.toString(), category.name);
           };
           option.textContent = category.name;
-          categoryDropdown.appendChild(option);
+          categoryDropdown.append(option);
         });
       }
     } catch (error) {
@@ -218,12 +218,12 @@ class KvpPage {
       this.departments = data.departments ?? [];
 
       // Populate department dropdown
-      const departmentDropdown = document.getElementById('departmentDropdown');
+      const departmentDropdown = document.querySelector('#departmentDropdown');
       if (departmentDropdown) {
         // Keep the first "Alle Abteilungen" option
         const firstOption = departmentDropdown.querySelector('.dropdown-option');
         departmentDropdown.innerHTML = '';
-        if (firstOption) departmentDropdown.appendChild(firstOption);
+        if (firstOption) departmentDropdown.append(firstOption);
 
         // Add departments
         this.departments.forEach((dept) => {
@@ -233,7 +233,7 @@ class KvpPage {
             (window as unknown as KvpWindow).selectDepartment(dept.id.toString(), dept.name);
           };
           option.textContent = dept.name;
-          departmentDropdown.appendChild(option);
+          departmentDropdown.append(option);
         });
       }
     } catch (error) {
@@ -248,10 +248,10 @@ class KvpPage {
       });
 
       // Add additional filters
-      const statusFilter = (document.getElementById('statusFilterValue') as HTMLInputElement).value;
-      const categoryFilter = (document.getElementById('categoryFilterValue') as HTMLInputElement).value;
-      const departmentFilter = (document.getElementById('departmentFilterValue') as HTMLInputElement).value;
-      const searchFilter = (document.getElementById('searchFilter') as HTMLInputElement).value;
+      const statusFilter = (document.querySelector('#statusFilterValue') as HTMLInputElement).value;
+      const categoryFilter = (document.querySelector('#categoryFilterValue') as HTMLInputElement).value;
+      const departmentFilter = (document.querySelector('#departmentFilterValue') as HTMLInputElement).value;
+      const searchFilter = (document.querySelector('#searchFilter') as HTMLInputElement).value;
 
       if (statusFilter !== '') params.append('status', statusFilter);
       if (categoryFilter !== '') params.append('category_id', categoryFilter);
@@ -279,8 +279,8 @@ class KvpPage {
   }
 
   private renderSuggestions(): void {
-    const container = document.getElementById('suggestionsContainer');
-    const emptyState = document.getElementById('emptyState');
+    const container = document.querySelector('#suggestionsContainer');
+    const emptyState = document.querySelector('#emptyState');
 
     if (!container || !emptyState) return;
 
@@ -344,7 +344,7 @@ class KvpPage {
         const target = e.target as HTMLElement;
         if (!target.closest('.action-btn')) {
           const id = card.getAttribute('data-id');
-          if (id !== null && id !== '') this.viewSuggestion(parseInt(id, 10));
+          if (id !== null && id !== '') this.viewSuggestion(Number.parseInt(id, 10));
         }
       });
     });
@@ -356,7 +356,7 @@ class KvpPage {
         const action = btn.getAttribute('data-action');
         const id = btn.getAttribute('data-id');
         if (action !== null && action !== '' && id !== null && id !== '') {
-          void this.handleAction(action, parseInt(id, 10));
+          void this.handleAction(action, Number.parseInt(id, 10));
         }
       });
     });
@@ -493,10 +493,10 @@ class KvpPage {
       const data = (await response.json()) as StatsResponse;
 
       // Update statistics display
-      const totalEl = document.getElementById('totalSuggestions');
-      const openEl = document.getElementById('openSuggestions');
-      const implementedEl = document.getElementById('implementedSuggestions');
-      const savingsEl = document.getElementById('totalSavings');
+      const totalEl = document.querySelector('#totalSuggestions');
+      const openEl = document.querySelector('#openSuggestions');
+      const implementedEl = document.querySelector('#implementedSuggestions');
+      const savingsEl = document.querySelector('#totalSavings');
 
       if (totalEl) totalEl.textContent = data.company.total.toString();
       if (openEl) {
@@ -526,11 +526,11 @@ class KvpPage {
     };
 
     // Update badge counts
-    const badgeAll = document.getElementById('badgeAll');
-    const badgeMine = document.getElementById('badgeMine');
-    const badgeDepartment = document.getElementById('badgeDepartment');
-    const badgeCompany = document.getElementById('badgeCompany');
-    const badgeArchived = document.getElementById('badgeArchived');
+    const badgeAll = document.querySelector('#badgeAll');
+    const badgeMine = document.querySelector('#badgeMine');
+    const badgeDepartment = document.querySelector('#badgeDepartment');
+    const badgeCompany = document.querySelector('#badgeCompany');
+    const badgeArchived = document.querySelector('#badgeArchived');
 
     if (badgeAll) badgeAll.textContent = counts.all.toString();
     if (badgeMine) badgeMine.textContent = counts.mine.toString();
@@ -564,7 +564,7 @@ class KvpPage {
 
     // Search filter with debounce
     let searchTimeout: number;
-    const searchInput = document.getElementById('searchFilter') as HTMLInputElement;
+    const searchInput = document.querySelector('#searchFilter') as HTMLInputElement;
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimeout);
       searchTimeout = window.setTimeout(() => {
@@ -573,7 +573,7 @@ class KvpPage {
     });
 
     // Create new button
-    const createBtn = document.getElementById('createNewBtn');
+    const createBtn = document.querySelector('#createNewBtn');
     if (createBtn) {
       createBtn.addEventListener('click', () => {
         this.openCreateModal();
@@ -581,7 +581,7 @@ class KvpPage {
     }
 
     // Create form submission
-    const createForm = document.getElementById('createKvpForm') as HTMLFormElement | null;
+    const createForm = document.querySelector('#createKvpForm') as HTMLFormElement | null;
     if (createForm !== null) {
       createForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -616,7 +616,7 @@ class KvpPage {
     const notification = document.createElement('div');
     notification.className = 'notification success';
     notification.textContent = message;
-    document.body.appendChild(notification);
+    document.body.append(notification);
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -628,7 +628,7 @@ class KvpPage {
     const notification = document.createElement('div');
     notification.className = 'notification error';
     notification.textContent = `Fehler: ${message}`;
-    document.body.appendChild(notification);
+    document.body.append(notification);
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -643,11 +643,11 @@ class KvpPage {
 
   private openCreateModal(): void {
     // Reset form
-    const form = document.getElementById('createKvpForm') as HTMLFormElement;
+    const form = document.querySelector('#createKvpForm') as HTMLFormElement;
     form.reset();
 
     // Load categories into dropdown
-    const categoryDropdown = document.getElementById('kvpCategoryDropdown');
+    const categoryDropdown = document.querySelector('#kvpCategoryDropdown');
     if (categoryDropdown && this.categories.length > 0) {
       categoryDropdown.innerHTML = this.categories
         .map(
@@ -666,7 +666,7 @@ class KvpPage {
 
   private async createSuggestion(): Promise<void> {
     try {
-      const form = document.getElementById('createKvpForm') as HTMLFormElement;
+      const form = document.querySelector('#createKvpForm') as HTMLFormElement;
       const formData = new FormData(form);
 
       // Validate required fields
@@ -697,10 +697,10 @@ class KvpPage {
       const data = {
         title: titleStr.trim(),
         description: descStr.trim(),
-        category_id: parseInt(catIdStr, 10),
+        category_id: Number.parseInt(catIdStr, 10),
         priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
         expected_benefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null,
-        estimated_cost: costValue !== null && costValue !== '' ? parseFloat(costValue as string) : null,
+        estimated_cost: costValue !== null && costValue !== '' ? Number.parseFloat(costValue as string) : null,
       };
 
       // Submit to API
@@ -740,7 +740,7 @@ class KvpPage {
 
       // Clear photo selection
       (window as unknown as KvpWindow).selectedPhotos = [];
-      const photoPreview = document.getElementById('photoPreview');
+      const photoPreview = document.querySelector('#photoPreview');
       if (photoPreview) photoPreview.innerHTML = '';
 
       // Reload suggestions

@@ -85,10 +85,15 @@ interface KvpShareRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class KvpController {
   /**
    * Get visible KVP suggestions based on user role and permissions
    * GET /api/kvp
+   * @param req
+   * @param res
    */
   async getAll(req: KvpQueryRequest, res: Response): Promise<void> {
     try {
@@ -116,7 +121,7 @@ class KvpController {
           statusFilter: status,
           departmentFilter:
             req.query.department_id != null && req.query.department_id !== ""
-              ? parseInt(req.query.department_id)
+              ? Number.parseInt(req.query.department_id)
               : undefined,
         });
 
@@ -148,8 +153,8 @@ class KvpController {
       }
 
       // Execute query
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
+      const pageNum = Number.parseInt(page);
+      const limitNum = Number.parseInt(limit);
       const offset = (pageNum - 1) * limitNum;
 
       // Build the full query
@@ -249,6 +254,8 @@ class KvpController {
   /**
    * Get a single KVP suggestion if user has permission
    * GET /api/kvp/:id
+   * @param req
+   * @param res
    */
   async getById(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -257,7 +264,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -316,6 +323,8 @@ class KvpController {
   /**
    * Create a new KVP suggestion
    * POST /api/kvp
+   * @param req
+   * @param res
    */
   async create(req: KvpCreateRequest, res: Response): Promise<void> {
     try {
@@ -418,6 +427,8 @@ class KvpController {
   /**
    * Update a KVP suggestion if user has permission
    * PUT /api/kvp/:id
+   * @param req
+   * @param res
    */
   async update(req: KvpUpdateRequest, res: Response): Promise<void> {
     try {
@@ -426,7 +437,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -550,6 +561,8 @@ class KvpController {
   /**
    * Archive a KVP suggestion (soft delete)
    * DELETE /api/kvp/:id
+   * @param req
+   * @param res
    */
   async delete(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -558,7 +571,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -605,6 +618,8 @@ class KvpController {
   /**
    * Share a suggestion company-wide
    * POST /api/kvp/:id/share
+   * @param req
+   * @param res
    */
   async shareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
@@ -613,7 +628,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -695,6 +710,8 @@ class KvpController {
   /**
    * Unshare a suggestion (back to department level)
    * POST /api/kvp/:id/unshare
+   * @param req
+   * @param res
    */
   async unshareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
@@ -705,7 +722,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -776,6 +793,8 @@ class KvpController {
   /**
    * Get department statistics
    * GET /api/kvp/stats
+   * @param req
+   * @param res
    */
   async getStatistics(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -872,6 +891,8 @@ class KvpController {
   /**
    * Get KVP categories
    * GET /api/kvp/categories
+   * @param req
+   * @param res
    */
   async getCategories(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -900,6 +921,8 @@ class KvpController {
   /**
    * Get comments for a suggestion
    * GET /api/kvp/:id/comments
+   * @param req
+   * @param res
    */
   async getComments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -908,7 +931,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -963,6 +986,8 @@ class KvpController {
   /**
    * Add comment to a suggestion
    * POST /api/kvp/:id/comments
+   * @param req
+   * @param res
    */
   async addComment(
     req: TenantRequest & {
@@ -977,7 +1002,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -1033,6 +1058,8 @@ class KvpController {
   /**
    * Get attachments for a suggestion
    * GET /api/kvp/:id/attachments
+   * @param req
+   * @param res
    */
   async getAttachments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -1041,7 +1068,7 @@ class KvpController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -1087,6 +1114,8 @@ class KvpController {
   /**
    * Upload photo attachments for a KVP suggestion
    * POST /api/kvp/:id/attachments
+   * @param req
+   * @param res
    */
   async uploadAttachment(
     req: TenantRequest & {
@@ -1109,7 +1138,7 @@ class KvpController {
         return;
       }
 
-      const suggestionId = parseInt(req.params.id);
+      const suggestionId = Number.parseInt(req.params.id);
 
       // Ensure req.files is an array to prevent type confusion
       if (!Array.isArray(req.files)) {
@@ -1196,6 +1225,8 @@ class KvpController {
   /**
    * Download a KVP attachment
    * GET /api/kvp/attachments/:attachmentId/download
+   * @param req
+   * @param res
    */
   async downloadAttachment(
     req: TenantRequest & { params: { attachmentId: string } },
@@ -1207,7 +1238,7 @@ class KvpController {
         return;
       }
 
-      const attachmentId = parseInt(req.params.attachmentId, 10);
+      const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
       // Get attachment details
       const [attachments] = await executeQuery<RowDataPacket[]>(

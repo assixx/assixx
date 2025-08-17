@@ -78,10 +78,15 @@ interface DepartmentQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class DepartmentController {
   /**
    * Holt alle Department Einträge
    * GET /api/department
+   * @param req
+   * @param res
    */
   async getAll(req: DepartmentQueryRequest, res: Response): Promise<void> {
     try {
@@ -102,11 +107,11 @@ class DepartmentController {
         search: req.query.search,
         parent_id:
           req.query.parent_id !== undefined && req.query.parent_id !== ""
-            ? parseInt(req.query.parent_id)
+            ? Number.parseInt(req.query.parent_id)
             : undefined,
         manager_id:
           req.query.manager_id !== undefined && req.query.manager_id !== ""
-            ? parseInt(req.query.manager_id)
+            ? Number.parseInt(req.query.manager_id)
             : undefined,
         active:
           req.query.active !== undefined && req.query.active !== ""
@@ -114,11 +119,11 @@ class DepartmentController {
             : undefined,
         page:
           req.query.page !== undefined && req.query.page !== ""
-            ? parseInt(req.query.page)
+            ? Number.parseInt(req.query.page)
             : undefined,
         limit:
           req.query.limit !== undefined && req.query.limit !== ""
-            ? parseInt(req.query.limit)
+            ? Number.parseInt(req.query.limit)
             : undefined,
         sortBy: req.query.sortBy,
         sortDir: req.query.sortDir,
@@ -142,6 +147,8 @@ class DepartmentController {
   /**
    * Holt einen Department Eintrag per ID
    * GET /api/department/:id
+   * @param req
+   * @param res
    */
   async getById(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
@@ -150,7 +157,7 @@ class DepartmentController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -185,6 +192,8 @@ class DepartmentController {
   /**
    * Erstellt einen neuen Department Eintrag
    * POST /api/department
+   * @param req
+   * @param res
    */
   async create(req: DepartmentCreateRequest, res: Response): Promise<void> {
     try {
@@ -219,6 +228,8 @@ class DepartmentController {
   /**
    * Aktualisiert einen Department Eintrag
    * PUT /api/department/:id
+   * @param req
+   * @param res
    */
   async update(req: DepartmentUpdateRequest, res: Response): Promise<void> {
     try {
@@ -227,7 +238,7 @@ class DepartmentController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -268,6 +279,8 @@ class DepartmentController {
   /**
    * Löscht einen Department Eintrag
    * DELETE /api/department/:id
+   * @param req
+   * @param res
    */
   async delete(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
@@ -276,7 +289,7 @@ class DepartmentController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

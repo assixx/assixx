@@ -85,30 +85,30 @@ class EmployeesManager {
 
   private initializeEventListeners() {
     // Filter buttons
-    document.getElementById('show-all-employees')?.addEventListener('click', () => {
+    document.querySelector('#show-all-employees')?.addEventListener('click', () => {
       this.currentFilter = 'all';
       void this.loadEmployees();
     });
 
-    document.getElementById('filter-employees-active')?.addEventListener('click', () => {
+    document.querySelector('#filter-employees-active')?.addEventListener('click', () => {
       this.currentFilter = 'active';
       void this.loadEmployees();
     });
 
-    document.getElementById('filter-employees-inactive')?.addEventListener('click', () => {
+    document.querySelector('#filter-employees-inactive')?.addEventListener('click', () => {
       this.currentFilter = 'inactive';
       void this.loadEmployees();
     });
 
     // Search
-    document.getElementById('employee-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('employee-search') as HTMLInputElement | null;
+    document.querySelector('#employee-search-btn')?.addEventListener('click', () => {
+      const searchInput = document.querySelector('#employee-search') as HTMLInputElement | null;
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadEmployees();
     });
 
     // Enter key on search
-    document.getElementById('employee-search')?.addEventListener('keypress', (e) => {
+    document.querySelector('#employee-search')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
@@ -192,7 +192,7 @@ class EmployeesManager {
   }
 
   private renderEmployeesTable(): void {
-    const tableBody = document.getElementById('employees-table-body');
+    const tableBody = document.querySelector('#employees-table-body');
     if (tableBody === null) return;
 
     if (this.employees.length === 0) {
@@ -310,7 +310,7 @@ class EmployeesManager {
   }
 
   showEmployeeModal(): void {
-    const modal = document.getElementById('employee-modal');
+    const modal = document.querySelector('#employee-modal');
     if (modal !== null) {
       modal.style.display = 'flex';
 
@@ -324,7 +324,7 @@ class EmployeesManager {
   }
 
   hideEmployeeModal(): void {
-    const modal = document.getElementById('employee-modal');
+    const modal = document.querySelector('#employee-modal');
     if (modal !== null) {
       modal.style.display = 'none';
     }
@@ -433,10 +433,9 @@ class EmployeesManager {
 
   async loadDepartments(): Promise<Department[]> {
     try {
-      const response = await this.apiClient.request<Department[]>('/departments', {
+      return await this.apiClient.request<Department[]>('/departments', {
         method: 'GET',
       });
-      return response;
     } catch (error) {
       console.error('Error loading departments:', error);
       return [];
@@ -445,10 +444,9 @@ class EmployeesManager {
 
   async loadTeams(): Promise<Team[]> {
     try {
-      const response = await this.apiClient.request<Team[]>('/teams', {
+      return await this.apiClient.request<Team[]>('/teams', {
         method: 'GET',
       });
-      return response;
     } catch (error) {
       console.error('Error loading teams:', error);
       return [];
@@ -504,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveEmployee = async () => {
-      const form = document.getElementById('employee-form') as HTMLFormElement | null;
+      const form = document.querySelector('#employee-form') as HTMLFormElement | null;
       if (form === null) return;
 
       const formData = new FormData(form);
@@ -514,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof value === 'string' && value.length > 0) {
           // Convert to appropriate types
           if (key === 'departmentId' || key === 'teamId') {
-            data[key] = parseInt(value, 10);
+            data[key] = Number.parseInt(value, 10);
           } else {
             data[key] = value;
           }
@@ -583,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadDepartmentsForEmployeeSelect = async () => {
       const departments = await employeesManager?.loadDepartments();
-      const selectElement = document.getElementById('employee-department-select') as HTMLSelectElement | null;
+      const selectElement = document.querySelector('#employee-department-select') as HTMLSelectElement | null;
 
       if (selectElement !== null && departments !== undefined) {
         // Clear existing options and add default
@@ -594,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const option = document.createElement('option');
           option.value = dept.id.toString();
           option.textContent = dept.name;
-          selectElement.appendChild(option);
+          selectElement.append(option);
         });
 
         console.info('[EmployeesManager] Loaded departments:', departments.length);
@@ -603,14 +601,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadTeamsForEmployeeSelect = async () => {
       const teams = await employeesManager?.loadTeams();
-      const selectedDeptId = (document.getElementById('employee-department-select') as HTMLSelectElement | null)?.value;
-      const selectElement = document.getElementById('employee-team-select') as HTMLSelectElement | null;
+      const selectedDeptId = (document.querySelector('#employee-department-select') as HTMLSelectElement | null)?.value;
+      const selectElement = document.querySelector('#employee-team-select') as HTMLSelectElement | null;
 
       if (selectElement !== null && teams !== undefined) {
         // Filter teams by department if one is selected
         let filteredTeams = teams;
         if (selectedDeptId !== undefined && selectedDeptId !== '' && selectedDeptId !== '0') {
-          filteredTeams = teams.filter((team) => team.departmentId === parseInt(selectedDeptId, 10));
+          filteredTeams = teams.filter((team) => team.departmentId === Number.parseInt(selectedDeptId, 10));
         }
 
         // Clear existing options and add default
@@ -621,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const option = document.createElement('option');
           option.value = team.id.toString();
           option.textContent = team.name;
-          selectElement.appendChild(option);
+          selectElement.append(option);
         });
 
         console.info('[EmployeesManager] Loaded teams:', filteredTeams.length);
@@ -629,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Add form submit handler
-    const employeeForm = document.getElementById('employee-form') as HTMLFormElement | null;
+    const employeeForm = document.querySelector('#employee-form') as HTMLFormElement | null;
     if (employeeForm !== null) {
       employeeForm.addEventListener('submit', (e) => {
         e.preventDefault();

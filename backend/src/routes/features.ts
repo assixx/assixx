@@ -134,7 +134,7 @@ router.get(
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
       // Only Root and Admin can view other tenants
-      const requestedTenantId = parseInt(req.params.tenantId, 10);
+      const requestedTenantId = Number.parseInt(req.params.tenantId, 10);
       const userTenantId = req.user.tenant_id;
 
       if (

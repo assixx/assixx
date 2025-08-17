@@ -137,8 +137,8 @@ export class ApiClient {
 
   private extractApiName(endpoint: string): string {
     // Extract API name from endpoint (e.g., /auth/login -> auth)
-    const parts = endpoint.split('/').filter(Boolean);
-    return parts[0] ?? '';
+    const part = endpoint.split('/').find(Boolean);
+    return part ?? '';
   }
 
   private async handleResponse<T>(response: Response, version: 'v1' | 'v2'): Promise<T> {

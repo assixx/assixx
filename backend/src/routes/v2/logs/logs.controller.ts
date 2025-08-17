@@ -14,6 +14,8 @@ export const logsController = {
   /**
    * Get logs with filters
    * GET /api/v2/logs
+   * @param req
+   * @param res
    */
   async getLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     console.log("===== LOGS V2 CONTROLLER GETLOGS CALLED =====");
@@ -35,24 +37,24 @@ export const logsController = {
       logger.info("[Logs v2 Controller] User is root, proceeding");
 
       // Support both 'offset' and 'page' parameters for compatibility
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const limit = req.query.limit ? Number.parseInt(req.query.limit as string) : 50;
       let page = 1;
       
       if (req.query.offset !== undefined) {
         // If offset is provided, calculate page from it
-        const offset = parseInt(req.query.offset as string);
+        const offset = Number.parseInt(req.query.offset as string);
         page = Math.floor(offset / limit) + 1;
         logger.info(`[Logs v2] Converting offset ${offset} to page ${page} (limit: ${limit})`);
       } else if (req.query.page) {
         // Otherwise use page directly
-        page = parseInt(req.query.page as string);
+        page = Number.parseInt(req.query.page as string);
       }
 
       const filters: LogsFilterParams = {
         page,
         limit,
-        userId: req.query.userId ? parseInt(req.query.userId as string) : undefined,
-        tenantId: req.query.tenantId ? parseInt(req.query.tenantId as string) : undefined,
+        userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
+        tenantId: req.query.tenantId ? Number.parseInt(req.query.tenantId as string) : undefined,
         action: req.query.action as string,
         entityType: req.query.entityType as string,
         startDate: req.query.startDate as string,
@@ -77,6 +79,8 @@ export const logsController = {
   /**
    * Get log statistics
    * GET /api/v2/logs/stats
+   * @param req
+   * @param res
    */
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -97,6 +101,8 @@ export const logsController = {
   /**
    * Delete logs with filters
    * DELETE /api/v2/logs
+   * @param req
+   * @param res
    */
   async deleteLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {

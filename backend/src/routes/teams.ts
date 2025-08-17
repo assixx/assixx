@@ -373,7 +373,7 @@ router.get("/", async (req, res): Promise<void> => {
 router.get("/:id", async (req, res): Promise<void> => {
   try {
     // const authReq = req as AuthenticatedRequest;
-    const team = await Team.findById(parseInt(req.params.id, 10));
+    const team = await Team.findById(Number.parseInt(req.params.id, 10));
 
     if (!team) {
       res.status(404).json({ message: "Team nicht gefunden" });
@@ -505,7 +505,7 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
       department_id?: number;
       leader_id?: number;
     };
-    const teamId = parseInt(req.params.id, 10);
+    const teamId = Number.parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
@@ -634,7 +634,7 @@ router.put("/:id", authenticateToken, async (req, res): Promise<void> => {
 router.delete("/:id", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const teamId = parseInt(req.params.id, 10);
+    const teamId = Number.parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
@@ -737,7 +737,7 @@ router.delete("/:id", authenticateToken, async (req, res): Promise<void> => {
 router.get("/:id/members", async (req, res): Promise<void> => {
   try {
     // const authReq = req as AuthenticatedRequest;
-    const teamId = parseInt(req.params.id, 10);
+    const teamId = Number.parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
@@ -850,7 +850,7 @@ router.post(
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const teamId = parseInt(req.params.id, 10);
+      const teamId = Number.parseInt(req.params.id, 10);
       const { userId } = req.body as { userId?: number };
 
       if (userId == null || userId === 0) {
@@ -976,8 +976,8 @@ router.delete(
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const teamId = parseInt(req.params.id, 10);
-      const userId = parseInt(req.params.userId, 10);
+      const teamId = Number.parseInt(req.params.id, 10);
+      const userId = Number.parseInt(req.params.userId, 10);
 
       // Check if team exists
       const team = await Team.findById(teamId);

@@ -42,9 +42,15 @@ interface AssignmentRow extends RowDataPacket {
   dept_desc?: string;
 }
 
+/**
+ *
+ */
 export class DepartmentGroupsService {
   /**
    * Create a new department group
+   * @param data
+   * @param tenantId
+   * @param createdBy
    */
   async createGroup(
     data: CreateGroupRequest,
@@ -135,6 +141,7 @@ export class DepartmentGroupsService {
 
   /**
    * Get all groups with hierarchy
+   * @param tenantId
    */
   async getGroupHierarchy(
     tenantId: number,
@@ -217,6 +224,8 @@ export class DepartmentGroupsService {
 
   /**
    * Get a single group by ID
+   * @param groupId
+   * @param tenantId
    */
   async getGroupById(
     groupId: number,
@@ -255,6 +264,10 @@ export class DepartmentGroupsService {
 
   /**
    * Update a group
+   * @param groupId
+   * @param data
+   * @param tenantId
+   * @param updatedBy
    */
   async updateGroup(
     groupId: number,
@@ -293,6 +306,9 @@ export class DepartmentGroupsService {
 
   /**
    * Delete a group
+   * @param groupId
+   * @param tenantId
+   * @param deletedBy
    */
   async deleteGroup(
     groupId: number,
@@ -379,6 +395,10 @@ export class DepartmentGroupsService {
 
   /**
    * Add departments to a group
+   * @param groupId
+   * @param departmentIds
+   * @param tenantId
+   * @param addedBy
    */
   async addDepartmentsToGroup(
     groupId: number,
@@ -433,6 +453,10 @@ export class DepartmentGroupsService {
 
   /**
    * Remove a department from a group
+   * @param groupId
+   * @param departmentId
+   * @param tenantId
+   * @param removedBy
    */
   async removeDepartmentFromGroup(
     groupId: number,
@@ -467,6 +491,9 @@ export class DepartmentGroupsService {
 
   /**
    * Get departments in a group
+   * @param groupId
+   * @param tenantId
+   * @param includeSubgroups
    */
   async getGroupDepartments(
     groupId: number,
@@ -504,7 +531,7 @@ export class DepartmentGroupsService {
         });
       }
 
-      return Array.from(departments.values());
+      return [...departments.values()];
     } catch (error: unknown) {
       logger.error("Error getting group departments:", error);
       throw new ServiceError("SERVER_ERROR", "Failed to get departments");
@@ -513,6 +540,8 @@ export class DepartmentGroupsService {
 
   /**
    * Get departments from all subgroups recursively
+   * @param parentGroupId
+   * @param tenantId
    */
   private async getSubgroupDepartments(
     parentGroupId: number,
@@ -540,11 +569,14 @@ export class DepartmentGroupsService {
       });
     }
 
-    return Array.from(departments.values());
+    return [...departments.values()];
   }
 
   /**
    * Check for circular dependencies
+   * @param groupId
+   * @param targetId
+   * @param tenantId
    */
   private async checkCircularDependency(
     groupId: number,

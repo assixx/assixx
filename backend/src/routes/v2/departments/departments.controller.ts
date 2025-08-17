@@ -18,9 +18,15 @@ interface Department {
   [key: string]: unknown;
 }
 
+/**
+ *
+ */
 export class DepartmentController {
   /**
    * Get all departments
+   * @param req
+   * @param res
+   * @param _next
    */
   async getDepartments(
     req: AuthenticatedRequest,
@@ -65,6 +71,9 @@ export class DepartmentController {
 
   /**
    * Get department by ID
+   * @param req
+   * @param res
+   * @param _next
    */
   async getDepartmentById(
     req: AuthenticatedRequest,
@@ -72,7 +81,7 @@ export class DepartmentController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
       if (isNaN(departmentId)) {
         res
@@ -116,6 +125,9 @@ export class DepartmentController {
 
   /**
    * Create a new department
+   * @param req
+   * @param res
+   * @param _next
    */
   async createDepartment(
     req: AuthenticatedRequest,
@@ -218,6 +230,9 @@ export class DepartmentController {
 
   /**
    * Update a department
+   * @param req
+   * @param res
+   * @param _next
    */
   async updateDepartment(
     req: AuthenticatedRequest,
@@ -238,7 +253,7 @@ export class DepartmentController {
         return;
       }
 
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
       if (isNaN(departmentId)) {
         res
@@ -340,6 +355,9 @@ export class DepartmentController {
 
   /**
    * Delete a department
+   * @param req
+   * @param res
+   * @param _next
    */
   async deleteDepartment(
     req: AuthenticatedRequest,
@@ -360,7 +378,7 @@ export class DepartmentController {
         return;
       }
 
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
       if (isNaN(departmentId)) {
         res
@@ -439,6 +457,9 @@ export class DepartmentController {
 
   /**
    * Get department members
+   * @param req
+   * @param res
+   * @param _next
    */
   async getDepartmentMembers(
     req: AuthenticatedRequest,
@@ -446,7 +467,7 @@ export class DepartmentController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
       if (isNaN(departmentId)) {
         res
@@ -490,6 +511,9 @@ export class DepartmentController {
 
   /**
    * Get department statistics
+   * @param req
+   * @param res
+   * @param _next
    */
   async getDepartmentStats(
     req: AuthenticatedRequest,

@@ -10,6 +10,9 @@ import { ServiceError } from "../../../utils/ServiceError.js";
 
 /**
  * Validation middleware wrapper
+ * @param req
+ * @param _res
+ * @param next
  */
 const validate = (req: Request, _res: Response, next: NextFunction) => {
   const errors = validationResult(req);

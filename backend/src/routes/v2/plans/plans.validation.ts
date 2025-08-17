@@ -49,11 +49,11 @@ export const plansValidation = {
       .withMessage("Storage must be a non-negative integer"),
     body()
       .custom((value) => {
-        const hasAtLeastOneField =
+        return (
           value.employees !== undefined ||
           value.admins !== undefined ||
-          value.storageGb !== undefined;
-        return hasAtLeastOneField;
+          value.storageGb !== undefined
+        );
       })
       .withMessage("At least one addon field must be provided"),
     handleValidationErrors,

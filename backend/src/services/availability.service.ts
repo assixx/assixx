@@ -15,9 +15,13 @@ interface AvailabilityFilter {
   endDate?: string;
 }
 
+/**
+ *
+ */
 class AvailabilityService {
   /**
    * Get all availability records for a tenant
+   * @param filter
    */
   async getAll(filter: AvailabilityFilter): Promise<EmployeeAvailability[]> {
     try {
@@ -75,6 +79,7 @@ class AvailabilityService {
 
   /**
    * Get current availability status for all employees
+   * @param tenantId
    */
   async getCurrentStatus(tenantId: number): Promise<RowDataPacket[]> {
     try {
@@ -105,6 +110,8 @@ class AvailabilityService {
 
   /**
    * Get availability record by ID
+   * @param id
+   * @param tenantId
    */
   async getById(
     id: number,
@@ -132,6 +139,7 @@ class AvailabilityService {
 
   /**
    * Create new availability record
+   * @param data
    */
   async create(data: Partial<EmployeeAvailability>): Promise<number> {
     try {
@@ -166,6 +174,9 @@ class AvailabilityService {
 
   /**
    * Update availability record
+   * @param id
+   * @param tenantId
+   * @param data
    */
   async update(
     id: number,
@@ -228,6 +239,8 @@ class AvailabilityService {
 
   /**
    * Delete availability record
+   * @param id
+   * @param tenantId
    */
   async delete(id: number, tenantId: number): Promise<boolean> {
     try {
@@ -264,6 +277,9 @@ class AvailabilityService {
 
   /**
    * Get availability summary for a date range
+   * @param tenantId
+   * @param startDate
+   * @param endDate
    */
   async getAvailabilitySummary(
     tenantId: number,

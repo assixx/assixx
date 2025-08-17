@@ -19,6 +19,10 @@ interface TenantAuthenticatedRequest extends AuthenticatedRequest {
 }
 
 // Type guard to check if request is authenticated
+/**
+ *
+ * @param req
+ */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
     "user" in req &&
@@ -28,8 +32,16 @@ function isAuthenticated(req: Request): req is AuthenticatedRequest {
   );
 }
 
+/**
+ *
+ */
 class ChatController {
   // Get list of users available for chat
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async getUsers(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -48,6 +60,11 @@ class ChatController {
   }
 
   // Create a new conversation
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async createConversation(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -84,6 +101,11 @@ class ChatController {
   }
 
   // Get user's conversations
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async getConversations(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -103,6 +125,11 @@ class ChatController {
   }
 
   // Get messages for a conversation
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async getMessages(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -110,11 +137,11 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
-      const limit = parseInt(
+      const conversationId = Number.parseInt(req.params.id);
+      const limit = Number.parseInt(
         typeof req.query.limit === "string" ? req.query.limit : "50",
       );
-      const offset = parseInt(
+      const offset = Number.parseInt(
         typeof req.query.offset === "string" ? req.query.offset : "0",
       );
 
@@ -134,6 +161,11 @@ class ChatController {
   }
 
   // Send a message
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async sendMessage(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -141,7 +173,7 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
       const body = req.body as { content?: string };
       let content = body.content ?? "";
       let attachmentUrl: string | undefined;
@@ -182,6 +214,11 @@ class ChatController {
   }
 
   // Get conversation participants
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async getConversationParticipants(
     req: Request,
     res: Response,
@@ -192,7 +229,7 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
 
       const participants = await chatService.getConversationParticipants(
         conversationId,
@@ -206,6 +243,11 @@ class ChatController {
   }
 
   // Add participant to conversation
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async addParticipant(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -213,7 +255,7 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
       const { userId } = req.body as { userId?: number };
 
       if (userId == null) {
@@ -235,6 +277,11 @@ class ChatController {
   }
 
   // Remove participant from conversation
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async removeParticipant(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -242,8 +289,8 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
-      const userId = parseInt(req.params.userId);
+      const conversationId = Number.parseInt(req.params.id);
+      const userId = Number.parseInt(req.params.userId);
 
       await chatService.removeParticipant(
         conversationId,
@@ -259,6 +306,11 @@ class ChatController {
   }
 
   // Update conversation name
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async updateConversationName(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -266,7 +318,7 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
       const { name } = req.body as { name?: string };
 
       if (name == null || name.trim().length === 0) {
@@ -288,6 +340,11 @@ class ChatController {
   }
 
   // Handle file download
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async downloadFile(req: Request, res: Response): Promise<void> {
     try {
       const filename = req.params.filename;
@@ -314,6 +371,11 @@ class ChatController {
   }
 
   // Get unread message count
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async getUnreadCount(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -340,6 +402,11 @@ class ChatController {
   }
 
   // Mark all messages in a conversation as read
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async markConversationAsRead(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -347,7 +414,7 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
       const userId = req.user.userId;
 
       await chatService.markConversationAsRead(conversationId, userId);
@@ -359,6 +426,11 @@ class ChatController {
   }
 
   // Delete conversation
+  /**
+   *
+   * @param req
+   * @param res
+   */
   async deleteConversation(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
@@ -366,7 +438,7 @@ class ChatController {
         return;
       }
 
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
 
       await chatService.deleteConversation(conversationId, req.user.userId);
 

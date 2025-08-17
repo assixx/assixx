@@ -9,14 +9,23 @@ import availabilityService from "../services/availability.service";
 import type { AuthenticatedRequest } from "../types/request.types";
 
 // Type guard to check if request has authenticated user
+/**
+ *
+ * @param req
+ */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return "user" in req && req.user != null && "tenant_id" in req.user;
 }
 
+/**
+ *
+ */
 class AvailabilityController {
   /**
    * Get all availability records
    * GET /api/availability
+   * @param req
+   * @param res
    */
   async getAll(req: Request, res: Response): Promise<void> {
     try {
@@ -30,7 +39,7 @@ class AvailabilityController {
         tenant_id: tenantId,
         employeeId:
           req.query.employee_id !== undefined
-            ? parseInt(req.query.employee_id as string)
+            ? Number.parseInt(req.query.employee_id as string)
             : undefined,
         status: req.query.status as string,
         startDate: req.query.start_date as string,
@@ -48,6 +57,8 @@ class AvailabilityController {
   /**
    * Get current availability status for all employees
    * GET /api/availability/current
+   * @param req
+   * @param res
    */
   async getCurrentStatus(req: Request, res: Response): Promise<void> {
     try {
@@ -70,6 +81,8 @@ class AvailabilityController {
   /**
    * Get availability summary for date range
    * GET /api/availability/summary
+   * @param req
+   * @param res
    */
   async getSummary(req: Request, res: Response): Promise<void> {
     try {
@@ -100,6 +113,8 @@ class AvailabilityController {
   /**
    * Get availability by ID
    * GET /api/availability/:id
+   * @param req
+   * @param res
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
@@ -109,7 +124,7 @@ class AvailabilityController {
       }
       const tenantId = req.user.tenant_id;
 
-      const id = parseInt(req.params.id);
+      const id = Number.parseInt(req.params.id);
       const record = await availabilityService.getById(id, tenantId);
 
       if (record === null) {
@@ -127,6 +142,8 @@ class AvailabilityController {
   /**
    * Create new availability record
    * POST /api/availability
+   * @param req
+   * @param res
    */
   async create(req: Request, res: Response): Promise<void> {
     try {
@@ -211,6 +228,8 @@ class AvailabilityController {
   /**
    * Update availability record
    * PUT /api/availability/:id
+   * @param req
+   * @param res
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
@@ -221,7 +240,7 @@ class AvailabilityController {
       const tenantId = req.user.tenant_id;
       const userId = req.user.id;
 
-      const id = parseInt(req.params.id);
+      const id = Number.parseInt(req.params.id);
       const { status, start_date, end_date, reason, notes } = req.body as {
         status?: string;
         start_date?: string;
@@ -296,6 +315,8 @@ class AvailabilityController {
   /**
    * Delete availability record
    * DELETE /api/availability/:id
+   * @param req
+   * @param res
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
@@ -306,7 +327,7 @@ class AvailabilityController {
       const tenantId = req.user.tenant_id;
       const userId = req.user.id;
 
-      const id = parseInt(req.params.id);
+      const id = Number.parseInt(req.params.id);
 
       // Get existing record
       const existing = await availabilityService.getById(id, tenantId);

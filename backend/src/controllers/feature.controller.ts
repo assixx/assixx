@@ -75,10 +75,15 @@ interface FeatureQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class FeatureController {
   /**
    * Holt alle Feature Einträge
    * GET /api/feature
+   * @param req
+   * @param res
    */
   getAll(req: FeatureQueryRequest, res: Response): void {
     try {
@@ -97,11 +102,11 @@ class FeatureController {
               : undefined,
         page:
           req.query.page !== undefined
-            ? parseInt(req.query.page, 10)
+            ? Number.parseInt(req.query.page, 10)
             : undefined,
         limit:
           req.query.limit !== undefined
-            ? parseInt(req.query.limit, 10)
+            ? Number.parseInt(req.query.limit, 10)
             : undefined,
       };
       const result = featureService.getAll(req.tenantDb, filters);
@@ -118,6 +123,8 @@ class FeatureController {
   /**
    * Holt einen Feature Eintrag per ID
    * GET /api/feature/:id
+   * @param req
+   * @param res
    */
   getById(req: FeatureGetRequest, res: Response): void {
     try {
@@ -126,7 +133,7 @@ class FeatureController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -150,6 +157,8 @@ class FeatureController {
   /**
    * Erstellt einen neuen Feature Eintrag
    * POST /api/feature
+   * @param req
+   * @param res
    */
   create(req: FeatureCreateRequest, res: Response): void {
     try {
@@ -179,6 +188,8 @@ class FeatureController {
   /**
    * Aktualisiert einen Feature Eintrag
    * PUT /api/feature/:id
+   * @param req
+   * @param res
    */
   update(req: FeatureUpdateRequest, res: Response): void {
     try {
@@ -187,7 +198,7 @@ class FeatureController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -207,6 +218,8 @@ class FeatureController {
   /**
    * Löscht einen Feature Eintrag
    * DELETE /api/feature/:id
+   * @param req
+   * @param res
    */
   delete(req: FeatureGetRequest, res: Response): void {
     try {
@@ -215,7 +228,7 @@ class FeatureController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

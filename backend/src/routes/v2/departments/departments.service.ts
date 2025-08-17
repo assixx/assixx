@@ -53,7 +53,16 @@ export interface DepartmentMember {
 }
 
 // Service Error Class
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code
+   * @param message
+   * @param details
+   */
   constructor(
     public code: number,
     message: string,
@@ -64,9 +73,14 @@ export class ServiceError extends Error {
   }
 }
 
+/**
+ *
+ */
 export class DepartmentService {
   /**
    * Get all departments for a tenant
+   * @param tenantId
+   * @param includeExtended
    */
   async getDepartments(
     tenantId: number,
@@ -102,6 +116,8 @@ export class DepartmentService {
 
   /**
    * Get a single department by ID
+   * @param id
+   * @param tenantId
    */
   async getDepartmentById(id: number, tenantId: number): Promise<DepartmentV2> {
     try {
@@ -139,6 +155,8 @@ export class DepartmentService {
 
   /**
    * Create a new department
+   * @param data
+   * @param tenantId
    */
   async createDepartment(
     data: CreateDepartmentData,
@@ -189,6 +207,9 @@ export class DepartmentService {
 
   /**
    * Update a department
+   * @param id
+   * @param data
+   * @param tenantId
    */
   async updateDepartment(
     id: number,
@@ -258,6 +279,8 @@ export class DepartmentService {
 
   /**
    * Delete a department
+   * @param id
+   * @param tenantId
    */
   async deleteDepartment(id: number, tenantId: number): Promise<void> {
     try {
@@ -291,6 +314,8 @@ export class DepartmentService {
 
   /**
    * Get department members
+   * @param id
+   * @param tenantId
    */
   async getDepartmentMembers(
     id: number,
@@ -341,6 +366,7 @@ export class DepartmentService {
 
   /**
    * Get department statistics
+   * @param tenantId
    */
   async getDepartmentStats(tenantId: number): Promise<{
     totalDepartments: number;

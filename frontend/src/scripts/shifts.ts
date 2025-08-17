@@ -183,7 +183,7 @@ class ShiftPlanningSystem {
         this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
         this.currentUserId = user.id;
 
-        const userNameElement = document.getElementById('userName');
+        const userNameElement = document.querySelector('#userName');
         if (userNameElement) {
           userNameElement.textContent = user.username;
         }
@@ -195,12 +195,12 @@ class ShiftPlanningSystem {
         }
 
         // Update info row with user's department/team info
-        const currentDeptElement = document.getElementById('currentDepartment');
+        const currentDeptElement = document.querySelector('#currentDepartment');
         if (currentDeptElement && user.department_id !== undefined && user.department_id !== 0) {
           currentDeptElement.textContent = `Department ${user.department_id}`;
         }
 
-        const currentTeamLeaderElement = document.getElementById('currentTeamLeader');
+        const currentTeamLeaderElement = document.querySelector('#currentTeamLeader');
         if (currentTeamLeaderElement && user.position !== undefined && user.position !== '') {
           currentTeamLeaderElement.textContent = user.username;
         }
@@ -235,8 +235,8 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS DEBUG] Setting up event listeners');
 
     // Week navigation
-    const prevBtn = document.getElementById('prevWeekBtn');
-    const nextBtn = document.getElementById('nextWeekBtn');
+    const prevBtn = document.querySelector('#prevWeekBtn');
+    const nextBtn = document.querySelector('#nextWeekBtn');
 
     console.info('[SHIFTS DEBUG] Previous week button:', prevBtn);
     console.info('[SHIFTS DEBUG] Next week button:', nextBtn);
@@ -290,10 +290,10 @@ class ShiftPlanningSystem {
     this.setupNotesEvents();
 
     // Admin actions
-    document.getElementById('saveScheduleBtn')?.addEventListener('click', () => {
+    document.querySelector('#saveScheduleBtn')?.addEventListener('click', () => {
       void this.saveSchedule();
     });
-    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => {
+    document.querySelector('#resetScheduleBtn')?.addEventListener('click', () => {
       this.resetSchedule();
     });
 
@@ -384,7 +384,7 @@ class ShiftPlanningSystem {
         console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
 
         if (employeeId !== undefined && employeeId !== '') {
-          this.assignShift(shiftCell as HTMLElement, parseInt(employeeId, 10));
+          this.assignShift(shiftCell as HTMLElement, Number.parseInt(employeeId, 10));
         } else {
           console.error('[SHIFTS ERROR] No employee ID in drop data');
         }
@@ -394,30 +394,30 @@ class ShiftPlanningSystem {
 
   setupContextEvents(): void {
     // Department selection
-    const departmentSelect = document.getElementById('departmentSelect') as HTMLSelectElement | null;
+    const departmentSelect = document.querySelector('#departmentSelect') as HTMLSelectElement | null;
     if (departmentSelect !== null) {
       departmentSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
-        this.selectedContext.departmentId = target.value !== '' ? parseInt(target.value, 10) : null;
+        this.selectedContext.departmentId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
         void this.onContextChange();
         this.togglePlanningAreaVisibility();
       });
     }
 
     // Machine selection
-    const machineSelect = document.getElementById('machineSelect') as HTMLSelectElement | null;
+    const machineSelect = document.querySelector('#machineSelect') as HTMLSelectElement | null;
     if (machineSelect !== null) {
       machineSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
-        this.selectedContext.machineId = target.value !== '' ? parseInt(target.value, 10) : null;
+        this.selectedContext.machineId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
       });
     }
   }
 
   setupNotesEvents(): void {
-    const notesToggle = document.getElementById('notesToggle');
-    const notesPanel = document.getElementById('notesPanel');
-    const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+    const notesToggle = document.querySelector('#notesToggle');
+    const notesPanel = document.querySelector('#notesPanel');
+    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
 
     if (notesToggle !== null) {
       notesToggle.addEventListener('click', () => {
@@ -507,7 +507,7 @@ class ShiftPlanningSystem {
   }
 
   populateDepartmentSelect(): void {
-    const dropdown = document.getElementById('departmentDropdown');
+    const dropdown = document.querySelector('#departmentDropdown');
     if (!dropdown) {
       console.error('Department dropdown element not found');
       return;
@@ -523,14 +523,14 @@ class ShiftPlanningSystem {
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption('department', dept.id.toString(), dept.name);
       };
-      dropdown.appendChild(option);
+      dropdown.append(option);
     });
 
     console.info('Department dropdown populated with', this.departments.length, 'departments');
   }
 
   populateMachineSelect(): void {
-    const dropdown = document.getElementById('machineDropdown');
+    const dropdown = document.querySelector('#machineDropdown');
     if (!dropdown) return;
 
     dropdown.innerHTML = '';
@@ -548,12 +548,12 @@ class ShiftPlanningSystem {
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption('machine', machine.id.toString(), machine.name);
       };
-      dropdown.appendChild(option);
+      dropdown.append(option);
     });
   }
 
   populateTeamLeaderSelect(): void {
-    const dropdown = document.getElementById('teamLeaderDropdown');
+    const dropdown = document.querySelector('#teamLeaderDropdown');
     if (!dropdown) return;
 
     dropdown.innerHTML = '';
@@ -569,7 +569,7 @@ class ShiftPlanningSystem {
           leader.name !== '' ? leader.name : leader.username,
         );
       };
-      dropdown.appendChild(option);
+      dropdown.append(option);
     });
   }
 
@@ -587,9 +587,9 @@ class ShiftPlanningSystem {
   }
 
   togglePlanningAreaVisibility(): void {
-    const departmentNotice = document.getElementById('departmentNotice');
-    const mainPlanningArea = document.getElementById('mainPlanningArea');
-    const adminActions = document.getElementById('adminActions');
+    const departmentNotice = document.querySelector('#departmentNotice');
+    const mainPlanningArea = document.querySelector('#mainPlanningArea');
+    const adminActions = document.querySelector('#adminActions');
     const weekNavigation = document.querySelector('.week-navigation');
 
     if ((this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) || !this.isAdmin) {
@@ -716,7 +716,7 @@ class ShiftPlanningSystem {
       return;
     }
 
-    const container = document.getElementById('employeeList');
+    const container = document.querySelector('#employeeList');
     console.info('[SHIFTS DEBUG] Employee list container:', container);
 
     if (container === null) {
@@ -767,7 +767,7 @@ class ShiftPlanningSystem {
         </div>
       `;
 
-      container.appendChild(item);
+      container.append(item);
     });
 
     console.info('[SHIFTS DEBUG] Employee list rendered');
@@ -841,7 +841,7 @@ class ShiftPlanningSystem {
     // Add selection to clicked item
     employeeItem.classList.add('selected');
 
-    const employeeId = parseInt(employeeItem.dataset.employeeId ?? '0', 10);
+    const employeeId = Number.parseInt(employeeItem.dataset.employeeId ?? '0', 10);
     this.selectedEmployee = this.employees.find((e) => e.id === employeeId) ?? null;
   }
 
@@ -966,7 +966,7 @@ class ShiftPlanningSystem {
         const employee = this.employees.find((e) => e.id === employeeId);
         if (employee) {
           const card = this.createEmployeeCard(employee);
-          assignmentDiv.appendChild(card);
+          assignmentDiv.append(card);
         }
       });
     }
@@ -1077,7 +1077,7 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
 
     // Update week display
-    const currentWeekElement = document.getElementById('currentWeekInfo');
+    const currentWeekElement = document.querySelector('#currentWeekInfo');
     if (currentWeekElement) {
       currentWeekElement.textContent = this.formatWeekRange(weekStart);
     } else {
@@ -1213,7 +1213,7 @@ class ShiftPlanningSystem {
 
               if (employee) {
                 const employeeCard = this.createEmployeeCard(employee);
-                assignmentDiv.appendChild(employeeCard);
+                assignmentDiv.append(employeeCard);
               } else if (shiftDetail !== undefined) {
                 // Create a temporary employee object from shift details
                 const tempEmployee: Employee = {
@@ -1231,7 +1231,7 @@ class ShiftPlanningSystem {
                   is_archived: false,
                 };
                 const employeeCard = this.createEmployeeCard(tempEmployee);
-                assignmentDiv.appendChild(employeeCard);
+                assignmentDiv.append(employeeCard);
               } else {
                 console.error('[SHIFTS ERROR] Employee not found:', employeeId);
                 // Show at least the ID if employee data not found
@@ -1240,8 +1240,8 @@ class ShiftPlanningSystem {
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'employee-name';
                 nameDiv.textContent = `Mitarbeiter #${employeeId}`;
-                tempCard.appendChild(nameDiv);
-                assignmentDiv.appendChild(tempCard);
+                tempCard.append(nameDiv);
+                assignmentDiv.append(tempCard);
               }
             });
           } else {
@@ -1282,7 +1282,7 @@ class ShiftPlanningSystem {
           this.assignShift(cell as HTMLElement, employee.id);
         }
       };
-      card.appendChild(removeBtn);
+      card.append(removeBtn);
     }
 
     return card;
@@ -1313,7 +1313,7 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Get notes from textarea
-      const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
       // Prepare shift assignments
@@ -1444,7 +1444,7 @@ class ShiftPlanningSystem {
           this.weeklyNotes = '';
         }
 
-        const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+        const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
         if (notesTextarea !== null) {
           // If notes are empty, show placeholder by clearing value
           notesTextarea.value = this.weeklyNotes;
@@ -1453,7 +1453,7 @@ class ShiftPlanningSystem {
       } else {
         console.info('[SHIFTS DEBUG] Notes API error response');
         // If error, clear the notes
-        const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+        const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
         if (notesTextarea !== null) {
           notesTextarea.value = '';
         }
@@ -1462,7 +1462,7 @@ class ShiftPlanningSystem {
     } catch (error) {
       console.error('[SHIFTS ERROR] Error loading weekly notes:', error);
       // Clear notes on error
-      const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
       if (notesTextarea !== null) {
         notesTextarea.value = '';
       }
@@ -1474,7 +1474,7 @@ class ShiftPlanningSystem {
     if (!this.isAdmin) return;
 
     try {
-      const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
       if (notesTextarea === null) return;
 
       const newNotes = notesTextarea.value;
@@ -1515,10 +1515,10 @@ class ShiftPlanningSystem {
   updateUIForRole(): void {
     const adminControls = document.querySelectorAll('.admin-controls');
     const employeeInfo = document.querySelectorAll('.employee-info-section');
-    const adminActions = document.getElementById('adminActions');
+    const adminActions = document.querySelector('#adminActions');
     const employeeSidebar = document.querySelector('.employee-sidebar');
     const mainPlanningArea = document.querySelector('.main-planning-area');
-    const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement | null;
+    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
     const infoRow = document.querySelector('.shift-info-row');
 
     if (this.isAdmin) {
@@ -1561,7 +1561,7 @@ class ShiftPlanningSystem {
     }
 
     // Update instructions
-    const instructions = document.getElementById('instructions');
+    const instructions = document.querySelector('#instructions');
     if (instructions) {
       if (this.isAdmin) {
         instructions.innerHTML = `
@@ -1602,7 +1602,7 @@ class ShiftPlanningSystem {
       '"': '&quot;',
       "'": '&#039;',
     };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
+    return text.replace(/["&'<>]/g, (m) => map[m]);
   }
 
   private showShiftDetailsModal(shiftCell: HTMLElement): void {

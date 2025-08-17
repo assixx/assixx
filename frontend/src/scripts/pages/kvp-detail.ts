@@ -76,13 +76,13 @@ class KvpDetailPage {
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
 
-    if (id === null || id === '' || isNaN(parseInt(id, 10))) {
+    if (id === null || id === '' || isNaN(Number.parseInt(id, 10))) {
       this.showError('Ungültige Vorschlags-ID');
       setTimeout(() => (window.location.href = '/kvp'), 2000);
       return;
     }
 
-    this.suggestionId = parseInt(id, 10);
+    this.suggestionId = Number.parseInt(id, 10);
     void this.init();
   }
 
@@ -154,10 +154,10 @@ class KvpDetailPage {
     if (!this.suggestion) return;
 
     // Basic info
-    const titleEl = document.getElementById('suggestionTitle');
-    const submittedByEl = document.getElementById('submittedBy');
-    const createdAtEl = document.getElementById('createdAt');
-    const departmentEl = document.getElementById('department');
+    const titleEl = document.querySelector('#suggestionTitle');
+    const submittedByEl = document.querySelector('#submittedBy');
+    const createdAtEl = document.querySelector('#createdAt');
+    const departmentEl = document.querySelector('#department');
 
     if (titleEl) titleEl.textContent = this.suggestion.title;
     if (submittedByEl)
@@ -166,20 +166,20 @@ class KvpDetailPage {
     if (departmentEl) departmentEl.textContent = this.suggestion.department_name;
 
     // Status and Priority
-    const statusBadge = document.getElementById('statusBadge');
+    const statusBadge = document.querySelector('#statusBadge');
     if (statusBadge) {
       statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(this.suggestion.status);
     }
 
-    const priorityBadge = document.getElementById('priorityBadge');
+    const priorityBadge = document.querySelector('#priorityBadge');
     if (priorityBadge) {
       priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
       priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
     }
 
     // Visibility info
-    const visibilityInfo = document.getElementById('visibilityInfo');
+    const visibilityInfo = document.querySelector('#visibilityInfo');
     if (!visibilityInfo) return;
     if (this.suggestion.org_level === 'company') {
       visibilityInfo.innerHTML = `
@@ -201,13 +201,13 @@ class KvpDetailPage {
     }
 
     // Description
-    const descriptionEl = document.getElementById('description');
+    const descriptionEl = document.querySelector('#description');
     if (descriptionEl) descriptionEl.textContent = this.suggestion.description;
 
     // Expected benefit
     if (this.suggestion.expected_benefit !== undefined && this.suggestion.expected_benefit !== '') {
-      const benefitSection = document.getElementById('benefitSection');
-      const expectedBenefit = document.getElementById('expectedBenefit');
+      const benefitSection = document.querySelector('#benefitSection');
+      const expectedBenefit = document.querySelector('#expectedBenefit');
       if (benefitSection) benefitSection.style.display = '';
       if (expectedBenefit) expectedBenefit.textContent = this.suggestion.expected_benefit;
     }
@@ -217,11 +217,11 @@ class KvpDetailPage {
       (this.suggestion.estimated_cost !== undefined && this.suggestion.estimated_cost !== 0) ||
       (this.suggestion.actual_savings !== undefined && this.suggestion.actual_savings !== 0)
     ) {
-      const financialSection = document.getElementById('financialSection');
+      const financialSection = document.querySelector('#financialSection');
       if (financialSection) financialSection.style.display = '';
 
       if (this.suggestion.estimated_cost !== undefined && this.suggestion.estimated_cost !== 0) {
-        const estimatedCostEl = document.getElementById('estimatedCost');
+        const estimatedCostEl = document.querySelector('#estimatedCost');
         if (estimatedCostEl) {
           estimatedCostEl.textContent = new Intl.NumberFormat('de-DE', {
             style: 'currency',
@@ -231,7 +231,7 @@ class KvpDetailPage {
       }
 
       if (this.suggestion.actual_savings !== undefined && this.suggestion.actual_savings !== 0) {
-        const actualSavingsEl = document.getElementById('actualSavings');
+        const actualSavingsEl = document.querySelector('#actualSavings');
         if (actualSavingsEl) {
           actualSavingsEl.textContent = new Intl.NumberFormat('de-DE', {
             style: 'currency',
@@ -242,7 +242,7 @@ class KvpDetailPage {
     }
 
     // Details sidebar
-    const categoryEl = document.getElementById('category');
+    const categoryEl = document.querySelector('#category');
     if (categoryEl) {
       categoryEl.innerHTML = `
       <span style="color: ${this.suggestion.category_color}">
@@ -253,9 +253,9 @@ class KvpDetailPage {
     }
 
     // For non-admins, just show the status text
-    const statusElement = document.getElementById('status');
-    const statusDropdownContainer = document.getElementById('statusDropdownContainer');
-    const statusDisplay = document.getElementById('statusDisplay');
+    const statusElement = document.querySelector('#status');
+    const statusDropdownContainer = document.querySelector('#statusDropdownContainer');
+    const statusDisplay = document.querySelector('#statusDisplay');
 
     if (!statusElement || !statusDropdownContainer || !statusDisplay) return;
 
@@ -267,7 +267,7 @@ class KvpDetailPage {
       // Update the dropdown display text
       const statusSpan = statusDisplay.querySelector('span');
       if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-      const statusValue = document.getElementById('statusValue');
+      const statusValue = document.querySelector('#statusValue');
       if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
     } else {
       // Show only the status text for regular users
@@ -276,14 +276,14 @@ class KvpDetailPage {
     }
 
     if (this.suggestion.assigned_to !== undefined && this.suggestion.assigned_to !== 0) {
-      const assignedToItem = document.getElementById('assignedToItem');
+      const assignedToItem = document.querySelector('#assignedToItem');
       if (assignedToItem) assignedToItem.style.display = '';
       // TODO: Load assigned user name
     }
 
     if (this.suggestion.implementation_date !== undefined && this.suggestion.implementation_date !== '') {
-      const implementationItem = document.getElementById('implementationItem');
-      const implementationDate = document.getElementById('implementationDate');
+      const implementationItem = document.querySelector('#implementationItem');
+      const implementationDate = document.querySelector('#implementationDate');
       if (implementationItem) implementationItem.style.display = '';
       if (implementationDate) {
         implementationDate.textContent = new Date(this.suggestion.implementation_date).toLocaleDateString('de-DE');
@@ -291,8 +291,8 @@ class KvpDetailPage {
     }
 
     if (this.suggestion.rejection_reason !== undefined && this.suggestion.rejection_reason !== '') {
-      const rejectionItem = document.getElementById('rejectionItem');
-      const rejectionReason = document.getElementById('rejectionReason');
+      const rejectionItem = document.querySelector('#rejectionItem');
+      const rejectionReason = document.querySelector('#rejectionReason');
       if (rejectionItem) rejectionItem.style.display = '';
       if (rejectionReason) rejectionReason.textContent = this.suggestion.rejection_reason;
     }
@@ -307,12 +307,12 @@ class KvpDetailPage {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
 
       // Show actions card
-      const actionsCard = document.getElementById('actionsCard');
+      const actionsCard = document.querySelector('#actionsCard');
       if (actionsCard) actionsCard.style.display = '';
 
       // Configure share/unshare buttons
-      const shareBtn = document.getElementById('shareBtn');
-      const unshareBtn = document.getElementById('unshareBtn');
+      const shareBtn = document.querySelector('#shareBtn');
+      const unshareBtn = document.querySelector('#unshareBtn');
 
       if (this.suggestion.org_level === 'department') {
         if (shareBtn) shareBtn.style.display = '';
@@ -346,7 +346,7 @@ class KvpDetailPage {
   }
 
   private renderComments(comments: Comment[]): void {
-    const container = document.getElementById('commentList');
+    const container = document.querySelector('#commentList');
     if (!container) return;
 
     if (comments.length === 0) {
@@ -415,8 +415,8 @@ class KvpDetailPage {
 
     // Render photo gallery
     if (photos.length > 0) {
-      const photoSection = document.getElementById('photoSection');
-      const photoGallery = document.getElementById('photoGallery');
+      const photoSection = document.querySelector('#photoSection');
+      const photoGallery = document.querySelector('#photoGallery');
 
       if (photoSection) photoSection.style.display = '';
       if (!photoGallery) return;
@@ -437,8 +437,8 @@ class KvpDetailPage {
 
     // Render other attachments
     if (otherFiles.length > 0) {
-      const attachmentsCard = document.getElementById('attachmentsCard');
-      const container = document.getElementById('attachmentList');
+      const attachmentsCard = document.querySelector('#attachmentsCard');
+      const container = document.querySelector('#attachmentList');
 
       if (attachmentsCard) attachmentsCard.style.display = '';
       if (!container) return;
@@ -468,7 +468,7 @@ class KvpDetailPage {
         item.addEventListener('click', () => {
           const id = item.getAttribute('data-id');
           if (id !== null && id !== '') {
-            this.downloadAttachment(parseInt(id, 10));
+            this.downloadAttachment(Number.parseInt(id, 10));
           }
         });
       });
@@ -486,7 +486,7 @@ class KvpDetailPage {
 
   private setupEventListeners(): void {
     // Comment form
-    const commentForm = document.getElementById('commentForm') as HTMLFormElement;
+    const commentForm = document.querySelector('#commentForm') as HTMLFormElement;
     commentForm.addEventListener('submit', (e) => {
       e.preventDefault();
       void (async () => {
@@ -495,25 +495,25 @@ class KvpDetailPage {
     });
 
     // Action buttons
-    document.getElementById('editBtn')?.addEventListener('click', () => {
+    document.querySelector('#editBtn')?.addEventListener('click', () => {
       // TODO: Navigate to edit page
       console.warn('Bearbeiten-Funktion noch nicht implementiert');
       this.showError('Bearbeiten-Funktion noch nicht implementiert');
     });
 
-    document.getElementById('shareBtn')?.addEventListener('click', () => {
+    document.querySelector('#shareBtn')?.addEventListener('click', () => {
       void (async () => {
         await this.shareSuggestion();
       })();
     });
 
-    document.getElementById('unshareBtn')?.addEventListener('click', () => {
+    document.querySelector('#unshareBtn')?.addEventListener('click', () => {
       void (async () => {
         await this.unshareSuggestion();
       })();
     });
 
-    document.getElementById('archiveBtn')?.addEventListener('click', () => {
+    document.querySelector('#archiveBtn')?.addEventListener('click', () => {
       void (async () => {
         await this.archiveSuggestion();
       })();
@@ -536,8 +536,8 @@ class KvpDetailPage {
   }
 
   private async addComment(): Promise<void> {
-    const input = document.getElementById('commentInput') as HTMLTextAreaElement;
-    const internalCheckbox = document.getElementById('internalComment') as HTMLInputElement;
+    const input = document.querySelector('#commentInput') as HTMLTextAreaElement;
+    const internalCheckbox = document.querySelector('#internalComment') as HTMLInputElement;
 
     const comment = input.value.trim();
     if (comment === '') return;
@@ -670,11 +670,11 @@ class KvpDetailPage {
         if (reason === null || reason.trim() === '') {
           this.showError('Ein Ablehnungsgrund ist erforderlich');
           // Reset dropdown
-          const statusDisplay = document.getElementById('statusDisplay');
+          const statusDisplay = document.querySelector('#statusDisplay');
           if (statusDisplay && this.suggestion) {
             const statusSpan = statusDisplay.querySelector('span');
             if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-            const statusValue = document.getElementById('statusValue');
+            const statusValue = document.querySelector('#statusValue');
             if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
           }
           return;
@@ -700,14 +700,14 @@ class KvpDetailPage {
       this.suggestion = data.suggestion;
 
       // Update the status badge
-      const statusBadge = document.getElementById('statusBadge');
+      const statusBadge = document.querySelector('#statusBadge');
       if (!statusBadge) return;
       statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(newStatus);
 
       // Update rejection reason display
-      const rejectionItem = document.getElementById('rejectionItem');
-      const rejectionReason = document.getElementById('rejectionReason');
+      const rejectionItem = document.querySelector('#rejectionItem');
+      const rejectionReason = document.querySelector('#rejectionReason');
 
       if (newStatus === 'rejected' && updateData.rejection_reason !== undefined && updateData.rejection_reason !== '') {
         if (rejectionItem) rejectionItem.style.display = '';
@@ -722,11 +722,11 @@ class KvpDetailPage {
       this.showError('Fehler beim Aktualisieren des Status');
 
       // Reset dropdown to original value on error
-      const statusDisplay = document.getElementById('statusDisplay');
+      const statusDisplay = document.querySelector('#statusDisplay');
       if (statusDisplay && this.suggestion) {
         const statusSpan = statusDisplay.querySelector('span');
         if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-        const statusValue = document.getElementById('statusValue');
+        const statusValue = document.querySelector('#statusValue');
         if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
       }
     }
@@ -780,7 +780,7 @@ class KvpDetailPage {
     const notification = document.createElement('div');
     notification.className = 'notification success';
     notification.textContent = message;
-    document.body.appendChild(notification);
+    document.body.append(notification);
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -792,7 +792,7 @@ class KvpDetailPage {
     const notification = document.createElement('div');
     notification.className = 'notification error';
     notification.textContent = `Fehler: ${message}`;
-    document.body.appendChild(notification);
+    document.body.append(notification);
     setTimeout(() => {
       notification.remove();
     }, 3000);

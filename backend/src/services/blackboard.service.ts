@@ -48,9 +48,16 @@ interface BlackboardUpdateData {
   category?: string | null;
 }
 
+/**
+ *
+ */
 class BlackboardService {
   /**
    * Holt alle Blackboard Einträge für einen Tenant
+   * @param _tenantDb
+   * @param filters
+   * @param tenantId
+   * @param userId
    */
   async getAll(
     _tenantDb: Pool,
@@ -71,6 +78,10 @@ class BlackboardService {
 
   /**
    * Holt einen Blackboard Eintrag per ID
+   * @param _tenantDb
+   * @param id
+   * @param tenantId
+   * @param userId
    */
   async getById(
     _tenantDb: Pool,
@@ -79,8 +90,7 @@ class BlackboardService {
     userId: number,
   ): Promise<BlackboardEntry | null> {
     try {
-      const entry = await getEntryById(id, tenantId, userId);
-      return entry;
+      return await getEntryById(id, tenantId, userId);
     } catch (error: unknown) {
       console.error("Error in BlackboardService.getById:", error);
       throw error;
@@ -89,6 +99,8 @@ class BlackboardService {
 
   /**
    * Erstellt einen neuen Blackboard Eintrag
+   * @param _tenantDb
+   * @param data
    */
   async create(
     _tenantDb: Pool,
@@ -128,6 +140,10 @@ class BlackboardService {
 
   /**
    * Aktualisiert einen Blackboard Eintrag
+   * @param _tenantDb
+   * @param id
+   * @param data
+   * @param tenantId
    */
   async update(
     _tenantDb: Pool,
@@ -150,8 +166,7 @@ class BlackboardService {
             : undefined,
       };
 
-      const entry = await updateEntry(id, updateData, tenantId);
-      return entry;
+      return await updateEntry(id, updateData, tenantId);
     } catch (error: unknown) {
       console.error("Error in BlackboardService.update:", error);
       throw error;
@@ -160,6 +175,9 @@ class BlackboardService {
 
   /**
    * Löscht einen Blackboard Eintrag
+   * @param _tenantDb
+   * @param id
+   * @param tenantId
    */
   async delete(
     _tenantDb: Pool,

@@ -92,8 +92,8 @@ const storage = multer.diskStorage({
       .then(() => {
         cb(null, uploadDir);
       })
-      .catch((err: unknown) => {
-        cb(err as Error, uploadDir);
+      .catch((error: unknown) => {
+        cb(error as Error, uploadDir);
       });
   },
   filename(_req, file, cb) {
@@ -275,19 +275,19 @@ router.post(
           if (userId == null || userId === "") {
             throw new Error("Kein Benutzer ausgewählt");
           }
-          recipientData.user_id = parseInt(userId, 10);
+          recipientData.user_id = Number.parseInt(userId, 10);
           break;
         case "team":
           if (teamId == null || teamId === "") {
             throw new Error("Kein Team ausgewählt");
           }
-          recipientData.team_id = parseInt(teamId, 10);
+          recipientData.team_id = Number.parseInt(teamId, 10);
           break;
         case "department":
           if (departmentId == null || departmentId === "") {
             throw new Error("Keine Abteilung ausgewählt");
           }
-          recipientData.department_id = parseInt(departmentId, 10);
+          recipientData.department_id = Number.parseInt(departmentId, 10);
           break;
         case "company":
           // No specific ID needed for company-wide documents
@@ -336,7 +336,8 @@ router.post(
         fileContent,
         category: category ?? "other",
         description: description ?? "",
-        year: year != null && year !== "" ? parseInt(year, 10) : undefined,
+        year:
+          year != null && year !== "" ? Number.parseInt(year, 10) : undefined,
         month: month ?? undefined,
         tenant_id: uploadReq.user.tenant_id,
         createdBy: adminId,
@@ -347,11 +348,11 @@ router.post(
         try {
           // Use safeDeleteFile to prevent path injection attacks
           await safeDeleteFile(filePath);
-        } catch (unlinkErr: unknown) {
+        } catch (error: unknown) {
           // Only warn if it's not a "file not found" error
-          if ((unlinkErr as { code?: string }).code !== "ENOENT") {
+          if ((error as { code?: string }).code !== "ENOENT") {
             logger.warn(
-              `Could not delete temporary file: ${getErrorMessage(unlinkErr)}`,
+              `Could not delete temporary file: ${getErrorMessage(error)}`,
             );
           }
         }
@@ -380,7 +381,7 @@ router.post(
               // Send to individual user
               if (userId !== undefined && userId !== "") {
                 const user = await User.findById(
-                  parseInt(userId, 10),
+                  Number.parseInt(userId, 10),
                   uploadReq.user.tenant_id,
                 );
                 if (user?.email != null && user.email !== "") {
@@ -574,15 +575,18 @@ router.get(
       const filters = {
         category,
         userId:
-          userId != null && userId !== "" ? parseInt(userId, 10) : undefined,
-        year: year != null && year !== "" ? parseInt(year, 10) : undefined,
+          userId != null && userId !== ""
+            ? Number.parseInt(userId, 10)
+            : undefined,
+        year:
+          year != null && year !== "" ? Number.parseInt(year, 10) : undefined,
         month,
         archived: archived === "true",
         tenant_id: queryReq.user.tenant_id,
       };
 
-      const pageNum = parseInt(page, 10);
-      const limitNum = parseInt(limit, 10);
+      const pageNum = Number.parseInt(page, 10);
+      const limitNum = Number.parseInt(limit, 10);
 
       const result = await Document.findWithFilters(
         req.user.tenant_id,
@@ -695,7 +699,7 @@ router.get(
       const documentReq = req as DocumentAccessRequest;
       const document =
         documentReq.document ??
-        (await Document.findById(parseInt(req.params.documentId, 10)));
+        (await Document.findById(Number.parseInt(req.params.documentId, 10)));
 
       if (!document) {
         res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
@@ -759,7 +763,7 @@ router.get(
       const documentReq = req as DocumentAccessRequest;
       const document =
         documentReq.document ??
-        (await Document.findById(parseInt(req.params.documentId, 10)));
+        (await Document.findById(Number.parseInt(req.params.documentId, 10)));
 
       if (!document) {
         res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
@@ -819,7 +823,7 @@ router.put(
   typed.auth(async (req, res) => {
     try {
       const success = await Document.archiveDocument(
-        parseInt(req.params.documentId, 10),
+        Number.parseInt(req.params.documentId, 10),
       );
 
       if (!success) {
@@ -847,7 +851,7 @@ router.delete(
   typed.auth(async (req, res) => {
     try {
       const success = await Document.delete(
-        parseInt(req.params.documentId, 10),
+        Number.parseInt(req.params.documentId, 10),
       );
 
       if (!success) {

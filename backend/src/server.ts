@@ -29,7 +29,7 @@ const server: Server = http.createServer(app);
 new ChatWebSocketServer(server);
 
 // Get port from environment
-const PORT: number = parseInt(process.env.PORT ?? "3000", 10);
+const PORT: number = Number.parseInt(process.env.PORT ?? "3000", 10);
 
 // Start server
 server.listen(PORT, (): void => {

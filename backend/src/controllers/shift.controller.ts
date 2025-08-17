@@ -80,10 +80,15 @@ interface ShiftQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class ShiftController {
   /**
    * Holt alle Shift Einträge
    * GET /api/shift
+   * @param req
+   * @param res
    */
   getAll(req: ShiftQueryRequest, res: Response): void {
     try {
@@ -95,7 +100,7 @@ class ShiftController {
       const filters = {
         department_id:
           req.query.department_id != null && req.query.department_id !== ""
-            ? parseInt(req.query.department_id, 10)
+            ? Number.parseInt(req.query.department_id, 10)
             : undefined,
         team_id: undefined as number | undefined, // Not in query but expected by ShiftFilters
         start_date: req.query.start_date,
@@ -122,6 +127,8 @@ class ShiftController {
   /**
    * Holt einen Shift Eintrag per ID
    * GET /api/shift/:id
+   * @param req
+   * @param res
    */
   getById(req: ShiftGetRequest, res: Response): void {
     try {
@@ -130,7 +137,7 @@ class ShiftController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -154,6 +161,8 @@ class ShiftController {
   /**
    * Erstellt einen neuen Shift Eintrag
    * POST /api/shift
+   * @param req
+   * @param res
    */
   create(req: ShiftCreateRequest, res: Response): void {
     try {
@@ -189,6 +198,8 @@ class ShiftController {
   /**
    * Aktualisiert einen Shift Eintrag
    * PUT /api/shift/:id
+   * @param req
+   * @param res
    */
   update(req: ShiftUpdateRequest, res: Response): void {
     try {
@@ -197,7 +208,7 @@ class ShiftController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -217,6 +228,8 @@ class ShiftController {
   /**
    * Löscht einen Shift Eintrag
    * DELETE /api/shift/:id
+   * @param req
+   * @param res
    */
   delete(req: ShiftGetRequest, res: Response): void {
     try {
@@ -225,7 +238,7 @@ class ShiftController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

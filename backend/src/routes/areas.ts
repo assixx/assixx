@@ -109,7 +109,7 @@ router.get("/:id", authenticateToken, (req, res): void => {
       });
       return;
     }
-    const areaId = parseInt(authReq.params.id);
+    const areaId = Number.parseInt(authReq.params.id);
 
     // Mock implementation
     const area: Area = {

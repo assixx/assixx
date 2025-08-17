@@ -19,8 +19,13 @@ import {
   TenantDeletionRequest,
 } from "./types.js";
 
+/**
+ *
+ */
 export class RootController {
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/admins:
    *   get:
@@ -55,6 +60,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/admins/{id}:
    *   get:
@@ -77,7 +84,7 @@ export class RootController {
   async getAdminById(req: Request, res: Response): Promise<void> {
     try {
       const admin = await rootService.getAdminById(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         req.user.tenant_id,
       );
 
@@ -100,6 +107,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/admins:
    *   post:
@@ -149,6 +158,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/admins/{id}:
    *   put:
@@ -178,7 +189,7 @@ export class RootController {
     try {
       const data: UpdateAdminRequest = req.body;
       await rootService.updateAdmin(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         data,
         req.user.tenant_id,
       );
@@ -203,6 +214,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/admins/{id}:
    *   delete:
@@ -225,7 +238,7 @@ export class RootController {
   async deleteAdmin(req: Request, res: Response): Promise<void> {
     try {
       await rootService.deleteAdmin(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         req.user.tenant_id,
       );
 
@@ -250,6 +263,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/admins/{id}/logs:
    *   get:
@@ -276,9 +291,9 @@ export class RootController {
    */
   async getAdminLogs(req: Request, res: Response): Promise<void> {
     try {
-      const days = parseInt(req.query.days as string) ?? 30;
+      const days = Number.parseInt(req.query.days as string) ?? 30;
       const logs = await rootService.getAdminLogs(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         req.user.tenant_id,
         days,
       );
@@ -303,6 +318,8 @@ export class RootController {
   }
 
   /**
+   * @param _req
+   * @param res
    * @swagger
    * /api/v2/root/tenants:
    *   get:
@@ -328,6 +345,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/users:
    *   get:
@@ -353,6 +372,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/users/{id}:
    *   get:
@@ -375,7 +396,7 @@ export class RootController {
   async getRootUserById(req: Request, res: Response): Promise<void> {
     try {
       const user = await rootService.getRootUserById(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         req.user.tenant_id,
       );
 
@@ -398,6 +419,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/users:
    *   post:
@@ -465,6 +488,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/users/{id}:
    *   put:
@@ -494,7 +519,7 @@ export class RootController {
     try {
       const data: UpdateRootUserRequest = req.body;
       await rootService.updateRootUser(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         data,
         req.user.tenant_id,
       );
@@ -537,6 +562,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/users/{id}:
    *   delete:
@@ -561,7 +588,7 @@ export class RootController {
   async deleteRootUser(req: Request, res: Response): Promise<void> {
     try {
       await rootService.deleteRootUser(
-        parseInt(req.params.id),
+        Number.parseInt(req.params.id),
         req.user.tenant_id,
         req.user.id,
       );
@@ -605,6 +632,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/dashboard:
    *   get:
@@ -630,6 +659,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/storage:
    *   get:
@@ -667,6 +698,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/tenant/deletion:
    *   post:
@@ -728,6 +761,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/tenant/deletion-status:
    *   get:
@@ -764,6 +799,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/tenant/cancel-deletion:
    *   post:
@@ -795,6 +832,8 @@ export class RootController {
   }
 
   /**
+   * @param _req
+   * @param res
    * @swagger
    * /api/v2/root/deletion-approvals:
    *   get:
@@ -820,6 +859,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/deletion-approvals/pending:
    *   get:
@@ -845,6 +886,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/deletion-approvals/{queueId}/approve:
    *   post:
@@ -872,7 +915,7 @@ export class RootController {
    */
   async approveDeletion(req: Request, res: Response): Promise<void> {
     try {
-      const queueId = parseInt(req.params.queueId);
+      const queueId = Number.parseInt(req.params.queueId);
       const { comment } = req.body;
 
       await tenantDeletionService.approveDeletion(
@@ -892,6 +935,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/deletion-approvals/{queueId}/reject:
    *   post:
@@ -924,7 +969,7 @@ export class RootController {
    */
   async rejectDeletion(req: Request, res: Response): Promise<void> {
     try {
-      const queueId = parseInt(req.params.queueId);
+      const queueId = Number.parseInt(req.params.queueId);
       const { reason } = req.body;
 
       if (!reason) {
@@ -948,6 +993,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/deletion-queue/{queueId}/emergency-stop:
    *   post:
@@ -967,7 +1014,7 @@ export class RootController {
    */
   async emergencyStop(req: Request, res: Response): Promise<void> {
     try {
-      const queueId = parseInt(req.params.queueId);
+      const queueId = Number.parseInt(req.params.queueId);
 
       await tenantDeletionService.triggerEmergencyStop(queueId, req.user.id);
 
@@ -986,6 +1033,8 @@ export class RootController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/root/tenant/deletion-dry-run:
    *   post:

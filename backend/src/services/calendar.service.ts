@@ -60,10 +60,15 @@ interface UserInfo {
   teamId: number | null;
 }
 
+/**
+ *
+ */
 class CalendarService {
   /**
    * Holt alle Calendar Einträge für einen Tenant
    * Note: This method is kept for compatibility but uses the more specific getAllEvents internally
+   * @param _tenantDb
+   * @param _filters
    */
   getAll(_tenantDb: Pool, _filters: EventFilters = {}): CalendarEvent[] {
     try {
@@ -81,6 +86,9 @@ class CalendarService {
 
   /**
    * Get all calendar events visible to the user
+   * @param tenantId
+   * @param userId
+   * @param options
    */
   async getAllEvents(
     tenantId: number,
@@ -98,6 +106,8 @@ class CalendarService {
   /**
    * Holt einen Calendar Eintrag per ID
    * Note: This method is kept for compatibility but uses getEventById internally
+   * @param _tenantDb
+   * @param _id
    */
   getById(_tenantDb: Pool, _id: number): CalendarEvent | null {
     try {
@@ -113,6 +123,9 @@ class CalendarService {
 
   /**
    * Get a specific calendar event by ID
+   * @param id
+   * @param tenantId
+   * @param userId
    */
   async getEventById(
     id: number,
@@ -130,6 +143,8 @@ class CalendarService {
   /**
    * Erstellt einen neuen Calendar Eintrag
    * Note: This method is kept for compatibility but uses createEvent internally
+   * @param _tenantDb
+   * @param data
    */
   async create(
     _tenantDb: Pool,
@@ -145,6 +160,7 @@ class CalendarService {
 
   /**
    * Create a new calendar event
+   * @param eventData
    */
   async createEvent(eventData: EventCreateData): Promise<CalendarEvent | null> {
     try {
@@ -158,6 +174,9 @@ class CalendarService {
   /**
    * Aktualisiert einen Calendar Eintrag
    * Note: This method is kept for compatibility but uses updateEvent internally
+   * @param _tenantDb
+   * @param _id
+   * @param _data
    */
   update(
     _tenantDb: Pool,
@@ -177,6 +196,9 @@ class CalendarService {
 
   /**
    * Update a calendar event
+   * @param id
+   * @param eventData
+   * @param tenantId
    */
   async updateEvent(
     id: number,
@@ -194,6 +216,8 @@ class CalendarService {
   /**
    * Löscht einen Calendar Eintrag
    * Note: This method is kept for compatibility but uses deleteEvent internally
+   * @param _tenantDb
+   * @param _id
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
@@ -209,6 +233,8 @@ class CalendarService {
 
   /**
    * Delete a calendar event
+   * @param id
+   * @param tenantId
    */
   async deleteEvent(id: number, tenantId: number): Promise<boolean> {
     try {
@@ -221,6 +247,9 @@ class CalendarService {
 
   /**
    * Add attendee to event
+   * @param eventId
+   * @param userId
+   * @param responseStatus
    */
   async addEventAttendee(
     eventId: number,
@@ -237,6 +266,8 @@ class CalendarService {
 
   /**
    * Remove attendee from event
+   * @param eventId
+   * @param userId
    */
   async removeEventAttendee(eventId: number, userId: number): Promise<boolean> {
     try {
@@ -249,6 +280,9 @@ class CalendarService {
 
   /**
    * Respond to event invitation
+   * @param eventId
+   * @param userId
+   * @param response
    */
   async respondToEvent(
     eventId: number,
@@ -265,6 +299,8 @@ class CalendarService {
 
   /**
    * Get event attendees
+   * @param eventId
+   * @param tenantId
    */
   async getEventAttendees(
     eventId: number,
@@ -280,6 +316,10 @@ class CalendarService {
 
   /**
    * Get dashboard events
+   * @param tenantId
+   * @param userId
+   * @param days
+   * @param limit
    */
   async getDashboardEvents(
     tenantId: number,
@@ -297,6 +337,9 @@ class CalendarService {
 
   /**
    * Check if user can manage event
+   * @param eventId
+   * @param userId
+   * @param userInfo
    */
   async canManageEvent(
     eventId: number,

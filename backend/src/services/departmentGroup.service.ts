@@ -26,9 +26,17 @@ interface Department {
   description?: string;
 }
 
+/**
+ *
+ */
 class DepartmentGroupService {
   /**
    * Create a new department group
+   * @param name
+   * @param description
+   * @param parentGroupId
+   * @param tenantId
+   * @param createdBy
    */
   async createGroup(
     name: string,
@@ -71,6 +79,10 @@ class DepartmentGroupService {
 
   /**
    * Add departments to a group
+   * @param groupId
+   * @param departmentIds
+   * @param tenantId
+   * @param addedBy
    */
   async addDepartmentsToGroup(
     groupId: number,
@@ -116,6 +128,9 @@ class DepartmentGroupService {
 
   /**
    * Remove departments from a group
+   * @param groupId
+   * @param departmentIds
+   * @param tenantId
    */
   async removeDepartmentsFromGroup(
     groupId: number,
@@ -142,6 +157,9 @@ class DepartmentGroupService {
 
   /**
    * Get all departments in a group (including subgroups recursively)
+   * @param groupId
+   * @param tenantId
+   * @param includeSubgroups
    */
   async getGroupDepartments(
     groupId: number,
@@ -179,7 +197,7 @@ class DepartmentGroupService {
         });
       }
 
-      return Array.from(departments.values());
+      return [...departments.values()];
     } catch (error: unknown) {
       logger.error("Error getting group departments:", error);
       return [];
@@ -188,6 +206,8 @@ class DepartmentGroupService {
 
   /**
    * Get departments from all subgroups recursively
+   * @param parentGroupId
+   * @param tenantId
    */
   private async getSubgroupDepartments(
     parentGroupId: number,
@@ -215,11 +235,12 @@ class DepartmentGroupService {
       });
     }
 
-    return Array.from(departments.values());
+    return [...departments.values()];
   }
 
   /**
    * Get the complete group hierarchy for a tenant
+   * @param tenantId
    */
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroup[]> {
     try {
@@ -294,6 +315,10 @@ class DepartmentGroupService {
 
   /**
    * Update a group
+   * @param groupId
+   * @param name
+   * @param description
+   * @param tenantId
    */
   async updateGroup(
     groupId: number,
@@ -321,6 +346,8 @@ class DepartmentGroupService {
 
   /**
    * Delete a group (only if no admin permissions exist)
+   * @param groupId
+   * @param tenantId
    */
   async deleteGroup(groupId: number, tenantId: number): Promise<boolean> {
     const connection = await getConnection();
@@ -377,6 +404,9 @@ class DepartmentGroupService {
 
   /**
    * Check for circular dependencies
+   * @param groupId
+   * @param targetId
+   * @param tenantId
    */
   private async checkCircularDependency(
     groupId: number,

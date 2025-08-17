@@ -13,9 +13,14 @@ import { ServiceError } from "../../../utils/ServiceError.js";
 import { rolesService } from "./service.js";
 import type { RoleCheckRequest, RoleName } from "./types.js";
 
+/**
+ *
+ */
 export class RolesController {
   /**
    * Get all available roles
+   * @param _req
+   * @param res
    */
   async getAllRoles(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -39,6 +44,8 @@ export class RolesController {
 
   /**
    * Get a single role by ID
+   * @param req
+   * @param res
    */
   async getRoleById(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Validate request
@@ -90,6 +97,8 @@ export class RolesController {
 
   /**
    * Get role hierarchy
+   * @param _req
+   * @param res
    */
   async getRoleHierarchy(
     _req: AuthenticatedRequest,
@@ -116,6 +125,8 @@ export class RolesController {
 
   /**
    * Get roles that can be assigned by the current user
+   * @param req
+   * @param res
    */
   async getAssignableRoles(
     req: AuthenticatedRequest,
@@ -144,6 +155,8 @@ export class RolesController {
 
   /**
    * Check if a user has a specific role
+   * @param req
+   * @param res
    */
   async checkUserRole(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is admin or root

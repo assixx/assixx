@@ -30,13 +30,13 @@ interface SearchResponse {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Bestehende Elemente
-  const employeeTableBody = document.getElementById('employee-table-body') as HTMLTableSectionElement | null;
+  const employeeTableBody = document.querySelector('#employee-table-body') as HTMLTableSectionElement | null;
 
   // Neue Elemente für die erweiterte Suche
-  const searchForm = document.getElementById('employee-search-form') as HTMLFormElement | null;
-  const searchInput = document.getElementById('employee-search-input') as HTMLInputElement | null;
-  const departmentFilter = document.getElementById('department-filter') as HTMLSelectElement | null;
-  const paginationContainer = document.getElementById('pagination-container');
+  const searchForm = document.querySelector('#employee-search-form') as HTMLFormElement | null;
+  const searchInput = document.querySelector('#employee-search-input') as HTMLInputElement | null;
+  const departmentFilter = document.querySelector('#department-filter') as HTMLSelectElement | null;
+  const paginationContainer = document.querySelector('#pagination-container');
 
   // Event-Listener hinzufügen
   searchForm?.addEventListener('submit', handleSearch);
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const option = document.createElement('option');
             option.value = dept.id.toString();
             option.textContent = dept.name;
-            departmentFilter.appendChild(option);
+            departmentFilter.append(option);
           });
         }
       } else {
@@ -132,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
           cell.setAttribute('colspan', '5');
           cell.className = 'text-center';
           cell.textContent = `Fehler beim Laden der Mitarbeiter: ${error.message ?? 'Unbekannter Fehler'}`;
-          row.appendChild(cell);
-          employeeTableBody.appendChild(row);
+          row.append(cell);
+          employeeTableBody.append(row);
         }
       }
     } catch (error) {
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
       `;
 
-      employeeTableBody.appendChild(row);
+      employeeTableBody.append(row);
     });
 
     // Event-Listener für die Lösch-Buttons hinzufügen
@@ -251,8 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         void loadEmployees(currentPage - 1);
       });
     }
-    prevLi.appendChild(prevLink);
-    ul.appendChild(prevLi);
+    prevLi.append(prevLink);
+    ul.append(prevLi);
 
     // Seitenzahlen
     const maxPages = 5; // Maximale Anzahl von Seiten, die angezeigt werden
@@ -270,8 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         void loadEmployees(i);
       });
-      li.appendChild(link);
-      ul.appendChild(li);
+      li.append(link);
+      ul.append(li);
     }
 
     // Weiter-Button
@@ -287,10 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
         void loadEmployees(currentPage + 1);
       });
     }
-    nextLi.appendChild(nextLink);
-    ul.appendChild(nextLi);
+    nextLi.append(nextLink);
+    ul.append(nextLi);
 
-    paginationContainer.appendChild(ul);
+    paginationContainer.append(ul);
   }
 
   // Funktion zum Löschen eines Mitarbeiters

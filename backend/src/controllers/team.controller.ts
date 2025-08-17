@@ -67,10 +67,15 @@ interface TeamQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class TeamController {
   /**
    * Holt alle Team Einträge
    * GET /api/team
+   * @param req
+   * @param res
    */
   async getAll(req: TeamQueryRequest, res: Response): Promise<void> {
     try {
@@ -83,11 +88,11 @@ class TeamController {
         ...req.query,
         department_id:
           req.query.department_id != null && req.query.department_id !== ""
-            ? parseInt(req.query.department_id, 10)
+            ? Number.parseInt(req.query.department_id, 10)
             : undefined,
         team_lead_id:
           req.query.team_lead_id != null && req.query.team_lead_id !== ""
-            ? parseInt(req.query.team_lead_id, 10)
+            ? Number.parseInt(req.query.team_lead_id, 10)
             : undefined,
         is_active:
           req.query.is_active === "true"
@@ -97,11 +102,11 @@ class TeamController {
               : undefined,
         page:
           req.query.page != null && req.query.page !== ""
-            ? parseInt(req.query.page, 10)
+            ? Number.parseInt(req.query.page, 10)
             : undefined,
         limit:
           req.query.limit != null && req.query.limit !== ""
-            ? parseInt(req.query.limit, 10)
+            ? Number.parseInt(req.query.limit, 10)
             : undefined,
       };
       const result = await teamService.getAll(req.tenantDb, filters);
@@ -118,6 +123,8 @@ class TeamController {
   /**
    * Holt einen Team Eintrag per ID
    * GET /api/team/:id
+   * @param req
+   * @param res
    */
   async getById(req: TeamGetRequest, res: Response): Promise<void> {
     try {
@@ -126,7 +133,7 @@ class TeamController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -150,6 +157,8 @@ class TeamController {
   /**
    * Erstellt einen neuen Team Eintrag
    * POST /api/team
+   * @param req
+   * @param res
    */
   async create(req: TeamCreateRequest, res: Response): Promise<void> {
     try {
@@ -172,6 +181,8 @@ class TeamController {
   /**
    * Aktualisiert einen Team Eintrag
    * PUT /api/team/:id
+   * @param req
+   * @param res
    */
   async update(req: TeamUpdateRequest, res: Response): Promise<void> {
     try {
@@ -180,7 +191,7 @@ class TeamController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -200,6 +211,8 @@ class TeamController {
   /**
    * Löscht einen Team Eintrag
    * DELETE /api/team/:id
+   * @param req
+   * @param res
    */
   async delete(req: TeamGetRequest, res: Response): Promise<void> {
     try {
@@ -208,7 +221,7 @@ class TeamController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

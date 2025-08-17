@@ -40,9 +40,16 @@ interface GroupPermissionRow extends RowDataPacket {
   can_delete: number;
 }
 
+/**
+ *
+ */
 export class AdminPermissionsService {
   /**
    * Check if admin has access to a specific department
+   * @param adminId
+   * @param departmentId
+   * @param tenantId
+   * @param requiredPermission
    */
   async checkAccess(
     adminId: number,
@@ -119,6 +126,8 @@ export class AdminPermissionsService {
 
   /**
    * Get all permissions for an admin
+   * @param adminId
+   * @param tenantId
    */
   async getAdminPermissions(
     adminId: number,
@@ -224,6 +233,11 @@ export class AdminPermissionsService {
 
   /**
    * Set department permissions for an admin
+   * @param adminId
+   * @param departmentIds
+   * @param permissions
+   * @param modifiedBy
+   * @param tenantId
    */
   async setDepartmentPermissions(
     adminId: number,
@@ -282,6 +296,11 @@ export class AdminPermissionsService {
 
   /**
    * Set group permissions for an admin
+   * @param adminId
+   * @param groupIds
+   * @param permissions
+   * @param modifiedBy
+   * @param tenantId
    */
   async setGroupPermissions(
     adminId: number,
@@ -340,6 +359,10 @@ export class AdminPermissionsService {
 
   /**
    * Remove specific department permission
+   * @param adminId
+   * @param departmentId
+   * @param modifiedBy
+   * @param tenantId
    */
   async removeDepartmentPermission(
     adminId: number,
@@ -374,6 +397,10 @@ export class AdminPermissionsService {
 
   /**
    * Remove specific group permission
+   * @param adminId
+   * @param groupId
+   * @param modifiedBy
+   * @param tenantId
    */
   async removeGroupPermission(
     adminId: number,
@@ -411,6 +438,12 @@ export class AdminPermissionsService {
 
   /**
    * Bulk update permissions
+   * @param adminIds
+   * @param operation
+   * @param departmentIds
+   * @param permissions
+   * @param modifiedBy
+   * @param tenantId
    */
   async bulkUpdatePermissions(
     adminIds: number[],
@@ -458,6 +491,8 @@ export class AdminPermissionsService {
 
   /**
    * Check permission level
+   * @param permission
+   * @param requiredLevel
    */
   private checkPermissionLevel(
     permission: RowDataPacket,

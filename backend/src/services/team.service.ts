@@ -40,9 +40,14 @@ interface TeamUpdateData extends Omit<ModelTeamUpdateData, "team_lead_id"> {
   team_lead_id?: number | null;
 }
 
+/**
+ *
+ */
 class TeamService {
   /**
    * Holt alle Team Einträge für einen Tenant
+   * @param _tenantDb
+   * @param _filters
    */
   async getAll(
     _tenantDb: Pool,
@@ -65,6 +70,8 @@ class TeamService {
 
   /**
    * Holt einen Team Eintrag per ID
+   * @param _tenantDb
+   * @param id
    */
   async getById(_tenantDb: Pool, id: number): Promise<TeamData | null> {
     try {
@@ -85,6 +92,8 @@ class TeamService {
 
   /**
    * Erstellt einen neuen Team Eintrag
+   * @param _tenantDb
+   * @param data
    */
   async create(_tenantDb: Pool, data: TeamCreateData): Promise<TeamData> {
     try {
@@ -112,6 +121,9 @@ class TeamService {
 
   /**
    * Aktualisiert einen Team Eintrag
+   * @param tenantDb
+   * @param id
+   * @param data
    */
   async update(
     tenantDb: Pool,
@@ -137,6 +149,8 @@ class TeamService {
 
   /**
    * Löscht einen Team Eintrag
+   * @param _tenantDb
+   * @param id
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {

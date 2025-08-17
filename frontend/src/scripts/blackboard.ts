@@ -202,7 +202,7 @@ function initializeBlackboard() {
           console.info('[Blackboard] User role:', userData.role);
 
           // Show/hide "New Entry" button based on permissions
-          const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
+          const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
           if (newEntryBtn) {
             console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
             newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -224,7 +224,7 @@ function initializeBlackboard() {
               console.info('[Blackboard] isAdmin after API call:', isAdmin);
               console.info('[Blackboard] User role from API:', userData.role);
 
-              const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
+              const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
               if (newEntryBtn) {
                 console.info('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
                 newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -233,8 +233,8 @@ function initializeBlackboard() {
               }
               void loadDepartmentsAndTeams();
             })
-            .catch((err1: unknown) => {
-              console.error('[Blackboard] Error loading user data:', err1);
+            .catch((error_: unknown) => {
+              console.error('[Blackboard] Error loading user data:', error_);
               showError('Fehler beim Laden der Benutzerdaten');
             });
         }
@@ -249,7 +249,7 @@ function initializeBlackboard() {
             console.info('[Blackboard] No localStorage - isAdmin:', isAdmin);
             console.info('[Blackboard] No localStorage - User role:', userData.role);
 
-            const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
+            const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
             if (newEntryBtn) {
               console.info(
                 '[Blackboard] No localStorage - Setting newEntryBtn display:',
@@ -261,8 +261,8 @@ function initializeBlackboard() {
             }
             void loadDepartmentsAndTeams();
           })
-          .catch((err2: unknown) => {
-            console.error('[Blackboard] Error loading user data:', err2);
+          .catch((error: unknown) => {
+            console.error('[Blackboard] Error loading user data:', error);
             showError('Fehler beim Laden der Benutzerdaten');
           });
       }
@@ -289,13 +289,13 @@ function initializeBlackboard() {
       });
 
       // Hide the load entries button since entries are loaded automatically
-      const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement | null;
+      const loadEntriesBtn = document.querySelector('#loadEntriesBtn') as HTMLButtonElement | null;
       if (loadEntriesBtn) {
         loadEntriesBtn.style.display = 'none';
       }
 
       // Retry-Button Ereignisbehandlung
-      const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement | null;
+      const retryLoadBtn = document.querySelector('#retryLoadBtn') as HTMLButtonElement | null;
       if (retryLoadBtn) {
         retryLoadBtn.addEventListener('click', () => {
           entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
@@ -373,7 +373,7 @@ function setupEventListeners(): void {
   });
 
   // Sort entries
-  const sortFilter = document.getElementById('sortFilter') as HTMLSelectElement | null;
+  const sortFilter = document.querySelector('#sortFilter') as HTMLSelectElement | null;
   if (sortFilter) {
     sortFilter.addEventListener('change', function (this: HTMLSelectElement) {
       currentSort = this.value;
@@ -388,8 +388,8 @@ function setupEventListeners(): void {
   }
 
   // Search button
-  const searchButton = document.getElementById('searchButton') as HTMLButtonElement | null;
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
+  const searchButton = document.querySelector('#searchButton') as HTMLButtonElement | null;
+  const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
 
   if (searchButton && searchInput) {
     searchButton.addEventListener('click', () => {
@@ -418,7 +418,7 @@ function setupEventListeners(): void {
   }
 
   // New entry button
-  const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
+  const newEntryBtn = document.querySelector('#newEntryBtn') as HTMLButtonElement | null;
   if (newEntryBtn) {
     newEntryBtn.addEventListener('click', () => {
       openEntryForm();
@@ -428,7 +428,7 @@ function setupEventListeners(): void {
   }
 
   // Direct attachment button
-  const directAttachBtn = document.getElementById('directAttachBtn') as HTMLButtonElement | null;
+  const directAttachBtn = document.querySelector('#directAttachBtn') as HTMLButtonElement | null;
   if (directAttachBtn) {
     directAttachBtn.addEventListener('click', () => {
       openDirectAttachModal();
@@ -438,7 +438,7 @@ function setupEventListeners(): void {
   }
 
   // Save entry button
-  const saveEntryBtn = document.getElementById('saveEntryBtn') as HTMLButtonElement | null;
+  const saveEntryBtn = document.querySelector('#saveEntryBtn') as HTMLButtonElement | null;
   if (saveEntryBtn) {
     saveEntryBtn.addEventListener('click', () => {
       void saveEntry();
@@ -448,7 +448,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement | null;
+  const entryOrgLevel = document.querySelector('#entryOrgLevel') as HTMLSelectElement | null;
   if (entryOrgLevel) {
     entryOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -483,8 +483,8 @@ function setupEventListeners(): void {
  * Setup file upload handlers for attachments
  */
 function setupFileUploadHandlers(): void {
-  const dropZone = document.getElementById('attachmentDropZone') as HTMLDivElement | null;
-  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement | null;
+  const dropZone = document.querySelector('#attachmentDropZone') as HTMLDivElement | null;
+  const fileInput = document.querySelector('#attachmentInput') as HTMLInputElement | null;
 
   if (!dropZone || !fileInput) return;
 
@@ -497,7 +497,7 @@ function setupFileUploadHandlers(): void {
   fileInput.addEventListener('change', (event) => {
     const target = event.target as HTMLInputElement | null;
     if (target?.files) {
-      handleFileSelection(Array.from(target.files));
+      handleFileSelection([...target.files]);
     }
   });
 
@@ -516,7 +516,7 @@ function setupFileUploadHandlers(): void {
     dropZone.classList.remove('drag-over');
 
     if (event.dataTransfer?.files) {
-      handleFileSelection(Array.from(event.dataTransfer.files));
+      handleFileSelection([...event.dataTransfer.files]);
     }
   });
 }
@@ -559,8 +559,8 @@ function handleFileSelection(files: File[]): void {
  * Update attachment preview display
  */
 function updateAttachmentPreview(): void {
-  const preview = document.getElementById('attachmentPreview') as HTMLDivElement | null;
-  const list = document.getElementById('attachmentList') as HTMLDivElement | null;
+  const preview = document.querySelector('#attachmentPreview') as HTMLDivElement | null;
+  const list = document.querySelector('#attachmentList') as HTMLDivElement | null;
 
   if (!preview || !list) return;
 
@@ -592,7 +592,7 @@ function updateAttachmentPreview(): void {
       </button>
     `;
 
-    list.appendChild(item);
+    list.append(item);
   });
 }
 
@@ -604,7 +604,7 @@ function removeAttachment(index: number): void {
   updateAttachmentPreview();
 
   // Reset file input
-  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#attachmentInput') as HTMLInputElement | null;
   if (fileInput) {
     fileInput.value = '';
   }
@@ -620,7 +620,7 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -634,18 +634,18 @@ async function loadEntries(): Promise<void> {
 
   try {
     // Verstecke die Lade-Button-Karte
-    const loadEntriesCard = document.getElementById('loadEntriesCard');
+    const loadEntriesCard = document.querySelector('#loadEntriesCard');
     if (loadEntriesCard) loadEntriesCard.classList.add('d-none');
 
     // Zeige den Ladeindikator
-    const loadingIndicator = document.getElementById('loadingIndicator');
+    const loadingIndicator = document.querySelector('#loadingIndicator');
     if (loadingIndicator) loadingIndicator.classList.remove('d-none');
 
     // Verstecke vorherige Ergebnisse oder Fehlermeldungen
-    const blackboardEntries = document.getElementById('blackboardEntries');
+    const blackboardEntries = document.querySelector('#blackboardEntries');
     if (blackboardEntries) blackboardEntries.classList.add('d-none');
 
-    const noEntriesMessage = document.getElementById('noEntriesMessage');
+    const noEntriesMessage = document.querySelector('#noEntriesMessage');
     if (noEntriesMessage) noEntriesMessage.classList.add('d-none');
 
     // Parse sort option
@@ -718,17 +718,17 @@ async function loadEntries(): Promise<void> {
     showError('Fehler beim Laden der Einträge.');
 
     // Bei einem Fehler, zeige die "Keine Einträge" Nachricht mit Wiederholungs-Button
-    const noEntriesMessage = document.getElementById('noEntriesMessage');
+    const noEntriesMessage = document.querySelector('#noEntriesMessage');
     if (noEntriesMessage) {
       noEntriesMessage.classList.remove('d-none');
     }
 
     // Zeige die Lade-Button-Karte wieder an
-    const loadEntriesCard = document.getElementById('loadEntriesCard');
+    const loadEntriesCard = document.querySelector('#loadEntriesCard');
     if (loadEntriesCard) loadEntriesCard.classList.remove('d-none');
   } finally {
     // Verstecke den Ladeindikator
-    const loadingIndicator = document.getElementById('loadingIndicator');
+    const loadingIndicator = document.querySelector('#loadingIndicator');
     if (loadingIndicator) loadingIndicator.classList.add('d-none');
   }
 }
@@ -782,8 +782,7 @@ async function fetchUserData(): Promise<UserData> {
   const endpoint = useV2 ? '/users/me' : '/user/profile';
 
   if (useV2) {
-    const result = await apiClient.request<UserData>(endpoint, { method: 'GET' }, { version: 'v2' });
-    return result;
+    return await apiClient.request<UserData>(endpoint, { method: 'GET' }, { version: 'v2' });
   } else {
     const response = await fetch(`/api${endpoint}`, {
       headers: {
@@ -861,14 +860,14 @@ async function loadDepartmentsAndTeams(): Promise<void> {
  * Display blackboard entries
  */
 function displayEntries(entries: BlackboardEntry[]): void {
-  const container = document.getElementById('blackboardEntries');
+  const container = document.querySelector('#blackboardEntries');
   if (!container) return;
 
   container.innerHTML = '';
   container.classList.remove('d-none');
 
   if (entries.length === 0) {
-    const noEntriesMessage = document.getElementById('noEntriesMessage');
+    const noEntriesMessage = document.querySelector('#noEntriesMessage');
     if (noEntriesMessage) {
       noEntriesMessage.classList.remove('d-none');
     }
@@ -877,7 +876,7 @@ function displayEntries(entries: BlackboardEntry[]): void {
 
   entries.forEach((entry) => {
     const entryCard = createEntryCard(entry);
-    container.appendChild(entryCard);
+    container.append(entryCard);
   });
 }
 
@@ -1072,7 +1071,7 @@ function getPriorityIcon(priority: string): string {
  * Update pagination UI
  */
 function updatePagination(pagination: PaginationInfo): void {
-  const paginationContainer = document.getElementById('pagination');
+  const paginationContainer = document.querySelector('#pagination');
   if (!paginationContainer) return;
 
   paginationContainer.innerHTML = '';
@@ -1087,7 +1086,7 @@ function updatePagination(pagination: PaginationInfo): void {
     prevBtn.onclick = () => {
       changePage(currentPage - 1);
     };
-    paginationContainer.appendChild(prevBtn);
+    paginationContainer.append(prevBtn);
   }
 
   // Page numbers
@@ -1099,12 +1098,12 @@ function updatePagination(pagination: PaginationInfo): void {
       pageBtn.onclick = () => {
         changePage(i);
       };
-      paginationContainer.appendChild(pageBtn);
+      paginationContainer.append(pageBtn);
     } else if (i === currentPage - 3 || i === currentPage + 3) {
       const dots = document.createElement('span');
       dots.textContent = '...';
       dots.className = 'pagination-dots';
-      paginationContainer.appendChild(dots);
+      paginationContainer.append(dots);
     }
   }
 
@@ -1116,7 +1115,7 @@ function updatePagination(pagination: PaginationInfo): void {
     nextBtn.onclick = () => {
       changePage(currentPage + 1);
     };
-    paginationContainer.appendChild(nextBtn);
+    paginationContainer.append(nextBtn);
   }
 }
 
@@ -1133,11 +1132,11 @@ function changePage(page: number): void {
  * Open entry form for creating/editing
  */
 function openEntryForm(entryId?: number): void {
-  const modal = document.getElementById('entryFormModal');
+  const modal = document.querySelector('#entryFormModal');
   if (!modal) return;
 
   // Reset form
-  const form = document.getElementById('entryForm') as HTMLFormElement | null;
+  const form = document.querySelector('#entryForm') as HTMLFormElement | null;
   if (form) form.reset();
 
   // Reset color selection
@@ -1149,7 +1148,7 @@ function openEntryForm(entryId?: number): void {
   // Reset file selection
   selectedFiles = [];
   updateAttachmentPreview();
-  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#attachmentInput') as HTMLInputElement | null;
   if (fileInput) {
     fileInput.value = '';
   }
@@ -1160,7 +1159,7 @@ function openEntryForm(entryId?: number): void {
   } else {
     // New entry - reset org dropdown
     updateOrgIdDropdown('all');
-    const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement | null;
+    const entryOrgLevel = document.querySelector('#entryOrgLevel') as HTMLSelectElement | null;
     if (entryOrgLevel) {
       entryOrgLevel.value = 'company';
       updateOrgIdDropdown('company');
@@ -1175,8 +1174,8 @@ function openEntryForm(entryId?: number): void {
  * Update organization ID dropdown based on level
  */
 function updateOrgIdDropdown(level: string): void {
-  const orgIdContainer = document.getElementById('orgIdContainer');
-  const orgIdSelect = document.getElementById('entryOrgId') as HTMLSelectElement | null;
+  const orgIdContainer = document.querySelector('#orgIdContainer');
+  const orgIdSelect = document.querySelector('#entryOrgId') as HTMLSelectElement | null;
 
   if (!orgIdContainer || !orgIdSelect) return;
 
@@ -1193,7 +1192,7 @@ function updateOrgIdDropdown(level: string): void {
       const option = document.createElement('option');
       option.value = dept.id.toString();
       option.textContent = dept.name;
-      orgIdSelect.appendChild(option);
+      orgIdSelect.append(option);
     });
   } else if (level === 'team') {
     orgIdContainer.style.display = 'block';
@@ -1204,7 +1203,7 @@ function updateOrgIdDropdown(level: string): void {
       const option = document.createElement('option');
       option.value = team.id.toString();
       option.textContent = team.name;
-      orgIdSelect.appendChild(option);
+      orgIdSelect.append(option);
     });
   }
 }
@@ -1213,7 +1212,7 @@ function updateOrgIdDropdown(level: string): void {
  * Save entry
  */
 async function saveEntry(): Promise<void> {
-  const form = document.getElementById('entryForm') as HTMLFormElement | null;
+  const form = document.querySelector('#entryForm') as HTMLFormElement | null;
   if (!form) return;
 
   const formData = new FormData(form);
@@ -1229,7 +1228,7 @@ async function saveEntry(): Promise<void> {
     content: formData.get('content') as string,
     priority_level: formData.get('priority_level') as string,
     org_level: formData.get('org_level') as string,
-    org_id: formData.get('org_level') === 'all' ? null : parseInt(formData.get('org_id') as string, 10),
+    org_id: formData.get('org_level') === 'all' ? null : Number.parseInt(formData.get('org_id') as string, 10),
     color,
   };
 
@@ -1331,7 +1330,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
     }
 
     // Fill form with entry data
-    const form = document.getElementById('entryForm') as HTMLFormElement | null;
+    const form = document.querySelector('#entryForm') as HTMLFormElement | null;
     if (!form) return;
 
     (form.elements.namedItem('entry_id') as HTMLInputElement).value = entry.id.toString();
@@ -1453,7 +1452,7 @@ async function loadAttachments(entryId: number): Promise<BlackboardAttachment[]>
  */
 function showDeleteConfirmation(entryId: number): void {
   // Create confirmation modal if it doesn't exist
-  let confirmModal = document.getElementById('deleteConfirmModal');
+  let confirmModal = document.querySelector('#deleteConfirmModal');
   if (!confirmModal) {
     confirmModal = document.createElement('div');
     confirmModal.id = 'deleteConfirmModal';
@@ -1476,11 +1475,11 @@ function showDeleteConfirmation(entryId: number): void {
         </div>
       </div>
     `;
-    document.body.appendChild(confirmModal);
+    document.body.append(confirmModal);
   }
 
   // Set up the confirm button
-  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const confirmBtn = document.querySelector('#confirmDeleteBtn');
   if (confirmBtn) {
     confirmBtn.onclick = async () => {
       closeModal('deleteConfirmModal');
@@ -1601,7 +1600,7 @@ async function viewEntry(entryId: number): Promise<void> {
     console.info(`[Blackboard] Attachments loaded:`, attachments);
 
     // Show entry detail modal
-    const detailContent = document.getElementById('entryDetailContent');
+    const detailContent = document.querySelector('#entryDetailContent');
     if (detailContent) {
       const priorityIcon = getPriorityIcon(entry.priority_level);
       const canEdit = isAdmin || entry.created_by === currentUserId;
@@ -1663,7 +1662,7 @@ async function viewEntry(entryId: number): Promise<void> {
         `;
 
       // Update footer buttons BEFORE showing modal
-      const footer = document.getElementById('entryDetailFooter');
+      const footer = document.querySelector('#entryDetailFooter');
       if (footer && canEdit) {
         footer.innerHTML = `
             <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
@@ -1679,7 +1678,7 @@ async function viewEntry(entryId: number): Promise<void> {
 
     // Show modal FIRST
     console.info('[Blackboard] Showing entry detail modal');
-    const detailModal = document.getElementById('entryDetailModal');
+    const detailModal = document.querySelector('#entryDetailModal');
     if (!detailModal) {
       console.error('[Blackboard] Entry detail modal not found!');
       return;
@@ -1713,7 +1712,7 @@ async function viewEntry(entryId: number): Promise<void> {
 
         attachmentItems.forEach((item, index) => {
           const htmlItem = item as HTMLElement;
-          const attachmentId = parseInt(htmlItem.getAttribute('data-attachment-id') ?? '0', 10);
+          const attachmentId = Number.parseInt(htmlItem.getAttribute('data-attachment-id') ?? '0', 10);
           const mimeType = htmlItem.getAttribute('data-mime-type') ?? '';
           const filename = htmlItem.getAttribute('data-filename') ?? '';
 
@@ -1778,7 +1777,7 @@ async function viewEntry(entryId: number): Promise<void> {
         });
 
         // Check if modal is blocking
-        const modal = document.getElementById('entryDetailModal');
+        const modal = document.querySelector('#entryDetailModal');
         if (modal) {
           const modalStyle = window.getComputedStyle(modal);
           console.info('[Blackboard] Modal computed styles:', {
@@ -1845,7 +1844,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
   }
 
   // Create preview modal if it doesn't exist
-  let previewModal = document.getElementById('attachmentPreviewModal');
+  let previewModal = document.querySelector('#attachmentPreviewModal');
   if (!previewModal) {
     previewModal = document.createElement('div');
     previewModal.id = 'attachmentPreviewModal';
@@ -1870,7 +1869,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
         </div>
       </div>
     `;
-    document.body.appendChild(previewModal);
+    document.body.append(previewModal);
     setupCloseButtons();
   }
 
@@ -1882,11 +1881,11 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
   previewModal.style.visibility = 'visible';
 
   // Update title
-  const titleElement = document.getElementById('previewTitle');
+  const titleElement = document.querySelector('#previewTitle');
   if (titleElement) titleElement.textContent = `Vorschau: ${fileName}`;
 
   // Update download link
-  const downloadLink = document.getElementById('downloadLink') as HTMLAnchorElement | null;
+  const downloadLink = document.querySelector('#downloadLink') as HTMLAnchorElement | null;
   if (downloadLink) {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
     const endpoint = `/blackboard/attachments/${attachmentId}?download=true`;
@@ -1920,9 +1919,9 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
-        document.body.appendChild(a);
+        document.body.append(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
         URL.revokeObjectURL(url);
       } catch (error) {
         console.error('Download error:', error);
@@ -1932,7 +1931,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
   }
 
   // Load preview content
-  const previewContent = document.getElementById('previewContent');
+  const previewContent = document.querySelector('#previewContent');
   if (!previewContent) return;
 
   try {
@@ -1961,8 +1960,8 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       img.src = blobUrl;
       img.alt = fileName;
       img.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);';
-      centerDiv.appendChild(img);
-      previewContent.appendChild(centerDiv);
+      centerDiv.append(img);
+      previewContent.append(centerDiv);
 
       // Clean up blob URL when modal is closed
       const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
@@ -2000,7 +1999,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
 
       // Add click handler for "open in new tab" button
       setTimeout(() => {
-        const openButton = document.getElementById('openPdfNewTab');
+        const openButton = document.querySelector('#openPdfNewTab');
         if (openButton) {
           openButton.onclick = async () => {
             try {
@@ -2053,10 +2052,10 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       p2.className = 'text-muted';
       p2.textContent = fileName;
 
-      unsupportedDiv.appendChild(icon);
-      unsupportedDiv.appendChild(p1);
-      unsupportedDiv.appendChild(p2);
-      previewContent.appendChild(unsupportedDiv);
+      unsupportedDiv.append(icon);
+      unsupportedDiv.append(p1);
+      unsupportedDiv.append(p2);
+      previewContent.append(unsupportedDiv);
     }
   } catch (error) {
     console.error('Error loading preview:', error);
@@ -2112,15 +2111,15 @@ if (typeof window !== 'undefined') {
  */
 function openDirectAttachModal(): void {
   console.info('[DirectAttach] Opening modal');
-  const modal = document.getElementById('directAttachModal');
+  const modal = document.querySelector('#directAttachModal');
   if (!modal) return;
 
   // Reset form
-  const form = document.getElementById('directAttachForm') as HTMLFormElement | null;
+  const form = document.querySelector('#directAttachForm') as HTMLFormElement | null;
   if (form) form.reset();
 
   // Reset file input and global file
-  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
+  const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
   if (fileInput) {
     console.info('[DirectAttach] Resetting file input');
     fileInput.value = '';
@@ -2128,7 +2127,7 @@ function openDirectAttachModal(): void {
   directAttachmentFile = null;
 
   // Hide preview
-  const preview = document.getElementById('directAttachPreview');
+  const preview = document.querySelector('#directAttachPreview');
   if (preview) preview.classList.add('d-none');
 
   // Reset size selection
@@ -2155,9 +2154,9 @@ function openDirectAttachModal(): void {
  */
 function setupDirectAttachHandlers(): void {
   console.info('[DirectAttach] Setting up handlers');
-  const dropZone = document.getElementById('directAttachDropZone') as HTMLDivElement | null;
-  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
-  const saveBtn = document.getElementById('saveDirectAttachBtn') as HTMLButtonElement | null;
+  const dropZone = document.querySelector('#directAttachDropZone') as HTMLDivElement | null;
+  const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
+  const saveBtn = document.querySelector('#saveDirectAttachBtn') as HTMLButtonElement | null;
 
   if (!dropZone || !fileInput) {
     console.error('[DirectAttach] Missing required elements');
@@ -2268,10 +2267,10 @@ function handleDirectAttachFile(file: File): void {
   console.info('[DirectAttach] File stored globally');
 
   // Show preview
-  const preview = document.getElementById('directAttachPreview');
-  const previewImage = document.getElementById('previewImage');
-  const fileName = document.getElementById('previewFileName');
-  const fileSize = document.getElementById('previewFileSize');
+  const preview = document.querySelector('#directAttachPreview');
+  const previewImage = document.querySelector('#previewImage');
+  const fileName = document.querySelector('#previewFileName');
+  const fileSize = document.querySelector('#previewFileSize');
 
   if (!preview || !previewImage || !fileName || !fileSize) return;
 
@@ -2280,9 +2279,9 @@ function handleDirectAttachFile(file: File): void {
   fileSize.textContent = formatFileSize(file.size);
 
   // Set title from filename if empty
-  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
+  const titleInput = document.querySelector('#directAttachTitle') as HTMLInputElement | null;
   if (titleInput && titleInput.value.length === 0) {
-    titleInput.value = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+    titleInput.value = file.name.replace(/\.[^./]+$/, ''); // Remove extension
   }
 
   // Show preview based on file type
@@ -2295,7 +2294,7 @@ function handleDirectAttachFile(file: File): void {
       img.src = e.target?.result as string;
       img.alt = file.name;
       img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
-      previewImage.appendChild(img);
+      previewImage.append(img);
     };
     reader.readAsDataURL(file);
   } else if (file.type === 'application/pdf') {
@@ -2308,8 +2307,8 @@ function handleDirectAttachFile(file: File): void {
  */
 function clearDirectAttachment(): void {
   console.info('[DirectAttach] Clearing attachment');
-  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
-  const preview = document.getElementById('directAttachPreview');
+  const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
+  const preview = document.querySelector('#directAttachPreview');
 
   if (fileInput) fileInput.value = '';
   if (preview) preview.classList.add('d-none');
@@ -2325,9 +2324,9 @@ async function saveDirectAttachment(): Promise<void> {
   console.info('[DirectAttach] saveDirectAttachment called');
   console.info('[DirectAttach] Global file:', directAttachmentFile?.name ?? 'none');
 
-  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
-  const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement | null;
-  const prioritySelect = document.getElementById('directAttachPriority') as HTMLSelectElement | null;
+  const titleInput = document.querySelector('#directAttachTitle') as HTMLInputElement | null;
+  const orgLevelSelect = document.querySelector('#directAttachOrgLevel') as HTMLSelectElement | null;
+  const prioritySelect = document.querySelector('#directAttachPriority') as HTMLSelectElement | null;
   const sizeOption = document.querySelector('.size-option.active');
 
   console.info('[DirectAttach] Elements found:', {
@@ -2345,7 +2344,7 @@ async function saveDirectAttachment(): Promise<void> {
   }
 
   const file = directAttachmentFile;
-  const title = titleInput?.value ?? file.name.replace(/\.[^/.]+$/, '');
+  const title = titleInput?.value ?? file.name.replace(/\.[^./]+$/, '');
   const size = sizeOption?.getAttribute('data-size') ?? 'medium';
 
   // Create FormData
@@ -2405,13 +2404,13 @@ async function saveDirectAttachment(): Promise<void> {
     directAttachmentFile = null;
 
     // Reset the form and file input for next use
-    const form = document.getElementById('directAttachForm') as HTMLFormElement | null;
+    const form = document.querySelector('#directAttachForm') as HTMLFormElement | null;
     if (form) form.reset();
 
-    const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
+    const fileInput = document.querySelector('#directAttachInput') as HTMLInputElement | null;
     if (fileInput) fileInput.value = '';
 
-    const preview = document.getElementById('directAttachPreview');
+    const preview = document.querySelector('#directAttachPreview');
     if (preview) preview.classList.add('d-none');
 
     // Reload entries
@@ -2431,10 +2430,10 @@ let fullscreenAutoRefreshInterval: ReturnType<typeof setInterval> | null = null;
  * Setup zoom controls for the blackboard
  */
 function setupZoomControls(): void {
-  const zoomInBtn = document.getElementById('zoomInBtn');
-  const zoomOutBtn = document.getElementById('zoomOutBtn');
-  const zoomLevelDisplay = document.getElementById('zoomLevel');
-  const blackboardContainer = document.getElementById('blackboardContainer');
+  const zoomInBtn = document.querySelector('#zoomInBtn');
+  const zoomOutBtn = document.querySelector('#zoomOutBtn');
+  const zoomLevelDisplay = document.querySelector('#zoomLevel');
+  const blackboardContainer = document.querySelector('#blackboardContainer');
 
   if (!zoomInBtn || !zoomOutBtn || !zoomLevelDisplay || !blackboardContainer) {
     console.error('[Zoom] Required elements not found');
@@ -2464,9 +2463,9 @@ function setupZoomControls(): void {
  * Setup fullscreen controls
  */
 function setupFullscreenControls(): void {
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-  const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
-  const blackboardContainer = document.getElementById('blackboardContainer');
+  const fullscreenBtn = document.querySelector('#fullscreenBtn');
+  const exitFullscreenBtn = document.querySelector('#exitFullscreenBtn');
+  const blackboardContainer = document.querySelector('#blackboardContainer');
 
   if (!fullscreenBtn || !exitFullscreenBtn || !blackboardContainer) {
     console.error('[Fullscreen] Required elements not found');
@@ -2546,7 +2545,7 @@ function handleFullscreenChange(): void {
     stopAutoRefresh();
 
     // Reset button icon
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const fullscreenBtn = document.querySelector('#fullscreenBtn');
     if (fullscreenBtn) {
       const icon = fullscreenBtn.querySelector('i');
       if (icon) {

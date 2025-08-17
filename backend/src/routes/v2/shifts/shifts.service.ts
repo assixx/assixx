@@ -145,6 +145,10 @@ interface DbShiftData extends RowDataPacket {
 }
 
 // Helper function to convert DB shift to API format
+/**
+ *
+ * @param dbShift
+ */
 function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
   const apiShift = dbToApi(dbShift) as unknown as ShiftApiResponse;
 
@@ -158,8 +162,8 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
         const minutes = startTime.getMinutes().toString().padStart(2, "0");
         apiShift.startTime = `${hours}:${minutes}`;
       }
-    } catch (e: unknown) {
-      logger.error("Error parsing start_time:", e);
+    } catch (error: unknown) {
+      logger.error("Error parsing start_time:", error);
     }
   }
 
@@ -172,8 +176,8 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
         const minutes = endTime.getMinutes().toString().padStart(2, "0");
         apiShift.endTime = `${hours}:${minutes}`;
       }
-    } catch (e: unknown) {
-      logger.error("Error parsing end_time:", e);
+    } catch (error: unknown) {
+      logger.error("Error parsing end_time:", error);
     }
   }
 
@@ -184,17 +188,25 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
       if (!isNaN(date.getTime())) {
         apiShift.date = date.toISOString().split("T")[0]; // YYYY-MM-DD format
       }
-    } catch (e: unknown) {
-      logger.error("Error parsing date:", e);
+    } catch (error: unknown) {
+      logger.error("Error parsing date:", error);
     }
   }
 
   return apiShift;
 }
 
+/**
+ *
+ */
 export class ShiftsService {
   // ============= SHIFTS CRUD =============
 
+  /**
+   *
+   * @param tenantId
+   * @param filters
+   */
   async listShifts(
     tenantId: number,
     filters: ShiftFilters,
@@ -216,6 +228,11 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param tenantId
+   */
   async getShiftById(id: number, tenantId: number): Promise<ShiftApiResponse> {
     try {
       const shift = await Shift.findById(id, tenantId);
@@ -230,6 +247,14 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async createShift(
     data: ShiftCreateData,
     tenantId: number,
@@ -266,6 +291,15 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async updateShift(
     id: number,
     data: ShiftUpdateData,
@@ -302,6 +336,14 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async deleteShift(
     id: number,
     tenantId: number,
@@ -336,6 +378,10 @@ export class ShiftsService {
 
   // ============= TEMPLATES =============
 
+  /**
+   *
+   * @param tenantId
+   */
   async listTemplates(tenantId: number): Promise<unknown[]> {
     try {
       const templates = await Shift.getTemplates(tenantId);
@@ -349,6 +395,11 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param tenantId
+   */
   async getTemplateById(id: number, tenantId: number): Promise<unknown> {
     try {
       const template = await Shift.getTemplateById(id, tenantId);
@@ -362,6 +413,14 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async createTemplate(
     data: TemplateCreateData,
     tenantId: number,
@@ -412,6 +471,15 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async updateTemplate(
     id: number,
     data: TemplateUpdateData,
@@ -462,6 +530,14 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async deleteTemplate(
     id: number,
     tenantId: number,
@@ -499,6 +575,13 @@ export class ShiftsService {
 
   // ============= SWAP REQUESTS =============
 
+  /**
+   *
+   * @param tenantId
+   * @param filters
+   * @param filters.userId
+   * @param filters.status
+   */
   async listSwapRequests(
     tenantId: number,
     filters: { userId?: number; status?: string },
@@ -515,6 +598,14 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async createSwapRequest(
     data: SwapRequestCreateData,
     tenantId: number,
@@ -573,6 +664,15 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param id
+   * @param status
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async updateSwapRequestStatus(
     id: number,
     status: string,
@@ -618,6 +718,11 @@ export class ShiftsService {
 
   // ============= OVERTIME =============
 
+  /**
+   *
+   * @param data
+   * @param tenantId
+   */
   async getOvertimeReport(
     data: OverTimeData,
     tenantId: number,
@@ -641,6 +746,12 @@ export class ShiftsService {
 
   // ============= EXPORT =============
 
+  /**
+   *
+   * @param filters
+   * @param tenantId
+   * @param format
+   */
   async exportShifts(
     filters: ShiftFilters,
     tenantId: number,
@@ -668,6 +779,10 @@ export class ShiftsService {
     }
   }
 
+  /**
+   *
+   * @param shifts
+   */
   private generateCSV(shifts: ShiftApiResponse[]): string {
     const headers = [
       "Date",
@@ -695,14 +810,18 @@ export class ShiftsService {
       shift.notes ?? "",
     ]);
 
-    const csvContent = [
+    return [
       headers.join(","),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
-
-    return csvContent;
   }
 
+  /**
+   *
+   * @param startTime
+   * @param endTime
+   * @param breakMinutes
+   */
   private calculateHours(
     startTime: string,
     endTime: string,

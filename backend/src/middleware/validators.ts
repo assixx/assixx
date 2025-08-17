@@ -159,13 +159,13 @@ export const validateSignup: ValidationMiddleware = [
     .isLength({ min: 3, max: 30 })
     .trim()
     .escape()
-    .matches(/^[a-zA-Z0-9_-]+$/)
+    .matches(/^[\w-]+$/)
     .withMessage(
       "Benutzername muss 3-30 Zeichen lang sein (nur Buchstaben, Zahlen, _ und -)",
     ),
   body("password")
     .isLength({ min: 8, max: 128 })
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!#$%&*@^])/)
     .withMessage(
       "Passwort muss 8-128 Zeichen lang sein mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen",
     ),
@@ -527,5 +527,5 @@ export const validateFileUpload = (allowedTypes: string[], maxSize: number) => {
 
 // SQL injection prevention for dynamic queries
 export const sanitizeSQLInput = (input: string): string => {
-  return input.replace(/[^\w\s-_.@]/g, "");
+  return input.replace(/[^\s\w-.@_]/g, "");
 };

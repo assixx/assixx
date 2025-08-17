@@ -78,15 +78,15 @@ router.get(
 
     const limit =
       authReq.query.limit != null
-        ? parseInt(authReq.query.limit as string)
+        ? Number.parseInt(authReq.query.limit as string)
         : 20;
     const offset =
       authReq.query.offset != null
-        ? parseInt(authReq.query.offset as string)
+        ? Number.parseInt(authReq.query.offset as string)
         : 0;
     const userId =
       authReq.query.user_id != null
-        ? parseInt(authReq.query.user_id as string)
+        ? Number.parseInt(authReq.query.user_id as string)
         : null;
     const action =
       authReq.query.action != null ? (authReq.query.action as string) : null;
@@ -280,7 +280,7 @@ router.delete(
 
     const userId =
       authReq.query.user_id != null
-        ? parseInt(authReq.query.user_id as string)
+        ? Number.parseInt(authReq.query.user_id as string)
         : null;
     const action =
       authReq.query.action != null ? (authReq.query.action as string) : null;

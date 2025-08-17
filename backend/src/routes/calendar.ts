@@ -149,7 +149,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
 
     // Check if user can manage this event
     const canManage = await calendarModel.canManageEvent(
-      parseInt(eventId, 10),
+      Number.parseInt(eventId, 10),
       req.user.id,
       userInfo,
     );
@@ -168,7 +168,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
 
     // Get event details for the request
     const event = await calendarModel.getEventById(
-      parseInt(eventId, 10),
+      Number.parseInt(eventId, 10),
       tenantId,
       req.user.id,
     );
@@ -334,11 +334,11 @@ router.get(
         end_date: (req.query.end ?? req.query.end_date) as string | undefined,
         page:
           req.query.page !== undefined
-            ? parseInt(req.query.page as string, 10)
+            ? Number.parseInt(req.query.page as string, 10)
             : 1,
         limit:
           req.query.limit !== undefined
-            ? parseInt(req.query.limit as string, 10)
+            ? Number.parseInt(req.query.limit as string, 10)
             : 50,
         sortBy:
           req.query.sortBy !== undefined
@@ -383,8 +383,8 @@ router.get(
     try {
       const tenantId = getTenantId(req.user);
 
-      const days = parseInt((req.query.days as string) || "7", 10);
-      const limit = parseInt((req.query.limit as string) || "5", 10);
+      const days = Number.parseInt((req.query.days as string) || "7", 10);
+      const limit = Number.parseInt((req.query.limit as string) || "5", 10);
 
       const events = await calendarModel.getDashboardEvents(
         tenantId,
@@ -423,7 +423,7 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const event = await calendarModel.getEventById(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
         req.user.id,
       );
@@ -458,7 +458,7 @@ router.post(
       // Convert org_id to number if it's a string
       let org_id = req.body.org_id;
       if (typeof org_id === "string") {
-        org_id = parseInt(org_id, 10);
+        org_id = Number.parseInt(org_id, 10);
       }
 
       const eventData = {
@@ -520,11 +520,11 @@ router.put(
           | undefined,
         department_id:
           req.body.department_id != null && req.body.department_id !== ""
-            ? parseInt(String(req.body.department_id), 10)
+            ? Number.parseInt(String(req.body.department_id), 10)
             : undefined,
         team_id:
           req.body.team_id != null && req.body.team_id !== ""
-            ? parseInt(String(req.body.team_id), 10)
+            ? Number.parseInt(String(req.body.team_id), 10)
             : undefined,
         reminder_time: req.body.reminder_time,
         color: req.body.color,
@@ -537,7 +537,7 @@ router.put(
 
       const tenantId = getTenantId(req.user);
       const updatedEvent = await calendarModel.updateEvent(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         eventData,
         tenantId,
       );
@@ -569,7 +569,7 @@ router.delete(
     try {
       const tenantId = getTenantId(req.user);
       const success = await calendarModel.deleteEvent(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
       );
 

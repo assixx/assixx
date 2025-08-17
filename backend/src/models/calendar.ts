@@ -241,7 +241,7 @@ export async function getAllEvents(
     // Apply pagination
     const offset = (page - 1) * limit;
     query += " LIMIT ? OFFSET ?";
-    queryParams.push(parseInt(limit.toString(), 10), offset);
+    queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
     const [events] = await executeQuery<DbCalendarEvent[]>(query, queryParams);
@@ -343,8 +343,8 @@ export async function getAllEvents(
       events,
       pagination: {
         total: totalEvents,
-        page: parseInt(page.toString(), 10),
-        limit: parseInt(limit.toString(), 10),
+        page: Number.parseInt(page.toString(), 10),
+        limit: Number.parseInt(limit.toString(), 10),
         totalPages: Math.ceil(totalEvents / limit),
       },
     };
@@ -661,7 +661,7 @@ export async function updateEvent(
       const reminderValue =
         reminder_time === "" || reminder_time === null
           ? null
-          : parseInt(reminder_time.toString());
+          : Number.parseInt(reminder_time.toString());
       queryParams.push(reminderValue);
     }
 
@@ -687,12 +687,7 @@ export async function updateEvent(
       return null;
     }
 
-    const updatedEvent = await getEventById(
-      id,
-      tenant_id,
-      eventRows[0].user_id as number,
-    );
-    return updatedEvent;
+    return await getEventById(id, tenant_id, eventRows[0].user_id as number);
   } catch (error: unknown) {
     logger.error("Error in updateEvent:", error);
     throw error;
@@ -906,7 +901,7 @@ export async function getDashboardEvents(
         ORDER BY e.start_date ASC
         LIMIT ?
       `;
-    queryParams.push(parseInt(limit.toString(), 10));
+    queryParams.push(Number.parseInt(limit.toString(), 10));
 
     const [events] = await executeQuery<DbCalendarEvent[]>(query, queryParams);
 
@@ -1011,7 +1006,7 @@ export async function generateRecurringEvents(
     // Parse options
     for (const option of options) {
       if (option.startsWith("COUNT=")) {
-        count = parseInt(option.substring(6), 10);
+        count = Number.parseInt(option.substring(6), 10);
       } else if (option.startsWith("UNTIL=")) {
         until = new Date(option.substring(6));
       }

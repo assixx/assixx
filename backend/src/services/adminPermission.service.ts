@@ -26,9 +26,16 @@ interface DepartmentWithPermission {
   can_delete: boolean;
 }
 
+/**
+ *
+ */
 class AdminPermissionService {
   /**
    * Check if admin has access to a specific department
+   * @param adminId
+   * @param departmentId
+   * @param tenantId
+   * @param requiredPermission
    */
   async hasAccess(
     adminId: number,
@@ -75,6 +82,11 @@ class AdminPermissionService {
     }
   }
 
+  /**
+   *
+   * @param permission
+   * @param requiredLevel
+   */
   private checkPermissionLevel(
     permission: RowDataPacket,
     requiredLevel: "read" | "write" | "delete",
@@ -93,6 +105,8 @@ class AdminPermissionService {
 
   /**
    * Get all departments an admin has access to (direct + via groups)
+   * @param adminId
+   * @param tenantId
    */
   async getAdminDepartments(
     adminId: number,
@@ -178,7 +192,7 @@ class AdminPermissionService {
       });
 
       return {
-        departments: Array.from(departmentMap.values()),
+        departments: [...departmentMap.values()],
         hasAllAccess,
       };
     } catch (error: unknown) {
@@ -189,6 +203,11 @@ class AdminPermissionService {
 
   /**
    * Set department permissions for an admin (overwrites existing)
+   * @param adminId
+   * @param departmentIds
+   * @param assignedBy
+   * @param tenantId
+   * @param permissions
    */
   async setPermissions(
     adminId: number,
@@ -296,6 +315,11 @@ class AdminPermissionService {
 
   /**
    * Set group permissions for an admin
+   * @param adminId
+   * @param groupIds
+   * @param assignedBy
+   * @param tenantId
+   * @param permissions
    */
   async setGroupPermissions(
     adminId: number,
@@ -357,6 +381,9 @@ class AdminPermissionService {
 
   /**
    * Remove specific department permission
+   * @param adminId
+   * @param departmentId
+   * @param tenantId
    */
   async removePermission(
     adminId: number,
@@ -379,6 +406,9 @@ class AdminPermissionService {
 
   /**
    * Remove specific group permission
+   * @param adminId
+   * @param groupId
+   * @param tenantId
    */
   async removeGroupPermission(
     adminId: number,
@@ -401,6 +431,14 @@ class AdminPermissionService {
 
   /**
    * Log permission change for audit trail
+   * @param action
+   * @param adminId
+   * @param targetId
+   * @param targetType
+   * @param changedBy
+   * @param tenantId
+   * @param oldPermissions
+   * @param newPermissions
    */
   async logPermissionChange(
     action: "grant" | "revoke" | "modify",

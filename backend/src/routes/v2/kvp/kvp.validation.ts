@@ -98,7 +98,7 @@ export const kvpValidation = {
     body("estimatedCost")
       .optional()
       .isNumeric()
-      .custom((value) => parseFloat(value) >= 0)
+      .custom((value) => Number.parseFloat(value) >= 0)
       .withMessage("Estimated cost must be a non-negative number"),
     handleValidationErrors,
   ],
@@ -140,12 +140,12 @@ export const kvpValidation = {
     body("estimatedCost")
       .optional()
       .isNumeric()
-      .custom((value) => parseFloat(value) >= 0)
+      .custom((value) => Number.parseFloat(value) >= 0)
       .withMessage("Estimated cost must be a non-negative number"),
     body("actualSavings")
       .optional()
       .isNumeric()
-      .custom((value) => parseFloat(value) >= 0)
+      .custom((value) => Number.parseFloat(value) >= 0)
       .withMessage("Actual savings must be a non-negative number"),
     body("status")
       .optional()

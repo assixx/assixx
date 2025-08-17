@@ -19,9 +19,14 @@ interface SignupResult {
   [key: string]: unknown;
 }
 
+/**
+ *
+ */
 export class SignupController {
   /**
    * Register a new tenant
+   * @param req
+   * @param res
    */
   async signup(req: Request, res: Response): Promise<void> {
     console.info("[SignupController] METHOD START");
@@ -135,6 +140,8 @@ export class SignupController {
 
   /**
    * Check subdomain availability
+   * @param req
+   * @param res
    */
   async checkSubdomain(req: Request, res: Response): Promise<void> {
     // Validate request

@@ -28,6 +28,8 @@ import { CreateAreaRequest, UpdateAreaRequest, AreaFilters } from "./types.js";
 /**
  * Get all areas
  * GET /api/v2/areas
+ * @param req
+ * @param res
  */
 export async function getAreasController(
   req: AuthenticatedRequest,
@@ -39,7 +41,7 @@ export async function getAreasController(
       isActive: req.query.isActive === "false" ? false : true,
       parentId:
         req.query.parentId !== undefined && req.query.parentId !== ""
-          ? parseInt(req.query.parentId as string)
+          ? Number.parseInt(req.query.parentId as string)
           : undefined,
       search: req.query.search as string,
     };
@@ -56,6 +58,8 @@ export async function getAreasController(
 /**
  * Get area hierarchy
  * GET /api/v2/areas/hierarchy
+ * @param req
+ * @param res
  */
 export async function getAreaHierarchyController(
   req: AuthenticatedRequest,
@@ -76,13 +80,15 @@ export async function getAreaHierarchyController(
 /**
  * Get area by ID
  * GET /api/v2/areas/:id
+ * @param req
+ * @param res
  */
 export async function getAreaByIdController(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const areaId = parseInt(req.params.id);
+    const areaId = Number.parseInt(req.params.id);
 
     if (isNaN(areaId)) {
       res.status(400).json(errorResponse("Invalid area ID", 400));
@@ -106,6 +112,8 @@ export async function getAreaByIdController(
 /**
  * Create new area
  * POST /api/v2/areas
+ * @param req
+ * @param res
  */
 export async function createAreaController(
   req: AuthenticatedRequest,
@@ -158,6 +166,8 @@ export async function createAreaController(
 /**
  * Update area
  * PUT /api/v2/areas/:id
+ * @param req
+ * @param res
  */
 export async function updateAreaController(
   req: AuthenticatedRequest,
@@ -170,7 +180,7 @@ export async function updateAreaController(
       return;
     }
 
-    const areaId = parseInt(req.params.id);
+    const areaId = Number.parseInt(req.params.id);
 
     if (isNaN(areaId)) {
       res.status(400).json(errorResponse("Invalid area ID", 400));
@@ -229,6 +239,8 @@ export async function updateAreaController(
 /**
  * Delete area
  * DELETE /api/v2/areas/:id
+ * @param req
+ * @param res
  */
 export async function deleteAreaController(
   req: AuthenticatedRequest,
@@ -241,7 +253,7 @@ export async function deleteAreaController(
       return;
     }
 
-    const areaId = parseInt(req.params.id);
+    const areaId = Number.parseInt(req.params.id);
 
     if (isNaN(areaId)) {
       res.status(400).json(errorResponse("Invalid area ID", 400));
@@ -290,6 +302,8 @@ export async function deleteAreaController(
 /**
  * Get area statistics
  * GET /api/v2/areas/stats
+ * @param req
+ * @param res
  */
 export async function getAreaStatsController(
   req: AuthenticatedRequest,

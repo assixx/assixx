@@ -266,8 +266,8 @@ let calendarView = 'dayGridMonth'; // Default view
  * Helper function to set selected organization ID
  */
 function selectOrgId(id: number, name: string): void {
-  const selectedOrgIdElement = document.getElementById('selectedOrgId');
-  const eventOrgIdElement = document.getElementById('eventOrgId') as HTMLInputElement | null;
+  const selectedOrgIdElement = document.querySelector('#selectedOrgId');
+  const eventOrgIdElement = document.querySelector('#eventOrgId') as HTMLInputElement | null;
 
   if (selectedOrgIdElement) {
     selectedOrgIdElement.textContent = name;
@@ -294,7 +294,7 @@ function initializeApp() {
         isAdmin = userData.role === 'admin' || userData.role === 'root';
 
         // Show/hide "New Event" button based on permissions
-        const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement | null;
+        const newEventBtn = document.querySelector('#newEventBtn') as HTMLButtonElement | null;
         console.info('Calendar: newEventBtn found:', newEventBtn !== null);
         if (newEventBtn !== null) {
           newEventBtn.style.display = isAdmin ? 'block' : 'none';
@@ -433,7 +433,7 @@ async function checkUnreadEvents(): Promise<void> {
     // If there are unread events, show the modal
     if (totalUnread > 0) {
       // Check if badge was clicked or if we should auto-show
-      const badge = document.getElementById('calendar-unread-badge');
+      const badge = document.querySelector('#calendar-unread-badge');
       if (badge && badge.style.display !== 'none') {
         // Auto-show modal when page loads with unread events
         setTimeout(() => {
@@ -494,7 +494,7 @@ async function showUnreadEventsModal(): Promise<void> {
     if (!modal) return;
 
     // Populate events list
-    const listContainer = document.getElementById('unreadEventsList');
+    const listContainer = document.querySelector('#unreadEventsList');
     if (!listContainer) return;
 
     if (events.length === 0) {
@@ -549,7 +549,7 @@ function initializeCalendar(): void {
 
   console.info('Calendar: Initializing FullCalendar...');
 
-  const calendarEl = document.getElementById('calendar');
+  const calendarEl = document.querySelector('#calendar');
   console.info('Calendar: Calendar element found:', !!calendarEl);
 
   if (!calendarEl) {
@@ -630,7 +630,7 @@ function initializeCalendar(): void {
         loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
       },
       eventClick(info: FullCalendarEventClickInfo) {
-        void viewEvent(parseInt(info.event.id, 10));
+        void viewEvent(Number.parseInt(info.event.id, 10));
       },
       eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
         // Show tooltip on hover
@@ -643,7 +643,7 @@ function initializeCalendar(): void {
         ${description}
         ${location !== undefined && location !== '' ? `<br><i class="fas fa-map-marker-alt"></i> ${location}` : ''}
       `;
-        document.body.appendChild(tooltip);
+        document.body.append(tooltip);
 
         const rect = info.el.getBoundingClientRect();
         tooltip.style.position = 'absolute';
@@ -763,8 +763,8 @@ function setupEventListeners(): void {
   });
 
   // Search button
-  const searchButton = document.getElementById('searchButton') as HTMLButtonElement | null;
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
+  const searchButton = document.querySelector('#searchButton') as HTMLButtonElement | null;
+  const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
 
   if (searchButton !== null && searchInput !== null) {
     searchButton.addEventListener('click', () => {
@@ -781,7 +781,7 @@ function setupEventListeners(): void {
   }
 
   // New event button (in filter bar) - only for admins and root
-  const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement | null;
+  const newEventBtn = document.querySelector('#newEventBtn') as HTMLButtonElement | null;
   console.info('Calendar: Looking for newEventBtn:', newEventBtn);
 
   // Get user role
@@ -819,7 +819,7 @@ function setupEventListeners(): void {
   }
 
   // New event button in calendar card header - only for admins and root
-  const newCalendarEventBtn = document.getElementById('newCalendarEventBtn') as HTMLButtonElement | null;
+  const newCalendarEventBtn = document.querySelector('#newCalendarEventBtn') as HTMLButtonElement | null;
   console.info('Calendar: Looking for newCalendarEventBtn:', newCalendarEventBtn);
 
   // Check user role
@@ -855,7 +855,7 @@ function setupEventListeners(): void {
   }
 
   // Save event button
-  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement | null;
+  const saveEventBtn = document.querySelector('#saveEventBtn') as HTMLButtonElement | null;
   if (saveEventBtn !== null) {
     saveEventBtn.addEventListener('click', () => {
       void saveEvent();
@@ -863,7 +863,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLSelectElement | null;
+  const eventOrgLevel = document.querySelector('#eventOrgLevel') as HTMLSelectElement | null;
   if (eventOrgLevel !== null) {
     eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -873,7 +873,7 @@ function setupEventListeners(): void {
   // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
-  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement | null;
+  const allDayCheckbox = document.querySelector('#eventAllDay') as HTMLInputElement | null;
   if (allDayCheckbox !== null) {
     allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
@@ -887,11 +887,11 @@ function setupEventListeners(): void {
   }
 
   // Add attendee button
-  const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+  const addAttendeeBtn = document.querySelector('#addAttendeeBtn');
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
       // Only open modal if button is visible (for personal events)
-      const orgLevelInput = document.getElementById('orgLevelInput') as HTMLInputElement | null;
+      const orgLevelInput = document.querySelector('#orgLevelInput') as HTMLInputElement | null;
       if (orgLevelInput !== null && orgLevelInput.value === 'personal') {
         modalManager.show('attendeesModal');
         void loadEmployeesForAttendees();
@@ -1206,7 +1206,7 @@ async function loadUpcomingEvents(): Promise<void> {
     displayUpcomingEvents(events);
   } catch (error: unknown) {
     console.error('Error loading upcoming events:', error);
-    const upcomingEvents = document.getElementById('upcomingEvents');
+    const upcomingEvents = document.querySelector('#upcomingEvents');
     if (upcomingEvents) {
       upcomingEvents.innerHTML = '<p class="text-center">Fehler beim Laden der Termine.</p>';
     }
@@ -1217,7 +1217,7 @@ async function loadUpcomingEvents(): Promise<void> {
  * Display upcoming events in the sidebar
  */
 function displayUpcomingEvents(events: CalendarEvent[]): void {
-  const container = document.getElementById('upcomingEvents');
+  const container = document.querySelector('#upcomingEvents');
 
   if (!container) {
     console.error('Upcoming events container not found');
@@ -1284,7 +1284,7 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
       void viewEvent(event.id);
     });
 
-    container.appendChild(eventItem);
+    container.append(eventItem);
   });
 }
 
@@ -1325,8 +1325,8 @@ async function viewEvent(eventId: number): Promise<void> {
           currentUserId = user.id;
           isAdmin = user.role === 'admin' || user.role === 'root';
           console.info('[CALENDAR] Set from localStorage - currentUserId:', currentUserId, 'isAdmin:', isAdmin);
-        } catch (e) {
-          console.error('Error parsing user from localStorage:', e);
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
         }
       }
     }
@@ -1584,7 +1584,7 @@ async function viewEvent(eventId: number): Promise<void> {
       content: modalContent,
       onOpen: () => {
         // Content is already in the modal template
-        const modalBody = document.getElementById('eventDetailContent');
+        const modalBody = document.querySelector('#eventDetailContent');
         if (modalBody) {
           modalBody.innerHTML = modalContent;
         }
@@ -1696,7 +1696,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   }
 
   // Reset form
-  const form = document.getElementById('eventForm') as HTMLFormElement | null;
+  const form = document.querySelector('#eventForm') as HTMLFormElement | null;
   form?.reset();
 
   // No color selection needed anymore - color is determined by org_level
@@ -1708,8 +1708,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   selectedAttendees = [];
 
   // Set default org level and show info message
-  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement | null;
-  const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
+  const orgLevelInput = document.querySelector('#eventOrgLevel') as HTMLInputElement | null;
+  const selectedOrgLevelSpan = document.querySelector('#selectedOrgLevel');
 
   if (eventId === undefined || eventId === null) {
     // For new events, set default to company and show appropriate UI
@@ -1719,9 +1719,9 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     // Use setTimeout to ensure DOM is fully rendered before updating
     setTimeout(() => {
       // Show attendees section with company info by default
-      const attendeesGroup = document.getElementById('attendeesGroup');
-      const attendeesContainer = document.getElementById('attendeesContainer');
-      const addAttendeeBtn = document.getElementById('addAttendeeBtn') as HTMLButtonElement | null;
+      const attendeesGroup = document.querySelector('#attendeesGroup');
+      const attendeesContainer = document.querySelector('#attendeesContainer');
+      const addAttendeeBtn = document.querySelector('#addAttendeeBtn') as HTMLButtonElement | null;
 
       if (attendeesGroup) attendeesGroup.style.display = 'block';
       if (addAttendeeBtn) addAttendeeBtn.style.display = 'none'; // Hide for company events
@@ -1731,8 +1731,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
 
       // Also update the department/team groups visibility for company events
-      const departmentGroup = document.getElementById('departmentGroup');
-      const teamGroup = document.getElementById('teamGroup');
+      const departmentGroup = document.querySelector('#departmentGroup');
+      const teamGroup = document.querySelector('#teamGroup');
       if (departmentGroup) departmentGroup.style.display = 'none';
       if (teamGroup) teamGroup.style.display = 'none';
     }, 50);
@@ -1759,8 +1759,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
     // New event
     if (startDate) {
-      const startInput = document.getElementById('eventStartDate') as HTMLInputElement | null;
-      const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement | null;
+      const startInput = document.querySelector('#eventStartDate') as HTMLInputElement | null;
+      const startTimeInput = document.querySelector('#eventStartTime') as HTMLInputElement | null;
 
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
@@ -1772,8 +1772,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
 
     if (endDate) {
-      const endInput = document.getElementById('eventEndDate') as HTMLInputElement | null;
-      const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement | null;
+      const endInput = document.querySelector('#eventEndDate') as HTMLInputElement | null;
+      const endTimeInput = document.querySelector('#eventEndTime') as HTMLInputElement | null;
 
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
@@ -1784,7 +1784,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
     }
 
-    const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement | null;
+    const allDayCheckbox = document.querySelector('#eventAllDay') as HTMLInputElement | null;
     if (allDayCheckbox && allDay !== undefined) {
       allDayCheckbox.checked = allDay;
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
@@ -1823,17 +1823,17 @@ function formatTimeForInput(date: Date): string {
  */
 function updateOrgIdDropdown(level: string): void {
   // Handle department dropdown
-  const departmentGroup = document.getElementById('departmentGroup');
-  const departmentDropdown = document.getElementById('departmentDropdown');
+  const departmentGroup = document.querySelector('#departmentGroup');
+  const departmentDropdown = document.querySelector('#departmentDropdown');
 
   // Handle team dropdown
-  const teamGroup = document.getElementById('teamGroup');
-  const teamDropdown = document.getElementById('teamDropdown');
+  const teamGroup = document.querySelector('#teamGroup');
+  const teamDropdown = document.querySelector('#teamDropdown');
 
   // Handle attendees section
-  const attendeesGroup = document.getElementById('attendeesGroup');
-  const addAttendeeBtn = document.getElementById('addAttendeeBtn') as HTMLButtonElement;
-  const attendeesContainer = document.getElementById('attendeesContainer');
+  const attendeesGroup = document.querySelector('#attendeesGroup');
+  const addAttendeeBtn = document.querySelector('#addAttendeeBtn') as HTMLButtonElement;
+  const attendeesContainer = document.querySelector('#attendeesContainer');
 
   // Clear dropdowns
   if (departmentDropdown) departmentDropdown.innerHTML = '';
@@ -1902,7 +1902,7 @@ function updateOrgIdDropdown(level: string): void {
           selectDepartment(dept.id, dept.name);
           closeAllDropdowns();
         };
-        departmentDropdown?.appendChild(option);
+        departmentDropdown?.append(option);
       });
     }
   } else if (level === 'team') {
@@ -1924,7 +1924,7 @@ function updateOrgIdDropdown(level: string): void {
           loadTeamsForDepartment(dept.id);
           closeAllDropdowns();
         };
-        departmentDropdown?.appendChild(option);
+        departmentDropdown?.append(option);
       });
     }
   }
@@ -1934,8 +1934,8 @@ function updateOrgIdDropdown(level: string): void {
  * Select department
  */
 function selectDepartment(departmentId: number, departmentName: string): void {
-  const selectedElement = document.getElementById('selectedDepartment');
-  const inputElement = document.getElementById('eventDepartmentId') as HTMLInputElement | null;
+  const selectedElement = document.querySelector('#selectedDepartment');
+  const inputElement = document.querySelector('#eventDepartmentId') as HTMLInputElement | null;
 
   if (selectedElement) selectedElement.textContent = departmentName;
   if (inputElement) inputElement.value = departmentId.toString();
@@ -1945,8 +1945,8 @@ function selectDepartment(departmentId: number, departmentName: string): void {
  * Select team
  */
 function selectTeam(teamId: number, teamName: string): void {
-  const selectedElement = document.getElementById('selectedTeam');
-  const inputElement = document.getElementById('eventTeamId') as HTMLInputElement | null;
+  const selectedElement = document.querySelector('#selectedTeam');
+  const inputElement = document.querySelector('#eventTeamId') as HTMLInputElement | null;
 
   if (selectedElement) selectedElement.textContent = teamName;
   if (inputElement) inputElement.value = teamId.toString();
@@ -1956,7 +1956,7 @@ function selectTeam(teamId: number, teamName: string): void {
  * Load teams for selected department
  */
 function loadTeamsForDepartment(departmentId: number): void {
-  const teamDropdown = document.getElementById('teamDropdown');
+  const teamDropdown = document.querySelector('#teamDropdown');
   if (!teamDropdown) return;
 
   teamDropdown.innerHTML = '';
@@ -1978,13 +1978,13 @@ function loadTeamsForDepartment(departmentId: number): void {
       selectTeam(team.id, team.name);
       closeAllDropdowns();
     };
-    teamDropdown.appendChild(option);
+    teamDropdown.append(option);
   });
 
   // Reset team selection
-  const selectedTeam = document.getElementById('selectedTeam');
+  const selectedTeam = document.querySelector('#selectedTeam');
   if (selectedTeam) selectedTeam.textContent = '-- Team wählen --';
-  const teamInput = document.getElementById('eventTeamId') as HTMLInputElement | null;
+  const teamInput = document.querySelector('#eventTeamId') as HTMLInputElement | null;
   if (teamInput) teamInput.value = '';
 }
 
@@ -1994,7 +1994,7 @@ function loadTeamsForDepartment(departmentId: number): void {
 async function saveEvent(): Promise<void> {
   console.info('saveEvent called');
 
-  const form = document.getElementById('eventForm') as HTMLFormElement | null;
+  const form = document.querySelector('#eventForm') as HTMLFormElement | null;
   if (form === null) {
     console.error('Form not found');
     return;
@@ -2007,19 +2007,19 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get form values directly from elements
-  const titleInput = document.getElementById('eventTitle') as HTMLInputElement | null;
-  const descriptionInput = document.getElementById('eventDescription') as HTMLTextAreaElement | null;
-  const startDateInput = document.getElementById('eventStartDate') as HTMLInputElement | null;
-  const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement | null;
-  const endDateInput = document.getElementById('eventEndDate') as HTMLInputElement | null;
-  const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement | null;
-  const allDayInput = document.getElementById('eventAllDay') as HTMLInputElement | null;
-  const locationInput = document.getElementById('eventLocation') as HTMLInputElement | null;
-  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement | null;
-  const departmentIdInput = document.getElementById('eventDepartmentId') as HTMLInputElement | null;
-  const teamIdInput = document.getElementById('eventTeamId') as HTMLInputElement | null;
-  const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement | null;
-  const eventIdInput = document.getElementById('eventId') as HTMLInputElement | null;
+  const titleInput = document.querySelector('#eventTitle') as HTMLInputElement | null;
+  const descriptionInput = document.querySelector('#eventDescription') as HTMLTextAreaElement | null;
+  const startDateInput = document.querySelector('#eventStartDate') as HTMLInputElement | null;
+  const startTimeInput = document.querySelector('#eventStartTime') as HTMLInputElement | null;
+  const endDateInput = document.querySelector('#eventEndDate') as HTMLInputElement | null;
+  const endTimeInput = document.querySelector('#eventEndTime') as HTMLInputElement | null;
+  const allDayInput = document.querySelector('#eventAllDay') as HTMLInputElement | null;
+  const locationInput = document.querySelector('#eventLocation') as HTMLInputElement | null;
+  const orgLevelInput = document.querySelector('#eventOrgLevel') as HTMLInputElement | null;
+  const departmentIdInput = document.querySelector('#eventDepartmentId') as HTMLInputElement | null;
+  const teamIdInput = document.querySelector('#eventTeamId') as HTMLInputElement | null;
+  const reminderTimeInput = document.querySelector('#eventReminderTime') as HTMLInputElement | null;
+  const eventIdInput = document.querySelector('#eventId') as HTMLInputElement | null;
 
   // Validate required fields
   if (titleInput?.value === undefined || titleInput.value === '') {
@@ -2091,14 +2091,14 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get recurrence data
-  const recurrenceType = (document.getElementById('eventRecurrence') as HTMLInputElement | null)?.value;
+  const recurrenceType = (document.querySelector('#eventRecurrence') as HTMLInputElement | null)?.value;
   let recurrenceRule = '';
 
   if (recurrenceType !== undefined && recurrenceType !== '') {
     // Build recurrence rule based on selection
-    const recurrenceEnd = document.getElementById('selectedRecurrenceEnd')?.textContent;
-    const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement | null)?.value;
-    const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement | null)?.value;
+    const recurrenceEnd = document.querySelector('#selectedRecurrenceEnd')?.textContent;
+    const recurrenceCount = (document.querySelector('#recurrenceCount') as HTMLInputElement | null)?.value;
+    const recurrenceEndDate = (document.querySelector('#recurrenceEndDate') as HTMLInputElement | null)?.value;
 
     // Build simplified recurrence rule
     recurrenceRule = recurrenceType;
@@ -2116,24 +2116,28 @@ async function saveEvent(): Promise<void> {
 
   if (orgLevelInput.value === 'department') {
     departmentId =
-      departmentIdInput !== null && departmentIdInput.value !== '' ? parseInt(departmentIdInput.value, 10) : null;
+      departmentIdInput !== null && departmentIdInput.value !== ''
+        ? Number.parseInt(departmentIdInput.value, 10)
+        : null;
   } else if (orgLevelInput.value === 'team') {
     departmentId =
-      departmentIdInput !== null && departmentIdInput.value !== '' ? parseInt(departmentIdInput.value, 10) : null;
-    teamId = teamIdInput !== null && teamIdInput.value !== '' ? parseInt(teamIdInput.value, 10) : null;
+      departmentIdInput !== null && departmentIdInput.value !== ''
+        ? Number.parseInt(departmentIdInput.value, 10)
+        : null;
+    teamId = teamIdInput !== null && teamIdInput.value !== '' ? Number.parseInt(teamIdInput.value, 10) : null;
   }
 
   // Handle reminder_time properly - check if value is valid number
   let reminderTime = undefined;
   if (reminderTimeInput?.value !== undefined && reminderTimeInput.value !== '') {
-    const parsed = parseInt(reminderTimeInput.value, 10);
+    const parsed = Number.parseInt(reminderTimeInput.value, 10);
     if (!isNaN(parsed) && parsed >= 0) {
       reminderTime = parsed;
     }
   }
 
   // Get requires response checkbox
-  const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement | null;
+  const requiresResponseInput = document.querySelector('#eventRequiresResponse') as HTMLInputElement | null;
   const requiresResponse = requiresResponseInput?.checked ?? false;
 
   const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
@@ -2277,8 +2281,8 @@ async function loadEventForEdit(eventId: number): Promise<void> {
           try {
             const user = JSON.parse(userStr) as UserData;
             currentUserId = user.id;
-          } catch (e) {
-            console.error('Error parsing user from localStorage:', e);
+          } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
           }
         }
       }
@@ -2317,7 +2321,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Fill form with event data
-      const form = document.getElementById('eventForm') as HTMLFormElement | null;
+      const form = document.querySelector('#eventForm') as HTMLFormElement | null;
       if (form === null) return;
 
       // Set event ID
@@ -2339,7 +2343,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       locationInput.value = event.location ?? '';
 
       // Set org level using custom dropdown
-      const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
+      const selectedOrgLevelSpan = document.querySelector('#selectedOrgLevel');
       if (selectedOrgLevelSpan) {
         const orgLevelText =
           event.org_level === 'company'
@@ -2393,13 +2397,13 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
-      const reminderSelect = document.getElementById('eventReminderTime') as HTMLSelectElement | null;
+      const reminderSelect = document.querySelector('#eventReminderTime') as HTMLSelectElement | null;
       if (reminderSelect !== null && event.reminder_time !== undefined) {
         reminderSelect.value = event.reminder_time.toString();
       }
 
       // Set requires response checkbox
-      const requiresResponseInput = document.getElementById('eventRequiresResponse') as HTMLInputElement | null;
+      const requiresResponseInput = document.querySelector('#eventRequiresResponse') as HTMLInputElement | null;
       if (requiresResponseInput !== null) {
         // Check both camelCase and snake_case fields
         const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
@@ -2441,7 +2445,7 @@ function deleteEvent(eventId: number): void {
       console.info('[CALENDAR] Confirmation modal opened, eventToDelete:', eventToDelete);
 
       // Add click handler to the delete button when modal opens
-      const confirmBtn = document.getElementById('confirmDeleteBtn');
+      const confirmBtn = document.querySelector('#confirmDeleteBtn');
       if (confirmBtn) {
         confirmBtn.onclick = () => {
           console.info('[CALENDAR] Confirm delete button clicked, eventToDelete:', eventToDelete);
@@ -2505,7 +2509,7 @@ async function confirmDeleteEvent(): Promise<void> {
  * Search attendees
  */
 function searchAttendees(query: string): void {
-  const searchResults = document.getElementById('attendeeSearchResults');
+  const searchResults = document.querySelector('#attendeeSearchResults');
   if (!searchResults) return;
 
   if (query === '' || query.length < 2) {
@@ -2550,7 +2554,7 @@ function searchAttendees(query: string): void {
         <i class="fas fa-plus"></i>
       </button>
     `;
-    searchResults.appendChild(item);
+    searchResults.append(item);
   });
 }
 
@@ -2563,8 +2567,8 @@ function addAttendee(userId: number, _name: string): void {
     updateSelectedAttendees();
 
     // Clear search
-    const searchInput = document.getElementById('attendeeSearch') as HTMLInputElement | null;
-    const searchResults = document.getElementById('attendeeSearchResults');
+    const searchInput = document.querySelector('#attendeeSearch') as HTMLInputElement | null;
+    const searchResults = document.querySelector('#attendeeSearchResults');
     if (searchInput !== null) searchInput.value = '';
     if (searchResults !== null) searchResults.innerHTML = '';
   }
@@ -2671,8 +2675,8 @@ async function loadDepartmentsAndTeams(): Promise<void> {
         try {
           const user = JSON.parse(userStr) as UserData;
           currentUserIdLocal = user.id;
-        } catch (e) {
-          console.error('Error parsing user from localStorage:', e);
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
         }
       }
       employees = allEmployees.filter((emp: User) => emp.id !== currentUserIdLocal);
@@ -2695,7 +2699,7 @@ function escapeHtml(text: string | null | undefined): string {
     '"': '&quot;',
     "'": '&#039;',
   };
-  return str.replace(/[&<>"']/g, (m) => map[m]);
+  return str.replace(/["&'<>]/g, (m) => map[m]);
 }
 
 // Extend window for calendar functions
@@ -2731,7 +2735,7 @@ declare global {
  */
 function setupModalEventListeners(): void {
   // Save event button
-  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement | null;
+  const saveEventBtn = document.querySelector('#saveEventBtn') as HTMLButtonElement | null;
   if (saveEventBtn !== null) {
     // Remove existing listeners by cloning
     const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
@@ -2746,7 +2750,7 @@ function setupModalEventListeners(): void {
   }
 
   // Add attendee button
-  const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+  const addAttendeeBtn = document.querySelector('#addAttendeeBtn');
   if (addAttendeeBtn) {
     const newButton = addAttendeeBtn.cloneNode(true) as HTMLButtonElement;
     addAttendeeBtn.parentNode?.replaceChild(newButton, addAttendeeBtn);
@@ -2760,7 +2764,7 @@ function setupModalEventListeners(): void {
   }
 
   // All day checkbox
-  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement | null;
+  const allDayCheckbox = document.querySelector('#eventAllDay') as HTMLInputElement | null;
   if (allDayCheckbox !== null) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
@@ -2782,7 +2786,7 @@ function setupModalEventListeners(): void {
 
 // Custom dropdown functions
 function toggleOrgLevelDropdown(): void {
-  const dropdown = document.getElementById('orgLevelDropdown');
+  const dropdown = document.querySelector('#orgLevelDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2798,8 +2802,8 @@ function toggleOrgLevelDropdown(): void {
 }
 
 function selectOrgLevel(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedOrgLevel');
-  const inputElement = document.getElementById('eventOrgLevel') as HTMLInputElement;
+  const selectedElement = document.querySelector('#selectedOrgLevel');
+  const inputElement = document.querySelector('#eventOrgLevel') as HTMLInputElement;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   inputElement.value = value;
@@ -2810,10 +2814,10 @@ function selectOrgLevel(value: string, text: string): void {
 }
 
 function toggleOrgIdDropdown(): void {
-  const display = document.getElementById('orgIdDisplay');
+  const display = document.querySelector('#orgIdDisplay');
   if (display?.classList.contains('disabled') === true) return;
 
-  const dropdown = document.getElementById('orgIdDropdown');
+  const dropdown = document.querySelector('#orgIdDropdown');
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -2827,7 +2831,7 @@ function toggleOrgIdDropdown(): void {
 }
 
 function toggleReminderDropdown(): void {
-  const dropdown = document.getElementById('reminderDropdown');
+  const dropdown = document.querySelector('#reminderDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2843,8 +2847,8 @@ function toggleReminderDropdown(): void {
 }
 
 function selectReminder(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedReminder');
-  const inputElement = document.getElementById('eventReminderTime') as HTMLInputElement;
+  const selectedElement = document.querySelector('#selectedReminder');
+  const inputElement = document.querySelector('#eventReminderTime') as HTMLInputElement;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   inputElement.value = value;
@@ -2852,7 +2856,7 @@ function selectReminder(value: string, text: string): void {
 }
 
 function toggleRecurrenceDropdown(): void {
-  const dropdown = document.getElementById('recurrenceDropdown');
+  const dropdown = document.querySelector('#recurrenceDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2868,7 +2872,7 @@ function toggleRecurrenceDropdown(): void {
 }
 
 function toggleDepartmentDropdown(): void {
-  const dropdown = document.getElementById('departmentDropdown');
+  const dropdown = document.querySelector('#departmentDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2884,7 +2888,7 @@ function toggleDepartmentDropdown(): void {
 }
 
 function toggleTeamDropdown(): void {
-  const dropdown = document.getElementById('teamDropdown');
+  const dropdown = document.querySelector('#teamDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2900,14 +2904,14 @@ function toggleTeamDropdown(): void {
 }
 
 function selectRecurrence(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedRecurrence');
-  const inputElement = document.getElementById('eventRecurrence') as HTMLInputElement;
+  const selectedElement = document.querySelector('#selectedRecurrence');
+  const inputElement = document.querySelector('#eventRecurrence') as HTMLInputElement;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   inputElement.value = value;
 
   // Show/hide recurrence end options
-  const endWrapper = document.getElementById('recurrenceEndWrapper');
+  const endWrapper = document.querySelector('#recurrenceEndWrapper');
   if (endWrapper) {
     endWrapper.style.display = value !== '' ? 'block' : 'none';
   }
@@ -2916,7 +2920,7 @@ function selectRecurrence(value: string, text: string): void {
 }
 
 function toggleRecurrenceEndDropdown(): void {
-  const dropdown = document.getElementById('recurrenceEndDropdown');
+  const dropdown = document.querySelector('#recurrenceEndDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2932,11 +2936,11 @@ function toggleRecurrenceEndDropdown(): void {
 }
 
 function selectRecurrenceEnd(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedRecurrenceEnd');
+  const selectedElement = document.querySelector('#selectedRecurrenceEnd');
   if (selectedElement) selectedElement.textContent = text;
 
-  const countWrapper = document.getElementById('recurrenceCountWrapper');
-  const dateWrapper = document.getElementById('recurrenceEndDateWrapper');
+  const countWrapper = document.querySelector('#recurrenceCountWrapper');
+  const dateWrapper = document.querySelector('#recurrenceEndDateWrapper');
 
   if (countWrapper && dateWrapper) {
     if (value === 'after') {
@@ -2976,7 +2980,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
     // For employees, show a simple input field instead of user list
     if (userRole === 'employee') {
-      const attendeesList = document.getElementById('attendeesList');
+      const attendeesList = document.querySelector('#attendeesList');
       if (attendeesList) {
         attendeesList.innerHTML = `
           <div class="form-group">
@@ -2990,7 +2994,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
         `;
       }
       // Register event handler for add button
-      const addSelectedAttendeesBtn = document.getElementById('addSelectedAttendeesBtn');
+      const addSelectedAttendeesBtn = document.querySelector('#addSelectedAttendeesBtn');
       if (addSelectedAttendeesBtn) {
         addSelectedAttendeesBtn.style.display = 'none'; // Hide for employees
       }
@@ -3010,7 +3014,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
     if (response.ok) {
       const data = (await response.json()) as ApiV2Response<User> | User[];
       const users: User[] = useV2Users && 'data' in data ? data.data.data : (data as User[]);
-      const attendeesList = document.getElementById('attendeesList');
+      const attendeesList = document.querySelector('#attendeesList');
 
       // Get current user ID to exclude from list
       const userStr = localStorage.getItem('user');
@@ -3019,8 +3023,8 @@ async function loadEmployeesForAttendees(): Promise<void> {
         try {
           const user = JSON.parse(userStr) as UserData;
           currentUserIdLocal = user.id;
-        } catch (e) {
-          console.error('Error parsing user from localStorage:', e);
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
         }
       }
 
@@ -3054,7 +3058,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
       }
 
       // Re-attach event listener for the "Add Selected" button after modal content is loaded
-      const addSelectedAttendeesBtn = document.getElementById('addSelectedAttendeesBtn');
+      const addSelectedAttendeesBtn = document.querySelector('#addSelectedAttendeesBtn');
       if (addSelectedAttendeesBtn) {
         // Remove any existing listeners by cloning
         const newButton = addSelectedAttendeesBtn.cloneNode(true) as HTMLButtonElement;
@@ -3068,7 +3072,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
           console.info('Found checked boxes:', checkboxes.length);
 
           checkboxes.forEach((checkbox) => {
-            const userId = parseInt(checkbox.value, 10);
+            const userId = Number.parseInt(checkbox.value, 10);
             if (!selectedAttendees.includes(userId)) {
               selectedAttendees.push(userId);
               console.info('Added attendee:', userId);
@@ -3081,7 +3085,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
       }
 
       // Also re-attach the search functionality
-      const attendeeSearch = document.getElementById('attendeeSearch') as HTMLInputElement | null;
+      const attendeeSearch = document.querySelector('#attendeeSearch') as HTMLInputElement | null;
       if (attendeeSearch !== null) {
         const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
         attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);
@@ -3098,7 +3102,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
 // Update selected attendees display
 function updateSelectedAttendees(): void {
-  const container = document.getElementById('attendeesContainer');
+  const container = document.querySelector('#attendeesContainer');
   if (!container) return;
 
   if (selectedAttendees.length === 0) {
@@ -3646,8 +3650,8 @@ function getConfirmationModalTemplate(): string {
  * Setup fullscreen controls for the calendar
  */
 function setupFullscreenControls(): void {
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-  const calendarContainer = document.getElementById('calendarContainer');
+  const fullscreenBtn = document.querySelector('#fullscreenBtn');
+  const calendarContainer = document.querySelector('#calendarContainer');
 
   if (!fullscreenBtn || !calendarContainer) {
     console.warn('Calendar: Fullscreen elements not found');

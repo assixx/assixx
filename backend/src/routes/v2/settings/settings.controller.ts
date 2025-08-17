@@ -21,6 +21,8 @@ import { SystemSetting, UserSetting, BulkUpdateRequest } from "./types.js";
 
 /**
  * Get all system settings
+ * @param req
+ * @param res
  */
 export const getSystemSettings = async (
   req: AuthenticatedRequest,
@@ -62,6 +64,8 @@ export const getSystemSettings = async (
 
 /**
  * Get single system setting
+ * @param req
+ * @param res
  */
 export const getSystemSetting = async (
   req: AuthenticatedRequest,
@@ -92,6 +96,8 @@ export const getSystemSetting = async (
 
 /**
  * Create or update system setting
+ * @param req
+ * @param res
  */
 export const upsertSystemSetting = async (
   req: AuthenticatedRequest,
@@ -137,6 +143,8 @@ export const upsertSystemSetting = async (
 
 /**
  * Delete system setting
+ * @param req
+ * @param res
  */
 export const deleteSystemSetting = async (
   req: AuthenticatedRequest,
@@ -174,6 +182,8 @@ export const deleteSystemSetting = async (
 
 /**
  * Get all tenant settings
+ * @param req
+ * @param res
  */
 export const getTenantSettings = async (
   req: AuthenticatedRequest,
@@ -210,6 +220,8 @@ export const getTenantSettings = async (
 
 /**
  * Get single tenant setting
+ * @param req
+ * @param res
  */
 export const getTenantSetting = async (
   req: AuthenticatedRequest,
@@ -241,6 +253,8 @@ export const getTenantSetting = async (
 
 /**
  * Create or update tenant setting
+ * @param req
+ * @param res
  */
 export const upsertTenantSetting = async (
   req: AuthenticatedRequest,
@@ -286,6 +300,8 @@ export const upsertTenantSetting = async (
 
 /**
  * Delete tenant setting
+ * @param req
+ * @param res
  */
 export const deleteTenantSetting = async (
   req: AuthenticatedRequest,
@@ -323,6 +339,8 @@ export const deleteTenantSetting = async (
 
 /**
  * Get all user settings
+ * @param req
+ * @param res
  */
 export const getUserSettings = async (
   req: AuthenticatedRequest,
@@ -359,6 +377,8 @@ export const getUserSettings = async (
 
 /**
  * Get single user setting
+ * @param req
+ * @param res
  */
 export const getUserSetting = async (
   req: AuthenticatedRequest,
@@ -390,6 +410,8 @@ export const getUserSetting = async (
 
 /**
  * Create or update user setting
+ * @param req
+ * @param res
  */
 export const upsertUserSetting = async (
   req: AuthenticatedRequest,
@@ -432,6 +454,8 @@ export const upsertUserSetting = async (
 
 /**
  * Delete user setting
+ * @param req
+ * @param res
  */
 export const deleteUserSetting = async (
   req: AuthenticatedRequest,
@@ -462,6 +486,8 @@ export const deleteUserSetting = async (
 
 /**
  * Get another user's settings (admin only)
+ * @param req
+ * @param res
  */
 export const getAdminUserSettings = async (
   req: AuthenticatedRequest,
@@ -472,7 +498,7 @@ export const getAdminUserSettings = async (
       throw new ServiceError("UNAUTHORIZED", "User not authenticated");
     }
 
-    const targetUserId = parseInt(req.params.userId);
+    const targetUserId = Number.parseInt(req.params.userId);
     const settings = await settingsService.getAdminUserSettings(
       targetUserId,
       req.user.tenant_id,
@@ -497,6 +523,8 @@ export const getAdminUserSettings = async (
 
 /**
  * Get settings categories
+ * @param _req
+ * @param res
  */
 export const getCategories = async (
   _req: AuthenticatedRequest,
@@ -514,6 +542,8 @@ export const getCategories = async (
 
 /**
  * Bulk update settings
+ * @param req
+ * @param res
  */
 export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
   try {

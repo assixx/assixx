@@ -14,11 +14,18 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
+/**
+ *
+ */
 export class ApiService {
   private baseURL: string;
   private token: string | null;
   private useV2 = false;
 
+  /**
+   *
+   * @param baseURL
+   */
   constructor(baseURL = '/api') {
     this.baseURL = baseURL;
     // Check for v2 token first, then v1
@@ -29,6 +36,8 @@ export class ApiService {
 
   /**
    * Set authentication token
+   * @param token
+   * @param refreshToken
    */
   setToken(token: string | null, refreshToken?: string | null): void {
     this.token = token;
@@ -55,6 +64,7 @@ export class ApiService {
 
   /**
    * Get headers for requests
+   * @param customHeaders
    */
   private getHeaders(customHeaders?: HeadersInit): Headers {
     const headers = new Headers({
@@ -78,6 +88,8 @@ export class ApiService {
 
   /**
    * Build URL with query parameters
+   * @param endpoint
+   * @param params
    */
   private buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
     const url = `${this.baseURL}${endpoint}`;
@@ -96,6 +108,10 @@ export class ApiService {
 
   /**
    * Make API request
+   * @param method
+   * @param endpoint
+   * @param data
+   * @param options
    */
   async request<T = unknown>(
     method: HttpMethod,
@@ -197,27 +213,55 @@ export class ApiService {
   }
 
   // Convenience methods
+  /**
+   *
+   * @param endpoint
+   * @param params
+   */
   async get<T = unknown>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
     return this.request<T>('GET', endpoint, null, { params });
   }
 
+  /**
+   *
+   * @param endpoint
+   * @param data
+   */
   async post<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('POST', endpoint, data);
   }
 
+  /**
+   *
+   * @param endpoint
+   * @param data
+   */
   async put<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('PUT', endpoint, data);
   }
 
+  /**
+   *
+   * @param endpoint
+   * @param data
+   */
   async patch<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('PATCH', endpoint, data);
   }
 
+  /**
+   *
+   * @param endpoint
+   */
   async delete<T = unknown>(endpoint: string): Promise<T> {
     return this.request<T>('DELETE', endpoint);
   }
 
   // Auth endpoints
+  /**
+   *
+   * @param credentials
+   */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
 
@@ -258,6 +302,9 @@ export class ApiService {
     }
   }
 
+  /**
+   *
+   */
   async logout(): Promise<void> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
 
@@ -277,6 +324,9 @@ export class ApiService {
     }
   }
 
+  /**
+   *
+   */
   async checkAuth(): Promise<ApiResponse<{ authenticated: boolean }>> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
 
@@ -302,6 +352,9 @@ export class ApiService {
   }
 
   // User endpoints
+  /**
+   *
+   */
   async getProfile(): Promise<User> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
 
@@ -314,6 +367,10 @@ export class ApiService {
     }
   }
 
+  /**
+   *
+   * @param data
+   */
   async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
 
@@ -340,6 +397,10 @@ export class ApiService {
     }
   }
 
+  /**
+   *
+   * @param file
+   */
   async uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {
     const formData = new FormData();
     formData.append('profilePicture', file);
@@ -348,41 +409,78 @@ export class ApiService {
   }
 
   // Document endpoints
+  /**
+   *
+   * @param params
+   */
   async getDocuments(params?: PaginationParams & { category?: string }): Promise<PaginatedResponse<Document>> {
     const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
     return this.get('/documents', queryParams);
   }
 
+  /**
+   *
+   * @param id
+   */
   async getDocument(id: number): Promise<Document> {
     return this.get(`/documents/${id}`);
   }
 
+  /**
+   *
+   * @param formData
+   */
   async uploadDocument(formData: FormData): Promise<ApiResponse<Document>> {
     return this.post('/documents', formData);
   }
 
+  /**
+   *
+   * @param id
+   */
   async deleteDocument(id: number): Promise<ApiResponse> {
     return this.delete(`/documents/${id}`);
   }
 
   // Employee endpoints
+  /**
+   *
+   * @param params
+   */
   async getEmployees(params?: PaginationParams): Promise<PaginatedResponse<User>> {
     const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
     return this.get('/users', queryParams);
   }
 
+  /**
+   *
+   * @param id
+   */
   async getEmployee(id: number): Promise<User> {
     return this.get(`/users/${id}`);
   }
 
+  /**
+   *
+   * @param data
+   */
   async createEmployee(data: Partial<User>): Promise<ApiResponse<User>> {
     return this.post('/users', data);
   }
 
+  /**
+   *
+   * @param id
+   * @param data
+   */
   async updateEmployee(id: number, data: Partial<User>): Promise<ApiResponse<User>> {
     return this.patch(`/users/${id}`, data);
   }
 
+  /**
+   *
+   * @param id
+   */
   async deleteEmployee(id: number): Promise<ApiResponse> {
     return this.delete(`/users/${id}`);
   }

@@ -44,9 +44,9 @@ export function generateRandomString(length = 32): string {
  * @returns Parsed pagination object
  */
 export function parsePagination(query: QueryParams): PaginationResult {
-  const page = parseInt(String(query.page)) || PAGINATION.DEFAULT_PAGE;
+  const page = Number.parseInt(String(query.page)) || PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(
-    parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
+    Number.parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
     PAGINATION.MAX_LIMIT,
   );
   const offset = (page - 1) * limit;
@@ -101,8 +101,8 @@ export function generateSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "") // Remove special characters
-    .replace(/[\s_-]+/g, "-") // Replace spaces with -
+    .replace(/[^\s\w-]/g, "") // Remove special characters
+    .replace(/[\s\-_]+/g, "-") // Replace spaces with -
     .replace(/^-+|-+$/g, ""); // Remove leading/trailing -
 }
 

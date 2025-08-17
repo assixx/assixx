@@ -44,9 +44,13 @@ interface TenantRow extends RowDataPacket {
   updated_at: Date;
 }
 
+/**
+ *
+ */
 export class RootService {
   /**
    * Get all admin users for a tenant
+   * @param tenantId
    */
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
     try {
@@ -54,7 +58,7 @@ export class RootService {
       const admins = await UserModel.findByRole("admin", true, tenantId);
 
       // Add tenant information
-      const adminsWithTenants = await Promise.all(
+      return await Promise.all(
         admins.map(async (admin) => {
           let tenantName: string | undefined;
           if (admin.tenant_id) {
@@ -79,8 +83,6 @@ export class RootService {
           };
         }),
       );
-
-      return adminsWithTenants;
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
@@ -92,6 +94,8 @@ export class RootService {
 
   /**
    * Get single admin by ID
+   * @param id
+   * @param tenantId
    */
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
     try {
@@ -133,6 +137,8 @@ export class RootService {
 
   /**
    * Create new admin user
+   * @param data
+   * @param tenantId
    */
   async createAdmin(
     data: CreateAdminRequest,
@@ -181,6 +187,9 @@ export class RootService {
 
   /**
    * Update admin user
+   * @param id
+   * @param data
+   * @param tenantId
    */
   async updateAdmin(
     id: number,
@@ -221,6 +230,8 @@ export class RootService {
 
   /**
    * Delete admin user
+   * @param id
+   * @param tenantId
    */
   async deleteAdmin(id: number, tenantId: number): Promise<void> {
     try {
@@ -242,6 +253,9 @@ export class RootService {
 
   /**
    * Get admin logs
+   * @param adminId
+   * @param tenantId
+   * @param days
    */
   async getAdminLogs(
     adminId: number,
@@ -286,7 +300,7 @@ export class RootService {
       const tenants = await TenantModel.findAll();
 
       // Get user counts for each tenant
-      const tenantsWithCounts = await Promise.all(
+      return await Promise.all(
         tenants.map(async (tenant) => {
           const [adminCount] = await execute<RowDataPacket[]>(
             "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'admin'",
@@ -321,8 +335,6 @@ export class RootService {
           };
         }),
       );
-
-      return tenantsWithCounts;
     } catch (error: unknown) {
       throw new ServiceError(
         "SERVER_ERROR",
@@ -334,6 +346,7 @@ export class RootService {
 
   /**
    * Get all root users for a tenant
+   * @param tenantId
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     try {
@@ -371,6 +384,8 @@ export class RootService {
 
   /**
    * Get single root user
+   * @param id
+   * @param tenantId
    */
   async getRootUserById(
     id: number,
@@ -415,6 +430,8 @@ export class RootService {
 
   /**
    * Create root user
+   * @param data
+   * @param tenantId
    */
   async createRootUser(
     data: CreateRootUserRequest,
@@ -482,6 +499,9 @@ export class RootService {
 
   /**
    * Update root user
+   * @param id
+   * @param data
+   * @param tenantId
    */
   async updateRootUser(
     id: number,
@@ -546,6 +566,9 @@ export class RootService {
 
   /**
    * Delete root user
+   * @param id
+   * @param tenantId
+   * @param currentUserId
    */
   async deleteRootUser(
     id: number,
@@ -591,6 +614,7 @@ export class RootService {
 
   /**
    * Get dashboard statistics
+   * @param tenantId
    */
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
     try {
@@ -640,6 +664,7 @@ export class RootService {
 
   /**
    * Get storage information
+   * @param tenantId
    */
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
     try {
@@ -710,6 +735,10 @@ export class RootService {
 
   /**
    * Request tenant deletion
+   * @param tenantId
+   * @param requestedBy
+   * @param reason
+   * @param ipAddress
    */
   async requestTenantDeletion(
     tenantId: number,
@@ -728,14 +757,12 @@ export class RootService {
         );
       }
 
-      const queueId = await tenantDeletionService.requestTenantDeletion(
+      return await tenantDeletionService.requestTenantDeletion(
         tenantId,
         requestedBy,
         reason ?? "No reason provided",
         ipAddress,
       );
-
-      return queueId;
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError(
@@ -748,6 +775,7 @@ export class RootService {
 
   /**
    * Get tenant deletion status
+   * @param tenantId
    */
   async getDeletionStatus(
     tenantId: number,
@@ -838,6 +866,7 @@ export class RootService {
 
   /**
    * Get pending approvals
+   * @param currentUserId
    */
   async getPendingApprovals(
     currentUserId: number,
@@ -882,6 +911,7 @@ export class RootService {
 
   /**
    * Perform deletion dry run
+   * @param tenantId
    */
   async performDeletionDryRun(tenantId: number): Promise<DeletionDryRunReport> {
     try {

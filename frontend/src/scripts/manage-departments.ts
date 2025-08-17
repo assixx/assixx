@@ -122,35 +122,35 @@ class DepartmentsManager {
 
   private initializeEventListeners() {
     // Filter buttons
-    document.getElementById('show-all-departments')?.addEventListener('click', () => {
+    document.querySelector('#show-all-departments')?.addEventListener('click', () => {
       this.currentFilter = 'all';
       void this.loadDepartments();
     });
 
-    document.getElementById('filter-departments-active')?.addEventListener('click', () => {
+    document.querySelector('#filter-departments-active')?.addEventListener('click', () => {
       this.currentFilter = 'active';
       void this.loadDepartments();
     });
 
-    document.getElementById('filter-departments-inactive')?.addEventListener('click', () => {
+    document.querySelector('#filter-departments-inactive')?.addEventListener('click', () => {
       this.currentFilter = 'inactive';
       void this.loadDepartments();
     });
 
-    document.getElementById('filter-departments-restructuring')?.addEventListener('click', () => {
+    document.querySelector('#filter-departments-restructuring')?.addEventListener('click', () => {
       this.currentFilter = 'restructuring';
       void this.loadDepartments();
     });
 
     // Search
-    document.getElementById('department-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('department-search') as HTMLInputElement | null;
+    document.querySelector('#department-search-btn')?.addEventListener('click', () => {
+      const searchInput = document.querySelector('#department-search') as HTMLInputElement | null;
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadDepartments();
     });
 
     // Enter key on search
-    document.getElementById('department-search')?.addEventListener('keypress', (e) => {
+    document.querySelector('#department-search')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
@@ -208,7 +208,7 @@ class DepartmentsManager {
   }
 
   private renderDepartmentsTable() {
-    const tableBody = document.getElementById('departments-table-body');
+    const tableBody = document.querySelector('#departments-table-body');
     if (!tableBody) return;
 
     if (this.departments.length === 0) {
@@ -282,7 +282,7 @@ class DepartmentsManager {
   }
 
   showDepartmentModal(): void {
-    const modal = document.getElementById('department-modal');
+    const modal = document.querySelector('#department-modal');
     if (modal !== null) {
       modal.style.display = 'flex';
 
@@ -298,7 +298,7 @@ class DepartmentsManager {
   }
 
   closeDepartmentModal(): void {
-    const modal = document.getElementById('department-modal');
+    const modal = document.querySelector('#department-modal');
     if (modal !== null) {
       modal.style.display = 'none';
     }
@@ -363,10 +363,9 @@ class DepartmentsManager {
 
   async getDepartmentDetails(id: number): Promise<Department | null> {
     try {
-      const response = await this.apiClient.request<Department>(`/departments/${id}`, {
+      return await this.apiClient.request<Department>(`/departments/${id}`, {
         method: 'GET',
       });
-      return response;
     } catch (error) {
       console.error('Error getting department details:', error);
       showError('Fehler beim Laden der Abteilungsdetails');
@@ -380,7 +379,7 @@ class DepartmentsManager {
         method: 'GET',
       });
 
-      const dropdown = document.getElementById('department-area-dropdown');
+      const dropdown = document.querySelector('#department-area-dropdown');
       if (dropdown !== null) {
         dropdown.innerHTML = '';
 
@@ -390,7 +389,7 @@ class DepartmentsManager {
         defaultOption.setAttribute('data-value', '');
         defaultOption.setAttribute('data-text', 'Kein Bereich');
         defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Bereich')}`;
-        dropdown.appendChild(defaultOption);
+        dropdown.append(defaultOption);
 
         // Add area options
         response.forEach((area) => {
@@ -399,7 +398,7 @@ class DepartmentsManager {
           optionDiv.setAttribute('data-value', area.id.toString());
           optionDiv.setAttribute('data-text', area.name);
           optionDiv.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(area.name)}`;
-          dropdown.appendChild(optionDiv);
+          dropdown.append(optionDiv);
         });
 
         // Setup event delegation
@@ -421,7 +420,7 @@ class DepartmentsManager {
       // Filter for users who can be managers (admins or managers)
       const managers = response.filter((user) => user.role === 'admin' || user.role === 'manager');
 
-      const dropdown = document.getElementById('department-manager-dropdown');
+      const dropdown = document.querySelector('#department-manager-dropdown');
       if (dropdown !== null) {
         dropdown.innerHTML = '';
 
@@ -431,7 +430,7 @@ class DepartmentsManager {
         defaultOption.setAttribute('data-value', '');
         defaultOption.setAttribute('data-text', 'Kein Manager');
         defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Manager')}`;
-        dropdown.appendChild(defaultOption);
+        dropdown.append(defaultOption);
 
         // Add manager options
         managers.forEach((manager) => {
@@ -444,7 +443,7 @@ class DepartmentsManager {
               : manager.username;
           optionDiv.setAttribute('data-text', name);
           optionDiv.innerHTML = `<i class="fas fa-user-tie"></i> ${this.escapeHtml(name)}`;
-          dropdown.appendChild(optionDiv);
+          dropdown.append(optionDiv);
         });
 
         // Setup event delegation
@@ -463,7 +462,7 @@ class DepartmentsManager {
         method: 'GET',
       });
 
-      const dropdown = document.getElementById('department-parent-dropdown');
+      const dropdown = document.querySelector('#department-parent-dropdown');
       if (dropdown !== null) {
         dropdown.innerHTML = '';
 
@@ -473,7 +472,7 @@ class DepartmentsManager {
         defaultOption.setAttribute('data-value', '');
         defaultOption.setAttribute('data-text', 'Keine übergeordnete Abteilung');
         defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Keine übergeordnete Abteilung')}`;
-        dropdown.appendChild(defaultOption);
+        dropdown.append(defaultOption);
 
         // Add department options
         response.map(mapDepartment).forEach((dept) => {
@@ -482,7 +481,7 @@ class DepartmentsManager {
           optionDiv.setAttribute('data-value', dept.id.toString());
           optionDiv.setAttribute('data-text', dept.name);
           optionDiv.innerHTML = `<i class="fas fa-sitemap"></i> ${this.escapeHtml(dept.name)}`;
-          dropdown.appendChild(optionDiv);
+          dropdown.append(optionDiv);
         });
 
         // Setup event delegation
@@ -544,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveDepartment = async () => {
-      const form = document.getElementById('department-form') as HTMLFormElement | null;
+      const form = document.querySelector('#department-form') as HTMLFormElement | null;
       if (form === null) return;
 
       const formData = new FormData(form);
@@ -554,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof value === 'string' && value.length > 0) {
           // Convert to appropriate types
           if (key === 'areaId' || key === 'managerId' || key === 'parentId') {
-            data[key] = parseInt(value, 10);
+            data[key] = Number.parseInt(value, 10);
           } else {
             data[key] = value;
           }

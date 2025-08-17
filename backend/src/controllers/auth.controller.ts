@@ -16,6 +16,10 @@ import { successResponse, errorResponse } from "../types/response.types";
 import { logger } from "../utils/logger";
 
 // Type guard to check if request has authenticated user
+/**
+ *
+ * @param req
+ */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
     "user" in req &&
@@ -46,9 +50,14 @@ interface RegisterRequest extends Request {
   };
 }
 
+/**
+ *
+ */
 class AuthController {
   /**
    * Check if user is authenticated
+   * @param req
+   * @param res
    */
   checkAuth(req: AuthenticatedRequest, res: Response): void {
     try {
@@ -71,6 +80,8 @@ class AuthController {
 
   /**
    * Get current user profile
+   * @param req
+   * @param res
    */
   async getUserProfile(
     req: AuthenticatedRequest,
@@ -136,6 +147,8 @@ class AuthController {
 
   /**
    * Login user
+   * @param req
+   * @param res
    */
   async login(req: LoginRequest, res: Response): Promise<void> {
     console.info("[DEBUG] AuthController.login called");
@@ -265,6 +278,8 @@ class AuthController {
 
   /**
    * Register new user
+   * @param req
+   * @param res
    */
   async register(req: RegisterRequest, res: Response): Promise<void> {
     try {
@@ -309,6 +324,8 @@ class AuthController {
 
   /**
    * Logout user
+   * @param req
+   * @param res
    */
   async logout(req: Request, res: Response): Promise<void> {
     // Log logout action if user is authenticated
@@ -361,6 +378,8 @@ class AuthController {
 
   /**
    * Validate token
+   * @param req
+   * @param res
    */
   async validateToken(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -403,6 +422,8 @@ class AuthController {
 
   /**
    * Validate browser fingerprint
+   * @param req
+   * @param res
    */
   async validateFingerprint(
     req: AuthenticatedRequest,
@@ -480,6 +501,8 @@ class AuthController {
 
   /**
    * Initiate password reset
+   * @param req
+   * @param res
    */
   forgotPassword(req: Request, res: Response): void {
     try {
@@ -503,6 +526,8 @@ class AuthController {
 
   /**
    * Reset password with token
+   * @param _req
+   * @param res
    */
   resetPassword(_req: Request, res: Response): void {
     try {
@@ -525,6 +550,8 @@ class AuthController {
 
   /**
    * Refresh access token using refresh token
+   * @param req
+   * @param res
    */
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {

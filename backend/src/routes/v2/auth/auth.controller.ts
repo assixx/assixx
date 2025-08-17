@@ -27,6 +27,10 @@ const REFRESH_TOKEN_EXPIRES = "7d";
 
 /**
  * Generate JWT tokens
+ * @param userId
+ * @param tenantId
+ * @param role
+ * @param email
  */
 function generateTokens(
   userId: number,
@@ -63,6 +67,8 @@ function generateTokens(
 
 /**
  * User login
+ * @param req
+ * @param res
  */
 export async function login(req: Request, res: Response): Promise<void> {
   try {
@@ -185,6 +191,8 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 /**
  * Register new user (admin only)
+ * @param req
+ * @param res
  */
 export async function register(
   req: AuthenticatedRequest,
@@ -312,6 +320,8 @@ export async function register(
 
 /**
  * User logout
+ * @param req
+ * @param res
  */
 export async function logout(
   req: AuthenticatedRequest,
@@ -370,6 +380,8 @@ export async function logout(
 
 /**
  * Refresh access token
+ * @param req
+ * @param res
  */
 export async function refresh(req: Request, res: Response): Promise<void> {
   try {
@@ -435,6 +447,8 @@ export async function refresh(req: Request, res: Response): Promise<void> {
 
 /**
  * Verify current token
+ * @param req
+ * @param res
  */
 export async function verify(
   req: AuthenticatedRequest,
@@ -471,6 +485,8 @@ export async function verify(
 
 /**
  * Get current user information
+ * @param req
+ * @param res
  */
 export async function getCurrentUser(
   req: AuthenticatedRequest,

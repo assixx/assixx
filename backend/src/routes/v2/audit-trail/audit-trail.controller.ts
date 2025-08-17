@@ -17,6 +17,8 @@ import { AuditFilter, AuditEntry } from "./types.js";
 export const auditTrailController = {
   /**
    * Get audit entries with filters
+   * @param req
+   * @param res
    */
   async getEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -31,19 +33,21 @@ export const auditTrailController = {
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
         userId: req.query.userId
-          ? parseInt(req.query.userId as string)
+          ? Number.parseInt(req.query.userId as string)
           : undefined,
         action: req.query.action as string,
         resourceType: req.query.resourceType as string,
         resourceId: req.query.resourceId
-          ? parseInt(req.query.resourceId as string)
+          ? Number.parseInt(req.query.resourceId as string)
           : undefined,
         status: req.query.status as "success" | "failure",
         dateFrom: req.query.dateFrom as string,
         dateTo: req.query.dateTo as string,
         search: req.query.search as string,
-        page: req.query.page ? parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+        limit: req.query.limit
+          ? Number.parseInt(req.query.limit as string)
+          : 50,
         sortBy: req.query.sortBy as
           | "created_at"
           | "action"
@@ -108,6 +112,8 @@ export const auditTrailController = {
 
   /**
    * Get audit entry by ID
+   * @param req
+   * @param res
    */
   async getEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -118,7 +124,7 @@ export const auditTrailController = {
         return;
       }
 
-      const id = parseInt(req.params.id);
+      const id = Number.parseInt(req.params.id);
       const entry = await auditTrailService.getEntryById(
         id,
         req.user.tenant_id,
@@ -156,6 +162,8 @@ export const auditTrailController = {
 
   /**
    * Get audit statistics
+   * @param req
+   * @param res
    */
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -206,6 +214,8 @@ export const auditTrailController = {
 
   /**
    * Generate compliance report
+   * @param req
+   * @param res
    */
   async generateReport(
     req: AuthenticatedRequest,
@@ -265,6 +275,8 @@ export const auditTrailController = {
 
   /**
    * Export audit entries
+   * @param req
+   * @param res
    */
   async exportEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -345,6 +357,8 @@ export const auditTrailController = {
 
   /**
    * Delete old audit entries (data retention)
+   * @param req
+   * @param res
    */
   async deleteOldEntries(
     req: AuthenticatedRequest,
@@ -438,6 +452,7 @@ export const auditTrailController = {
 
   /**
    * Generate CSV from audit entries
+   * @param entries
    */
   generateCSV(entries: AuditEntry[]): string {
     const headers = [
@@ -464,11 +479,9 @@ export const auditTrailController = {
       entry.ipAddress ?? "",
     ]);
 
-    const csvContent = [
+    return [
       headers.join(","),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
-
-    return csvContent;
   },
 };

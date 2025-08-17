@@ -253,7 +253,7 @@ if (USE_MOCK_DB) {
   const defaultDatabase = process.env.NODE_ENV === "test" ? "main" : "main";
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(
+    port: Number.parseInt(
       process.env.DB_PORT !== undefined && process.env.DB_PORT !== ""
         ? process.env.DB_PORT
         : defaultPort,
@@ -298,10 +298,10 @@ if (USE_MOCK_DB) {
           console.info("[DEBUG] Database connection test successful");
           conn.release();
         })
-        .catch((err: unknown) => {
+        .catch((error: unknown) => {
           console.error(
             "[DEBUG] Database connection test failed:",
-            err instanceof Error ? err.message : "Unknown error",
+            error instanceof Error ? error.message : "Unknown error",
           );
         });
     }
@@ -346,6 +346,9 @@ export default pool;
 export { pool };
 
 // Function to close the pool (for tests)
+/**
+ *
+ */
 export async function closePool(): Promise<void> {
   if ("end" in pool && typeof pool.end === "function") {
     try {

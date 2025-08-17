@@ -59,9 +59,17 @@ export interface CalendarEventUpdateData {
   status?: "tentative" | "confirmed" | "cancelled";
 }
 
+/**
+ *
+ */
 export class CalendarService {
   /**
    * Get paginated list of calendar events with filter optimization
+   * @param tenantId
+   * @param userId
+   * @param userDepartmentId
+   * @param userTeamId
+   * @param filters
    */
   async listEvents(
     tenantId: number,
@@ -70,11 +78,11 @@ export class CalendarService {
     userTeamId: number | null,
     filters: CalendarFilters,
   ) {
-    const page = Math.max(1, parseInt(filters.page ?? "1", 10));
+    const page = Math.max(1, Number.parseInt(filters.page ?? "1", 10));
     // Performance-Limit: max 200 Events
     const limit = Math.min(
       200,
-      Math.max(1, parseInt(filters.limit ?? "50", 10)),
+      Math.max(1, Number.parseInt(filters.limit ?? "50", 10)),
     );
     // offset is calculated in the model
 
@@ -143,6 +151,10 @@ export class CalendarService {
 
   /**
    * Get single event by ID
+   * @param eventId
+   * @param tenantId
+   * @param userId
+   * @param _userDepartmentId
    */
   async getEventById(
     eventId: number,
@@ -186,6 +198,12 @@ export class CalendarService {
 
   /**
    * Create new calendar event with permission checks
+   * @param eventData
+   * @param tenantId
+   * @param userId
+   * @param userRole
+   * @param userDepartmentId
+   * @param userTeamId
    */
   async createEvent(
     eventData: CalendarEventData,
@@ -364,12 +382,7 @@ export class CalendarService {
       }
 
       // Retrieve and return the created event with attendees
-      const eventWithAttendees = await this.getEventById(
-        createdEvent.id,
-        tenantId,
-        userId,
-      );
-      return eventWithAttendees;
+      return await this.getEventById(createdEvent.id, tenantId, userId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -380,6 +393,11 @@ export class CalendarService {
 
   /**
    * Update calendar event
+   * @param eventId
+   * @param updateData
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async updateEvent(
     eventId: number,
@@ -460,8 +478,7 @@ export class CalendarService {
       }
 
       // Return updated event
-      const updatedEvent = await this.getEventById(eventId, tenantId, userId);
-      return updatedEvent;
+      return await this.getEventById(eventId, tenantId, userId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -472,6 +489,10 @@ export class CalendarService {
 
   /**
    * Delete calendar event
+   * @param eventId
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async deleteEvent(
     eventId: number,
@@ -525,6 +546,10 @@ export class CalendarService {
 
   /**
    * Update attendee response
+   * @param eventId
+   * @param userId
+   * @param response
+   * @param tenantId
    */
   async updateAttendeeResponse(
     eventId: number,
@@ -563,6 +588,10 @@ export class CalendarService {
 
   /**
    * Export events
+   * @param tenantId
+   * @param userId
+   * @param _userDepartmentId
+   * @param format
    */
   async exportEvents(
     tenantId: number,
@@ -591,6 +620,7 @@ export class CalendarService {
 
   /**
    * Generate CSV export
+   * @param events
    */
   private generateCSV(events: CalendarEvent[]): string {
     const headers = [
@@ -612,16 +642,16 @@ export class CalendarService {
       event.status ?? "confirmed",
     ]);
 
-    const csv = [
+    return [
       headers.join(","),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
     ].join("\n");
-
-    return csv;
   }
 
   /**
    * Get unread events (events requiring response)
+   * @param tenantId
+   * @param userId
    */
   async getUnreadEvents(tenantId: number, userId: number) {
     try {
@@ -678,6 +708,7 @@ export class CalendarService {
 
   /**
    * Generate ICS export
+   * @param events
    */
   private generateICS(events: CalendarEvent[]): string {
     const icsEvents = events

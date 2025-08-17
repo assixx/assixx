@@ -410,7 +410,7 @@ router.get(
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
     const adminId = req.user.id;
-    const employeeId = parseInt(req.params.id, 10);
+    const employeeId = Number.parseInt(req.params.id, 10);
 
     logger.info(`Admin ${adminId} requesting employee ${employeeId}`);
 
@@ -544,7 +544,7 @@ router.put(
     EmployeeUpdateRequest["body"]
   >(async (req, res) => {
     const adminId = req.user.id;
-    const employeeId = parseInt(req.params.id, 10);
+    const employeeId = Number.parseInt(req.params.id, 10);
 
     logger.info(`Admin ${adminId} attempting to update employee ${employeeId}`);
 
@@ -716,7 +716,7 @@ router.post(
     DocumentUploadRequest["body"]
   >(async (req, res) => {
     const adminId = req.user.id;
-    const employeeId = parseInt(req.params.employeeId, 10);
+    const employeeId = Number.parseInt(req.params.employeeId, 10);
 
     logger.info(
       `Admin ${adminId} attempting to upload document for Employee ${employeeId}`,
@@ -859,8 +859,8 @@ router.get(
         if (typeof Department.countByTenant === "function") {
           departmentCount = await Department.countByTenant(req.user.tenant_id);
         }
-      } catch (e: unknown) {
-        logger.warn(`Could not count departments: ${getErrorMessage(e)}`);
+      } catch (error: unknown) {
+        logger.warn(`Could not count departments: ${getErrorMessage(error)}`);
       }
 
       // Team count (using Department model)
@@ -868,16 +868,16 @@ router.get(
         if (typeof Department.countTeamsByTenant === "function") {
           teamCount = await Department.countTeamsByTenant(req.user.tenant_id);
         }
-      } catch (e: unknown) {
-        logger.warn(`Could not count teams: ${getErrorMessage(e)}`);
+      } catch (error: unknown) {
+        logger.warn(`Could not count teams: ${getErrorMessage(error)}`);
       }
 
       try {
         if (typeof Document.countByTenant === "function") {
           documentCount = await Document.countByTenant(req.user.tenant_id);
         }
-      } catch (e: unknown) {
-        logger.warn(`Could not count documents: ${getErrorMessage(e)}`);
+      } catch (error: unknown) {
+        logger.warn(`Could not count documents: ${getErrorMessage(error)}`);
       }
 
       res.json({

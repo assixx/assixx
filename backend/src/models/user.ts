@@ -334,13 +334,11 @@ export async function findUsersByRole(
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
     // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    const normalizedRows = rows.map((row) => ({
+    return rows.map((row) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
     }));
-
-    return normalizedRows;
   } catch (error) {
     logger.error(`Error finding users by role: ${(error as Error).message}`);
     throw error;
@@ -558,8 +556,8 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
 
     // Pagination hinzufügen
     if (filters.limit != null && filters.limit !== 0) {
-      const limit = parseInt(filters.limit.toString()) || 20;
-      const page = parseInt((filters.page ?? 1).toString()) || 1;
+      const limit = Number.parseInt(filters.limit.toString()) || 20;
+      const page = Number.parseInt((filters.page ?? 1).toString()) || 1;
       const offset = (page - 1) * limit;
 
       query += ` LIMIT ? OFFSET ?`;
@@ -569,13 +567,11 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
     const [rows] = await executeQuery<DbUser[]>(query, values);
 
     // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    const normalizedRows = rows.map((row) => ({
+    return rows.map((row) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
     }));
-
-    return normalizedRows;
   } catch (error) {
     logger.error(`Error searching users: ${(error as Error).message}`);
     throw error;
@@ -946,13 +942,11 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
     // Normalize boolean fields
-    const normalizedRows = rows.map((row) => ({
+    return rows.map((row) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
     }));
-
-    return normalizedRows;
   } catch (error) {
     logger.error(`Error finding all users: ${(error as Error).message}`);
     throw error;
@@ -973,13 +967,11 @@ export async function findAllUsersByTenant(
     );
 
     // Normalize boolean fields
-    const normalizedRows = rows.map((row) => ({
+    return rows.map((row) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
     }));
-
-    return normalizedRows;
   } catch (error) {
     logger.error(`Error finding users by tenant: ${(error as Error).message}`);
     throw error;

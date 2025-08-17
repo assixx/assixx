@@ -89,7 +89,7 @@ export async function initializeTenantDatabase(
 
   try {
     // Validate tenantId to prevent SQL injection
-    if (!/^[a-zA-Z0-9_]+$/.test(tenantId)) {
+    if (!/^\w+$/.test(tenantId)) {
       throw new Error("Invalid tenant ID format");
     }
 

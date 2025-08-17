@@ -56,8 +56,8 @@ export class DocumentBase {
    * Update page header
    */
   protected updatePageHeader(): void {
-    const titleElement = document.getElementById('page-title');
-    const subtitleElement = document.getElementById('page-subtitle');
+    const titleElement = document.querySelector('#page-title');
+    const subtitleElement = document.querySelector('#page-subtitle');
 
     if (titleElement) {
       titleElement.textContent = this.pageTitle;
@@ -67,7 +67,7 @@ export class DocumentBase {
     }
 
     // Hide/show search based on page type
-    const searchContainer = document.getElementById('search-container');
+    const searchContainer = document.querySelector('#search-container');
     if (searchContainer) {
       searchContainer.style.display = this.showSearch ? 'block' : 'none';
     }
@@ -94,7 +94,7 @@ export class DocumentBase {
       </button>
     `;
 
-    controlLeft.appendChild(toggleContainer);
+    controlLeft.append(toggleContainer);
 
     // Make instance available globally for onclick handlers
     window.documentBase = this;
@@ -106,7 +106,7 @@ export class DocumentBase {
   protected setupEventListeners(): void {
     // Search input (only for search page)
     if (this.currentScope === 'all') {
-      const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
+      const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
       if (searchInput) {
         searchInput.addEventListener('input', (e: Event) => {
           const target = e.target as HTMLInputElement | null;
@@ -122,7 +122,7 @@ export class DocumentBase {
     }
 
     // Sort dropdown
-    const sortDropdown = document.getElementById('sortDropdown');
+    const sortDropdown = document.querySelector('#sortDropdown');
     if (sortDropdown) {
       sortDropdown.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
@@ -285,7 +285,7 @@ export class DocumentBase {
    * Render documents grid
    */
   protected renderDocuments(): void {
-    const container = document.getElementById('documentsContainer');
+    const container = document.querySelector('#documentsContainer');
     if (!container) return;
 
     if (this.filteredDocuments.length === 0) {
@@ -308,11 +308,11 @@ export class DocumentBase {
     grid.className = 'documents-grid';
 
     this.filteredDocuments.forEach((doc) => {
-      grid.appendChild(this.createDocumentCard(doc));
+      grid.append(this.createDocumentCard(doc));
     });
 
     container.innerHTML = '';
-    container.appendChild(grid);
+    container.append(grid);
   }
 
   /**
@@ -406,7 +406,7 @@ export class DocumentBase {
    * Show document preview modal
    */
   protected showDocumentModal(doc: Document): void {
-    const modal = document.getElementById('documentPreviewModal');
+    const modal = document.querySelector('#documentPreviewModal');
     if (!modal) return;
 
     // Update modal content
@@ -417,8 +417,8 @@ export class DocumentBase {
     this.updateElement('modalUploadDate', this.formatDate(doc.created_at));
 
     // Setup preview
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
-    const previewError = document.getElementById('previewError');
+    const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
+    const previewError = document.querySelector('#previewError');
 
     if (previewFrame && previewError) {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
@@ -444,7 +444,7 @@ export class DocumentBase {
     }
 
     // Store document ID for download
-    const downloadBtn = document.getElementById('downloadButton');
+    const downloadBtn = document.querySelector('#downloadButton');
     if (downloadBtn) {
       downloadBtn.setAttribute('data-document-id', doc.id.toString());
     }
@@ -503,7 +503,7 @@ export class DocumentBase {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
   protected escapeHtml(text: string): string {
@@ -520,7 +520,7 @@ export class DocumentBase {
   }
 
   protected updateSortDisplay(text: string): void {
-    const display = document.getElementById('sortDisplay');
+    const display = document.querySelector('#sortDisplay');
     if (display) {
       const span = display.querySelector('span');
       if (span) {
@@ -564,8 +564,8 @@ export class DocumentBase {
       try {
         const favorites = JSON.parse(stored) as number[];
         this.favoriteDocIds = new Set(favorites);
-      } catch (e) {
-        console.error('Error loading favorites:', e);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
       }
     }
   }
@@ -574,7 +574,7 @@ export class DocumentBase {
    * Save favorites to localStorage
    */
   protected saveFavorites(): void {
-    localStorage.setItem('favoriteDocuments', JSON.stringify(Array.from(this.favoriteDocIds)));
+    localStorage.setItem('favoriteDocuments', JSON.stringify([...this.favoriteDocIds]));
   }
 
   /**
@@ -605,12 +605,12 @@ declare global {
 
 // Close document modal
 window.closeDocumentModal = function (): void {
-  const modal = document.getElementById('documentPreviewModal');
+  const modal = document.querySelector('#documentPreviewModal');
   if (modal) {
     modal.style.display = 'none';
 
     // Clean up blob URL
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
+    const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
     if (previewFrame) {
       const blobUrl = previewFrame.dataset.blobUrl;
       if (blobUrl !== undefined && blobUrl !== '') {
@@ -630,7 +630,7 @@ window.downloadDocument = function (docId?: string | number): void {
     if (docId !== undefined) {
       documentId = String(docId);
     } else {
-      const downloadBtn = document.getElementById('downloadButton');
+      const downloadBtn = document.querySelector('#downloadButton');
       if (!downloadBtn) {
         console.error('Download button not found');
         return;
@@ -659,11 +659,11 @@ window.downloadDocument = function (docId?: string | number): void {
       link.href = url;
       link.download = 'document.pdf';
       link.style.display = 'none';
-      document.body.appendChild(link);
+      document.body.append(link);
       link.click();
 
       setTimeout(() => {
-        document.body.removeChild(link);
+        link.remove();
         window.URL.revokeObjectURL(url);
       }, 100);
 

@@ -186,8 +186,8 @@ export const corsOptions: cors.CorsOptions = {
 
     // Check if origin matches allowed patterns
     const allowedPatterns = [
-      /^https:\/\/[a-z0-9-]+\.assixx\.com$/, // Production subdomains
-      /^https:\/\/[a-z0-9-]+\.assixx\.de$/, // German domain
+      /^https:\/\/[-0-9a-z]+\.assixx\.com$/, // Production subdomains
+      /^https:\/\/[-0-9a-z]+\.assixx\.de$/, // German domain
       /^http:\/\/localhost:\d+$/, // Local development
       /^http:\/\/127\.0\.0\.1:\d+$/, // Local development
     ];

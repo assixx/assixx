@@ -381,7 +381,7 @@ router.get(
   plansValidation.getPlanById,
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const planId = parseInt(req.params.id, 10);
+      const planId = Number.parseInt(req.params.id, 10);
       const plan = await PlansService.getPlanById(planId);
 
       if (!plan) {
@@ -446,7 +446,7 @@ router.get(
   plansValidation.getPlanById,
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const planId = parseInt(req.params.id, 10);
+      const planId = Number.parseInt(req.params.id, 10);
       const features = await PlansService.getPlanFeatures(planId);
 
       res.json(successResponse(features));

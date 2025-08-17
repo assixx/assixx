@@ -16,7 +16,9 @@ import { testDataTracker } from "./test-data-tracker";
 // Test database configuration
 const TEST_DB_CONFIG: PoolOptions = {
   host: process.env.DB_HOST ?? "localhost",
-  port: parseInt(process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307")),
+  port: Number.parseInt(
+    process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307"),
+  ),
   user: process.env.DB_USER ?? "assixx_user",
   password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
   database: process.env.DB_NAME ?? "main",
@@ -1052,9 +1054,9 @@ export async function createTestTenant(
 
     testDataTracker.trackTenant(tenantId); // Track created tenant
     return tenantId;
-  } catch (err: unknown) {
+  } catch (error_: unknown) {
     // If it fails, try with 'name' field (GitHub Actions schema)
-    const error = err as Error;
+    const error = error_ as Error;
     if (
       error.message?.includes("Unknown column 'company_name'") ||
       error.message?.includes("Field 'name' doesn't have a default value")
@@ -1082,7 +1084,7 @@ export async function createTestTenant(
       testDataTracker.trackTenant(tenantId); // Track created tenant
       return tenantId;
     }
-    throw err;
+    throw error_;
   }
 }
 
@@ -1166,8 +1168,8 @@ export async function createTestUser(
       username: uniqueUsername,
       email: uniqueEmail,
     };
-  } catch (err: unknown) {
-    const error = err as Error;
+  } catch (error_: unknown) {
+    const error = error_ as Error;
     if (error.message?.includes("Unknown column 'employee_number'")) {
       // Fallback for environments where the column does not exist
       const [result] = await db.execute(
@@ -1194,7 +1196,7 @@ export async function createTestUser(
         email: uniqueEmail,
       };
     }
-    throw err;
+    throw error_;
   }
 }
 

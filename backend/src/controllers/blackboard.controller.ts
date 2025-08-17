@@ -65,10 +65,15 @@ interface BlackboardQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class BlackboardController {
   /**
    * Holt alle Blackboard Einträge
    * GET /api/blackboard
+   * @param req
+   * @param res
    */
   async getAll(req: BlackboardQueryRequest, res: Response): Promise<void> {
     try {
@@ -82,9 +87,13 @@ class BlackboardController {
             : undefined,
         search: req.query.search,
         page:
-          req.query.page !== undefined ? parseInt(req.query.page) : undefined,
+          req.query.page !== undefined
+            ? Number.parseInt(req.query.page)
+            : undefined,
         limit:
-          req.query.limit !== undefined ? parseInt(req.query.limit) : undefined,
+          req.query.limit !== undefined
+            ? Number.parseInt(req.query.limit)
+            : undefined,
       };
 
       if (!req.tenantDb) {
@@ -110,10 +119,12 @@ class BlackboardController {
   /**
    * Holt einen Blackboard Eintrag per ID
    * GET /api/blackboard/:id
+   * @param req
+   * @param res
    */
   async getById(req: BlackboardGetRequest, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -142,6 +153,8 @@ class BlackboardController {
   /**
    * Erstellt einen neuen Blackboard Eintrag
    * POST /api/blackboard
+   * @param req
+   * @param res
    */
   async create(req: BlackboardCreateRequest, res: Response): Promise<void> {
     try {
@@ -185,10 +198,12 @@ class BlackboardController {
   /**
    * Aktualisiert einen Blackboard Eintrag
    * PUT /api/blackboard/:id
+   * @param req
+   * @param res
    */
   async update(req: BlackboardUpdateRequest, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -228,10 +243,12 @@ class BlackboardController {
   /**
    * Löscht einen Blackboard Eintrag
    * DELETE /api/blackboard/:id
+   * @param req
+   * @param res
    */
   async delete(req: BlackboardGetRequest, res: Response): Promise<void> {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

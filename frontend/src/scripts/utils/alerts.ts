@@ -38,18 +38,18 @@ export async function showConfirm(message: string): Promise<boolean> {
       </div>
     `;
 
-    document.body.appendChild(confirmDiv);
+    document.body.append(confirmDiv);
 
     const yesBtn = confirmDiv.querySelector('.btn-confirm-yes');
     const noBtn = confirmDiv.querySelector('.btn-confirm-no');
 
     yesBtn?.addEventListener('click', () => {
-      document.body.removeChild(confirmDiv);
+      confirmDiv.remove();
       resolve(true);
     });
 
     noBtn?.addEventListener('click', () => {
-      document.body.removeChild(confirmDiv);
+      confirmDiv.remove();
       resolve(false);
     });
   });

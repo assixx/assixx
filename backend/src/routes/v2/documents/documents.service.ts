@@ -13,7 +13,17 @@ import User from "../../../models/user";
 import { dbToApi } from "../../../utils/fieldMapping";
 import { logger } from "../../../utils/logger";
 
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code
+   * @param message
+   * @param statusCode
+   * @param details
+   */
   constructor(
     public code: string,
     public message: string,
@@ -67,9 +77,15 @@ export interface DocumentUpdateInput {
   expiresAt?: Date;
 }
 
+/**
+ *
+ */
 export class DocumentsService {
   /**
    * List documents with filters
+   * @param userId
+   * @param tenantId
+   * @param filters
    */
   async listDocuments(
     userId: number,
@@ -173,6 +189,9 @@ export class DocumentsService {
 
   /**
    * Get document by ID
+   * @param id
+   * @param userId
+   * @param tenantId
    */
   async getDocumentById(id: number, userId: number, tenantId: number) {
     try {
@@ -243,6 +262,9 @@ export class DocumentsService {
 
   /**
    * Create a new document
+   * @param data
+   * @param createdBy
+   * @param tenantId
    */
   async createDocument(
     data: DocumentCreateInput,
@@ -301,6 +323,10 @@ export class DocumentsService {
 
   /**
    * Update a document
+   * @param id
+   * @param data
+   * @param userId
+   * @param tenantId
    */
   async updateDocument(
     id: number,
@@ -366,6 +392,9 @@ export class DocumentsService {
 
   /**
    * Delete a document
+   * @param id
+   * @param userId
+   * @param tenantId
    */
   async deleteDocument(id: number, userId: number, tenantId: number) {
     try {
@@ -407,6 +436,10 @@ export class DocumentsService {
 
   /**
    * Archive/Unarchive a document
+   * @param id
+   * @param archive
+   * @param userId
+   * @param tenantId
    */
   async archiveDocument(
     id: number,
@@ -461,6 +494,9 @@ export class DocumentsService {
 
   /**
    * Get document content for download/preview
+   * @param id
+   * @param userId
+   * @param tenantId
    */
   async getDocumentContent(id: number, userId: number, tenantId: number) {
     try {
@@ -511,6 +547,8 @@ export class DocumentsService {
 
   /**
    * Get document statistics
+   * @param userId
+   * @param tenantId
    */
   async getDocumentStats(userId: number, tenantId: number) {
     try {
@@ -556,6 +594,9 @@ export class DocumentsService {
 
   /**
    * Check if user has access to a document
+   * @param document
+   * @param userId
+   * @param tenantId
    */
   private async checkDocumentAccess(
     document: DbDocument,
@@ -594,6 +635,8 @@ export class DocumentsService {
 
   /**
    * Validate recipient based on type
+   * @param data
+   * @param tenantId
    */
   private async validateRecipient(data: DocumentCreateInput, tenantId: number) {
     switch (data.recipientType) {
@@ -653,6 +696,7 @@ export class DocumentsService {
 
   /**
    * Check if file type is allowed
+   * @param mimeType
    */
   private isAllowedFileType(mimeType: string): boolean {
     const allowedTypes = ["application/pdf"];

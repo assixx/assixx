@@ -16,8 +16,16 @@ import {
   MachineFilters,
 } from "./types.js";
 
+/**
+ *
+ */
 export class MachinesService {
   // List all machines with filters
+  /**
+   *
+   * @param tenantId
+   * @param filters
+   */
   async listMachines(
     tenantId: number,
     filters: MachineFilters = {},
@@ -27,6 +35,11 @@ export class MachinesService {
   }
 
   // Get machine by ID
+  /**
+   *
+   * @param id
+   * @param tenantId
+   */
   async getMachineById(id: number, tenantId: number): Promise<MachineResponse> {
     const machine = await MachineModel.findById(id, tenantId);
     if (!machine) {
@@ -36,6 +49,14 @@ export class MachinesService {
   }
 
   // Create new machine
+  /**
+   *
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async createMachine(
     data: MachineCreateRequest,
     tenantId: number,
@@ -116,6 +137,15 @@ export class MachinesService {
   }
 
   // Update machine
+  /**
+   *
+   * @param id
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async updateMachine(
     id: number,
     data: MachineUpdateRequest,
@@ -217,6 +247,14 @@ export class MachinesService {
   }
 
   // Delete machine (soft delete)
+  /**
+   *
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async deleteMachine(
     id: number,
     tenantId: number,
@@ -245,6 +283,11 @@ export class MachinesService {
   }
 
   // Get maintenance history
+  /**
+   *
+   * @param machineId
+   * @param tenantId
+   */
   async getMaintenanceHistory(
     machineId: number,
     tenantId: number,
@@ -260,6 +303,14 @@ export class MachinesService {
   }
 
   // Add maintenance record
+  /**
+   *
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
   async addMaintenanceRecord(
     data: MaintenanceRecordRequest,
     tenantId: number,
@@ -320,6 +371,11 @@ export class MachinesService {
   }
 
   // Get upcoming maintenance
+  /**
+   *
+   * @param tenantId
+   * @param days
+   */
   async getUpcomingMaintenance(
     tenantId: number,
     days: number = 30,
@@ -329,20 +385,28 @@ export class MachinesService {
   }
 
   // Get statistics
+  /**
+   *
+   * @param tenantId
+   */
   async getStatistics(tenantId: number): Promise<MachineStatistics> {
     const stats = await MachineModel.getStatistics(tenantId);
     return {
-      totalMachines: parseInt(String(stats.total_machines)) ?? 0,
-      operational: parseInt(String(stats.operational)) ?? 0,
-      inMaintenance: parseInt(String(stats.in_maintenance)) ?? 0,
-      inRepair: parseInt(String(stats.in_repair)) ?? 0,
-      standby: parseInt(String(stats.standby)) ?? 0,
-      decommissioned: parseInt(String(stats.decommissioned)) ?? 0,
-      needsMaintenanceSoon: parseInt(String(stats.needs_maintenance_soon)) ?? 0,
+      totalMachines: Number.parseInt(String(stats.total_machines)) ?? 0,
+      operational: Number.parseInt(String(stats.operational)) ?? 0,
+      inMaintenance: Number.parseInt(String(stats.in_maintenance)) ?? 0,
+      inRepair: Number.parseInt(String(stats.in_repair)) ?? 0,
+      standby: Number.parseInt(String(stats.standby)) ?? 0,
+      decommissioned: Number.parseInt(String(stats.decommissioned)) ?? 0,
+      needsMaintenanceSoon:
+        Number.parseInt(String(stats.needs_maintenance_soon)) ?? 0,
     };
   }
 
   // Get machine categories
+  /**
+   *
+   */
   async getCategories(): Promise<MachineCategory[]> {
     const categories = await MachineModel.getCategories();
     return categories.map((cat) => ({
@@ -356,6 +420,10 @@ export class MachinesService {
   }
 
   // Helper: Format machine response
+  /**
+   *
+   * @param machine
+   */
   private formatMachineResponse(
     machine: Machine & {
       department_name?: string;
@@ -399,6 +467,10 @@ export class MachinesService {
   }
 
   // Helper: Format maintenance response
+  /**
+   *
+   * @param record
+   */
   private formatMaintenanceResponse(
     record: MachineMaintenanceHistory & {
       performed_by_name?: string;
@@ -416,9 +488,9 @@ export class MachinesService {
       externalCompany: record.external_company,
       description: record.description,
       partsReplaced: record.parts_replaced,
-      cost: record.cost ? parseFloat(String(record.cost)) : undefined,
+      cost: record.cost ? Number.parseFloat(String(record.cost)) : undefined,
       durationHours: record.duration_hours
-        ? parseFloat(String(record.duration_hours))
+        ? Number.parseFloat(String(record.duration_hours))
         : undefined,
       statusAfter: record.status_after,
       nextMaintenanceDate: record.next_maintenance_date?.toISOString(),

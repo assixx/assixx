@@ -33,7 +33,7 @@ type DataObject = Record<string, unknown>;
  * @returns True if valid
  */
 export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
@@ -44,7 +44,7 @@ export function isValidEmail(email: string): boolean {
  */
 export function isValidPhone(phone: string): boolean {
   // Remove spaces and special characters
-  const cleaned = phone.replace(/[\s\-()]/g, "");
+  const cleaned = phone.replace(/[\s()\-]/g, "");
   // Check for German phone number format
   const phoneRegex = /^(\+49|0049|0)[1-9]\d{1,14}$/;
   return phoneRegex.test(cleaned);
@@ -68,10 +68,10 @@ export function validatePassword(password: string): ValidationResult {
   if (!/[a-z]/.test(password)) {
     errors.push("Password must contain at least one lowercase letter");
   }
-  if (!/[0-9]/.test(password)) {
+  if (!/\d/.test(password)) {
     errors.push("Password must contain at least one number");
   }
-  if (!/[!@#$%^&*]/.test(password)) {
+  if (!/[!#$%&*@^]/.test(password)) {
     errors.push(
       "Password must contain at least one special character (!@#$%^&*)",
     );
@@ -97,7 +97,7 @@ export function validateUsername(username: string): UsernameValidationResult {
   if (username.length > 30) {
     errors.push("Username must not exceed 30 characters");
   }
-  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+  if (!/^[\w-]+$/.test(username)) {
     errors.push(
       "Username can only contain letters, numbers, underscores, and hyphens",
     );
@@ -152,7 +152,7 @@ export function validateSubdomain(
   if (subdomain.length > 63) {
     errors.push("Subdomain must not exceed 63 characters");
   }
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(subdomain)) {
+  if (!/^[0-9a-z]+(-[0-9a-z]+)*$/.test(subdomain)) {
     errors.push(
       "Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)",
     );

@@ -17,9 +17,14 @@ import {
   AddDepartmentsRequest,
 } from "./types.js";
 
+/**
+ *
+ */
 export class DepartmentGroupsController {
   /**
    * Get all department groups with hierarchy
+   * @param req
+   * @param res
    */
   async getGroups(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -45,10 +50,12 @@ export class DepartmentGroupsController {
 
   /**
    * Get a single group by ID
+   * @param req
+   * @param res
    */
   async getGroupById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       const group = await departmentGroupsService.getGroupById(
         groupId,
         req.user.tenant_id,
@@ -82,6 +89,8 @@ export class DepartmentGroupsController {
 
   /**
    * Create a new department group
+   * @param req
+   * @param res
    */
   async createGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -151,6 +160,8 @@ export class DepartmentGroupsController {
 
   /**
    * Update a department group
+   * @param req
+   * @param res
    */
   async updateGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -183,7 +194,7 @@ export class DepartmentGroupsController {
     }
 
     try {
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       await departmentGroupsService.updateGroup(
         groupId,
         req.body as UpdateGroupRequest,
@@ -219,6 +230,8 @@ export class DepartmentGroupsController {
 
   /**
    * Delete a department group
+   * @param req
+   * @param res
    */
   async deleteGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -251,7 +264,7 @@ export class DepartmentGroupsController {
     }
 
     try {
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       await departmentGroupsService.deleteGroup(
         groupId,
         req.user.tenant_id,
@@ -286,6 +299,8 @@ export class DepartmentGroupsController {
 
   /**
    * Add departments to a group
+   * @param req
+   * @param res
    */
   async addDepartments(
     req: AuthenticatedRequest,
@@ -321,7 +336,7 @@ export class DepartmentGroupsController {
     }
 
     try {
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       const { departmentIds } = req.body as AddDepartmentsRequest;
       await departmentGroupsService.addDepartmentsToGroup(
         groupId,
@@ -358,6 +373,8 @@ export class DepartmentGroupsController {
 
   /**
    * Remove a department from a group
+   * @param req
+   * @param res
    */
   async removeDepartment(
     req: AuthenticatedRequest,
@@ -393,8 +410,8 @@ export class DepartmentGroupsController {
     }
 
     try {
-      const groupId = parseInt(req.params.id);
-      const departmentId = parseInt(req.params.departmentId);
+      const groupId = Number.parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.departmentId);
 
       await departmentGroupsService.removeDepartmentFromGroup(
         groupId,
@@ -431,6 +448,8 @@ export class DepartmentGroupsController {
 
   /**
    * Get departments in a group
+   * @param req
+   * @param res
    */
   async getGroupDepartments(
     req: AuthenticatedRequest,
@@ -454,7 +473,7 @@ export class DepartmentGroupsController {
     }
 
     try {
-      const groupId = parseInt(req.params.id);
+      const groupId = Number.parseInt(req.params.id);
       const includeSubgroups = req.query.includeSubgroups !== "false";
 
       const departments = await departmentGroupsService.getGroupDepartments(

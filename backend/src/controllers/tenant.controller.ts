@@ -75,10 +75,15 @@ interface TenantQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class TenantController {
   /**
    * Holt alle Tenant Einträge
    * GET /api/tenant
+   * @param req
+   * @param res
    */
   getAll(req: TenantQueryRequest, res: Response): void {
     try {
@@ -97,11 +102,11 @@ class TenantController {
               : undefined,
         page:
           req.query.page != null && req.query.page !== ""
-            ? parseInt(req.query.page, 10)
+            ? Number.parseInt(req.query.page, 10)
             : undefined,
         limit:
           req.query.limit != null && req.query.limit !== ""
-            ? parseInt(req.query.limit, 10)
+            ? Number.parseInt(req.query.limit, 10)
             : undefined,
       };
       const result = tenantService.getAll(req.tenantDb, filters);
@@ -118,6 +123,8 @@ class TenantController {
   /**
    * Holt einen Tenant Eintrag per ID
    * GET /api/tenant/:id
+   * @param req
+   * @param res
    */
   getById(req: TenantGetRequest, res: Response): void {
     try {
@@ -126,7 +133,7 @@ class TenantController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -150,6 +157,8 @@ class TenantController {
   /**
    * Erstellt einen neuen Tenant Eintrag
    * POST /api/tenant
+   * @param req
+   * @param res
    */
   create(req: TenantCreateRequest, res: Response): void {
     try {
@@ -199,6 +208,8 @@ class TenantController {
   /**
    * Aktualisiert einen Tenant Eintrag
    * PUT /api/tenant/:id
+   * @param req
+   * @param res
    */
   update(req: TenantUpdateRequest, res: Response): void {
     try {
@@ -207,7 +218,7 @@ class TenantController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -227,6 +238,8 @@ class TenantController {
   /**
    * Löscht einen Tenant Eintrag
    * DELETE /api/tenant/:id
+   * @param req
+   * @param res
    */
   delete(req: TenantGetRequest, res: Response): void {
     try {
@@ -235,7 +248,7 @@ class TenantController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

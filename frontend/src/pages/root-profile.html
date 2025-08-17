@@ -1157,14 +1157,14 @@
         if (container) {
           container.classList.remove('avatar-initials');
           container.innerHTML = ''; // Clear existing content
-          
+
           // Sicher: DOM-Methoden verwenden
           const img = document.createElement('img');
           img.src = url;
           img.alt = 'Profilbild';
           img.className = 'profile-picture';
           container.appendChild(img);
-          
+
           const removeBtn = document.getElementById('remove-picture-btn');
           if (removeBtn) {
             removeBtn.style.display = 'block';

@@ -338,7 +338,7 @@ router.get(
       );
 
       // Dokument suchen
-      const document = await Document.findById(parseInt(documentId, 10));
+      const document = await Document.findById(Number.parseInt(documentId, 10));
 
       // Prüfen, ob das Dokument existiert
       if (!document) {
@@ -365,9 +365,9 @@ router.get(
               [employeeId, document.team_id, tenantId],
             );
             hasAccess = teamMembership.length > 0;
-          } catch (err: unknown) {
+          } catch (error: unknown) {
             logger.error(
-              `Error checking team membership: ${getErrorMessage(err)}`,
+              `Error checking team membership: ${getErrorMessage(error)}`,
             );
           }
           break;
@@ -380,9 +380,9 @@ router.get(
               [employeeId, tenantId],
             );
             hasAccess = userDept[0]?.department_id == document.department_id;
-          } catch (err: unknown) {
+          } catch (error: unknown) {
             logger.error(
-              `Error checking department membership: ${getErrorMessage(err)}`,
+              `Error checking department membership: ${getErrorMessage(error)}`,
             );
           }
           break;
@@ -402,7 +402,7 @@ router.get(
       }
 
       // Download-Zähler erhöhen
-      await Document.incrementDownloadCount(parseInt(documentId, 10));
+      await Document.incrementDownloadCount(Number.parseInt(documentId, 10));
 
       // Content-Type Header setzen
       res.setHeader("Content-Type", "application/pdf");

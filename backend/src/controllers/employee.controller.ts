@@ -95,10 +95,15 @@ interface EmployeeQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class EmployeeController {
   /**
    * Holt alle Employee Einträge
    * GET /api/employee
+   * @param req
+   * @param res
    */
   async getAll(req: EmployeeQueryRequest, res: Response): Promise<void> {
     try {
@@ -121,11 +126,11 @@ class EmployeeController {
         department_id:
           req.query.department_id !== undefined &&
           req.query.department_id !== ""
-            ? parseInt(req.query.department_id)
+            ? Number.parseInt(req.query.department_id)
             : undefined,
         team_id:
           req.query.team_id !== undefined && req.query.team_id !== ""
-            ? parseInt(req.query.team_id)
+            ? Number.parseInt(req.query.team_id)
             : undefined,
         is_active:
           req.query.is_active !== undefined && req.query.is_active !== ""
@@ -133,11 +138,11 @@ class EmployeeController {
             : undefined,
         page:
           req.query.page !== undefined && req.query.page !== ""
-            ? parseInt(req.query.page)
+            ? Number.parseInt(req.query.page)
             : undefined,
         limit:
           req.query.limit !== undefined && req.query.limit !== ""
-            ? parseInt(req.query.limit)
+            ? Number.parseInt(req.query.limit)
             : undefined,
         sortBy: req.query.sortBy,
         sortDir: req.query.sortDir,
@@ -157,6 +162,8 @@ class EmployeeController {
   /**
    * Holt einen Employee Eintrag per ID
    * GET /api/employee/:id
+   * @param req
+   * @param res
    */
   async getById(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
@@ -165,7 +172,7 @@ class EmployeeController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -196,6 +203,8 @@ class EmployeeController {
   /**
    * Erstellt einen neuen Employee Eintrag
    * POST /api/employee
+   * @param req
+   * @param res
    */
   async create(req: EmployeeCreateRequest, res: Response): Promise<void> {
     try {
@@ -240,6 +249,8 @@ class EmployeeController {
   /**
    * Aktualisiert einen Employee Eintrag
    * PUT /api/employee/:id
+   * @param req
+   * @param res
    */
   async update(req: EmployeeUpdateRequest, res: Response): Promise<void> {
     try {
@@ -248,7 +259,7 @@ class EmployeeController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -306,6 +317,8 @@ class EmployeeController {
   /**
    * Löscht einen Employee Eintrag
    * DELETE /api/employee/:id
+   * @param req
+   * @param res
    */
   async delete(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
@@ -314,7 +327,7 @@ class EmployeeController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

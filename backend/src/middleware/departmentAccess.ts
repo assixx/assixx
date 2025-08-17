@@ -52,23 +52,23 @@ export const checkDepartmentAccess = async (
 
     // Check body
     if (authReq.body.department_id != null) {
-      department_id = parseInt(String(authReq.body.department_id));
+      department_id = Number.parseInt(String(authReq.body.department_id));
     }
     // Check query parameters
     else if (req.query.department_id != null) {
-      department_id = parseInt(req.query.department_id as string);
+      department_id = Number.parseInt(req.query.department_id as string);
     }
     // Check route parameters
     else if ("department_id" in req.params && req.params.department_id) {
-      department_id = parseInt(req.params.department_id);
+      department_id = Number.parseInt(req.params.department_id);
     }
     // Check for departmentId variant
     else if (authReq.body.departmentId != null) {
-      department_id = parseInt(String(authReq.body.departmentId));
+      department_id = Number.parseInt(String(authReq.body.departmentId));
     } else if (req.query.departmentId != null) {
-      department_id = parseInt(req.query.departmentId as string);
+      department_id = Number.parseInt(req.query.departmentId as string);
     } else if ("departmentId" in req.params && req.params.departmentId) {
-      department_id = parseInt(req.params.departmentId);
+      department_id = Number.parseInt(req.params.departmentId);
     }
 
     // If department_id is found, check access

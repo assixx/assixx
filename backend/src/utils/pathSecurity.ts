@@ -58,7 +58,7 @@ export function sanitizeFilename(filename: string): string {
   let sanitized = filename
     .replace(/[/\\]/g, "_") // Replace path separators
     .replace(/\.\./g, "_") // Replace directory traversal
-    .replace(/[<>:"|?*\0]/g, "_") // Replace illegal characters
+    .replace(/[\0"*:<>?|]/g, "_") // Replace illegal characters
     .replace(/^\.+/, "_") // Replace leading dots
     .trim();
 

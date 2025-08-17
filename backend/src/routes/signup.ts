@@ -57,7 +57,7 @@ const signupValidation = createValidation([
     .withMessage("Firmenname ist erforderlich"),
   body("subdomain")
     .notEmpty()
-    .matches(/^[a-z0-9-]+$/)
+    .matches(/^[-0-9a-z]+$/)
     .withMessage(
       "Subdomain darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten",
     ),
@@ -77,7 +77,7 @@ const signupValidation = createValidation([
   body("phone")
     .notEmpty()
     .trim()
-    .matches(/^\+[0-9]{7,29}$/)
+    .matches(/^\+\d{7,29}$/)
     .withMessage(
       "Telefonnummer muss mit + beginnen und 7-29 Ziffern enthalten (z.B. +491234567890)",
     ),
@@ -86,7 +86,7 @@ const signupValidation = createValidation([
 const checkSubdomainValidation = createValidation([
   param("subdomain")
     .notEmpty()
-    .matches(/^[a-z0-9-]+$/)
+    .matches(/^[-0-9a-z]+$/)
     .withMessage("Ungültige Subdomain"),
 ]);
 

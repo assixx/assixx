@@ -311,7 +311,7 @@ router.put(
     try {
       // Prüfen ob Admin existiert
       const admin = await User.findById(
-        parseInt(adminId, 10),
+        Number.parseInt(adminId, 10),
         req.user.tenant_id,
       );
       if (!admin || admin.role !== "admin") {
@@ -326,7 +326,7 @@ router.put(
 
       // Update durchführen
       const success = await User.update(
-        parseInt(adminId, 10),
+        Number.parseInt(adminId, 10),
         updateData,
         req.user.tenant_id,
       );
@@ -362,7 +362,7 @@ router.delete(
     try {
       // Zuerst prüfen, ob der zu löschende Benutzer wirklich ein Admin ist
       const adminToDelete = await User.findById(
-        parseInt(adminId, 10),
+        Number.parseInt(adminId, 10),
         req.user.tenant_id,
       );
 
@@ -381,7 +381,7 @@ router.delete(
       }
 
       // Admin löschen - hier müssen wir eine neue Methode in der User-Klasse erstellen
-      const success = await User.delete(parseInt(adminId, 10));
+      const success = await User.delete(Number.parseInt(adminId, 10));
 
       if (success) {
         logger.info(`Admin user with ID ${adminId} deleted successfully`);
@@ -419,7 +419,7 @@ router.get(
 
     try {
       const admin = await User.findById(
-        parseInt(adminId, 10),
+        Number.parseInt(adminId, 10),
         req.user.tenant_id,
       );
 
@@ -441,7 +441,7 @@ router.get(
       const { password: _password, ...adminData } = admin;
 
       // Letzten Login-Zeitpunkt hinzufügen, falls vorhanden
-      const lastLogin = await getLastRootLogin(parseInt(adminId, 10));
+      const lastLogin = await getLastRootLogin(Number.parseInt(adminId, 10));
       if (lastLogin) {
         adminData.last_login = lastLogin.created_at;
       }
@@ -469,7 +469,7 @@ router.put(
 
     try {
       const admin = await User.findById(
-        parseInt(adminId, 10),
+        Number.parseInt(adminId, 10),
         req.user.tenant_id,
       );
 
@@ -508,7 +508,11 @@ router.put(
       }
 
       // Admin aktualisieren
-      await User.update(parseInt(adminId, 10), updateData, req.user.tenant_id);
+      await User.update(
+        Number.parseInt(adminId, 10),
+        updateData,
+        req.user.tenant_id,
+      );
 
       logger.info(
         `Admin ${adminId} updated successfully by root user ${rootUser}`,
@@ -538,7 +542,7 @@ router.get(
   typed.params<{ id: string }>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
-    const days = parseInt(req.query.days as string) || 0; // 0 bedeutet alle Logs
+    const days = Number.parseInt(req.query.days as string) || 0; // 0 bedeutet alle Logs
 
     logger.info(
       `Root user ${rootUser} requesting logs for admin ${adminId} (days: ${days})`,
@@ -546,7 +550,7 @@ router.get(
 
     try {
       const admin = await User.findById(
-        parseInt(adminId, 10),
+        Number.parseInt(adminId, 10),
         req.user.tenant_id,
       );
 
@@ -565,7 +569,10 @@ router.get(
       }
 
       // Logs abrufen
-      const logs = await getRootLogsByUserId(parseInt(adminId, 10), days);
+      const logs = await getRootLogsByUserId(
+        Number.parseInt(adminId, 10),
+        days,
+      );
 
       logger.info(`Retrieved ${logs.length} logs for admin ${adminId}`);
       res.json(successResponse(logs));
@@ -818,7 +825,7 @@ router.post(
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const queueId = parseInt(req.params.id);
+      const queueId = Number.parseInt(req.params.id);
       const approverId = req.user.id;
 
       await tenantDeletionService.approveDeletion(queueId, approverId);
@@ -839,7 +846,7 @@ router.post(
   ...security.root(),
   typed.paramsBody<{ id: string }, { reason?: string }>(async (req, res) => {
     try {
-      const queueId = parseInt(req.params.id);
+      const queueId = Number.parseInt(req.params.id);
       const approverId = req.user.id;
       const { reason } = req.body;
 
@@ -865,7 +872,7 @@ router.post(
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const queueId = parseInt(req.params.id);
+      const queueId = Number.parseInt(req.params.id);
       const stoppedBy = req.user.id;
 
       await tenantDeletionService.emergencyStop(queueId, stoppedBy);
@@ -885,7 +892,7 @@ router.delete(
   "/tenants/:id",
   ...security.root(),
   typed.paramsBody<{ id: string }, { reason?: string }>(async (req, res) => {
-    const tenantId = parseInt(req.params.id, 10);
+    const tenantId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
 
     // SECURITY WARNING: This route uses tenant ID from URL
@@ -1015,7 +1022,7 @@ router.get(
   "/tenants/:id/deletion-status",
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
-    const tenantId = parseInt(req.params.id, 10);
+    const tenantId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
 
     try {
@@ -1084,7 +1091,7 @@ router.post(
   "/tenants/:id/cancel-deletion",
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
-    const tenantId = parseInt(req.params.id, 10);
+    const tenantId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
 
     logger.info(
@@ -1123,7 +1130,7 @@ router.post(
   ...security.root(),
   typed.paramsBody<{ queueId: string }, { comment?: string }>(
     async (req, res) => {
-      const queueId = parseInt(req.params.queueId, 10);
+      const queueId = Number.parseInt(req.params.queueId, 10);
       const rootUser = req.user;
 
       logger.info(
@@ -1157,7 +1164,7 @@ router.post(
   ...security.root(),
   typed.paramsBody<{ queueId: string }, { reason: string }>(
     async (req, res) => {
-      const queueId = parseInt(req.params.queueId, 10);
+      const queueId = Number.parseInt(req.params.queueId, 10);
       const rootUser = req.user;
 
       logger.info(
@@ -1229,7 +1236,7 @@ router.post(
   "/deletion-queue/:queueId/emergency-stop",
   ...security.root(),
   typed.params<{ queueId: string }>(async (req, res) => {
-    const queueId = parseInt(req.params.queueId, 10);
+    const queueId = Number.parseInt(req.params.queueId, 10);
     const rootUser = req.user;
 
     logger.error(
@@ -1257,7 +1264,7 @@ router.post(
   "/tenants/:id/deletion-dry-run",
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
-    const tenantId = parseInt(req.params.id, 10);
+    const tenantId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
 
     logger.info(
@@ -1292,7 +1299,7 @@ router.post(
   "/deletion-queue/:queueId/retry",
   ...security.root(),
   typed.params<{ queueId: string }>(async (req, res) => {
-    const queueId = parseInt(req.params.queueId, 10);
+    const queueId = Number.parseInt(req.params.queueId, 10);
     const rootUser = req.user;
 
     logger.warn(
@@ -1351,7 +1358,7 @@ router.get(
   "/users/:id",
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
-    const userId = parseInt(req.params.id, 10);
+    const userId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
 
     try {
@@ -1519,7 +1526,7 @@ router.put(
       is_active?: boolean;
     }
   >(async (req, res) => {
-    const userId = parseInt(req.params.id, 10);
+    const userId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
     const { first_name, last_name, email, position, notes, is_active } =
       req.body;
@@ -1582,7 +1589,7 @@ router.delete(
   "/users/:id",
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
-    const userId = parseInt(req.params.id, 10);
+    const userId = Number.parseInt(req.params.id, 10);
     const rootUser = req.user;
 
     try {

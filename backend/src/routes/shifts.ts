@@ -404,7 +404,7 @@ router.get(
       const options: ShiftPlanFilters = {
         department_id:
           req.query.department_id != null && req.query.department_id !== ""
-            ? parseInt(
+            ? Number.parseInt(
                 typeof req.query.department_id === "string"
                   ? req.query.department_id
                   : typeof req.query.department_id === "number"
@@ -415,7 +415,7 @@ router.get(
             : undefined,
         team_id:
           req.query.team_id != null && req.query.team_id !== ""
-            ? parseInt(
+            ? Number.parseInt(
                 typeof req.query.team_id === "string"
                   ? req.query.team_id
                   : typeof req.query.team_id === "number"
@@ -451,7 +451,7 @@ router.get(
                 | "published"
                 | "archived")
             : undefined,
-        page: parseInt(
+        page: Number.parseInt(
           typeof req.query.page === "string"
             ? req.query.page
             : req.query.page != null
@@ -461,7 +461,7 @@ router.get(
               : "1",
           10,
         ),
-        limit: parseInt(
+        limit: Number.parseInt(
           typeof req.query.limit === "string"
             ? req.query.limit
             : req.query.limit != null
@@ -541,7 +541,7 @@ router.get(
   ),
   typed.params<{ planId: string }>(async (req, res) => {
     try {
-      const planId = parseInt(req.params.planId);
+      const planId = Number.parseInt(req.params.planId);
       const shifts = await Shift.getShiftsByPlan(
         planId,
         req.user.tenant_id,
@@ -728,7 +728,7 @@ router.get(
           }
         } else if (department_id !== undefined && department_id !== "") {
           // For admins, use the provided department_id
-          departmentId = parseInt(
+          departmentId = Number.parseInt(
             typeof department_id === "string"
               ? department_id
               : typeof department_id === "number"
@@ -1050,7 +1050,7 @@ router.post(
           return;
         }
 
-        const shiftId = parseInt(req.params.shiftId);
+        const shiftId = Number.parseInt(req.params.shiftId);
         const assignmentData = {
           ...req.body,
           tenant_id: req.user.tenant_id,
@@ -1098,7 +1098,7 @@ router.get(
       // Use provided user_id or current user's id
       const targetUserId =
         user_id != null && user_id !== ""
-          ? parseInt(user_id as string)
+          ? Number.parseInt(user_id as string)
           : req.user.id;
 
       // Check if user can view this availability
@@ -1221,7 +1221,7 @@ router.get(
                 | "rejected"
                 | "cancelled")
             : "pending",
-        limit: parseInt(
+        limit: Number.parseInt(
           typeof req.query.limit === "string"
             ? req.query.limit
             : req.query.limit != null
@@ -1513,7 +1513,7 @@ router.post(
         }
       } else if (department_id != null && department_id !== 0) {
         // For admins, use the provided department_id
-        departmentId = parseInt(String(department_id), 10);
+        departmentId = Number.parseInt(String(department_id), 10);
       }
 
       if (departmentId == null || departmentId === 0) {
@@ -1578,8 +1578,8 @@ router.post(
 
         // Convert week/year to date
         const weekDate = new Date();
-        weekDate.setFullYear(parseInt(year));
-        weekDate.setDate(weekDate.getDate() + (parseInt(week) - 1) * 7);
+        weekDate.setFullYear(Number.parseInt(year));
+        weekDate.setDate(weekDate.getDate() + (Number.parseInt(week) - 1) * 7);
         const weekStart = weekDate.toISOString().split("T")[0];
 
         const tenantId = req.user.tenant_id;

@@ -44,7 +44,13 @@ interface AddMachineBody {
   machineId: number;
 }
 
+/**
+ *
+ */
 export class TeamsController {
+  /**
+   *
+   */
   constructor() {
     // Bind all methods to ensure correct context
     this.listTeams = this.listTeams.bind(this);
@@ -62,6 +68,8 @@ export class TeamsController {
 
   /**
    * List all teams
+   * @param req
+   * @param res
    */
   async listTeams(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -104,10 +112,12 @@ export class TeamsController {
 
   /**
    * Get team by ID
+   * @param req
+   * @param res
    */
   async getTeamById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       if (!req.user) {
         res
           .status(401)
@@ -139,6 +149,8 @@ export class TeamsController {
 
   /**
    * Create new team
+   * @param req
+   * @param res
    */
   async createTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -201,10 +213,12 @@ export class TeamsController {
 
   /**
    * Update team
+   * @param req
+   * @param res
    */
   async updateTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       const body = req.body as UpdateTeamBody;
       const updateData = {
         name: body.name,
@@ -280,10 +294,12 @@ export class TeamsController {
 
   /**
    * Delete team
+   * @param req
+   * @param res
    */
   async deleteTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       if (!req.user) {
         res
           .status(401)
@@ -341,13 +357,15 @@ export class TeamsController {
 
   /**
    * Get team members
+   * @param req
+   * @param res
    */
   async getTeamMembers(
     req: AuthenticatedRequest,
     res: Response,
   ): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       if (!req.user) {
         res
           .status(401)
@@ -382,10 +400,12 @@ export class TeamsController {
 
   /**
    * Add team member
+   * @param req
+   * @param res
    */
   async addTeamMember(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       const body = req.body as AddMemberBody;
       const userId = body.userId;
 
@@ -441,14 +461,16 @@ export class TeamsController {
 
   /**
    * Remove team member
+   * @param req
+   * @param res
    */
   async removeTeamMember(
     req: AuthenticatedRequest,
     res: Response,
   ): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
-      const userId = parseInt(req.params.userId);
+      const teamId = Number.parseInt(req.params.id);
+      const userId = Number.parseInt(req.params.userId);
 
       if (!req.user) {
         res
@@ -485,13 +507,15 @@ export class TeamsController {
 
   /**
    * Get team machines
+   * @param req
+   * @param res
    */
   async getTeamMachines(
     req: AuthenticatedRequest,
     res: Response,
   ): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       if (!req.user) {
         res
           .status(401)
@@ -526,13 +550,15 @@ export class TeamsController {
 
   /**
    * Add machine to team
+   * @param req
+   * @param res
    */
   async addTeamMachine(
     req: AuthenticatedRequest,
     res: Response,
   ): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
+      const teamId = Number.parseInt(req.params.id);
       const body = req.body as AddMachineBody;
       const machineId = body.machineId;
 
@@ -589,14 +615,16 @@ export class TeamsController {
 
   /**
    * Remove machine from team
+   * @param req
+   * @param res
    */
   async removeTeamMachine(
     req: AuthenticatedRequest,
     res: Response,
   ): Promise<void> {
     try {
-      const teamId = parseInt(req.params.id);
-      const machineId = parseInt(req.params.machineId);
+      const teamId = Number.parseInt(req.params.id);
+      const machineId = Number.parseInt(req.params.machineId);
 
       if (!req.user) {
         res

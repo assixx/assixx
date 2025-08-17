@@ -75,11 +75,16 @@ interface CalendarEventQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class CalendarController {
   /**
    * Holt alle Calendar Einträge
    * GET /api/calendar
    * NOTE: This method should be refactored to use getAllEvents with proper tenantId and userId
+   * @param req
+   * @param res
    */
   getAll(req: CalendarEventQueryRequest, res: Response): void {
     try {
@@ -96,10 +101,12 @@ class CalendarController {
           start_date: req.query.start_date,
           end_date: req.query.end_date,
           page:
-            req.query.page !== undefined ? parseInt(req.query.page) : undefined,
+            req.query.page !== undefined
+              ? Number.parseInt(req.query.page)
+              : undefined,
           limit:
             req.query.limit !== undefined
-              ? parseInt(req.query.limit)
+              ? Number.parseInt(req.query.limit)
               : undefined,
           sortBy: req.query.sortBy,
           sortDir: req.query.sortDir,
@@ -139,6 +146,8 @@ class CalendarController {
    * Holt einen Calendar Eintrag per ID
    * GET /api/calendar/:id
    * NOTE: This method should be refactored to use getEventById with proper tenantId and userId
+   * @param req
+   * @param res
    */
   getById(req: CalendarEventGetRequest, res: Response): void {
     try {
@@ -147,7 +156,7 @@ class CalendarController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -180,6 +189,8 @@ class CalendarController {
    * Erstellt einen neuen Calendar Eintrag
    * POST /api/calendar
    * NOTE: This method should be refactored to use createEvent
+   * @param req
+   * @param res
    */
   async create(req: CalendarEventCreateRequest, res: Response): Promise<void> {
     try {
@@ -212,6 +223,8 @@ class CalendarController {
    * Aktualisiert einen Calendar Eintrag
    * PUT /api/calendar/:id
    * NOTE: This method should be refactored to use updateEvent
+   * @param req
+   * @param res
    */
   update(req: CalendarEventUpdateRequest, res: Response): void {
     try {
@@ -220,7 +233,7 @@ class CalendarController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -253,6 +266,8 @@ class CalendarController {
    * Löscht einen Calendar Eintrag
    * DELETE /api/calendar/:id
    * NOTE: This method should be refactored to use deleteEvent
+   * @param req
+   * @param res
    */
   delete(req: CalendarEventGetRequest, res: Response): void {
     try {
@@ -261,7 +276,7 @@ class CalendarController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -295,6 +310,8 @@ class CalendarController {
   /**
    * Get all events (proper implementation)
    * GET /api/calendar/events
+   * @param _req
+   * @param res
    */
   getAllEvents(_req: CalendarEventQueryRequest, res: Response): void {
     try {

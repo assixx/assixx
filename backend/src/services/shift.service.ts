@@ -103,10 +103,15 @@ interface ShiftPlan {
   updated_at: Date;
 }
 
+/**
+ *
+ */
 class ShiftService {
   /**
    * Holt alle Shift Einträge für einen Tenant
    * NOTE: This generic method doesn't match the actual Shift model functionality
+   * @param _tenantDb
+   * @param _filters
    */
   getAll(_tenantDb: Pool, _filters: ShiftFilters = {}): ShiftEntry[] {
     try {
@@ -126,6 +131,8 @@ class ShiftService {
   /**
    * Holt einen Shift Eintrag per ID
    * NOTE: This should use specific methods depending on what's being retrieved
+   * @param _tenantDb
+   * @param _id
    */
   getById(_tenantDb: Pool, _id: number): ShiftEntry | null {
     try {
@@ -144,6 +151,8 @@ class ShiftService {
   /**
    * Erstellt einen neuen Shift Eintrag
    * NOTE: This should use createShift, createShiftPlan, or createShiftTemplate
+   * @param _tenantDb
+   * @param _data
    */
   create(_tenantDb: Pool, _data: ShiftCreateData): ShiftEntry {
     try {
@@ -162,6 +171,9 @@ class ShiftService {
   /**
    * Aktualisiert einen Shift Eintrag
    * NOTE: The Shift model doesn't have generic update methods
+   * @param _tenantDb
+   * @param _id
+   * @param _data
    */
   update(
     _tenantDb: Pool,
@@ -184,6 +196,8 @@ class ShiftService {
   /**
    * Löscht einen Shift Eintrag
    * NOTE: The Shift model doesn't have generic delete methods
+   * @param _tenantDb
+   * @param _id
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
@@ -204,6 +218,7 @@ class ShiftService {
 
   /**
    * Get all shift templates for a tenant
+   * @param tenantId
    */
   async getShiftTemplates(tenantId: number): Promise<ShiftTemplate[]> {
     try {
@@ -216,6 +231,15 @@ class ShiftService {
 
   /**
    * Create a new shift template
+   * @param templateData
+   * @param templateData.tenant_id
+   * @param templateData.name
+   * @param templateData.description
+   * @param templateData.start_time
+   * @param templateData.end_time
+   * @param templateData.break_minutes
+   * @param templateData.color
+   * @param templateData.created_by
    */
   async createShiftTemplate(templateData: {
     tenant_id: number;
@@ -250,6 +274,9 @@ class ShiftService {
 
   /**
    * Get all shift plans for a tenant with optional filters
+   * @param tenantId
+   * @param userId
+   * @param options
    */
   async getShiftPlans(
     tenantId: number,
@@ -274,6 +301,15 @@ class ShiftService {
 
   /**
    * Create a new shift plan
+   * @param planData
+   * @param planData.tenant_id
+   * @param planData.name
+   * @param planData.description
+   * @param planData.start_date
+   * @param planData.end_date
+   * @param planData.department_id
+   * @param planData.team_id
+   * @param planData.created_by
    */
   async createShiftPlan(planData: {
     tenant_id: number;
@@ -295,6 +331,9 @@ class ShiftService {
 
   /**
    * Get shifts for a specific plan
+   * @param planId
+   * @param tenantId
+   * @param userId
    */
   async getShiftsByPlan(
     planId: number,
@@ -326,6 +365,7 @@ class ShiftService {
 
   /**
    * Create a shift
+   * @param shiftData
    */
   async createShift(
     shiftData: ShiftCreateData & { created_by: number },
@@ -366,6 +406,11 @@ class ShiftService {
 
   /**
    * Assign employee to a shift
+   * @param assignmentData
+   * @param assignmentData.shift_id
+   * @param assignmentData.employee_id
+   * @param assignmentData.tenant_id
+   * @param assignmentData.assigned_by
    */
   async assignEmployeeToShift(assignmentData: {
     shift_id: number;
@@ -402,6 +447,10 @@ class ShiftService {
 
   /**
    * Get employee shifts for a date range
+   * @param tenantId
+   * @param userId
+   * @param startDate
+   * @param endDate
    */
   async getEmployeeShifts(
     tenantId: number,

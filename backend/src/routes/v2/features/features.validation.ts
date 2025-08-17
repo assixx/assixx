@@ -9,7 +9,7 @@ const featureCodeValidator = param("code")
   .withMessage("Feature code is required")
   .isLength({ min: 3, max: 50 })
   .withMessage("Feature code must be between 3 and 50 characters")
-  .matches(/^[a-z0-9_-]+$/)
+  .matches(/^[-0-9_a-z]+$/)
   .withMessage(
     "Feature code must contain only lowercase letters, numbers, underscores and hyphens",
   );
@@ -63,7 +63,7 @@ export const activateFeatureValidation = [
     .withMessage("Feature code is required")
     .isLength({ min: 3, max: 50 })
     .withMessage("Feature code must be between 3 and 50 characters")
-    .matches(/^[a-z0-9_-]+$/)
+    .matches(/^[-0-9_a-z]+$/)
     .withMessage(
       "Feature code must contain only lowercase letters, numbers, underscores and hyphens",
     ),
@@ -86,7 +86,7 @@ export const activateFeatureValidation = [
     .optional()
     .isNumeric()
     .withMessage("customPrice must be a number")
-    .custom((value) => parseFloat(value) >= 0)
+    .custom((value) => Number.parseFloat(value) >= 0)
     .withMessage("customPrice must be positive"),
   body("options.trialDays")
     .optional()
@@ -112,7 +112,7 @@ export const deactivateFeatureValidation = [
     .withMessage("Feature code is required")
     .isLength({ min: 3, max: 50 })
     .withMessage("Feature code must be between 3 and 50 characters")
-    .matches(/^[a-z0-9_-]+$/)
+    .matches(/^[-0-9_a-z]+$/)
     .withMessage(
       "Feature code must contain only lowercase letters, numbers, underscores and hyphens",
     ),
@@ -127,7 +127,7 @@ export const getUsageStatsValidation = [
     .withMessage("Feature code is required")
     .isLength({ min: 3, max: 50 })
     .withMessage("Feature code must be between 3 and 50 characters")
-    .matches(/^[a-z0-9_-]+$/)
+    .matches(/^[-0-9_a-z]+$/)
     .withMessage(
       "Feature code must contain only lowercase letters, numbers, underscores and hyphens",
     ),
@@ -159,7 +159,7 @@ export const testFeatureAccessValidation = [
     .withMessage("Feature code is required")
     .isLength({ min: 3, max: 50 })
     .withMessage("Feature code must be between 3 and 50 characters")
-    .matches(/^[a-z0-9_-]+$/)
+    .matches(/^[-0-9_a-z]+$/)
     .withMessage(
       "Feature code must contain only lowercase letters, numbers, underscores and hyphens",
     ),

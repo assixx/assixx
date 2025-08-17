@@ -26,9 +26,15 @@ interface DepartmentFilters {
   offset?: number;
 }
 
+/**
+ *
+ */
 class DepartmentService {
   /**
    * Holt alle Department Einträge für einen Tenant
+   * @param _tenantDb
+   * @param tenantId
+   * @param _filters
    */
   async getAll(
     _tenantDb: Pool,
@@ -47,6 +53,9 @@ class DepartmentService {
 
   /**
    * Holt einen Department Eintrag per ID
+   * @param _tenantDb
+   * @param id
+   * @param tenantId
    */
   async getById(
     _tenantDb: Pool,
@@ -63,6 +72,8 @@ class DepartmentService {
 
   /**
    * Erstellt einen neuen Department Eintrag
+   * @param _tenantDb
+   * @param data
    */
   async create(
     _tenantDb: Pool,
@@ -83,6 +94,10 @@ class DepartmentService {
 
   /**
    * Aktualisiert einen Department Eintrag
+   * @param _tenantDb
+   * @param id
+   * @param tenantId
+   * @param data
    */
   async update(
     _tenantDb: Pool,
@@ -104,6 +119,8 @@ class DepartmentService {
 
   /**
    * Löscht einen Department Eintrag
+   * @param _tenantDb
+   * @param id
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {

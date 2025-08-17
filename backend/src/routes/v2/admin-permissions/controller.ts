@@ -23,6 +23,8 @@ export const adminPermissionsController = {
   /**
    * Get permissions for a specific admin
    * Root only
+   * @param req
+   * @param res
    */
   async getAdminPermissions(
     req: AuthenticatedRequest,
@@ -56,7 +58,7 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = parseInt(req.params.adminId);
+      const adminId = Number.parseInt(req.params.adminId);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(
@@ -92,6 +94,8 @@ export const adminPermissionsController = {
 
   /**
    * Get current admin's permissions
+   * @param req
+   * @param res
    */
   async getMyPermissions(
     req: AuthenticatedRequest,
@@ -141,6 +145,8 @@ export const adminPermissionsController = {
   /**
    * Set permissions for an admin
    * Root only
+   * @param req
+   * @param res
    */
   async setPermissions(
     req: AuthenticatedRequest,
@@ -234,6 +240,8 @@ export const adminPermissionsController = {
   /**
    * Remove specific department permission
    * Root only
+   * @param req
+   * @param res
    */
   async removeDepartmentPermission(
     req: AuthenticatedRequest,
@@ -267,8 +275,8 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = parseInt(req.params.adminId);
-      const departmentId = parseInt(req.params.departmentId);
+      const adminId = Number.parseInt(req.params.adminId);
+      const departmentId = Number.parseInt(req.params.departmentId);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(
@@ -308,6 +316,8 @@ export const adminPermissionsController = {
   /**
    * Remove specific group permission
    * Root only
+   * @param req
+   * @param res
    */
   async removeGroupPermission(
     req: AuthenticatedRequest,
@@ -341,8 +351,8 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = parseInt(req.params.adminId);
-      const groupId = parseInt(req.params.groupId);
+      const adminId = Number.parseInt(req.params.adminId);
+      const groupId = Number.parseInt(req.params.groupId);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(
@@ -387,6 +397,8 @@ export const adminPermissionsController = {
   /**
    * Bulk update permissions
    * Root only
+   * @param req
+   * @param res
    */
   async bulkUpdatePermissions(
     req: AuthenticatedRequest,
@@ -456,6 +468,8 @@ export const adminPermissionsController = {
   /**
    * Check if admin has access to a department
    * Root only (for debugging/verification)
+   * @param req
+   * @param res
    */
   async checkAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -486,8 +500,8 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = parseInt(req.params.adminId);
-      const departmentId = parseInt(req.params.departmentId);
+      const adminId = Number.parseInt(req.params.adminId);
+      const departmentId = Number.parseInt(req.params.departmentId);
       const permissionLevel =
         (req.params.permissionLevel as PermissionLevel) ?? "read";
 

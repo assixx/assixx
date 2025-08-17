@@ -47,7 +47,7 @@ function setupEventListeners(): void {
  */
 async function loadNavigation(): Promise<void> {
   try {
-    const navPlaceholder = document.getElementById('navigation-placeholder');
+    const navPlaceholder = document.querySelector('#navigation-placeholder');
     if (!navPlaceholder) return;
 
     const token = getAuthToken();
@@ -307,7 +307,7 @@ async function checkUnreadNotifications(): Promise<void> {
  * Update notification badge
  */
 function updateNotificationBadge(count: number): void {
-  const badge = document.getElementById('notificationCount');
+  const badge = document.querySelector('#notificationCount');
   if (badge) {
     if (count > 0) {
       badge.textContent = count.toString();
@@ -333,7 +333,7 @@ function initializeBootstrapComponents(): void {
 
   // Initialize tooltips if Bootstrap is available
   if (typeof (window as WindowWithBootstrap).bootstrap !== 'undefined') {
-    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipTriggerList = [...document.querySelectorAll('[data-bs-toggle="tooltip"]')];
     tooltipTriggerList.forEach((tooltipTriggerEl) => {
       const bootstrap = (window as WindowWithBootstrap).bootstrap;
       if (bootstrap?.Tooltip) {
@@ -421,7 +421,7 @@ export async function loadBlackboardPreview(): Promise<void> {
  * Display blackboard items
  */
 function displayBlackboardItems(entries: BlackboardEntry[]): void {
-  const container = document.getElementById('blackboard-items');
+  const container = document.querySelector('#blackboard-items');
   if (!container) return;
 
   if (entries.length === 0) {

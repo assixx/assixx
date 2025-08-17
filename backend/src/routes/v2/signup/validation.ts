@@ -15,7 +15,7 @@ export const signupValidation = [
   body("subdomain")
     .notEmpty()
     .trim()
-    .matches(/^[a-z0-9-]+$/)
+    .matches(/^[-0-9a-z]+$/)
     .withMessage(
       "Subdomain can only contain lowercase letters, numbers, and hyphens",
     )
@@ -25,7 +25,7 @@ export const signupValidation = [
   body("phone")
     .notEmpty()
     .trim()
-    .matches(/^\+[0-9]{7,29}$/)
+    .matches(/^\+\d{7,29}$/)
     .withMessage(
       "Phone must start with + and contain 7-29 digits (e.g. +491234567890)",
     ),
@@ -67,7 +67,7 @@ export const checkSubdomainValidation = [
   param("subdomain")
     .notEmpty()
     .trim()
-    .matches(/^[a-z0-9-]+$/)
+    .matches(/^[-0-9a-z]+$/)
     .withMessage("Invalid subdomain format")
     .isLength({ min: 3, max: 63 })
     .withMessage("Subdomain must be between 3 and 63 characters"),

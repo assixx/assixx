@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   void loadEmployees();
 
   // Register form events
-  const uploadForm = document.getElementById('upload-form') as UploadForm | null;
+  const uploadForm = document.querySelector('#upload-form') as UploadForm | null;
   if (uploadForm !== null) {
     console.info('Upload form found');
     uploadForm.addEventListener('submit', (e) => {
@@ -39,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // File selection event
-  const fileInput = document.getElementById('file-input') as HTMLInputElement | null;
-  const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement | null;
+  const fileInput = document.querySelector('#file-input') as HTMLInputElement | null;
+  const fileNameSpan = document.querySelector('#file-name') as HTMLSpanElement | null;
 
   if (fileInput !== null && fileNameSpan !== null) {
     fileInput.addEventListener('change', () => {
@@ -76,7 +76,7 @@ async function loadEmployees(): Promise<void> {
 
     if (response.ok) {
       const employees = (await response.json()) as User[];
-      const userSelect = document.getElementById('user-select') as HTMLSelectElement | null;
+      const userSelect = document.querySelector('#user-select') as HTMLSelectElement | null;
 
       if (userSelect !== null) {
         // Add employees to dropdown
@@ -87,7 +87,7 @@ async function loadEmployees(): Promise<void> {
           option.value = employee.id.toString();
           const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
           option.textContent = fullName !== '' ? fullName : employee.username;
-          userSelect.appendChild(option);
+          userSelect.append(option);
         });
 
         console.info(`Loaded ${employees.length} employees for select`);
@@ -133,8 +133,8 @@ async function uploadDocument(e: Event): Promise<void> {
   }
 
   // Success and error elements
-  const successElem = document.getElementById('upload-success');
-  const errorElem = document.getElementById('upload-error');
+  const successElem = document.querySelector('#upload-success');
+  const errorElem = document.querySelector('#upload-error');
 
   // Hide previous messages
   if (successElem) successElem.style.display = 'none';
@@ -175,7 +175,7 @@ async function uploadDocument(e: Event): Promise<void> {
       form.reset();
 
       // Reset file name display
-      const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement | null;
+      const fileNameSpan = document.querySelector('#file-name') as HTMLSpanElement | null;
       if (fileNameSpan !== null) {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
       }

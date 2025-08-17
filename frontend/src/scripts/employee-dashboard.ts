@@ -42,9 +42,9 @@ function downloadDocument(docId?: string | number): void {
   // Note: This is a workaround since we can't set headers on anchor tag downloads
   link.href += `?token=${encodeURIComponent(token)}`;
 
-  document.body.appendChild(link);
+  document.body.append(link);
   link.click();
-  document.body.removeChild(link);
+  link.remove();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -69,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show role indicator for admins
   if (isAdminAsEmployee) {
-    const roleIndicator = document.getElementById('role-indicator');
-    const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
+    const roleIndicator = document.querySelector('#role-indicator');
+    const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
 
     if (roleIndicator) {
       roleIndicator.style.display = 'inline-flex';
@@ -81,10 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // DOM elements
-  const documentTableBody = document.getElementById('recent-documents') as HTMLTableSectionElement | null;
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null;
-  const searchForm = document.getElementById('search-form') as HTMLFormElement | null;
-  const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+  const documentTableBody = document.querySelector('#recent-documents') as HTMLTableSectionElement | null;
+  const logoutBtn = document.querySelector('#logout-btn') as HTMLButtonElement | null;
+  const searchForm = document.querySelector('#search-form') as HTMLFormElement | null;
+  const searchInput = document.querySelector('#search-input') as HTMLInputElement | null;
 
   // Search functionality - only add if search form exists
   if (searchForm !== null && searchInput !== null) {
@@ -157,20 +157,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function displayEmployeeInfo(info: EmployeeInfo): void {
     try {
       // Update username in header
-      const employeeName = document.getElementById('employee-name');
+      const employeeName = document.querySelector('#employee-name');
       if (employeeName) {
         const fullName = `${info.first_name ?? ''} ${info.last_name ?? ''}`.trim();
         employeeName.textContent = fullName !== '' ? fullName : info.username;
       }
 
       // Update username in welcome message
-      const userName = document.getElementById('user-name');
+      const userName = document.querySelector('#user-name');
       if (userName) {
         userName.textContent = info.first_name ?? info.username;
       }
 
       // Update employee details if container exists
-      const employeeDetails = document.getElementById('employee-details');
+      const employeeDetails = document.querySelector('#employee-details');
       if (employeeDetails) {
         employeeDetails.innerHTML = `
           <p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name ?? '')}</p>
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Update document count if exists
-      const docCount = document.getElementById('doc-count');
+      const docCount = document.querySelector('#doc-count');
       if (docCount && info.documents_count !== undefined) {
         docCount.textContent = info.documents_count.toString();
       }
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 });
 

@@ -75,7 +75,7 @@
 
   // Render group tree
   function renderGroupTree() {
-    const container = document.getElementById('groupTree');
+    const container = document.querySelector('#groupTree');
     if (!container) return;
 
     if (groups.length === 0) {
@@ -150,7 +150,7 @@
     const group = findGroupById(groupId);
     if (!group) return;
 
-    const container = document.getElementById('groupDetails');
+    const container = document.querySelector('#groupDetails');
     if (!container) return;
 
     container.innerHTML = `
@@ -207,7 +207,7 @@
 
   // Close modal
   function closeModal() {
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.querySelector('#createGroupModal');
     if (modal) {
       modal.classList.remove('show');
     }
@@ -218,9 +218,9 @@
   // Show create group modal
   (window as unknown as ManageDeptGroupsWindow).showCreateGroupModal = function () {
     editingGroupId = null;
-    const modalTitle = document.getElementById('modalTitle');
+    const modalTitle = document.querySelector('#modalTitle');
     if (modalTitle) modalTitle.textContent = 'Neue Abteilungsgruppe erstellen';
-    const form = document.getElementById('createGroupForm') as HTMLFormElement | null;
+    const form = document.querySelector('#createGroupForm') as HTMLFormElement | null;
     if (form !== null) {
       form.reset();
     }
@@ -231,7 +231,7 @@
     // Load departments
     updateDepartmentChecklist([]);
 
-    document.getElementById('createGroupModal')?.classList.add('active');
+    document.querySelector('#createGroupModal')?.classList.add('active');
   };
 
   // Edit group
@@ -240,24 +240,24 @@
     if (!group) return;
 
     editingGroupId = groupId;
-    const modalTitle = document.getElementById('modalTitle');
+    const modalTitle = document.querySelector('#modalTitle');
     if (modalTitle) modalTitle.textContent = 'Gruppe bearbeiten';
 
     // Fill form
-    (document.getElementById('groupName') as HTMLInputElement).value = group.name;
-    (document.getElementById('groupDescription') as HTMLTextAreaElement).value = group.description ?? '';
-    (document.getElementById('parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() ?? '';
+    (document.querySelector('#groupName') as HTMLInputElement).value = group.name;
+    (document.querySelector('#groupDescription') as HTMLTextAreaElement).value = group.description ?? '';
+    (document.querySelector('#parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() ?? '';
 
     // Update selects
     updateParentGroupSelect(groupId);
     updateDepartmentChecklist(group.departments?.map((d) => d.id) ?? []);
 
-    document.getElementById('createGroupModal')?.classList.add('active');
+    document.querySelector('#createGroupModal')?.classList.add('active');
   };
 
   // Update parent group select
   function updateParentGroupSelect(excludeId?: number) {
-    const select = document.getElementById('parentGroup') as HTMLSelectElement | null;
+    const select = document.querySelector('#parentGroup') as HTMLSelectElement | null;
     if (select === null) return;
 
     select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
@@ -268,7 +268,7 @@
           const option = document.createElement('option');
           option.value = group.id.toString();
           option.textContent = '  '.repeat(level) + group.name;
-          targetSelect.appendChild(option);
+          targetSelect.append(option);
 
           if (group.subgroups) {
             addOptions(group.subgroups, targetSelect, level + 1);
@@ -282,7 +282,7 @@
 
   // Update department checklist
   function updateDepartmentChecklist(selectedIds: number[]) {
-    const container = document.getElementById('departmentChecklist');
+    const container = document.querySelector('#departmentChecklist');
     if (!container) return;
 
     container.innerHTML = departments
@@ -300,24 +300,24 @@
 
   // Close modal
   (window as unknown as ManageDeptGroupsWindow).closeModal = function () {
-    document.getElementById('createGroupModal')?.classList.remove('active');
+    document.querySelector('#createGroupModal')?.classList.remove('active');
     editingGroupId = null;
   };
 
   // Form submit
-  document.getElementById('createGroupForm')?.addEventListener('submit', (e) => {
+  document.querySelector('#createGroupForm')?.addEventListener('submit', (e) => {
     void (async () => {
       e.preventDefault();
 
       const formData = {
-        name: (document.getElementById('groupName') as HTMLInputElement).value,
-        description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
+        name: (document.querySelector('#groupName') as HTMLInputElement).value,
+        description: (document.querySelector('#groupDescription') as HTMLTextAreaElement).value,
         parentGroupId:
-          (document.getElementById('parentGroup') as HTMLSelectElement).value !== ''
-            ? (document.getElementById('parentGroup') as HTMLSelectElement).value
+          (document.querySelector('#parentGroup') as HTMLSelectElement).value !== ''
+            ? (document.querySelector('#parentGroup') as HTMLSelectElement).value
             : null,
-        departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
-          parseInt((cb as HTMLInputElement).value, 10),
+        departmentIds: [...document.querySelectorAll('input[name="department"]:checked')].map((cb) =>
+          Number.parseInt((cb as HTMLInputElement).value, 10),
         ),
       };
 
@@ -374,7 +374,7 @@
         showSuccess('Gruppe gelöscht');
         selectedGroupId = null;
         await loadGroups();
-        const groupDetails = document.getElementById('groupDetails');
+        const groupDetails = document.querySelector('#groupDetails');
         if (groupDetails) {
           groupDetails.innerHTML = `
         <div class="empty-state">
@@ -412,7 +412,7 @@
     const notification = document.createElement('div');
     notification.className = 'notification error';
     notification.textContent = `Fehler: ${message}`;
-    document.body.appendChild(notification);
+    document.body.append(notification);
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -425,7 +425,7 @@
     const notification = document.createElement('div');
     notification.className = 'notification success';
     notification.textContent = `Erfolg: ${message}`;
-    document.body.appendChild(notification);
+    document.body.append(notification);
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -448,7 +448,7 @@
 
   // Close modal on outside click
   window.addEventListener('click', (e) => {
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.querySelector('#createGroupModal');
     if (e.target === modal) {
       closeModal();
     }

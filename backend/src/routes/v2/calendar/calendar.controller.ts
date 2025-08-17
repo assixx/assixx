@@ -23,6 +23,9 @@ import type {
 } from "./calendar.service.js";
 
 /**
+ * @param req
+ * @param res
+ * @param _next
  * @swagger
  * /api/v2/calendar/events:
  *   get:
@@ -130,6 +133,9 @@ export async function listEvents(
 }
 
 /**
+ * @param req
+ * @param res
+ * @param _next
  * @swagger
  * /api/v2/calendar/events/{id}:
  *   get:
@@ -160,7 +166,7 @@ export async function getEvent(
   _next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
     const tenantId = user.tenant_id;
     const userId = user.id;
@@ -190,6 +196,9 @@ export async function getEvent(
 }
 
 /**
+ * @param req
+ * @param res
+ * @param _next
  * @swagger
  * /api/v2/calendar/events:
  *   post:
@@ -308,6 +317,9 @@ export async function createEvent(
 }
 
 /**
+ * @param req
+ * @param res
+ * @param next
  * @swagger
  * /api/v2/calendar/events/{id}:
  *   put:
@@ -371,7 +383,7 @@ export async function updateEvent(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
     const tenantId = user.tenant_id;
     const userId = user.id;
@@ -453,12 +465,15 @@ export async function updateEvent(
     }
 
     res.json(successResponse({ event }));
-  } catch (err: unknown) {
-    next(err);
+  } catch (error: unknown) {
+    next(error);
   }
 }
 
 /**
+ * @param req
+ * @param res
+ * @param next
  * @swagger
  * /api/v2/calendar/events/{id}:
  *   delete:
@@ -487,7 +502,7 @@ export async function deleteEvent(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
     const tenantId = user.tenant_id;
     const userId = user.id;
@@ -551,12 +566,15 @@ export async function deleteEvent(
     }
 
     res.json(successResponse({ message: "Event deleted successfully" }));
-  } catch (err: unknown) {
-    next(err);
+  } catch (error: unknown) {
+    next(error);
   }
 }
 
 /**
+ * @param req
+ * @param res
+ * @param _next
  * @swagger
  * /api/v2/calendar/events/{id}/attendees/response:
  *   put:
@@ -595,7 +613,7 @@ export async function updateAttendeeResponse(
   _next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
     const tenantId = user.tenant_id;
     const userId = user.id;
@@ -644,6 +662,9 @@ export async function updateAttendeeResponse(
 }
 
 /**
+ * @param req
+ * @param res
+ * @param _next
  * @swagger
  * /api/v2/calendar/export:
  *   get:
@@ -711,6 +732,9 @@ export async function exportEvents(
 }
 
 /**
+ * @param req
+ * @param res
+ * @param next
  * @swagger
  * /api/v2/calendar/dashboard:
  *   get:
@@ -760,8 +784,8 @@ export async function getDashboardEvents(
     const tenantId = user.tenant_id;
     const userId = user.id;
 
-    const days = parseInt((req.query.days ?? "7") as string, 10);
-    const limit = parseInt((req.query.limit ?? "5") as string, 10);
+    const days = Number.parseInt((req.query.days ?? "7") as string, 10);
+    const limit = Number.parseInt((req.query.limit ?? "5") as string, 10);
 
     const events = await CalendarModel.getDashboardEvents(
       tenantId,
@@ -771,12 +795,15 @@ export async function getDashboardEvents(
     );
 
     res.json(successResponse(events));
-  } catch (err: unknown) {
-    next(err);
+  } catch (error: unknown) {
+    next(error);
   }
 }
 
 /**
+ * @param req
+ * @param res
+ * @param next
  * @swagger
  * /api/v2/calendar/unread-events:
  *   get:
@@ -823,7 +850,7 @@ export async function getUnreadEvents(
     const result = await calendarService.getUnreadEvents(tenantId, userId);
 
     res.json(successResponse(result));
-  } catch (err: unknown) {
-    next(err);
+  } catch (error: unknown) {
+    next(error);
   }
 }

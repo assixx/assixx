@@ -722,7 +722,7 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
       [tenant_id],
     );
     // MySQL SUM can return null or string, ensure we return a number
-    const totalSize = parseInt(String(rows[0]?.total_size ?? "0")) || 0;
+    const totalSize = Number.parseInt(String(rows[0]?.total_size ?? "0")) || 0;
     logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
     return totalSize;
   } catch (error: unknown) {

@@ -125,10 +125,15 @@ interface CountResult extends RowDataPacket {
   count: number;
 }
 
+/**
+ *
+ */
 class ChatService {
   /**
    * Holt alle verfügbaren Chat-Benutzer für einen Tenant
    * Berücksichtigt Department-Zugehörigkeit und Chat-Berechtigungen
+   * @param tenantId
+   * @param userId
    */
   async getUsers(
     tenantId: string | number,
@@ -150,8 +155,8 @@ class ChatService {
       );
 
       // Ensure parameters are numbers
-      const numericTenantId = parseInt(tenantId.toString());
-      const numericUserId = parseInt(userId.toString());
+      const numericTenantId = Number.parseInt(tenantId.toString());
+      const numericUserId = Number.parseInt(userId.toString());
 
       if (isNaN(numericTenantId) || isNaN(numericUserId)) {
         throw new Error(
@@ -282,6 +287,8 @@ class ChatService {
 
   /**
    * Holt alle Konversationen für einen Benutzer
+   * @param tenantId
+   * @param userId
    */
   async getConversations(
     tenantId: string | number,
@@ -295,8 +302,8 @@ class ChatService {
       console.info("DB pool status:", "exists");
 
       // Ensure parameters are numbers
-      const numericTenantId = parseInt(tenantId.toString());
-      const numericUserId = parseInt(userId.toString());
+      const numericTenantId = Number.parseInt(tenantId.toString());
+      const numericUserId = Number.parseInt(userId.toString());
 
       if (isNaN(numericTenantId) || isNaN(numericUserId)) {
         throw new Error(
@@ -361,7 +368,7 @@ class ChatService {
         >(query, [numericUserId, numericTenantId, numericTenantId, numericUserId, numericUserId, numericTenantId]);
 
       // Transform the results to match the expected format
-      const conversationsWithParticipants = await Promise.all(
+      return await Promise.all(
         conversations.map(async (conv) => {
           const participants = await this.getConversationParticipants(
             conv.id,
@@ -406,8 +413,6 @@ class ChatService {
           return transformedConv;
         }),
       );
-
-      return conversationsWithParticipants;
     } catch (error: unknown) {
       console.error("Error in ChatService.getConversations:", error);
       if (error instanceof Error) {
@@ -420,6 +425,11 @@ class ChatService {
   /**
    * Erstellt eine neue Konversation
    * Nur Admins und Root können initial Nachrichten an Employees senden
+   * @param tenantId
+   * @param userId
+   * @param participantIds
+   * @param isGroup
+   * @param name
    */
   async createConversation(
     tenantId: string | number,
@@ -525,6 +535,11 @@ class ChatService {
 
   /**
    * Holt Nachrichten einer Konversation
+   * @param tenantId
+   * @param conversationId
+   * @param userId
+   * @param limit
+   * @param offset
    */
   async getMessages(
     tenantId: string | number,
@@ -600,6 +615,11 @@ class ChatService {
   /**
    * Sendet eine Nachricht
    * Prüft Chat-Permissions basierend auf Rollen
+   * @param tenantId
+   * @param conversationId
+   * @param senderId
+   * @param content
+   * @param attachment
    */
   async sendMessage(
     tenantId: string | number,
@@ -689,6 +709,8 @@ class ChatService {
 
   /**
    * Markiert Nachrichten als gelesen
+   * @param messageId
+   * @param userId
    */
   async markAsRead(messageId: number, userId: number): Promise<void> {
     await db.promise().query(
@@ -701,6 +723,8 @@ class ChatService {
 
   /**
    * Löscht eine Nachricht
+   * @param messageId
+   * @param userId
    */
   async deleteMessage(messageId: number, userId: number): Promise<boolean> {
     const [result] = await db
@@ -715,6 +739,9 @@ class ChatService {
 
   /**
    * Holt die Anzahl ungelesener Nachrichten
+   * @param _tenantDb
+   * @param tenantId
+   * @param userId
    */
   async getUnreadCount(
     _tenantDb: Pool,
@@ -745,6 +772,8 @@ class ChatService {
 
   /**
    * Mark all messages in a conversation as read for a user
+   * @param conversationId
+   * @param userId
    */
   async markConversationAsRead(
     conversationId: number,
@@ -779,6 +808,8 @@ class ChatService {
 
   /**
    * Archiviert eine Nachricht
+   * @param messageId
+   * @param userId
    */
   async archiveMessage(messageId: number, userId: number): Promise<boolean> {
     await db.promise().query(
@@ -793,6 +824,8 @@ class ChatService {
 
   /**
    * Löscht eine Konversation für einen Benutzer
+   * @param conversationId
+   * @param userId
    */
   async deleteConversation(
     conversationId: number,
@@ -878,6 +911,11 @@ class ChatService {
   }
 
   // Get participants of a conversation
+  /**
+   *
+   * @param conversationId
+   * @param tenantId
+   */
   async getConversationParticipants(
     conversationId: number,
     tenantId: number,
@@ -898,6 +936,13 @@ class ChatService {
   }
 
   // Add participant to conversation
+  /**
+   *
+   * @param conversationId
+   * @param userId
+   * @param addedBy
+   * @param _tenantId
+   */
   async addParticipant(
     conversationId: number,
     userId: number,
@@ -945,6 +990,13 @@ class ChatService {
   }
 
   // Remove participant from conversation
+  /**
+   *
+   * @param conversationId
+   * @param userId
+   * @param removedBy
+   * @param _tenantId
+   */
   async removeParticipant(
     conversationId: number,
     userId: number,
@@ -992,6 +1044,13 @@ class ChatService {
   }
 
   // Update conversation name
+  /**
+   *
+   * @param conversationId
+   * @param name
+   * @param updatedBy
+   * @param _tenantId
+   */
   async updateConversationName(
     conversationId: number,
     name: string,

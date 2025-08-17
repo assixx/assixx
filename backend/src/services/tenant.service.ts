@@ -49,9 +49,14 @@ interface TenantUpdateData {
   max_users?: number;
 }
 
+/**
+ *
+ */
 class TenantService {
   /**
    * Holt alle Tenant Einträge für einen Tenant
+   * @param _tenantDb
+   * @param _filters
    */
   getAll(_tenantDb: Pool, _filters: TenantFilters = {}): TenantData[] {
     try {
@@ -66,6 +71,8 @@ class TenantService {
 
   /**
    * Holt einen Tenant Eintrag per ID
+   * @param _tenantDb
+   * @param _id
    */
   getById(_tenantDb: Pool, _id: number): TenantData | null {
     try {
@@ -80,14 +87,15 @@ class TenantService {
 
   /**
    * Erstellt einen neuen Tenant Eintrag
+   * @param _tenantDb
+   * @param data
    */
   async create(
     _tenantDb: Pool,
     data: ModelTenantCreateData,
   ): Promise<TenantCreateResult> {
     try {
-      const result = await Tenant.create(data);
-      return result;
+      return await Tenant.create(data);
     } catch (error: unknown) {
       console.error("Error in TenantService.create:", error);
       throw error;
@@ -96,6 +104,9 @@ class TenantService {
 
   /**
    * Aktualisiert einen Tenant Eintrag
+   * @param _tenantDb
+   * @param _id
+   * @param _data
    */
   update(
     _tenantDb: Pool,
@@ -114,6 +125,8 @@ class TenantService {
 
   /**
    * Löscht einen Tenant Eintrag
+   * @param _tenantDb
+   * @param _id
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {

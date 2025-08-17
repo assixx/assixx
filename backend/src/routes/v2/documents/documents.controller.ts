@@ -47,6 +47,8 @@ const upload = multer({
 export const uploadMiddleware = upload.single("document");
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents:
  *   get:
@@ -140,20 +142,24 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
       category: req.query.category as string,
       recipientType: req.query.recipientType as string,
       userId: req.query.userId
-        ? parseInt(req.query.userId as string)
+        ? Number.parseInt(req.query.userId as string)
         : undefined,
       teamId: req.query.teamId
-        ? parseInt(req.query.teamId as string)
+        ? Number.parseInt(req.query.teamId as string)
         : undefined,
       departmentId: req.query.departmentId
-        ? parseInt(req.query.departmentId as string)
+        ? Number.parseInt(req.query.departmentId as string)
         : undefined,
-      year: req.query.year ? parseInt(req.query.year as string) : undefined,
-      month: req.query.month ? parseInt(req.query.month as string) : undefined,
+      year: req.query.year
+        ? Number.parseInt(req.query.year as string)
+        : undefined,
+      month: req.query.month
+        ? Number.parseInt(req.query.month as string)
+        : undefined,
       isArchived: req.query.isArchived === "true",
       search: req.query.search as string,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
     };
 
     const result = await documentsService.listDocuments(
@@ -178,6 +184,8 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}:
  *   get:
@@ -213,7 +221,7 @@ export async function getDocumentById(
   res: Response,
 ) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const document = await documentsService.getDocumentById(
       documentId,
@@ -237,6 +245,8 @@ export async function getDocumentById(
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents:
  *   post:
@@ -322,12 +332,14 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
       mimeType: req.file.mimetype,
       category: body.category,
       recipientType: body.recipientType,
-      userId: body.userId ? parseInt(body.userId) : undefined,
-      teamId: body.teamId ? parseInt(body.teamId) : undefined,
-      departmentId: body.departmentId ? parseInt(body.departmentId) : undefined,
+      userId: body.userId ? Number.parseInt(body.userId) : undefined,
+      teamId: body.teamId ? Number.parseInt(body.teamId) : undefined,
+      departmentId: body.departmentId
+        ? Number.parseInt(body.departmentId)
+        : undefined,
       description: body.description,
-      year: body.year ? parseInt(body.year) : undefined,
-      month: body.month ? parseInt(body.month) : undefined,
+      year: body.year ? Number.parseInt(body.year) : undefined,
+      month: body.month ? Number.parseInt(body.month) : undefined,
       tags: body.tags ? JSON.parse(body.tags) : undefined,
       isPublic: body.isPublic === "true",
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
@@ -377,6 +389,8 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}:
  *   put:
@@ -435,7 +449,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
  */
 export async function updateDocument(req: AuthenticatedRequest, res: Response) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
     interface UpdateDocumentBody {
       filename?: string;
       category?: string;
@@ -479,6 +493,8 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}:
  *   delete:
@@ -519,7 +535,7 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
  */
 export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     // Get document details before deletion for logging
     const document = await documentsService.getDocumentById(
@@ -575,6 +591,8 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}/archive:
  *   post:
@@ -618,7 +636,7 @@ export async function archiveDocument(
   res: Response,
 ) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
     logger.info(`Archiving document ${documentId} for user ${req.user.id}`);
 
     const result = await documentsService.archiveDocument(
@@ -644,6 +662,8 @@ export async function archiveDocument(
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}/unarchive:
  *   post:
@@ -687,7 +707,7 @@ export async function unarchiveDocument(
   res: Response,
 ) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const result = await documentsService.archiveDocument(
       documentId,
@@ -714,6 +734,8 @@ export async function unarchiveDocument(
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}/download:
  *   get:
@@ -750,7 +772,7 @@ export async function downloadDocument(
   res: Response,
 ) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const documentContent = await documentsService.getDocumentContent(
       documentId,
@@ -785,6 +807,8 @@ export async function downloadDocument(
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/{id}/preview:
  *   get:
@@ -821,7 +845,7 @@ export async function previewDocument(
   res: Response,
 ) {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const documentContent = await documentsService.getDocumentContent(
       documentId,
@@ -854,6 +878,8 @@ export async function previewDocument(
 }
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/documents/stats:
  *   get:

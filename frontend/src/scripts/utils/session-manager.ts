@@ -69,7 +69,7 @@ export class SessionManager {
     // Check localStorage for activity from other tabs
     const storedLastActivity = localStorage.getItem('lastActivity');
     if (storedLastActivity !== null && storedLastActivity !== '') {
-      const storedTime = parseInt(storedLastActivity, 10);
+      const storedTime = Number.parseInt(storedLastActivity, 10);
       if (storedTime > this.lastActivityTime) {
         this.lastActivityTime = storedTime;
       }
@@ -143,7 +143,7 @@ export class SessionManager {
         </div>
       </div>
     `;
-    document.body.appendChild(warningModal);
+    document.body.append(warningModal);
   }
 
   private handleSessionTimeout(): void {
@@ -161,7 +161,7 @@ export class SessionManager {
 
   public extendSession(): void {
     // Remove warning modal
-    const modal = document.getElementById('session-warning-modal');
+    const modal = document.querySelector('#session-warning-modal');
     if (modal) {
       modal.remove();
     }

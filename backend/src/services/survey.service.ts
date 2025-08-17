@@ -157,10 +157,15 @@ interface SurveyStatistics {
   }[];
 }
 
+/**
+ *
+ */
 class SurveyService {
   /**
    * Holt alle Survey Einträge für einen Tenant
    * NOTE: This generic method doesn't match the actual Survey model methods
+   * @param _tenantDb
+   * @param _filters
    */
   getAll(_tenantDb: Pool, _filters: SurveyFilters = {}): SurveyData[] {
     try {
@@ -181,6 +186,8 @@ class SurveyService {
   /**
    * Holt einen Survey Eintrag per ID
    * NOTE: This should pass tenantId as well
+   * @param _tenantDb
+   * @param _id
    */
   getById(_tenantDb: Pool, _id: number): SurveyData | null {
     try {
@@ -200,6 +207,8 @@ class SurveyService {
   /**
    * Erstellt einen neuen Survey Eintrag
    * NOTE: Survey.create expects (surveyData, tenantId, createdBy)
+   * @param _tenantDb
+   * @param _data
    */
   create(_tenantDb: Pool, _data: SurveyCreateData): number {
     try {
@@ -218,6 +227,9 @@ class SurveyService {
   /**
    * Aktualisiert einen Survey Eintrag
    * NOTE: Survey.update expects (surveyId, surveyData, tenantId)
+   * @param _tenantDb
+   * @param _id
+   * @param _data
    */
   update(_tenantDb: Pool, _id: number, _data: SurveyUpdateData): boolean {
     try {
@@ -236,6 +248,8 @@ class SurveyService {
   /**
    * Löscht einen Survey Eintrag
    * NOTE: Survey.delete expects (surveyId, tenantId)
+   * @param _tenantDb
+   * @param _id
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
@@ -253,6 +267,8 @@ class SurveyService {
 
   /**
    * Holt alle Surveys für einen Tenant
+   * @param tenantId
+   * @param filters
    */
   async getAllByTenant(
     tenantId: number,
@@ -268,6 +284,8 @@ class SurveyService {
 
   /**
    * Get survey by ID
+   * @param surveyId
+   * @param tenantId
    */
   async getSurveyById(
     surveyId: number,
@@ -283,6 +301,9 @@ class SurveyService {
 
   /**
    * Create a new survey
+   * @param surveyData
+   * @param tenantId
+   * @param createdBy
    */
   async createSurvey(
     surveyData: SurveyCreateData,
@@ -299,6 +320,9 @@ class SurveyService {
 
   /**
    * Update a survey
+   * @param surveyId
+   * @param surveyData
+   * @param tenantId
    */
   async updateSurvey(
     surveyId: number,
@@ -319,6 +343,8 @@ class SurveyService {
 
   /**
    * Delete a survey
+   * @param surveyId
+   * @param tenantId
    */
   async deleteSurvey(surveyId: number, tenantId: number): Promise<boolean> {
     try {
@@ -331,6 +357,7 @@ class SurveyService {
 
   /**
    * Holt Survey Templates
+   * @param tenantId
    */
   async getTemplates(tenantId: number): Promise<SurveyTemplate[]> {
     try {
@@ -343,6 +370,9 @@ class SurveyService {
 
   /**
    * Erstellt Survey aus Template
+   * @param templateId
+   * @param tenantId
+   * @param createdBy
    */
   async createFromTemplate(
     templateId: number,
@@ -359,6 +389,8 @@ class SurveyService {
 
   /**
    * Holt Survey Statistiken
+   * @param surveyId
+   * @param tenantId
    */
   async getStatistics(
     surveyId: number,

@@ -5,15 +5,23 @@
 
 import type { StorageItem } from '../../types/utils.types';
 
+/**
+ *
+ */
 export class StorageService {
   private prefix: string;
 
+  /**
+   *
+   * @param prefix
+   */
   constructor(prefix = 'assixx_') {
     this.prefix = prefix;
   }
 
   /**
    * Get item from storage
+   * @param key
    */
   get(key: string): unknown {
     try {
@@ -37,6 +45,9 @@ export class StorageService {
 
   /**
    * Set item in storage with optional expiration
+   * @param key
+   * @param value
+   * @param expiryMinutes
    */
   set(key: string, value: unknown, expiryMinutes?: number): void {
     try {
@@ -58,6 +69,7 @@ export class StorageService {
 
   /**
    * Remove item from storage
+   * @param key
    */
   remove(key: string): void {
     localStorage.removeItem(this.prefix + key);
@@ -77,6 +89,7 @@ export class StorageService {
 
   /**
    * Check if key exists
+   * @param key
    */
   has(key: string): boolean {
     return localStorage.getItem(this.prefix + key) !== null;

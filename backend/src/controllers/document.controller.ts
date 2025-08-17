@@ -30,6 +30,10 @@ interface DocumentUpdateRequest extends AuthenticatedRequest {
 }
 
 // Type guard to check if request is authenticated
+/**
+ *
+ * @param req
+ */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
     "user" in req &&
@@ -39,9 +43,14 @@ function isAuthenticated(req: Request): req is AuthenticatedRequest {
   );
 }
 
+/**
+ *
+ */
 class DocumentController {
   /**
    * Get all documents with pagination
+   * @param req
+   * @param res
    */
   async getDocuments(req: Request, res: Response): Promise<void> {
     try {
@@ -80,7 +89,9 @@ class DocumentController {
         tenant_id: req.user.tenant_id,
         category,
         userId:
-          userId != null && userId !== "" ? parseInt(userId, 10) : req.user.id,
+          userId != null && userId !== ""
+            ? Number.parseInt(userId, 10)
+            : req.user.id,
         departmentId: req.user.department_id ?? undefined,
         teamId: userTeamId,
         limit,
@@ -103,6 +114,8 @@ class DocumentController {
 
   /**
    * Get document by ID
+   * @param req
+   * @param res
    */
   async getDocumentById(req: Request, res: Response): Promise<void> {
     try {
@@ -117,7 +130,7 @@ class DocumentController {
       const id = req.params.id;
 
       const document = await documentService.getDocumentById(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.tenant_id,
       );
 
@@ -144,6 +157,8 @@ class DocumentController {
 
   /**
    * Upload new document
+   * @param req
+   * @param res
    */
   async uploadDocument(
     req: Request & Partial<DocumentUploadRequest>,
@@ -179,7 +194,7 @@ class DocumentController {
         userId: (() => {
           const bodyUserId = (req.body as DocumentUploadRequest["body"]).userId;
           if (bodyUserId != null && bodyUserId !== "") {
-            return parseInt(bodyUserId, 10);
+            return Number.parseInt(bodyUserId, 10);
           }
           return null; // Company documents don't have a specific user
         })(),
@@ -205,6 +220,8 @@ class DocumentController {
 
   /**
    * Update document metadata
+   * @param req
+   * @param res
    */
   async updateDocument(
     req: Request & Partial<DocumentUpdateRequest>,
@@ -226,7 +243,7 @@ class DocumentController {
       };
 
       const result = await documentService.updateDocument(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         updateData,
         (req as AuthenticatedRequest).user.tenant_id,
       );
@@ -254,6 +271,8 @@ class DocumentController {
 
   /**
    * Delete document
+   * @param req
+   * @param res
    */
   async deleteDocument(req: Request, res: Response): Promise<void> {
     try {
@@ -268,7 +287,7 @@ class DocumentController {
       const id = req.params.id;
 
       const result = await documentService.deleteDocument(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.tenant_id,
       );
 
@@ -295,6 +314,8 @@ class DocumentController {
 
   /**
    * Download document
+   * @param req
+   * @param res
    */
   async downloadDocument(req: Request, res: Response): Promise<void> {
     try {
@@ -309,7 +330,7 @@ class DocumentController {
       const id = req.params.id;
 
       const document = await documentService.getDocumentById(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.tenant_id,
       );
 
@@ -340,6 +361,8 @@ class DocumentController {
 
   /**
    * Mark document as read
+   * @param req
+   * @param res
    */
   async markDocumentAsRead(req: Request, res: Response): Promise<void> {
     try {
@@ -354,7 +377,7 @@ class DocumentController {
       const id = req.params.id;
 
       const success = await documentService.markDocumentAsRead(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.id,
         req.user.tenant_id,
       );

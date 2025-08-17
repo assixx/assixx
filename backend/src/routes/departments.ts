@@ -305,7 +305,7 @@ router.get(
     try {
       const authReq = req as AuthenticatedRequest;
       const department = await Department.findById(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         authReq.user.tenant_id,
       );
 
@@ -436,7 +436,7 @@ router.put(
     try {
       const authReq = req as AuthenticatedRequest;
       const { name, manager_id, parent_id } = req.body;
-      const departmentId = parseInt(req.params.id, 10);
+      const departmentId = Number.parseInt(req.params.id, 10);
 
       // Check if department exists
       const department = await Department.findById(
@@ -597,7 +597,7 @@ router.delete(
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const departmentId = parseInt(req.params.id, 10);
+      const departmentId = Number.parseInt(req.params.id, 10);
 
       // Check if department exists
       const department = await Department.findById(
@@ -717,7 +717,7 @@ router.get(
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const departmentId = parseInt(req.params.id, 10);
+      const departmentId = Number.parseInt(req.params.id, 10);
 
       // Check if department exists
       const department = await Department.findById(

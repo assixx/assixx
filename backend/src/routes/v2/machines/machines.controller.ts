@@ -19,6 +19,10 @@ import {
 } from "./types";
 
 // Helper to map validation errors to our error response format
+/**
+ *
+ * @param errors
+ */
 function mapValidationErrors(
   errors: ValidationError[],
 ): Array<{ field: string; message: string }> {
@@ -32,6 +36,8 @@ export const machinesController = {
   /**
    * List all machines with filters
    * GET /api/v2/machines
+   * @param req
+   * @param res
    */
   async listMachines(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -60,7 +66,7 @@ export const machinesController = {
         status: req.query.status as string,
         machine_type: req.query.machineType as string,
         department_id: req.query.departmentId
-          ? parseInt(req.query.departmentId as string)
+          ? Number.parseInt(req.query.departmentId as string)
           : undefined,
         search: req.query.search as string,
         is_active: req.query.isActive === "false" ? false : true,
@@ -98,6 +104,8 @@ export const machinesController = {
   /**
    * Get machine by ID
    * GET /api/v2/machines/:id
+   * @param req
+   * @param res
    */
   async getMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -108,7 +116,7 @@ export const machinesController = {
         return;
       }
 
-      const machineId = parseInt(req.params.id);
+      const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
         res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
         return;
@@ -136,6 +144,8 @@ export const machinesController = {
   /**
    * Create new machine
    * POST /api/v2/machines
+   * @param req
+   * @param res
    */
   async createMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -194,6 +204,8 @@ export const machinesController = {
   /**
    * Update machine
    * PUT /api/v2/machines/:id
+   * @param req
+   * @param res
    */
   async updateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -218,7 +230,7 @@ export const machinesController = {
         return;
       }
 
-      const machineId = parseInt(req.params.id);
+      const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
         res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
         return;
@@ -259,6 +271,8 @@ export const machinesController = {
   /**
    * Delete machine (soft delete)
    * DELETE /api/v2/machines/:id
+   * @param req
+   * @param res
    */
   async deleteMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -269,7 +283,7 @@ export const machinesController = {
         return;
       }
 
-      const machineId = parseInt(req.params.id);
+      const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
         res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
         return;
@@ -301,6 +315,8 @@ export const machinesController = {
   /**
    * Get maintenance history for a machine
    * GET /api/v2/machines/:id/maintenance
+   * @param req
+   * @param res
    */
   async getMaintenanceHistory(
     req: AuthenticatedRequest,
@@ -314,7 +330,7 @@ export const machinesController = {
         return;
       }
 
-      const machineId = parseInt(req.params.id);
+      const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
         res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
         return;
@@ -347,6 +363,8 @@ export const machinesController = {
   /**
    * Add maintenance record
    * POST /api/v2/machines/maintenance
+   * @param req
+   * @param res
    */
   async addMaintenanceRecord(
     req: AuthenticatedRequest,
@@ -410,6 +428,8 @@ export const machinesController = {
   /**
    * Get upcoming maintenance
    * GET /api/v2/machines/upcoming-maintenance
+   * @param req
+   * @param res
    */
   async getUpcomingMaintenance(
     req: AuthenticatedRequest,
@@ -423,7 +443,9 @@ export const machinesController = {
         return;
       }
 
-      const days = req.query.days ? parseInt(req.query.days as string) : 30;
+      const days = req.query.days
+        ? Number.parseInt(req.query.days as string)
+        : 30;
       if (isNaN(days) || days < 1 || days > 365) {
         res
           .status(400)
@@ -460,6 +482,8 @@ export const machinesController = {
   /**
    * Get machine statistics
    * GET /api/v2/machines/statistics
+   * @param req
+   * @param res
    */
   async getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -489,6 +513,8 @@ export const machinesController = {
   /**
    * Get machine categories
    * GET /api/v2/machines/categories
+   * @param _req
+   * @param res
    */
   async getCategories(
     _req: AuthenticatedRequest,

@@ -24,8 +24,15 @@ import {
   ActivationOptions,
 } from "./types";
 
+/**
+ *
+ */
 export class FeaturesService {
   // Get all available features
+  /**
+   *
+   * @param includeInactive
+   */
   static async getAllFeatures(includeInactive = false): Promise<Feature[]> {
     try {
       const whereClause = includeInactive ? "" : "WHERE is_active = true";
@@ -38,7 +45,7 @@ export class FeaturesService {
         // Map base_price to price
         if ("base_price" in row) {
           mapped.price = row.base_price
-            ? parseFloat(row.base_price as string)
+            ? Number.parseFloat(row.base_price as string)
             : undefined;
         }
         return mapped;
@@ -50,13 +57,17 @@ export class FeaturesService {
   }
 
   // Get features grouped by category
+  /**
+   *
+   * @param includeInactive
+   */
   static async getFeaturesByCategory(
     includeInactive = false,
   ): Promise<FeatureCategory[]> {
     try {
       const features = await this.getAllFeatures(includeInactive);
 
-      const categorized = features.reduce<FeatureCategory[]>((acc, feature) => {
+      return features.reduce<FeatureCategory[]>((acc, feature) => {
         const category = acc.find((c) => c.category === feature.category);
         if (category) {
           category.features.push(feature);
@@ -68,8 +79,6 @@ export class FeaturesService {
         }
         return acc;
       }, []);
-
-      return categorized;
     } catch (error: unknown) {
       logger.error(`Error fetching features by category: ${String(error)}`);
       throw error;
@@ -77,6 +86,10 @@ export class FeaturesService {
   }
 
   // Get single feature by code
+  /**
+   *
+   * @param code
+   */
   static async getFeatureByCode(code: string): Promise<Feature | null> {
     try {
       const [rows] = await query<DbFeature[]>(
@@ -93,6 +106,10 @@ export class FeaturesService {
   }
 
   // Get tenant features
+  /**
+   *
+   * @param tenantId
+   */
   static async getTenantFeatures(tenantId: number): Promise<TenantFeature[]> {
     try {
       const [rows] = await query<DbTenantFeature[]>(
@@ -141,6 +158,10 @@ export class FeaturesService {
   }
 
   // Get all features with tenant-specific info
+  /**
+   *
+   * @param tenantId
+   */
   static async getFeaturesWithTenantInfo(
     tenantId: number,
   ): Promise<FeatureWithTenantInfo[]> {
@@ -215,6 +236,11 @@ export class FeaturesService {
   }
 
   // Activate feature for tenant
+  /**
+   *
+   * @param request
+   * @param activatedBy
+   */
   static async activateFeature(
     request: FeatureActivationRequest,
     activatedBy: number,
@@ -302,6 +328,12 @@ export class FeaturesService {
   }
 
   // Deactivate feature for tenant
+  /**
+   *
+   * @param tenantId
+   * @param featureCode
+   * @param deactivatedBy
+   */
   static async deactivateFeature(
     tenantId: number,
     featureCode: string,
@@ -349,6 +381,13 @@ export class FeaturesService {
   }
 
   // Get feature usage statistics
+  /**
+   *
+   * @param tenantId
+   * @param featureCode
+   * @param startDate
+   * @param endDate
+   */
   static async getUsageStats(
     tenantId: number,
     featureCode: string,
@@ -394,6 +433,10 @@ export class FeaturesService {
   }
 
   // Get tenant features summary
+  /**
+   *
+   * @param tenantId
+   */
   static async getTenantFeaturesSummary(
     tenantId: number,
   ): Promise<TenantFeaturesSummary> {
@@ -428,6 +471,11 @@ export class FeaturesService {
   }
 
   // Check if tenant has access to feature
+  /**
+   *
+   * @param tenantId
+   * @param featureCode
+   */
   static async checkTenantAccess(
     tenantId: number,
     featureCode: string,
@@ -454,6 +502,13 @@ export class FeaturesService {
   }
 
   // Log feature usage
+  /**
+   *
+   * @param tenantId
+   * @param featureCode
+   * @param userId
+   * @param metadata
+   */
   static async logUsage(
     tenantId: number,
     featureCode: string,
@@ -486,6 +541,9 @@ export class FeaturesService {
   }
 
   // Get all tenants with features (Root only)
+  /**
+   *
+   */
   static async getAllTenantsWithFeatures(): Promise<TenantWithFeatures[]> {
     try {
       const [tenants] = await query<RowDataPacket[]>(`
@@ -495,7 +553,7 @@ export class FeaturesService {
       `);
 
       // Get features for each tenant
-      const result = await Promise.all(
+      return await Promise.all(
         tenants.map(async (tenant) => {
           const summary = await this.getTenantFeaturesSummary(tenant.id);
           return {
@@ -512,8 +570,6 @@ export class FeaturesService {
           };
         }),
       );
-
-      return result;
     } catch (error: unknown) {
       logger.error(
         `Error fetching all tenants with features: ${String(error)}`,

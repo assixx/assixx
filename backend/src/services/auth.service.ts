@@ -18,6 +18,9 @@ import { DatabaseUser } from "../types/models";
 import { execute, ResultSetHeader } from "../utils/db";
 import { logger } from "../utils/logger";
 
+/**
+ *
+ */
 class AuthService {
   /**
    * Authenticate user with username and password
@@ -260,6 +263,7 @@ class AuthService {
 
   /**
    * Map database user format to application user format
+   * @param dbUser
    * @private
    */
   private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<
@@ -316,6 +320,27 @@ class AuthService {
 
   /**
    * Convert DbUser to DatabaseUser format
+   * @param dbUser
+   * @param dbUser.id
+   * @param dbUser.username
+   * @param dbUser.email
+   * @param dbUser.password
+   * @param dbUser.first_name
+   * @param dbUser.last_name
+   * @param dbUser.role
+   * @param dbUser.tenant_id
+   * @param dbUser.department_id
+   * @param dbUser.is_active
+   * @param dbUser.is_archived
+   * @param dbUser.profile_picture
+   * @param dbUser.phone
+   * @param dbUser.landline
+   * @param dbUser.employee_number
+   * @param dbUser.position
+   * @param dbUser.hire_date
+   * @param dbUser.birthday
+   * @param dbUser.created_at
+   * @param dbUser.updated_at
    * @private
    */
   private dbUserToDatabaseUser(dbUser: {

@@ -85,13 +85,22 @@ interface DeletionStep {
 
 // Removed unused interfaces QueueItem and TenantInfo
 
+/**
+ *
+ */
 export class TenantDeletionService {
   private steps: DeletionStep[] = [];
 
+  /**
+   *
+   */
   constructor() {
     this.initializeSteps();
   }
 
+  /**
+   *
+   */
   private initializeSteps(): void {
     this.steps = [
       // ========== PRE-DELETION PHASE ==========
@@ -702,13 +711,13 @@ export class TenantDeletionService {
               try {
                 await fs.access(fullPath);
                 await fs.unlink(fullPath);
-              } catch (err: unknown) {
+              } catch (error: unknown) {
                 if (
-                  err instanceof Error &&
-                  "code" in err &&
-                  err.code !== "ENOENT"
+                  error instanceof Error &&
+                  "code" in error &&
+                  error.code !== "ENOENT"
                 ) {
-                  throw err;
+                  throw error;
                 }
               }
             } catch (error: unknown) {
@@ -1755,6 +1764,10 @@ export class TenantDeletionService {
 
   /**
    * Request tenant deletion (requires approval from second root user)
+   * @param tenantId
+   * @param requestedBy
+   * @param reason
+   * @param ipAddress
    */
   async requestTenantDeletion(
     tenantId: number,
@@ -1806,7 +1819,7 @@ export class TenantDeletionService {
       const gracePeriodDays =
         process.env.DELETION_GRACE_PERIOD_DAYS != null &&
         process.env.DELETION_GRACE_PERIOD_DAYS !== ""
-          ? parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
+          ? Number.parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
           : 30;
       const scheduledDate = new Date();
       scheduledDate.setDate(scheduledDate.getDate() + gracePeriodDays);
@@ -1816,7 +1829,7 @@ export class TenantDeletionService {
       const coolingOffHours =
         process.env.DELETION_COOLING_OFF_HOURS != null &&
         process.env.DELETION_COOLING_OFF_HOURS !== ""
-          ? parseInt(process.env.DELETION_COOLING_OFF_HOURS)
+          ? Number.parseInt(process.env.DELETION_COOLING_OFF_HOURS)
           : process.env.NODE_ENV === "development"
             ? 0
             : 24;
@@ -1838,8 +1851,8 @@ export class TenantDeletionService {
 
       // 6. Send deletion warning emails (non-blocking)
       this.sendDeletionWarningEmails(tenantId, scheduledDate).catch(
-        (err: unknown) => {
-          logger.error("Failed to send deletion warning emails:", err);
+        (error: unknown) => {
+          logger.error("Failed to send deletion warning emails:", error);
         },
       );
 
@@ -1849,8 +1862,8 @@ export class TenantDeletionService {
         requestedBy,
         tenant.company_name,
         result.insertId,
-      ).catch((err: unknown) => {
-        logger.error("Failed to notify root admins:", err);
+      ).catch((error: unknown) => {
+        logger.error("Failed to notify root admins:", error);
       });
 
       logger.warn(
@@ -1863,6 +1876,9 @@ export class TenantDeletionService {
 
   /**
    * Approve tenant deletion request
+   * @param queueId
+   * @param approverId
+   * @param comment
    */
   async approveDeletion(
     queueId: number,
@@ -1961,14 +1977,17 @@ export class TenantDeletionService {
               : "Not scheduled",
           },
         })
-        .catch((err: unknown) =>
-          logger.error("Failed to send approval alert:", err),
+        .catch((error: unknown) =>
+          logger.error("Failed to send approval alert:", error),
         );
     });
   }
 
   /**
    * Reject tenant deletion request
+   * @param queueId
+   * @param approverId
+   * @param reason
    */
   async rejectDeletion(
     queueId: number,
@@ -2049,14 +2068,16 @@ export class TenantDeletionService {
             Reason: reason,
           },
         })
-        .catch((err: unknown) =>
-          logger.error("Failed to send rejection alert:", err),
+        .catch((error: unknown) =>
+          logger.error("Failed to send rejection alert:", error),
         );
     });
   }
 
   /**
    * Emergency stop for a deletion in progress
+   * @param queueId
+   * @param stoppedBy
    */
   async emergencyStop(queueId: number, stoppedBy: number): Promise<void> {
     try {
@@ -2133,6 +2154,7 @@ export class TenantDeletionService {
 
   /**
    * Process single tenant deletion
+   * @param queueId
    */
   private async processTenantDeletion(queueId: number): Promise<void> {
     let tenantId = 0;
@@ -2336,6 +2358,8 @@ export class TenantDeletionService {
 
   /**
    * Trigger emergency stop for deletion
+   * @param queueId
+   * @param stoppedBy
    */
   async triggerEmergencyStop(
     queueId: number,
@@ -2374,13 +2398,15 @@ export class TenantDeletionService {
           Action: "Deletion process will be halted at next checkpoint",
         },
       })
-      .catch((err: unknown) =>
-        logger.error("Failed to send emergency stop alert:", err),
+      .catch((error: unknown) =>
+        logger.error("Failed to send emergency stop alert:", error),
       );
   }
 
   /**
    * Handle emergency stop during deletion
+   * @param queueId
+   * @param tenantId
    */
   private async handleEmergencyStop(
     queueId: number,
@@ -2435,6 +2461,7 @@ export class TenantDeletionService {
 
   /**
    * Get deletion status
+   * @param tenantId
    */
   async getDeletionStatus(tenantId: number): Promise<DeletionStatusRow | null> {
     const [result] = await query<DeletionStatusRow[]>(
@@ -2457,6 +2484,7 @@ export class TenantDeletionService {
 
   /**
    * Retry failed deletion
+   * @param queueId
    */
   async retryDeletion(queueId: number): Promise<void> {
     const [queueItems] = await query<RowDataPacket[]>(
@@ -2476,6 +2504,8 @@ export class TenantDeletionService {
 
   /**
    * Cancel queued deletion (within grace period)
+   * @param tenantId
+   * @param cancelledBy
    */
   async cancelDeletion(tenantId: number, cancelledBy: number): Promise<void> {
     const [queueItems] = await query<RowDataPacket[]>(
@@ -2521,6 +2551,10 @@ export class TenantDeletionService {
 
   // ========== HELPER METHODS ==========
 
+  /**
+   *
+   * @param tenantId
+   */
   private async createTenantDataExport(tenantId: number): Promise<string> {
     const exportDir = `/exports/tenant_${tenantId}`;
     const timestamp = Date.now();
@@ -2575,6 +2609,10 @@ export class TenantDeletionService {
     return exportFile;
   }
 
+  /**
+   *
+   * @param filePath
+   */
   private async calculateFileChecksum(filePath: string): Promise<string> {
     const fileBuffer = await fs.readFile(filePath);
     const hashSum = crypto.createHash("sha256");
@@ -2582,6 +2620,14 @@ export class TenantDeletionService {
     return hashSum.digest("hex");
   }
 
+  /**
+   *
+   * @param tenantId
+   * @param requestedBy
+   * @param reason
+   * @param ipAddress
+   * @param connection
+   */
   private async createDeletionAuditTrail(
     tenantId: number,
     requestedBy: number,
@@ -2692,6 +2738,11 @@ export class TenantDeletionService {
     }
   }
 
+  /**
+   *
+   * @param tenantId
+   * @param scheduledDate
+   */
   private async sendDeletionWarningEmails(
     tenantId: number,
     scheduledDate: Date,
@@ -2724,12 +2775,17 @@ export class TenantDeletionService {
     // Schedule reminder emails (non-blocking)
     try {
       await this.scheduleReminderEmails(tenantId, scheduledDate);
-    } catch (err: unknown) {
-      logger.error("Failed to schedule reminder emails:", err);
+    } catch (error: unknown) {
+      logger.error("Failed to schedule reminder emails:", error);
       // Don't fail the whole operation
     }
   }
 
+  /**
+   *
+   * @param tenantId
+   * @param scheduledDate
+   */
   private async scheduleReminderEmails(
     tenantId: number,
     scheduledDate: Date,
@@ -2765,6 +2821,13 @@ export class TenantDeletionService {
     }
   }
 
+  /**
+   *
+   * @param tenantId
+   * @param requestedBy
+   * @param tenantName
+   * @param queueId
+   */
   private async notifyRootAdminsForApproval(
     tenantId: number,
     requestedBy: number,
@@ -2820,6 +2883,14 @@ export class TenantDeletionService {
     }
   }
 
+  /**
+   *
+   * @param tenantId
+   * @param requesterId
+   * @param status
+   * @param approverId
+   * @param reason
+   */
   private async notifyApprovalStatus(
     tenantId: number,
     requesterId: number,
@@ -2908,6 +2979,11 @@ export class TenantDeletionService {
     }
   } */
 
+  /**
+   *
+   * @param queueId
+   * @param error
+   */
   private async sendDeletionFailureAlert(
     queueId: number,
     error: string,
@@ -2943,8 +3019,8 @@ export class TenantDeletionService {
           "Action Required": "Check logs and retry or contact support",
         },
       })
-      .catch((err: unknown) =>
-        logger.error("Failed to send Slack alert:", err),
+      .catch((error_: unknown) =>
+        logger.error("Failed to send Slack alert:", error_),
       );
 
     await alertingService
@@ -2958,13 +3034,16 @@ export class TenantDeletionService {
           { name: "Time", value: new Date().toISOString() },
         ],
       })
-      .catch((err: unknown) =>
-        logger.error("Failed to send Teams alert:", err),
+      .catch((error_: unknown) =>
+        logger.error("Failed to send Teams alert:", error_),
       );
   }
 
   /**
    * Notify admins about emergency stop
+   * @param tenantId
+   * @param queueId
+   * @param stoppedBy
    */
   private async notifyEmergencyStop(
     tenantId: number,
@@ -3007,6 +3086,7 @@ export class TenantDeletionService {
 
   /**
    * Perform dry-run simulation
+   * @param tenantId
    */
   async performDryRun(tenantId: number): Promise<{
     tenantId: number;

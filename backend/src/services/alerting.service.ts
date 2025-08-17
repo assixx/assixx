@@ -36,9 +36,13 @@ interface PagerDutyIncident {
   group?: string;
 }
 
+/**
+ *
+ */
 export class AlertingService {
   /**
    * Send alert to Slack
+   * @param alert
    */
   async sendSlackAlert(alert: SlackAlert): Promise<void> {
     if (
@@ -102,6 +106,7 @@ export class AlertingService {
 
   /**
    * Send alert to Microsoft Teams
+   * @param alert
    */
   async sendTeamsAlert(alert: TeamsAlert): Promise<void> {
     if (
@@ -167,6 +172,7 @@ export class AlertingService {
 
   /**
    * Create PagerDuty incident
+   * @param incident
    */
   async sendPagerDutyAlert(incident: PagerDutyIncident): Promise<void> {
     if (
@@ -256,6 +262,9 @@ export class AlertingService {
 
   /**
    * Send alert to all configured channels based on severity
+   * @param title
+   * @param message
+   * @param details
    */
   async sendCriticalAlert(
     title: string,
@@ -315,6 +324,13 @@ export class AlertingService {
 
   /**
    * Log alert to database for audit trail
+   * @param alertType
+   * @param severity
+   * @param channel
+   * @param title
+   * @param message
+   * @param responseCode
+   * @param errorMessage
    */
   private async logAlert(
     alertType: string,

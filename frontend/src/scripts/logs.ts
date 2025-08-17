@@ -103,7 +103,7 @@ import { ApiClient } from '../utils/api-client';
 
   // Load logs
   async function loadLogs() {
-    const container = document.getElementById('logs-table-container');
+    const container = document.querySelector('#logs-table-container');
     if (!container) return;
 
     container.innerHTML = `
@@ -196,7 +196,7 @@ import { ApiClient } from '../utils/api-client';
 
   // Display logs in table
   function displayLogs(logs: LogEntry[]) {
-    const container = document.getElementById('logs-table-container');
+    const container = document.querySelector('#logs-table-container');
     if (!container) return;
 
     if (logs.length === 0) {
@@ -330,10 +330,10 @@ import { ApiClient } from '../utils/api-client';
   }
 
   function updatePagination(pagination: Pagination) {
-    const container = document.getElementById('pagination-container');
-    const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement | null;
-    const nextBtn = document.getElementById('next-btn') as HTMLButtonElement | null;
-    const info = document.getElementById('pagination-info');
+    const container = document.querySelector('#pagination-container');
+    const prevBtn = document.querySelector('#prev-btn') as HTMLButtonElement | null;
+    const nextBtn = document.querySelector('#next-btn') as HTMLButtonElement | null;
+    const info = document.querySelector('#pagination-info');
 
     if (!container) return;
 
@@ -357,10 +357,10 @@ import { ApiClient } from '../utils/api-client';
 
   // Apply filters
   function applyFilters() {
-    const userFilter = (document.getElementById('filter-user') as HTMLInputElement | null)?.value;
-    const actionFilter = (document.getElementById('filter-action') as HTMLInputElement | null)?.value;
-    const entityFilter = (document.getElementById('filter-entity') as HTMLInputElement | null)?.value;
-    const timerangeFilter = (document.getElementById('filter-timerange') as HTMLInputElement | null)?.value;
+    const userFilter = (document.querySelector('#filter-user') as HTMLInputElement | null)?.value;
+    const actionFilter = (document.querySelector('#filter-action') as HTMLInputElement | null)?.value;
+    const entityFilter = (document.querySelector('#filter-entity') as HTMLInputElement | null)?.value;
+    const timerangeFilter = (document.querySelector('#filter-timerange') as HTMLInputElement | null)?.value;
 
     console.info('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
 
@@ -384,10 +384,10 @@ import { ApiClient } from '../utils/api-client';
 
   // Reset filters
   function resetFilters() {
-    const userInput = document.getElementById('filter-user') as HTMLInputElement | null;
-    const actionInput = document.getElementById('filter-action') as HTMLInputElement | null;
-    const entityInput = document.getElementById('filter-entity') as HTMLInputElement | null;
-    const timerangeInput = document.getElementById('filter-timerange') as HTMLInputElement | null;
+    const userInput = document.querySelector('#filter-user') as HTMLInputElement | null;
+    const actionInput = document.querySelector('#filter-action') as HTMLInputElement | null;
+    const entityInput = document.querySelector('#filter-entity') as HTMLInputElement | null;
+    const timerangeInput = document.querySelector('#filter-timerange') as HTMLInputElement | null;
 
     if (userInput !== null) userInput.value = '';
     if (actionInput !== null) actionInput.value = 'all';
@@ -395,9 +395,9 @@ import { ApiClient } from '../utils/api-client';
     if (timerangeInput !== null) timerangeInput.value = 'all';
 
     // Reset dropdown displays
-    const actionDisplay = document.getElementById('actionDisplay');
-    const entityDisplay = document.getElementById('entityDisplay');
-    const timerangeDisplay = document.getElementById('timerangeDisplay');
+    const actionDisplay = document.querySelector('#actionDisplay');
+    const entityDisplay = document.querySelector('#entityDisplay');
+    const timerangeDisplay = document.querySelector('#timerangeDisplay');
 
     if (actionDisplay) {
       const span = actionDisplay.querySelector('span');
@@ -438,8 +438,8 @@ import { ApiClient } from '../utils/api-client';
     }
 
     // Show delete confirmation modal
-    const modal = document.getElementById('deleteLogsModal');
-    const activeFiltersDisplay = document.getElementById('activeFiltersDisplay');
+    const modal = document.querySelector('#deleteLogsModal');
+    const activeFiltersDisplay = document.querySelector('#activeFiltersDisplay');
 
     if (modal && activeFiltersDisplay) {
       // Build filter display
@@ -489,9 +489,9 @@ import { ApiClient } from '../utils/api-client';
       modal.classList.add('active');
 
       // Reset confirmation input
-      const confirmInput = document.getElementById('deleteLogsConfirmation') as HTMLInputElement | null;
-      const passwordSection = document.getElementById('passwordConfirmSection');
-      const passwordInput = document.getElementById('deleteLogsPassword') as HTMLInputElement | null;
+      const confirmInput = document.querySelector('#deleteLogsConfirmation') as HTMLInputElement | null;
+      const passwordSection = document.querySelector('#passwordConfirmSection');
+      const passwordInput = document.querySelector('#deleteLogsPassword') as HTMLInputElement | null;
 
       if (confirmInput !== null) {
         confirmInput.value = '';
@@ -509,8 +509,8 @@ import { ApiClient } from '../utils/api-client';
 
   // Confirm delete logs (called from modal)
   async function confirmDeleteLogs() {
-    const confirmBtn = document.getElementById('confirmDeleteLogsBtn') as HTMLButtonElement | null;
-    const passwordInput = document.getElementById('deleteLogsPassword') as HTMLInputElement | null;
+    const confirmBtn = document.querySelector('#confirmDeleteLogsBtn') as HTMLButtonElement | null;
+    const passwordInput = document.querySelector('#deleteLogsPassword') as HTMLInputElement | null;
 
     // v2 API requires password for ALL delete operations
     if (passwordInput === null || passwordInput.value === '') {
@@ -561,7 +561,7 @@ import { ApiClient } from '../utils/api-client';
       // Add filters to body based on what's selected
       // v2 API now supports all filters in body
       if (currentFilters.user !== undefined && currentFilters.user !== '') {
-        bodyData.userId = parseInt(currentFilters.user, 10);
+        bodyData.userId = Number.parseInt(currentFilters.user, 10);
       }
 
       // Now the backend supports action and entityType directly!
@@ -624,7 +624,7 @@ import { ApiClient } from '../utils/api-client';
         const result = await apiClient.request<{ deletedCount: number }>('/logs', requestOptions);
 
         // Close modal
-        const modal = document.getElementById('deleteLogsModal');
+        const modal = document.querySelector('#deleteLogsModal');
         if (modal) {
           modal.classList.remove('active');
         }
@@ -732,7 +732,7 @@ import { ApiClient } from '../utils/api-client';
         </div>
       </div>
     `;
-      document.body.appendChild(modal);
+      document.body.append(modal);
 
       // Close modal on outside click
       modal.addEventListener('click', (e) => {
@@ -756,7 +756,7 @@ import { ApiClient } from '../utils/api-client';
         </div>
       </div>
     `;
-      document.body.appendChild(modal);
+      document.body.append(modal);
     }
   }
 

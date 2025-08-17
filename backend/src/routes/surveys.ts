@@ -194,7 +194,7 @@ router.get(
               : undefined,
           page:
             page != null && page !== ""
-              ? parseInt(
+              ? Number.parseInt(
                   typeof page === "string"
                     ? page
                     : typeof page === "number"
@@ -204,7 +204,7 @@ router.get(
               : 1,
           limit:
             limit != null && limit !== ""
-              ? parseInt(
+              ? Number.parseInt(
                   typeof limit === "string"
                     ? limit
                     : typeof limit === "number"
@@ -230,7 +230,7 @@ router.get(
                 : undefined,
             page:
               page != null && page !== ""
-                ? parseInt(
+                ? Number.parseInt(
                     typeof page === "string"
                       ? page
                       : typeof page === "number"
@@ -240,7 +240,7 @@ router.get(
                 : 1,
             limit:
               limit != null && limit !== ""
-                ? parseInt(
+                ? Number.parseInt(
                     typeof limit === "string"
                       ? limit
                       : typeof limit === "number"
@@ -267,7 +267,7 @@ router.get(
                 : undefined,
             page:
               page != null && page !== ""
-                ? parseInt(
+                ? Number.parseInt(
                     typeof page === "string"
                       ? page
                       : typeof page === "number"
@@ -277,7 +277,7 @@ router.get(
                 : 1,
             limit:
               limit != null && limit !== ""
-                ? parseInt(
+                ? Number.parseInt(
                     typeof limit === "string"
                       ? limit
                       : typeof limit === "number"
@@ -330,7 +330,7 @@ router.get(
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const survey = await Survey.getById(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         req.user.tenant_id,
       );
       if (!survey) {
@@ -355,7 +355,7 @@ router.get(
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const stats = await Survey.getStatistics(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         req.user.tenant_id,
       );
       res.json(successResponse(stats));
@@ -488,7 +488,7 @@ router.post(
   typed.params<{ templateId: string }>(async (req, res) => {
     try {
       const surveyId = await Survey.createFromTemplate(
-        parseInt(req.params.templateId, 10),
+        Number.parseInt(req.params.templateId, 10),
         req.user.tenant_id,
         req.user.id,
       );
@@ -528,7 +528,7 @@ router.put(
   >(async (req, res) => {
     try {
       const success = await Survey.update(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         req.body,
         req.user.tenant_id,
       );
@@ -558,7 +558,7 @@ router.delete(
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const success = await Survey.delete(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         req.user.tenant_id,
       );
 
@@ -596,7 +596,7 @@ router.post(
     }
   >(async (req, res) => {
     try {
-      const surveyId = parseInt(req.params.id);
+      const surveyId = Number.parseInt(req.params.id);
       const userId = req.user.id;
       const answers = req.body.answers;
 
@@ -749,7 +749,7 @@ router.get(
   checkFeature("surveys"),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const surveyId = parseInt(req.params.id);
+      const surveyId = Number.parseInt(req.params.id);
       const userId = req.user.id;
 
       console.info(
@@ -812,7 +812,7 @@ router.get(
   checkFeature("surveys"),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const surveyId = parseInt(req.params.id, 10);
+      const surveyId = Number.parseInt(req.params.id, 10);
       const format =
         req.query.format != null && req.query.format !== ""
           ? typeof req.query.format === "string"

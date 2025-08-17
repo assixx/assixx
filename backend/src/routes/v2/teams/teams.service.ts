@@ -13,7 +13,17 @@ import { execute } from "../../../utils/db.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { logger } from "../../../utils/logger.js";
 
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code
+   * @param message
+   * @param statusCode
+   * @param details
+   */
   constructor(
     public code: string,
     public message: string,
@@ -45,9 +55,14 @@ export interface TeamUpdateInput {
   leaderId?: number;
 }
 
+/**
+ *
+ */
 export class TeamsService {
   /**
    * List all teams for a tenant
+   * @param tenantId
+   * @param filters
    */
   async listTeams(tenantId: number, filters?: TeamFilters) {
     try {
@@ -73,7 +88,7 @@ export class TeamsService {
       }
 
       // Convert to API format
-      const apiTeams = filteredTeams.map((team) => {
+      return filteredTeams.map((team) => {
         const apiTeam = dbToApi(team) as Record<string, unknown>;
 
         // Map team_lead_id to leaderId
@@ -96,8 +111,6 @@ export class TeamsService {
 
         return apiTeam;
       });
-
-      return apiTeams;
     } catch (error: unknown) {
       logger.error(`Error listing teams: ${String((error as Error).message)}`);
       throw new ServiceError("SERVER_ERROR", "Failed to list teams", 500);
@@ -106,6 +119,8 @@ export class TeamsService {
 
   /**
    * Get team by ID
+   * @param id
+   * @param tenantId
    */
   async getTeamById(id: number, tenantId: number) {
     try {
@@ -161,6 +176,8 @@ export class TeamsService {
 
   /**
    * Create a new team
+   * @param data
+   * @param tenantId
    */
   async createTeam(data: TeamCreateInput, tenantId: number) {
     try {
@@ -218,6 +235,9 @@ export class TeamsService {
 
   /**
    * Update a team
+   * @param id
+   * @param data
+   * @param tenantId
    */
   async updateTeam(id: number, data: TeamUpdateInput, tenantId: number) {
     try {
@@ -302,6 +322,8 @@ export class TeamsService {
 
   /**
    * Delete a team
+   * @param id
+   * @param tenantId
    */
   async deleteTeam(id: number, tenantId: number) {
     try {
@@ -341,6 +363,8 @@ export class TeamsService {
 
   /**
    * Get team members
+   * @param teamId
+   * @param tenantId
    */
   async getTeamMembers(teamId: number, tenantId: number) {
     try {
@@ -374,6 +398,9 @@ export class TeamsService {
 
   /**
    * Add member to team
+   * @param teamId
+   * @param userId
+   * @param tenantId
    */
   async addTeamMember(teamId: number, userId: number, tenantId: number) {
     try {
@@ -422,6 +449,9 @@ export class TeamsService {
 
   /**
    * Remove member from team
+   * @param teamId
+   * @param userId
+   * @param tenantId
    */
   async removeTeamMember(teamId: number, userId: number, tenantId: number) {
     try {
@@ -458,6 +488,8 @@ export class TeamsService {
 
   /**
    * Get team machines
+   * @param teamId
+   * @param tenantId
    */
   async getTeamMachines(teamId: number, tenantId: number) {
     try {
@@ -501,6 +533,10 @@ export class TeamsService {
 
   /**
    * Add machine to team
+   * @param teamId
+   * @param machineId
+   * @param tenantId
+   * @param assignedBy
    */
   async addTeamMachine(
     teamId: number,
@@ -567,6 +603,9 @@ export class TeamsService {
 
   /**
    * Remove machine from team
+   * @param teamId
+   * @param machineId
+   * @param tenantId
    */
   async removeTeamMachine(teamId: number, machineId: number, tenantId: number) {
     try {

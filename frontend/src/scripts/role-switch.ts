@@ -11,8 +11,8 @@ let currentView = localStorage.getItem('activeRole') ?? userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
-  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
-  const roleIndicator = document.getElementById('role-indicator');
+  const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
+  const roleIndicator = document.querySelector('#role-indicator');
 
   if (switchBtn === null || roleIndicator === null) return;
 
@@ -109,8 +109,8 @@ async function switchRole(): Promise<void> {
 
 // Update UI based on current role
 function updateRoleUI(): void {
-  const roleIndicator = document.getElementById('role-indicator');
-  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
+  const roleIndicator = document.querySelector('#role-indicator');
+  const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
   const switchText = switchBtn !== null ? switchBtn.querySelector('.role-switch-text') : null;
 
   if (roleIndicator === null || switchBtn === null) return;
@@ -215,10 +215,10 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' = 'suc
   const messageSpan = document.createElement('span');
   messageSpan.textContent = message;
 
-  toast.appendChild(icon);
-  toast.appendChild(messageSpan);
+  toast.append(icon);
+  toast.append(messageSpan);
 
-  document.body.appendChild(toast);
+  document.body.append(toast);
 
   setTimeout(() => {
     toast.style.animation = 'slideOutRight 0.3s ease-in';
@@ -229,7 +229,7 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' = 'suc
 }
 
 // Add animation styles if not already present
-if (!document.getElementById('toast-animations')) {
+if (!document.querySelector('#toast-animations')) {
   const style = document.createElement('style');
   style.id = 'toast-animations';
   style.textContent = `
@@ -242,13 +242,13 @@ if (!document.getElementById('toast-animations')) {
       to { transform: translateX(100%); opacity: 0%; }
     }
   `;
-  document.head.appendChild(style);
+  document.head.append(style);
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   // Handle for admins
-  const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement | null;
+  const switchBtn = document.querySelector('#role-switch-btn') as HTMLButtonElement | null;
 
   if (userRole === 'admin' && switchBtn !== null) {
     switchBtn.style.display = 'flex';
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Handle for root users with dropdown
-  const switchSelect = document.getElementById('role-switch-select') as HTMLSelectElement | null;
+  const switchSelect = document.querySelector('#role-switch-select') as HTMLSelectElement | null;
 
   if (userRole === 'root' && switchSelect !== null) {
     switchSelect.style.display = 'block';
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Handle role switch for root with dropdown
 export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee'): Promise<void> {
   // For custom dropdown, we'll update the display element instead
-  const dropdownDisplay = document.getElementById('roleSwitchDisplay');
+  const dropdownDisplay = document.querySelector('#roleSwitchDisplay');
 
   if (dropdownDisplay) {
     // Disable dropdown during switch
@@ -436,7 +436,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
 
 // Handle role switch for admin users
 export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Promise<void> {
-  const dropdownDisplay = document.getElementById('roleSwitchDisplay');
+  const dropdownDisplay = document.querySelector('#roleSwitchDisplay');
 
   if (dropdownDisplay) {
     dropdownDisplay.style.pointerEvents = 'none';

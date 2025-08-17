@@ -86,7 +86,7 @@ export const usersValidation = {
     body("address").optional().isString().trim(),
     body("employeeNumber")
       .optional()
-      .matches(/^[A-Za-z0-9-]{1,10}$/)
+      .matches(/^[-0-9A-Za-z]{1,10}$/)
       .withMessage(
         "Employee number: max 10 characters (letters, numbers, hyphen)",
       ),
@@ -130,7 +130,7 @@ export const usersValidation = {
       .withMessage("isActive must be boolean"),
     body("employeeNumber")
       .optional()
-      .matches(/^[A-Za-z0-9-]{1,10}$/)
+      .matches(/^[-0-9A-Za-z]{1,10}$/)
       .withMessage(
         "Employee number: max 10 characters (letters, numbers, hyphen)",
       ),

@@ -117,35 +117,35 @@ class MachinesManager {
 
   private initializeEventListeners() {
     // Filter buttons
-    document.getElementById('show-all-machines')?.addEventListener('click', () => {
+    document.querySelector('#show-all-machines')?.addEventListener('click', () => {
       this.currentFilter = 'all';
       void this.loadMachines();
     });
 
-    document.getElementById('filter-machines-operational')?.addEventListener('click', () => {
+    document.querySelector('#filter-machines-operational')?.addEventListener('click', () => {
       this.currentFilter = 'operational';
       void this.loadMachines();
     });
 
-    document.getElementById('filter-machines-maintenance')?.addEventListener('click', () => {
+    document.querySelector('#filter-machines-maintenance')?.addEventListener('click', () => {
       this.currentFilter = 'maintenance';
       void this.loadMachines();
     });
 
-    document.getElementById('filter-machines-repair')?.addEventListener('click', () => {
+    document.querySelector('#filter-machines-repair')?.addEventListener('click', () => {
       this.currentFilter = 'repair';
       void this.loadMachines();
     });
 
     // Search
-    document.getElementById('machine-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('machine-search') as HTMLInputElement | null;
+    document.querySelector('#machine-search-btn')?.addEventListener('click', () => {
+      const searchInput = document.querySelector('#machine-search') as HTMLInputElement | null;
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadMachines();
     });
 
     // Enter key on search
-    document.getElementById('machine-search')?.addEventListener('keypress', (e) => {
+    document.querySelector('#machine-search')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
@@ -154,20 +154,20 @@ class MachinesManager {
     });
 
     // Delete modal event listeners
-    document.getElementById('confirm-delete-machine')?.addEventListener('click', () => {
-      const deleteInput = document.getElementById('delete-machine-id') as HTMLInputElement | null;
+    document.querySelector('#confirm-delete-machine')?.addEventListener('click', () => {
+      const deleteInput = document.querySelector('#delete-machine-id') as HTMLInputElement | null;
       if (deleteInput !== null && deleteInput.value !== '') {
-        void this.confirmDeleteMachine(parseInt(deleteInput.value, 10));
+        void this.confirmDeleteMachine(Number.parseInt(deleteInput.value, 10));
       }
     });
 
-    document.getElementById('close-delete-modal')?.addEventListener('click', () => {
-      const modal = document.getElementById('delete-machine-modal');
+    document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
+      const modal = document.querySelector('#delete-machine-modal');
       if (modal) modal.classList.remove('active');
     });
 
-    document.getElementById('cancel-delete-modal')?.addEventListener('click', () => {
-      const modal = document.getElementById('delete-machine-modal');
+    document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
+      const modal = document.querySelector('#delete-machine-modal');
       if (modal) modal.classList.remove('active');
     });
   }
@@ -212,9 +212,9 @@ class MachinesManager {
   }
 
   private renderMachinesTable(): void {
-    const tbody = document.getElementById('machines-table-body');
-    const machinesTable = document.getElementById('machines-table');
-    const machinesEmpty = document.getElementById('machines-empty');
+    const tbody = document.querySelector('#machines-table-body');
+    const machinesTable = document.querySelector('#machines-table');
+    const machinesEmpty = document.querySelector('#machines-empty');
 
     console.info('[MachinesManager] Rendering table, machines count:', this.machines.length);
     console.info('[MachinesManager] Elements found:', {
@@ -371,8 +371,8 @@ class MachinesManager {
 
   async deleteMachine(id: number): Promise<void> {
     // Show delete confirmation modal
-    const modal = document.getElementById('delete-machine-modal');
-    const deleteInput = document.getElementById('delete-machine-id') as HTMLInputElement | null;
+    const modal = document.querySelector('#delete-machine-modal');
+    const deleteInput = document.querySelector('#delete-machine-id') as HTMLInputElement | null;
 
     if (modal !== null && deleteInput !== null) {
       deleteInput.value = id.toString();
@@ -392,7 +392,7 @@ class MachinesManager {
       showSuccessAlert('Maschine erfolgreich gelöscht');
 
       // Close the modal
-      const modal = document.getElementById('delete-machine-modal');
+      const modal = document.querySelector('#delete-machine-modal');
       if (modal !== null) {
         modal.classList.remove('active');
       }
@@ -417,11 +417,9 @@ class MachinesManager {
 
   async getMachineDetails(id: number): Promise<Machine | null> {
     try {
-      const response = await this.apiClient.request<Machine>(`/machines/${id}`, {
+      return await this.apiClient.request<Machine>(`/machines/${id}`, {
         method: 'GET',
       });
-
-      return response;
     } catch (error) {
       console.error('Error getting machine details:', error);
       showErrorAlert('Fehler beim Laden der Maschinendetails');
@@ -436,7 +434,7 @@ class MachinesManager {
       });
 
       const departments = response;
-      const dropdownOptions = document.getElementById('machine-department-dropdown');
+      const dropdownOptions = document.querySelector('#machine-department-dropdown');
 
       if (dropdownOptions === null) {
         console.error('[MachinesManager] Machine department dropdown not found');
@@ -452,7 +450,7 @@ class MachinesManager {
       defaultOption.setAttribute('data-value', '');
       defaultOption.setAttribute('data-text', 'Keine Abteilung');
       defaultOption.textContent = 'Keine Abteilung';
-      dropdownOptions.appendChild(defaultOption);
+      dropdownOptions.append(defaultOption);
 
       // Add department options
       departments.forEach((dept: Department) => {
@@ -461,7 +459,7 @@ class MachinesManager {
         optionDiv.setAttribute('data-value', dept.id.toString());
         optionDiv.setAttribute('data-text', dept.name);
         optionDiv.textContent = dept.name;
-        dropdownOptions.appendChild(optionDiv);
+        dropdownOptions.append(optionDiv);
       });
 
       // Setup event delegation
@@ -481,7 +479,7 @@ class MachinesManager {
       });
 
       const areas = response;
-      const dropdownOptions = document.getElementById('machine-area-dropdown');
+      const dropdownOptions = document.querySelector('#machine-area-dropdown');
 
       if (dropdownOptions === null) {
         console.error('[MachinesManager] Machine area dropdown not found');
@@ -497,7 +495,7 @@ class MachinesManager {
       defaultOption.setAttribute('data-value', '');
       defaultOption.setAttribute('data-text', 'Kein Bereich');
       defaultOption.textContent = 'Kein Bereich';
-      dropdownOptions.appendChild(defaultOption);
+      dropdownOptions.append(defaultOption);
 
       // Add area options
       areas.forEach((area: Area) => {
@@ -506,7 +504,7 @@ class MachinesManager {
         optionDiv.setAttribute('data-value', area.id.toString());
         optionDiv.setAttribute('data-text', area.name);
         optionDiv.textContent = area.name;
-        dropdownOptions.appendChild(optionDiv);
+        dropdownOptions.append(optionDiv);
       });
 
       // Setup event delegation
@@ -560,12 +558,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handler for floating add button
     w.showMachineModal = async () => {
-      const modal = document.getElementById('machineModal');
+      const modal = document.querySelector('#machineModal');
       if (modal !== null) {
         modal.classList.add('active');
 
         // Reset form
-        const form = document.getElementById('machineForm') as HTMLFormElement | null;
+        const form = document.querySelector('#machineForm') as HTMLFormElement | null;
         if (form !== null) form.reset();
 
         // Load departments and areas for dropdowns
@@ -578,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close modal handler
     w.closeMachineModal = () => {
-      const modal = document.getElementById('machineModal');
+      const modal = document.querySelector('#machineModal');
       if (modal !== null) {
         modal.classList.remove('active');
       }
@@ -586,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save machine handler
     w.saveMachine = async () => {
-      const form = document.getElementById('machineForm') as HTMLFormElement | null;
+      const form = document.querySelector('#machineForm') as HTMLFormElement | null;
       if (form === null) return;
 
       const formData = new FormData(form);

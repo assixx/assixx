@@ -119,7 +119,7 @@ router.get(
 
       // Apply limit if specified
       if (limit != null && limit !== "" && typeof limit === "string") {
-        const limitNum = parseInt(limit, 10);
+        const limitNum = Number.parseInt(limit, 10);
         if (!isNaN(limitNum) && limitNum > 0) {
           users = users.slice(0, limitNum);
         }
@@ -174,7 +174,7 @@ router.get(
         return;
       }
 
-      const userId = parseInt(req.user.id.toString(), 10);
+      const userId = Number.parseInt(req.user.id.toString(), 10);
       const tenantId = req.user.tenant_id;
 
       logger.info(`Fetching user ${userId} from tenant ${tenantId}`);
@@ -212,7 +212,7 @@ router.get(
     try {
       // Security middleware already checked admin/root role
 
-      const userId = parseInt(req.params.id);
+      const userId = Number.parseInt(req.params.id);
       const user = await User.findById(userId, req.user.tenant_id);
 
       if (!user) {
@@ -258,7 +258,7 @@ router.put(
     try {
       // Security middleware already checked admin/root role
 
-      const userId = parseInt(req.params.id);
+      const userId = Number.parseInt(req.params.id);
       // Create a copy and filter out protected fields
       const {
         id: _id,
@@ -318,7 +318,7 @@ router.delete(
     try {
       // Security middleware already checked admin/root role
 
-      const userId = parseInt(req.params.id);
+      const userId = Number.parseInt(req.params.id);
 
       // Prevent self-deletion
       if (userId === req.user.id) {
@@ -404,7 +404,7 @@ router.get(
         return;
       }
 
-      const userId = parseInt(req.user.id.toString(), 10);
+      const userId = Number.parseInt(req.user.id.toString(), 10);
       const tenantId = req.user.tenant_id;
 
       console.info("[DEBUG] Parsed userId:", userId, "tenantId:", tenantId);
@@ -692,7 +692,7 @@ router.put(
   ...security.admin(validationSchemas.availabilityUpdate),
   typed.paramsBody<{ id: string }, AvailabilityUpdateBody>(async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = Number.parseInt(req.params.id);
       const {
         availability_status,
         availability_start,
@@ -768,7 +768,7 @@ router.patch(
 
       // Validate employee number format: max 10 chars, alphanumeric + hyphens allowed
       // Allow formats like "ABC-123", "2025-001", "EMP001", etc.
-      const employeeNumberRegex = /^[a-zA-Z0-9-]{1,10}$/;
+      const employeeNumberRegex = /^[-0-9A-Za-z]{1,10}$/;
       if (!employeeNumberRegex.test(employee_number)) {
         res
           .status(400)

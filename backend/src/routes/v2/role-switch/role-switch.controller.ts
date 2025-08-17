@@ -14,10 +14,15 @@ import { getErrorMessage } from "../../../utils/errorHandler.js";
 
 import { RoleSwitchService, ServiceError } from "./role-switch.service.js";
 
+/**
+ *
+ */
 export class RoleSwitchController {
   /**
+   * @param req
+   * @param res
    * @route POST /api/v2/role-switch/to-employee
-   * @desc Switch admin/root view to employee mode
+   * @description Switch admin/root view to employee mode
    * @access Private (Admin/Root only)
    */
   static async switchToEmployee(
@@ -53,8 +58,10 @@ export class RoleSwitchController {
   }
 
   /**
+   * @param req
+   * @param res
    * @route POST /api/v2/role-switch/to-original
-   * @desc Switch back to original role (admin/root)
+   * @description Switch back to original role (admin/root)
    * @access Private
    */
   static async switchToOriginal(
@@ -93,8 +100,10 @@ export class RoleSwitchController {
   }
 
   /**
+   * @param req
+   * @param res
    * @route POST /api/v2/role-switch/root-to-admin
-   * @desc Switch root to admin view
+   * @description Switch root to admin view
    * @access Private (Root only)
    */
   static async rootToAdmin(
@@ -130,8 +139,10 @@ export class RoleSwitchController {
   }
 
   /**
+   * @param req
+   * @param res
    * @route GET /api/v2/role-switch/status
-   * @desc Get current role switch status
+   * @description Get current role switch status
    * @access Private
    */
   static async getStatus(

@@ -37,9 +37,15 @@ interface ChatMessageResult {
   [key: string]: unknown;
 }
 
+/**
+ *
+ */
 export class ChatController {
   /**
    * Get available chat users
+   * @param req
+   * @param res
+   * @param next
    */
   async getChatUsers(
     req: AuthenticatedRequest,
@@ -73,6 +79,9 @@ export class ChatController {
 
   /**
    * Get user's conversations
+   * @param req
+   * @param res
+   * @param next
    */
   async getConversations(
     req: AuthenticatedRequest,
@@ -99,8 +108,8 @@ export class ChatController {
               ? false
               : undefined,
         hasUnread: req.query.hasUnread === "true",
-        page: parseInt(req.query.page as string) ?? 1,
-        limit: parseInt(req.query.limit as string) ?? 20,
+        page: Number.parseInt(req.query.page as string) ?? 1,
+        limit: Number.parseInt(req.query.limit as string) ?? 20,
       };
 
       const result = await chatService.getConversations(
@@ -117,6 +126,9 @@ export class ChatController {
 
   /**
    * Create a new conversation
+   * @param req
+   * @param res
+   * @param next
    */
   async createConversation(
     req: AuthenticatedRequest,
@@ -187,6 +199,9 @@ export class ChatController {
 
   /**
    * Get messages from a conversation
+   * @param req
+   * @param res
+   * @param next
    */
   async getMessages(
     req: AuthenticatedRequest,
@@ -203,7 +218,7 @@ export class ChatController {
       }
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
 
       const filters: MessageFilters = {
         search: req.query.search as string,
@@ -214,8 +229,8 @@ export class ChatController {
           ? new Date(req.query.endDate as string)
           : undefined,
         hasAttachment: req.query.hasAttachment === "true",
-        page: parseInt(req.query.page as string) ?? 1,
-        limit: parseInt(req.query.limit as string) ?? 50,
+        page: Number.parseInt(req.query.page as string) ?? 1,
+        limit: Number.parseInt(req.query.limit as string) ?? 50,
       };
 
       const result = await chatService.getMessages(
@@ -233,6 +248,9 @@ export class ChatController {
 
   /**
    * Send a message to a conversation
+   * @param req
+   * @param res
+   * @param next
    */
   async sendMessage(
     req: AuthenticatedRequest,
@@ -249,7 +267,7 @@ export class ChatController {
       }
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
 
       const body = req.body as { message?: string; content?: string };
       const data: SendMessageData = {
@@ -321,6 +339,9 @@ export class ChatController {
 
   /**
    * Get unread message count
+   * @param req
+   * @param res
+   * @param next
    */
   async getUnreadCount(
     req: AuthenticatedRequest,
@@ -348,6 +369,9 @@ export class ChatController {
 
   /**
    * Mark all messages in a conversation as read
+   * @param req
+   * @param res
+   * @param next
    */
   async markAsRead(
     req: AuthenticatedRequest,
@@ -365,7 +389,7 @@ export class ChatController {
         return;
       }
       const userId = user.id;
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
       logError(
         "[Chat Controller] markAsRead - conversationId:",
         conversationId,
@@ -387,6 +411,9 @@ export class ChatController {
 
   /**
    * Delete a conversation
+   * @param req
+   * @param res
+   * @param next
    */
   async deleteConversation(
     req: AuthenticatedRequest,
@@ -403,7 +430,7 @@ export class ChatController {
       }
       const userId = user.id;
       const userRole = user.role;
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
 
       await chatService.deleteConversation(conversationId, userId, userRole);
 
@@ -437,6 +464,9 @@ export class ChatController {
 
   /**
    * Download chat attachment
+   * @param req
+   * @param res
+   * @param next
    */
   async downloadAttachment(
     req: AuthenticatedRequest,
@@ -490,6 +520,9 @@ export class ChatController {
 
   /**
    * Get conversation details
+   * @param req
+   * @param res
+   * @param next
    */
   async getConversation(
     req: AuthenticatedRequest,
@@ -506,7 +539,7 @@ export class ChatController {
       }
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const conversationId = parseInt(req.params.id);
+      const conversationId = Number.parseInt(req.params.id);
 
       // Get single conversation
       const conversation = await chatService.getConversation(
@@ -530,6 +563,9 @@ export class ChatController {
 
   /**
    * Update conversation (name, etc.)
+   * @param _req
+   * @param res
+   * @param next
    */
   async updateConversation(
     _req: AuthenticatedRequest,
@@ -548,6 +584,9 @@ export class ChatController {
 
   /**
    * Add participants to conversation
+   * @param _req
+   * @param res
+   * @param next
    */
   async addParticipants(
     _req: AuthenticatedRequest,
@@ -566,6 +605,9 @@ export class ChatController {
 
   /**
    * Remove participant from conversation
+   * @param _req
+   * @param res
+   * @param next
    */
   async removeParticipant(
     _req: AuthenticatedRequest,
@@ -584,6 +626,9 @@ export class ChatController {
 
   /**
    * Leave conversation
+   * @param _req
+   * @param res
+   * @param next
    */
   async leaveConversation(
     _req: AuthenticatedRequest,
@@ -602,6 +647,9 @@ export class ChatController {
 
   /**
    * Search messages across all conversations
+   * @param _req
+   * @param res
+   * @param next
    */
   async searchMessages(
     _req: AuthenticatedRequest,
@@ -620,6 +668,9 @@ export class ChatController {
 
   /**
    * Delete a message
+   * @param _req
+   * @param res
+   * @param next
    */
   async deleteMessage(
     _req: AuthenticatedRequest,
@@ -638,6 +689,9 @@ export class ChatController {
 
   /**
    * Edit a message
+   * @param _req
+   * @param res
+   * @param next
    */
   async editMessage(
     _req: AuthenticatedRequest,

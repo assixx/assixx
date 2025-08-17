@@ -195,7 +195,7 @@ export async function getAllEntries(
     // Apply pagination
     const offset = (page - 1) * limit;
     query += " LIMIT ? OFFSET ?";
-    queryParams.push(parseInt(limit.toString(), 10), offset);
+    queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
     const [entries] = await executeQuery<DbBlackboardEntry[]>(
@@ -276,8 +276,8 @@ export async function getAllEntries(
       entries,
       pagination: {
         total: totalEntries,
-        page: parseInt(page.toString(), 10),
-        limit: parseInt(limit.toString(), 10),
+        page: Number.parseInt(page.toString(), 10),
+        limit: Number.parseInt(limit.toString(), 10),
         totalPages: Math.ceil(totalEntries / limit),
       },
     };
@@ -422,12 +422,7 @@ export async function createEntry(
     }
 
     // Get the created entry
-    const createdEntry = await getEntryById(
-      result.insertId,
-      tenant_id,
-      author_id,
-    );
-    return createdEntry;
+    return await getEntryById(result.insertId, tenant_id, author_id);
   } catch (error: unknown) {
     logger.error("Error in createEntry:", error);
     throw error;
@@ -526,12 +521,7 @@ export async function updateEntry(
     }
 
     // Get the updated entry
-    const updatedEntry = await getEntryById(
-      id,
-      tenant_id,
-      entryData.author_id ?? 0,
-    );
-    return updatedEntry;
+    return await getEntryById(id, tenant_id, entryData.author_id ?? 0);
   } catch (error: unknown) {
     logger.error("Error in updateEntry:", error);
     throw error;
@@ -717,7 +707,7 @@ export async function getDashboardEntries(
           e.created_at DESC
         LIMIT ?
       `;
-    queryParams.push(parseInt(limit.toString(), 10));
+    queryParams.push(Number.parseInt(limit.toString(), 10));
 
     const [entries] = await executeQuery<DbBlackboardEntry[]>(
       query,

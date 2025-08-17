@@ -117,8 +117,8 @@ function initTabs(): void {
  * Benutzerdaten und Logout-Funktionalität
  */
 async function setupUserAndLogout(): Promise<void> {
-  const userInfo = document.getElementById('user-info');
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null;
+  const userInfo = document.querySelector('#user-info');
+  const logoutBtn = document.querySelector('#logout-btn') as HTMLButtonElement | null;
 
   if (userInfo) {
     // Lade Benutzerdaten
@@ -195,7 +195,7 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container';
-    document.body.appendChild(toastContainer);
+    document.body.append(toastContainer);
   }
 
   // Create toast element
@@ -204,7 +204,7 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
   toast.innerHTML = message;
 
   // Add to container
-  toastContainer.appendChild(toast);
+  toastContainer.append(toast);
 
   // Auto remove after 3 seconds
   setTimeout(() => {

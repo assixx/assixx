@@ -409,7 +409,7 @@ export async function getShiftPlans(
     // Apply pagination
     const offset = (page - 1) * limit;
     query += " ORDER BY sp.start_date DESC LIMIT ? OFFSET ?";
-    queryParams.push(parseInt(limit.toString(), 10), offset);
+    queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     const [plans] = await executeQuery<DbShiftPlan[]>(query, queryParams);
 
@@ -469,8 +469,8 @@ export async function getShiftPlans(
       plans,
       pagination: {
         total,
-        page: parseInt(page.toString(), 10),
-        limit: parseInt(limit.toString(), 10),
+        page: Number.parseInt(page.toString(), 10),
+        limit: Number.parseInt(limit.toString(), 10),
         totalPages: Math.ceil(total / limit),
       },
     };
@@ -1947,12 +1947,12 @@ async function getOvertimeByUser(
     return {
       summary: {
         totalShifts: (result[0].totalShifts as number) || 0,
-        totalHours: parseFloat(String(result[0].totalHours)) || 0,
-        overtimeHours: parseFloat(String(result[0].overtimeHours)) || 0,
-        breakHours: parseFloat(String(result[0].breakHours)) || 0,
+        totalHours: Number.parseFloat(String(result[0].totalHours)) || 0,
+        overtimeHours: Number.parseFloat(String(result[0].overtimeHours)) || 0,
+        breakHours: Number.parseFloat(String(result[0].breakHours)) || 0,
         netHours:
-          (parseFloat(String(result[0].totalHours)) || 0) -
-          (parseFloat(String(result[0].breakHours)) || 0),
+          (Number.parseFloat(String(result[0].totalHours)) || 0) -
+          (Number.parseFloat(String(result[0].breakHours)) || 0),
       },
       shifts,
     };

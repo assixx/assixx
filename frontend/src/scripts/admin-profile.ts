@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Set initial placeholder
-    const display = document.getElementById('profile-picture-display');
+    const display = document.querySelector('#profile-picture-display');
     if (display !== null && display.innerHTML.trim().length === 0) {
       display.innerHTML = '...';
     }
@@ -138,24 +138,24 @@ function populateProfileForm(profile: UserProfile): void {
   const companyName = extProfile.companyName ?? profile.company_name;
 
   // Editable fields
-  (document.getElementById('first_name') as HTMLInputElement).value = firstName ?? '';
-  (document.getElementById('last_name') as HTMLInputElement).value = lastName ?? '';
+  (document.querySelector('#first_name') as HTMLInputElement).value = firstName ?? '';
+  (document.querySelector('#last_name') as HTMLInputElement).value = lastName ?? '';
 
   // Read-only fields
-  (document.getElementById('email') as HTMLInputElement).value = profile.email;
-  (document.getElementById('position') as HTMLInputElement).value =
+  (document.querySelector('#email') as HTMLInputElement).value = profile.email;
+  (document.querySelector('#position') as HTMLInputElement).value =
     profile.position !== undefined && profile.position.length > 0
       ? (positionMap[profile.position] ?? profile.position)
       : '-';
-  (document.getElementById('company') as HTMLInputElement).value = companyName ?? '-';
+  (document.querySelector('#company') as HTMLInputElement).value = companyName ?? '-';
 }
 
 /**
  * Update profile picture display
  */
 function updateProfilePicture(url?: string, firstName?: string, lastName?: string): void {
-  const display = document.getElementById('profile-picture-display');
-  const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement | null;
+  const display = document.querySelector('#profile-picture-display');
+  const removeBtn = document.querySelector('#remove-picture-btn') as HTMLButtonElement | null;
 
   if (!display) {
     console.error('Profile picture display element not found!');
@@ -187,7 +187,7 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
       }
     };
 
-    display.appendChild(img);
+    display.append(img);
 
     // Show remove button when picture exists
     if (removeBtn) {
@@ -222,19 +222,19 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
  */
 function setupFormHandlers(): void {
   // Profile form
-  const profileForm = document.getElementById('profile-form') as HTMLFormElement;
+  const profileForm = document.querySelector('#profile-form') as HTMLFormElement;
   profileForm.addEventListener('submit', (e) => {
     void handleProfileUpdate(e);
   });
 
   // Password form
-  const passwordForm = document.getElementById('password-form') as HTMLFormElement;
+  const passwordForm = document.querySelector('#password-form') as HTMLFormElement;
   passwordForm.addEventListener('submit', (e) => {
     void handlePasswordChange(e);
   });
 
   // Logout button
-  const logoutBtn = document.getElementById('logout-btn');
+  const logoutBtn = document.querySelector('#logout-btn');
   logoutBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     // TODO: Implement proper confirmation modal
@@ -262,8 +262,8 @@ function setupFormHandlers(): void {
  * Setup profile picture handlers
  */
 function setupProfilePictureHandlers(): void {
-  const fileInput = document.getElementById('profile-picture-input') as HTMLInputElement;
-  const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement | null;
+  const fileInput = document.querySelector('#profile-picture-input') as HTMLInputElement;
+  const removeBtn = document.querySelector('#remove-picture-btn') as HTMLButtonElement | null;
 
   // File upload
   fileInput.addEventListener('change', (e) => {
@@ -365,9 +365,9 @@ async function handlePasswordChange(event: Event): Promise<void> {
   event.preventDefault();
 
   const form = event.target as HTMLFormElement;
-  const currentPassword = (document.getElementById('current_password') as HTMLInputElement).value;
-  const newPassword = (document.getElementById('new_password') as HTMLInputElement).value;
-  const confirmPassword = (document.getElementById('confirm_password') as HTMLInputElement).value;
+  const currentPassword = (document.querySelector('#current_password') as HTMLInputElement).value;
+  const newPassword = (document.querySelector('#new_password') as HTMLInputElement).value;
+  const confirmPassword = (document.querySelector('#confirm_password') as HTMLInputElement).value;
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
@@ -438,8 +438,8 @@ async function uploadProfilePicture(file: File): Promise<void> {
         const pictureUrl =
           result.data?.profilePictureUrl ?? result.data?.profilePicture ?? result.data?.profile_picture;
         console.info('Upload response:', result);
-        const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
-        const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+        const firstName = (document.querySelector('#first_name') as HTMLInputElement).value;
+        const lastName = (document.querySelector('#last_name') as HTMLInputElement).value;
         updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
         showMessage('Profilbild erfolgreich hochgeladen', 'success');
         // Reload page to update header
@@ -470,8 +470,8 @@ async function uploadProfilePicture(file: File): Promise<void> {
         };
         const pictureUrl =
           result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
-        const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
-        const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+        const firstName = (document.querySelector('#first_name') as HTMLInputElement).value;
+        const lastName = (document.querySelector('#last_name') as HTMLInputElement).value;
         updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
         showMessage('Profilbild erfolgreich hochgeladen', 'success');
         // Reload page to update header
@@ -496,7 +496,7 @@ async function uploadProfilePicture(file: File): Promise<void> {
  * Show message to user
  */
 function showMessage(message: string, type: 'success' | 'error'): void {
-  const container = document.getElementById('message-container');
+  const container = document.querySelector('#message-container');
   if (!container) return;
   container.innerHTML = `
     <div class="alert alert-${type}">
@@ -527,7 +527,7 @@ function showSuccessOverlay(text = 'Erfolgreich!'): void {
       </div>
     </div>
   `;
-  document.body.appendChild(overlay);
+  document.body.append(overlay);
 
   // Remove after animation
   setTimeout(() => {

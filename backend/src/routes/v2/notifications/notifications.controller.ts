@@ -13,6 +13,8 @@ import * as notificationsService from "./notifications.service.js";
 import { NotificationData, NotificationPreferences } from "./types.js";
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications:
  *   get:
@@ -71,8 +73,8 @@ export const listNotifications = async (
       type: req.query.type as string | undefined,
       priority: req.query.priority as string | undefined,
       unread: req.query.unread === "true",
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
     };
 
     const result = await notificationsService.listNotifications(
@@ -96,6 +98,8 @@ export const listNotifications = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications:
  *   post:
@@ -160,6 +164,8 @@ export const createNotification = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/{id}/read:
  *   put:
@@ -186,7 +192,7 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
       throw new ServiceError("UNAUTHORIZED", "User not authenticated");
     }
 
-    const notificationId = parseInt(req.params.id);
+    const notificationId = Number.parseInt(req.params.id);
     await notificationsService.markAsRead(
       notificationId,
       req.user.id,
@@ -208,6 +214,8 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/mark-all-read:
  *   put:
@@ -261,6 +269,8 @@ export const markAllAsRead = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/{id}:
  *   delete:
@@ -290,7 +300,7 @@ export const deleteNotification = async (
       throw new ServiceError("UNAUTHORIZED", "User not authenticated");
     }
 
-    const notificationId = parseInt(req.params.id);
+    const notificationId = Number.parseInt(req.params.id);
     await notificationsService.deleteNotification(
       notificationId,
       req.user.id,
@@ -315,6 +325,8 @@ export const deleteNotification = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/preferences:
  *   get:
@@ -359,6 +371,8 @@ export const getPreferences = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/preferences:
  *   put:
@@ -408,6 +422,8 @@ export const updatePreferences = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/stats:
  *   get:
@@ -460,6 +476,8 @@ export const getStatistics = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/stats/me:
  *   get:
@@ -504,6 +522,8 @@ export const getPersonalStats = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/subscribe:
  *   post:
@@ -563,6 +583,8 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/subscribe/{id}:
  *   delete:
@@ -605,6 +627,8 @@ export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/templates:
  *   get:
@@ -657,6 +681,8 @@ export const getTemplates = async (
 };
 
 /**
+ * @param req
+ * @param res
  * @swagger
  * /api/v2/notifications/from-template:
  *   post:

@@ -233,7 +233,7 @@ export function validateTenantSubdomain(
   subdomain: string,
 ): SubdomainValidationResult {
   // Nur Buchstaben, Zahlen und Bindestriche
-  const regex = /^[a-z0-9-]+$/;
+  const regex = /^[-0-9a-z]+$/;
 
   if (!regex.test(subdomain)) {
     return {

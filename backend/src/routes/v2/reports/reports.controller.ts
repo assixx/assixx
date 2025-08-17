@@ -13,6 +13,8 @@ import * as reportsService from "./reports.service.js";
 
 /**
  * Get company overview report with high-level KPIs
+ * @param req
+ * @param res
  */
 export const getOverviewReport = async (
   req: AuthenticatedRequest,
@@ -47,6 +49,8 @@ export const getOverviewReport = async (
 
 /**
  * Get detailed employee analytics report
+ * @param req
+ * @param res
  */
 export const getEmployeeReport = async (
   req: AuthenticatedRequest,
@@ -62,8 +66,10 @@ export const getEmployeeReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string | undefined,
       dateTo: dateTo as string | undefined,
-      departmentId: departmentId ? parseInt(departmentId as string) : undefined,
-      teamId: teamId ? parseInt(teamId as string) : undefined,
+      departmentId: departmentId
+        ? Number.parseInt(departmentId as string)
+        : undefined,
+      teamId: teamId ? Number.parseInt(teamId as string) : undefined,
     });
 
     res.json(successResponse(report, "Employee report retrieved successfully"));
@@ -83,6 +89,8 @@ export const getEmployeeReport = async (
 
 /**
  * Get department performance analytics
+ * @param req
+ * @param res
  */
 export const getDepartmentReport = async (
   req: AuthenticatedRequest,
@@ -119,6 +127,8 @@ export const getDepartmentReport = async (
 
 /**
  * Get shift coverage and overtime analytics
+ * @param req
+ * @param res
  */
 export const getShiftReport = async (
   req: AuthenticatedRequest,
@@ -134,8 +144,10 @@ export const getShiftReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string | undefined,
       dateTo: dateTo as string | undefined,
-      departmentId: departmentId ? parseInt(departmentId as string) : undefined,
-      teamId: teamId ? parseInt(teamId as string) : undefined,
+      departmentId: departmentId
+        ? Number.parseInt(departmentId as string)
+        : undefined,
+      teamId: teamId ? Number.parseInt(teamId as string) : undefined,
     });
 
     res.json(successResponse(report, "Shift report retrieved successfully"));
@@ -155,6 +167,8 @@ export const getShiftReport = async (
 
 /**
  * Get KVP ROI and performance report
+ * @param req
+ * @param res
  */
 export const getKvpReport = async (
   req: AuthenticatedRequest,
@@ -170,7 +184,9 @@ export const getKvpReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string | undefined,
       dateTo: dateTo as string | undefined,
-      categoryId: categoryId ? parseInt(categoryId as string) : undefined,
+      categoryId: categoryId
+        ? Number.parseInt(categoryId as string)
+        : undefined,
     });
 
     res.json(successResponse(report, "KVP report retrieved successfully"));
@@ -190,6 +206,8 @@ export const getKvpReport = async (
 
 /**
  * Get attendance and absence report
+ * @param req
+ * @param res
  */
 export const getAttendanceReport = async (
   req: AuthenticatedRequest,
@@ -205,8 +223,10 @@ export const getAttendanceReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string,
       dateTo: dateTo as string,
-      departmentId: departmentId ? parseInt(departmentId as string) : undefined,
-      teamId: teamId ? parseInt(teamId as string) : undefined,
+      departmentId: departmentId
+        ? Number.parseInt(departmentId as string)
+        : undefined,
+      teamId: teamId ? Number.parseInt(teamId as string) : undefined,
     });
 
     res.json(
@@ -228,6 +248,8 @@ export const getAttendanceReport = async (
 
 /**
  * Get labor law compliance report
+ * @param req
+ * @param res
  */
 export const getComplianceReport = async (
   req: AuthenticatedRequest,
@@ -243,7 +265,9 @@ export const getComplianceReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string,
       dateTo: dateTo as string,
-      departmentId: departmentId ? parseInt(departmentId as string) : undefined,
+      departmentId: departmentId
+        ? Number.parseInt(departmentId as string)
+        : undefined,
     });
 
     res.json(
@@ -320,6 +344,8 @@ export const generateCustomReport = async (
 
 /**
  * Export report in various formats (PDF, Excel, CSV)
+ * @param req
+ * @param res
  */
 export const exportReport = async (
   req: AuthenticatedRequest,
@@ -340,9 +366,11 @@ export const exportReport = async (
         dateFrom: filters.dateFrom as string | undefined,
         dateTo: filters.dateTo as string | undefined,
         departmentId: filters.departmentId
-          ? parseInt(filters.departmentId as string)
+          ? Number.parseInt(filters.departmentId as string)
           : undefined,
-        teamId: filters.teamId ? parseInt(filters.teamId as string) : undefined,
+        teamId: filters.teamId
+          ? Number.parseInt(filters.teamId as string)
+          : undefined,
       },
     });
 

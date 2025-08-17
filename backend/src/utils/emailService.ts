@@ -76,13 +76,13 @@ function sanitizeHtml(html: string): string {
   // Schritt 3: URL-Bereinigung mit verbesserter Erkennung
   const urlPatterns = [
     // href Attribute
-    /href\s*=\s*["']([^"']*?)["']/gi,
+    /href\s*=\s*["']([^"']*)["']/gi,
     /href\s*=\s*([^\s>]+)/gi,
     // src Attribute
-    /src\s*=\s*["']([^"']*?)["']/gi,
+    /src\s*=\s*["']([^"']*)["']/gi,
     /src\s*=\s*([^\s>]+)/gi,
     // andere URL Attribute
-    /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*?)["']/gi,
+    /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*)["']/gi,
   ];
 
   urlPatterns.forEach((pattern) => {
@@ -111,7 +111,7 @@ function sanitizeHtml(html: string): string {
 
   // Schritt 4: Style-Bereinigung
   sanitized = sanitized.replace(
-    /style\s*=\s*["']([^"']*?)["']/gi,
+    /style\s*=\s*["']([^"']*)["']/gi,
     (_match: string, styleContent: string) => {
       let cleanedStyle = styleContent;
 
@@ -224,7 +224,7 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   // Default-Konfiguration für Entwicklung
   const defaultConfig: EmailConfig = {
     host: process.env.EMAIL_HOST ?? "smtp.example.com",
-    port: parseInt(process.env.EMAIL_PORT ?? "587", 10),
+    port: Number.parseInt(process.env.EMAIL_PORT ?? "587", 10),
     secure: process.env.EMAIL_SECURE === "true",
     auth: {
       user: process.env.EMAIL_USER ?? "user@example.com",
@@ -275,7 +275,7 @@ async function loadTemplate(
         '"': "&quot;",
         "'": "&#39;",
       };
-      return str.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
+      return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
     };
 
     // Platzhalter ersetzen (Format: {{variable}})
@@ -301,7 +301,7 @@ async function loadTemplate(
         '"': "&quot;",
         "'": "&#39;",
       };
-      return str.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
+      return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
     };
 
     const safeMessage = escapeHtml(

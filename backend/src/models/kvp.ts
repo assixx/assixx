@@ -145,8 +145,7 @@ interface FileData {
 // Helper method to get database connection
 async function getConnection(): Promise<Connection> {
   try {
-    const connection = await mysql.createConnection(dbConfig);
-    return connection;
+    return await mysql.createConnection(dbConfig);
   } catch (error: unknown) {
     console.error("Database connection error in KVP model:", error);
     throw error;
@@ -493,8 +492,7 @@ export async function getKvpUserPoints(
       } as DbPointsSummary;
     }
 
-    const result = rows[0];
-    return result;
+    return rows[0];
   } finally {
     await connection.end();
   }

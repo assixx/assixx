@@ -282,7 +282,7 @@ router.delete(
   ...security.root(),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const adminId = parseInt(req.params.id, 10);
+      const adminId = Number.parseInt(req.params.id, 10);
       await User.delete(adminId);
 
       res.json(successResponse({ message: "Admin deleted successfully" }));

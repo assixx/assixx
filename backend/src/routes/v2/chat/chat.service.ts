@@ -171,9 +171,15 @@ interface MessageRow extends RowDataPacket {
   created_at: Date;
 }
 
+/**
+ *
+ */
 export class ChatService {
   /**
    * Get list of users available for chat
+   * @param tenantId
+   * @param currentUserId
+   * @param search
    */
   async getChatUsers(
     tenantId: number,
@@ -277,6 +283,9 @@ export class ChatService {
 
   /**
    * Get user's conversations with pagination
+   * @param tenantId
+   * @param userId
+   * @param filters
    */
   async getConversations(
     tenantId: number,
@@ -483,6 +492,9 @@ export class ChatService {
 
   /**
    * Create a new conversation
+   * @param tenantId
+   * @param creatorId
+   * @param data
    */
   async createConversation(
     tenantId: number,
@@ -608,6 +620,10 @@ export class ChatService {
 
   /**
    * Get messages from a conversation with pagination
+   * @param tenantId
+   * @param conversationId
+   * @param userId
+   * @param filters
    */
   async getMessages(
     tenantId: number,
@@ -760,6 +776,10 @@ export class ChatService {
 
   /**
    * Send a message to a conversation
+   * @param tenantId
+   * @param conversationId
+   * @param senderId
+   * @param data
    */
   async sendMessage(
     tenantId: number,
@@ -851,6 +871,8 @@ export class ChatService {
 
   /**
    * Get unread message count
+   * @param tenantId
+   * @param userId
    */
   async getUnreadCount(
     tenantId: number,
@@ -910,6 +932,8 @@ export class ChatService {
 
   /**
    * Mark all messages in a conversation as read
+   * @param conversationId
+   * @param userId
    */
   async markConversationAsRead(
     conversationId: number,
@@ -977,6 +1001,9 @@ export class ChatService {
 
   /**
    * Delete a conversation (admin only or single participant)
+   * @param conversationId
+   * @param userId
+   * @param userRole
    */
   async deleteConversation(
     conversationId: number,
@@ -1044,6 +1071,9 @@ export class ChatService {
 
   /**
    * Get single conversation details
+   * @param tenantId
+   * @param conversationId
+   * @param userId
    */
   async getConversation(
     tenantId: number,

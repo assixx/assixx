@@ -20,13 +20,13 @@ async function loadHeaderUserInfo(): Promise<void> {
     const payload = parseJwt(token);
     if (!payload) return;
 
-    const userNameElement = document.getElementById('user-name');
+    const userNameElement = document.querySelector('#user-name');
     if (userNameElement) {
       userNameElement.textContent = payload.username;
     }
 
     // Update role badge based on user role
-    const roleIndicator = document.getElementById('role-indicator');
+    const roleIndicator = document.querySelector('#role-indicator');
     if (roleIndicator && payload.role !== '') {
       roleIndicator.textContent = payload.role === 'admin' ? 'Admin' : payload.role === 'root' ? 'Root' : 'Mitarbeiter';
       roleIndicator.className = `role-badge ${payload.role}`;
@@ -44,7 +44,7 @@ async function loadHeaderUserInfo(): Promise<void> {
       }
 
       // Update avatar
-      const avatarElement = document.getElementById('user-avatar') as HTMLImageElement | null;
+      const avatarElement = document.querySelector('#user-avatar') as HTMLImageElement | null;
       if (avatarElement !== null) {
         if (
           (user.profile_picture !== undefined && user.profile_picture !== '') ||
@@ -99,7 +99,7 @@ async function loadDepartmentBadge(): Promise<void> {
     }>('/admin-permissions/my');
 
     // Look for department badge element in user info card
-    let badgeContainer = document.getElementById('departmentBadge');
+    let badgeContainer = document.querySelector('#departmentBadge');
 
     // If not found, create it
     if (!badgeContainer && document.querySelector('.user-info-card')) {
@@ -112,7 +112,7 @@ async function loadDepartmentBadge(): Promise<void> {
             <i class="fas fa-building"></i>
             <span class="badge loading">Lade...</span>
           `;
-        userCard.appendChild(badgeContainer);
+        userCard.append(badgeContainer);
       }
     }
 

@@ -61,7 +61,7 @@ router.get("/", authenticateToken, (req, res): void => {
       filteredMachines = machines.filter(
         (machine) =>
           machine.department_id ==
-          parseInt(
+          Number.parseInt(
             typeof departmentId === "string"
               ? departmentId
               : typeof departmentId === "number"
@@ -91,7 +91,7 @@ router.get("/", authenticateToken, (req, res): void => {
 router.get("/:id", authenticateToken, (req, res): void => {
   try {
     // const authReq = req as AuthenticatedRequest;
-    const machineId = parseInt(req.params.id);
+    const machineId = Number.parseInt(req.params.id);
 
     // Dummy machine data
     const machine: Machine = {

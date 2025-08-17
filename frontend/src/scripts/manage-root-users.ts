@@ -42,7 +42,7 @@ async function loadRootUsers() {
 
 // Display root users in table
 function displayRootUsers(users: RootUser[]) {
-  const container = document.getElementById('rootTableContent');
+  const container = document.querySelector('#rootTableContent');
   if (!container) return;
 
   if (users.length === 0) {
@@ -114,15 +114,15 @@ function displayRootUsers(users: RootUser[]) {
 async function handleFormSubmit(event: Event) {
   event.preventDefault();
 
-  const firstName = (document.getElementById('rootFirstName') as HTMLInputElement).value;
-  const lastName = (document.getElementById('rootLastName') as HTMLInputElement).value;
-  const email = (document.getElementById('rootEmail') as HTMLInputElement).value;
-  const emailConfirm = (document.getElementById('rootEmailConfirm') as HTMLInputElement).value;
-  const password = (document.getElementById('rootPassword') as HTMLInputElement).value;
-  const passwordConfirm = (document.getElementById('rootPasswordConfirm') as HTMLInputElement).value;
-  const position = (document.getElementById('positionDropdownValue') as HTMLInputElement).value;
-  const notes = (document.getElementById('rootNotes') as HTMLTextAreaElement).value;
-  const activeCheckbox = document.getElementById('rootIsActive') as HTMLInputElement | null;
+  const firstName = (document.querySelector('#rootFirstName') as HTMLInputElement).value;
+  const lastName = (document.querySelector('#rootLastName') as HTMLInputElement).value;
+  const email = (document.querySelector('#rootEmail') as HTMLInputElement).value;
+  const emailConfirm = (document.querySelector('#rootEmailConfirm') as HTMLInputElement).value;
+  const password = (document.querySelector('#rootPassword') as HTMLInputElement).value;
+  const passwordConfirm = (document.querySelector('#rootPasswordConfirm') as HTMLInputElement).value;
+  const position = (document.querySelector('#positionDropdownValue') as HTMLInputElement).value;
+  const notes = (document.querySelector('#rootNotes') as HTMLTextAreaElement).value;
+  const activeCheckbox = document.querySelector('#rootIsActive') as HTMLInputElement | null;
   const isActive = activeCheckbox !== null ? activeCheckbox.checked : true;
 
   // Validation
@@ -194,12 +194,12 @@ async function handleFormSubmit(event: Event) {
 
 // Close modal and reset
 function closeRootModal() {
-  const modal = document.getElementById('rootModal');
+  const modal = document.querySelector('#rootModal');
   if (modal) {
     modal.classList.remove('active');
   }
   currentEditId = null;
-  (document.getElementById('rootForm') as HTMLFormElement).reset();
+  (document.querySelector('#rootForm') as HTMLFormElement).reset();
 }
 
 // Initialize when DOM is loaded
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
   void loadRootUsers();
 
   // Attach form submit handler
-  const form = document.getElementById('rootForm');
+  const form = document.querySelector('#rootForm');
   if (form) {
     form.addEventListener('submit', (e) => {
       void handleFormSubmit(e);
@@ -225,26 +225,26 @@ declare global {
 
 window.showAddRootModal = () => {
   currentEditId = null;
-  const modalTitle = document.getElementById('modalTitle');
+  const modalTitle = document.querySelector('#modalTitle');
   if (modalTitle) modalTitle.textContent = 'Root User hinzufügen';
 
-  const rootForm = document.getElementById('rootForm') as HTMLFormElement | null;
+  const rootForm = document.querySelector('#rootForm') as HTMLFormElement | null;
   if (rootForm !== null) rootForm.reset();
 
-  const positionDropdown = document.getElementById('positionDropdownDisplay');
+  const positionDropdown = document.querySelector('#positionDropdownDisplay');
   const positionSpan = positionDropdown?.querySelector('span');
   if (positionSpan) positionSpan.textContent = 'Position auswählen...';
 
-  const passwordGroup = document.getElementById('passwordGroup');
+  const passwordGroup = document.querySelector('#passwordGroup');
   if (passwordGroup) passwordGroup.style.display = 'block';
 
-  const passwordConfirmGroup = document.getElementById('passwordConfirmGroup');
+  const passwordConfirmGroup = document.querySelector('#passwordConfirmGroup');
   if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
 
-  const activeStatusGroup = document.getElementById('activeStatusGroup');
+  const activeStatusGroup = document.querySelector('#activeStatusGroup');
   if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
-  const rootModal = document.getElementById('rootModal');
+  const rootModal = document.querySelector('#rootModal');
   if (rootModal) rootModal.classList.add('active');
 };
 window.closeRootModal = closeRootModal;

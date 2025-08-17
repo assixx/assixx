@@ -53,7 +53,7 @@ router.get(
     ]),
   ),
   typed.params<{ adminId: string }>(async (req, res) => {
-    const adminId = parseInt(req.params.adminId);
+    const adminId = Number.parseInt(req.params.adminId);
 
     try {
       // Get the tenant_id from the admin being queried
@@ -280,8 +280,8 @@ router.delete(
     ]),
   ),
   typed.params<{ adminId: string; departmentId: string }>(async (req, res) => {
-    const adminId = parseInt(req.params.adminId);
-    const departmentId = parseInt(req.params.departmentId);
+    const adminId = Number.parseInt(req.params.adminId);
+    const departmentId = Number.parseInt(req.params.departmentId);
 
     try {
       const success = await adminPermissionService.removePermission(
@@ -332,8 +332,8 @@ router.delete(
     ]),
   ),
   typed.params<{ adminId: string; groupId: string }>(async (req, res) => {
-    const adminId = parseInt(req.params.adminId);
-    const groupId = parseInt(req.params.groupId);
+    const adminId = Number.parseInt(req.params.adminId);
+    const groupId = Number.parseInt(req.params.groupId);
 
     try {
       const success = await adminPermissionService.removeGroupPermission(

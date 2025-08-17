@@ -65,6 +65,11 @@ interface BlackboardEntry {
   [key: string]: unknown;
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function listEntries(
   req: AuthenticatedRequest,
   res: Response,
@@ -81,11 +86,11 @@ export async function listEntries(
       search: req.query.search as string | undefined,
       page:
         req.query.page !== undefined
-          ? parseInt(req.query.page as string, 10)
+          ? Number.parseInt(req.query.page as string, 10)
           : 1,
       limit:
         req.query.limit !== undefined
-          ? parseInt(req.query.limit as string, 10)
+          ? Number.parseInt(req.query.limit as string, 10)
           : 10,
       sortBy: req.query.sortBy as string | undefined,
       sortDir: req.query.sortDir as "ASC" | "DESC" | undefined,
@@ -135,12 +140,17 @@ export async function listEntries(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getEntryById(
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
     const entry = await blackboardService.getEntryById(
       entryId,
       req.user.tenant_id,
@@ -162,6 +172,11 @@ export async function getEntryById(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function createEntry(req: AuthenticatedRequest, res: Response) {
   try {
     const body = req.body as CreateEntryBody;
@@ -221,9 +236,14 @@ export async function createEntry(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function updateEntry(req: AuthenticatedRequest, res: Response) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
     const body = req.body as UpdateEntryBody;
     const updateData = {
       title: body.title,
@@ -293,9 +313,14 @@ export async function updateEntry(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
 
     // Get entry data before deletion for logging
     const deletedEntry = await blackboardService.getEntryById(
@@ -345,9 +370,14 @@ export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
     const entry = await blackboardService.archiveEntry(
       entryId,
       req.user.tenant_id,
@@ -388,9 +418,14 @@ export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function unarchiveEntry(req: AuthenticatedRequest, res: Response) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
     const entry = await blackboardService.unarchiveEntry(
       entryId,
       req.user.tenant_id,
@@ -414,9 +449,14 @@ export async function unarchiveEntry(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function confirmEntry(req: AuthenticatedRequest, res: Response) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
     const result = await blackboardService.confirmEntry(entryId, req.user.id);
 
     res.json(successResponse(result));
@@ -434,12 +474,17 @@ export async function confirmEntry(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getConfirmationStatus(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
     const users = await blackboardService.getConfirmationStatus(
       entryId,
       req.user.tenant_id,
@@ -462,12 +507,19 @@ export async function getConfirmationStatus(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getDashboardEntries(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 3;
+    const limit = req.query.limit
+      ? Number.parseInt(req.query.limit as string, 10)
+      : 3;
     const entries = await blackboardService.getDashboardEntries(
       req.user.tenant_id,
       req.user.id,
@@ -489,6 +541,11 @@ export async function getDashboardEntries(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getAllTags(req: AuthenticatedRequest, res: Response) {
   try {
     const tags = await blackboardService.getAllTags(req.user.tenant_id);
@@ -505,6 +562,11 @@ export async function getAllTags(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function uploadAttachment(
   req: AuthenticatedRequest,
   res: Response,
@@ -515,7 +577,7 @@ export async function uploadAttachment(
       return;
     }
 
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
 
     // Check if entry exists and user has access
     await blackboardService.getEntryById(
@@ -552,9 +614,14 @@ export async function uploadAttachment(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getAttachments(req: AuthenticatedRequest, res: Response) {
   try {
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = Number.parseInt(req.params.id, 10);
 
     // Check if entry exists and user has access
     await blackboardService.getEntryById(
@@ -579,12 +646,17 @@ export async function getAttachments(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function downloadAttachment(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
-    const attachmentId = parseInt(req.params.attachmentId, 10);
+    const attachmentId = Number.parseInt(req.params.attachmentId, 10);
     const attachment = (await blackboardService.getAttachmentById(
       attachmentId,
       req.user.tenant_id,
@@ -606,12 +678,17 @@ export async function downloadAttachment(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function deleteAttachment(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
-    const attachmentId = parseInt(req.params.attachmentId, 10);
+    const attachmentId = Number.parseInt(req.params.attachmentId, 10);
     const result = await blackboardService.deleteAttachment(
       attachmentId,
       req.user.tenant_id,

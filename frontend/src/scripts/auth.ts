@@ -120,8 +120,8 @@ export function parseJwt(token: string): JWTPayload | null {
         .join(''),
     );
     return JSON.parse(jsonPayload) as JWTPayload;
-  } catch (e) {
-    console.error('Error parsing JWT:', e);
+  } catch (error) {
+    console.error('Error parsing JWT:', error);
     return null;
   }
 }
@@ -356,14 +356,14 @@ export async function loadUserInfo(): Promise<User> {
         }
 
         // Update user display - check both element IDs for compatibility
-        const userName = document.getElementById('userName') ?? document.getElementById('user-name');
+        const userName = document.querySelector('#userName') ?? document.querySelector('#user-name');
         if (userName) {
           const firstName = user.first_name ?? 'Admin';
           const lastName = user.last_name ?? '';
           userName.textContent = `${firstName} ${lastName}`.trim();
         }
 
-        const userRole = document.getElementById('userRole');
+        const userRole = document.querySelector('#userRole');
         if (userRole) {
           userRole.textContent = user.role;
         }
@@ -388,12 +388,12 @@ export async function loadUserInfo(): Promise<User> {
     profileLoadingPromise = null;
 
     // Fallback: Set default values if API fails
-    const userName = document.getElementById('userName');
+    const userName = document.querySelector('#userName');
     if (userName) {
       userName.textContent = 'Benutzer';
     }
 
-    const userRole = document.getElementById('userRole');
+    const userRole = document.querySelector('#userRole');
     if (userRole) {
       userRole.textContent = localStorage.getItem('role') ?? 'Benutzer';
     }

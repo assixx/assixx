@@ -23,6 +23,10 @@ interface ReportFilters extends DateRangeFilter {
 
 /**
  * Get company overview report with KPIs
+ * @param filters
+ * @param filters.tenantId
+ * @param filters.dateFrom
+ * @param filters.dateTo
  */
 export async function getOverviewReport(filters: {
   tenantId: number;
@@ -91,6 +95,7 @@ export async function getOverviewReport(filters: {
 
 /**
  * Get detailed employee report
+ * @param filters
  */
 export async function getEmployeeReport(filters: ReportFilters) {
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
@@ -166,6 +171,10 @@ export async function getEmployeeReport(filters: ReportFilters) {
 
 /**
  * Get department performance report
+ * @param filters
+ * @param filters.tenantId
+ * @param filters.dateFrom
+ * @param filters.dateTo
  */
 export async function getDepartmentReport(filters: {
   tenantId: number;
@@ -220,11 +229,11 @@ export async function getDepartmentReport(filters: {
       departmentId: dept.department_id,
       departmentName: dept.department_name,
       metrics: {
-        employees: parseInt(String(dept.employees)) ?? 0,
-        teams: parseInt(String(dept.teams)) ?? 0,
-        kvpSuggestions: parseInt(String(dept.kvp_suggestions)) ?? 0,
-        shiftCoverage: parseFloat(String(dept.shift_coverage)) ?? 0,
-        avgOvertime: parseFloat(String(dept.avg_overtime)) ?? 0,
+        employees: Number.parseInt(String(dept.employees)) ?? 0,
+        teams: Number.parseInt(String(dept.teams)) ?? 0,
+        kvpSuggestions: Number.parseInt(String(dept.kvp_suggestions)) ?? 0,
+        shiftCoverage: Number.parseFloat(String(dept.shift_coverage)) ?? 0,
+        avgOvertime: Number.parseFloat(String(dept.avg_overtime)) ?? 0,
       },
     }),
   );
@@ -235,6 +244,7 @@ export async function getDepartmentReport(filters: {
 
 /**
  * Get shift analytics report
+ * @param filters
  */
 export async function getShiftReport(filters: ReportFilters) {
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
@@ -319,15 +329,15 @@ export async function getShiftReport(filters: ReportFilters) {
       from: dateFrom,
       to: dateTo,
     },
-    totalShifts: parseInt(String(summary.total_shifts)) ?? 0,
+    totalShifts: Number.parseInt(String(summary.total_shifts)) ?? 0,
     coverage: {
-      scheduled: parseInt(String(summary.total_required)) ?? 0,
-      filled: parseInt(String(summary.total_filled)) ?? 0,
-      rate: parseFloat(String(summary.coverage_rate)) ?? 0,
+      scheduled: Number.parseInt(String(summary.total_required)) ?? 0,
+      filled: Number.parseInt(String(summary.total_filled)) ?? 0,
+      rate: Number.parseFloat(String(summary.coverage_rate)) ?? 0,
     },
     overtime: {
-      totalHours: parseFloat(String(summary.total_overtime_hours)) ?? 0,
-      totalCost: parseFloat(String(summary.total_overtime_cost)) ?? 0,
+      totalHours: Number.parseFloat(String(summary.total_overtime_hours)) ?? 0,
+      totalCost: Number.parseFloat(String(summary.total_overtime_cost)) ?? 0,
       byDepartment: (overtimeByDept as Array<Record<string, unknown>>).map(
         (row) => dbToApi(row),
       ),
@@ -337,14 +347,19 @@ export async function getShiftReport(filters: ReportFilters) {
         dbToApi(row),
       ),
       understaffedShifts:
-        parseInt(String(summary.total_shifts)) -
-        (parseInt(String(summary.total_filled ?? "0")) ?? 0),
+        Number.parseInt(String(summary.total_shifts)) -
+        (Number.parseInt(String(summary.total_filled ?? "0")) ?? 0),
     },
   };
 }
 
 /**
  * Get KVP ROI report
+ * @param filters
+ * @param filters.tenantId
+ * @param filters.dateFrom
+ * @param filters.dateTo
+ * @param filters.categoryId
  */
 export async function getKvpReport(filters: {
   tenantId: number;
@@ -439,10 +454,11 @@ export async function getKvpReport(filters: {
         to: dateTo,
       },
       summary: {
-        totalSuggestions: parseInt(String(summary.total_suggestions)) ?? 0,
-        implemented: parseInt(String(summary.implemented)) ?? 0,
-        totalCost: parseFloat(String(summary.total_cost)) ?? 0,
-        totalSavings: parseFloat(String(summary.total_savings)) ?? 0,
+        totalSuggestions:
+          Number.parseInt(String(summary.total_suggestions)) ?? 0,
+        implemented: Number.parseInt(String(summary.implemented)) ?? 0,
+        totalCost: Number.parseFloat(String(summary.total_cost)) ?? 0,
+        totalSavings: Number.parseFloat(String(summary.total_savings)) ?? 0,
         roi: roi,
       },
       byCategory: (byCategory as Array<Record<string, unknown>>).map((row) =>
@@ -460,6 +476,7 @@ export async function getKvpReport(filters: {
 
 /**
  * Get attendance report
+ * @param filters
  */
 export async function getAttendanceReport(filters: ReportFilters) {
   // For now, return mock data
@@ -512,6 +529,11 @@ export async function getAttendanceReport(filters: ReportFilters) {
 
 /**
  * Get compliance report
+ * @param filters
+ * @param filters.tenantId
+ * @param filters.dateFrom
+ * @param filters.dateTo
+ * @param filters.departmentId
  */
 export async function getComplianceReport(filters: {
   tenantId: number;
@@ -575,6 +597,10 @@ interface CustomReportParams {
   groupBy?: string;
 }
 
+/**
+ *
+ * @param params
+ */
 export async function generateCustomReport(params: CustomReportParams) {
   const reportId = `RPT-${String(Date.now())}-${String(Math.random().toString(36).substr(2, 9))}`;
   const data: Record<string, unknown> = {};
@@ -656,6 +682,10 @@ interface ExportReportParams {
   };
 }
 
+/**
+ *
+ * @param params
+ */
 export async function exportReport(params: ExportReportParams) {
   // Get report data based on type
   let reportData: Record<string, unknown> | Buffer | unknown[];
@@ -740,16 +770,28 @@ export async function exportReport(params: ExportReportParams) {
 
 // Helper functions
 
+/**
+ *
+ */
 function getDefaultDateFrom(): string {
   const date = new Date();
   date.setDate(date.getDate() - 30);
   return date.toISOString().split("T")[0];
 }
 
+/**
+ *
+ */
 function getDefaultDateTo(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+/**
+ *
+ * @param tenantId
+ * @param _dateFrom
+ * @param _dateTo
+ */
 async function getEmployeeMetrics(
   tenantId: number,
   _dateFrom: string,
@@ -770,12 +812,18 @@ async function getEmployeeMetrics(
 
   const metrics = (resultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    total: parseInt(String(metrics.total)) ?? 0,
-    active: parseInt(String(metrics.active)) ?? 0,
-    newThisMonth: parseInt(String(metrics.new_this_month)) ?? 0,
+    total: Number.parseInt(String(metrics.total)) ?? 0,
+    active: Number.parseInt(String(metrics.active)) ?? 0,
+    newThisMonth: Number.parseInt(String(metrics.new_this_month)) ?? 0,
   };
 }
 
+/**
+ *
+ * @param tenantId
+ * @param _dateFrom
+ * @param _dateTo
+ */
 async function getDepartmentMetrics(
   tenantId: number,
   _dateFrom: string,
@@ -800,11 +848,17 @@ async function getDepartmentMetrics(
 
   const metrics = (deptResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    total: parseInt(String(metrics.total)) ?? 0,
-    avgEmployeesPerDept: parseFloat(String(metrics.avg_employees)) ?? 0,
+    total: Number.parseInt(String(metrics.total)) ?? 0,
+    avgEmployeesPerDept: Number.parseFloat(String(metrics.avg_employees)) ?? 0,
   };
 }
 
+/**
+ *
+ * @param tenantId
+ * @param dateFrom
+ * @param dateTo
+ */
 async function getShiftMetrics(
   tenantId: number,
   dateFrom: string,
@@ -825,12 +879,18 @@ async function getShiftMetrics(
 
   const metrics = (shiftResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    totalScheduled: parseInt(String(metrics.total_scheduled)) ?? 0,
-    overtimeHours: parseFloat(String(metrics.overtime_hours)) ?? 0,
-    coverageRate: parseFloat(String(metrics.coverage_rate)) ?? 0,
+    totalScheduled: Number.parseInt(String(metrics.total_scheduled)) ?? 0,
+    overtimeHours: Number.parseFloat(String(metrics.overtime_hours)) ?? 0,
+    coverageRate: Number.parseFloat(String(metrics.coverage_rate)) ?? 0,
   };
 }
 
+/**
+ *
+ * @param tenantId
+ * @param dateFrom
+ * @param dateTo
+ */
 async function getKvpMetrics(
   tenantId: number,
   dateFrom: string,
@@ -853,13 +913,19 @@ async function getKvpMetrics(
 
   const metrics = (kvpResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    totalSuggestions: parseInt(String(metrics.total_suggestions)) ?? 0,
-    implemented: parseInt(String(metrics.implemented)) ?? 0,
-    totalSavings: parseFloat(String(metrics.total_savings)) ?? 0,
-    avgROI: parseFloat(String(metrics.avg_roi)) ?? 0,
+    totalSuggestions: Number.parseInt(String(metrics.total_suggestions)) ?? 0,
+    implemented: Number.parseInt(String(metrics.implemented)) ?? 0,
+    totalSavings: Number.parseFloat(String(metrics.total_savings)) ?? 0,
+    avgROI: Number.parseFloat(String(metrics.avg_roi)) ?? 0,
   };
 }
 
+/**
+ *
+ * @param tenantId
+ * @param dateFrom
+ * @param dateTo
+ */
 async function getSurveyMetrics(
   tenantId: number,
   dateFrom: string,
@@ -890,11 +956,19 @@ async function getSurveyMetrics(
 
   const metrics = (surveyResultRows as Array<Record<string, unknown>>)[0] ?? {};
   return {
-    active: parseInt(String(metrics.active_surveys)) ?? 0,
-    avgResponseRate: parseFloat(String(metrics.avg_response_rate)) ?? 0,
+    active: Number.parseInt(String(metrics.active_surveys)) ?? 0,
+    avgResponseRate: Number.parseFloat(String(metrics.avg_response_rate)) ?? 0,
   };
 }
 
+/**
+ *
+ * @param _tenantId
+ * @param _dateFrom
+ * @param _dateTo
+ * @param _departmentId
+ * @param _teamId
+ */
 async function getAttendanceMetrics(
   _tenantId: number,
   _dateFrom: string,
@@ -909,6 +983,14 @@ async function getAttendanceMetrics(
   };
 }
 
+/**
+ *
+ * @param tenantId
+ * @param dateFrom
+ * @param dateTo
+ * @param _departmentId
+ * @param _teamId
+ */
 async function getPerformanceMetrics(
   tenantId: number,
   dateFrom: string,
@@ -944,6 +1026,10 @@ async function getPerformanceMetrics(
   };
 }
 
+/**
+ *
+ * @param data
+ */
 function convertToCSV(data: Record<string, unknown>): Buffer {
   // Simple CSV conversion for demonstration
   // In production, use a proper CSV library

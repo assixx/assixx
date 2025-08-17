@@ -17,9 +17,14 @@ interface KvpVisibilityQuery {
   departmentFilter?: number;
 }
 
+/**
+ *
+ */
 class KvpPermissionService {
   /**
    * Get all departments an admin has access to
+   * @param adminId
+   * @param tenantId
    */
   async getAdminDepartments(
     adminId: number,
@@ -39,6 +44,10 @@ class KvpPermissionService {
 
   /**
    * Check if user can view a specific KVP suggestion
+   * @param userId
+   * @param suggestionId
+   * @param role
+   * @param tenantId
    */
   async canViewSuggestion(
     userId: number,
@@ -102,6 +111,10 @@ class KvpPermissionService {
 
   /**
    * Check if user can edit a specific KVP suggestion
+   * @param userId
+   * @param suggestionId
+   * @param role
+   * @param tenantId
    */
   async canEditSuggestion(
     userId: number,
@@ -151,6 +164,7 @@ class KvpPermissionService {
 
   /**
    * Build SQL WHERE clause for visibility filtering
+   * @param params
    */
   async buildVisibilityQuery(params: KvpVisibilityQuery): Promise<{
     whereClause: string;
@@ -244,6 +258,9 @@ class KvpPermissionService {
 
   /**
    * Check if admin can share a suggestion company-wide
+   * @param adminId
+   * @param suggestionId
+   * @param tenantId
    */
   async canShareSuggestion(
     adminId: number,
@@ -279,6 +296,13 @@ class KvpPermissionService {
 
   /**
    * Log admin action for audit trail
+   * @param adminId
+   * @param action
+   * @param entityId
+   * @param entityType
+   * @param tenantId
+   * @param oldValue
+   * @param newValue
    */
   async logAdminAction(
     adminId: number,
@@ -311,6 +335,9 @@ class KvpPermissionService {
 
   /**
    * Get suggestion statistics for a department or company
+   * @param scope
+   * @param scopeId
+   * @param tenantId
    */
   async getSuggestionStats(
     scope: "company" | "department",
@@ -377,7 +404,8 @@ class KvpPermissionService {
         total,
         byStatus,
         byPriority,
-        totalSavings: parseFloat(savings[0].total_savings as string) || 0,
+        totalSavings:
+          Number.parseFloat(savings[0].total_savings as string) || 0,
       };
     } catch (error: unknown) {
       logger.error("Error getting suggestion stats:", error);

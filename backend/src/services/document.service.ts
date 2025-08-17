@@ -104,15 +104,22 @@ interface RawDocumentStats {
   totalSize?: number;
 }
 
+/**
+ *
+ */
 class DocumentService {
   private uploadDir: string;
 
+  /**
+   *
+   */
   constructor() {
     this.uploadDir = path.join(projectRoot, "uploads/documents");
   }
 
   /**
    * Get documents with filters
+   * @param options
    */
   async getDocuments(options: GetDocumentsOptions): Promise<DocumentsResponse> {
     try {
@@ -229,6 +236,8 @@ class DocumentService {
 
   /**
    * Get document by ID
+   * @param documentId
+   * @param _tenantId
    */
   async getDocumentById(
     documentId: number,
@@ -264,6 +273,7 @@ class DocumentService {
 
   /**
    * Create new document record
+   * @param documentData
    */
   async createDocument(
     documentData: ServiceDocumentCreateData,
@@ -298,6 +308,9 @@ class DocumentService {
 
   /**
    * Update document metadata
+   * @param documentId
+   * @param updateData
+   * @param tenant_id
    */
   async updateDocument(
     documentId: number,
@@ -327,6 +340,8 @@ class DocumentService {
 
   /**
    * Delete document
+   * @param documentId
+   * @param tenant_id
    */
   async deleteDocument(
     documentId: number,
@@ -358,6 +373,7 @@ class DocumentService {
 
   /**
    * Get full path for document file
+   * @param filename
    */
   async getDocumentPath(filename: string): Promise<string> {
     const filePath = path.join(this.uploadDir, filename);
@@ -373,6 +389,8 @@ class DocumentService {
 
   /**
    * Get documents by user
+   * @param userId
+   * @param _tenantId
    */
   async getDocumentsByUser(
     userId: number,
@@ -410,6 +428,7 @@ class DocumentService {
 
   /**
    * Get document statistics
+   * @param _tenantId
    */
   getDocumentStats(_tenantId: number): DocumentStats {
     try {
@@ -440,6 +459,9 @@ class DocumentService {
 
   /**
    * Mark document as read by user
+   * @param documentId
+   * @param userId
+   * @param tenant_id
    */
   async markDocumentAsRead(
     documentId: number,

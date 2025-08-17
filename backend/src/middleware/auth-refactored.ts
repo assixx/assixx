@@ -25,6 +25,10 @@ if (!JWT_SECRET && process.env.NODE_ENV === "production") {
 }
 
 // Helper to extract token from request
+/**
+ *
+ * @param req
+ */
 function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
   const authHeader = req.headers.authorization;
@@ -42,6 +46,10 @@ function extractToken(req: PublicRequest): string | null {
 }
 
 // Helper to verify JWT token
+/**
+ *
+ * @param token
+ */
 function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -55,6 +63,11 @@ function verifyToken(token: string): TokenPayload | null {
 }
 
 // Helper to validate session (optional)
+/**
+ *
+ * @param userId
+ * @param sessionId
+ */
 async function validateSession(
   userId: number,
   sessionId?: string,
@@ -81,6 +94,10 @@ async function validateSession(
 }
 
 // Helper to get user details from database
+/**
+ *
+ * @param userId
+ */
 async function getUserDetails(
   userId: number,
 ): Promise<Partial<AuthUser> | null> {
@@ -409,6 +426,12 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 };
 
 // Optional authentication middleware (doesn't fail if no token)
+/**
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
 export async function optionalAuth(
   req: PublicRequest,
   res: Response,
@@ -433,6 +456,10 @@ export async function optionalAuth(
 }
 
 // Role-based authorization middleware
+/**
+ *
+ * @param allowedRoles
+ */
 export function requireRole(allowedRoles: string | string[]) {
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 

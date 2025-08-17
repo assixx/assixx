@@ -8,13 +8,16 @@ import { logger } from "../utils/logger";
 
 let redisClient: RedisClientType | null = null;
 
+/**
+ *
+ */
 export async function connectRedis(): Promise<RedisClientType> {
   try {
     if (redisClient === null) {
       redisClient = createClient({
         socket: {
           host: process.env.REDIS_HOST ?? "redis",
-          port: parseInt(process.env.REDIS_PORT ?? "6379"),
+          port: Number.parseInt(process.env.REDIS_PORT ?? "6379"),
         },
       });
 
@@ -35,6 +38,9 @@ export async function connectRedis(): Promise<RedisClientType> {
   }
 }
 
+/**
+ *
+ */
 export function disconnectRedis(): void {
   if (redisClient !== null) {
     redisClient.destroy();
@@ -43,6 +49,9 @@ export function disconnectRedis(): void {
   }
 }
 
+/**
+ *
+ */
 export async function getRedisClient(): Promise<RedisClientType> {
   if (redisClient?.isOpen !== true) {
     await connectRedis();

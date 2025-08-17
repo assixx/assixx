@@ -11,8 +11,13 @@ import type {
   FeatureDeactivationRequest,
 } from "./types";
 
+/**
+ *
+ */
 export class FeaturesController {
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features:
    *   get:
@@ -70,6 +75,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/categories:
    *   get:
@@ -116,6 +123,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/{code}:
    *   get:
@@ -166,6 +175,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/tenant/{tenantId}:
    *   get:
@@ -200,7 +211,7 @@ export class FeaturesController {
     res: Response,
   ): Promise<void> {
     try {
-      const tenantId = parseInt(req.params.tenantId, 10);
+      const tenantId = Number.parseInt(req.params.tenantId, 10);
       const userTenantId = req.user.tenant_id;
 
       // Only allow viewing own tenant unless root/admin
@@ -225,6 +236,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/my-features:
    *   get:
@@ -261,6 +274,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/tenant/{tenantId}/summary:
    *   get:
@@ -295,7 +310,7 @@ export class FeaturesController {
     res: Response,
   ): Promise<void> {
     try {
-      const tenantId = parseInt(req.params.tenantId, 10);
+      const tenantId = Number.parseInt(req.params.tenantId, 10);
       const userTenantId = req.user.tenant_id;
 
       // Only allow viewing own tenant unless root/admin
@@ -323,6 +338,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/activate:
    *   post:
@@ -380,6 +397,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/deactivate:
    *   post:
@@ -439,6 +458,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/usage/{featureCode}:
    *   get:
@@ -525,6 +546,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/test/{featureCode}:
    *   get:
@@ -591,6 +614,8 @@ export class FeaturesController {
   }
 
   /**
+   * @param req
+   * @param res
    * @swagger
    * /api/v2/features/all-tenants:
    *   get:

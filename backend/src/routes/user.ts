@@ -115,8 +115,8 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    const userId = parseInt(authReq.user.id.toString());
-    const tenantId = parseInt(authReq.user.tenant_id.toString());
+    const userId = Number.parseInt(authReq.user.id.toString());
+    const tenantId = Number.parseInt(authReq.user.tenant_id.toString());
 
     // Check for valid IDs
     if (isNaN(userId) || isNaN(tenantId)) {

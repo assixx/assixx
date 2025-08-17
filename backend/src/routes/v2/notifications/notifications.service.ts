@@ -18,6 +18,9 @@ import {
 
 /**
  * Get notifications for a user with filters
+ * @param userId
+ * @param tenantId
+ * @param filters
  */
 export async function listNotifications(
   userId: number,
@@ -115,6 +118,11 @@ export async function listNotifications(
 
 /**
  * Create a new notification
+ * @param data
+ * @param createdBy
+ * @param tenantId
+ * @param ipAddress
+ * @param userAgent
  */
 export async function createNotification(
   data: NotificationData,
@@ -161,6 +169,9 @@ export async function createNotification(
 
 /**
  * Mark notification as read
+ * @param notificationId
+ * @param userId
+ * @param tenantId
  */
 export async function markAsRead(
   notificationId: number,
@@ -200,6 +211,8 @@ export async function markAsRead(
 
 /**
  * Mark all notifications as read
+ * @param userId
+ * @param tenantId
  */
 export async function markAllAsRead(userId: number, tenantId: number) {
   // Get all unread notifications for user
@@ -228,6 +241,12 @@ export async function markAllAsRead(userId: number, tenantId: number) {
 
 /**
  * Delete notification
+ * @param notificationId
+ * @param userId
+ * @param tenantId
+ * @param userRole
+ * @param ipAddress
+ * @param userAgent
  */
 export async function deleteNotification(
   notificationId: number,
@@ -279,6 +298,8 @@ export async function deleteNotification(
 
 /**
  * Get notification preferences
+ * @param userId
+ * @param tenantId
  */
 export async function getPreferences(userId: number, tenantId: number) {
   try {
@@ -309,10 +330,10 @@ export async function getPreferences(userId: number, tenantId: number) {
           typeof prefs.preferences === "string"
             ? JSON.parse(prefs.preferences)
             : prefs.preferences;
-      } catch (e: unknown) {
+      } catch (error: unknown) {
         console.error(
           "[Notifications Service] Failed to parse preferences:",
-          e,
+          error,
         );
         notificationTypes = {};
       }
@@ -332,6 +353,11 @@ export async function getPreferences(userId: number, tenantId: number) {
 
 /**
  * Update notification preferences
+ * @param userId
+ * @param tenantId
+ * @param preferences
+ * @param ipAddress
+ * @param userAgent
  */
 export async function updatePreferences(
   userId: number,
@@ -396,6 +422,7 @@ export async function updatePreferences(
 
 /**
  * Get notification statistics (admin only)
+ * @param tenantId
  */
 export async function getStatistics(tenantId: number) {
   // Total notifications
@@ -468,6 +495,8 @@ export async function getStatistics(tenantId: number) {
 
 /**
  * Get personal notification statistics
+ * @param userId
+ * @param tenantId
  */
 export async function getPersonalStats(userId: number, tenantId: number) {
   // Total notifications for user

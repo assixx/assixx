@@ -78,10 +78,9 @@ class TeamsManager {
 
   async loadDepartments(): Promise<Department[] | null> {
     try {
-      const response = await this.apiClient.request<Department[]>('/departments', {
+      return await this.apiClient.request<Department[]>('/departments', {
         method: 'GET',
       });
-      return response;
     } catch (error) {
       console.error('Error loading departments:', error);
       return null;
@@ -90,65 +89,65 @@ class TeamsManager {
 
   private initializeEventListeners() {
     // Add button
-    document.getElementById('add-team-btn')?.addEventListener('click', () => {
+    document.querySelector('#add-team-btn')?.addEventListener('click', () => {
       void (window as WindowWithTeamHandlers).showTeamModal?.();
     });
 
     // Modal close buttons
-    document.getElementById('close-team-modal')?.addEventListener('click', () => {
+    document.querySelector('#close-team-modal')?.addEventListener('click', () => {
       (window as WindowWithTeamHandlers).closeTeamModal?.();
     });
-    document.getElementById('cancel-team-modal')?.addEventListener('click', () => {
+    document.querySelector('#cancel-team-modal')?.addEventListener('click', () => {
       (window as WindowWithTeamHandlers).closeTeamModal?.();
     });
 
     // Form submit
-    document.getElementById('team-form')?.addEventListener('submit', (e) => {
+    document.querySelector('#team-form')?.addEventListener('submit', (e) => {
       e.preventDefault();
       void (window as WindowWithTeamHandlers).saveTeam?.();
     });
 
     // Delete modal
-    document.getElementById('confirm-delete-team')?.addEventListener('click', () => {
-      const deleteInput = document.getElementById('delete-team-id') as HTMLInputElement | null;
+    document.querySelector('#confirm-delete-team')?.addEventListener('click', () => {
+      const deleteInput = document.querySelector('#delete-team-id') as HTMLInputElement | null;
       if (deleteInput !== null && deleteInput.value !== '') {
-        void this.confirmDeleteTeam(parseInt(deleteInput.value, 10));
+        void this.confirmDeleteTeam(Number.parseInt(deleteInput.value, 10));
       }
     });
-    document.getElementById('close-delete-modal')?.addEventListener('click', () => {
-      const modal = document.getElementById('delete-team-modal');
+    document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
+      const modal = document.querySelector('#delete-team-modal');
       if (modal) modal.classList.remove('active');
     });
-    document.getElementById('cancel-delete-modal')?.addEventListener('click', () => {
-      const modal = document.getElementById('delete-team-modal');
+    document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
+      const modal = document.querySelector('#delete-team-modal');
       if (modal) modal.classList.remove('active');
     });
 
     // Filter buttons
-    document.getElementById('show-all-teams')?.addEventListener('click', () => {
+    document.querySelector('#show-all-teams')?.addEventListener('click', () => {
       this.currentFilter = 'all';
       void this.loadTeams();
     });
 
-    document.getElementById('filter-teams-active')?.addEventListener('click', () => {
+    document.querySelector('#filter-teams-active')?.addEventListener('click', () => {
       this.currentFilter = 'active';
       void this.loadTeams();
     });
 
-    document.getElementById('filter-teams-inactive')?.addEventListener('click', () => {
+    document.querySelector('#filter-teams-inactive')?.addEventListener('click', () => {
       this.currentFilter = 'inactive';
       void this.loadTeams();
     });
 
     // Search
-    document.getElementById('team-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('team-search') as HTMLInputElement | null;
+    document.querySelector('#team-search-btn')?.addEventListener('click', () => {
+      const searchInput = document.querySelector('#team-search') as HTMLInputElement | null;
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadTeams();
     });
 
     // Enter key on search
-    document.getElementById('team-search')?.addEventListener('keypress', (e) => {
+    document.querySelector('#team-search')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
@@ -193,9 +192,9 @@ class TeamsManager {
   }
 
   private renderTeamsTable() {
-    const tbody = document.getElementById('teams-table-body');
-    const teamsTable = document.getElementById('teams-table');
-    const teamsEmpty = document.getElementById('teams-empty');
+    const tbody = document.querySelector('#teams-table-body');
+    const teamsTable = document.querySelector('#teams-table');
+    const teamsEmpty = document.querySelector('#teams-empty');
 
     if (tbody === null) return;
 
@@ -310,8 +309,8 @@ class TeamsManager {
 
   deleteTeam(id: number): void {
     // Show confirmation modal
-    const modal = document.getElementById('delete-team-modal');
-    const deleteInput = document.getElementById('delete-team-id') as HTMLInputElement | null;
+    const modal = document.querySelector('#delete-team-modal');
+    const deleteInput = document.querySelector('#delete-team-id') as HTMLInputElement | null;
 
     if (modal === null || deleteInput === null) {
       showErrorAlert('Löschbestätigungs-Modal nicht gefunden');
@@ -334,7 +333,7 @@ class TeamsManager {
       showSuccessAlert('Team erfolgreich gelöscht');
 
       // Close the modal
-      const modal = document.getElementById('delete-team-modal');
+      const modal = document.querySelector('#delete-team-modal');
       if (modal !== null) {
         modal.classList.remove('active');
       }
@@ -360,11 +359,9 @@ class TeamsManager {
 
   async getTeamDetails(id: number): Promise<Team | null> {
     try {
-      const response = await this.apiClient.request<Team>(`/teams/${id}`, {
+      return await this.apiClient.request<Team>(`/teams/${id}`, {
         method: 'GET',
       });
-
-      return response;
     } catch (error) {
       console.error('Error getting team details:', error);
       showErrorAlert('Fehler beim Laden der Teamdetails');
@@ -413,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handler for floating add button
     w.showTeamModal = async () => {
-      const modal = document.getElementById('team-modal');
+      const modal = document.querySelector('#team-modal');
       if (modal !== null) {
         modal.classList.add('active');
 
@@ -421,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (teamsManager !== null) {
           try {
             const departments = await teamsManager.loadDepartments();
-            const departmentSelect = document.getElementById('team-department') as HTMLSelectElement | null;
+            const departmentSelect = document.querySelector('#team-department') as HTMLSelectElement | null;
 
             if (departmentSelect && departments) {
               // Clear existing options and add placeholder
@@ -432,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const option = document.createElement('option');
                 option.value = dept.id.toString();
                 option.textContent = dept.name;
-                departmentSelect.appendChild(option);
+                departmentSelect.append(option);
               });
 
               console.info('[TeamsManager] Loaded departments:', departments.length);
@@ -447,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
               method: 'GET',
             });
             const admins = mapUsers(usersResponse);
-            const teamLeadSelect = document.getElementById('team-lead') as HTMLSelectElement | null;
+            const teamLeadSelect = document.querySelector('#team-lead') as HTMLSelectElement | null;
 
             if (teamLeadSelect !== null) {
               // Clear existing options and add placeholder
@@ -462,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `${admin.firstName} ${admin.lastName}`
                     : admin.username;
                 option.textContent = displayName;
-                teamLeadSelect.appendChild(option);
+                teamLeadSelect.append(option);
               });
 
               console.info('[TeamsManager] Loaded admins for team-lead:', admins.length);
@@ -477,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
               method: 'GET',
             });
             const machines = machineResponse;
-            const machineDropdown = document.getElementById('team-machines-dropdown');
+            const machineDropdown = document.querySelector('#team-machines-dropdown');
 
             if (machineDropdown !== null) {
               // Clear and create checkboxes for multi-selection
@@ -499,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName !== null && machine.departmentName !== '' ? `(${machine.departmentName})` : ''}</span>
                     </label>
                   `;
-                  machineDropdown.appendChild(optionDiv);
+                  machineDropdown.append(optionDiv);
                 });
               }
 
@@ -515,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
               method: 'GET',
             });
             const users = mapUsers(userResponse);
-            const memberDropdown = document.getElementById('team-members-dropdown');
+            const memberDropdown = document.querySelector('#team-members-dropdown');
 
             if (memberDropdown !== null) {
               // Clear and create checkboxes for multi-selection
@@ -541,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <span>${displayName} ${user.departmentName !== undefined && user.departmentName !== '' && user.departmentName !== 'Keine Abteilung' ? `(${user.departmentName})` : ''}</span>
                     </label>
                   `;
-                  memberDropdown.appendChild(optionDiv);
+                  memberDropdown.append(optionDiv);
                 });
               }
 
@@ -553,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Reset form
-        const form = document.getElementById('team-form') as HTMLFormElement | null;
+        const form = document.querySelector('#team-form') as HTMLFormElement | null;
         if (form !== null) {
           form.reset();
         }
@@ -562,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close modal handler
     w.closeTeamModal = () => {
-      const modal = document.getElementById('team-modal');
+      const modal = document.querySelector('#team-modal');
       if (modal !== null) {
         modal.classList.remove('active');
       }
@@ -605,9 +602,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update member selection handler
     (window as WindowWithTeamHandlers & { updateMemberSelection?: () => void }).updateMemberSelection = () => {
-      const memberDropdown = document.getElementById('team-members-dropdown');
-      const memberDisplay = document.getElementById('team-members-display');
-      const memberInput = document.getElementById('team-members-select') as HTMLInputElement | null;
+      const memberDropdown = document.querySelector('#team-members-dropdown');
+      const memberDisplay = document.querySelector('#team-members-display');
+      const memberInput = document.querySelector('#team-members-select') as HTMLInputElement | null;
 
       if (memberDropdown === null || memberDisplay === null || memberInput === null) {
         return;
@@ -641,9 +638,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update machine selection handler
     (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
-      const machineDropdown = document.getElementById('team-machines-dropdown');
-      const machineDisplay = document.getElementById('team-machines-display');
-      const machineInput = document.getElementById('team-machines-select') as HTMLInputElement | null;
+      const machineDropdown = document.querySelector('#team-machines-dropdown');
+      const machineDisplay = document.querySelector('#team-machines-display');
+      const machineInput = document.querySelector('#team-machines-select') as HTMLInputElement | null;
 
       if (machineDropdown === null || machineDisplay === null || machineInput === null) {
         return;
@@ -677,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save team handler
     w.saveTeam = async () => {
-      const form = document.getElementById('team-form') as HTMLFormElement | null;
+      const form = document.querySelector('#team-form') as HTMLFormElement | null;
       if (form === null) {
         return;
       }
@@ -694,16 +691,16 @@ document.addEventListener('DOMContentLoaded', () => {
           machineIds = value
             .split(',')
             .filter((id) => id.length > 0)
-            .map((id) => parseInt(id, 10));
+            .map((id) => Number.parseInt(id, 10));
         } else if (key === 'userIds' && typeof value === 'string' && value.length > 0) {
           // Extract user IDs for separate handling
           userIds = value
             .split(',')
             .filter((id) => id.length > 0)
-            .map((id) => parseInt(id, 10));
+            .map((id) => Number.parseInt(id, 10));
         } else if (typeof value === 'string' && value.length > 0) {
           if (key === 'maxMembers' || key === 'departmentId') {
-            teamData[key] = parseInt(value, 10);
+            teamData[key] = Number.parseInt(value, 10);
           } else {
             teamData[key] = value;
           }

@@ -142,11 +142,11 @@ export function generateToken(
 ): string {
   try {
     const payload: TokenPayload = {
-      id: parseInt(user.id.toString(), 10), // Ensure ID is a number
+      id: Number.parseInt(user.id.toString(), 10), // Ensure ID is a number
       username: user.username,
       role: user.role as TokenPayload["role"],
       tenant_id: user.tenant_id
-        ? parseInt(user.tenant_id.toString(), 10)
+        ? Number.parseInt(user.tenant_id.toString(), 10)
         : null,
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
@@ -154,9 +154,9 @@ export function generateToken(
         `sess_${String(Date.now())}_${String(crypto.randomBytes(16).toString("hex"))}`, // Cryptographically secure session ID
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "30m" }); // 30 Minuten
+    // 30 Minuten
 
-    return token;
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: "30m" });
   } catch (error: unknown) {
     console.error(`Error generating token for user ${user.username}:`, error);
     throw error;
@@ -290,8 +290,8 @@ export async function authenticateToken(
         activeRole?: string;
         isRoleSwitched?: boolean;
       } = {
-        id: parseInt(user.id.toString(), 10),
-        userId: parseInt(user.id.toString(), 10),
+        id: Number.parseInt(user.id.toString(), 10),
+        userId: Number.parseInt(user.id.toString(), 10),
         username: user.username,
         email: "", // Will be filled from database if needed
         first_name: "",
@@ -300,9 +300,9 @@ export async function authenticateToken(
         activeRole: user.activeRole ?? user.role, // Support für Dual-Role
         isRoleSwitched: user.isRoleSwitched ?? false,
         tenant_id: user.tenant_id
-          ? parseInt(user.tenant_id.toString(), 10)
+          ? Number.parseInt(user.tenant_id.toString(), 10)
           : user.tenantId
-            ? parseInt(user.tenantId.toString(), 10)
+            ? Number.parseInt(user.tenantId.toString(), 10)
             : 0,
         department_id: null,
         position: null,

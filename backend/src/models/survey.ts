@@ -481,8 +481,12 @@ export async function getSurveyById(
           typeof question.options === "string"
             ? (JSON.parse(question.options) as DbSurveyQuestionOption[])
             : question.options;
-      } catch (e: unknown) {
-        console.error("Error parsing options for question:", question.id, e);
+      } catch (error: unknown) {
+        console.error(
+          "Error parsing options for question:",
+          question.id,
+          error,
+        );
         question.options = [];
       }
     }
@@ -812,8 +816,9 @@ export async function getSurveyStatistics(
 
     return {
       survey_id: surveyId,
-      total_responses: parseInt(String(stats[0].total_responses)) || 0,
-      completed_responses: parseInt(String(stats[0].completed_responses)) || 0,
+      total_responses: Number.parseInt(String(stats[0].total_responses)) || 0,
+      completed_responses:
+        Number.parseInt(String(stats[0].completed_responses)) || 0,
       completion_rate:
         (stats[0].total_responses as number) > 0
           ? Math.round(

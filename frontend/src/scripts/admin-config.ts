@@ -39,10 +39,10 @@ interface AdminUpdateForm extends HTMLFormElement {
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
-  const updateAdminForm = document.getElementById('update-admin-form') as AdminUpdateForm | null;
-  const adminDetailsContainer = document.getElementById('admin-details');
-  const adminUsernameTitle = document.getElementById('admin-username');
-  const backBtn = document.getElementById('back-btn') as HTMLButtonElement | null;
+  const updateAdminForm = document.querySelector('#update-admin-form') as AdminUpdateForm | null;
+  const adminDetailsContainer = document.querySelector('#admin-details');
+  const adminUsernameTitle = document.querySelector('#admin-username');
+  const backBtn = document.querySelector('#back-btn') as HTMLButtonElement | null;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
 
   // Get URL parameters
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Store admin ID in form
-  const adminIdInput = document.getElementById('admin-id') as HTMLInputElement | null;
+  const adminIdInput = document.querySelector('#admin-id') as HTMLInputElement | null;
   if (adminIdInput !== null) {
     adminIdInput.value = adminId;
   }
@@ -156,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
    * Populate admin form with data
    */
   function populateAdminForm(admin: AdminUser): void {
-    const usernameInput = document.getElementById('username') as HTMLInputElement | null;
-    const emailInput = document.getElementById('email') as HTMLInputElement | null;
-    const companyInput = document.getElementById('company') as HTMLInputElement | null;
-    const notesInput = document.getElementById('notes') as HTMLTextAreaElement | null;
+    const usernameInput = document.querySelector('#username') as HTMLInputElement | null;
+    const emailInput = document.querySelector('#email') as HTMLInputElement | null;
+    const companyInput = document.querySelector('#company') as HTMLInputElement | null;
+    const notesInput = document.querySelector('#notes') as HTMLTextAreaElement | null;
 
     if (usernameInput !== null) usernameInput.value = admin.username;
     if (emailInput !== null) emailInput.value = admin.email;

@@ -83,7 +83,7 @@ export const commonValidations = {
   username: body("username")
     .isLength({ min: 3, max: 30 })
     .withMessage("Username must be between 3 and 30 characters")
-    .matches(/^[a-zA-Z0-9_-]+$/)
+    .matches(/^[\w-]+$/)
     .withMessage(
       "Username can only contain letters, numbers, underscores, and hyphens",
     ),
@@ -143,7 +143,7 @@ export const validationSchemas = {
       .withMessage("Company name is required"),
     body("subdomain")
       .notEmpty()
-      .matches(/^[a-z0-9-]+$/)
+      .matches(/^[-0-9a-z]+$/)
       .withMessage(
         "Subdomain can only contain lowercase letters, numbers, and hyphens",
       ),

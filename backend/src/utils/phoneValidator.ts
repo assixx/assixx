@@ -13,7 +13,7 @@ export function isValidPhoneNumber(phone: string | null | undefined): boolean {
   if (phone == null || phone === "") return true; // Allow empty/null for optional fields
 
   // Must start with + and contain 7-29 digits
-  const phoneRegex = /^\+[0-9]{7,29}$/;
+  const phoneRegex = /^\+\d{7,29}$/;
   return phoneRegex.test(phone);
 }
 

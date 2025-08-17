@@ -56,7 +56,7 @@ export const checkDocumentAccess = (
       );
 
       // Prüfe, ob das Dokument existiert
-      const document = await Document.findById(parseInt(documentId, 10));
+      const document = await Document.findById(Number.parseInt(documentId, 10));
       if (!document) {
         logger.warn(`Document ${documentId} not found`);
         res.status(404).json({
@@ -197,7 +197,7 @@ export const checkPublicDocumentAccess = async (
   try {
     const { documentId } = req.params;
 
-    const document = await Document.findById(parseInt(documentId, 10));
+    const document = await Document.findById(Number.parseInt(documentId, 10));
     if (!document) {
       res.status(404).json({
         error: "Dokument nicht gefunden",

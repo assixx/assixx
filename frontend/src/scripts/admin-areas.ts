@@ -47,35 +47,35 @@ class AreasManager {
 
   private initializeEventListeners() {
     // Filter buttons
-    document.getElementById('show-all-areas')?.addEventListener('click', () => {
+    document.querySelector('#show-all-areas')?.addEventListener('click', () => {
       this.currentFilter = 'all';
       void this.loadAreas();
     });
 
-    document.getElementById('filter-areas-production')?.addEventListener('click', () => {
+    document.querySelector('#filter-areas-production')?.addEventListener('click', () => {
       this.currentFilter = 'production';
       void this.loadAreas();
     });
 
-    document.getElementById('filter-areas-warehouse')?.addEventListener('click', () => {
+    document.querySelector('#filter-areas-warehouse')?.addEventListener('click', () => {
       this.currentFilter = 'warehouse';
       void this.loadAreas();
     });
 
-    document.getElementById('filter-areas-office')?.addEventListener('click', () => {
+    document.querySelector('#filter-areas-office')?.addEventListener('click', () => {
       this.currentFilter = 'office';
       void this.loadAreas();
     });
 
     // Search
-    document.getElementById('area-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.getElementById('area-search') as HTMLInputElement | null;
+    document.querySelector('#area-search-btn')?.addEventListener('click', () => {
+      const searchInput = document.querySelector('#area-search') as HTMLInputElement | null;
       this.searchTerm = searchInput ? searchInput.value : '';
       void this.loadAreas();
     });
 
     // Enter key on search
-    document.getElementById('area-search')?.addEventListener('keypress', (e) => {
+    document.querySelector('#area-search')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
@@ -110,7 +110,7 @@ class AreasManager {
   }
 
   private renderAreasTable(): void {
-    const tbody = document.getElementById('areas-table-body');
+    const tbody = document.querySelector('#areas-table-body');
     if (!tbody) return;
 
     if (this.areas.length === 0) {
@@ -234,11 +234,9 @@ class AreasManager {
 
   async getAreaDetails(id: number): Promise<Area | null> {
     try {
-      const response = await this.apiClient.request<Area>(`/areas/${id}`, {
+      return await this.apiClient.request<Area>(`/areas/${id}`, {
         method: 'GET',
       });
-
-      return response;
     } catch (error) {
       console.error('Error getting area details:', error);
       showError('Fehler beim Laden der Bereichsdetails');
@@ -287,19 +285,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handler for floating add button
     w.showAreaModal = () => {
-      const modal = document.getElementById('areaModal');
+      const modal = document.querySelector('#areaModal');
       if (modal !== null) {
         modal.classList.add('active');
 
         // Reset form
-        const form = document.getElementById('areaForm') as HTMLFormElement | null;
+        const form = document.querySelector('#areaForm') as HTMLFormElement | null;
         if (form) form.reset();
       }
     };
 
     // Close modal handler
     w.closeAreaModal = (): void => {
-      const modal = document.getElementById('areaModal');
+      const modal = document.querySelector('#areaModal');
       if (modal) {
         modal.classList.remove('active');
       }
@@ -307,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save area handler
     w.saveArea = async (): Promise<void> => {
-      const form = document.getElementById('areaForm') as HTMLFormElement | null;
+      const form = document.querySelector('#areaForm') as HTMLFormElement | null;
       if (!form) return;
 
       const formData = new FormData(form);
@@ -317,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.forEach((value, key) => {
         if (typeof value === 'string' && value.length > 0) {
           if (key === 'capacity' || key === 'parentId') {
-            const numValue = parseInt(value, 10);
+            const numValue = Number.parseInt(value, 10);
             if (!isNaN(numValue)) {
               areaData[key] = numValue;
             }

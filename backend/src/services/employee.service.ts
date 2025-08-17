@@ -32,9 +32,14 @@ type EmployeeFilters = UserFilter;
 
 // NOTE: Class is named UserService but exported as employee service
 // This naming inconsistency should be fixed
+/**
+ *
+ */
 class UserService {
   /**
    * Holt alle User Einträge für einen Tenant
+   * @param _tenantDb
+   * @param filters
    */
   async getAll(
     _tenantDb: Pool,
@@ -51,6 +56,9 @@ class UserService {
 
   /**
    * Holt einen User Eintrag per ID
+   * @param _tenantDb
+   * @param id
+   * @param tenantId
    */
   async getById(
     _tenantDb: Pool,
@@ -68,6 +76,8 @@ class UserService {
 
   /**
    * Erstellt einen neuen User Eintrag
+   * @param _tenantDb
+   * @param data
    */
   async create(
     _tenantDb: Pool,
@@ -91,6 +101,10 @@ class UserService {
 
   /**
    * Aktualisiert einen User Eintrag
+   * @param _tenantDb
+   * @param id
+   * @param tenantId
+   * @param data
    */
   async update(
     _tenantDb: Pool,
@@ -113,6 +127,8 @@ class UserService {
 
   /**
    * Löscht einen User Eintrag
+   * @param _tenantDb
+   * @param id
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {

@@ -6,6 +6,13 @@ import typescriptPlugin from "@typescript-eslint/eslint-plugin";
 import importPlugin from "eslint-plugin-import-x";
 import securityPlugin from "eslint-plugin-security";
 import noUnsanitizedPlugin from "eslint-plugin-no-unsanitized";
+import regexpPlugin from "eslint-plugin-regexp";
+import promisePlugin from "eslint-plugin-promise";
+import sonarjsPlugin from "eslint-plugin-sonarjs";
+import unicornPlugin from "eslint-plugin-unicorn";
+import jsdocPlugin from "eslint-plugin-jsdoc";
+import noSecretsPlugin from "eslint-plugin-no-secrets";
+// import jsxA11yPlugin from "eslint-plugin-jsx-a11y"; // Für später wenn wir React/JSX haben
 
 export default [
   // Base JavaScript configuration
@@ -14,16 +21,22 @@ export default [
   // Prettier configuration
   prettierConfig,
 
-  // Global overrides to disable complexity rules
+  // Global complexity rules for code quality
   {
     rules: {
-      complexity: "off",
-      "max-depth": "off",
-      "max-lines": "off",
-      "max-lines-per-function": "off",
-      "max-nested-callbacks": "off",
-      "max-params": "off",
-      "max-statements": "off",
+      complexity: ["warn", 15], // Cognitive complexity max 15
+      "max-depth": ["warn", 4], // Max nesting depth 4
+      "max-lines": [
+        "warn",
+        { max: 500, skipBlankLines: true, skipComments: true },
+      ],
+      "max-lines-per-function": [
+        "warn",
+        { max: 100, skipBlankLines: true, skipComments: true },
+      ],
+      "max-nested-callbacks": ["warn", 4],
+      "max-params": ["warn", 5], // Max 5 parameters
+      "max-statements": ["warn", 20], // Max 20 statements per function
     },
   },
 
@@ -76,13 +89,38 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
-      "no-console": "off",
+      "no-console": ["warn", { allow: ["warn", "error", "info"] }], // Log nur für debugging
       // Additional type safety rules
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/prefer-nullish-coalescing": "error",
       "@typescript-eslint/prefer-optional-chain": "error",
+
+      // STRICT MODE - Maximum Type Safety
+      "@typescript-eslint/strict-boolean-expressions": [
+        "error",
+        {
+          allowString: false,
+          allowNumber: false,
+          allowNullableObject: false,
+        },
+      ],
+      "@typescript-eslint/no-unsafe-assignment": "error",
+      "@typescript-eslint/no-unsafe-call": "error",
+      "@typescript-eslint/no-unsafe-member-access": "error",
+      "@typescript-eslint/no-unsafe-return": "error",
+      "@typescript-eslint/only-throw-error": "error", // Correct rule name
+
+      // XSS/Injection Prevention
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
+      "no-script-url": "error",
+
+      // Error Handling
+      "no-unsafe-finally": "error",
+      "require-atomic-updates": "error",
       // Naming convention rules for camelCase enforcement
       "@typescript-eslint/naming-convention": [
         "error",
@@ -233,6 +271,224 @@ export default [
     },
   },
 
+  // RegExp Plugin Configuration - ReDoS Prevention and Best Practices
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    plugins: {
+      regexp: regexpPlugin,
+    },
+    rules: {
+      // ReDoS Prevention - CRITICAL
+      "regexp/no-super-linear-backtracking": "error",
+
+      // Performance
+      "regexp/no-useless-lazy": "error",
+      "regexp/no-useless-quantifier": "error",
+      "regexp/optimal-quantifier-concatenation": "error",
+
+      // Best Practices
+      "regexp/no-empty-alternative": "error",
+      "regexp/no-empty-group": "error",
+      "regexp/no-lazy-ends": "error",
+      "regexp/no-optional-assertion": "error",
+      "regexp/no-useless-escape": "error",
+      "regexp/no-useless-flag": "error",
+
+      // Readability
+      "regexp/prefer-d": "error", // Use \d instead of [0-9]
+      "regexp/prefer-w": "error", // Use \w instead of [a-zA-Z0-9_]
+      "regexp/prefer-character-class": "error",
+      "regexp/sort-character-class-elements": "warn",
+    },
+  },
+
+  // Promise Plugin Configuration - Async/Promise Best Practices
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    plugins: {
+      promise: promisePlugin,
+    },
+    rules: {
+      // Promise Best Practices
+      "promise/always-return": "error",
+      "promise/no-return-wrap": "error",
+      "promise/param-names": "error",
+      "promise/catch-or-return": "error",
+      "promise/no-native": "off", // We use native promises
+      "promise/no-nesting": "warn",
+      "promise/no-promise-in-callback": "warn",
+      "promise/no-callback-in-promise": "warn",
+      "promise/avoid-new": "off", // Sometimes needed
+      "promise/no-new-statics": "error",
+      "promise/no-return-in-finally": "error",
+      "promise/valid-params": "error",
+
+      // Async/Await
+      "promise/prefer-await-to-then": "warn",
+      "promise/prefer-await-to-callbacks": "warn",
+    },
+  },
+
+  // SonarJS Plugin Configuration - Code Quality and Bug Detection
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    plugins: {
+      sonarjs: sonarjsPlugin,
+    },
+    rules: {
+      // Bug Detection
+      "sonarjs/no-all-duplicated-branches": "error",
+      "sonarjs/no-element-overwrite": "error",
+      "sonarjs/no-extra-arguments": "error",
+      "sonarjs/no-identical-conditions": "error",
+      "sonarjs/no-identical-functions": "warn",
+      "sonarjs/no-identical-expressions": "error",
+      "sonarjs/no-one-iteration-loop": "error",
+      "sonarjs/no-use-of-empty-return-value": "error",
+      "sonarjs/non-existent-operator": "error",
+
+      // Code Smells
+      "sonarjs/cognitive-complexity": ["warn", 15],
+      "sonarjs/no-collapsible-if": "warn",
+      "sonarjs/no-collection-size-mischeck": "error",
+      "sonarjs/no-duplicate-string": ["warn", { threshold: 3 }],
+      "sonarjs/no-duplicated-branches": "error",
+      "sonarjs/no-gratuitous-expressions": "error",
+      "sonarjs/no-inverted-boolean-check": "warn",
+      "sonarjs/no-redundant-boolean": "error",
+      "sonarjs/no-redundant-jump": "error",
+      "sonarjs/no-same-line-conditional": "warn",
+      "sonarjs/no-small-switch": "warn",
+      "sonarjs/no-unused-collection": "warn",
+      "sonarjs/no-useless-catch": "error",
+      "sonarjs/prefer-immediate-return": "warn",
+      "sonarjs/prefer-object-literal": "warn",
+      "sonarjs/prefer-single-boolean-return": "error",
+    },
+  },
+
+  // Unicorn Plugin - Cherry-picked best rules (NON-DISRUPTIVE)
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    plugins: {
+      unicorn: unicornPlugin,
+    },
+    rules: {
+      // SICHERHEIT & BUGS (als error)
+      "unicorn/no-instanceof-array": "error", // instanceof Array ist falsch
+      "unicorn/no-new-buffer": "error", // Buffer() deprecated, use Buffer.from()
+
+      // MODERNE DOM APIs (als warn - nicht disruptiv)
+      "unicorn/prefer-modern-dom-apis": "warn", // .append() statt .appendChild()
+      "unicorn/prefer-query-selector": "warn", // querySelector statt getElementById
+      "unicorn/prefer-dom-node-remove": "warn", // node.remove() statt parent.removeChild()
+      "unicorn/prefer-dom-node-append": "warn", // append() statt appendChild()
+
+      // BESSERE ERROR HANDLING (als warn)
+      "unicorn/catch-error-name": ["warn", { name: "error" }], // catch(error) nicht catch(e)
+      "unicorn/prefer-optional-catch-binding": "warn", // catch {} statt catch (_error)
+      "unicorn/custom-error-definition": "warn", // Richtige Error-Klassen
+
+      // PERFORMANCE & LESBARKEIT (als warn)
+      "unicorn/prefer-includes": "warn", // .includes() statt .indexOf() !== -1
+      "unicorn/prefer-string-starts-ends-with": "warn", // startsWith/endsWith
+      "unicorn/prefer-array-find": "warn", // .find() statt .filter()[0]
+      "unicorn/prefer-array-some": "warn", // .some() statt .find() für boolean
+      "unicorn/prefer-default-parameters": "warn", // Default params statt ||
+      "unicorn/prefer-spread": "warn", // [...arr] statt Array.from()
+      "unicorn/prefer-number-properties": "warn", // Number.isNaN statt isNaN
+      "unicorn/prefer-modern-math-apis": "warn", // Math.trunc() statt ~~
+
+      // NULL/UNDEFINED HANDLING (als warn)
+      "unicorn/no-null": "off", // Zu disruptiv - wir nutzen null
+      "unicorn/no-useless-undefined": "warn",
+
+      // EXPLICITLY DISABLED - zu disruptiv
+      "unicorn/filename-case": "off", // Würde alle Dateien umbenennen
+      "unicorn/prevent-abbreviations": "off", // req, res, err sind OK
+      "unicorn/no-array-for-each": "off", // forEach ist OK
+      "unicorn/no-array-reduce": "off", // reduce ist OK
+      "unicorn/explicit-length-check": "off", // if (arr.length) ist OK
+      "unicorn/no-await-expression-member": "off", // (await foo).bar ist OK
+    },
+  },
+
+  // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
+  {
+    files: [
+      // NUR diese Dateien brauchen vollständige Dokumentation:
+      "**/controllers/**/*.ts", // API Controllers
+      "**/services/**/*.ts", // Business Logic Services
+      "**/utils/db.ts", // Database Utilities
+      "**/middleware/auth*.ts", // Auth Middleware
+      "**/routes/v2/**/*.ts", // V2 API Routes
+      "**/config/*.ts", // Configuration Files
+    ],
+    plugins: {
+      jsdoc: jsdocPlugin,
+    },
+    rules: {
+      // BASIC JSDoc Requirements (als warn)
+      "jsdoc/require-jsdoc": [
+        "warn",
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            // ArrowFunctionExpression und FunctionExpression nur für exports
+          },
+          contexts: [
+            "ExportNamedDeclaration > FunctionDeclaration",
+            "ExportDefaultDeclaration > FunctionDeclaration",
+            "ExportNamedDeclaration > ClassDeclaration",
+          ],
+        },
+      ],
+
+      // PARAMETER & RETURN Documentation (als warn)
+      "jsdoc/require-param": "warn",
+      "jsdoc/require-param-description": "off", // Description optional
+      "jsdoc/require-param-type": "off", // TypeScript hat Types
+      "jsdoc/require-returns": "warn",
+      "jsdoc/require-returns-description": "off", // Description optional
+      "jsdoc/require-returns-type": "off", // TypeScript hat Types
+
+      // VALIDITY Checks (als error - wenn JSDoc da ist, muss es korrekt sein)
+      "jsdoc/check-param-names": "error",
+      "jsdoc/check-tag-names": "error",
+      "jsdoc/check-types": "off", // TypeScript handled das
+      "jsdoc/valid-types": "off", // TypeScript handled das
+
+      // EXPLIZIT DISABLED - zu streng
+      "jsdoc/require-description": "off",
+      "jsdoc/require-example": "off",
+      "jsdoc/require-throws": "off",
+    },
+  },
+
+  // No-Secrets Plugin - Detect API Keys, Passwords, Tokens
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    plugins: {
+      "no-secrets": noSecretsPlugin,
+    },
+    rules: {
+      "no-secrets/no-secrets": [
+        "error",
+        {
+          tolerance: 4.5, // Default is 5, lower = stricter
+          additionalRegexes: {
+            // Custom patterns für deutsche Begriffe
+            "German Password": "(passwort|kennwort)\\s*[:=]\\s*['\"]?.+['\"]?",
+            "JWT Token":
+              "eyJ[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*",
+          },
+        },
+      ],
+    },
+  },
+
   // TypeScript configuration for frontend
   {
     files: ["frontend/**/*.ts", "frontend/**/*.tsx"],
@@ -297,13 +553,38 @@ export default [
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
-      "no-console": "off",
+      "no-console": ["warn", { allow: ["warn", "error", "info"] }], // Log nur für debugging
       // Additional type safety rules
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/prefer-nullish-coalescing": "error",
       "@typescript-eslint/prefer-optional-chain": "error",
+
+      // STRICT MODE - Maximum Type Safety
+      "@typescript-eslint/strict-boolean-expressions": [
+        "error",
+        {
+          allowString: false,
+          allowNumber: false,
+          allowNullableObject: false,
+        },
+      ],
+      "@typescript-eslint/no-unsafe-assignment": "error",
+      "@typescript-eslint/no-unsafe-call": "error",
+      "@typescript-eslint/no-unsafe-member-access": "error",
+      "@typescript-eslint/no-unsafe-return": "error",
+      "@typescript-eslint/only-throw-error": "error", // Correct rule name
+
+      // XSS/Injection Prevention
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
+      "no-script-url": "error",
+
+      // Error Handling
+      "no-unsafe-finally": "error",
+      "require-atomic-updates": "error",
       // Naming convention rules for camelCase enforcement
       "@typescript-eslint/naming-convention": [
         "warn",

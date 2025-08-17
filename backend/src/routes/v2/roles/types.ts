@@ -46,7 +46,15 @@ export interface ErrorResponse {
   };
 }
 
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code
+   * @param message
+   */
   constructor(
     public code: string,
     message: string,

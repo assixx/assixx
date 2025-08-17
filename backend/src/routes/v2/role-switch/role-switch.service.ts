@@ -25,7 +25,16 @@ export interface RoleSwitchResult {
   message: string;
 }
 
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param message
+   * @param statusCode
+   * @param code
+   */
   constructor(
     message: string,
     public statusCode: number = 500,
@@ -36,10 +45,15 @@ export class ServiceError extends Error {
   }
 }
 
+/**
+ *
+ */
 export class RoleSwitchService {
   /**
    * SECURITY: Verify user belongs to the same tenant
    * CRITICAL: This prevents cross-tenant access
+   * @param userId
+   * @param tenantId
    */
   private static async verifyUserTenant(
     userId: number,
@@ -68,6 +82,9 @@ export class RoleSwitchService {
   /**
    * Generate JWT token with role switch information
    * SECURITY: Always preserves original role, tenant_id, and user_id
+   * @param user
+   * @param activeRole
+   * @param isRoleSwitched
    */
   private static generateToken(
     user: DbUser,
@@ -98,6 +115,11 @@ export class RoleSwitchService {
 
   /**
    * Log role switch action for audit trail
+   * @param tenantId
+   * @param userId
+   * @param fromRole
+   * @param toRole
+   * @param action
    */
   private static async logRoleSwitch(
     tenantId: number,
@@ -124,6 +146,8 @@ export class RoleSwitchService {
   /**
    * Switch to employee view
    * Only admin and root users can switch to employee
+   * @param userId
+   * @param tenantId
    */
   static async switchToEmployee(
     userId: number,
@@ -179,6 +203,8 @@ export class RoleSwitchService {
 
   /**
    * Switch back to original role (admin or root)
+   * @param userId
+   * @param tenantId
    */
   static async switchToOriginalRole(
     userId: number,
@@ -225,6 +251,8 @@ export class RoleSwitchService {
 
   /**
    * Root user switches to admin view
+   * @param userId
+   * @param tenantId
    */
   static async rootToAdmin(
     userId: number,

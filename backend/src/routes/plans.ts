@@ -215,7 +215,7 @@ router.get(
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
-      const tenantId = parseInt(req.params.tenantId, 10);
+      const tenantId = Number.parseInt(req.params.tenantId, 10);
 
       const currentPlan = await Plan.getTenantPlan(tenantId);
       if (!currentPlan) {
@@ -383,7 +383,7 @@ router.get(
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
-      const tenantId = parseInt(req.params.tenantId, 10);
+      const tenantId = Number.parseInt(req.params.tenantId, 10);
 
       // Only root can view other tenants' costs, others can only see their own
       const userTenantId = req.user.tenant_id;

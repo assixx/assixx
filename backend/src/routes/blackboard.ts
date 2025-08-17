@@ -130,7 +130,7 @@ async function canManageEntry(
     const tenantId = getTenantId(authReq.user);
 
     const entry = await blackboardModel.getEntryById(
-      parseInt(entryId, 10),
+      Number.parseInt(entryId, 10),
       tenantId,
       authReq.user.id,
     );
@@ -347,8 +347,8 @@ router.get(
           | "department"
           | "team",
         search: (req.query.search as string) || "",
-        page: parseInt((req.query.page as string) || "1", 10),
-        limit: parseInt((req.query.limit as string) || "18", 10),
+        page: Number.parseInt((req.query.page as string) || "1", 10),
+        limit: Number.parseInt((req.query.limit as string) || "18", 10),
         sortBy: (req.query.sortBy as string) || "created_at",
         sortDir: ((req.query.sortDir as string) || "DESC") as "ASC" | "DESC",
       };
@@ -382,7 +382,7 @@ router.get(
     try {
       const tenantId = getTenantId(req.user);
       const limitParam = req.query.limit;
-      const limit = parseInt(
+      const limit = Number.parseInt(
         typeof limitParam === "string" ? limitParam : "3",
         10,
       );
@@ -421,8 +421,8 @@ router.get(
           | "department"
           | "team",
         search: (req.query.search as string) || "",
-        page: parseInt((req.query.page as string) || "1", 10),
-        limit: parseInt((req.query.limit as string) || "18", 10),
+        page: Number.parseInt((req.query.page as string) || "1", 10),
+        limit: Number.parseInt((req.query.limit as string) || "18", 10),
         sortBy: (req.query.sortBy as string) || "created_at",
         sortDir: (((req.query.sortOrder ?? req.query.sortDir) as string) ||
           "DESC") as "ASC" | "DESC",
@@ -458,7 +458,7 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const entry = await blackboardModel.getEntryById(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
         req.user.id,
       );
@@ -607,7 +607,7 @@ router.post(
       if (req.body.org_level === "company") {
         org_id = null;
       } else if (typeof org_id === "string") {
-        org_id = parseInt(org_id, 10);
+        org_id = Number.parseInt(org_id, 10);
       }
 
       // Handle priority_level vs priority field name
@@ -725,7 +725,7 @@ router.put(
 
       const tenantId = getTenantId(req.user);
       const updatedEntry = await blackboardModel.updateEntry(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         entryData,
         tenantId,
       );
@@ -766,7 +766,7 @@ router.delete(
     try {
       const tenantId = getTenantId(req.user);
       const success = await blackboardModel.deleteEntry(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
       );
 
@@ -801,7 +801,7 @@ router.post(
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const success = await blackboardModel.confirmEntry(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         req.user.id,
       );
 
@@ -844,7 +844,7 @@ router.get(
     try {
       const tenantId = getTenantId(req.user);
       const confirmations = await blackboardModel.getConfirmationStatus(
-        parseInt(req.params.id, 10),
+        Number.parseInt(req.params.id, 10),
         tenantId,
       );
 
@@ -873,7 +873,7 @@ router.post(
   upload.array("attachments", 5), // Max 5 files at once
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const entryId = parseInt(req.params.id, 10);
+      const entryId = Number.parseInt(req.params.id, 10);
       const files = req.files as Express.Multer.File[];
 
       if (files.length === 0) {
@@ -936,7 +936,7 @@ router.get(
   ),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const entryId = parseInt(req.params.id, 10);
+      const entryId = Number.parseInt(req.params.id, 10);
       const attachments = await blackboardModel.getEntryAttachments(entryId);
       res.json(successResponse(attachments));
     } catch (error: unknown) {
@@ -965,7 +965,7 @@ router.get(
   typed.params<{ attachmentId: string }>(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
-      const attachmentId = parseInt(req.params.attachmentId, 10);
+      const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
       const attachment = await blackboardModel.getAttachmentById(
         attachmentId,
@@ -1047,7 +1047,7 @@ router.get(
   typed.params<{ attachmentId: string }>(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
-      const attachmentId = parseInt(req.params.attachmentId, 10);
+      const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
       const attachment = await blackboardModel.getAttachmentById(
         attachmentId,
@@ -1131,7 +1131,7 @@ router.delete(
   typed.params<{ attachmentId: string }>(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
-      const attachmentId = parseInt(req.params.attachmentId, 10);
+      const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
       // Get attachment details before deletion
       const attachment = await blackboardModel.getAttachmentById(

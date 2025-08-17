@@ -11,7 +11,7 @@ export default async function globalTeardown() {
 
   const db = createPool({
     host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(process.env.DB_PORT ?? "3307"),
+    port: Number.parseInt(process.env.DB_PORT ?? "3307"),
     user: process.env.DB_USER ?? "assixx_user",
     password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
     database: process.env.DB_NAME ?? "main",

@@ -80,6 +80,11 @@ interface SwapRequestCreateData {
 
 // ============= SHIFTS CRUD =============
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function listShifts(req: AuthenticatedRequest, res: Response) {
   try {
     const filters = {
@@ -87,24 +92,24 @@ export async function listShifts(req: AuthenticatedRequest, res: Response) {
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
       userId: req.query.userId
-        ? parseInt(req.query.userId as string)
+        ? Number.parseInt(req.query.userId as string)
         : undefined,
       departmentId: req.query.departmentId
-        ? parseInt(req.query.departmentId as string)
+        ? Number.parseInt(req.query.departmentId as string)
         : undefined,
       teamId: req.query.teamId
-        ? parseInt(req.query.teamId as string)
+        ? Number.parseInt(req.query.teamId as string)
         : undefined,
       status: req.query.status as string,
       type: req.query.type as string,
       templateId: req.query.templateId
-        ? parseInt(req.query.templateId as string)
+        ? Number.parseInt(req.query.templateId as string)
         : undefined,
       planId: req.query.planId
-        ? parseInt(req.query.planId as string)
+        ? Number.parseInt(req.query.planId as string)
         : undefined,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
       sortBy: (req.query.sortBy as string) ?? "date",
       sortOrder: (req.query.sortOrder as "asc" | "desc") ?? "desc",
     };
@@ -132,9 +137,14 @@ export async function listShifts(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getShiftById(req: AuthenticatedRequest, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const shift = await shiftsService.getShiftById(id, req.user.tenant_id);
     res.json(successResponse(shift));
   } catch (error: unknown) {
@@ -153,6 +163,11 @@ export async function getShiftById(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function createShift(req: AuthenticatedRequest, res: Response) {
   try {
     const shift = await shiftsService.createShift(
@@ -175,9 +190,14 @@ export async function createShift(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function updateShift(req: AuthenticatedRequest, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const shift = await shiftsService.updateShift(
       id,
       req.body as ShiftUpdateData, // Validated by middleware
@@ -203,9 +223,14 @@ export async function updateShift(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function deleteShift(req: AuthenticatedRequest, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const result = await shiftsService.deleteShift(
       id,
       req.user.tenant_id,
@@ -232,6 +257,11 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response) {
 
 // ============= TEMPLATES =============
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function listTemplates(req: AuthenticatedRequest, res: Response) {
   try {
     const templates = await shiftsService.listTemplates(req.user.tenant_id);
@@ -248,12 +278,17 @@ export async function listTemplates(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getTemplateById(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const template = await shiftsService.getTemplateById(
       id,
       req.user.tenant_id,
@@ -275,6 +310,11 @@ export async function getTemplateById(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
   try {
     const template = await shiftsService.createTemplate(
@@ -297,9 +337,14 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const template = await shiftsService.updateTemplate(
       id,
       req.body as TemplateUpdateData, // Validated by middleware
@@ -327,9 +372,14 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const result = await shiftsService.deleteTemplate(
       id,
       req.user.tenant_id,
@@ -358,6 +408,11 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // ============= SWAP REQUESTS =============
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function listSwapRequests(
   req: AuthenticatedRequest,
   res: Response,
@@ -365,7 +420,7 @@ export async function listSwapRequests(
   try {
     const filters = {
       userId: req.query.userId
-        ? parseInt(req.query.userId as string)
+        ? Number.parseInt(req.query.userId as string)
         : undefined,
       status: req.query.status as string,
     };
@@ -389,6 +444,11 @@ export async function listSwapRequests(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function createSwapRequest(
   req: AuthenticatedRequest,
   res: Response,
@@ -425,12 +485,17 @@ export async function createSwapRequest(
   }
 }
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function updateSwapRequestStatus(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number.parseInt(req.params.id);
     const { status } = req.body as { status: string };
 
     const result = await shiftsService.updateSwapRequestStatus(
@@ -465,13 +530,18 @@ export async function updateSwapRequestStatus(
 
 // ============= OVERTIME =============
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function getOvertimeReport(
   req: AuthenticatedRequest,
   res: Response,
 ) {
   try {
     const userId = req.query.userId
-      ? parseInt(req.query.userId as string)
+      ? Number.parseInt(req.query.userId as string)
       : req.user.id;
     const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
@@ -509,19 +579,24 @@ export async function getOvertimeReport(
 
 // ============= EXPORT =============
 
+/**
+ *
+ * @param req
+ * @param res
+ */
 export async function exportShifts(req: AuthenticatedRequest, res: Response) {
   try {
     const filters = {
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
       departmentId: req.query.departmentId
-        ? parseInt(req.query.departmentId as string)
+        ? Number.parseInt(req.query.departmentId as string)
         : undefined,
       teamId: req.query.teamId
-        ? parseInt(req.query.teamId as string)
+        ? Number.parseInt(req.query.teamId as string)
         : undefined,
       userId: req.query.userId
-        ? parseInt(req.query.userId as string)
+        ? Number.parseInt(req.query.userId as string)
         : undefined,
     };
 

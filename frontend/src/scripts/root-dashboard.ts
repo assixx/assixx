@@ -15,7 +15,7 @@ function showNotification(message: string, type: 'success' | 'error' | 'warning'
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
   notification.textContent = message;
-  document.body.appendChild(notification);
+  document.body.append(notification);
   setTimeout(() => {
     notification.remove();
   }, 3000);
@@ -68,9 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Elemente aus dem DOM holen
-  const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm | null;
+  const createAdminForm = document.querySelector('#create-admin-form') as CreateAdminForm | null;
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
-  const dashboardContent = document.getElementById('dashboard-data');
+  const dashboardContent = document.querySelector('#dashboard-data');
 
   // Event-Listener hinzufügen
   if (createAdminForm !== null) {
@@ -128,9 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show employee number modal
   function showEmployeeNumberModal(): void {
-    const modal = document.getElementById('employeeNumberModal');
-    const form = document.getElementById('employeeNumberForm') as HTMLFormElement | null;
-    const input = document.getElementById('employeeNumberInput') as HTMLInputElement | null;
+    const modal = document.querySelector('#employeeNumberModal');
+    const form = document.querySelector('#employeeNumberForm') as HTMLFormElement | null;
+    const input = document.querySelector('#employeeNumberInput') as HTMLInputElement | null;
 
     if (modal === null || form === null || input === null) return;
 
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Allow letters, numbers and hyphens
     input.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
-      target.value = target.value.replace(/[^A-Za-z0-9-]/g, '');
+      target.value = target.value.replace(/[^-0-9A-Za-z]/g, '');
     });
 
     form.addEventListener('submit', (e) => {
@@ -249,9 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const users = usersResponse.data;
 
       // Update counters
-      const adminCount = document.getElementById('admin-count');
-      const userCount = document.getElementById('user-count');
-      const tenantCount = document.getElementById('tenant-count');
+      const adminCount = document.querySelector('#admin-count');
+      const userCount = document.querySelector('#user-count');
+      const tenantCount = document.querySelector('#tenant-count');
 
       if (adminCount !== null) {
         adminCount.textContent = admins.length.toString();
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
       displayAdmins(admins);
 
       // Update admin count
-      const adminCount = document.getElementById('admin-count');
+      const adminCount = document.querySelector('#admin-count');
       if (adminCount && Array.isArray(admins)) {
         adminCount.textContent = admins.length.toString();
       }
@@ -311,8 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadHeaderUserInfo(): Promise<void> {
     try {
       const authToken = getAuthToken();
-      const userNameElement = document.getElementById('user-name');
-      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement | null;
+      const userNameElement = document.querySelector('#user-name');
+      const userAvatar = document.querySelector('#user-avatar') as HTMLImageElement | null;
 
       if (authToken === null || authToken === '' || userNameElement === null) return;
 
@@ -320,8 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const payload = JSON.parse(atob(authToken.split('.')[1])) as { userName?: string };
         userNameElement.textContent = payload.userName ?? 'Root';
-      } catch (e) {
-        console.error('Error parsing JWT token:', e);
+      } catch (error) {
+        console.error('Error parsing JWT token:', error);
       }
 
       // Try to fetch full user profile for more details
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Fallback to local storage
       const userStr = localStorage.getItem('user');
       const userData = userStr !== null && userStr !== '' ? (JSON.parse(userStr) as { userName?: string }) : {};
-      const userName = document.getElementById('user-name');
+      const userName = document.querySelector('#user-name');
       if (userName !== null) {
         userName.textContent = userData.userName ?? 'Root';
       }
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
           pagination?: { limit: number; offset: number; total: number; hasMore: boolean };
         };
       }>('/logs?limit=20');
-      const logsContainer = document.getElementById('activity-logs');
+      const logsContainer = document.querySelector('#activity-logs');
 
       if (logsContainer !== null) {
         // Handle both response formats (direct logs array or nested in data)

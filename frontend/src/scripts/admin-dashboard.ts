@@ -144,7 +144,7 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       useV2 === true ? (responseData as { data?: Department[] }).data : responseData
     ) as Department[];
     console.info('[loadDepartmentsForEmployeeSelect] Departments:', departments);
-    const dropdownOptions = document.getElementById('employee-department-dropdown');
+    const dropdownOptions = document.querySelector('#employee-department-dropdown');
 
     if (!dropdownOptions) {
       console.error('[loadDepartmentsForEmployeeSelect] Dropdown options element not found!');
@@ -167,7 +167,7 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       optionDiv.textContent = dept.name;
       // Set onclick as an attribute so it shows in HTML and works correctly
       optionDiv.setAttribute('onclick', `selectDropdownOption('employee-department', '${dept.id}', '${dept.name}')`);
-      dropdownOptions.appendChild(optionDiv);
+      dropdownOptions.append(optionDiv);
     });
     console.info('[loadDepartmentsForEmployeeSelect] Dropdown content:', dropdownOptions.innerHTML);
   } catch (error) {
@@ -178,16 +178,16 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
 
 // Show New Employee Modal (defined globally)
 const showNewEmployeeModal = function (): void {
-  const modal = document.getElementById('employee-modal');
+  const modal = document.querySelector('#employee-modal');
   if (modal) {
     // Formular zurücksetzen, falls es bereits benutzt wurde
-    const form = document.getElementById('create-employee-form') as HTMLFormElement | null;
+    const form = document.querySelector('#create-employee-form') as HTMLFormElement | null;
     if (form !== null) {
       form.reset();
 
       // Fehler-Anzeigen zurücksetzen
-      const emailError = document.getElementById('email-error');
-      const passwordError = document.getElementById('password-error');
+      const emailError = document.querySelector('#email-error');
+      const passwordError = document.querySelector('#password-error');
 
       if (emailError) emailError.style.display = 'none';
       if (passwordError) passwordError.style.display = 'none';
@@ -222,15 +222,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // loadHeaderUserInfo(); // Removed to avoid redundancy
 
   // Event Listeners for forms
-  const createEmployeeForm = document.getElementById('create-employee-form') as CreateEmployeeForm | null;
+  const createEmployeeForm = document.querySelector('#create-employee-form') as CreateEmployeeForm | null;
   // const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
-  const departmentForm = document.getElementById('department-form') as HTMLFormElement | null;
-  const teamForm = document.getElementById('team-form') as HTMLFormElement | null;
+  const departmentForm = document.querySelector('#department-form') as HTMLFormElement | null;
+  const teamForm = document.querySelector('#team-form') as HTMLFormElement | null;
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null; // Not used - handled by unified-navigation
 
   // Buttons für Mitarbeiter-Modal
-  const newEmployeeBtn = document.getElementById('new-employee-button') as HTMLButtonElement | null;
-  const employeesSectionNewBtn = document.getElementById('employees-section-new-button') as HTMLButtonElement | null;
+  const newEmployeeBtn = document.querySelector('#new-employee-button') as HTMLButtonElement | null;
+  const employeesSectionNewBtn = document.querySelector('#employees-section-new-button') as HTMLButtonElement | null;
 
   // Event-Listener für Formulare
   if (createEmployeeForm) {
@@ -239,13 +239,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Live-Validierung für E-Mail und Passwort hinzufügen
-    const emailInput = document.getElementById('email') as HTMLInputElement | null;
-    const emailConfirmInput = document.getElementById('email_confirm') as HTMLInputElement | null;
-    const emailError = document.getElementById('email-error');
+    const emailInput = document.querySelector('#email') as HTMLInputElement | null;
+    const emailConfirmInput = document.querySelector('#email_confirm') as HTMLInputElement | null;
+    const emailError = document.querySelector('#email-error');
 
-    const passwordInput = document.getElementById('password') as HTMLInputElement | null;
-    const passwordConfirmInput = document.getElementById('password_confirm') as HTMLInputElement | null;
-    const passwordError = document.getElementById('password-error');
+    const passwordInput = document.querySelector('#password') as HTMLInputElement | null;
+    const passwordConfirmInput = document.querySelector('#password_confirm') as HTMLInputElement | null;
+    const passwordError = document.querySelector('#password-error');
 
     // E-Mail-Validierung
     if (emailInput && emailConfirmInput && emailError) {
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Setup manage links
-  const manageEmployeesLink = document.getElementById('manage-employees-link');
+  const manageEmployeesLink = document.querySelector('#manage-employees-link');
   if (manageEmployeesLink) {
     manageEmployeesLink.addEventListener('click', (e) => {
       e.preventDefault();
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Employee Status Modal is now handled in admin-dashboard.html
   // Removed duplicate event listener to prevent conflicts
 
-  const manageDocumentsLink = document.getElementById('manage-documents-link');
+  const manageDocumentsLink = document.querySelector('#manage-documents-link');
   if (manageDocumentsLink) {
     manageDocumentsLink.addEventListener('click', (e) => {
       e.preventDefault();
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const manageDepartmentsLink = document.getElementById('manage-departments-link');
+  const manageDepartmentsLink = document.querySelector('#manage-departments-link');
   if (manageDepartmentsLink) {
     manageDepartmentsLink.addEventListener('click', (e) => {
       e.preventDefault();
@@ -405,10 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
           'data' in responseData && responseData.data ? responseData.data : (responseData as DashboardStats);
 
         // Update UI mit den Statistiken vom Admin Dashboard Endpoint
-        const employeeCount = document.getElementById('employee-count');
-        const documentCount = document.getElementById('document-count');
-        const deptCountElement = document.getElementById('department-count');
-        const teamCount = document.getElementById('team-count');
+        const employeeCount = document.querySelector('#employee-count');
+        const documentCount = document.querySelector('#document-count');
+        const deptCountElement = document.querySelector('#department-count');
+        const teamCount = document.querySelector('#team-count');
 
         if (employeeCount) employeeCount.textContent = stats.employeeCount.toString();
         if (documentCount) documentCount.textContent = stats.documentCount.toString();
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const employeeCount = document.getElementById('employee-count');
+      const employeeCount = document.querySelector('#employee-count');
       if (employeeCount) employeeCount.textContent = employees.length.toString();
     } catch (error) {
       console.error('Error loading employees:', error);
@@ -492,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const documentCount = document.getElementById('document-count');
+      const documentCount = document.querySelector('#document-count');
       if (documentCount) documentCount.textContent = documents.length.toString();
     } catch (error) {
       console.error('Error loading documents:', error);
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
           useV2Departments === true && 'data' in responseData
             ? ((responseData as { data?: Department[] }).data ?? [])
             : (responseData as Department[]);
-        const deptCountElement = document.getElementById('department-count');
+        const deptCountElement = document.querySelector('#department-count');
         if (deptCountElement) {
           deptCountElement.textContent = departments.length.toString();
         }
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const teamCount = document.getElementById('team-count');
+      const teamCount = document.querySelector('#team-count');
       if (teamCount) teamCount.textContent = teams.length.toString();
     } catch (error) {
       console.error('Error loading teams:', error);
@@ -587,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         entries = data.entries ?? [];
       }
 
-      const previewContainer = document.getElementById('blackboard-preview');
+      const previewContainer = document.querySelector('#blackboard-preview');
       if (!previewContainer) return;
 
       // Clear loading placeholder
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Error loading blackboard preview:', error);
 
-      const previewContainer = document.getElementById('blackboard-preview');
+      const previewContainer = document.querySelector('#blackboard-preview');
       if (previewContainer) {
         previewContainer.innerHTML = `
           <div class="blackboard-empty-state">
@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
         entries = (await response.json()) as BlackboardEntry[];
       }
 
-      const containerElement = document.getElementById('blackboard-widget-container');
+      const containerElement = document.querySelector('#blackboard-widget-container');
       if (!containerElement) {
         console.error('[BlackboardWidget] Container element not found: blackboard-widget-container');
         return;
@@ -733,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      const widgetContent = document.getElementById('blackboard-widget-content');
+      const widgetContent = document.querySelector('#blackboard-widget-content');
       if (!widgetContent) return;
       console.info('[BlackboardWidget] API Response - entries array:', entries);
       console.info('[BlackboardWidget] Number of entries:', entries.length);
@@ -837,10 +837,10 @@ document.addEventListener('DOMContentLoaded', () => {
           window.location.href = '/blackboard';
         };
 
-        miniNotesContainer.appendChild(noteDiv);
+        miniNotesContainer.append(noteDiv);
       });
 
-      widgetContent.appendChild(miniNotesContainer);
+      widgetContent.append(miniNotesContainer);
       console.info('[BlackboardWidget] Mini-notes container appended to widget content');
 
       // Add widget loaded class
@@ -852,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('[BlackboardWidget] Error loading widget:', error);
 
-      const widgetContent = document.getElementById('blackboard-widget-content');
+      const widgetContent = document.querySelector('#blackboard-widget-content');
       if (widgetContent) {
         widgetContent.innerHTML = `
           <div class="blackboard-empty-state">
@@ -871,10 +871,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!createEmployeeForm) return;
 
     const formData = new FormData(createEmployeeForm);
-    const employeeData = Object.fromEntries(Array.from(formData.entries())) as unknown as EmployeeFormData;
+    const employeeData = Object.fromEntries([...formData.entries()]) as unknown as EmployeeFormData;
 
     // E-Mail-Übereinstimmung prüfen
-    const emailError = document.getElementById('email-error');
+    const emailError = document.querySelector('#email-error');
     if (employeeData.email !== employeeData.email_confirm) {
       if (emailError) emailError.style.display = 'block';
 
@@ -885,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Passwort-Übereinstimmung prüfen
-    const passwordError = document.getElementById('password-error');
+    const passwordError = document.querySelector('#password-error');
     if (employeeData.password !== employeeData.password_confirm) {
       if (passwordError) passwordError.style.display = 'block';
 
@@ -908,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
         employee_id: employeeData.employee_id,
         department_id:
           employeeData.department_id !== '' && employeeData.department_id !== undefined
-            ? parseInt(employeeData.department_id, 10)
+            ? Number.parseInt(employeeData.department_id, 10)
             : null,
         phone: employeeData.phone !== '' && employeeData.phone !== undefined ? employeeData.phone : '',
         birth_date: employeeData.birth_date ?? null,
@@ -967,7 +967,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createEmployeeForm.reset();
 
         // Modal schließen
-        const modal = document.getElementById('employee-modal');
+        const modal = document.querySelector('#employee-modal');
         if (modal) modal.style.display = 'none';
 
         // Listen neu laden
@@ -1036,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Fill compact card
-      const employeeCard = document.getElementById('recent-employees');
+      const employeeCard = document.querySelector('#recent-employees');
       if (employeeCard) {
         employeeCard.innerHTML = '';
 
@@ -1051,13 +1051,13 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="compact-item-name">${emp.fullName}</span>
               <span class="compact-item-count">${emp.position ?? 'Mitarbeiter'}</span>
             `;
-            employeeCard.appendChild(item);
+            employeeCard.append(item);
           });
         }
       }
 
       // Also fill detailed list if it exists
-      const employeeDetailList = document.getElementById('recent-employees-list');
+      const employeeDetailList = document.querySelector('#recent-employees-list');
       if (employeeDetailList) {
         employeeDetailList.innerHTML = '';
 
@@ -1071,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <strong>${emp.fullName}</strong> - ${emp.position ?? 'Mitarbeiter'}
               <span class="text-muted">(${emp.departmentName ?? 'Keine Abteilung'})</span>
             `;
-            employeeDetailList.appendChild(listItem);
+            employeeDetailList.append(listItem);
           });
         }
       }
@@ -1109,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Fill compact card
-      const documentCard = document.getElementById('recent-documents');
+      const documentCard = document.querySelector('#recent-documents');
       if (documentCard) {
         documentCard.innerHTML = '';
 
@@ -1127,13 +1127,13 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="compact-item-name">${fileName}</span>
               <span class="compact-item-count">${uploadDate}</span>
             `;
-            documentCard.appendChild(item);
+            documentCard.append(item);
           });
         }
       }
 
       // Also fill detailed list if it exists
-      const documentDetailList = document.getElementById('recent-documents-list');
+      const documentDetailList = document.querySelector('#recent-documents-list');
       if (documentDetailList) {
         documentDetailList.innerHTML = '';
 
@@ -1150,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <strong>${fileName}</strong> - ${doc.category}
               <span class="text-muted">(${uploadDate})</span>
             `;
-            documentDetailList.appendChild(listItem);
+            documentDetailList.append(listItem);
           });
         }
       }
@@ -1183,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ? (responseData as { data: Department[] }).data
           : (responseData as Department[]);
 
-      const departmentList = document.getElementById('department-list');
+      const departmentList = document.querySelector('#department-list');
 
       if (!departmentList) return;
 
@@ -1219,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="compact-item-name">${dept.name}</span>
           <span class="compact-item-count">${description}</span>
         `;
-          departmentList.appendChild(item);
+          departmentList.append(item);
         });
     } catch (error) {
       console.error('Error loading departments:', error);
@@ -1250,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         teams = (await response.json()) as Team[];
       }
-      const teamList = document.getElementById('team-list');
+      const teamList = document.querySelector('#team-list');
 
       if (!teamList) return;
 
@@ -1270,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="compact-item-name">${team.name}</span>
           <span class="compact-item-count">${departmentName}</span>
         `;
-        teamList.appendChild(item);
+        teamList.append(item);
       });
     } catch (error) {
       console.error('Error loading teams:', error);
@@ -1329,7 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Reset form and close modal
       form.reset();
-      const modal = document.getElementById('department-modal');
+      const modal = document.querySelector('#department-modal');
       if (modal) modal.style.display = 'none';
 
       // Reload departments
@@ -1349,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const teamData = {
       name: formData.get('name') as string,
-      department_id: parseInt(formData.get('department_id') as string, 10),
+      department_id: Number.parseInt(formData.get('department_id') as string, 10),
       description: formData.get('description') as string,
     };
 
@@ -1394,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Reset form and close modal
       form.reset();
-      const modal = document.getElementById('team-modal');
+      const modal = document.querySelector('#team-modal');
       if (modal) modal.style.display = 'none';
 
       // Reload teams

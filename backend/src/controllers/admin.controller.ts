@@ -59,10 +59,15 @@ interface AdminLogQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class AdminLogController {
   /**
    * Holt alle AdminLog Einträge
    * GET /api/admin
+   * @param req
+   * @param res
    */
   async getAll(req: AdminLogQueryRequest, res: Response): Promise<void> {
     try {
@@ -75,7 +80,7 @@ class AdminLogController {
       const filters = {
         user_id:
           req.query.user_id != null && req.query.user_id.length > 0
-            ? parseInt(req.query.user_id)
+            ? Number.parseInt(req.query.user_id)
             : undefined,
         action: req.query.action,
         entity_type: req.query.entity_type,
@@ -83,11 +88,11 @@ class AdminLogController {
         end_date: req.query.end_date,
         limit:
           req.query.limit != null && req.query.limit.length > 0
-            ? parseInt(req.query.limit)
+            ? Number.parseInt(req.query.limit)
             : undefined,
         offset:
           req.query.offset != null && req.query.offset.length > 0
-            ? parseInt(req.query.offset)
+            ? Number.parseInt(req.query.offset)
             : undefined,
       };
 
@@ -105,6 +110,8 @@ class AdminLogController {
   /**
    * Holt einen AdminLog Eintrag per ID
    * GET /api/admin/:id
+   * @param req
+   * @param res
    */
   async getById(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
@@ -113,7 +120,7 @@ class AdminLogController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -137,6 +144,8 @@ class AdminLogController {
   /**
    * Erstellt einen neuen AdminLog Eintrag
    * POST /api/admin
+   * @param req
+   * @param res
    */
   async create(req: AdminLogCreateRequest, res: Response): Promise<void> {
     try {
@@ -172,6 +181,8 @@ class AdminLogController {
   /**
    * Aktualisiert einen AdminLog Eintrag
    * PUT /api/admin/:id
+   * @param req
+   * @param res
    */
   async update(req: AdminLogUpdateRequest, res: Response): Promise<void> {
     try {
@@ -180,7 +191,7 @@ class AdminLogController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;
@@ -200,6 +211,8 @@ class AdminLogController {
   /**
    * Löscht einen AdminLog Eintrag
    * DELETE /api/admin/:id
+   * @param req
+   * @param res
    */
   async delete(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
@@ -208,7 +221,7 @@ class AdminLogController {
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
+      const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid ID" });
         return;

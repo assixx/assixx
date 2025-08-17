@@ -226,7 +226,7 @@ export class BrowserFingerprint {
     span.style.left = '-9999px';
     span.style.fontSize = testSize;
     span.innerHTML = testString;
-    document.body.appendChild(span);
+    document.body.append(span);
 
     const baseFontWidths: Record<string, number> = {};
     for (const baseFont of baseFonts) {
@@ -249,7 +249,7 @@ export class BrowserFingerprint {
       }
     }
 
-    document.body.removeChild(span);
+    span.remove();
     return detectedFonts.join(',');
   }
 
@@ -261,7 +261,7 @@ export class BrowserFingerprint {
     try {
       const msgBuffer = new TextEncoder().encode(str);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashArray = [...new Uint8Array(hashBuffer)];
       return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     } catch {
       // Fallback to simple hash if crypto API fails
@@ -308,7 +308,7 @@ export class BrowserFingerprint {
     const timestamp = localStorage.getItem('fingerprintTimestamp');
     if (timestamp === null || timestamp === '') return true;
 
-    const age = Date.now() - parseInt(timestamp, 10);
+    const age = Date.now() - Number.parseInt(timestamp, 10);
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
     return age > thirtyDays;
   }

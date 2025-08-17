@@ -72,10 +72,10 @@ class ModalManager {
 
       // Remove from current parent if it has one
       if (modal.parentElement) {
-        modal.parentElement.removeChild(modal);
+        modal.remove();
       }
 
-      document.body.appendChild(modal);
+      document.body.append(modal);
       console.info(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
       console.info(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
       console.info(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
@@ -186,7 +186,7 @@ class ModalManager {
    */
   private createModal(modalId: string, config?: Partial<ModalConfig>): HTMLElement | null {
     console.info(`[ModalManager] createModal() called for modalId: ${modalId}`);
-    console.info(`[ModalManager] Available templates:`, Array.from(this.templates.keys()));
+    console.info(`[ModalManager] Available templates:`, [...this.templates.keys()]);
 
     // Try to get template first
     const template = this.templates.get(modalId);
@@ -262,7 +262,7 @@ class ModalManager {
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape' && this.activeModals.size > 0) {
         // Get the last added modal
-        const lastModalId = Array.from(this.activeModals.keys()).pop();
+        const lastModalId = [...this.activeModals.keys()].pop();
         if (lastModalId !== undefined && lastModalId !== '') {
           this.hide(lastModalId);
         }

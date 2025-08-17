@@ -67,9 +67,16 @@ export interface ResponseSubmitData {
   }[];
 }
 
+/**
+ *
+ */
 export class SurveysService {
   /**
    * List surveys based on user role
+   * @param tenantId
+   * @param userId
+   * @param userRole
+   * @param filters
    */
   async listSurveys(
     tenantId: number,
@@ -118,6 +125,10 @@ export class SurveysService {
 
   /**
    * Get survey by ID
+   * @param surveyId
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async getSurveyById(
     surveyId: number,
@@ -198,6 +209,11 @@ export class SurveysService {
 
   /**
    * Create a new survey
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
    */
   async createSurvey(
     data: SurveyCreateData,
@@ -255,6 +271,13 @@ export class SurveysService {
 
   /**
    * Update a survey
+   * @param surveyId
+   * @param data
+   * @param tenantId
+   * @param userId
+   * @param userRole
+   * @param ipAddress
+   * @param userAgent
    */
   async updateSurvey(
     surveyId: number,
@@ -343,6 +366,12 @@ export class SurveysService {
 
   /**
    * Delete a survey
+   * @param surveyId
+   * @param tenantId
+   * @param userId
+   * @param userRole
+   * @param ipAddress
+   * @param userAgent
    */
   async deleteSurvey(
     surveyId: number,
@@ -411,6 +440,7 @@ export class SurveysService {
 
   /**
    * Get survey templates
+   * @param tenantId
    */
   async getSurveyTemplates(tenantId: number): Promise<unknown[]> {
     try {
@@ -424,6 +454,11 @@ export class SurveysService {
 
   /**
    * Create survey from template
+   * @param templateId
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
    */
   async createFromTemplate(
     templateId: number,
@@ -464,6 +499,10 @@ export class SurveysService {
 
   /**
    * Get survey statistics
+   * @param surveyId
+   * @param tenantId
+   * @param userId
+   * @param userRole
    */
   async getSurveyStatistics(
     surveyId: number,

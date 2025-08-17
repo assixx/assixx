@@ -38,9 +38,17 @@ interface DbAuditEntry extends RowDataPacket {
   created_at: Date;
 }
 
+/**
+ *
+ */
 export class AuditTrailService {
   /**
    * Create a new audit entry
+   * @param tenantId
+   * @param userId
+   * @param entry
+   * @param ipAddress
+   * @param userAgent
    */
   async createEntry(
     tenantId: number,
@@ -94,6 +102,7 @@ export class AuditTrailService {
 
   /**
    * Get audit entries with filters
+   * @param filter
    */
   async getEntries(
     filter: AuditFilter,
@@ -204,6 +213,8 @@ export class AuditTrailService {
 
   /**
    * Get audit entry by ID
+   * @param id
+   * @param tenantId
    */
   async getEntryById(id: number, tenantId: number): Promise<AuditEntry> {
     const [rows] = await execute<DbAuditEntry[]>(
@@ -220,6 +231,7 @@ export class AuditTrailService {
 
   /**
    * Get audit statistics
+   * @param filter
    */
   async getStats(filter: AuditFilter): Promise<AuditStats> {
     const { tenantId, dateFrom, dateTo } = filter;
@@ -325,6 +337,11 @@ export class AuditTrailService {
 
   /**
    * Generate compliance report
+   * @param tenantId
+   * @param reportType
+   * @param dateFrom
+   * @param dateTo
+   * @param generatedBy
    */
   async generateComplianceReport(
     tenantId: number,
@@ -406,6 +423,8 @@ export class AuditTrailService {
 
   /**
    * Delete old audit entries (for data retention policies)
+   * @param tenantId
+   * @param olderThan
    */
   async deleteOldEntries(tenantId: number, olderThan: Date): Promise<number> {
     const [result] = await execute<ResultSetHeader>(
@@ -418,6 +437,7 @@ export class AuditTrailService {
 
   /**
    * Map database row to AuditEntry
+   * @param row
    */
   private mapToAuditEntry(row: DbAuditEntry): AuditEntry {
     return {

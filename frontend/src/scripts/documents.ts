@@ -55,7 +55,7 @@ function setupEventListeners(): void {
   });
 
   // Search input
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
+  const searchInput = document.querySelector('#searchInput') as HTMLInputElement | null;
   if (searchInput !== null) {
     searchInput.addEventListener(
       'input',
@@ -237,7 +237,7 @@ function sortDocuments(): void {
  * Render documents grid
  */
 function renderDocuments(): void {
-  const container = document.getElementById('documentsContainer');
+  const container = document.querySelector('#documentsContainer');
   if (!container) return;
 
   if (filteredDocuments.length === 0) {
@@ -255,11 +255,11 @@ function renderDocuments(): void {
   grid.className = 'documents-grid';
 
   filteredDocuments.forEach((doc) => {
-    grid.appendChild(createDocumentCard(doc));
+    grid.append(createDocumentCard(doc));
   });
 
   container.innerHTML = '';
-  container.appendChild(grid);
+  container.append(grid);
 }
 
 /**
@@ -392,7 +392,7 @@ function viewDocument(documentId: number): void {
  */
 function showDocumentModal(doc: Document): void {
   // Update modal content
-  const modal = document.getElementById('documentPreviewModal');
+  const modal = document.querySelector('#documentPreviewModal');
   if (!modal) return;
 
   // Update info
@@ -403,8 +403,8 @@ function showDocumentModal(doc: Document): void {
   updateElement('modalUploadDate', formatDate(doc.created_at));
 
   // Setup preview
-  const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
-  const previewError = document.getElementById('previewError');
+  const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
+  const previewError = document.querySelector('#previewError');
 
   if (previewFrame !== null && previewError !== null) {
     // Create preview URL with authentication token
@@ -445,7 +445,7 @@ function showDocumentModal(doc: Document): void {
   }
 
   // Store document ID for download
-  const downloadBtn = document.getElementById('downloadButton');
+  const downloadBtn = document.querySelector('#downloadButton');
   if (downloadBtn) {
     downloadBtn.setAttribute('data-document-id', doc.id.toString());
   }
@@ -458,12 +458,12 @@ function showDocumentModal(doc: Document): void {
  * Close document modal
  */
 function closeDocumentModal(): void {
-  const modal = document.getElementById('documentPreviewModal');
+  const modal = document.querySelector('#documentPreviewModal');
   if (modal) {
     modal.style.display = 'none';
 
     // Clear iframe and clean up blob URL
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
+    const previewFrame = document.querySelector('#documentPreviewFrame') as HTMLIFrameElement | null;
     if (previewFrame !== null) {
       // Clean up blob URL if exists
       const blobUrl = previewFrame.dataset.blobUrl;
@@ -489,7 +489,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     documentId = String(docId);
   } else {
     // Called without parameter from documents page
-    const downloadBtn = document.getElementById('downloadButton');
+    const downloadBtn = document.querySelector('#downloadButton');
     if (!downloadBtn) {
       console.error('Download button not found');
       return;
@@ -542,14 +542,14 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     link.href = url;
     link.download = currentDocument?.file_name ?? 'document.pdf';
     link.style.display = 'none';
-    document.body.appendChild(link);
+    document.body.append(link);
 
     // Trigger download
     link.click();
 
     // Cleanup
     setTimeout(() => {
-      document.body.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
     }, 100);
 
@@ -596,9 +596,9 @@ window.toggleDropdown = function (type: string): void {
 window.selectSort = function (value: SortOption, text: string): void {
   currentSort = value;
 
-  const display = document.getElementById('sortDisplay');
-  const dropdown = document.getElementById('sortDropdown');
-  const input = document.getElementById('sortValue') as HTMLInputElement | null;
+  const display = document.querySelector('#sortDisplay');
+  const dropdown = document.querySelector('#sortDropdown');
+  const input = document.querySelector('#sortValue') as HTMLInputElement | null;
 
   if (display !== null && dropdown !== null && input !== null) {
     const span = display.querySelector('span');
@@ -647,7 +647,7 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**

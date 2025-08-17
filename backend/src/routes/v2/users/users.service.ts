@@ -24,6 +24,13 @@ import {
  * Service Error class for consistent error handling
  */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code
+   * @param message
+   * @param statusCode
+   * @param details
+   */
   constructor(
     public code: string,
     public message: string,
@@ -37,6 +44,7 @@ export class ServiceError extends Error {
 
 /**
  * Helper to remove sensitive fields from user objects
+ * @param user
  */
 const sanitizeUser = <T extends Record<string, unknown>>(
   user: T,
@@ -67,10 +75,12 @@ const sanitizeUser = <T extends Record<string, unknown>>(
 export class UsersService {
   /**
    * List users with pagination and filters
+   * @param tenantId
+   * @param query
    */
   async listUsers(tenantId: number, query: ListUsersQuery): Promise<unknown> {
-    const page = parseInt(query.page ?? "1", 10);
-    const limit = parseInt(query.limit ?? "20", 10);
+    const page = Number.parseInt(query.page ?? "1", 10);
+    const limit = Number.parseInt(query.limit ?? "20", 10);
     const search = query.search;
     const role = query.role;
     const isActive =
@@ -127,6 +137,8 @@ export class UsersService {
 
   /**
    * Get user by ID
+   * @param userId
+   * @param tenantId
    */
   async getUserById(userId: number, tenantId: number): Promise<unknown> {
     const user = await User.findById(userId, tenantId);
@@ -140,6 +152,8 @@ export class UsersService {
 
   /**
    * Create new user
+   * @param userData
+   * @param tenantId
    */
   async createUser(
     userData: CreateUserBody,
@@ -214,6 +228,9 @@ export class UsersService {
 
   /**
    * Update user
+   * @param userId
+   * @param updateData
+   * @param tenantId
    */
   async updateUser(
     userId: number,
@@ -272,6 +289,9 @@ export class UsersService {
 
   /**
    * Update user profile (limited fields)
+   * @param userId
+   * @param profileData
+   * @param tenantId
    */
   async updateProfile(
     userId: number,
@@ -341,6 +361,10 @@ export class UsersService {
 
   /**
    * Change user password
+   * @param userId
+   * @param tenantId
+   * @param currentPassword
+   * @param newPassword
    */
   async changePassword(
     userId: number,
@@ -369,6 +393,9 @@ export class UsersService {
 
   /**
    * Delete user
+   * @param userId
+   * @param currentUserId
+   * @param tenantId
    */
   async deleteUser(
     userId: number,
@@ -397,6 +424,8 @@ export class UsersService {
 
   /**
    * Archive user
+   * @param userId
+   * @param tenantId
    */
   async archiveUser(
     userId: number,
@@ -415,6 +444,8 @@ export class UsersService {
 
   /**
    * Unarchive user
+   * @param userId
+   * @param tenantId
    */
   async unarchiveUser(
     userId: number,
@@ -433,6 +464,8 @@ export class UsersService {
 
   /**
    * Get profile picture path
+   * @param userId
+   * @param tenantId
    */
   async getProfilePicturePath(
     userId: number,
@@ -466,6 +499,9 @@ export class UsersService {
 
   /**
    * Update profile picture
+   * @param userId
+   * @param filePath
+   * @param tenantId
    */
   async updateProfilePicture(
     userId: number,
@@ -493,6 +529,8 @@ export class UsersService {
 
   /**
    * Delete profile picture
+   * @param userId
+   * @param tenantId
    */
   async deleteProfilePicture(
     userId: number,
@@ -523,6 +561,9 @@ export class UsersService {
 
   /**
    * Update user availability
+   * @param userId
+   * @param availabilityData
+   * @param tenantId
    */
   async updateAvailability(
     userId: number,

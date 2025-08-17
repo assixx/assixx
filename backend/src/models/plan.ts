@@ -297,8 +297,8 @@ export async function calculateTenantCost(tenantId: number): Promise<{
     ]);
     const data = queryResult[0];
 
-    const planCost = parseFloat(String(data.plan_cost ?? 0));
-    const addonCost = parseFloat(String(data.addon_cost ?? 0));
+    const planCost = Number.parseFloat(String(data.plan_cost ?? 0));
+    const addonCost = Number.parseFloat(String(data.addon_cost ?? 0));
 
     return {
       planCost,

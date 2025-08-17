@@ -38,19 +38,19 @@ export class TestDataTracker {
 
   // Get tracked IDs
   getTenantIds(): number[] {
-    return Array.from(this.createdTenantIds);
+    return [...this.createdTenantIds];
   }
 
   getUserIds(): number[] {
-    return Array.from(this.createdUserIds);
+    return [...this.createdUserIds];
   }
 
   getDepartmentIds(): number[] {
-    return Array.from(this.createdDepartmentIds);
+    return [...this.createdDepartmentIds];
   }
 
   getTeamIds(): number[] {
-    return Array.from(this.createdTeamIds);
+    return [...this.createdTeamIds];
   }
 
   // Clear all tracked data
