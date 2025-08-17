@@ -864,8 +864,8 @@ body {
   color: var(--text-secondary);
 }
 
-/* General modal footer - but not for logout modal */
-.modal-footer:not(#logoutModal .logout-modal) {
+/* General modal footer */
+.modal-footer {
   display: flex;
   gap: var(--spacing-md);
   justify-content: center;
@@ -1170,45 +1170,44 @@ body {
   height: 100%;
 
   /* background-color: rgba(0, 0, 0, 0.7); */
-  backdrop-filter: blur(5px);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
 }
 
 #logoutModal .logout-modal {
-  position: absolute;
-  z-index: 1001;
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-
   display: flex;
   flex-direction: column;
-
-  width: 100%;
+  left: 50%;
+  max-height: calc(100vh - 80px);
   max-width: var(--alert-modal-max-width);
   min-height: var(--alert-modal-min-height);
-  max-height: calc(100vh - 80px);
-  border: var(--border-width) solid hsl(0deg 0% 100% / 10%);
+  position: absolute;
+  top: 35%;
+  transform: translate(-50%,-50%);
+  width: 100%;
+  z-index: 1001;
+  backdrop-filter: blur(20px) saturate(180%);
+  background: #121212c4;
+  border: 1px solid hsla(0,0%,100%,.1);
   border-radius: var(--radius-md);
-
-  background: hsl(0deg 0% 100% / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 32px #0006,inset 0 1px #ffffff1a;
 }
 
-#logoutModal .logout-modal .modal-header {
+#logoutModal .logout-modal .logout-modal-header {
+  align-items: center;
+  background: #ffffff05;
+  display: flex;
+  justify-content: space-between;
   padding: var(--spacing-lg);
-  border-bottom: 1px solid hsl(0deg 0% 100% / 10%);
 }
 
-#logoutModal .logout-modal .modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
+#logoutModal .logout-modal .logout-modal-header h2 {
+  color: var(--primary-color);
+  font-size: 20px;
   font-weight: 600;
-  text-align: center;
+  margin: 0;
 }
 
-#logoutModal .logout-modal .modal-body {
+#logoutModal .logout-modal .logout-modal-body {
   padding: var(--spacing-lg);
 }
 
@@ -1241,14 +1240,15 @@ body {
   color: var(--primary-color);
 }
 
-#logoutModal .logout-modal .modal-footer {
+#logoutModal .logout-modal .logout-modal-footer {
+  background: #ffffff05;
+  border-top: 0;
   display: flex;
+  flex-shrink: 0;
   gap: var(--spacing-md);
   justify-content: center;
-
-  margin: 0; /* Override general modal-footer margin */
   padding: var(--spacing-lg);
-  border-top: 1px solid hsl(0deg 0% 100% / 10%);
+  margin: 0;
 }
 
 #logoutModal .logout-modal .btn {

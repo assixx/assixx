@@ -121,9 +121,13 @@ export class ApiClient {
     } catch (error) {
       console.error(`[API ${version}] Request failed:`, error);
 
-      // If v2 fails and we're not explicitly using v2, try v1 as fallback
-      if (version === 'v2' && config.version === undefined && this.version !== 'v1') {
-        console.info('[API] v2 failed, falling back to v1...');
+      // Only attempt fallback for server errors, not client errors
+      // Client errors (400-499) are legitimate business errors
+      const isClientError = error instanceof ApiError && error.status >= 400 && error.status < 500;
+
+      // If v2 fails with server error and we're not explicitly using v2, try v1 as fallback
+      if (version === 'v2' && config.version === undefined && this.version !== 'v1' && !isClientError) {
+        console.info('[API] v2 failed with server error, falling back to v1...');
         return this.request<T>(endpoint, options, { ...config, version: 'v1' });
       }
 

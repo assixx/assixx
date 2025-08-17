@@ -4,7 +4,8 @@
  */
 
 import { ApiClient } from '../utils/api-client';
-import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
+import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse, type MappedTeam } from '../utils/api-mappers';
+
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
 interface Team {
@@ -41,9 +42,9 @@ interface Department {
 interface Machine {
   id: number;
   name: string;
-  departmentId?: number;
-  departmentName?: string;
-  areaId?: number;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  areaId?: number | null;
   status?: string;
 }
 
@@ -52,7 +53,7 @@ interface Machine {
 interface WindowWithTeamHandlers extends Window {
   editTeam?: (id: number) => Promise<void>;
   viewTeamDetails?: (id: number) => Promise<void>;
-  deleteTeam?: (id: number) => Promise<void>;
+  deleteTeam?: (id: number) => void;
   showTeamModal?: () => Promise<void>;
   closeTeamModal?: () => void;
   saveTeam?: () => Promise<void>;
@@ -111,9 +112,7 @@ class TeamsManager {
     document.getElementById('confirm-delete-team')?.addEventListener('click', () => {
       const deleteInput = document.getElementById('delete-team-id') as HTMLInputElement | null;
       if (deleteInput !== null && deleteInput.value !== '') {
-        void this.deleteTeam(parseInt(deleteInput.value, 10));
-        const modal = document.getElementById('delete-team-modal');
-        if (modal) modal.classList.remove('active');
+        void this.confirmDeleteTeam(parseInt(deleteInput.value, 10));
       }
     });
     document.getElementById('close-delete-modal')?.addEventListener('click', () => {
@@ -178,10 +177,11 @@ class TeamsManager {
       // Map response through api-mappers for consistent field names (only for v2)
       // Handle both v2 (with mappers) and v1 responses
       if (this.useV2API) {
-        // Direct assignment with type casting - mapTeams is imported correctly
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const mappedData = mapTeams(response) as unknown as Team[];
-        this.teams = mappedData;
+        // Map through api-mappers for consistent field names
+        // TypeScript workaround for mapTeams import issue
+        const mapFunction = mapTeams as (teams: TeamAPIResponse[]) => MappedTeam[];
+        const mappedData = mapFunction(response);
+        this.teams = mappedData as Team[];
       } else {
         this.teams = response as Team[];
       }
@@ -308,28 +308,54 @@ class TeamsManager {
     }
   }
 
-  async deleteTeam(_id: number): Promise<void> {
-    // TODO: Implement proper confirmation modal
-    showErrorAlert('Löschbestätigung: Feature noch nicht implementiert - Team kann nicht gelöscht werden');
-    await Promise.resolve();
-    // Code below will be activated once confirmation modal is implemented
-    /*
-    if (!confirm('Sind Sie sicher, dass Sie dieses Team löschen möchten?')) {
+  deleteTeam(id: number): void {
+    // Show confirmation modal
+    const modal = document.getElementById('delete-team-modal');
+    const deleteInput = document.getElementById('delete-team-id') as HTMLInputElement | null;
+
+    if (modal === null || deleteInput === null) {
+      showErrorAlert('Löschbestätigungs-Modal nicht gefunden');
       return;
     }
 
+    // Set the team ID in the hidden input
+    deleteInput.value = id.toString();
+
+    // Show the modal
+    modal.classList.add('active');
+  }
+
+  async confirmDeleteTeam(id: number): Promise<void> {
     try {
-      await this.apiClient.request(`/teams/${_id}`, {
+      await this.apiClient.request(`/teams/${id}`, {
         method: 'DELETE',
       });
 
       showSuccessAlert('Team erfolgreich gelöscht');
+
+      // Close the modal
+      const modal = document.getElementById('delete-team-modal');
+      if (modal !== null) {
+        modal.classList.remove('active');
+      }
+
+      // Reload teams
       await this.loadTeams();
     } catch (error) {
       console.error('Error deleting team:', error);
-      showErrorAlert('Fehler beim Löschen des Teams');
+      const errorObj = error as { message?: string; code?: string };
+
+      if (
+        errorObj.code === 'FOREIGN_KEY_CONSTRAINT' ||
+        errorObj.message?.includes('foreign key') === true ||
+        errorObj.message?.includes('Cannot delete team with members') === true ||
+        errorObj.message?.includes('Cannot delete team with machines') === true
+      ) {
+        showErrorAlert('Team kann nicht gelöscht werden, da noch Zuordnungen (Mitarbeiter/Maschinen) existieren');
+      } else {
+        showErrorAlert('Fehler beim Löschen des Teams');
+      }
     }
-    */
   }
 
   async getTeamDetails(id: number): Promise<Team | null> {
@@ -381,8 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    w.deleteTeam = async (id: number) => {
-      await teamsManager?.deleteTeam(id);
+    w.deleteTeam = (id: number) => {
+      teamsManager?.deleteTeam(id);
     };
 
     // Handler for floating add button
@@ -470,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <input type="checkbox" value="${machine.id}"
                              onchange="window.updateMachineSelection()"
                              style="margin-right: 8px;">
-                      <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName !== '' ? `(${machine.departmentName})` : ''}</span>
+                      <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName !== null && machine.departmentName !== '' ? `(${machine.departmentName})` : ''}</span>
                     </label>
                   `;
                   machineDropdown.appendChild(optionDiv);
@@ -512,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <input type="checkbox" value="${user.id}"
                              onchange="window.updateMemberSelection()"
                              style="margin-right: 8px;">
-                      <span>${displayName} ${user.departmentName !== undefined && user.departmentName !== '' ? `(${user.departmentName})` : ''}</span>
+                      <span>${displayName} ${user.departmentName !== undefined && user.departmentName !== '' && user.departmentName !== 'Keine Abteilung' ? `(${user.departmentName})` : ''}</span>
                     </label>
                   `;
                   memberDropdown.appendChild(optionDiv);
@@ -701,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
               await teamsManager?.apiClient.request(`/teams/${createdTeam.id}/machines`, {
                 method: 'POST',
                 body: JSON.stringify({
-                  machineId: machineId, // API v2 expects camelCase
+                  machineId, // API v2 expects camelCase
                 }),
               });
             }
@@ -720,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
               await teamsManager?.apiClient.request(`/teams/${createdTeam.id}/members`, {
                 method: 'POST',
                 body: JSON.stringify({
-                  userId: userId, // API v2 expects camelCase
+                  userId, // API v2 expects camelCase
                 }),
               });
             }

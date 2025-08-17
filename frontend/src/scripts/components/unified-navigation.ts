@@ -1238,17 +1238,17 @@ class UnifiedNavigation {
       <div id="logoutModal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
         <div class="logout-modal">
-          <div class="modal-header">
+          <div class="logout-modal-header">
             <h2>Abmeldung bestätigen</h2>
           </div>
-          <div class="modal-body">
+          <div class="logout-modal-body">
             <div class="logout-info">
               <i class="fas fa-info-circle"></i>
               <span>Alle ungespeicherten Änderungen gehen verloren.</span>
             </div>
             <p class="logout-message">Möchten Sie sich wirklich abmelden?</p>
           </div>
-          <div class="modal-footer">
+          <div class="logout-modal-footer">
             <button class="btn btn-secondary" id="cancelLogout">
               <i class="fas fa-times"></i>
               Abbrechen

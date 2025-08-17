@@ -396,8 +396,12 @@
   </head>
   <body>
     <!-- Notification Container for alerts -->
-    <div id="notification-container" class="notification-container" style="position: fixed; top: 80px; right: 20px; z-index: 10000; pointer-events: none;"></div>
-    
+    <div
+      id="notification-container"
+      class="notification-container"
+      style="position: fixed; top: 80px; right: 20px; z-index: 10000; pointer-events: none"
+    ></div>
+
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
@@ -539,7 +543,7 @@
       });
 
       // Legacy functions for backwards compatibility
-      window.loadEmployees = async function() {
+      window.loadEmployees = async function () {
         try {
           const employees = await apiClient.get('/users');
           const employeeUsers = employees.filter((u) => u.role === 'employee');
@@ -547,7 +551,7 @@
         } catch (error) {
           console.error('Error loading employees:', error);
         }
-      }
+      };
 
       function renderEmployees(employees) {
         const container = document.getElementById('employeeTableContent');
