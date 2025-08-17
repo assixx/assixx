@@ -43,7 +43,7 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
@@ -94,7 +94,7 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
@@ -191,9 +191,10 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         const errorCode =
-          errorObj.code === 400 && errorObj.message?.includes("required")
+          errorObj.code === 400 &&
+          errorObj.message?.includes("required") === true
             ? "VALIDATION_ERROR"
             : `DEPT_${errorObj.code}`;
         res
@@ -317,7 +318,7 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
@@ -416,7 +417,7 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
@@ -467,7 +468,7 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
@@ -508,7 +509,7 @@ export class DepartmentController {
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(

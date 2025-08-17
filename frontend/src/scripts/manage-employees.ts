@@ -5,8 +5,8 @@
 
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
-
-import { showSuccess, showError } from './auth';
+import { mapUsers, type UserAPIResponse } from '../utils/api-mappers';
+import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
 interface Employee extends User {
   employeeId?: string;
@@ -64,9 +64,13 @@ class EmployeesManager {
   private employees: Employee[] = [];
   private currentFilter: 'all' | 'active' | 'inactive' = 'all';
   private searchTerm = '';
+  private useV2API = true; // Default to v2 API
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
+    // Check feature flag for v2 API
+    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_USERS?: boolean } };
+    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_USERS !== false;
     this.initializeEventListeners();
   }
 
@@ -74,7 +78,7 @@ class EmployeesManager {
     // TODO: Implement custom modal dialog
     // For now, return false to block action
     // In production, this should open a proper confirmation modal
-    showError(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
+    showErrorAlert(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
     return false; // Safer to block action until proper modal is implemented
   }
 
@@ -131,14 +135,25 @@ class EmployeesManager {
         params.search = this.searchTerm;
       }
 
-      const response = await this.apiClient.request<Employee[]>('/users', {
+      // ApiClient adds /api/v2 or /api prefix automatically based on feature flag
+      const response = await this.apiClient.request<UserAPIResponse[]>('/users', {
         method: 'GET',
       });
+
+      // Handle empty response
+      if (!Array.isArray(response)) {
+        this.employees = [];
+        this.renderEmployeesTable();
+        return;
+      }
+
+      // Map response through api-mappers for consistent field names (only for v2)
+      const mappedUsers = this.useV2API ? mapUsers(response) : response;
 
       // CRITICAL SECURITY: Only show users with role='employee'
       // NEVER show admins or roots in the employees table
       // Admins cannot manage other admins or see root users
-      this.employees = response.filter((user) => user.role === 'employee');
+      this.employees = mappedUsers.filter((user) => user.role === 'employee') as Employee[];
 
       // Apply status filter based on is_active field
       if (this.currentFilter === 'active') {
@@ -162,7 +177,16 @@ class EmployeesManager {
       this.renderEmployeesTable();
     } catch (error) {
       console.error('Error loading employees:', error);
-      showError('Fehler beim Laden der Mitarbeiter');
+      // Check if it's a 404 (no data) - in that case just show empty state
+      const errorObj = error as { status?: number; message?: string };
+      if (errorObj.status === 404) {
+        // No employees found - this is OK, just show empty state
+        this.employees = [];
+        this.renderEmployeesTable();
+      } else {
+        // Real error - show error message
+        showErrorAlert('Fehler beim Laden der Mitarbeiter');
+      }
     }
   }
 
@@ -306,49 +330,53 @@ class EmployeesManager {
   }
 
   async createEmployee(data: Partial<Employee>): Promise<Employee> {
-    try {
-      const response = await this.apiClient.request<Employee>('/users', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+    const response = await this.apiClient.request<UserAPIResponse>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
 
-      showSuccess('Mitarbeiter erfolgreich erstellt');
-      await this.loadEmployees();
-      return response;
-    } catch (error) {
-      console.error('Error creating employee:', error);
-      showError('Fehler beim Erstellen des Mitarbeiters');
-      throw error;
-    }
+    showSuccessAlert('Mitarbeiter erfolgreich erstellt');
+
+    // Reload page after successful creation
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+
+    // Map single user response
+    const mappedUsers = mapUsers([response]);
+    return mappedUsers[0] as unknown as Employee;
   }
 
   async updateEmployee(id: number, data: Partial<Employee>): Promise<Employee> {
     // SECURITY: First check if user is actually an employee
     const user = await this.getEmployeeDetails(id);
     if (user === null) {
-      showError('Mitarbeiter nicht gefunden');
+      showErrorAlert('Mitarbeiter nicht gefunden');
       throw new Error('User not found');
     }
 
     // CRITICAL: Never allow editing of admins or roots
     if (user.role !== 'employee') {
-      showError('Sicherheitsfehler: Diese Aktion ist nicht erlaubt');
+      showErrorAlert('Sicherheitsfehler: Diese Aktion ist nicht erlaubt');
       console.error(`SECURITY VIOLATION: Attempted to update user with role ${user.role}`);
       throw new Error('Security violation');
     }
 
     try {
-      const response = await this.apiClient.request<Employee>(`/users/${id}`, {
+      const response = await this.apiClient.request<UserAPIResponse>(`/users/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
 
-      showSuccess('Mitarbeiter erfolgreich aktualisiert');
+      showSuccessAlert('Mitarbeiter erfolgreich aktualisiert');
       await this.loadEmployees();
-      return response;
+
+      // Map single user response
+      const mappedUsers = mapUsers([response]);
+      return mappedUsers[0] as unknown as Employee;
     } catch (error) {
       console.error('Error updating employee:', error);
-      showError('Fehler beim Aktualisieren des Mitarbeiters');
+      showErrorAlert('Fehler beim Aktualisieren des Mitarbeiters');
       throw error;
     }
   }
@@ -357,13 +385,13 @@ class EmployeesManager {
     // SECURITY: First check if user is actually an employee
     const user = await this.getEmployeeDetails(id);
     if (user === null) {
-      showError('Mitarbeiter nicht gefunden');
+      showErrorAlert('Mitarbeiter nicht gefunden');
       return;
     }
 
     // CRITICAL: Never allow deletion of admins or roots
     if (user.role !== 'employee') {
-      showError('Sicherheitsfehler: Diese Aktion ist nicht erlaubt');
+      showErrorAlert('Sicherheitsfehler: Diese Aktion ist nicht erlaubt');
       console.error(`SECURITY VIOLATION: Attempted to delete user with role ${user.role}`);
       return;
     }
@@ -378,28 +406,31 @@ class EmployeesManager {
         method: 'DELETE',
       });
 
-      showSuccess('Mitarbeiter erfolgreich gelöscht');
+      showSuccessAlert('Mitarbeiter erfolgreich gelöscht');
       await this.loadEmployees();
     } catch (error) {
       console.error('Error deleting employee:', error);
-      showError('Fehler beim Löschen des Mitarbeiters');
+      showErrorAlert('Fehler beim Löschen des Mitarbeiters');
     }
   }
 
   async getEmployeeDetails(id: number): Promise<Employee | null> {
     try {
-      const response = await this.apiClient.request<Employee>(`/users/${id}`, {
+      const response = await this.apiClient.request<UserAPIResponse>(`/users/${id}`, {
         method: 'GET',
       });
-      return response;
+
+      // Map single user response
+      const mappedUsers = mapUsers([response]);
+      return mappedUsers[0] as unknown as Employee;
     } catch (error) {
       console.error('Error getting employee details:', error);
-      showError('Fehler beim Laden der Mitarbeiterdetails');
+      showErrorAlert('Fehler beim Laden der Mitarbeiterdetails');
       return null;
     }
   }
 
-  async loadDepartments(): Promise<Department[] | null> {
+  async loadDepartments(): Promise<Department[]> {
     try {
       const response = await this.apiClient.request<Department[]>('/departments', {
         method: 'GET',
@@ -407,11 +438,11 @@ class EmployeesManager {
       return response;
     } catch (error) {
       console.error('Error loading departments:', error);
-      return null;
+      return [];
     }
   }
 
-  async loadTeams(): Promise<Team[] | null> {
+  async loadTeams(): Promise<Team[]> {
     try {
       const response = await this.apiClient.request<Team[]>('/teams', {
         method: 'GET',
@@ -419,7 +450,7 @@ class EmployeesManager {
       return response;
     } catch (error) {
       console.error('Error loading teams:', error);
-      return null;
+      return [];
     }
   }
 }
@@ -429,8 +460,8 @@ let employeesManager: EmployeesManager | null = null;
 
 // Initialize on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
-  // Only initialize if we're on the admin dashboard
-  if (window.location.pathname === '/admin-dashboard') {
+  // Initialize on admin dashboard or manage-employees page
+  if (window.location.pathname === '/admin-dashboard' || window.location.pathname === '/manage-employees') {
     employeesManager = new EmployeesManager();
 
     // Setup global window functions
@@ -455,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (employee !== null) {
         console.info('View employee:', employee);
         // TODO: Show employee details modal
-        showError('Detailansicht noch nicht implementiert');
+        showErrorAlert('Detailansicht noch nicht implementiert');
       }
     };
 
@@ -472,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveEmployee = async () => {
-      const form = document.getElementById('create-employee-form') as HTMLFormElement | null;
+      const form = document.getElementById('employee-form') as HTMLFormElement | null;
       if (form === null) return;
 
       const formData = new FormData(form);
@@ -498,8 +529,17 @@ document.addEventListener('DOMContentLoaded', () => {
         typeof data.lastName !== 'string' ||
         data.lastName.length === 0
       ) {
-        showError('Bitte füllen Sie alle Pflichtfelder aus');
+        showErrorAlert('Bitte füllen Sie alle Pflichtfelder aus');
         return;
+      }
+
+      // Set role to 'employee' for new users
+      data.role = 'employee';
+      // Set username to email (required by backend)
+      data.username = data.email;
+      // Convert isActive to boolean if present
+      if (data.isActive !== undefined) {
+        data.isActive = data.isActive === '1' || data.isActive === true;
       }
 
       try {
@@ -508,30 +548,52 @@ document.addEventListener('DOMContentLoaded', () => {
         form.reset();
       } catch (error) {
         console.error('Error saving employee:', error);
+
+        // Check if error has a message property (works for both ApiError and Error)
+        const errorObj = error as { message?: string; code?: string; name?: string };
+
+        if (errorObj.message !== undefined) {
+          const errorMessage = errorObj.message.toLowerCase();
+          console.error('Error message to check:', errorObj.message);
+
+          if (errorMessage.includes('email already exists') || errorMessage.includes('email existiert bereits')) {
+            showErrorAlert(
+              'Diese E-Mail-Adresse ist bereits vergeben. Bitte verwenden Sie eine andere E-Mail-Adresse.',
+            );
+          } else if (
+            errorMessage.includes('username already exists') ||
+            errorMessage.includes('benutzername existiert bereits')
+          ) {
+            showErrorAlert('Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen Benutzernamen.');
+          } else if (errorMessage.includes('duplicate') || errorMessage.includes('duplikat')) {
+            showErrorAlert('Ein Mitarbeiter mit diesen Daten existiert bereits.');
+          } else if (errorMessage.includes('validation')) {
+            showErrorAlert(`Validierungsfehler: ${errorObj.message}`);
+          } else {
+            // Show the actual error message from backend
+            showErrorAlert(errorObj.message);
+          }
+        } else {
+          console.error('Unknown error type:', error);
+          showErrorAlert('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+        }
       }
     };
 
     w.loadDepartmentsForEmployeeSelect = async () => {
       const departments = await employeesManager?.loadDepartments();
-      const dropdown = document.getElementById('employee-department-dropdown');
+      const selectElement = document.getElementById('employee-department-select') as HTMLSelectElement | null;
 
-      if (dropdown && departments) {
-        dropdown.innerHTML = `
-          <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
-            <i class="fas fa-times-circle"></i> Keine Abteilung
-          </div>
-        `;
+      if (selectElement !== null && departments !== undefined) {
+        // Clear existing options and add default
+        selectElement.innerHTML = '<option value="">Keine Abteilung</option>';
 
+        // Add department options
         departments.forEach((dept) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'dropdown-option';
-          optionDiv.setAttribute('data-value', dept.id.toString());
-          optionDiv.innerHTML = `<i class="fas fa-building"></i> ${dept.name}`;
-          optionDiv.setAttribute(
-            'onclick',
-            `selectDropdownOption('employee-department', '${dept.id}', '${dept.name.replace(/'/g, "\\'")}')`,
-          );
-          dropdown.appendChild(optionDiv);
+          const option = document.createElement('option');
+          option.value = dept.id.toString();
+          option.textContent = dept.name;
+          selectElement.appendChild(option);
         });
 
         console.info('[EmployeesManager] Loaded departments:', departments.length);
@@ -540,42 +602,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadTeamsForEmployeeSelect = async () => {
       const teams = await employeesManager?.loadTeams();
-      const selectedDeptId = (document.getElementById('employee-department-select') as HTMLInputElement | null)?.value;
-      const dropdown = document.getElementById('employee-team-dropdown');
+      const selectedDeptId = (document.getElementById('employee-department-select') as HTMLSelectElement | null)?.value;
+      const selectElement = document.getElementById('employee-team-select') as HTMLSelectElement | null;
 
-      if (dropdown && teams) {
+      if (selectElement !== null && teams !== undefined) {
         // Filter teams by department if one is selected
         let filteredTeams = teams;
-        if (selectedDeptId !== undefined && selectedDeptId !== '0') {
+        if (selectedDeptId !== undefined && selectedDeptId !== '' && selectedDeptId !== '0') {
           filteredTeams = teams.filter((team) => team.departmentId === parseInt(selectedDeptId, 10));
         }
 
-        dropdown.innerHTML = `
-          <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-team', '', 'Kein Team')">
-            <i class="fas fa-times-circle"></i> Kein Team
-          </div>
-        `;
+        // Clear existing options and add default
+        selectElement.innerHTML = '<option value="">Kein Team</option>';
 
+        // Add team options
         filteredTeams.forEach((team) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'dropdown-option';
-          optionDiv.setAttribute('data-value', team.id.toString());
-          optionDiv.innerHTML = `<i class="fas fa-users"></i> ${team.name}`;
-          optionDiv.setAttribute(
-            'onclick',
-            `selectDropdownOption('employee-team', '${team.id}', '${team.name.replace(/'/g, "\\'")}')`,
-          );
-          dropdown.appendChild(optionDiv);
+          const option = document.createElement('option');
+          option.value = team.id.toString();
+          option.textContent = team.name;
+          selectElement.appendChild(option);
         });
 
         console.info('[EmployeesManager] Loaded teams:', filteredTeams.length);
       }
     };
 
+    // Add form submit handler
+    const employeeForm = document.getElementById('employee-form') as HTMLFormElement | null;
+    if (employeeForm !== null) {
+      employeeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        void w.saveEmployee?.();
+      });
+    }
+
     // Check URL and load employees if needed
     const checkAndLoadEmployees = () => {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('section') === 'employees') {
+      const currentPath = window.location.pathname;
+
+      // Load employees if on admin dashboard employees section OR on manage-employees page
+      if (urlParams.get('section') === 'employees' || currentPath.includes('manage-employees')) {
         void employeesManager?.loadEmployees();
       }
     };

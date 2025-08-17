@@ -150,4 +150,32 @@ export const teamsValidation = {
       .withMessage("User ID must be a positive integer"),
     handleValidationErrors,
   ],
+
+  /**
+   * Add machine to team validation
+   */
+  addMachine: [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Team ID must be a positive integer"),
+    body("machineId")
+      .notEmpty()
+      .withMessage("Machine ID is required")
+      .isInt({ min: 1 })
+      .withMessage("Machine ID must be a positive integer"),
+    handleValidationErrors,
+  ],
+
+  /**
+   * Remove machine from team validation
+   */
+  removeMachine: [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Team ID must be a positive integer"),
+    param("machineId")
+      .isInt({ min: 1 })
+      .withMessage("Machine ID must be a positive integer"),
+    handleValidationErrors,
+  ],
 };

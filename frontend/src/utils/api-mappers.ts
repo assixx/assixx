@@ -103,6 +103,7 @@ export interface MappedDepartment {
   id: number;
   name: string;
   description?: string;
+  areaId?: number | null;
   memberCount: number;
   createdAt?: string;
   updatedAt?: string;
@@ -113,6 +114,8 @@ export interface DepartmentAPIResponse {
   id: number;
   name?: string;
   description?: string;
+  area_id?: number | null;
+  areaId?: number | null;
   member_count?: number;
   memberCount?: number;
   created_at?: string;
@@ -126,6 +129,7 @@ export function mapDepartment(dept: DepartmentAPIResponse): MappedDepartment {
     id: dept.id,
     name: dept.name ?? '',
     description: dept.description ?? '',
+    areaId: dept.area_id ?? dept.areaId ?? null,
     memberCount: dept.member_count ?? dept.memberCount ?? 0,
     createdAt: dept.created_at ?? dept.createdAt,
     updatedAt: dept.updated_at ?? dept.updatedAt,
@@ -177,4 +181,99 @@ export function mapDocument(doc: DocumentAPIResponse): MappedDocument {
     uploadDate: doc.upload_date ?? doc.uploadDate ?? new Date().toISOString(),
     isPublic: doc.is_public ?? doc.isPublic ?? false,
   };
+}
+
+// Team mapping
+export interface MappedTeam {
+  id: number;
+  name: string;
+  description?: string;
+  leaderId?: number;
+  leaderName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  areaId?: number;
+  shiftModelId?: number;
+  memberCount?: number;
+  maxMembers?: number;
+  teamType?: 'production' | 'quality' | 'maintenance' | 'logistics' | 'administration' | 'other';
+  status: 'active' | 'inactive' | 'restructuring';
+  foundedDate?: string;
+  costCenter?: string;
+  budget?: number;
+  performanceScore?: number;
+  notes?: string;
+  isActive?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Team API response type
+export interface TeamAPIResponse {
+  id: number;
+  name?: string;
+  description?: string;
+  leader_id?: number;
+  leaderId?: number;
+  leader_name?: string;
+  leaderName?: string;
+  department_id?: number;
+  departmentId?: number;
+  department_name?: string;
+  departmentName?: string;
+  area_id?: number;
+  areaId?: number;
+  shift_model_id?: number;
+  shiftModelId?: number;
+  member_count?: number;
+  memberCount?: number;
+  max_members?: number;
+  maxMembers?: number;
+  team_type?: string;
+  teamType?: string;
+  status?: string;
+  founded_date?: string;
+  foundedDate?: string;
+  cost_center?: string;
+  costCenter?: string;
+  budget?: number;
+  performance_score?: number;
+  performanceScore?: number;
+  notes?: string;
+  is_active?: boolean;
+  isActive?: boolean;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+}
+
+export function mapTeam(team: TeamAPIResponse): MappedTeam {
+  return {
+    id: team.id,
+    name: team.name ?? '',
+    description: team.description,
+    leaderId: team.leader_id ?? team.leaderId,
+    leaderName: team.leader_name ?? team.leaderName,
+    departmentId: team.department_id ?? team.departmentId,
+    departmentName: team.department_name ?? team.departmentName,
+    areaId: team.area_id ?? team.areaId,
+    shiftModelId: team.shift_model_id ?? team.shiftModelId,
+    memberCount: team.member_count ?? team.memberCount,
+    maxMembers: team.max_members ?? team.maxMembers,
+    teamType: (team.team_type ?? team.teamType) as MappedTeam['teamType'],
+    status: (team.status ?? 'active') as MappedTeam['status'],
+    foundedDate: team.founded_date ?? team.foundedDate,
+    costCenter: team.cost_center ?? team.costCenter,
+    budget: team.budget,
+    performanceScore: team.performance_score ?? team.performanceScore,
+    notes: team.notes,
+    isActive: team.is_active ?? team.isActive,
+    createdAt: team.created_at ?? team.createdAt ?? new Date().toISOString(),
+    updatedAt: team.updated_at ?? team.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+export function mapTeams(teams: TeamAPIResponse[]): MappedTeam[] {
+  return teams.map(mapTeam);
 }

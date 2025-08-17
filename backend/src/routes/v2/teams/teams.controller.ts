@@ -45,6 +45,21 @@ interface AddMachineBody {
 }
 
 export class TeamsController {
+  constructor() {
+    // Bind all methods to ensure correct context
+    this.listTeams = this.listTeams.bind(this);
+    this.getTeamById = this.getTeamById.bind(this);
+    this.createTeam = this.createTeam.bind(this);
+    this.updateTeam = this.updateTeam.bind(this);
+    this.deleteTeam = this.deleteTeam.bind(this);
+    this.getTeamMembers = this.getTeamMembers.bind(this);
+    this.addTeamMember = this.addTeamMember.bind(this);
+    this.removeTeamMember = this.removeTeamMember.bind(this);
+    this.getTeamMachines = this.getTeamMachines.bind(this);
+    this.addTeamMachine = this.addTeamMachine.bind(this);
+    this.removeTeamMachine = this.removeTeamMachine.bind(this);
+  }
+
   /**
    * List all teams
    */

@@ -31,6 +31,58 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 - **Always use best-practice methods**
 - **Always make todowrite list**
 
+## 🎨 UX/UI DESIGN STANDARDS (NEU - 16.08.2025)
+
+### KEINE MODALS MEHR FÜR DATENEINGABE!
+
+**Ab sofort gilt:** Alle Formulare für Dateneingabe werden als **Inline-Formulare** implementiert, KEINE Modals mehr!
+
+#### Warum diese Änderung?
+
+- **Mobile-First:** Modals funktionieren schlecht auf Smartphones
+- **Better UX:** User bleibt im Kontext, kein Workflow-Unterbruch  
+- **Accessibility:** Screen-Reader und Keyboard-Navigation freundlicher
+- **Modern Standards:** Inline-Forms sind 2025 Best Practice
+- **Performance:** Weniger JavaScript, keine Z-Index Probleme
+
+#### Neue UI-Patterns für Formulare:
+
+1. **Split-View Pattern (Bevorzugt für Desktop)**
+   - Links: Liste/Tabelle der Einträge
+   - Rechts: Permanentes Formular für Add/Edit
+   - Beispiel: Mitarbeiter-Verwaltung, Areas, Departments
+
+2. **Inline-Expansion Pattern**
+   - "Add New" Button öffnet Formular direkt über/unter der Liste
+   - Edit-Form klappt direkt in der Zeile auf
+   - Beispiel: KVP-Vorschläge, Blackboard-Einträge
+
+3. **Slide-in Panel Pattern** 
+   - Von rechts einfahrendes Panel (nicht modal!)
+   - Overlay nur partial, Liste bleibt sichtbar
+   - Beispiel: Chat, Notifications
+
+4. **Top-Form Pattern**
+   - Formular permanent über der Tabelle
+   - Collapsible für mehr Platz
+   - Beispiel: Quick-Add für häufige Aktionen
+
+#### Was ist noch erlaubt für Modals?
+
+Modals NUR noch für:
+- ❌ Lösch-Bestätigungen ("Wirklich löschen?")
+- ⚠️ Kritische Warnungen (Datenverlust-Warnung)
+- ℹ️ Info-Dialoge (Hilfe, About)
+- 🔒 Session-Timeouts
+- NIEMALS für Dateneingabe!
+
+#### Migration bestehender Modals:
+
+Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden:
+- Priority 1: Häufig genutzte Features (Mitarbeiter, Shifts, Calendar)
+- Priority 2: Admin-Features (Areas, Departments, Teams)  
+- Priority 3: Seltene Features (Settings, Profile)
+
 ## **Use MCP Tools Before Everything:**
 
 – Before modifying files (understand history)

@@ -395,6 +395,9 @@
     <script type="module" src="/scripts/common.js"></script>
   </head>
   <body>
+    <!-- Notification Container for alerts -->
+    <div id="notification-container" class="notification-container" style="position: fixed; top: 80px; right: 20px; z-index: 10000; pointer-events: none;"></div>
+    
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
@@ -519,6 +522,8 @@
     <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <!-- Employee Management -->
+    <script type="module" src="/scripts/manage-employees.ts"></script>
     <script type="module">
       // Auth check
       const token = localStorage.getItem('token');
@@ -528,8 +533,13 @@
         window.location.href = '/login';
       }
 
-      // Load employees
-      async function loadEmployees() {
+      // Initialize when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        // Employee management is handled by manage-employees.ts
+      });
+
+      // Legacy functions for backwards compatibility
+      window.loadEmployees = async function() {
         try {
           const employees = await apiClient.get('/users');
           const employeeUsers = employees.filter((u) => u.role === 'employee');
@@ -765,7 +775,9 @@
         }
       }
 
-      // Form submit
+      // Form submit - DISABLED: Using TypeScript handler from manage-employees.ts instead
+      // This prevents duplicate handlers and ensures consistent error handling with NotificationService
+      /*
       document.getElementById('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -872,10 +884,23 @@
             window.location.reload();
           }
         } catch (error) {
-          console.error('Error saving employee:', error);
-          alert('Netzwerkfehler beim Speichern');
+          console.error('Error saving employee (HTML handler):', error);
+          // Check if error has a message
+          if (error && error.message) {
+            const errorMessage = error.message.toLowerCase();
+            if (errorMessage.includes('email already exists') || errorMessage.includes('email existiert bereits')) {
+              alert('Diese E-Mail-Adresse ist bereits vergeben. Bitte verwenden Sie eine andere E-Mail-Adresse.');
+            } else if (errorMessage.includes('username already exists')) {
+              alert('Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen Benutzernamen.');
+            } else {
+              alert(error.message || 'Fehler beim Speichern');
+            }
+          } else {
+            alert('Fehler beim Speichern');
+          }
         }
       });
+      */
 
       // Close modal on outside click
       window.addEventListener('click', (e) => {

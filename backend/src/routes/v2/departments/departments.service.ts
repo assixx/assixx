@@ -70,7 +70,7 @@ export class DepartmentService {
    */
   async getDepartments(
     tenantId: number,
-    includeExtended: boolean = true,
+    includeExtended = true,
   ): Promise<DepartmentV2[]> {
     try {
       const departments = await Department.findAll(tenantId);
@@ -151,7 +151,7 @@ export class DepartmentService {
       }
 
       // Validate parent department if specified
-      if (data.parentId) {
+      if (data.parentId !== undefined) {
         const parent = await Department.findById(data.parentId, tenantId);
         if (!parent) {
           throw new ServiceError(400, "Parent department not found");
@@ -169,12 +169,12 @@ export class DepartmentService {
         tenant_id: tenantId,
       });
 
-      return this.getDepartmentById(departmentId, tenantId);
+      return await this.getDepartmentById(departmentId, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
 
       // Check for duplicate key error
-      const errorMessage = (error as Error).message ?? "";
+      const errorMessage = (error as Error).message || "";
       if (
         errorMessage.includes("Duplicate entry") ||
         errorMessage.includes("unique_name_tenant")
@@ -208,16 +208,14 @@ export class DepartmentService {
           throw new ServiceError(400, "Department cannot be its own parent");
         }
 
-        if (data.parentId) {
-          const parent = await Department.findById(data.parentId, tenantId);
-          if (!parent) {
-            throw new ServiceError(400, "Parent department not found");
-          }
+        const parent = await Department.findById(data.parentId, tenantId);
+        if (!parent) {
+          throw new ServiceError(400, "Parent department not found");
         }
       }
 
       // Validate manager if specified
-      if (data.managerId !== undefined && data.managerId !== null) {
+      if (data.managerId !== undefined) {
         const User = (await import("../../../models/user.js")).default;
         const manager = await User.findById(data.managerId, tenantId);
         if (!manager) {
@@ -250,7 +248,7 @@ export class DepartmentService {
         throw new ServiceError(500, "Failed to update department");
       }
 
-      return this.getDepartmentById(id, tenantId);
+      return await this.getDepartmentById(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error("Error updating department:", error);

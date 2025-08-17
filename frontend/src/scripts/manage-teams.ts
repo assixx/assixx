@@ -4,8 +4,8 @@
  */
 
 import { ApiClient } from '../utils/api-client';
-
-import { showSuccess, showError } from './auth';
+import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
+import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
 interface Team {
   id: number;
@@ -47,16 +47,7 @@ interface Machine {
   status?: string;
 }
 
-interface User {
-  id: number;
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  departmentId?: number;
-  departmentName?: string;
-  role?: string;
-}
+// Use this type for users loaded in teams module to avoid conflicts
 
 interface WindowWithTeamHandlers extends Window {
   editTeam?: (id: number) => Promise<void>;
@@ -72,9 +63,13 @@ class TeamsManager {
   private teams: Team[] = [];
   private currentFilter: 'all' | 'active' | 'inactive' = 'all';
   private searchTerm = '';
+  private useV2API = true; // Default to v2 API
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
+    // Check feature flag for v2 API
+    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_TEAMS?: boolean } };
+    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_TEAMS !== false;
     this.initializeEventListeners();
     // Load teams initially
     void this.loadTeams();
@@ -175,16 +170,25 @@ class TeamsManager {
         params.search = this.searchTerm;
       }
 
-      const response = await this.apiClient.request<Team[]>('/teams', {
+      // ApiClient adds /api/v2 or /api prefix automatically based on feature flag
+      const response = await this.apiClient.request<TeamAPIResponse[]>('/teams', {
         method: 'GET',
       });
 
-      // v2 API: apiClient.request already extracts the data array
-      this.teams = response;
+      // Map response through api-mappers for consistent field names (only for v2)
+      // Handle both v2 (with mappers) and v1 responses
+      if (this.useV2API) {
+        // Direct assignment with type casting - mapTeams is imported correctly
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        const mappedData = mapTeams(response) as unknown as Team[];
+        this.teams = mappedData;
+      } else {
+        this.teams = response as Team[];
+      }
       this.renderTeamsTable();
     } catch (error) {
       console.error('Error loading teams:', error);
-      showError('Fehler beim Laden der Teams');
+      showErrorAlert('Fehler beim Laden der Teams');
     }
   }
 
@@ -277,12 +281,12 @@ class TeamsManager {
         body: JSON.stringify(teamData),
       });
 
-      showSuccess('Team erfolgreich erstellt');
+      showSuccessAlert('Team erfolgreich erstellt');
       await this.loadTeams();
       return response;
     } catch (error) {
       console.error('Error creating team:', error);
-      showError('Fehler beim Erstellen des Teams');
+      showErrorAlert('Fehler beim Erstellen des Teams');
       throw error;
     }
   }
@@ -294,19 +298,19 @@ class TeamsManager {
         body: JSON.stringify(teamData),
       });
 
-      showSuccess('Team erfolgreich aktualisiert');
+      showSuccessAlert('Team erfolgreich aktualisiert');
       await this.loadTeams();
       return response;
     } catch (error) {
       console.error('Error updating team:', error);
-      showError('Fehler beim Aktualisieren des Teams');
+      showErrorAlert('Fehler beim Aktualisieren des Teams');
       throw error;
     }
   }
 
   async deleteTeam(_id: number): Promise<void> {
     // TODO: Implement proper confirmation modal
-    showError('Löschbestätigung: Feature noch nicht implementiert - Team kann nicht gelöscht werden');
+    showErrorAlert('Löschbestätigung: Feature noch nicht implementiert - Team kann nicht gelöscht werden');
     await Promise.resolve();
     // Code below will be activated once confirmation modal is implemented
     /*
@@ -319,11 +323,11 @@ class TeamsManager {
         method: 'DELETE',
       });
 
-      showSuccess('Team erfolgreich gelöscht');
+      showSuccessAlert('Team erfolgreich gelöscht');
       await this.loadTeams();
     } catch (error) {
       console.error('Error deleting team:', error);
-      showError('Fehler beim Löschen des Teams');
+      showErrorAlert('Fehler beim Löschen des Teams');
     }
     */
   }
@@ -337,7 +341,7 @@ class TeamsManager {
       return response;
     } catch (error) {
       console.error('Error getting team details:', error);
-      showError('Fehler beim Laden der Teamdetails');
+      showErrorAlert('Fehler beim Laden der Teamdetails');
       return null;
     }
   }
@@ -364,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (team !== null) {
         // TODO: Open edit modal with team data
         console.info('Edit team:', team);
-        showError('Bearbeitungsmodal noch nicht implementiert');
+        showErrorAlert('Bearbeitungsmodal noch nicht implementiert');
       }
     };
 
@@ -373,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (team !== null) {
         // TODO: Open details modal
         console.info('View team:', team);
-        showError('Detailansicht noch nicht implementiert');
+        showErrorAlert('Detailansicht noch nicht implementiert');
       }
     };
 
@@ -413,10 +417,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Load admins for team-lead dropdown
           try {
-            const usersResponse = await teamsManager.apiClient.request<User[]>('/users?role=admin', {
+            const usersResponse = await teamsManager.apiClient.request<UserAPIResponse[]>('/users?role=admin', {
               method: 'GET',
             });
-            const admins = usersResponse;
+            const admins = mapUsers(usersResponse);
             const teamLeadSelect = document.getElementById('team-lead') as HTMLSelectElement | null;
 
             if (teamLeadSelect !== null) {
@@ -428,10 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const option = document.createElement('option');
                 option.value = admin.id.toString();
                 const displayName =
-                  admin.firstName !== undefined &&
-                  admin.firstName.length > 0 &&
-                  admin.lastName !== undefined &&
-                  admin.lastName.length > 0
+                  admin.firstName !== '' && admin.lastName !== ''
                     ? `${admin.firstName} ${admin.lastName}`
                     : admin.username;
                 option.textContent = displayName;
@@ -469,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <input type="checkbox" value="${machine.id}"
                              onchange="window.updateMachineSelection()"
                              style="margin-right: 8px;">
-                      <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName.length > 0 ? `(${machine.departmentName})` : ''}</span>
+                      <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName !== '' ? `(${machine.departmentName})` : ''}</span>
                     </label>
                   `;
                   machineDropdown.appendChild(optionDiv);
@@ -484,10 +485,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Load users for multi-select dropdown (Team-Members)
           try {
-            const userResponse = await teamsManager.apiClient.request<User[]>('/users', {
+            const userResponse = await teamsManager.apiClient.request<UserAPIResponse[]>('/users', {
               method: 'GET',
             });
-            const users = userResponse;
+            const users = mapUsers(userResponse);
             const memberDropdown = document.getElementById('team-members-dropdown');
 
             if (memberDropdown !== null) {
@@ -503,10 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   optionDiv.className = 'dropdown-option';
                   optionDiv.style.padding = '8px 12px';
                   const displayName =
-                    user.firstName !== undefined &&
-                    user.firstName.length > 0 &&
-                    user.lastName !== undefined &&
-                    user.lastName.length > 0
+                    user.firstName !== '' && user.lastName !== ''
                       ? `${user.firstName} ${user.lastName}`
                       : user.username;
                   optionDiv.innerHTML = `
@@ -514,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <input type="checkbox" value="${user.id}"
                              onchange="window.updateMemberSelection()"
                              style="margin-right: 8px;">
-                      <span>${displayName} ${user.departmentName !== undefined && user.departmentName.length > 0 ? `(${user.departmentName})` : ''}</span>
+                      <span>${displayName} ${user.departmentName !== undefined && user.departmentName !== '' ? `(${user.departmentName})` : ''}</span>
                     </label>
                   `;
                   memberDropdown.appendChild(optionDiv);
@@ -688,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Validate required fields
       if (typeof teamData.name !== 'string' || teamData.name.length === 0) {
-        showError('Bitte geben Sie einen Teamnamen ein');
+        showErrorAlert('Bitte geben Sie einen Teamnamen ein');
         return;
       }
 
@@ -703,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
               await teamsManager?.apiClient.request(`/teams/${createdTeam.id}/machines`, {
                 method: 'POST',
                 body: JSON.stringify({
-                  machineId,
+                  machineId: machineId, // API v2 expects camelCase
                 }),
               });
             }
@@ -722,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
               await teamsManager?.apiClient.request(`/teams/${createdTeam.id}/members`, {
                 method: 'POST',
                 body: JSON.stringify({
-                  userId,
+                  userId: userId, // API v2 expects camelCase
                 }),
               });
             }
@@ -734,10 +732,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         w.closeTeamModal?.();
-        showSuccess('Team erfolgreich erstellt');
+        // Success message already shown in createTeam method
       } catch (error) {
         console.error('Error creating team:', error);
-        showError('Fehler beim Erstellen des Teams');
+        // Error message already shown in createTeam method
       }
     };
 

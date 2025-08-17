@@ -4,6 +4,7 @@
  */
 
 import { ApiClient } from '../utils/api-client';
+import { mapDepartment, type DepartmentAPIResponse } from '../utils/api-mappers';
 
 import { showSuccess, showError } from './auth';
 
@@ -131,12 +132,12 @@ class DepartmentsManager {
         params.search = this.searchTerm;
       }
 
-      const response = await this.apiClient.request<Department[]>('/departments', {
+      const response = await this.apiClient.request<DepartmentAPIResponse[]>('/api/v2/departments', {
         method: 'GET',
       });
 
-      // v2 API: apiClient.request already extracts the data array
-      this.departments = response;
+      // v2 API: Map response through api-mappers for consistent field names
+      this.departments = response.map(mapDepartment) as Department[];
 
       // Apply client-side filtering if needed
       if (this.currentFilter !== 'all') {
@@ -259,14 +260,14 @@ class DepartmentsManager {
 
   async createDepartment(data: Partial<Department>): Promise<Department> {
     try {
-      const response = await this.apiClient.request<Department>('/departments', {
+      const response = await this.apiClient.request<DepartmentAPIResponse>('/api/v2/departments', {
         method: 'POST',
         body: JSON.stringify(data),
       });
 
       showSuccess('Abteilung erfolgreich erstellt');
       await this.loadDepartments();
-      return response;
+      return mapDepartment(response) as Department;
     } catch (error) {
       console.error('Error creating department:', error);
       showError('Fehler beim Erstellen der Abteilung');
@@ -276,14 +277,14 @@ class DepartmentsManager {
 
   async updateDepartment(id: number, data: Partial<Department>): Promise<Department> {
     try {
-      const response = await this.apiClient.request<Department>(`/departments/${id}`, {
+      const response = await this.apiClient.request<DepartmentAPIResponse>(`/api/v2/departments/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
 
       showSuccess('Abteilung erfolgreich aktualisiert');
       await this.loadDepartments();
-      return response;
+      return mapDepartment(response) as Department;
     } catch (error) {
       console.error('Error updating department:', error);
       showError('Fehler beim Aktualisieren der Abteilung');
@@ -302,7 +303,7 @@ class DepartmentsManager {
     }
 
     try {
-      await this.apiClient.request(`/departments/${id}`, {
+      await this.apiClient.request(`/api/v2/departments/${id}`, {
         method: 'DELETE',
       });
 
@@ -402,7 +403,7 @@ class DepartmentsManager {
 
   async loadParentDepartmentsForSelect(): Promise<void> {
     try {
-      const response = await this.apiClient.request<Department[]>('/departments', {
+      const response = await this.apiClient.request<DepartmentAPIResponse[]>('/api/v2/departments', {
         method: 'GET',
       });
 
@@ -414,7 +415,7 @@ class DepartmentsManager {
           </div>
         `;
 
-        response.forEach((dept) => {
+        response.map(mapDepartment).forEach((dept) => {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'dropdown-option';
           optionDiv.setAttribute('data-value', dept.id.toString());
@@ -518,7 +519,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check URL and load departments if needed
     const checkAndLoadDepartments = () => {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('section') === 'departments') {
+      const currentPath = window.location.pathname;
+
+      // Load departments if on admin dashboard departments section OR on manage-departments page
+      if (urlParams.get('section') === 'departments' || currentPath.includes('manage-departments')) {
         void departmentsManager?.loadDepartments();
       }
     };
