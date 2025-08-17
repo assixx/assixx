@@ -277,3 +277,117 @@ export function mapTeam(team: TeamAPIResponse): MappedTeam {
 export function mapTeams(teams: TeamAPIResponse[]): MappedTeam[] {
   return teams.map(mapTeam);
 }
+
+// Machine mapping
+export interface MappedMachine {
+  id: number;
+  name: string;
+  model?: string;
+  manufacturer?: string;
+  serialNumber?: string;
+  assetNumber?: string;
+  departmentId?: number;
+  departmentName?: string;
+  areaId?: number;
+  location?: string;
+  machineType?: 'production' | 'packaging' | 'quality_control' | 'logistics' | 'utility' | 'other';
+  status: 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
+  purchaseDate?: string;
+  installationDate?: string;
+  warrantyUntil?: string;
+  lastMaintenance?: string;
+  nextMaintenance?: string;
+  operatingHours?: number;
+  productionCapacity?: string;
+  energyConsumption?: string;
+  manualUrl?: string;
+  qrCode?: string;
+  notes?: string;
+  isActive?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Machine API response type
+export interface MachineAPIResponse {
+  id: number;
+  name: string;
+  model?: string;
+  manufacturer?: string;
+  serial_number?: string;
+  serialNumber?: string;
+  asset_number?: string;
+  assetNumber?: string;
+  department_id?: number;
+  departmentId?: number;
+  department_name?: string;
+  departmentName?: string;
+  area_id?: number;
+  areaId?: number;
+  location?: string;
+  machine_type?: string;
+  machineType?: string;
+  status: string;
+  purchase_date?: string;
+  purchaseDate?: string;
+  installation_date?: string;
+  installationDate?: string;
+  warranty_until?: string;
+  warrantyUntil?: string;
+  last_maintenance?: string;
+  lastMaintenance?: string;
+  next_maintenance?: string;
+  nextMaintenance?: string;
+  operating_hours?: number;
+  operatingHours?: number;
+  production_capacity?: string;
+  productionCapacity?: string;
+  energy_consumption?: string;
+  energyConsumption?: string;
+  manual_url?: string;
+  manualUrl?: string;
+  qr_code?: string;
+  qrCode?: string;
+  notes?: string;
+  is_active?: boolean;
+  isActive?: boolean;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+}
+
+export function mapMachine(machine: MachineAPIResponse): MappedMachine {
+  return {
+    id: machine.id,
+    name: machine.name,
+    model: machine.model,
+    manufacturer: machine.manufacturer,
+    serialNumber: machine.serial_number ?? machine.serialNumber,
+    assetNumber: machine.asset_number ?? machine.assetNumber,
+    departmentId: machine.department_id ?? machine.departmentId,
+    departmentName: machine.department_name ?? machine.departmentName,
+    areaId: machine.area_id ?? machine.areaId,
+    location: machine.location,
+    machineType: (machine.machine_type ?? machine.machineType) as MappedMachine['machineType'],
+    status: machine.status as MappedMachine['status'],
+    purchaseDate: machine.purchase_date ?? machine.purchaseDate,
+    installationDate: machine.installation_date ?? machine.installationDate,
+    warrantyUntil: machine.warranty_until ?? machine.warrantyUntil,
+    lastMaintenance: machine.last_maintenance ?? machine.lastMaintenance,
+    nextMaintenance: machine.next_maintenance ?? machine.nextMaintenance,
+    operatingHours: machine.operating_hours ?? machine.operatingHours,
+    productionCapacity: machine.production_capacity ?? machine.productionCapacity,
+    energyConsumption: machine.energy_consumption ?? machine.energyConsumption,
+    manualUrl: machine.manual_url ?? machine.manualUrl,
+    qrCode: machine.qr_code ?? machine.qrCode,
+    notes: machine.notes,
+    isActive: machine.is_active ?? machine.isActive,
+    createdAt: machine.created_at ?? machine.createdAt ?? new Date().toISOString(),
+    updatedAt: machine.updated_at ?? machine.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+export function mapMachines(machines: MachineAPIResponse[]): MappedMachine[] {
+  return machines.map(mapMachine);
+}

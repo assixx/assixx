@@ -4,8 +4,10 @@
  */
 
 import { ApiClient } from '../utils/api-client';
+import { mapMachines, type MachineAPIResponse } from '../utils/api-mappers';
 
-import { showSuccess, showError } from './auth';
+import { showSuccessAlert, showErrorAlert } from './utils/alerts';
+// Role switch will be loaded by HTML
 
 interface Machine {
   id: number;
@@ -68,6 +70,11 @@ class MachinesManager {
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
+
+    // Check feature flag for API v2
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_MACHINES ?? true;
+    console.info('[MachinesManager] Using API version:', useV2 ? 'v2' : 'v1');
+
     this.initializeEventListeners();
     // Load machines initially
     void this.loadMachines();
@@ -110,6 +117,24 @@ class MachinesManager {
         void this.loadMachines();
       }
     });
+
+    // Delete modal event listeners
+    document.getElementById('confirm-delete-machine')?.addEventListener('click', () => {
+      const deleteInput = document.getElementById('delete-machine-id') as HTMLInputElement | null;
+      if (deleteInput !== null && deleteInput.value !== '') {
+        void this.confirmDeleteMachine(parseInt(deleteInput.value, 10));
+      }
+    });
+
+    document.getElementById('close-delete-modal')?.addEventListener('click', () => {
+      const modal = document.getElementById('delete-machine-modal');
+      if (modal) modal.classList.remove('active');
+    });
+
+    document.getElementById('cancel-delete-modal')?.addEventListener('click', () => {
+      const modal = document.getElementById('delete-machine-modal');
+      if (modal) modal.classList.remove('active');
+    });
   }
 
   async loadMachines(): Promise<void> {
@@ -125,17 +150,26 @@ class MachinesManager {
         params.search = this.searchTerm;
       }
 
-      const response = await this.apiClient.request<Machine[]>('/machines', {
-        method: 'GET',
-      });
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_MACHINES ?? true;
 
-      // v2 API: apiClient.request already extracts the data array
-      this.machines = response;
+      if (useV2) {
+        const response = await this.apiClient.request<MachineAPIResponse[]>('/machines', {
+          method: 'GET',
+        });
+        // Map API response to frontend format
+        this.machines = mapMachines(response);
+      } else {
+        // v1 API fallback
+        const response = await this.apiClient.request<Machine[]>('/machines', {
+          method: 'GET',
+        });
+        this.machines = response;
+      }
       console.info('[MachinesManager] Loaded machines:', this.machines);
       this.renderMachinesTable();
     } catch (error) {
       console.error('Error loading machines:', error);
-      showError('Fehler beim Laden der Maschinen');
+      showErrorAlert('Fehler beim Laden der Maschinen');
       // Still show empty state on error
       this.machines = [];
       this.renderMachinesTable();
@@ -273,12 +307,12 @@ class MachinesManager {
         body: JSON.stringify(machineData),
       });
 
-      showSuccess('Maschine erfolgreich erstellt');
+      showSuccessAlert('Maschine erfolgreich erstellt');
       await this.loadMachines();
       return response;
     } catch (error) {
       console.error('Error creating machine:', error);
-      showError('Fehler beim Erstellen der Maschine');
+      showErrorAlert('Fehler beim Erstellen der Maschine');
       throw error;
     }
   }
@@ -290,37 +324,60 @@ class MachinesManager {
         body: JSON.stringify(machineData),
       });
 
-      showSuccess('Maschine erfolgreich aktualisiert');
+      showSuccessAlert('Maschine erfolgreich aktualisiert');
       await this.loadMachines();
       return response;
     } catch (error) {
       console.error('Error updating machine:', error);
-      showError('Fehler beim Aktualisieren der Maschine');
+      showErrorAlert('Fehler beim Aktualisieren der Maschine');
       throw error;
     }
   }
 
-  async deleteMachine(_id: number): Promise<void> {
-    // TODO: Implement proper modal confirmation dialog
-    showError('Löschbestätigung: Feature noch nicht implementiert - Maschine kann nicht gelöscht werden');
+  async deleteMachine(id: number): Promise<void> {
+    // Show delete confirmation modal
+    const modal = document.getElementById('delete-machine-modal');
+    const deleteInput = document.getElementById('delete-machine-id') as HTMLInputElement | null;
 
-    // Code below will be activated once confirmation modal is implemented
-    /*
+    if (modal !== null && deleteInput !== null) {
+      deleteInput.value = id.toString();
+      modal.classList.add('active');
+    }
+
+    // Actual deletion is handled by confirmDeleteMachine
+    await Promise.resolve();
+  }
+
+  async confirmDeleteMachine(id: number): Promise<void> {
     try {
-      await this.apiClient.request(`/machines/${_id}`, {
+      await this.apiClient.request(`/machines/${id}`, {
         method: 'DELETE',
       });
 
-      showSuccess('Maschine erfolgreich gelöscht');
+      showSuccessAlert('Maschine erfolgreich gelöscht');
+
+      // Close the modal
+      const modal = document.getElementById('delete-machine-modal');
+      if (modal !== null) {
+        modal.classList.remove('active');
+      }
+
+      // Reload machines
       await this.loadMachines();
     } catch (error) {
       console.error('Error deleting machine:', error);
-      showError('Fehler beim Löschen der Maschine');
-    }
-    */
+      const errorObj = error as { message?: string; code?: string };
 
-    // Temporary await to satisfy async requirement
-    await Promise.resolve();
+      if (
+        errorObj.code === 'FOREIGN_KEY_CONSTRAINT' ||
+        errorObj.message?.includes('foreign key') === true ||
+        errorObj.message?.includes('Cannot delete machine') === true
+      ) {
+        showErrorAlert('Maschine kann nicht gelöscht werden, da noch Zuordnungen existieren');
+      } else {
+        showErrorAlert('Fehler beim Löschen der Maschine');
+      }
+    }
   }
 
   async getMachineDetails(id: number): Promise<Machine | null> {
@@ -332,7 +389,7 @@ class MachinesManager {
       return response;
     } catch (error) {
       console.error('Error getting machine details:', error);
-      showError('Fehler beim Laden der Maschinendetails');
+      showErrorAlert('Fehler beim Laden der Maschinendetails');
       return null;
     }
   }
@@ -374,7 +431,7 @@ class MachinesManager {
       console.info('[MachinesManager] Loaded departments:', departments.length);
     } catch (error) {
       console.error('Error loading departments for machine select:', error);
-      showError('Fehler beim Laden der Abteilungen');
+      showErrorAlert('Fehler beim Laden der Abteilungen');
     }
   }
 
@@ -415,7 +472,7 @@ class MachinesManager {
       console.info('[MachinesManager] Loaded areas:', areas.length);
     } catch (error) {
       console.error('Error loading areas for machine select:', error);
-      showError('Fehler beim Laden der Bereiche');
+      showErrorAlert('Fehler beim Laden der Bereiche');
     }
   }
 }
@@ -441,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (machine !== null) {
         // TODO: Open edit modal with machine data
         console.info('Edit machine:', machine);
-        showError('Bearbeitungsmodal noch nicht implementiert');
+        showErrorAlert('Bearbeitungsmodal noch nicht implementiert');
       }
     };
 
@@ -450,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (machine !== null) {
         // TODO: Open details modal
         console.info('View machine:', machine);
-        showError('Detailansicht noch nicht implementiert');
+        showErrorAlert('Detailansicht noch nicht implementiert');
       }
     };
 
@@ -501,17 +558,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Validate required fields
       if (typeof machineData.name !== 'string' || machineData.name.length === 0) {
-        showError('Bitte geben Sie einen Maschinennamen ein');
+        showErrorAlert('Bitte geben Sie einen Maschinennamen ein');
         return;
       }
 
       try {
         await machinesManager?.createMachine(machineData as Partial<Machine>);
         w.closeMachineModal?.();
-        showSuccess('Maschine erfolgreich hinzugefügt');
+        showSuccessAlert('Maschine erfolgreich hinzugefügt');
       } catch (error) {
         console.error('Error creating machine:', error);
-        showError('Fehler beim Hinzufügen der Maschine');
+        showErrorAlert('Fehler beim Hinzufügen der Maschine');
       }
     };
 
