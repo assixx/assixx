@@ -3,9 +3,8 @@
  * Input validation for reports endpoints
  */
 
-import { NextFunction, Request, Response } from "express";
 import { body, param, query, validationResult } from "express-validator";
-
+import { NextFunction, Request, Response } from "express";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
 /**

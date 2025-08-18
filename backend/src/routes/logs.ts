@@ -1,8 +1,7 @@
 import bcrypt from "bcryptjs";
-import express, { Router } from "express";
 import { query, body, validationResult } from "express-validator";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
-
+import express, { Router } from "express";
 import { authenticateToken, authorizeRole } from "../auth.js";
 import { executeQuery } from "../database.js";
 import type { AuthenticatedRequest } from "../types/request.types.js";

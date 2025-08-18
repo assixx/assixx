@@ -12,7 +12,13 @@ import sonarjsPlugin from "eslint-plugin-sonarjs";
 import unicornPlugin from "eslint-plugin-unicorn";
 import jsdocPlugin from "eslint-plugin-jsdoc";
 import noSecretsPlugin from "eslint-plugin-no-secrets";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 // import jsxA11yPlugin from "eslint-plugin-jsx-a11y"; // Für später wenn wir React/JSX haben
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = join(__dirname, '..');
 
 export default [
   // Base JavaScript configuration
@@ -55,8 +61,8 @@ export default [
       parserOptions: {
         ecmaVersion: 2021,
         sourceType: "module",
-        project: "./backend/tsconfig.json",
-        tsconfigRootDir: import.meta.dirname,
+        project: join(projectRoot, "backend/tsconfig.json"),
+        tsconfigRootDir: projectRoot,
       },
       globals: {
         console: "readonly",
@@ -86,7 +92,7 @@ export default [
     settings: {
       "import-x/resolver": {
         typescript: {
-          project: "./backend/tsconfig.json",
+          project: join(projectRoot, "backend/tsconfig.json"),
           alwaysTryTypes: true,
         },
         node: {
@@ -260,11 +266,9 @@ export default [
             "builtin",
             "external",
             "internal",
-            "parent",
-            "sibling",
-            "index",
+            ["parent", "sibling", "index"],
           ],
-          "newlines-between": "always",
+          "newlines-between": "never",
           alphabetize: {
             order: "asc",
             caseInsensitive: true,
@@ -542,8 +546,8 @@ export default [
       parserOptions: {
         ecmaVersion: 2021,
         sourceType: "module",
-        project: "./frontend/tsconfig.json",
-        tsconfigRootDir: import.meta.dirname,
+        project: join(projectRoot, "frontend/tsconfig.json"),
+        tsconfigRootDir: projectRoot,
       },
       globals: {
         console: "readonly",
@@ -588,7 +592,7 @@ export default [
     settings: {
       "import-x/resolver": {
         typescript: {
-          project: "./frontend/tsconfig.json",
+          project: join(projectRoot, "frontend/tsconfig.json"),
           alwaysTryTypes: true,
         },
         node: {
@@ -748,11 +752,9 @@ export default [
             "builtin",
             "external",
             "internal",
-            "parent",
-            "sibling",
-            "index",
+            ["parent", "sibling", "index"],
           ],
-          "newlines-between": "always",
+          "newlines-between": "never",
           alphabetize: {
             order: "asc",
             caseInsensitive: true,
@@ -1024,6 +1026,13 @@ export default [
 
   {
     ignores: [
+      // Config files
+      "config/eslint.config.js",
+      "config/*.config.js",
+      "config/*.config.cjs",
+      "config/jest.*.js",
+      "config/jest.*.ts",
+      
       // Node modules
       "node_modules/**",
       "node_modules_old_backup/**",

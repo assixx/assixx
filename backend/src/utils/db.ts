@@ -9,7 +9,6 @@ import {
   FieldPacket,
   PoolConnection,
 } from "mysql2/promise";
-
 import pool from "../config/database.js";
 
 /**

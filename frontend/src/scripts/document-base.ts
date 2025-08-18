@@ -3,9 +3,8 @@
  * Shared functionality for all document category pages
  */
 
-import type { Document } from '../types/api.types';
-
 import { fetchWithAuth, showError, showSuccess } from './auth';
+import type { Document } from '../types/api.types';
 
 // Document scope type
 export type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';

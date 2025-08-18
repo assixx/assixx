@@ -1,5 +1,4 @@
 import { body, query } from "express-validator";
-
 import { handleValidationErrors } from "../../../middleware/validation.js";
 
 export const logsValidation = {
@@ -77,7 +76,7 @@ export const logsValidation = {
       .withMessage("Entity type must be a non-empty string"),
     body("olderThanDays")
       .optional()
-      .isInt({ min: 0 })  // 0 means delete all logs (no age filter)
+      .isInt({ min: 0 }) // 0 means delete all logs (no age filter)
       .withMessage("Days must be a non-negative integer"),
     body("confirmPassword")
       .notEmpty()

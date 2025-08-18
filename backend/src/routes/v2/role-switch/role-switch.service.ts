@@ -4,7 +4,6 @@
  */
 
 import jwt from "jsonwebtoken";
-
 import RootLog from "../../../models/rootLog";
 import User, { DbUser } from "../../../models/user.js";
 

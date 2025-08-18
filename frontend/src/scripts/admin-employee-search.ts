@@ -2,9 +2,8 @@
  * Admin-Dashboard erweiterte Mitarbeitersuche
  */
 
-import type { User } from '../types/api.types';
-
 import { getAuthToken, showError } from './auth';
+import type { User } from '../types/api.types';
 
 interface Department {
   id: number;

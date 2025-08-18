@@ -4,12 +4,10 @@
  */
 
 import crypto from "crypto";
-
 import bcrypt from "bcryptjs";
-import { Application } from "express";
 import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
 import request from "supertest";
-
+import { Application } from "express";
 import { TEST_DATA_PREFIX } from "./test-constants";
 import { testDataTracker } from "./test-data-tracker";
 

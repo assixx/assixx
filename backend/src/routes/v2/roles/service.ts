@@ -4,12 +4,10 @@
  */
 
 import { RowDataPacket } from "mysql2/promise";
-
+import { Role, RoleName, RoleCheckRequest } from "./types.js";
 import { execute } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { Role, RoleName, RoleCheckRequest } from "./types.js";
 
 /**
  *

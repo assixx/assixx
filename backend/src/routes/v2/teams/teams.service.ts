@@ -4,7 +4,6 @@
  */
 
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
 import Department from "../../../models/department.js";
 import Team from "../../../models/team.js";
 import type { TeamCreateData, TeamUpdateData } from "../../../models/team.js";

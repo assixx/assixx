@@ -3,14 +3,13 @@
  * Handles database operations for the blackboard entries and confirmations
  */
 
+import User from "./user";
 import {
   query as executeQuery,
   RowDataPacket,
   ResultSetHeader,
 } from "../utils/db";
 import { logger } from "../utils/logger";
-
-import User from "./user";
 
 // Database interfaces
 interface DbBlackboardEntry extends RowDataPacket {

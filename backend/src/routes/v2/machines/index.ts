@@ -8,15 +8,13 @@
  */
 
 import express, { Router, RequestHandler } from "express";
-
+import { machinesController } from "./machines.controller";
+import { machineValidation } from "./validation";
 import {
   authenticateV2,
   requireRoleV2,
 } from "../../../middleware/v2/auth.middleware";
 import { typed } from "../../../utils/routeHandlers";
-
-import { machinesController } from "./machines.controller";
-import { machineValidation } from "./validation";
 
 const router: Router = express.Router();
 

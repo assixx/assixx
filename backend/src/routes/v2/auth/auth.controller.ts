@@ -4,9 +4,8 @@
  */
 
 import bcryptjs from "bcryptjs";
-import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-
+import { Request, Response } from "express";
 import RootLog from "../../../models/rootLog";
 import User from "../../../models/user";
 import type { AuthenticatedRequest } from "../../../types/request.types";

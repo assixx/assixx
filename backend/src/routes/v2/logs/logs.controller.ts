@@ -1,13 +1,11 @@
 import bcrypt from "bcryptjs";
 import { Response } from "express";
-
+import { logsService } from "./logs.service.js";
+import { LogsFilterParams } from "./types.js";
 import User from "../../../models/user.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
-
-import { logsService } from "./logs.service.js";
-import { LogsFilterParams } from "./types.js";
 
 
 export const logsController = {
@@ -21,30 +19,42 @@ export const logsController = {
     console.log("===== LOGS V2 CONTROLLER GETLOGS CALLED =====");
     console.log("Query params:", req.query);
     console.log("User:", req.user);
-    
+
     logger.info("[Logs v2 Controller] =====START===== getLogs endpoint called");
     logger.info("[Logs v2 Controller] Query params:", req.query);
-    logger.info("[Logs v2 Controller] User info:", { id: req.user?.id, role: req.user?.role });
-    
+    logger.info("[Logs v2 Controller] User info:", {
+      id: req.user?.id,
+      role: req.user?.role,
+    });
+
     try {
       // Only root users can access logs
-      if (req.user?.role !== 'root') {
-        logger.warn("[Logs v2 Controller] Access denied - user role:", req.user?.role);
-        res.status(403).json(errorResponse("FORBIDDEN", "Only root users can access logs"));
+      if (req.user?.role !== "root") {
+        logger.warn(
+          "[Logs v2 Controller] Access denied - user role:",
+          req.user?.role,
+        );
+        res
+          .status(403)
+          .json(errorResponse("FORBIDDEN", "Only root users can access logs"));
         return;
       }
-      
+
       logger.info("[Logs v2 Controller] User is root, proceeding");
 
       // Support both 'offset' and 'page' parameters for compatibility
-      const limit = req.query.limit ? Number.parseInt(req.query.limit as string) : 50;
+      const limit = req.query.limit
+        ? Number.parseInt(req.query.limit as string)
+        : 50;
       let page = 1;
-      
+
       if (req.query.offset !== undefined) {
         // If offset is provided, calculate page from it
         const offset = Number.parseInt(req.query.offset as string);
         page = Math.floor(offset / limit) + 1;
-        logger.info(`[Logs v2] Converting offset ${offset} to page ${page} (limit: ${limit})`);
+        logger.info(
+          `[Logs v2] Converting offset ${offset} to page ${page} (limit: ${limit})`,
+        );
       } else if (req.query.page) {
         // Otherwise use page directly
         page = Number.parseInt(req.query.page as string);
@@ -53,8 +63,12 @@ export const logsController = {
       const filters: LogsFilterParams = {
         page,
         limit,
-        userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
-        tenantId: req.query.tenantId ? Number.parseInt(req.query.tenantId as string) : undefined,
+        userId: req.query.userId
+          ? Number.parseInt(req.query.userId as string)
+          : undefined,
+        tenantId: req.query.tenantId
+          ? Number.parseInt(req.query.tenantId as string)
+          : undefined,
         action: req.query.action as string,
         entityType: req.query.entityType as string,
         startDate: req.query.startDate as string,
@@ -72,7 +86,9 @@ export const logsController = {
       console.error("Stack:", (error as Error).stack);
       logger.error("[Logs v2] Error fetching logs - Details:", error);
       logger.error("[Logs v2] Error stack:", (error as Error).stack);
-      res.status(500).json(errorResponse("SERVER_ERROR", "Failed to fetch logs"));
+      res
+        .status(500)
+        .json(errorResponse("SERVER_ERROR", "Failed to fetch logs"));
     }
   },
 
@@ -85,8 +101,10 @@ export const logsController = {
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Only root users can access logs
-      if (req.user?.role !== 'root') {
-        res.status(403).json(errorResponse("FORBIDDEN", "Only root users can access logs"));
+      if (req.user?.role !== "root") {
+        res
+          .status(403)
+          .json(errorResponse("FORBIDDEN", "Only root users can access logs"));
         return;
       }
 
@@ -94,7 +112,9 @@ export const logsController = {
       res.json(successResponse(stats));
     } catch (error: unknown) {
       logger.error("[Logs v2] Error fetching stats:", error);
-      res.status(500).json(errorResponse("SERVER_ERROR", "Failed to fetch statistics"));
+      res
+        .status(500)
+        .json(errorResponse("SERVER_ERROR", "Failed to fetch statistics"));
     }
   },
 
@@ -107,12 +127,21 @@ export const logsController = {
   async deleteLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Only root users can delete logs
-      if (req.user?.role !== 'root') {
-        res.status(403).json(errorResponse("FORBIDDEN", "Only root users can delete logs"));
+      if (req.user?.role !== "root") {
+        res
+          .status(403)
+          .json(errorResponse("FORBIDDEN", "Only root users can delete logs"));
         return;
       }
 
-      const { userId, tenantId, olderThanDays, action, entityType, confirmPassword } = req.body as {
+      const {
+        userId,
+        tenantId,
+        olderThanDays,
+        action,
+        entityType,
+        confirmPassword,
+      } = req.body as {
         userId?: number;
         tenantId?: number;
         olderThanDays?: number;
@@ -121,8 +150,21 @@ export const logsController = {
         confirmPassword: string;
       };
 
-      logger.info(`[Logs v2 DELETE] Request body:`, { userId, tenantId, olderThanDays, action, entityType, confirmPassword: '***' });
-      console.log('[Logs v2 DELETE] Filters:', { userId, tenantId, olderThanDays, action, entityType });
+      logger.info(`[Logs v2 DELETE] Request body:`, {
+        userId,
+        tenantId,
+        olderThanDays,
+        action,
+        entityType,
+        confirmPassword: "***",
+      });
+      console.log("[Logs v2 DELETE] Filters:", {
+        userId,
+        tenantId,
+        olderThanDays,
+        action,
+        entityType,
+      });
 
       // Verify root password
       const rootUser = await User.findById(req.user.id, req.user.tenant_id);
@@ -131,17 +173,31 @@ export const logsController = {
         return;
       }
 
-      const isValidPassword = await bcrypt.compare(confirmPassword, rootUser.password);
+      const isValidPassword = await bcrypt.compare(
+        confirmPassword,
+        rootUser.password,
+      );
       if (!isValidPassword) {
         res.status(401).json(errorResponse("UNAUTHORIZED", "Invalid password"));
         return;
       }
 
       // At least one filter must be provided
-      if (!userId && !tenantId && olderThanDays === undefined && !action && !entityType) {
-        res.status(400).json(
-          errorResponse("VALIDATION_ERROR", "At least one filter must be provided")
-        );
+      if (
+        !userId &&
+        !tenantId &&
+        olderThanDays === undefined &&
+        !action &&
+        !entityType
+      ) {
+        res
+          .status(400)
+          .json(
+            errorResponse(
+              "VALIDATION_ERROR",
+              "At least one filter must be provided",
+            ),
+          );
         return;
       }
 
@@ -150,20 +206,27 @@ export const logsController = {
         tenantId,
         olderThanDays,
         action,
-        entityType
+        entityType,
       });
 
-      logger.info(`[Logs v2] Root user ${req.user.id} deleted ${deletedCount} logs`, {
-        filters: { userId, tenantId, olderThanDays }
-      });
+      logger.info(
+        `[Logs v2] Root user ${req.user.id} deleted ${deletedCount} logs`,
+        {
+          filters: { userId, tenantId, olderThanDays },
+        },
+      );
 
-      res.json(successResponse({
-        message: `Successfully deleted ${deletedCount} logs`,
-        deletedCount
-      }));
+      res.json(
+        successResponse({
+          message: `Successfully deleted ${deletedCount} logs`,
+          deletedCount,
+        }),
+      );
     } catch (error: unknown) {
       logger.error("[Logs v2] Error deleting logs:", error);
-      res.status(500).json(errorResponse("SERVER_ERROR", "Failed to delete logs"));
+      res
+        .status(500)
+        .json(errorResponse("SERVER_ERROR", "Failed to delete logs"));
     }
   },
 };

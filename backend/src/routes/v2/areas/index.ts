@@ -4,10 +4,6 @@
  */
 
 import { Router } from "express";
-
-import { security } from "../../../middleware/security.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
 import {
   getAreasController,
   getAreaHierarchyController,
@@ -24,6 +20,8 @@ import {
   updateAreaValidation,
   deleteAreaValidation,
 } from "./areas.validation.js";
+import { security } from "../../../middleware/security.js";
+import { typed } from "../../../utils/routeHandlers.js";
 
 const router = Router();
 

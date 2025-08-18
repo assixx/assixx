@@ -4,7 +4,6 @@
  */
 
 import { Pool } from "mysql2/promise";
-
 import Team, {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,

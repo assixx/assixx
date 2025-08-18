@@ -3,10 +3,9 @@
  * This replaces the authenticateToken function with a type-safe implementation
  */
 
-import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
-
+import { Response, NextFunction } from "express";
 import { executeQuery } from "../database";
 import { TokenPayload } from "../types/auth.types";
 import { AuthenticationMiddleware } from "../types/middleware.types";

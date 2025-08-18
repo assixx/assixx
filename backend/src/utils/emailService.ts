@@ -5,14 +5,11 @@
 
 import fs from "fs";
 import path from "path";
-
 import jwt from "jsonwebtoken";
 import nodemailer, { Transporter, SendMailOptions } from "nodemailer";
 import type { Attachment } from "nodemailer/lib/mailer";
-
-import Feature from "../models/feature";
-
 import { logger } from "./logger";
+import Feature from "../models/feature";
 
 /**
  * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand

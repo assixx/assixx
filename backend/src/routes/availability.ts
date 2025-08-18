@@ -4,7 +4,6 @@
  */
 
 import express, { Router } from "express";
-
 import availabilityController from "../controllers/availability.controller";
 import { checkFeature } from "../middleware/features";
 import { security } from "../middleware/security";

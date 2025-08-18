@@ -4,7 +4,6 @@
  */
 
 import bcrypt from "bcryptjs";
-
 import User from "../models/user";
 import type { DbUser } from "../models/user";
 import { logger } from "../utils/logger";

@@ -3,11 +3,9 @@
  */
 
 import { Router, Request, Response } from "express";
-
+import { SignupService } from "./service.js";
 import Tenant from "../../../models/tenant.js";
 import { logger } from "../../../utils/logger.js";
-
-import { SignupService } from "./service.js";
 
 const router = Router();
 

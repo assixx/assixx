@@ -4,7 +4,6 @@
  */
 
 import { Pool } from "mysql2/promise";
-
 import Department, {
   DbDepartment as DepartmentData,
   DepartmentCreateData,

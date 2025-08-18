@@ -7,13 +7,11 @@
  */
 
 import { Router } from "express";
-
+import * as shiftsController from "./shifts.controller";
+import { shiftsValidation } from "./shifts.validation";
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
 import { requireRoleV2 } from "../../../middleware/v2/roleCheck.middleware";
 import { typed } from "../../../utils/routeHandlers";
-
-import * as shiftsController from "./shifts.controller";
-import { shiftsValidation } from "./shifts.validation";
 
 const router = Router();
 

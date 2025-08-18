@@ -4,7 +4,6 @@
  */
 
 import { Request, Response, NextFunction } from "express";
-
 import adminPermissionService from "../services/adminPermission.service.js";
 import { logger } from "../utils/logger.js";
 

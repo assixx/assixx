@@ -4,12 +4,10 @@
  */
 
 import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
-import { typed } from "../../../utils/routeHandlers";
-
 import * as documentsController from "./documents.controller";
 import { documentsValidation } from "./documents.validation";
+import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
+import { typed } from "../../../utils/routeHandlers";
 
 const router = Router();
 

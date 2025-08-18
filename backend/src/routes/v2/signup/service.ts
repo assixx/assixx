@@ -3,11 +3,10 @@
  * Business logic for user registration
  */
 
+import type { SignupRequest, SubdomainValidation } from "./types.js";
 import Tenant from "../../../models/tenant.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-
-import type { SignupRequest, SubdomainValidation } from "./types.js";
 
 /**
  *

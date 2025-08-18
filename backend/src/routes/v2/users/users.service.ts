@@ -5,12 +5,7 @@
 
 import fs from "fs/promises";
 import path from "path";
-
 import bcrypt from "bcryptjs";
-
-import User from "../../../models/user";
-import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
-
 import {
   CreateUserBody,
   UpdateUserBody,
@@ -19,6 +14,8 @@ import {
   UserDbFields,
   ListUsersQuery,
 } from "./users.types";
+import User from "../../../models/user";
+import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
 
 /**
  * Service Error class for consistent error handling

@@ -8,15 +8,13 @@
  */
 
 import express, { Router, RequestHandler } from "express";
-
+import { auditTrailController } from "./audit-trail.controller.js";
+import { auditTrailValidation } from "./audit-trail.validation.js";
 import {
   authenticateV2,
   requireRoleV2,
 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
-
-import { auditTrailController } from "./audit-trail.controller.js";
-import { auditTrailValidation } from "./audit-trail.validation.js";
 
 const router: Router = express.Router();
 

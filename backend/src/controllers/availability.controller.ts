@@ -4,7 +4,6 @@
  */
 
 import { Request, Response } from "express";
-
 import availabilityService from "../services/availability.service";
 import type { AuthenticatedRequest } from "../types/request.types";
 

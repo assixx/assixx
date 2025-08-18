@@ -3,10 +3,9 @@
  * Handles permission checks and department visibility for KVP suggestions
  */
 
+import adminPermissionService from "./adminPermission.service.js";
 import { query as executeQuery, RowDataPacket } from "../utils/db";
 import { logger } from "../utils/logger.js";
-
-import adminPermissionService from "./adminPermission.service.js";
 
 interface KvpVisibilityQuery {
   userId: number;

@@ -4,7 +4,6 @@
  */
 
 import { Request, Response, NextFunction } from "express";
-
 import TenantModel from "../models/tenant";
 import { TenantInfo } from "../types/tenant.types";
 import { logger } from "../utils/logger";

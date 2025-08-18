@@ -3,11 +3,10 @@
  * Handles employee-specific functionality and document management
  */
 
-import type { User, Document } from '../types/api.types';
-import { apiClient } from '../utils/api-client';
-
 import { getAuthToken, showError } from './auth';
 import { formatDate, escapeHtml } from './common';
+import type { User, Document } from '../types/api.types';
+import { apiClient } from '../utils/api-client';
 
 interface EmployeeInfo extends User {
   department?: string;

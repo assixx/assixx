@@ -4,13 +4,11 @@
  */
 
 import { RequestHandler, Router } from "express";
-
-import { ValidationMiddleware } from "../types/middleware.types";
-import { RateLimiterType } from "../types/security.types";
-
 import { authenticateToken, requireRole } from "./auth-refactored";
 import { rateLimiter } from "./rateLimiter";
 import { validateTenantIsolation } from "./tenantIsolation";
+import { ValidationMiddleware } from "../types/middleware.types";
+import { RateLimiterType } from "../types/security.types";
 
 // Security middleware stacks for different endpoint types
 export const security = {

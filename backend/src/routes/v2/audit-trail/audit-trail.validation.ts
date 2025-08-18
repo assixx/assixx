@@ -3,7 +3,6 @@
  */
 
 import { body, query, param } from "express-validator";
-
 import { handleValidationErrors } from "../../../middleware/validation.js";
 
 export const auditTrailValidation = {

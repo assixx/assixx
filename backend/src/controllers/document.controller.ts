@@ -4,7 +4,6 @@
  */
 
 import { Request, Response } from "express";
-
 import Team from "../models/team";
 import documentService from "../services/document.service";
 import type { AuthenticatedRequest } from "../types/request.types";

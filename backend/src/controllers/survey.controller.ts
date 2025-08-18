@@ -4,7 +4,6 @@
  */
 
 import { Request, Response } from "express";
-
 import Survey from "../models/survey";
 import surveyService from "../services/survey.service";
 import { mapQuestionType } from "../types/survey.types";

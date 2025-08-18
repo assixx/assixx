@@ -4,7 +4,7 @@
  */
 
 import { Response } from "express";
-
+import { blackboardService } from "./blackboard.service.js";
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
@@ -14,8 +14,6 @@ import {
 } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { blackboardService } from "./blackboard.service.js";
 
 // Request body interfaces
 interface CreateEntryBody {

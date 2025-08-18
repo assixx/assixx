@@ -3,15 +3,13 @@
  * HTTP request handlers for roles API
  */
 
-import { Response } from "express";
 import { validationResult } from "express-validator";
-
+import { Response } from "express";
+import { rolesService } from "./service.js";
+import type { RoleCheckRequest, RoleName } from "./types.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { rolesService } from "./service.js";
-import type { RoleCheckRequest, RoleName } from "./types.js";
 
 /**
  *

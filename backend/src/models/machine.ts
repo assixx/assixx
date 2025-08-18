@@ -1,5 +1,4 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-
 import { executeQuery } from "../config/database.js";
 
 export interface MachineStatistics extends RowDataPacket {

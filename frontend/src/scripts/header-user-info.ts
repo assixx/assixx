@@ -3,10 +3,9 @@
  * Must be included in all pages with navigation
  */
 
+import { getAuthToken, parseJwt } from './auth';
 import type { User } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
-
-import { getAuthToken, parseJwt } from './auth';
 
 /**
  * Load user info for header display

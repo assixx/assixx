@@ -3,10 +3,9 @@
  * Handles JWT validation for protected routes in API v2
  */
 
-import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
-
+import { Response, NextFunction } from "express";
 import { executeQuery } from "../../database";
 import type {
   AuthenticatedRequest,

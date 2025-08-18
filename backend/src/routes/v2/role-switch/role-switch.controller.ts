@@ -4,15 +4,13 @@
  */
 
 import { Response } from "express";
-
+import { RoleSwitchService, ServiceError } from "./role-switch.service.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
   errorResponse,
   successResponse,
 } from "../../../types/response.types.js";
 import { getErrorMessage } from "../../../utils/errorHandler.js";
-
-import { RoleSwitchService, ServiceError } from "./role-switch.service.js";
 
 /**
  *

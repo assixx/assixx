@@ -5,15 +5,6 @@
 
 import bcrypt from "bcryptjs";
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
-import RootLog from "../../../models/rootLog";
-import TenantModel from "../../../models/tenant.js";
-import UserModel from "../../../models/user.js";
-import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
-import { execute } from "../../../utils/db.js";
-import { generateEmployeeId } from "../../../utils/employeeIdGenerator.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
 import {
   AdminUser,
   CreateAdminRequest,
@@ -29,6 +20,13 @@ import {
   DeletionApproval,
   DeletionDryRunReport,
 } from "./types.js";
+import RootLog from "../../../models/rootLog";
+import TenantModel from "../../../models/tenant.js";
+import UserModel from "../../../models/user.js";
+import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
+import { execute } from "../../../utils/db.js";
+import { generateEmployeeId } from "../../../utils/employeeIdGenerator.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 interface TenantRow extends RowDataPacket {
   id: number;

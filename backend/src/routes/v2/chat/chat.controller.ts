@@ -6,17 +6,7 @@
 import { error as logError } from "console";
 import { promises as fs } from "fs";
 import path from "path";
-
 import { Response, NextFunction } from "express";
-
-import RootLog from "../../../models/rootLog";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import {
-  validatePath,
-  getUploadDirectory,
-} from "../../../utils/pathSecurity.js";
-
 import chatService from "./chat.service.js";
 import type {
   ConversationFilters,
@@ -24,6 +14,13 @@ import type {
   CreateConversationData,
   SendMessageData,
 } from "./chat.service.js";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
+import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
+import {
+  validatePath,
+  getUploadDirectory,
+} from "../../../utils/pathSecurity.js";
 
 interface ChatConversationResult {
   id: number;

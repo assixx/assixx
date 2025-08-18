@@ -3,9 +3,8 @@
  * Ermöglicht Admins als Employee zu agieren
  */
 
-import express, { Router } from "express";
 import jwt from "jsonwebtoken";
-
+import express, { Router } from "express";
 import { authenticateToken } from "../middleware/auth.js";
 import { createRootLog } from "../models/rootLog.js";
 import User from "../models/user.js";

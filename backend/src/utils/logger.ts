@@ -4,7 +4,6 @@
  */
 
 import path from "path";
-
 import winston from "winston";
 
 // Define log directory using process.cwd() for compatibility with both ESM and CommonJS

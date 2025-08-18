@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-
 import Feature from "../models/feature.js";
 import { AuthenticatedRequest } from "../types/request.types.js";
 import { query, RowDataPacket } from "../utils/db.js";

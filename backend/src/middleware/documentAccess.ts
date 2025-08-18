@@ -2,7 +2,6 @@
  * Middleware für die Überprüfung der Dokumentenzugriffsberechtigungen
  */
 import { Request, Response, NextFunction, RequestHandler } from "express";
-
 import Document from "../models/document.js";
 import User from "../models/user.js";
 import type { DocumentRequest } from "../types/request.types.js";

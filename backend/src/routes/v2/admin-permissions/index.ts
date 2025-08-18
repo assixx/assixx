@@ -1,9 +1,4 @@
 import { Router } from "express";
-
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
 import { adminPermissionsController } from "./controller.js";
 import {
   getAdminPermissionsValidation,
@@ -14,6 +9,9 @@ import {
   bulkPermissionsValidation,
   checkAccessValidation,
 } from "./validation.js";
+import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
+import { validate } from "../../../middleware/validation.js";
+import { typed } from "../../../utils/routeHandlers.js";
 
 const router = Router();
 

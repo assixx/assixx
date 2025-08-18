@@ -4,7 +4,7 @@
  */
 
 import { Response } from "express";
-
+import { shiftsService } from "./shifts.service";
 import type { AuthenticatedRequest } from "../../../types/request.types";
 import {
   successResponse,
@@ -12,8 +12,6 @@ import {
   paginatedResponse,
 } from "../../../utils/apiResponse";
 import { ServiceError } from "../../../utils/ServiceError";
-
-import { shiftsService } from "./shifts.service";
 
 // Import types from service for type safety
 interface ShiftCreateData {

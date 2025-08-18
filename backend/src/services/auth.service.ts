@@ -6,7 +6,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
-
 import { authenticateUser as authUser, generateToken } from "../auth";
 import UserModel from "../models/user";
 import {

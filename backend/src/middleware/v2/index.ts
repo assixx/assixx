@@ -15,7 +15,6 @@ export { deprecationMiddleware } from "../deprecation";
 
 // Default export with all middleware
 import { deprecationMiddleware as deprecation } from "../deprecation";
-
 import authMiddleware from "./auth.middleware";
 
 export default {

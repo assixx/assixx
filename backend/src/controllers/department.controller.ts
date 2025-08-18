@@ -3,9 +3,8 @@
  * Handles department-related operations
  */
 
-import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
-
+import { Request, Response } from "express";
 import type {
   DepartmentCreateData,
   DepartmentUpdateData,

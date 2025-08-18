@@ -3,7 +3,6 @@
  */
 
 import { Response, NextFunction } from "express";
-
 import type { AuthenticatedRequest } from "../types/request.types";
 
 /**

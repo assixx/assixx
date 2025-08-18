@@ -1,15 +1,13 @@
 import { Response } from "express";
-
-import type { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../types/response.types";
-import { getErrorMessage } from "../../../utils/errorHandler";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
 import { FeaturesService } from "./features.service";
 import type {
   FeatureActivationRequest,
   FeatureDeactivationRequest,
 } from "./types";
+import type { AuthenticatedRequest } from "../../../types/request.types";
+import { successResponse, errorResponse } from "../../../types/response.types";
+import { getErrorMessage } from "../../../utils/errorHandler";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 /**
  *

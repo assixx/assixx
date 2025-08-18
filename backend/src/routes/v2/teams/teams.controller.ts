@@ -4,13 +4,11 @@
  */
 
 import { Response } from "express";
-
+import { teamsService, ServiceError } from "./teams.service.js";
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
-
-import { teamsService, ServiceError } from "./teams.service.js";
 
 interface Team {
   id: number;

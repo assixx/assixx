@@ -3,9 +3,8 @@
  * Central document management with smart filters
  */
 
-import type { Document } from '../types/api.types';
-
 import { fetchWithAuth, showError, showSuccess } from './auth';
+import type { Document } from '../types/api.types';
 
 // Document scope type
 type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';

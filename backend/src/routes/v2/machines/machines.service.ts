@@ -1,10 +1,3 @@
-import MachineModel, {
-  Machine,
-  MachineMaintenanceHistory,
-} from "../../../models/machine.js";
-import RootLog from "../../../models/rootLog";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
 import {
   MachineResponse,
   MaintenanceHistoryResponse,
@@ -15,6 +8,12 @@ import {
   MachineCategory,
   MachineFilters,
 } from "./types.js";
+import MachineModel, {
+  Machine,
+  MachineMaintenanceHistory,
+} from "../../../models/machine.js";
+import RootLog from "../../../models/rootLog";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 /**
  *

@@ -3,14 +3,13 @@
  * Handles database operations for the calendar events and attendees
  */
 
+import User from "./user";
 import {
   query as executeQuery,
   RowDataPacket,
   ResultSetHeader,
 } from "../utils/db";
 import { logger } from "../utils/logger";
-
-import User from "./user";
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)

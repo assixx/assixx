@@ -4,7 +4,6 @@
  */
 
 import express, { Router, Request } from "express";
-
 import { authenticateToken } from "../auth";
 import { getErrorMessage } from "../utils/errorHandler";
 

@@ -3,9 +3,8 @@
  * Handles KVP (Kontinuierlicher Verbesserungsprozess / Continuous Improvement Process) operations
  */
 
-import { Request, Response } from "express";
 import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
-
+import { Request, Response } from "express";
 import pool, { executeQuery } from "../database.js";
 import kvpPermissionService from "../services/kvpPermission.service.js";
 

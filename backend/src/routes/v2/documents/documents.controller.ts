@@ -7,15 +7,13 @@
  *   description: Document management API v2
  */
 
-import { Response } from "express";
 import multer from "multer";
-
+import { Response } from "express";
+import { documentsService, ServiceError } from "./documents.service";
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { logger } from "../../../utils/logger";
-
-import { documentsService, ServiceError } from "./documents.service";
 
 interface Document {
   id: number;

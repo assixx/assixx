@@ -3,9 +3,8 @@
  * Handles department and group permissions for admin users
  */
 
-import express, { Router } from "express";
 import { RowDataPacket } from "mysql2/promise";
-
+import express, { Router } from "express";
 import { executeQuery } from "../database.js";
 import { security } from "../middleware/security";
 import { createValidation, body, param } from "../middleware/validation";

@@ -4,16 +4,6 @@
  */
 
 import { Response } from "express";
-
-import RootLog from "../../../models/rootLog";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import {
-  successResponse,
-  errorResponse,
-  paginatedResponse,
-} from "../../../utils/apiResponse.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
 import { kvpService } from "./kvp.service.js";
 import type {
   KVPCreateData,
@@ -22,6 +12,14 @@ import type {
   CommentData,
   PointsData,
 } from "./kvp.service.js";
+import RootLog from "../../../models/rootLog";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
+import {
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+} from "../../../utils/apiResponse.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 // Request body interfaces
 interface CreateSuggestionBody {

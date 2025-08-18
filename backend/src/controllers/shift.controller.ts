@@ -3,9 +3,8 @@
  * Handles shift planning and scheduling operations
  */
 
-import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
-
+import { Request, Response } from "express";
 import shiftService from "../services/shift.service";
 import type { AuthenticatedRequest } from "../types/request.types";
 

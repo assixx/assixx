@@ -4,7 +4,6 @@
  */
 
 import { RowDataPacket } from "mysql2";
-
 import RootLog from "../../../models/rootLog";
 import Shift from "../../../models/shift";
 import { dbToApi, apiToDb } from "../../../utils/fieldMapping";

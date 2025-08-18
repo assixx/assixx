@@ -5,7 +5,6 @@
 
 import * as fs from "fs";
 import * as path from "path";
-
 import { Pool, PoolOptions, Connection } from "mysql2/promise";
 import * as mysql from "mysql2/promise";
 

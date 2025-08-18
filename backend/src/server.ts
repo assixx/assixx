@@ -7,7 +7,6 @@
 import fs from "fs";
 import http, { Server } from "http";
 import path from "path";
-
 import app from "./app";
 import { logger } from "./utils/logger";
 import { ChatWebSocketServer } from "./websocket";

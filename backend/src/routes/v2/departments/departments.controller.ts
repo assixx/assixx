@@ -1,11 +1,9 @@
 import { Response, NextFunction } from "express";
-
+import { departmentService } from "./departments.service.js";
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
-
-import { departmentService } from "./departments.service.js";
 
 interface Department {
   id: number;

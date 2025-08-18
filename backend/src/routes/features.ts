@@ -3,10 +3,9 @@
  * Handles feature management for multi-tenant system
  */
 
-import express, { Router } from "express";
 import { body, param, query } from "express-validator";
 import { RowDataPacket } from "mysql2";
-
+import express, { Router } from "express";
 import { execute } from "../database";
 import { checkFeature } from "../middleware/features";
 import { security } from "../middleware/security";

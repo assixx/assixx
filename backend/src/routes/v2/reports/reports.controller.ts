@@ -4,12 +4,10 @@
  */
 
 import { Response } from "express";
-
+import * as reportsService from "./reports.service.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-
-import * as reportsService from "./reports.service.js";
 
 /**
  * Get company overview report with high-level KPIs

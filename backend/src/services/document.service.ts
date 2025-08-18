@@ -5,7 +5,6 @@
 
 import { promises as fs } from "fs";
 import * as path from "path";
-
 import Document, {
   DocumentCreateData as ModelDocumentCreateData,
   DocumentUpdateData as ModelDocumentUpdateData,

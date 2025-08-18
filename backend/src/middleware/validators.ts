@@ -1,6 +1,5 @@
-import { Request, Response, NextFunction } from "express";
 import { body, validationResult } from "express-validator";
-
+import { Request, Response, NextFunction } from "express";
 import type { ValidationMiddleware } from "../types/middleware.types";
 
 // express-validator v7 with native ESM support

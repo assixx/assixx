@@ -3,9 +3,8 @@
  * Protects HTML pages based on user roles
  */
 
-import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
+import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger.js";
 
 interface PageConfig {

@@ -4,6 +4,13 @@
  */
 
 import {
+  AuditEntry,
+  AuditFilter,
+  AuditStats,
+  ComplianceReport,
+  CreateAuditEntryDto,
+} from "./types.js";
+import {
   execute,
   query,
   getConnection,
@@ -11,14 +18,6 @@ import {
   RowDataPacket,
 } from "../../../utils/db.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
-
-import {
-  AuditEntry,
-  AuditFilter,
-  AuditStats,
-  ComplianceReport,
-  CreateAuditEntryDto,
-} from "./types.js";
 
 interface DbAuditEntry extends RowDataPacket {
   id: number;

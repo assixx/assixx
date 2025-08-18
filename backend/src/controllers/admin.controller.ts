@@ -3,9 +3,8 @@
  * Handles admin log-related operations
  */
 
-import { Response } from "express";
 import { Pool } from "mysql2/promise";
-
+import { Response } from "express";
 import type { RootLogCreateData as AdminLogCreateData } from "../models/rootLog";
 import adminService from "../services/admin.service";
 import { AuthenticatedRequest } from "../types/request.types";

@@ -4,7 +4,6 @@
  */
 
 import { Pool } from "mysql2/promise";
-
 import Tenant from "../models/tenant";
 import type {
   TenantCreateData as ModelTenantCreateData,

@@ -3,9 +3,8 @@
  * Handles area/location CRUD operations for admin dashboard
  */
 
-import { ApiClient } from '../utils/api-client';
-
 import { showSuccess, showError } from './auth';
+import { ApiClient } from '../utils/api-client';
 
 interface Area {
   id: number;

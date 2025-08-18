@@ -4,7 +4,6 @@
  */
 
 import { body, param, query, ValidationChain } from "express-validator";
-
 import { handleValidationErrors } from "../../../middleware/validation";
 
 // Custom validators

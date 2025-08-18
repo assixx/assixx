@@ -4,16 +4,14 @@
  */
 
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
-import { execute } from "../../../utils/db.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
 import {
   Area,
   CreateAreaRequest,
   UpdateAreaRequest,
   AreaFilters,
 } from "./types.js";
+import { execute } from "../../../utils/db.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
 
 interface AreaRow extends RowDataPacket {
   id: number;

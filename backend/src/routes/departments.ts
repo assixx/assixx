@@ -8,7 +8,6 @@
  */
 
 import express, { Router, Request, Response, NextFunction } from "express";
-
 import { authenticateToken } from "../auth";
 import Department from "../models/department";
 import User from "../models/user";

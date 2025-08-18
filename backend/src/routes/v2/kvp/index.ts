@@ -8,19 +8,16 @@
  */
 
 import path from "path";
-
-import { Router } from "express";
 import multer from "multer";
-
+import { Router } from "express";
+import * as kvpController from "./kvp.controller.js";
+import { kvpValidation } from "./kvp.validation.js";
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import {
   sanitizeFilename,
   getUploadDirectory,
 } from "../../../utils/pathSecurity.js";
 import { typed } from "../../../utils/routeHandlers.js";
-
-import * as kvpController from "./kvp.controller.js";
-import { kvpValidation } from "./kvp.validation.js";
 
 const router = Router();
 

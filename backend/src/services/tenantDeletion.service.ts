@@ -9,11 +9,11 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { promisify } from "util";
-// import archiver from 'archiver/index.js';
-
 import axios from "axios";
 import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+// import archiver from 'archiver/index.js';
 
+import { alertingService } from "./alerting.service.stub";
 import { getRedisClient } from "../config/redis";
 import { DbUser } from "../models/user";
 import { execute, query, transaction } from "../utils/db";
@@ -23,8 +23,6 @@ import {
 } from "../utils/dbWrapper";
 import emailService from "../utils/emailService";
 import { logger } from "../utils/logger";
-
-import { alertingService } from "./alerting.service.stub";
 
 const execAsync = promisify(exec);
 

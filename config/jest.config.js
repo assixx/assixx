@@ -12,11 +12,11 @@ export default {
       "ts-jest",
       {
         useESM: true,
-        tsconfig: "tsconfig.test.json",
+        tsconfig: "../tsconfig.test.json",
       },
     ],
   },
-  roots: ["<rootDir>/backend"],
+  roots: ["<rootDir>/../backend"],
   testMatch: [
     "**/__tests__/**/*.+(ts|tsx|js)",
     "**/?(*.)+(spec|test).+(ts|tsx|js)",
@@ -37,10 +37,10 @@ export default {
     "blackboard.integration.test.ts",
   ],
   collectCoverageFrom: [
-    "backend/src/**/*.{js,ts}",
-    "!backend/src/**/*.d.ts",
-    "!backend/src/**/index.ts",
-    "!backend/src/server.ts",
+    "../backend/src/**/*.{js,ts}",
+    "!../backend/src/**/*.d.ts",
+    "!../backend/src/**/index.ts",
+    "!../backend/src/server.ts",
   ],
   coverageThreshold: {
     global: {
@@ -52,12 +52,12 @@ export default {
   },
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
-    "^@/(.*)$": "<rootDir>/backend/src/$1",
+    "^@/(.*)$": "<rootDir>/../backend/src/$1",
   },
   moduleFileExtensions: ["js", "json", "ts", "tsx"],
   extensionsToTreatAsEsm: [".ts"],
   setupFilesAfterEnv: [
-    "<rootDir>/backend/src/__tests__/setup.ts",
+    "<rootDir>/../backend/src/__tests__/setup.ts",
     "<rootDir>/jest.setup.ts",
   ],
   globalSetup: "<rootDir>/jest.globalSetup.js",
