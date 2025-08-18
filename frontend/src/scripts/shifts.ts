@@ -4,9 +4,9 @@
  */
 
 import type { User } from '../types/api.types';
-
 import { ApiClient } from '../utils/api-client';
 import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
+
 import { getAuthToken, showSuccess, showError, showInfo } from './auth';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 import { openModal } from './utils/modal-manager';
@@ -20,9 +20,9 @@ interface Employee extends User {
 
 interface ShiftAssignment {
   id: number;
+
   employee_id: number;
 
-  
   date: string;
   shift_type: 'early' | 'late' | 'night';
   department_id?: number;
@@ -230,7 +230,7 @@ class ShiftPlanningSystem {
         // Update info row with user's department/team info
         const currentDeptElement = document.querySelector('#currentDepartment');
         if (currentDeptElement && user.department_id !== undefined && user.department_id !== 0) {
-          currentDeptElement.textContent = `Department ${user.department_id}`;
+          currentDeptElement.textContent = `Department ${String(user.department_id)}`;
         }
 
         const currentTeamLeaderElement = document.querySelector('#currentTeamLeader');
@@ -512,7 +512,7 @@ class ShiftPlanningSystem {
     try {
       let url = '/api/machines';
       if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        url += `?department_id=${this.selectedContext.departmentId}`;
+        url += `?department_id=${String(this.selectedContext.departmentId)}`;
       }
 
       const response = await fetch(url, {
@@ -548,7 +548,7 @@ class ShiftPlanningSystem {
       try {
         let url = '/api/teams';
         if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          url += `?department_id=${this.selectedContext.departmentId}`;
+          url += `?department_id=${String(this.selectedContext.departmentId)}`;
         }
         const response = await fetch(url, {
           headers: {
@@ -569,7 +569,7 @@ class ShiftPlanningSystem {
       try {
         let url = '/v2/teams';
         if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          url += `?departmentId=${this.selectedContext.departmentId}`;
+          url += `?departmentId=${String(this.selectedContext.departmentId)}`;
         }
 
         const response = await this.apiClient.request<TeamAPIResponse[]>(url, {
@@ -580,7 +580,7 @@ class ShiftPlanningSystem {
           // Map snake_case to camelCase
           const mappedTeams = mapTeams(response);
           // Convert to internal Team interface
-          this.teams = mappedTeams.map(t => ({
+          this.teams = mappedTeams.map((t) => ({
             id: t.id,
             name: t.name,
             department_id: t.departmentId ?? 0,
@@ -720,7 +720,7 @@ class ShiftPlanningSystem {
     if (!this.useV2API) {
       // Fallback to v1 API
       try {
-        const response = await fetch(`/api/teams/${this.selectedContext.teamId}/members`, {
+        const response = await fetch(`/api/teams/${String(this.selectedContext.teamId)}/members`, {
           headers: {
             Authorization: `Bearer ${getAuthToken() ?? ''}`,
             'Content-Type': 'application/json',
@@ -739,14 +739,14 @@ class ShiftPlanningSystem {
       // Use v2 API with ApiClient
       try {
         const response = await this.apiClient.request<UserAPIResponse[]>(
-          `/v2/teams/${this.selectedContext.teamId}/members`,
-          { method: 'GET' }
+          `/v2/teams/${String(this.selectedContext.teamId)}/members`,
+          { method: 'GET' },
         );
 
         if (response) {
           // Map snake_case to camelCase and convert to TeamMember interface
           const mappedUsers = mapUsers(response);
-          const members: TeamMember[] = mappedUsers.map(user => ({
+          const members: TeamMember[] = mappedUsers.map((user) => ({
             id: user.id,
             username: user.username,
             first_name: user.firstName ?? '',
@@ -777,12 +777,16 @@ class ShiftPlanningSystem {
     memberPanel.innerHTML = `
       <h3>Team-Mitglieder</h3>
       <div class="members-list">
-        ${members.map(member => `
-          <div class="member-card" draggable="true" data-user-id="${member.id}">
+        ${members
+          .map(
+            (member) => `
+          <div class="member-card" draggable="true" data-user-id="${String(member.id)}">
             <div class="member-name">${member.first_name} ${member.last_name}</div>
             <div class="member-role">${member.role === 'lead' ? 'Team Lead' : 'Mitglied'}</div>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
     `;
 
@@ -793,7 +797,7 @@ class ShiftPlanningSystem {
   initializeMemberDragAndDrop(): void {
     const memberCards = document.querySelectorAll('.member-card');
 
-    memberCards.forEach(card => {
+    memberCards.forEach((card) => {
       card.addEventListener('dragstart', (e) => {
         const dragEvent = e as DragEvent;
         if (dragEvent.dataTransfer) {
@@ -816,7 +820,7 @@ class ShiftPlanningSystem {
   makeShiftCellsDroppable(): void {
     const shiftCells = document.querySelectorAll('.shift-cell');
 
-    shiftCells.forEach(cell => {
+    shiftCells.forEach((cell) => {
       cell.addEventListener('dragover', (e) => {
         e.preventDefault();
         const dragEvent = e as DragEvent;
@@ -922,7 +926,7 @@ class ShiftPlanningSystem {
   }
 
   getMemberNameById(userId: number): string {
-    const memberCard = document.querySelector(`.member-card[data-user-id="${userId}"]`);
+    const memberCard = document.querySelector(`.member-card[data-user-id="${String(userId)}"]`);
     if (memberCard) {
       const nameElement = memberCard.querySelector('.member-name');
       return nameElement?.textContent ?? 'Unbekannt';
@@ -1223,6 +1227,23 @@ class ShiftPlanningSystem {
     this.assignShift(shiftCell, this.selectedEmployee.id);
   }
 
+  // Safe helper to access nested shift data
+  private getShiftArray(date: string, shift: string): number[] {
+    const dateKey = String(date);
+    const shiftKey = String(shift);
+    
+    if (!Object.prototype.hasOwnProperty.call(this.weeklyShifts, dateKey)) {
+      this.weeklyShifts[dateKey] = {};
+    }
+    
+    const dayShifts = this.weeklyShifts[dateKey];
+    if (!Object.prototype.hasOwnProperty.call(dayShifts, shiftKey)) {
+      dayShifts[shiftKey] = [];
+    }
+    
+    return dayShifts[shiftKey];
+  }
+
   assignShift(shiftCell: HTMLElement, employeeId: number): void {
     let date = shiftCell.dataset.date;
     const day = shiftCell.dataset.day;
@@ -1296,17 +1317,17 @@ class ShiftPlanningSystem {
       }
     }
 
-    // Initialize data structures if needed
-    this.weeklyShifts[date] ??= {};
-    this.weeklyShifts[date][shift] ??= [];
+    // Use safe helper to get shift array
+    const shiftArray = this.getShiftArray(date, shift);
 
     // Check if employee is already assigned to this shift
-    if (this.weeklyShifts[date][shift].includes(employeeId)) {
+    const index = shiftArray.indexOf(employeeId);
+    if (index !== -1) {
       // Remove assignment
-      this.weeklyShifts[date][shift] = this.weeklyShifts[date][shift].filter((id) => id !== employeeId);
+      shiftArray.splice(index, 1);
     } else {
       // Add assignment
-      this.weeklyShifts[date][shift].push(employeeId);
+      shiftArray.push(employeeId);
     }
 
     // Update UI - pass the cell directly
@@ -1427,7 +1448,7 @@ class ShiftPlanningSystem {
       this.weeklyShifts[date][shiftType].push(shift.employee_id);
 
       // Store the full shift details including names
-      const shiftKey = `${date}_${shiftType}_${shift.employee_id}`;
+      const shiftKey = `${date}_${shiftType}_${String(shift.employee_id)}`;
       if (!(shiftKey in this.shiftDetails)) {
         this.shiftDetails[shiftKey] = {
           employee_id: shift.employee_id,
@@ -1499,7 +1520,7 @@ class ShiftPlanningSystem {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${String(year)}-${month}-${day}`;
   }
 
   formatWeekRange(weekStart: Date): string {
@@ -1513,7 +1534,7 @@ class ShiftPlanningSystem {
     const startStr = weekStart.toLocaleDateString('de-DE', options);
     const endStr = weekEnd.toLocaleDateString('de-DE', options);
 
-    return `${startStr} - ${endStr} ${weekEnd.getFullYear()}`;
+    return `${startStr} - ${endStr} ${String(weekEnd.getFullYear())}`;
   }
 
   updateShiftCells(weekStart: Date): void {
@@ -1570,7 +1591,7 @@ class ShiftPlanningSystem {
               const employee = this.employees.find((e) => e.id === employeeId);
 
               // If not found, try shift details (for employees who can't load all users)
-              const shiftDetailKey = `${dateKey}_${shiftType}_${employeeId}`;
+              const shiftDetailKey = `${dateKey}_${shiftType}_${String(employeeId)}`;
               const shiftDetail = shiftDetailKey in this.shiftDetails ? this.shiftDetails[shiftDetailKey] : undefined;
 
               console.info(
@@ -1610,7 +1631,7 @@ class ShiftPlanningSystem {
                 tempCard.className = 'employee-card';
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'employee-name';
-                nameDiv.textContent = `Mitarbeiter #${employeeId}`;
+                nameDiv.textContent = `Mitarbeiter #${String(employeeId)}`;
                 tempCard.append(nameDiv);
                 assignmentDiv.append(tempCard);
               }
@@ -1667,7 +1688,7 @@ class ShiftPlanningSystem {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${String(year)}-${month}-${day}`;
   }
 
   async saveSchedule(): Promise<void> {
@@ -1684,7 +1705,7 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Get notes from textarea
-      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement;
+      const notesTextarea = document.querySelector('#weeklyNotes')!;
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
       // Prepare shift assignments
@@ -1787,7 +1808,7 @@ class ShiftPlanningSystem {
 
       let url = `/api/shifts/notes?week=${weekStart}`;
       if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        url += `&department_id=${this.selectedContext.departmentId}`;
+        url += `&department_id=${String(this.selectedContext.departmentId)}`;
       }
       console.info('[SHIFTS DEBUG] Notes API URL:', url);
 

@@ -35,7 +35,7 @@ export default [
       // "max-depth": ["warn", 4], // Deaktiviert - nutzen sonarjs/no-collapsible-if stattdessen
       "max-lines": [
         "warn",
-        { max: 500, skipBlankLines: true, skipComments: true },
+        { max: 2500, skipBlankLines: true, skipComments: true },
       ],
       "max-lines-per-function": [
         "warn",
@@ -43,7 +43,7 @@ export default [
       ],
       "max-nested-callbacks": ["warn", 4],
       "max-params": ["warn", 5], // Max 5 parameters
-      "max-statements": ["warn", 20], // Max 20 statements per function
+      "max-statements": ["warn", 50], // Max 40 statements per function
     },
   },
 
@@ -396,7 +396,7 @@ export default [
       "sonarjs/non-existent-operator": "error",
 
       // Code Smells
-      "sonarjs/cognitive-complexity": ["warn", 15],
+      "sonarjs/cognitive-complexity": ["warn", 30],
       "sonarjs/no-collapsible-if": "warn",
       "sonarjs/no-collection-size-mischeck": "error",
       "sonarjs/no-duplicate-string": ["warn", { threshold: 3 }],

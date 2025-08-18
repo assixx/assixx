@@ -8,6 +8,7 @@ import { logger } from "../utils/logger";
 // Database interfaces
 interface DbTeam extends RowDataPacket {
   id: number;
+
   name: string;
   description?: string;
   department_id?: number;
@@ -59,7 +60,7 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
   logger.info(`Creating new team: ${name}`);
 
   const query = `
-      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id) 
+      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id)
       VALUES (?, ?, ?, ?, ?)
     `;
 
@@ -71,7 +72,7 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
       team_lead_id,
       tenant_id,
     ]);
-    logger.info(`Team created successfully with ID ${result.insertId}`);
+    logger.info(`Team created successfully with ID ${String(result.insertId)}`);
     return result.insertId;
   } catch (error: unknown) {
     logger.error(`Error creating team: ${(error as Error).message}`);
@@ -83,13 +84,13 @@ export async function findAllTeams(
   tenant_id: number | null = null,
 ): Promise<DbTeam[]> {
   logger.info(
-    `Fetching all teams${tenant_id != null && tenant_id !== 0 ? ` for tenant ${tenant_id}` : ""}`,
+    `Fetching all teams${tenant_id != null && tenant_id !== 0 ? ` for tenant ${String(tenant_id)}` : ""}`,
   );
   const query = `
-      SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id, 
+      SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
              t.tenant_id, t.created_at, t.updated_at, t.is_active,
              d.name AS department_name,
-             CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name 
+             CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN users u ON t.team_lead_id = u.id
@@ -102,7 +103,7 @@ export async function findAllTeams(
       query,
       tenant_id != null && tenant_id !== 0 ? [tenant_id] : [],
     );
-    logger.info(`Retrieved ${rows.length} teams`);
+    logger.info(`Retrieved ${String(rows.length)} teams`);
     return rows;
   } catch (error: unknown) {
     logger.error(`Error fetching teams: ${(error as Error).message}`);
@@ -111,12 +112,12 @@ export async function findAllTeams(
 }
 
 export async function findTeamById(id: number): Promise<DbTeam | null> {
-  logger.info(`Fetching team with ID ${id}`);
+  logger.info(`Fetching team with ID ${String(id)}`);
   const query = `
-      SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id, 
+      SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
              t.tenant_id, t.created_at, t.updated_at, t.is_active,
              d.name AS department_name,
-             CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name 
+             CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN users u ON t.team_lead_id = u.id
@@ -126,28 +127,28 @@ export async function findTeamById(id: number): Promise<DbTeam | null> {
   try {
     const [rows] = await executeQuery<DbTeam[]>(query, [id]);
     if (rows.length === 0) {
-      logger.warn(`Team with ID ${id} not found`);
+      logger.warn(`Team with ID ${String(id)} not found`);
       return null;
     }
-    logger.info(`Team ${id} retrieved successfully`);
+    logger.info(`Team ${String(id)} retrieved successfully`);
     return rows[0];
   } catch (error: unknown) {
-    logger.error(`Error fetching team ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error fetching team ${String(id)}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
 
-export async function updateTeam(
-  id: number,
-  teamData: TeamUpdateData,
-): Promise<boolean> {
-  logger.info(`Updating team ${id}`);
-  const { name, description, department_id, team_lead_id, is_active } =
-    teamData;
-
-  // Build dynamic update query
+// Helper function to build update query
+function buildUpdateQuery(teamData: TeamUpdateData): {
+  updateFields: string[];
+  values: unknown[];
+} {
   const updateFields: string[] = [];
   const values: unknown[] = [];
+  const { name, description, department_id, team_lead_id, is_active } =
+    teamData;
 
   if (name !== undefined) {
     updateFields.push("name = ?");
@@ -170,14 +171,25 @@ export async function updateTeam(
     values.push(is_active);
   }
 
+  return { updateFields, values };
+}
+
+export async function updateTeam(
+  id: number,
+  teamData: TeamUpdateData,
+): Promise<boolean> {
+  logger.info(`Updating team ${String(id)}`);
+
+  const { updateFields, values } = buildUpdateQuery(teamData);
+
   if (updateFields.length === 0) {
-    logger.warn(`No fields to update for team ${id}`);
+    logger.warn(`No fields to update for team ${String(id)}`);
     return true;
   }
 
   const query = `
-      UPDATE teams 
-      SET ${updateFields.join(", ")} 
+      UPDATE teams
+      SET ${updateFields.join(", ")}
       WHERE id = ?
     `;
   values.push(id);
@@ -185,31 +197,35 @@ export async function updateTeam(
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, values);
     if (result.affectedRows === 0) {
-      logger.warn(`No team found with ID ${id} for update`);
+      logger.warn(`No team found with ID ${String(id)} for update`);
       return false;
     }
-    logger.info(`Team ${id} updated successfully`);
+    logger.info(`Team ${String(id)} updated successfully`);
     return true;
   } catch (error: unknown) {
-    logger.error(`Error updating team ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error updating team ${String(id)}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
 
 export async function deleteTeam(id: number): Promise<boolean> {
-  logger.info(`Deleting team ${id}`);
+  logger.info(`Deleting team ${String(id)}`);
   const query = "DELETE FROM teams WHERE id = ?";
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [id]);
     if (result.affectedRows === 0) {
-      logger.warn(`No team found with ID ${id} for deletion`);
+      logger.warn(`No team found with ID ${String(id)} for deletion`);
       return false;
     }
-    logger.info(`Team ${id} deleted successfully`);
+    logger.info(`Team ${String(id)} deleted successfully`);
     return true;
   } catch (error: unknown) {
-    logger.error(`Error deleting team ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error deleting team ${String(id)}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
@@ -219,23 +235,29 @@ export async function addUserToTeam(
   teamId: number,
   tenantId: number,
 ): Promise<boolean> {
-  logger.info(`Adding user ${userId} to team ${teamId} for tenant ${tenantId}`);
+  logger.info(
+    `Adding user ${String(userId)} to team ${String(teamId)} for tenant ${String(tenantId)}`,
+  );
   const query =
     "INSERT INTO user_teams (user_id, team_id, tenant_id) VALUES (?, ?, ?)";
 
   try {
     await executeQuery(query, [userId, teamId, tenantId]);
-    logger.info(`User ${userId} added to team ${teamId} successfully`);
+    logger.info(
+      `User ${String(userId)} added to team ${String(teamId)} successfully`,
+    );
     return true;
   } catch (error: unknown) {
     const mysqlError = error as MysqlError;
     // Wenn es ein Duplikat ist, werfen wir einen Fehler
     if (mysqlError.code === "ER_DUP_ENTRY") {
-      logger.warn(`User ${userId} is already a member of team ${teamId}`);
+      logger.warn(
+        `User ${String(userId)} is already a member of team ${String(teamId)}`,
+      );
       throw new Error("User is already a member of this team");
     }
     logger.error(
-      `Error adding user ${userId} to team ${teamId}: ${mysqlError.message}`,
+      `Error adding user ${String(userId)} to team ${String(teamId)}: ${mysqlError.message}`,
     );
     throw error;
   }
@@ -245,7 +267,7 @@ export async function removeUserFromTeam(
   userId: number,
   teamId: number,
 ): Promise<boolean> {
-  logger.info(`Removing user ${userId} from team ${teamId}`);
+  logger.info(`Removing user ${String(userId)} from team ${String(teamId)}`);
   const query = "DELETE FROM user_teams WHERE user_id = ? AND team_id = ?";
 
   try {
@@ -254,44 +276,50 @@ export async function removeUserFromTeam(
       teamId,
     ]);
     if (result.affectedRows === 0) {
-      logger.warn(`User ${userId} is not a member of team ${teamId}`);
+      logger.warn(
+        `User ${String(userId)} is not a member of team ${String(teamId)}`,
+      );
       return false;
     }
-    logger.info(`User ${userId} removed from team ${teamId} successfully`);
+    logger.info(
+      `User ${String(userId)} removed from team ${String(teamId)} successfully`,
+    );
     return true;
   } catch (error: unknown) {
     logger.error(
-      `Error removing user ${userId} from team ${teamId}: ${(error as Error).message}`,
+      `Error removing user ${String(userId)} from team ${String(teamId)}: ${(error as Error).message}`,
     );
     throw error;
   }
 }
 
 export async function getTeamMembers(teamId: number): Promise<DbTeamMember[]> {
-  logger.info(`Fetching members for team ${teamId}`);
+  logger.info(`Fetching members for team ${String(teamId)}`);
   const query = `
-      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id 
-      FROM users u 
+      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id
+      FROM users u
       JOIN user_teams ut ON u.id = ut.user_id
       WHERE ut.team_id = ?
     `;
 
   try {
     const [rows] = await executeQuery<DbTeamMember[]>(query, [teamId]);
-    logger.info(`Retrieved ${rows.length} members for team ${teamId}`);
+    logger.info(
+      `Retrieved ${String(rows.length)} members for team ${String(teamId)}`,
+    );
     return rows;
   } catch (error: unknown) {
     logger.error(
-      `Error fetching members for team ${teamId}: ${(error as Error).message}`,
+      `Error fetching members for team ${String(teamId)}: ${(error as Error).message}`,
     );
     throw error;
   }
 }
 
 export async function getUserTeams(userId: number): Promise<DbTeam[]> {
-  logger.info(`Fetching teams for user ${userId}`);
+  logger.info(`Fetching teams for user ${String(userId)}`);
   const query = `
-      SELECT t.*, d.name AS department_name 
+      SELECT t.*, d.name AS department_name
       FROM teams t
       JOIN user_teams ut ON t.id = ut.team_id
       LEFT JOIN departments d ON t.department_id = d.id
@@ -300,11 +328,13 @@ export async function getUserTeams(userId: number): Promise<DbTeam[]> {
 
   try {
     const [rows] = await executeQuery<DbTeam[]>(query, [userId]);
-    logger.info(`Retrieved ${rows.length} teams for user ${userId}`);
+    logger.info(
+      `Retrieved ${String(rows.length)} teams for user ${String(userId)}`,
+    );
     return rows;
   } catch (error: unknown) {
     logger.error(
-      `Error fetching teams for user ${userId}: ${(error as Error).message}`,
+      `Error fetching teams for user ${String(userId)}: ${(error as Error).message}`,
     );
     throw error;
   }
@@ -312,8 +342,8 @@ export async function getUserTeams(userId: number): Promise<DbTeam[]> {
 
 export async function getTeamMachines(
   teamId: number,
-): Promise<Array<{ id: number; name: string; model?: string }>> {
-  logger.info(`Fetching machines for team ${teamId}`);
+): Promise<{ id: number; name: string; model?: string }[]> {
+  logger.info(`Fetching machines for team ${String(teamId)}`);
   const query = `
       SELECT m.id, m.name, m.model
       FROM machines m
@@ -323,11 +353,13 @@ export async function getTeamMachines(
 
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(query, [teamId]);
-    logger.info(`Retrieved ${rows.length} machines for team ${teamId}`);
-    return rows as Array<{ id: number; name: string; model?: string }>;
+    logger.info(
+      `Retrieved ${String(rows.length)} machines for team ${String(teamId)}`,
+    );
+    return rows as { id: number; name: string; model?: string }[];
   } catch (error: unknown) {
     logger.error(
-      `Error fetching machines for team ${teamId}: ${(error as Error).message}`,
+      `Error fetching machines for team ${String(teamId)}: ${(error as Error).message}`,
     );
     throw error;
   }
