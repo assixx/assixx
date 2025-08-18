@@ -3,9 +3,10 @@
  * These types extend Express Request with authentication and file upload support
  */
 
+import { Request } from "express";
 import { ParamsDictionary } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { Request } from "express";
+
 import { TenantInfo } from "./tenant.types";
 
 // User object that gets attached to authenticated requests

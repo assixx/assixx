@@ -4,6 +4,7 @@
  */
 
 import { body, query, param } from "express-validator";
+
 import { isValidPhoneNumber } from "../../../utils/phoneValidator";
 
 export const usersValidation = {

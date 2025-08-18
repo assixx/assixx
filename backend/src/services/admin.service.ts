@@ -4,6 +4,7 @@
  */
 
 import { Pool } from "mysql2/promise";
+
 import RootLog, {
   type DbRootLog,
   type RootLogCreateData as ModelRootLogCreateData,

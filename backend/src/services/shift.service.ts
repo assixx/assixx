@@ -9,6 +9,7 @@
  */
 
 import { Pool } from "mysql2/promise";
+
 import {
   getShiftTemplates,
   createShiftTemplate,

@@ -5,7 +5,9 @@
  */
 
 import { log, error as logError } from "console";
+
 import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+
 import { execute } from "../../../utils/db.js";
 import { ServiceError } from "../users/users.service.js";
 

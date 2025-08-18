@@ -3,9 +3,10 @@
  * Client-side TypeScript for the company calendar feature
  */
 
-import { getAuthToken, showSuccess, showError } from './auth';
 import type { User } from '../types/api.types';
 import { featureFlags } from '../utils/feature-flags';
+
+import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
 
 // Window.unifiedNav is already declared in global.d.ts

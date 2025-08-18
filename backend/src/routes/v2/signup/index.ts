@@ -4,13 +4,15 @@
  */
 
 import { Router, Request, Response } from "express";
-import { signupController } from "./controller.js";
-import { signupValidation, checkSubdomainValidation } from "./validation.js";
+
 import {
   authLimiter,
   apiLimiter,
 } from "../../../middleware/security-enhanced.js";
 import { validate } from "../../../middleware/validation.js";
+
+import { signupController } from "./controller.js";
+import { signupValidation, checkSubdomainValidation } from "./validation.js";
 
 const router = Router();
 

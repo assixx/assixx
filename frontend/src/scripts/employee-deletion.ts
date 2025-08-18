@@ -5,8 +5,9 @@
  * inklusive der Verarbeitung von verknüpften Dokumenten und anderen Daten.
  */
 
-import { getAuthToken, showError, showSuccess } from './auth';
 import type { User, Document } from '../types/api.types';
+
+import { getAuthToken, showError, showSuccess } from './auth';
 
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
 let selectedEmployeeId: number | null = null;

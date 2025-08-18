@@ -4,6 +4,16 @@
  */
 
 import { Response } from "express";
+
+import RootLog from "../../../models/rootLog.js";
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
+import {
+  successResponse,
+  errorResponse,
+} from "../../../types/response.types.js";
+import { getErrorMessage } from "../../../utils/errorHandler.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
+
 import {
   getAreas,
   getAreaById,
@@ -14,14 +24,6 @@ import {
   getAreaStats,
 } from "./areas.service.js";
 import { CreateAreaRequest, UpdateAreaRequest, AreaFilters } from "./types.js";
-import RootLog from "../../../models/rootLog.js";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import {
-  successResponse,
-  errorResponse,
-} from "../../../types/response.types.js";
-import { getErrorMessage } from "../../../utils/errorHandler.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 
 /**
  * Get all areas

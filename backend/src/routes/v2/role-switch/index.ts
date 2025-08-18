@@ -4,9 +4,11 @@
  */
 
 import { Router } from "express";
-import { RoleSwitchController } from "./role-switch.controller.js";
+
 import { securityV2 } from "../../../middleware/v2/security.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import { RoleSwitchController } from "./role-switch.controller.js";
 
 const router = Router();
 

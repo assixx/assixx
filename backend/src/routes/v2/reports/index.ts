@@ -8,10 +8,12 @@
  */
 
 import { Router } from "express";
-import * as reportsController from "./reports.controller.js";
-import { reportsValidation } from "./reports.validation.js";
+
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import * as reportsController from "./reports.controller.js";
+import { reportsValidation } from "./reports.validation.js";
 
 const router = Router();
 

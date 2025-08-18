@@ -3,9 +3,10 @@
  * WebSocket-based real-time chat functionality
  */
 
-import { getAuthToken } from './auth';
 import type { User, JWTPayload } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
+
+import { getAuthToken } from './auth';
 import type UnifiedNavigation from './components/unified-navigation';
 
 declare global {

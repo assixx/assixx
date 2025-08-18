@@ -4,11 +4,13 @@
  */
 
 import { Router } from "express";
-import { rolesController } from "./controller.js";
-import { getRoleValidation, checkRoleValidation } from "./validation.js";
+
 import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
 import { validate } from "../../../middleware/validation.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import { rolesController } from "./controller.js";
+import { getRoleValidation, checkRoleValidation } from "./validation.js";
 
 const router = Router();
 

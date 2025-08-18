@@ -4,10 +4,12 @@
  */
 
 import { Router } from "express";
-import * as settingsController from "./settings.controller.js";
-import * as validation from "./settings.validation.js";
+
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import * as settingsController from "./settings.controller.js";
+import * as validation from "./settings.validation.js";
 
 const router = Router();
 

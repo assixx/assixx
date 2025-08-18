@@ -8,14 +8,12 @@
  */
 
 import express, { Router, RequestHandler } from "express";
-import { logsController } from "./logs.controller.js";
-import { logsValidation } from "./logs.validation.js";
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware.js";
+
+import { authenticateV2, requireRoleV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
 
+import { logsController } from "./logs.controller.js";
+import { logsValidation } from "./logs.validation.js";
 
 const router: Router = express.Router();
 
@@ -113,7 +111,7 @@ router.get(
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.listLogs,
-  debugWrapper(typed.auth(logsController.getLogs)),
+  debugWrapper(typed.auth(logsController.getLogs))
 );
 
 /**
@@ -179,7 +177,7 @@ router.get(
   "/stats",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
-  typed.auth(logsController.getStats),
+  typed.auth(logsController.getStats)
 );
 
 /**
@@ -242,7 +240,7 @@ router.delete(
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.deleteLogs,
-  typed.auth(logsController.deleteLogs),
+  typed.auth(logsController.deleteLogs)
 );
 
 export default router;

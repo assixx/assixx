@@ -1,4 +1,8 @@
 import { Router } from "express";
+
+import { security } from "../../../middleware/security";
+import { typed } from "../../../utils/routeHandlers";
+
 import { FeaturesController } from "./features.controller";
 import {
   getAllFeaturesValidation,
@@ -11,8 +15,6 @@ import {
   getUsageStatsValidation,
   testFeatureAccessValidation,
 } from "./features.validation";
-import { security } from "../../../middleware/security";
-import { typed } from "../../../utils/routeHandlers";
 
 const router = Router();
 

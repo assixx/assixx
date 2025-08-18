@@ -3,17 +3,9 @@
  * Handles HTTP requests and delegates business logic to service layer
  */
 
-import { validationResult, ValidationError } from "express-validator";
 import { Response } from "express";
-import { usersService, ServiceError } from "./users.service";
-import {
-  CreateUserBody,
-  UpdateUserBody,
-  UpdateProfileBody,
-  ChangePasswordBody,
-  UpdateAvailabilityBody,
-  ListUsersQuery,
-} from "./users.types";
+import { validationResult, ValidationError } from "express-validator";
+
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types";
 import {
@@ -23,6 +15,16 @@ import {
   type PaginationMeta,
 } from "../../../utils/apiResponse";
 import { uploadMiddleware } from "../../../utils/uploadMiddleware";
+
+import { usersService, ServiceError } from "./users.service";
+import {
+  CreateUserBody,
+  UpdateUserBody,
+  UpdateProfileBody,
+  ChangePasswordBody,
+  UpdateAvailabilityBody,
+  ListUsersQuery,
+} from "./users.types";
 
 interface User {
   id: number;

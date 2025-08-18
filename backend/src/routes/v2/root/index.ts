@@ -3,12 +3,14 @@
  * Route definitions for root user operations
  */
 
-import { param, body } from "express-validator";
 import { Router } from "express";
-import { rootController } from "./root.controller.js";
+import { param, body } from "express-validator";
+
 import { security } from "../../../middleware/security.js";
 import { createValidation } from "../../../middleware/validation.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import { rootController } from "./root.controller.js";
 
 const router = Router();
 

@@ -1,8 +1,10 @@
 import { Server } from "http";
 import { URL } from "url";
+
 import jwt from "jsonwebtoken";
 import { RowDataPacket, ResultSetHeader, Pool } from "mysql2/promise";
 import { WebSocket, WebSocketServer, Data as WebSocketData } from "ws";
+
 import db from "./database.js";
 import { logger } from "./utils/logger.js";
 

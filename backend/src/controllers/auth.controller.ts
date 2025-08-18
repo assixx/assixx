@@ -3,9 +3,10 @@
  * Handles all authentication-related business logic
  */
 
+import { Request, Response } from "express";
 import { JwtPayload } from "jsonwebtoken";
 import { RowDataPacket } from "mysql2/promise";
-import { Request, Response } from "express";
+
 import { executeQuery } from "../database";
 import { createLog } from "../routes/logs.js";
 import authService from "../services/auth.service";

@@ -1,6 +1,7 @@
+import express, { Router } from "express";
 import { body, param } from "express-validator";
 import { RowDataPacket } from "mysql2";
-import express, { Router } from "express";
+
 import { security } from "../middleware/security";
 import { createValidation } from "../middleware/validation";
 import Plan from "../models/plan";

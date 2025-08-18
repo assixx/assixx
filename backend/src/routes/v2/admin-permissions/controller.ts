@@ -3,19 +3,21 @@
  * Handles HTTP requests for admin permissions management
  */
 
+import { Response } from "express";
 import { validationResult } from "express-validator";
 import { RowDataPacket } from "mysql2/promise";
-import { Response } from "express";
+
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
+import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
+import { execute } from "../../../utils/db.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
+
 import { adminPermissionsService } from "./service.js";
 import {
   SetPermissionsRequest,
   BulkPermissionsRequest,
   PermissionLevel,
 } from "./types.js";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { execute } from "../../../utils/db.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 
 export const adminPermissionsController = {
   /**

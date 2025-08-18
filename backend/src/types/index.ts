@@ -29,6 +29,7 @@ export type * from "./models";
 
 // Convenience type for any authenticated handler
 import { Response, NextFunction } from "express";
+
 import type { AuthenticatedRequest } from "./request.types";
 
 export type AuthenticatedHandler = (

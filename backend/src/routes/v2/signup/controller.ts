@@ -3,13 +3,15 @@
  * HTTP request handlers for signup API
  */
 
-import { validationResult } from "express-validator";
 import { Request, Response } from "express";
-import { signupService } from "./service.js";
-import type { SignupRequest } from "./types.js";
+import { validationResult } from "express-validator";
+
 import RootLog from "../../../models/rootLog";
 import { logger } from "../../../utils/logger.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
+
+import { signupService } from "./service.js";
+import type { SignupRequest } from "./types.js";
 
 interface SignupResult {
   tenantId: number;

@@ -1,3 +1,14 @@
+import RootLog from "../../../models/rootLog";
+import {
+  execute,
+  query,
+  ResultSetHeader,
+  RowDataPacket,
+} from "../../../utils/db";
+import { fieldMapper } from "../../../utils/fieldMapper";
+import { logger } from "../../../utils/logger";
+import { ServiceError as ServiceErrorClass } from "../../../utils/ServiceError";
+
 import {
   Feature,
   TenantFeature,
@@ -12,16 +23,6 @@ import {
   DbFeatureUsageStats,
   ActivationOptions,
 } from "./types";
-import RootLog from "../../../models/rootLog";
-import {
-  execute,
-  query,
-  ResultSetHeader,
-  RowDataPacket,
-} from "../../../utils/db";
-import { fieldMapper } from "../../../utils/fieldMapper";
-import { logger } from "../../../utils/logger";
-import { ServiceError as ServiceErrorClass } from "../../../utils/ServiceError";
 
 /**
  *

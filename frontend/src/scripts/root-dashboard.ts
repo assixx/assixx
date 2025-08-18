@@ -3,9 +3,10 @@
  * Handles root user dashboard functionality and admin management
  */
 
-import { getAuthToken } from './auth';
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
+
+import { getAuthToken } from './auth';
 
 // Notification helper
 function showNotification(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {

@@ -9,6 +9,7 @@
 
 // TODO: Fix import - employee model doesn't exist, using user model instead
 import { Pool } from "mysql2/promise";
+
 import User, { DbUser, UserCreateData, UserFilter } from "../models/user";
 /**
  * Employee Service

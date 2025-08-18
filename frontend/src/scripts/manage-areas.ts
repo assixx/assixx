@@ -1,5 +1,6 @@
 // Areas Management Module
 import { apiClient } from '../utils/api-client.js';
+
 import { showSuccessAlert, showErrorAlert } from './utils/alerts.js';
 
 // Types

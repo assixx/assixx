@@ -2,10 +2,10 @@
  * Dashboard Scripts - gemeinsame Funktionalität für alle Dashboard-Seiten
  */
 
-import { getAuthToken, removeAuthToken } from './auth';
 import type { User } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
 
+import { getAuthToken, removeAuthToken } from './auth';
 // import { formatDate as formatDateUtil } from './common';
 
 interface TabClickDetail {

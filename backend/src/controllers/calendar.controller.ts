@@ -7,8 +7,9 @@
  * Should be refactored to use getAllEvents, createEvent, etc.
  */
 
-import { Pool } from "mysql2/promise";
 import { Request, Response } from "express";
+import { Pool } from "mysql2/promise";
+
 import calendarService from "../services/calendar.service";
 
 // Extended Request interface with tenant database

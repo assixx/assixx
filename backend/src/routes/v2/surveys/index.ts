@@ -8,10 +8,12 @@
  */
 
 import { Router } from "express";
-import * as surveysController from "./surveys.controller.js";
-import { surveysValidation } from "./surveys.validation.js";
+
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import * as surveysController from "./surveys.controller.js";
+import { surveysValidation } from "./surveys.validation.js";
 
 const router = Router();
 

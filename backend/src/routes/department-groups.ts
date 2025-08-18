@@ -3,8 +3,9 @@
  * Handles hierarchical department group management
  */
 
-import { body, param, validationResult } from "express-validator";
 import express, { Router } from "express";
+import { body, param, validationResult } from "express-validator";
+
 import { authenticateToken, authorizeRole } from "../auth.js";
 import departmentGroupService from "../services/departmentGroup.service.js";
 import { getErrorMessage } from "../utils/errorHandler.js";

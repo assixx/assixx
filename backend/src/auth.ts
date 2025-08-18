@@ -6,9 +6,11 @@
  */
 
 import crypto from "crypto";
+
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+
 import UserModel from "./models/user";
 import type { DbUser } from "./models/user";
 import { DatabaseUser } from "./types";

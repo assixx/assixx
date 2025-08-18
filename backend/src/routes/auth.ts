@@ -7,6 +7,7 @@
  */
 
 import express, { Router, Request, Response } from "express";
+
 import authController from "../controllers/auth.controller";
 import { security } from "../middleware/security";
 import { validationSchemas } from "../middleware/validation";

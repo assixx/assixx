@@ -3,8 +3,9 @@
  * Interactive weekly shift planning with drag & drop functionality
  */
 
-import { getAuthToken, showSuccess, showError, showInfo } from './auth';
 import type { User } from '../types/api.types';
+
+import { getAuthToken, showSuccess, showError, showInfo } from './auth';
 import { openModal } from './utils/modal-manager';
 
 interface Employee extends User {

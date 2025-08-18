@@ -4,15 +4,17 @@
  */
 
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+
+import { executeQuery } from "../../../database.js";
+import RootLog from "../../../models/rootLog";
+import { dbToApi } from "../../../utils/fieldMapping.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
+
 import {
   NotificationFilters,
   NotificationData,
   NotificationPreferences,
 } from "./types.js";
-import { executeQuery } from "../../../database.js";
-import RootLog from "../../../models/rootLog";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 
 /**
  * Get notifications for a user with filters

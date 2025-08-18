@@ -9,9 +9,10 @@
 
 import fs from "fs/promises";
 import path from "path";
+
+import express, { Router, Request, Response, NextFunction } from "express";
 import { param } from "express-validator";
 import multer from "multer";
-import express, { Router, Request, Response, NextFunction } from "express";
 
 const router: Router = express.Router();
 

@@ -3,11 +3,12 @@
  * Client-side TypeScript for the blackboard feature
  */
 
+import type { User } from '../types/api.types';
+import { ApiClient } from '../utils/api-client';
+
 import { getAuthToken, showSuccess, showError } from './auth';
 import { escapeHtml } from './common';
 import { closeModal as dashboardCloseModal } from './dashboard-scripts';
-import type { User } from '../types/api.types';
-import { ApiClient } from '../utils/api-client';
 
 /**
  * Escapes a string for safe use in JavaScript string literals

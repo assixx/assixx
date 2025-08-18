@@ -4,6 +4,12 @@
  */
 
 import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
+
+import RootLog from "../../../models/rootLog";
+import { execute, getConnection } from "../../../utils/db.js";
+import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
+
 import {
   DepartmentGroup,
   DepartmentGroupWithHierarchy,
@@ -11,10 +17,6 @@ import {
   CreateGroupRequest,
   UpdateGroupRequest,
 } from "./types.js";
-import RootLog from "../../../models/rootLog";
-import { execute, getConnection } from "../../../utils/db.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 
 interface GroupRow extends RowDataPacket {
   id: number;

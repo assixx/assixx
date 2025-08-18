@@ -8,10 +8,10 @@
 
 import fs from "fs/promises";
 import path from "path";
-import multer from "multer";
+
 import { Router } from "express";
-import * as blackboardController from "./blackboard.controller.js";
-import { blackboardValidation } from "./blackboard.validation.js";
+import multer from "multer";
+
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { requireRoleV2 } from "../../../middleware/v2/roleCheck.middleware.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
@@ -20,6 +20,9 @@ import {
   getUploadDirectory,
 } from "../../../utils/pathSecurity.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import * as blackboardController from "./blackboard.controller.js";
+import { blackboardValidation } from "./blackboard.validation.js";
 
 const router = Router();
 

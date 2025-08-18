@@ -4,6 +4,7 @@
  */
 
 import { Pool } from "mysql2/promise";
+
 import {
   getAllEntries,
   getEntryById,

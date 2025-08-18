@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { PlansService } from "./plans.service";
-import { plansValidation } from "./plans.validation";
-import type { UpgradePlanRequest, UpdateAddonsRequest } from "./types";
+
 import { security } from "../../../middleware/security";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";
 import { getErrorMessage } from "../../../utils/errorHandler";
 import { typed } from "../../../utils/routeHandlers";
+
+import { PlansService } from "./plans.service";
+import { plansValidation } from "./plans.validation";
+import type { UpgradePlanRequest, UpdateAddonsRequest } from "./types";
 
 const router = Router();
 

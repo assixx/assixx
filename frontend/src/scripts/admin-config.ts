@@ -3,9 +3,10 @@
  * Handles admin user management and activity logs
  */
 
+import type { User } from '../types/api.types';
+
 import { getAuthToken, showSuccess, showError } from './auth';
 import { formatDateTime } from './common';
-import type { User } from '../types/api.types';
 
 interface AdminUser extends User {
   company?: string;

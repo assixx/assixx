@@ -4,14 +4,7 @@
  */
 
 import { Response } from "express";
-import { kvpService } from "./kvp.service.js";
-import type {
-  KVPCreateData,
-  KVPUpdateData,
-  KVPSuggestion,
-  CommentData,
-  PointsData,
-} from "./kvp.service.js";
+
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import {
@@ -20,6 +13,15 @@ import {
   paginatedResponse,
 } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
+
+import { kvpService } from "./kvp.service.js";
+import type {
+  KVPCreateData,
+  KVPUpdateData,
+  KVPSuggestion,
+  CommentData,
+  PointsData,
+} from "./kvp.service.js";
 
 // Request body interfaces
 interface CreateSuggestionBody {

@@ -1,4 +1,5 @@
 import { body, param, query } from "express-validator";
+
 import { handleValidationErrors } from "../../../middleware/validation";
 
 // Common validators

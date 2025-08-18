@@ -3,13 +3,15 @@
  * RESTful API endpoints for calendar management
  */
 
-import { body, param, query } from "express-validator";
 import { Router } from "express";
-import * as calendarController from "./calendar.controller.js";
+import { body, param, query } from "express-validator";
+
 import { apiLimiter } from "../../../middleware/security-enhanced.js";
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { createValidation } from "../../../middleware/validation.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import * as calendarController from "./calendar.controller.js";
 
 const router = Router();
 

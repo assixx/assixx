@@ -5,12 +5,14 @@
 
 import fs from "fs";
 import path from "path";
+
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import "dotenv/config";
+import express, { Application, Request, Response, NextFunction } from "express";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
-import express, { Application, Request, Response, NextFunction } from "express";
+
 import { swaggerSpec } from "./config/swagger";
 import { swaggerSpecV2 } from "./config/swagger-v2";
 import authController from "./controllers/auth.controller";

@@ -3,18 +3,20 @@
  * Handles HTTP requests and delegates business logic to service layer
  */
 
-import { validationResult, ValidationError } from "express-validator";
 import { Response } from "express";
+import { validationResult, ValidationError } from "express-validator";
+
+import type { AuthenticatedRequest } from "../../../types/request.types";
+import { successResponse, errorResponse } from "../../../utils/apiResponse";
+import { logger } from "../../../utils/logger";
+import { ServiceError } from "../../../utils/ServiceError";
+
 import { machinesService } from "./machines.service";
 import {
   MachineCreateRequest,
   MachineUpdateRequest,
   MaintenanceRecordRequest,
 } from "./types";
-import type { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../utils/apiResponse";
-import { logger } from "../../../utils/logger";
-import { ServiceError } from "../../../utils/ServiceError";
 
 // Helper to map validation errors to our error response format
 /**

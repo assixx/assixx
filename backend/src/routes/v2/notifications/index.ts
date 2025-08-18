@@ -4,10 +4,12 @@
  */
 
 import { Router } from "express";
-import * as notificationsController from "./notifications.controller.js";
-import * as notificationsValidation from "./notifications.validation.js";
+
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import * as notificationsController from "./notifications.controller.js";
+import * as notificationsValidation from "./notifications.validation.js";
 
 const router = Router();
 

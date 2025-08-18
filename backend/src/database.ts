@@ -6,6 +6,7 @@ import {
   ResultSetHeader,
   FieldPacket,
 } from "mysql2/promise";
+
 import { DatabasePool, MockDatabase } from "./types/database.types";
 
 dotenv.config();

@@ -1,3 +1,7 @@
+import { executeQuery as query } from "../../../config/database";
+import PlanModel from "../../../models/plan";
+import RootLog from "../../../models/rootLog";
+
 import {
   Plan,
   PlanFeature,
@@ -15,9 +19,6 @@ import {
   DbTenantAddon,
   DbAddonResult,
 } from "./types";
-import { executeQuery as query } from "../../../config/database";
-import PlanModel from "../../../models/plan";
-import RootLog from "../../../models/rootLog";
 
 // Type helper to cast Model types to our types
 type ModelDbPlan = DbPlan & { description?: string };

@@ -4,14 +4,16 @@
  */
 
 import express, { Router, RequestHandler } from "express";
-import { usersController } from "./users.controller";
-import { usersValidation } from "./users.validation";
+
 import { rateLimiter } from "../../../middleware/rateLimiter";
 import {
   authenticateV2,
   requireRoleV2,
 } from "../../../middleware/v2/auth.middleware";
 import { typed } from "../../../utils/routeHandlers";
+
+import { usersController } from "./users.controller";
+import { usersValidation } from "./users.validation";
 
 const router: Router = express.Router();
 

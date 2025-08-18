@@ -4,6 +4,13 @@
  */
 
 import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+
+import { createRootLog } from "../../../models/rootLog.js";
+import { execute } from "../../../utils/db.js";
+import { getErrorMessage } from "../../../utils/errorHandler.js";
+import { logger } from "../../../utils/logger.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
+
 import {
   AdminDepartment,
   AdminGroup,
@@ -13,11 +20,6 @@ import {
   PermissionCheckResult,
   BulkOperationResult,
 } from "./types.js";
-import { createRootLog } from "../../../models/rootLog.js";
-import { execute } from "../../../utils/db.js";
-import { getErrorMessage } from "../../../utils/errorHandler.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 
 interface DepartmentPermissionRow extends RowDataPacket {
   id: number;

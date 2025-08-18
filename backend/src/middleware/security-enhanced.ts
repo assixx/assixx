@@ -1,11 +1,11 @@
 // Enhanced Security Middleware für Assixx
 import * as cors from "cors";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import rateLimit, { RateLimitRequestHandler } from "express-rate-limit";
 import helmet from "helmet";
 // import mongoSanitize from 'express-mongo-sanitize'; // Disabled - not compatible with Express 5.x
 // import xss from 'xss-clean'; // Disabled - not compatible with Express 5.x
 import hpp from "hpp";
-import { Request, Response, NextFunction, RequestHandler } from "express";
 // import { doubleCsrf } from 'csrf-csrf'; // Package not installed
 
 import type { AuthenticatedRequest } from "../types/request.types.js";

@@ -4,12 +4,15 @@
  */
 
 import { log, error as logError } from "console";
+
 import { Response } from "express";
-import { auditTrailService } from "./audit-trail.service.js";
-import { AuditFilter, AuditEntry } from "./types.js";
+
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
+
+import { auditTrailService } from "./audit-trail.service.js";
+import { AuditFilter, AuditEntry } from "./types.js";
 
 export const auditTrailController = {
   /**

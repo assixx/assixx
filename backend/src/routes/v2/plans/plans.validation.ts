@@ -1,4 +1,5 @@
 import { body, param } from "express-validator";
+
 import { handleValidationErrors } from "../../../middleware/validation";
 
 export const plansValidation = {

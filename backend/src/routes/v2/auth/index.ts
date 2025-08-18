@@ -7,11 +7,13 @@
  */
 
 import express, { Router } from "express";
-import { authController } from "./auth.controller";
-import { authValidation } from "./auth.validation";
+
 import { rateLimiter } from "../../../middleware/rateLimiter";
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
 import { typed } from "../../../utils/routeHandlers";
+
+import { authController } from "./auth.controller";
+import { authValidation } from "./auth.validation";
 
 const router: Router = express.Router();
 

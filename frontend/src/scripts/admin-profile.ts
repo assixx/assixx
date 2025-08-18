@@ -3,8 +3,9 @@
  * Handles admin profile functionality with limited edit capabilities
  */
 
-import { getAuthToken, showError } from './auth';
 import { apiClient } from '../utils/api-client';
+
+import { getAuthToken, showError } from './auth';
 
 interface UserProfile {
   id: number;

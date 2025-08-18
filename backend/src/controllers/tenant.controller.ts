@@ -3,8 +3,9 @@
  * Handles tenant-related operations
  */
 
-import { Pool } from "mysql2/promise";
 import { Request, Response } from "express";
+import { Pool } from "mysql2/promise";
+
 import tenantService from "../services/tenant.service";
 
 // Extended Request interface with tenant database

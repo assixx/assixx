@@ -4,6 +4,7 @@
  */
 
 import * as path from "path";
+
 import * as dotenv from "dotenv";
 import * as mysql from "mysql2";
 import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";

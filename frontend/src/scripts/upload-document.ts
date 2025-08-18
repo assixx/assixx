@@ -3,8 +3,9 @@
  * Handles file uploads for employees
  */
 
-import { getAuthToken } from './auth';
 import type { User } from '../types/api.types';
+
+import { getAuthToken } from './auth';
 import notificationService from './services/notification.service';
 
 interface UploadFormElements extends HTMLFormControlsCollection {

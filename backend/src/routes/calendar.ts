@@ -7,8 +7,8 @@
  *   description: Event and calendar management
  */
 
-import { body, param, query } from "express-validator";
 import express, { Router } from "express";
+import { body, param, query } from "express-validator";
 
 const router: Router = express.Router();
 

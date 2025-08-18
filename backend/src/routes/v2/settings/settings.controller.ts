@@ -4,6 +4,11 @@
  */
 
 import { Response } from "express";
+
+import type { AuthenticatedRequest } from "../../../types/request.types.js";
+import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
+import { ServiceError } from "../../../utils/ServiceError.js";
+
 import * as settingsService from "./settings.service.js";
 import type {
   SettingData,
@@ -11,9 +16,6 @@ import type {
   SettingCategory,
 } from "./settings.service.js";
 import { SystemSetting, UserSetting, BulkUpdateRequest } from "./types.js";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
 
 // ==================== SYSTEM SETTINGS ====================
 

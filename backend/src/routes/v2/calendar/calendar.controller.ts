@@ -8,17 +8,19 @@
  */
 
 import { Response, NextFunction } from "express";
-import { calendarService } from "./calendar.service.js";
-import type {
-  CalendarEventData,
-  CalendarEventUpdateData,
-} from "./calendar.service.js";
+
 import type { CalendarEvent } from "../../../models/calendar.js";
 import CalendarModel from "../../../models/calendar.js";
 import RootLog from "../../../models/rootLog";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../users/users.service.js";
+
+import { calendarService } from "./calendar.service.js";
+import type {
+  CalendarEventData,
+  CalendarEventUpdateData,
+} from "./calendar.service.js";
 
 /**
  * @param req

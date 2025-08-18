@@ -4,9 +4,9 @@
  */
 
 import bcrypt from "bcryptjs";
+import express, { Router } from "express";
 import { param } from "express-validator";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import express, { Router } from "express";
 
 const router: Router = express.Router();
 

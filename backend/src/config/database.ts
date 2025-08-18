@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 import * as mysql from "mysql2/promise";
 import { PoolOptions, RowDataPacket, ResultSetHeader } from "mysql2/promise";
+
 import { DatabasePool, MockDatabase } from "../types/database.types.js";
 
 dotenv.config();
@@ -361,7 +362,7 @@ export async function closePool(): Promise<void> {
   }
 }
 
-// Utility functions are available from ../utils/db
-// Removed re-export to avoid circular dependency
+// Re-export utility functions from db.ts
+export { query as executeQuery, execute } from "../utils/db";
 
 // CommonJS compatibility

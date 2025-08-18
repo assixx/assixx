@@ -4,6 +4,7 @@
  */
 
 import { body, param, query } from "express-validator";
+
 import { handleValidationErrors } from "../../../middleware/validation.js";
 
 export const teamsValidation = {

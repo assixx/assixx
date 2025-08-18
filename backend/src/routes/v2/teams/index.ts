@@ -9,13 +9,15 @@
  */
 
 import { Router, RequestHandler } from "express";
-import { teamsController } from "./teams.controller.js";
-import { teamsValidation } from "./teams.validation.js";
+
 import {
   authenticateV2,
   requireRoleV2,
 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
+
+import { teamsController } from "./teams.controller.js";
+import { teamsValidation } from "./teams.validation.js";
 
 const router = Router();
 

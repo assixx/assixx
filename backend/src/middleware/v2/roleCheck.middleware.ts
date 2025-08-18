@@ -4,6 +4,7 @@
  */
 
 import { Response, NextFunction, RequestHandler } from "express";
+
 import type { AuthenticatedRequest } from "../../types/request.types.js";
 import { errorResponse } from "../../utils/apiResponse.js";
 

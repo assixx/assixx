@@ -3,9 +3,10 @@
  * Handles department CRUD operations for admin dashboard
  */
 
-import { showSuccess, showError } from './auth';
 import { ApiClient } from '../utils/api-client';
 import { mapDepartment, type DepartmentAPIResponse } from '../utils/api-mappers';
+
+import { showSuccess, showError } from './auth';
 
 interface Department {
   id: number;

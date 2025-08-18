@@ -4,11 +4,13 @@
  */
 
 import { Response } from "express";
-import * as notificationsService from "./notifications.service.js";
-import { NotificationData, NotificationPreferences } from "./types.js";
+
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
+
+import * as notificationsService from "./notifications.service.js";
+import { NotificationData, NotificationPreferences } from "./types.js";
 
 /**
  * @param req

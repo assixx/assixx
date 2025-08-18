@@ -64,7 +64,7 @@ jobs:
           # Führe jeden Test einzeln aus mit ESM Support
           for test in "${UNIT_TESTS[@]}"; do
             echo "Testing: $test"
-            pnpm jest -c ../config/jest.config.js "$test" --passWithNoTests || exit 1
+            pnpm jest -c ../jest.config.js "$test" --passWithNoTests || exit 1
           done
 
   linting-and-formatting:

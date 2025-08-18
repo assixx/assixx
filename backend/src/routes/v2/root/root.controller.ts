@@ -4,6 +4,12 @@
  */
 
 import { Request, Response } from "express";
+
+import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
+import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
+import { execute } from "../../../utils/db.js";
+import { logger } from "../../../utils/logger.js";
+
 import { rootService } from "./root.service.js";
 import {
   CreateAdminRequest,
@@ -12,10 +18,6 @@ import {
   UpdateRootUserRequest,
   TenantDeletionRequest,
 } from "./types.js";
-import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { execute } from "../../../utils/db.js";
-import { logger } from "../../../utils/logger.js";
 
 /**
  *

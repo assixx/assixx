@@ -3,11 +3,12 @@
  * Handles admin-specific functionality including employee, document, department, and team management
  */
 
-import { getAuthToken, showSuccess, showError } from './auth';
-import { showSection } from './show-section';
 import type { User, Document } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
 import { mapUsers, type MappedUser } from '../utils/api-mappers';
+
+import { getAuthToken, showSuccess, showError } from './auth';
+import { showSection } from './show-section';
 
 // Blackboard types (matching blackboard.ts)
 interface BlackboardEntry {

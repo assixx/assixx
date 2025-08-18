@@ -4,9 +4,11 @@
  */
 
 import { RequestHandler } from "express";
+
 import { ValidationMiddleware } from "../../types/middleware.types";
 import { rateLimiter } from "../rateLimiter";
 import { validateTenantIsolation } from "../tenantIsolation";
+
 import { authenticateV2, requireRoleV2 } from "./auth.middleware";
 
 // Security middleware stacks for v2 endpoints
