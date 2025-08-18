@@ -8,6 +8,16 @@ import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse, type Ma
 
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
+interface TeamMember {
+  id: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  position?: string | null;
+  employeeId?: string;
+}
+
 interface Team {
   id: number;
   name: string;
@@ -30,6 +40,8 @@ interface Team {
   isActive?: boolean;
   createdAt: string;
   updatedAt: string;
+  members?: TeamMember[];
+  machines?: { id: number; name: string }[];
 }
 
 // ApiResponse interface removed - not used in this file
@@ -441,27 +453,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
               }
 
-              // Load employees for team leader dropdown
-              const employees = await teamsManager.apiClient.request<UserAPIResponse[]>('/users', {
+              // Load admins for team leader dropdown (Team-Leaders should be admins)
+              const usersResponse = await teamsManager.apiClient.request<UserAPIResponse[]>('/users?role=admin', {
                 method: 'GET',
               });
 
-              const mappedUsers = mapUsers(employees);
-              const leaderSelect = document.querySelector<HTMLSelectElement>('#team-leader');
+              const admins = mapUsers(usersResponse);
+              const leaderSelect = document.querySelector<HTMLSelectElement>('#team-lead');
 
-              if (leaderSelect && mappedUsers) {
+              if (leaderSelect && admins) {
                 // Clear existing options and add placeholder
-                leaderSelect.innerHTML = '<option value="">Kein Teamleiter</option>';
+                leaderSelect.innerHTML = '<option value="">Kein Team-Leiter</option>';
 
-                // Add employee options (only non-admins)
-                mappedUsers
-                  .filter((user) => user.role === 'employee')
-                  .forEach((user) => {
-                    const option = document.createElement('option');
-                    option.value = user.id.toString();
-                    option.textContent = user.username;
-                    leaderSelect.append(option);
-                  });
+                // Add admin options
+                admins.forEach((admin) => {
+                  const option = document.createElement('option');
+                  option.value = admin.id.toString();
+                  const displayName =
+                    admin.firstName !== '' && admin.lastName !== ''
+                      ? `${admin.firstName} ${admin.lastName}`
+                      : admin.username;
+                  option.textContent = displayName;
+                  leaderSelect.append(option);
+                });
               }
             } catch (error) {
               console.error('Error loading form data:', error);
@@ -469,10 +483,14 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           // Fill form with team data
-          const setInputValue = (id: string, value: string | number | undefined) => {
+          const setInputValue = (id: string, value: string | number | null | undefined) => {
             const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
-            if (input !== null && value !== undefined) {
-              input.value = value.toString();
+            if (input !== null) {
+              if (value !== null && value !== undefined) {
+                input.value = value.toString();
+              } else {
+                input.value = '';
+              }
             }
           };
 
@@ -480,10 +498,28 @@ document.addEventListener('DOMContentLoaded', () => {
           setInputValue('team-name', team.name);
           setInputValue('team-description', team.description);
           setInputValue('team-department', team.departmentId);
-          setInputValue('team-leader', team.leaderId);
+          setInputValue('team-lead', team.leaderId);
           setInputValue('team-type', team.teamType);
           setInputValue('team-max-members', team.maxMembers);
           setInputValue('team-status', team.status);
+
+          // Display team members
+          const membersDisplay = document.querySelector('#team-members-display');
+          if (membersDisplay !== null && team.members !== undefined && team.members.length > 0) {
+            const memberNames = team.members.map((m) => `${m.firstName} ${m.lastName}`).join(', ');
+            membersDisplay.textContent = `${team.members.length} Mitglieder: ${memberNames}`;
+          } else if (membersDisplay !== null) {
+            membersDisplay.textContent = 'Keine Mitglieder zugewiesen';
+          }
+
+          // Display assigned machines (if any)
+          const machinesDisplay = document.querySelector('#team-machines-display');
+          if (machinesDisplay !== null && team.machines !== undefined && team.machines.length > 0) {
+            const machineNames = team.machines.map((m) => m.name).join(', ');
+            machinesDisplay.textContent = `${team.machines.length} Maschinen: ${machineNames}`;
+          } else if (machinesDisplay !== null) {
+            machinesDisplay.textContent = 'Keine Maschinen zugewiesen';
+          }
 
           // Update modal title
           const modalTitle = document.querySelector('#team-modal-title');
@@ -798,10 +834,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter((id) => id.length > 0)
             .map((id) => Number.parseInt(id, 10));
         } else if (typeof value === 'string' && value.length > 0) {
-          if (key === 'maxMembers' || key === 'departmentId') {
-            teamData[key] = Number.parseInt(value, 10);
+          // Map teamLeadId to leaderId for API compatibility
+          const mappedKey = key === 'teamLeadId' ? 'leaderId' : key;
+
+          if (mappedKey === 'maxMembers' || mappedKey === 'departmentId' || mappedKey === 'leaderId') {
+            teamData[mappedKey] = Number.parseInt(value, 10);
           } else {
-            teamData[key] = value;
+            teamData[mappedKey] = value;
           }
         }
       });

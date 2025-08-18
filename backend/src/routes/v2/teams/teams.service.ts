@@ -97,6 +97,12 @@ export class TeamsService {
           delete apiTeam.teamLeadId;
         }
 
+        // Map team_lead_name to leaderName
+        if ("teamLeadName" in apiTeam) {
+          apiTeam.leaderName = apiTeam.teamLeadName;
+          delete apiTeam.teamLeadName;
+        }
+
         // Convert empty strings to null for optional fields
         if (apiTeam.description === "") {
           apiTeam.description = null;
@@ -144,6 +150,12 @@ export class TeamsService {
       if ("teamLeadId" in apiTeam) {
         apiTeam.leaderId = apiTeam.teamLeadId;
         delete apiTeam.teamLeadId;
+      }
+
+      // Map team_lead_name to leaderName
+      if ("teamLeadName" in apiTeam) {
+        apiTeam.leaderName = apiTeam.teamLeadName;
+        delete apiTeam.teamLeadName;
       }
 
       // Convert empty strings to null for optional fields

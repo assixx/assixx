@@ -18,6 +18,7 @@ interface DbTeam extends RowDataPacket {
   is_active?: boolean;
   // Extended fields from joins
   department_name?: string;
+  team_lead_name?: string;
 }
 
 interface DbTeamMember extends RowDataPacket {
@@ -86,9 +87,11 @@ export async function findAllTeams(
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id, 
              t.tenant_id, t.created_at, t.updated_at, t.is_active,
-             d.name AS department_name 
+             d.name AS department_name,
+             CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name 
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
+      LEFT JOIN users u ON t.team_lead_id = u.id
       ${tenant_id != null && tenant_id !== 0 ? "WHERE t.tenant_id = ?" : ""}
       ORDER BY t.name
     `;
@@ -111,9 +114,11 @@ export async function findTeamById(id: number): Promise<DbTeam | null> {
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id, 
              t.tenant_id, t.created_at, t.updated_at, t.is_active,
-             d.name AS department_name 
+             d.name AS department_name,
+             CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name 
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
+      LEFT JOIN users u ON t.team_lead_id = u.id
       WHERE t.id = ?
     `;
 

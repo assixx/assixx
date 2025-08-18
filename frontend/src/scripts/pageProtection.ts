@@ -15,6 +15,11 @@ const pagePermissions: Partial<Record<string, string[]>> = {
   'survey-admin': ['admin', 'root'],
   'org-management': ['admin', 'root'],
   'archived-employees': ['admin', 'root'],
+  'manage-teams': ['admin', 'root'],
+  'manage-machines': ['admin', 'root'],
+  'manage-departments': ['admin', 'root'],
+  'manage-areas': ['admin', 'root'],
+  'manage-employees': ['admin', 'root'],
 
   // Employee pages
   'employee-dashboard': ['employee', 'admin', 'root'],
