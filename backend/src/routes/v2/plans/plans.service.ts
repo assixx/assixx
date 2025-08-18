@@ -15,7 +15,7 @@ import {
   DbTenantAddon,
   DbAddonResult,
 } from "./types";
-import { query } from "../../../utils/db";
+import { executeQuery as query } from "../../../config/database";
 import PlanModel from "../../../models/plan";
 import RootLog from "../../../models/rootLog";
 

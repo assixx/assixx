@@ -1,4 +1,3 @@
-current date: August 2025
 # Claude Code – Assixx Project Complete Guide
 
 Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf nicht gemischt werden. !!!! Stetige abfrage!!!! Kritisch
@@ -41,7 +40,7 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 #### Warum diese Änderung?
 
 - **Mobile-First:** Modals funktionieren schlecht auf Smartphones
-- **Better UX:** User bleibt im Kontext, kein Workflow-Unterbruch
+- **Better UX:** User bleibt im Kontext, kein Workflow-Unterbruch  
 - **Accessibility:** Screen-Reader und Keyboard-Navigation freundlicher
 - **Modern Standards:** Inline-Forms sind 2025 Best Practice
 - **Performance:** Weniger JavaScript, keine Z-Index Probleme
@@ -58,7 +57,7 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
    - Edit-Form klappt direkt in der Zeile auf
    - Beispiel: KVP-Vorschläge, Blackboard-Einträge
 
-3. **Slide-in Panel Pattern**
+3. **Slide-in Panel Pattern** 
    - Von rechts einfahrendes Panel (nicht modal!)
    - Overlay nur partial, Liste bleibt sichtbar
    - Beispiel: Chat, Notifications
@@ -81,7 +80,7 @@ Modals NUR noch für:
 
 Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden:
 - Priority 1: Häufig genutzte Features (Mitarbeiter, Shifts, Calendar)
-- Priority 2: Admin-Features (Areas, Departments, Teams)
+- Priority 2: Admin-Features (Areas, Departments, Teams)  
 - Priority 3: Seltene Features (Settings, Profile)
 
 ## **Use MCP Tools Before Everything:**

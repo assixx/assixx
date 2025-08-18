@@ -1,5 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { query as executeQuery } from "../utils/db.js";
+import { executeQuery } from "../config/database.js";
 
 export interface MachineStatistics extends RowDataPacket {
   total_machines: number;
