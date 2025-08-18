@@ -142,7 +142,8 @@ export async function updateTeam(
   teamData: TeamUpdateData,
 ): Promise<boolean> {
   logger.info(`Updating team ${id}`);
-  const { name, description, department_id, team_lead_id, is_active } = teamData;
+  const { name, description, department_id, team_lead_id, is_active } =
+    teamData;
 
   // Build dynamic update query
   const updateFields: string[] = [];
@@ -309,7 +310,9 @@ export async function getUserTeams(userId: number): Promise<DbTeam[]> {
   }
 }
 
-export async function getTeamMachines(teamId: number): Promise<Array<{ id: number; name: string; model?: string }>> {
+export async function getTeamMachines(
+  teamId: number,
+): Promise<Array<{ id: number; name: string; model?: string }>> {
   logger.info(`Fetching machines for team ${teamId}`);
   const query = `
       SELECT m.id, m.name, m.model

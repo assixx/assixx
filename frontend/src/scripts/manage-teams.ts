@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         let savedTeam: Team | undefined;
-        
+
         if (teamId !== null && teamId > 0) {
           // UPDATE existing team
           savedTeam = await teamsManager?.updateTeam(teamId, teamData as Partial<Team>);
@@ -946,18 +946,18 @@ document.addEventListener('DOMContentLoaded', () => {
           if (teamId !== null && teamId > 0) {
             // Get current team details to compare
             const currentTeam = await teamsManager?.getTeamDetails(teamId);
-            
+
             if (currentTeam) {
               // --- Handle MEMBERS ---
-              const currentMemberIds = currentTeam.members?.map(m => m.id) ?? [];
+              const currentMemberIds = currentTeam.members?.map((m) => m.id) ?? [];
               const selectedMemberIds = userIds;
-              
+
               // Find members to add (in selected but not in current)
-              const membersToAdd = selectedMemberIds.filter(id => !currentMemberIds.includes(id));
-              
+              const membersToAdd = selectedMemberIds.filter((id) => !currentMemberIds.includes(id));
+
               // Find members to remove (in current but not in selected)
-              const membersToRemove = currentMemberIds.filter(id => !selectedMemberIds.includes(id));
-              
+              const membersToRemove = currentMemberIds.filter((id) => !selectedMemberIds.includes(id));
+
               // Add new members
               for (const userId of membersToAdd) {
                 try {
@@ -969,7 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   console.error(`Error adding member ${userId}:`, error);
                 }
               }
-              
+
               // Remove members
               for (const userId of membersToRemove) {
                 try {
@@ -980,17 +980,17 @@ document.addEventListener('DOMContentLoaded', () => {
                   console.error(`Error removing member ${userId}:`, error);
                 }
               }
-              
+
               // --- Handle MACHINES ---
-              const currentMachineIds = currentTeam.machines?.map(m => m.id) ?? [];
+              const currentMachineIds = currentTeam.machines?.map((m) => m.id) ?? [];
               const selectedMachineIds = machineIds;
-              
+
               // Find machines to add
-              const machinesToAdd = selectedMachineIds.filter(id => !currentMachineIds.includes(id));
-              
+              const machinesToAdd = selectedMachineIds.filter((id) => !currentMachineIds.includes(id));
+
               // Find machines to remove
-              const machinesToRemove = currentMachineIds.filter(id => !selectedMachineIds.includes(id));
-              
+              const machinesToRemove = currentMachineIds.filter((id) => !selectedMachineIds.includes(id));
+
               // Add new machines
               for (const machineId of machinesToAdd) {
                 try {
@@ -1002,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   console.error(`Error adding machine ${machineId}:`, error);
                 }
               }
-              
+
               // Remove machines
               for (const machineId of machinesToRemove) {
                 try {
@@ -1013,8 +1013,10 @@ document.addEventListener('DOMContentLoaded', () => {
                   console.error(`Error removing machine ${machineId}:`, error);
                 }
               }
-              
-              console.info(`[TeamsManager] Updated members: +${membersToAdd.length} -${membersToRemove.length}, machines: +${machinesToAdd.length} -${machinesToRemove.length}`);
+
+              console.info(
+                `[TeamsManager] Updated members: +${membersToAdd.length} -${membersToRemove.length}, machines: +${machinesToAdd.length} -${machinesToRemove.length}`,
+              );
             }
           } else {
             // For NEW teams, just add all selected members and machines
@@ -1039,9 +1041,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error assigning user:', error);
               }
             }
-            
+
             if (machineIds.length > 0 || userIds.length > 0) {
-              console.info(`[TeamsManager] Created team with ${userIds.length} members and ${machineIds.length} machines`);
+              console.info(
+                `[TeamsManager] Created team with ${userIds.length} members and ${machineIds.length} machines`,
+              );
             }
           }
         }

@@ -5,7 +5,10 @@
 
 import type { User } from '../types/api.types';
 
+import { ApiClient } from '../utils/api-client';
+import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
 import { getAuthToken, showSuccess, showError, showInfo } from './auth';
+import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 import { openModal } from './utils/modal-manager';
 
 interface Employee extends User {
@@ -18,6 +21,8 @@ interface Employee extends User {
 interface ShiftAssignment {
   id: number;
   employee_id: number;
+
+  
   date: string;
   shift_type: 'early' | 'late' | 'night';
   department_id?: number;
@@ -41,6 +46,23 @@ interface Machine {
   description?: string;
 }
 
+interface Team {
+  id: number;
+  name: string;
+  department_id: number;
+  team_lead_id?: number;
+  description?: string;
+  members?: TeamMember[];
+}
+
+interface TeamMember {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  role: 'member' | 'lead';
+}
+
 interface TeamLeader {
   id: number;
   name: string;
@@ -50,6 +72,7 @@ interface TeamLeader {
 interface SelectedContext {
   departmentId: number | null;
   machineId: number | null;
+  teamId: number | null;
   teamLeaderId: number | null;
 }
 
@@ -60,6 +83,8 @@ interface ShiftsWindow extends Window {
 }
 
 class ShiftPlanningSystem {
+  private apiClient: ApiClient;
+  private useV2API: boolean;
   private currentWeek: Date;
   private selectedEmployee: Employee | null;
   private employees: Employee[];
@@ -81,12 +106,18 @@ class ShiftPlanningSystem {
   // Context data for shift planning
   private departments: Department[];
   private machines: Machine[];
+  private teams: Team[];
   private teamLeaders: TeamLeader[];
   private selectedContext: SelectedContext;
 
   private weeklyNotes: string;
 
   constructor() {
+    // Initialize API client and check feature flag
+    this.apiClient = ApiClient.getInstance();
+    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_SHIFTS?: boolean } };
+    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_SHIFTS !== false;
+
     this.currentWeek = new Date();
     this.selectedEmployee = null;
     this.employees = [];
@@ -100,10 +131,12 @@ class ShiftPlanningSystem {
     // Context data for shift planning
     this.departments = [];
     this.machines = [];
+    this.teams = [];
     this.teamLeaders = [];
     this.selectedContext = {
       departmentId: null,
       machineId: null,
+      teamId: null,
       teamLeaderId: null,
     };
 
@@ -404,6 +437,16 @@ class ShiftPlanningSystem {
       });
     }
 
+    // Team selection
+    const teamSelect = document.querySelector('#teamSelect');
+    if (teamSelect !== null) {
+      teamSelect.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.selectedContext.teamId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+        void this.onTeamSelected();
+      });
+    }
+
     // Machine selection
     const machineSelect = document.querySelector('#machineSelect');
     if (machineSelect !== null) {
@@ -424,7 +467,7 @@ class ShiftPlanningSystem {
         if (notesPanel !== null) {
           notesPanel.classList.toggle('show');
           if (notesPanel.classList.contains('show') && notesTextarea !== null) {
-            notesTextarea.focus();
+            (notesTextarea as HTMLTextAreaElement).focus();
           }
         }
       });
@@ -499,6 +542,61 @@ class ShiftPlanningSystem {
     this.populateMachineSelect();
   }
 
+  async loadTeams(): Promise<void> {
+    if (!this.useV2API) {
+      // Fallback to v1 API
+      try {
+        let url = '/api/teams';
+        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+          url += `?department_id=${this.selectedContext.departmentId}`;
+        }
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = (await response.json()) as Team[];
+          this.teams = Array.isArray(data) ? data : [];
+        }
+      } catch (error) {
+        console.error('Error loading teams (v1):', error);
+        this.teams = [];
+      }
+    } else {
+      // Use v2 API with ApiClient
+      try {
+        let url = '/v2/teams';
+        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+          url += `?departmentId=${this.selectedContext.departmentId}`;
+        }
+
+        const response = await this.apiClient.request<TeamAPIResponse[]>(url, {
+          method: 'GET',
+        });
+
+        if (response) {
+          // Map snake_case to camelCase
+          const mappedTeams = mapTeams(response);
+          // Convert to internal Team interface
+          this.teams = mappedTeams.map(t => ({
+            id: t.id,
+            name: t.name,
+            department_id: t.departmentId ?? 0,
+            team_lead_id: (t as any).teamLeadId,
+            description: t.description,
+          }));
+          console.info('Teams loaded (v2):', this.teams);
+        }
+      } catch (error) {
+        console.error('Error loading teams (v2):', error);
+        this.teams = [];
+      }
+    }
+    this.populateTeamSelect();
+  }
+
   loadTeamLeaders(): void {
     // Skip loading team leaders for non-admins
     // Team leaders are not used anymore
@@ -552,6 +650,29 @@ class ShiftPlanningSystem {
     });
   }
 
+  populateTeamSelect(): void {
+    const dropdown = document.querySelector('#teamDropdown');
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '';
+
+    // Filter teams by selected department if any
+    let filteredTeams = this.teams;
+    if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+      filteredTeams = this.teams.filter((team) => team.department_id === this.selectedContext.departmentId);
+    }
+
+    filteredTeams.forEach((team) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.textContent = team.name;
+      option.onclick = () => {
+        (window as unknown as ShiftsWindow).selectOption('team', team.id.toString(), team.name);
+      };
+      dropdown.append(option);
+    });
+  }
+
   populateTeamLeaderSelect(): void {
     const dropdown = document.querySelector('#teamLeaderDropdown');
     if (!dropdown) return;
@@ -574,9 +695,9 @@ class ShiftPlanningSystem {
   }
 
   async onContextChange(): Promise<void> {
-    // Reload machines when department changes
+    // Reload machines and teams when department changes
     if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-      await this.loadMachines();
+      await Promise.all([this.loadMachines(), this.loadTeams()]);
     }
 
     // Reload employees based on context
@@ -584,6 +705,256 @@ class ShiftPlanningSystem {
 
     // Reload weekly notes for new department
     await this.loadWeeklyNotes();
+  }
+
+  async onTeamSelected(): Promise<void> {
+    // Load team members when a team is selected
+    if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+      await this.loadTeamMembers();
+    }
+  }
+
+  async loadTeamMembers(): Promise<void> {
+    if (!this.selectedContext.teamId) return;
+
+    if (!this.useV2API) {
+      // Fallback to v1 API
+      try {
+        const response = await fetch(`/api/teams/${this.selectedContext.teamId}/members`, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const members = (await response.json()) as TeamMember[];
+          console.info('Team members loaded (v1):', members);
+          this.displayTeamMembers(members);
+        }
+      } catch (error) {
+        console.error('Error loading team members (v1):', error);
+      }
+    } else {
+      // Use v2 API with ApiClient
+      try {
+        const response = await this.apiClient.request<UserAPIResponse[]>(
+          `/v2/teams/${this.selectedContext.teamId}/members`,
+          { method: 'GET' }
+        );
+
+        if (response) {
+          // Map snake_case to camelCase and convert to TeamMember interface
+          const mappedUsers = mapUsers(response);
+          const members: TeamMember[] = mappedUsers.map(user => ({
+            id: user.id,
+            username: user.username,
+            first_name: user.firstName ?? '',
+            last_name: user.lastName ?? '',
+            role: 'member' as const,
+          }));
+          console.info('Team members loaded (v2):', members);
+          this.displayTeamMembers(members);
+        }
+      } catch (error) {
+        console.error('Error loading team members (v2):', error);
+        showErrorAlert('Fehler beim Laden der Team-Mitglieder');
+      }
+    }
+  }
+
+  displayTeamMembers(members: TeamMember[]): void {
+    // We'll create a panel to show team members that can be dragged
+    const memberPanel = document.querySelector('#teamMembersPanel');
+    if (!memberPanel) {
+      console.warn('Team members panel not found');
+      return;
+    }
+
+    // Show the panel
+    memberPanel.classList.remove('u-hidden');
+
+    memberPanel.innerHTML = `
+      <h3>Team-Mitglieder</h3>
+      <div class="members-list">
+        ${members.map(member => `
+          <div class="member-card" draggable="true" data-user-id="${member.id}">
+            <div class="member-name">${member.first_name} ${member.last_name}</div>
+            <div class="member-role">${member.role === 'lead' ? 'Team Lead' : 'Mitglied'}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // Initialize drag and drop for member cards
+    this.initializeMemberDragAndDrop();
+  }
+
+  initializeMemberDragAndDrop(): void {
+    const memberCards = document.querySelectorAll('.member-card');
+
+    memberCards.forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        const dragEvent = e as DragEvent;
+        if (dragEvent.dataTransfer) {
+          const userId = (card as HTMLElement).dataset.userId ?? '';
+          dragEvent.dataTransfer.setData('userId', userId);
+          dragEvent.dataTransfer.effectAllowed = 'copy';
+          card.classList.add('dragging');
+        }
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+    });
+
+    // Make shift cells droppable
+    this.makeShiftCellsDroppable();
+  }
+
+  makeShiftCellsDroppable(): void {
+    const shiftCells = document.querySelectorAll('.shift-cell');
+
+    shiftCells.forEach(cell => {
+      cell.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const dragEvent = e as DragEvent;
+        if (dragEvent.dataTransfer) {
+          dragEvent.dataTransfer.dropEffect = 'copy';
+        }
+        cell.classList.add('drag-over');
+      });
+
+      cell.addEventListener('dragleave', () => {
+        cell.classList.remove('drag-over');
+      });
+
+      cell.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        cell.classList.remove('drag-over');
+
+        const dragEvent = e as DragEvent;
+        if (!dragEvent.dataTransfer) return;
+
+        const userId = dragEvent.dataTransfer.getData('userId');
+        const cellElement = cell as HTMLElement;
+        const date = cellElement.dataset.date;
+        const shiftType = cellElement.dataset.shiftType;
+
+        if (userId && date && shiftType) {
+          await this.assignUserToShift(Number(userId), date, shiftType, cellElement);
+        }
+      });
+    });
+  }
+
+  async assignUserToShift(userId: number, date: string, shiftType: string, cellElement: HTMLElement): Promise<void> {
+    if (!this.useV2API) {
+      // Fallback to v1 API
+      try {
+        const response = await fetch('/api/shifts', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            date,
+            type: shiftType,
+            department_id: this.selectedContext.departmentId,
+            team_id: this.selectedContext.teamId,
+            machine_id: this.selectedContext.machineId,
+            start_time: this.getShiftStartTime(shiftType),
+            end_time: this.getShiftEndTime(shiftType),
+          }),
+        });
+
+        if (response.ok) {
+          await response.json();
+          showSuccess('Schicht zugewiesen');
+          this.updateShiftCell(cellElement, userId, shiftType);
+        } else {
+          showError('Fehler beim Zuweisen der Schicht');
+        }
+      } catch (error) {
+        console.error('Error assigning shift (v1):', error);
+        showError('Fehler beim Zuweisen der Schicht');
+      }
+    } else {
+      // Use v2 API with ApiClient
+      try {
+        const response = await this.apiClient.request('/v2/shifts', {
+          method: 'POST',
+          body: JSON.stringify({
+            userId,
+            date,
+            type: shiftType,
+            departmentId: this.selectedContext.departmentId,
+            teamId: this.selectedContext.teamId,
+            machineId: this.selectedContext.machineId,
+            startTime: this.getShiftStartTime(shiftType),
+            endTime: this.getShiftEndTime(shiftType),
+          }),
+        });
+
+        if (response) {
+          showSuccessAlert('Schicht erfolgreich zugewiesen');
+          this.updateShiftCell(cellElement, userId, shiftType);
+        }
+      } catch (error) {
+        console.error('Error assigning shift (v2):', error);
+        showErrorAlert('Fehler beim Zuweisen der Schicht');
+      }
+    }
+  }
+
+  private updateShiftCell(cellElement: HTMLElement, userId: number, shiftType: string): void {
+    const memberName = this.getMemberNameById(userId);
+    cellElement.innerHTML = `
+      <div class="employee-assignment">
+        <div class="employee-name">${memberName}</div>
+        <div class="shift-time">${this.getShiftTimeDisplay(shiftType)}</div>
+      </div>
+    `;
+    cellElement.classList.add('assigned');
+  }
+
+  getMemberNameById(userId: number): string {
+    const memberCard = document.querySelector(`.member-card[data-user-id="${userId}"]`);
+    if (memberCard) {
+      const nameElement = memberCard.querySelector('.member-name');
+      return nameElement?.textContent ?? 'Unbekannt';
+    }
+    return 'Unbekannt';
+  }
+
+  getShiftStartTime(shiftType: string): string {
+    const times: Record<string, string> = {
+      early: '06:00',
+      late: '14:00',
+      night: '22:00',
+    };
+    return times[shiftType] ?? '08:00';
+  }
+
+  getShiftEndTime(shiftType: string): string {
+    const times: Record<string, string> = {
+      early: '14:00',
+      late: '22:00',
+      night: '06:00',
+    };
+    return times[shiftType] ?? '17:00';
+  }
+
+  getShiftTimeDisplay(shiftType: string): string {
+    const displays: Record<string, string> = {
+      early: '06:00 - 14:00',
+      late: '14:00 - 22:00',
+      night: '22:00 - 06:00',
+    };
+    return displays[shiftType] ?? 'Ganztags';
   }
 
   togglePlanningAreaVisibility(): void {
@@ -594,9 +965,9 @@ class ShiftPlanningSystem {
 
     if ((this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) || !this.isAdmin) {
       // Department selected (or employee with auto-selected dept) - show planning area
-      if (departmentNotice) departmentNotice.style.display = 'none';
-      if (mainPlanningArea) mainPlanningArea.style.display = '';
-      if (adminActions && this.isAdmin) adminActions.style.display = 'block';
+      if (departmentNotice) (departmentNotice as HTMLElement).style.display = 'none';
+      if (mainPlanningArea) (mainPlanningArea as HTMLElement).style.display = '';
+      if (adminActions && this.isAdmin) (adminActions as HTMLElement).style.display = 'block';
       if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'flex';
 
       // Load data for the selected department
@@ -609,9 +980,9 @@ class ShiftPlanningSystem {
       });
     } else {
       // No department selected (only for admins) - show notice
-      if (departmentNotice) departmentNotice.style.display = 'block';
-      if (mainPlanningArea) mainPlanningArea.style.display = 'none';
-      if (adminActions) adminActions.style.display = 'none';
+      if (departmentNotice) (departmentNotice as HTMLElement).style.display = 'block';
+      if (mainPlanningArea) (mainPlanningArea as HTMLElement).style.display = 'none';
+      if (adminActions) (adminActions as HTMLElement).style.display = 'none';
       if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'none';
     }
   }
@@ -1313,7 +1684,7 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Get notes from textarea
-      const notesTextarea = document.querySelector('#weeklyNotes');
+      const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement;
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
       // Prepare shift assignments
@@ -1447,7 +1818,7 @@ class ShiftPlanningSystem {
         const notesTextarea = document.querySelector('#weeklyNotes');
         if (notesTextarea !== null) {
           // If notes are empty, show placeholder by clearing value
-          notesTextarea.value = this.weeklyNotes;
+          (notesTextarea as HTMLTextAreaElement).value = this.weeklyNotes;
           console.info('[SHIFTS DEBUG] Set textarea value to:', this.weeklyNotes);
         }
       } else {
@@ -1455,7 +1826,7 @@ class ShiftPlanningSystem {
         // If error, clear the notes
         const notesTextarea = document.querySelector('#weeklyNotes');
         if (notesTextarea !== null) {
-          notesTextarea.value = '';
+          (notesTextarea as HTMLTextAreaElement).value = '';
         }
         this.weeklyNotes = '';
       }
@@ -1464,7 +1835,7 @@ class ShiftPlanningSystem {
       // Clear notes on error
       const notesTextarea = document.querySelector('#weeklyNotes');
       if (notesTextarea !== null) {
-        notesTextarea.value = '';
+        (notesTextarea as HTMLTextAreaElement).value = '';
       }
       this.weeklyNotes = '';
     }
@@ -1477,7 +1848,7 @@ class ShiftPlanningSystem {
       const notesTextarea = document.querySelector('#weeklyNotes');
       if (notesTextarea === null) return;
 
-      const newNotes = notesTextarea.value;
+      const newNotes = (notesTextarea as HTMLTextAreaElement).value;
 
       // Only save if notes have actually changed
       if (newNotes === this.weeklyNotes) {
@@ -1540,7 +1911,7 @@ class ShiftPlanningSystem {
       employeeInfo.forEach((el) => {
         el.classList.remove('hidden');
       });
-      if (adminActions) adminActions.style.display = 'none';
+      if (adminActions) (adminActions as HTMLElement).style.display = 'none';
       if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'none';
 
       // Hide the info row (department, machine, team leader dropdowns) for employees

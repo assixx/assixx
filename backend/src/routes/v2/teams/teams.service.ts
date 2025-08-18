@@ -53,7 +53,7 @@ export interface TeamUpdateInput {
   description?: string;
   departmentId?: number;
   leaderId?: number;
-  status?: 'active' | 'inactive';
+  status?: "active" | "inactive";
 }
 
 /**
@@ -144,7 +144,7 @@ export class TeamsService {
 
       // Get team members
       const members = await Team.getTeamMembers(id);
-      
+
       // Get team machines
       const machines = await Team.getTeamMachines(id);
 
@@ -322,7 +322,7 @@ export class TeamsService {
       }
       if (data.status !== undefined) {
         // Convert status string to is_active boolean
-        updateData.is_active = data.status === 'active' ? 1 : 0;
+        updateData.is_active = data.status === "active" ? 1 : 0;
       }
 
       const success = await Team.update(id, updateData);
