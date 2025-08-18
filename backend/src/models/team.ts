@@ -44,6 +44,7 @@ interface TeamUpdateData {
   description?: string | null;
   department_id?: number | null;
   team_lead_id?: number | null;
+  is_active?: boolean | number;
 }
 
 interface MysqlError extends Error {
@@ -141,7 +142,7 @@ export async function updateTeam(
   teamData: TeamUpdateData,
 ): Promise<boolean> {
   logger.info(`Updating team ${id}`);
-  const { name, description, department_id, team_lead_id } = teamData;
+  const { name, description, department_id, team_lead_id, is_active } = teamData;
 
   // Build dynamic update query
   const updateFields: string[] = [];
@@ -162,6 +163,10 @@ export async function updateTeam(
   if (team_lead_id !== undefined) {
     updateFields.push("team_lead_id = ?");
     values.push(team_lead_id);
+  }
+  if (is_active !== undefined) {
+    updateFields.push("is_active = ?");
+    values.push(is_active);
   }
 
   if (updateFields.length === 0) {
@@ -304,6 +309,27 @@ export async function getUserTeams(userId: number): Promise<DbTeam[]> {
   }
 }
 
+export async function getTeamMachines(teamId: number): Promise<Array<{ id: number; name: string; model?: string }>> {
+  logger.info(`Fetching machines for team ${teamId}`);
+  const query = `
+      SELECT m.id, m.name, m.model
+      FROM machines m
+      JOIN machine_teams mt ON m.id = mt.machine_id
+      WHERE mt.team_id = ?
+    `;
+
+  try {
+    const [rows] = await executeQuery<RowDataPacket[]>(query, [teamId]);
+    logger.info(`Retrieved ${rows.length} machines for team ${teamId}`);
+    return rows as Array<{ id: number; name: string; model?: string }>;
+  } catch (error: unknown) {
+    logger.error(
+      `Error fetching machines for team ${teamId}: ${(error as Error).message}`,
+    );
+    throw error;
+  }
+}
+
 // Backward compatibility object
 const Team = {
   create: createTeam,
@@ -315,6 +341,7 @@ const Team = {
   removeUserFromTeam,
   getTeamMembers,
   getUserTeams,
+  getTeamMachines,
 };
 
 // Export types

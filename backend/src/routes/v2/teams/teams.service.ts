@@ -53,6 +53,7 @@ export interface TeamUpdateInput {
   description?: string;
   departmentId?: number;
   leaderId?: number;
+  status?: 'active' | 'inactive';
 }
 
 /**
@@ -143,6 +144,9 @@ export class TeamsService {
 
       // Get team members
       const members = await Team.getTeamMembers(id);
+      
+      // Get team machines
+      const machines = await Team.getTeamMachines(id);
 
       const apiTeam = dbToApi(team);
 
@@ -173,6 +177,9 @@ export class TeamsService {
         position: member.position,
         employeeId: member.employee_id,
       }));
+
+      // Add machines to response
+      apiTeam.machines = machines;
 
       return apiTeam;
     } catch (error: unknown) {
@@ -312,6 +319,10 @@ export class TeamsService {
       }
       if (data.leaderId !== undefined) {
         updateData.team_lead_id = data.leaderId;
+      }
+      if (data.status !== undefined) {
+        // Convert status string to is_active boolean
+        updateData.is_active = data.status === 'active' ? 1 : 0;
       }
 
       const success = await Team.update(id, updateData);

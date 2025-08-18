@@ -424,6 +424,89 @@ document.addEventListener('DOMContentLoaded', () => {
       void teamsManager?.loadTeams();
     };
 
+    // Toggle dropdown helper - Define globally so it's available for all modals
+    (window as WindowWithTeamHandlers & { toggleDropdown?: (dropdownId: string) => void }).toggleDropdown = (
+      dropdownId: string,
+    ) => {
+      const dropdown = document.getElementById(`${dropdownId}-dropdown`);
+      if (dropdown !== null) {
+        const isVisible = dropdown.style.display !== 'none';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+      }
+    };
+
+    // Update member selection handler
+    (window as WindowWithTeamHandlers & { updateMemberSelection?: () => void }).updateMemberSelection = () => {
+      const memberDropdown = document.querySelector('#team-members-dropdown');
+      const memberDisplay = document.querySelector('#team-members-display');
+      const memberInput = document.querySelector<HTMLInputElement>('#team-members-select');
+
+      if (memberDropdown === null || memberDisplay === null || memberInput === null) {
+        return;
+      }
+
+      const checkboxes = memberDropdown.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedIds: string[] = [];
+      const selectedNames: string[] = [];
+
+      checkboxes.forEach((checkbox) => {
+        const input = checkbox as HTMLInputElement;
+        selectedIds.push(input.value);
+        const label = checkbox.parentElement?.querySelector('span');
+        if (label && label.textContent.length > 0) {
+          selectedNames.push(label.textContent.split(' (')[0]);
+        }
+      });
+
+      // Update hidden input
+      memberInput.value = selectedIds.join(',');
+
+      // Update display
+      if (selectedNames.length === 0) {
+        memberDisplay.textContent = 'Keine Mitglieder zugewiesen';
+      } else if (selectedNames.length <= 3) {
+        memberDisplay.textContent = selectedNames.join(', ');
+      } else {
+        memberDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
+      }
+    };
+
+    // Update machine selection handler
+    (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
+      const machineDropdown = document.querySelector('#team-machines-dropdown');
+      const machineDisplay = document.querySelector('#team-machines-display');
+      const machineInput = document.querySelector<HTMLInputElement>('#team-machines-select');
+
+      if (machineDropdown === null || machineDisplay === null || machineInput === null) {
+        return;
+      }
+
+      const checkboxes = machineDropdown.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedIds: string[] = [];
+      const selectedNames: string[] = [];
+
+      checkboxes.forEach((checkbox) => {
+        const input = checkbox as HTMLInputElement;
+        selectedIds.push(input.value);
+        const label = checkbox.parentElement?.querySelector('span');
+        if (label && label.textContent.length > 0) {
+          selectedNames.push(label.textContent.split(' (')[0]);
+        }
+      });
+
+      // Update hidden input
+      machineInput.value = selectedIds.join(',');
+
+      // Update display
+      if (selectedNames.length === 0) {
+        machineDisplay.textContent = 'Keine Maschinen zugewiesen';
+      } else if (selectedNames.length <= 3) {
+        machineDisplay.textContent = selectedNames.join(', ');
+      } else {
+        machineDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
+      }
+    };
+
     // Expose functions globally for HTML onclick handlers
     const w = window as unknown as WindowWithTeamHandlers;
     w.editTeam = async (id: number) => {
@@ -477,6 +560,78 @@ document.addEventListener('DOMContentLoaded', () => {
                   leaderSelect.append(option);
                 });
               }
+
+              // Load machines for multi-select dropdown
+              const machineResponse = await teamsManager.apiClient.request<Machine[]>('/machines', {
+                method: 'GET',
+              });
+              const machines = machineResponse;
+              const machineDropdown = document.querySelector('#team-machines-dropdown');
+
+              if (machineDropdown !== null) {
+                machineDropdown.innerHTML = '';
+
+                if (machines.length === 0) {
+                  machineDropdown.innerHTML =
+                    '<div class="dropdown-option" style="color: #666;">Keine Maschinen verfügbar</div>';
+                } else {
+                  machines.forEach((machine) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'dropdown-option';
+                    optionDiv.style.padding = '8px 12px';
+                    // Check if machine is assigned to this team
+                    const isChecked = team.machines?.some((m) => m.id === machine.id) === true ? 'checked' : '';
+                    optionDiv.innerHTML = `
+                      <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
+                        <input type="checkbox" value="${machine.id}"
+                               onchange="window.updateMachineSelection()"
+                               style="margin-right: 8px;"
+                               ${isChecked}>
+                        <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName !== null && machine.departmentName !== '' ? `(${machine.departmentName})` : ''}</span>
+                      </label>
+                    `;
+                    machineDropdown.append(optionDiv);
+                  });
+                }
+              }
+
+              // Load users for multi-select dropdown (Team-Members)
+              const userResponse = await teamsManager.apiClient.request<UserAPIResponse[]>('/users', {
+                method: 'GET',
+              });
+              const users = mapUsers(userResponse);
+              const memberDropdown = document.querySelector('#team-members-dropdown');
+
+              if (memberDropdown !== null) {
+                memberDropdown.innerHTML = '';
+
+                if (users.length === 0) {
+                  memberDropdown.innerHTML =
+                    '<div class="dropdown-option" style="color: #666;">Keine Benutzer verfügbar</div>';
+                } else {
+                  users.forEach((user) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'dropdown-option';
+                    optionDiv.style.padding = '8px 12px';
+                    const displayName =
+                      user.firstName !== '' && user.lastName !== ''
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.username;
+                    // Check if user is member of this team
+                    const isChecked = team.members?.some((m) => m.id === user.id) === true ? 'checked' : '';
+                    optionDiv.innerHTML = `
+                      <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
+                        <input type="checkbox" value="${user.id}"
+                               onchange="window.updateMemberSelection()"
+                               style="margin-right: 8px;"
+                               ${isChecked}>
+                        <span>${displayName} ${user.departmentName !== undefined && user.departmentName !== '' && user.departmentName !== 'Keine Abteilung' ? `(${user.departmentName})` : ''}</span>
+                      </label>
+                    `;
+                    memberDropdown.append(optionDiv);
+                  });
+                }
+              }
             } catch (error) {
               console.error('Error loading form data:', error);
             }
@@ -501,7 +656,9 @@ document.addEventListener('DOMContentLoaded', () => {
           setInputValue('team-lead', team.leaderId);
           setInputValue('team-type', team.teamType);
           setInputValue('team-max-members', team.maxMembers);
-          setInputValue('team-status', team.status);
+          // Convert isActive to status string if status is not set
+          const teamStatus = team.status ?? (team.isActive ? 'active' : 'inactive');
+          setInputValue('team-status', teamStatus);
 
           // Display team members
           const membersDisplay = document.querySelector('#team-members-display');
@@ -700,17 +857,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Toggle dropdown helper
-    (window as WindowWithTeamHandlers & { toggleDropdown?: (dropdownId: string) => void }).toggleDropdown = (
-      dropdownId: string,
-    ) => {
-      const dropdown = document.getElementById(`${dropdownId}-dropdown`);
-      if (dropdown !== null) {
-        const isVisible = dropdown.style.display !== 'none';
-        dropdown.style.display = isVisible ? 'none' : 'block';
-      }
-    };
-
     // Select dropdown option helper (for department dropdown)
     (
       window as WindowWithTeamHandlers & {
@@ -732,78 +878,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const dropdown = document.getElementById(`${fieldId}-dropdown`);
       if (dropdown !== null) {
         dropdown.classList.remove('active');
-      }
-    };
-
-    // Update member selection handler
-    (window as WindowWithTeamHandlers & { updateMemberSelection?: () => void }).updateMemberSelection = () => {
-      const memberDropdown = document.querySelector('#team-members-dropdown');
-      const memberDisplay = document.querySelector('#team-members-display');
-      const memberInput = document.querySelector<HTMLInputElement>('#team-members-select');
-
-      if (memberDropdown === null || memberDisplay === null || memberInput === null) {
-        return;
-      }
-
-      const checkboxes = memberDropdown.querySelectorAll('input[type="checkbox"]:checked');
-      const selectedIds: string[] = [];
-      const selectedNames: string[] = [];
-
-      checkboxes.forEach((checkbox) => {
-        const input = checkbox as HTMLInputElement;
-        selectedIds.push(input.value);
-        const label = checkbox.parentElement?.querySelector('span');
-        if (label && label.textContent.length > 0) {
-          selectedNames.push(label.textContent.split(' (')[0]);
-        }
-      });
-
-      // Update hidden input
-      memberInput.value = selectedIds.join(',');
-
-      // Update display - memberDisplay already checked above
-      if (selectedNames.length === 0) {
-        memberDisplay.textContent = 'Keine Mitglieder zugewiesen';
-      } else if (selectedNames.length <= 3) {
-        memberDisplay.textContent = selectedNames.join(', ');
-      } else {
-        memberDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
-      }
-    };
-
-    // Update machine selection handler
-    (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
-      const machineDropdown = document.querySelector('#team-machines-dropdown');
-      const machineDisplay = document.querySelector('#team-machines-display');
-      const machineInput = document.querySelector<HTMLInputElement>('#team-machines-select');
-
-      if (machineDropdown === null || machineDisplay === null || machineInput === null) {
-        return;
-      }
-
-      const checkboxes = machineDropdown.querySelectorAll('input[type="checkbox"]:checked');
-      const selectedIds: string[] = [];
-      const selectedNames: string[] = [];
-
-      checkboxes.forEach((checkbox) => {
-        const input = checkbox as HTMLInputElement;
-        selectedIds.push(input.value);
-        const label = checkbox.parentElement?.querySelector('span');
-        if (label && label.textContent.length > 0) {
-          selectedNames.push(label.textContent.split(' (')[0]);
-        }
-      });
-
-      // Update hidden input
-      machineInput.value = selectedIds.join(',');
-
-      // Update display - machineDisplay already checked above
-      if (selectedNames.length === 0) {
-        machineDisplay.textContent = 'Keine Maschinen zugewiesen';
-      } else if (selectedNames.length <= 3) {
-        machineDisplay.textContent = selectedNames.join(', ');
-      } else {
-        machineDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
       }
     };
 
@@ -851,44 +925,124 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      try {
-        const createdTeam = await teamsManager?.createTeam(teamData as Partial<Team>);
+      // Check if this is an update (team-id field has value) or create
+      const teamIdInput = document.querySelector<HTMLInputElement>('#team-id');
+      const teamId = teamIdInput?.value ? Number.parseInt(teamIdInput.value, 10) : null;
 
-        // If machines were selected, create machine_teams associations
-        if (createdTeam && machineIds.length > 0) {
-          try {
-            // Create machine_teams entries
-            for (const machineId of machineIds) {
-              await teamsManager?.apiClient.request(`/teams/${createdTeam.id}/machines`, {
-                method: 'POST',
-                body: JSON.stringify({
-                  machineId, // API v2 expects camelCase
-                }),
-              });
-            }
-            console.info(`[TeamsManager] Assigned ${machineIds.length} machines to team ${createdTeam.id}`);
-          } catch (error) {
-            console.error('Error assigning machines to team:', error);
-            // Don't fail the whole operation, just log the error
-          }
+      try {
+        let savedTeam: Team | undefined;
+        
+        if (teamId !== null && teamId > 0) {
+          // UPDATE existing team
+          savedTeam = await teamsManager?.updateTeam(teamId, teamData as Partial<Team>);
+        } else {
+          // CREATE new team
+          savedTeam = await teamsManager?.createTeam(teamData as Partial<Team>);
         }
 
-        // If users were selected, create user_teams associations
-        if (createdTeam && userIds.length > 0) {
-          try {
-            // Create user_teams entries using the correct API v2 endpoint
-            for (const userId of userIds) {
-              await teamsManager?.apiClient.request(`/teams/${createdTeam.id}/members`, {
-                method: 'POST',
-                body: JSON.stringify({
-                  userId, // API v2 expects camelCase
-                }),
-              });
+        // Handle member/machine assignments for both CREATE and UPDATE
+        if (savedTeam) {
+          // For updates, we need to handle add/remove logic
+          if (teamId !== null && teamId > 0) {
+            // Get current team details to compare
+            const currentTeam = await teamsManager?.getTeamDetails(teamId);
+            
+            if (currentTeam) {
+              // --- Handle MEMBERS ---
+              const currentMemberIds = currentTeam.members?.map(m => m.id) ?? [];
+              const selectedMemberIds = userIds;
+              
+              // Find members to add (in selected but not in current)
+              const membersToAdd = selectedMemberIds.filter(id => !currentMemberIds.includes(id));
+              
+              // Find members to remove (in current but not in selected)
+              const membersToRemove = currentMemberIds.filter(id => !selectedMemberIds.includes(id));
+              
+              // Add new members
+              for (const userId of membersToAdd) {
+                try {
+                  await teamsManager?.apiClient.request(`/teams/${savedTeam.id}/members`, {
+                    method: 'POST',
+                    body: JSON.stringify({ userId }),
+                  });
+                } catch (error) {
+                  console.error(`Error adding member ${userId}:`, error);
+                }
+              }
+              
+              // Remove members
+              for (const userId of membersToRemove) {
+                try {
+                  await teamsManager?.apiClient.request(`/teams/${savedTeam.id}/members/${userId}`, {
+                    method: 'DELETE',
+                  });
+                } catch (error) {
+                  console.error(`Error removing member ${userId}:`, error);
+                }
+              }
+              
+              // --- Handle MACHINES ---
+              const currentMachineIds = currentTeam.machines?.map(m => m.id) ?? [];
+              const selectedMachineIds = machineIds;
+              
+              // Find machines to add
+              const machinesToAdd = selectedMachineIds.filter(id => !currentMachineIds.includes(id));
+              
+              // Find machines to remove
+              const machinesToRemove = currentMachineIds.filter(id => !selectedMachineIds.includes(id));
+              
+              // Add new machines
+              for (const machineId of machinesToAdd) {
+                try {
+                  await teamsManager?.apiClient.request(`/teams/${savedTeam.id}/machines`, {
+                    method: 'POST',
+                    body: JSON.stringify({ machineId }),
+                  });
+                } catch (error) {
+                  console.error(`Error adding machine ${machineId}:`, error);
+                }
+              }
+              
+              // Remove machines
+              for (const machineId of machinesToRemove) {
+                try {
+                  await teamsManager?.apiClient.request(`/teams/${savedTeam.id}/machines/${machineId}`, {
+                    method: 'DELETE',
+                  });
+                } catch (error) {
+                  console.error(`Error removing machine ${machineId}:`, error);
+                }
+              }
+              
+              console.info(`[TeamsManager] Updated members: +${membersToAdd.length} -${membersToRemove.length}, machines: +${machinesToAdd.length} -${machinesToRemove.length}`);
             }
-            console.info(`[TeamsManager] Assigned ${userIds.length} users to team ${createdTeam.id}`);
-          } catch (error) {
-            console.error('Error assigning users to team:', error);
-            // Don't fail the whole operation, just log the error
+          } else {
+            // For NEW teams, just add all selected members and machines
+            for (const machineId of machineIds) {
+              try {
+                await teamsManager?.apiClient.request(`/teams/${savedTeam.id}/machines`, {
+                  method: 'POST',
+                  body: JSON.stringify({ machineId }),
+                });
+              } catch (error) {
+                console.error('Error assigning machine:', error);
+              }
+            }
+
+            for (const userId of userIds) {
+              try {
+                await teamsManager?.apiClient.request(`/teams/${savedTeam.id}/members`, {
+                  method: 'POST',
+                  body: JSON.stringify({ userId }),
+                });
+              } catch (error) {
+                console.error('Error assigning user:', error);
+              }
+            }
+            
+            if (machineIds.length > 0 || userIds.length > 0) {
+              console.info(`[TeamsManager] Created team with ${userIds.length} members and ${machineIds.length} machines`);
+            }
           }
         }
 
