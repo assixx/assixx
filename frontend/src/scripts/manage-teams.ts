@@ -109,7 +109,7 @@ class TeamsManager {
 
     // Delete modal
     document.querySelector('#confirm-delete-team')?.addEventListener('click', () => {
-      const deleteInput = document.querySelector('#delete-team-id');
+      const deleteInput = document.querySelector<HTMLInputElement>('#delete-team-id');
       if (deleteInput !== null && deleteInput.value !== '') {
         void this.confirmDeleteTeam(Number.parseInt(deleteInput.value, 10));
       }
@@ -141,14 +141,15 @@ class TeamsManager {
 
     // Search
     document.querySelector('#team-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#team-search');
+      const searchInput = document.querySelector<HTMLInputElement>('#team-search');
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadTeams();
     });
 
     // Enter key on search
     document.querySelector('#team-search')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+      const keyboardEvent = e as KeyboardEvent;
+      if (keyboardEvent.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
         void this.loadTeams();
@@ -310,7 +311,7 @@ class TeamsManager {
   deleteTeam(id: number): void {
     // Show confirmation modal
     const modal = document.querySelector('#delete-team-modal');
-    const deleteInput = document.querySelector('#delete-team-id');
+    const deleteInput = document.querySelector<HTMLInputElement>('#delete-team-id');
 
     if (modal === null || deleteInput === null) {
       showErrorAlert('Löschbestätigungs-Modal nicht gefunden');
@@ -326,6 +327,7 @@ class TeamsManager {
 
   async confirmDeleteTeam(id: number): Promise<void> {
     try {
+      // First try to delete without force
       await this.apiClient.request(`/teams/${id}`, {
         method: 'DELETE',
       });
@@ -341,17 +343,43 @@ class TeamsManager {
       // Reload teams
       await this.loadTeams();
     } catch (error) {
-      console.error('Error deleting team:', error);
-      const errorObj = error as { message?: string; code?: string };
+      const errorObj = error as { message?: string; code?: string; details?: { memberCount?: number } };
 
-      if (
+      // If team has members, try again with force=true
+      if (errorObj.message?.includes('Cannot delete team with members') === true) {
+        try {
+          // Ask for confirmation first
+          const memberCount = errorObj.details?.memberCount ?? 'einige';
+          if (
+            confirm(
+              `Das Team hat ${memberCount} Mitglieder. Möchten Sie das Team trotzdem löschen? Alle Mitglieder werden automatisch aus dem Team entfernt.`,
+            )
+          ) {
+            // Delete with force=true
+            await this.apiClient.request(`/teams/${id}?force=true`, {
+              method: 'DELETE',
+            });
+            showSuccessAlert('Team und alle Mitgliederzuordnungen erfolgreich gelöscht');
+            // Close the modal
+            const modal = document.querySelector('#delete-team-modal');
+            if (modal !== null) {
+              modal.classList.remove('active');
+            }
+            // Reload teams
+            await this.loadTeams();
+          }
+        } catch (forceError) {
+          console.error('Error force deleting team:', forceError);
+          showErrorAlert('Fehler beim Löschen des Teams');
+        }
+      } else if (
         errorObj.code === 'FOREIGN_KEY_CONSTRAINT' ||
         errorObj.message?.includes('foreign key') === true ||
-        errorObj.message?.includes('Cannot delete team with members') === true ||
         errorObj.message?.includes('Cannot delete team with machines') === true
       ) {
-        showErrorAlert('Team kann nicht gelöscht werden, da noch Zuordnungen (Mitarbeiter/Maschinen) existieren');
+        showErrorAlert('Team kann nicht gelöscht werden, da noch Zuordnungen (Maschinen) existieren');
       } else {
+        console.error('Error deleting team:', error);
         showErrorAlert('Fehler beim Löschen des Teams');
       }
     }
@@ -388,10 +416,81 @@ document.addEventListener('DOMContentLoaded', () => {
     const w = window as unknown as WindowWithTeamHandlers;
     w.editTeam = async (id: number) => {
       const team = await teamsManager?.getTeamDetails(id);
-      if (team !== null) {
-        // TODO: Open edit modal with team data
-        console.info('Edit team:', team);
-        showErrorAlert('Bearbeitungsmodal noch nicht implementiert');
+      if (team !== null && team !== undefined) {
+        // Open modal
+        const modal = document.querySelector('#team-modal');
+        if (modal !== null) {
+          modal.classList.add('active');
+
+          // Load departments for dropdown
+          if (teamsManager !== null) {
+            try {
+              const departments = await teamsManager.loadDepartments();
+              const departmentSelect = document.querySelector<HTMLSelectElement>('#team-department');
+
+              if (departmentSelect && departments) {
+                // Clear existing options and add placeholder
+                departmentSelect.innerHTML = '<option value="">Keine Abteilung</option>';
+
+                // Add department options
+                departments.forEach((dept: Department) => {
+                  const option = document.createElement('option');
+                  option.value = dept.id.toString();
+                  option.textContent = dept.name;
+                  departmentSelect.append(option);
+                });
+              }
+
+              // Load employees for team leader dropdown
+              const employees = await teamsManager.apiClient.request<UserAPIResponse[]>('/users', {
+                method: 'GET',
+              });
+
+              const mappedUsers = mapUsers(employees);
+              const leaderSelect = document.querySelector<HTMLSelectElement>('#team-leader');
+
+              if (leaderSelect && mappedUsers) {
+                // Clear existing options and add placeholder
+                leaderSelect.innerHTML = '<option value="">Kein Teamleiter</option>';
+
+                // Add employee options (only non-admins)
+                mappedUsers
+                  .filter((user) => user.role === 'employee')
+                  .forEach((user) => {
+                    const option = document.createElement('option');
+                    option.value = user.id.toString();
+                    option.textContent = user.username;
+                    leaderSelect.append(option);
+                  });
+              }
+            } catch (error) {
+              console.error('Error loading form data:', error);
+            }
+          }
+
+          // Fill form with team data
+          const setInputValue = (id: string, value: string | number | undefined) => {
+            const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
+            if (input !== null && value !== undefined) {
+              input.value = value.toString();
+            }
+          };
+
+          setInputValue('team-id', team.id);
+          setInputValue('team-name', team.name);
+          setInputValue('team-description', team.description);
+          setInputValue('team-department', team.departmentId);
+          setInputValue('team-leader', team.leaderId);
+          setInputValue('team-type', team.teamType);
+          setInputValue('team-max-members', team.maxMembers);
+          setInputValue('team-status', team.status);
+
+          // Update modal title
+          const modalTitle = document.querySelector('#team-modal-title');
+          if (modalTitle !== null) {
+            modalTitle.textContent = 'Team bearbeiten';
+          }
+        }
       }
     };
 
@@ -550,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Reset form
-        const form = document.querySelector('#team-form');
+        const form = document.querySelector<HTMLFormElement>('#team-form');
         if (form !== null) {
           form.reset();
         }
@@ -604,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as WindowWithTeamHandlers & { updateMemberSelection?: () => void }).updateMemberSelection = () => {
       const memberDropdown = document.querySelector('#team-members-dropdown');
       const memberDisplay = document.querySelector('#team-members-display');
-      const memberInput = document.querySelector('#team-members-select');
+      const memberInput = document.querySelector<HTMLInputElement>('#team-members-select');
 
       if (memberDropdown === null || memberDisplay === null || memberInput === null) {
         return;
@@ -640,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
       const machineDropdown = document.querySelector('#team-machines-dropdown');
       const machineDisplay = document.querySelector('#team-machines-display');
-      const machineInput = document.querySelector('#team-machines-select');
+      const machineInput = document.querySelector<HTMLInputElement>('#team-machines-select');
 
       if (machineDropdown === null || machineDisplay === null || machineInput === null) {
         return;
@@ -674,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save team handler
     w.saveTeam = async () => {
-      const form = document.querySelector('#team-form');
+      const form = document.querySelector<HTMLFormElement>('#team-form');
       if (form === null) {
         return;
       }

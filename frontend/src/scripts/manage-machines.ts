@@ -80,42 +80,29 @@ class MachinesManager {
     void this.loadMachines();
   }
 
-  /**
-   * Sets up event delegation for dropdown clicks
-   * @param dropdownId - The dropdown container ID
-   * @param selectId - The select input ID prefix
-   */
-  private setupDropdownEventDelegation(dropdownId: string, selectId: string): void {
-    const dropdown = document.getElementById(dropdownId);
-    if (!dropdown) return;
-
-    // Remove any existing listeners to prevent duplicates
-    const newDropdown = dropdown.cloneNode(true) as HTMLElement;
-    dropdown.parentNode?.replaceChild(newDropdown, dropdown);
-
-    // Add event delegation
-    newDropdown.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      const option = target.closest('.dropdown-option');
-
-      if (option instanceof HTMLElement) {
-        const value = option.dataset.value ?? '';
-        const text = option.dataset.text ?? '';
-
-        // Call the global selectDropdownOption function safely
-        // Using window extension interface for type safety
-        const windowWithSelect = window as Window & {
-          selectDropdownOption?: (dropdownId: string, value: string, text: string) => void;
-        };
-
-        if (typeof windowWithSelect.selectDropdownOption === 'function') {
-          windowWithSelect.selectDropdownOption(selectId, value, text);
-        }
-      }
-    });
-  }
+  // setupDropdownEventDelegation removed - using native select elements instead of custom dropdowns
 
   private initializeEventListeners() {
+    // Add Machine Button (Floating Button)
+    document.querySelector('#add-machine-btn')?.addEventListener('click', () => {
+      void this.showMachineModal();
+    });
+
+    // Modal close buttons
+    document.querySelector('#close-machine-modal')?.addEventListener('click', () => {
+      this.closeMachineModal();
+    });
+
+    document.querySelector('#cancel-machine-modal')?.addEventListener('click', () => {
+      this.closeMachineModal();
+    });
+
+    // Machine form submission
+    document.querySelector('#machine-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      void this.saveMachine();
+    });
+
     // Filter buttons
     document.querySelector('#show-all-machines')?.addEventListener('click', () => {
       this.currentFilter = 'all';
@@ -342,7 +329,6 @@ class MachinesManager {
         body: JSON.stringify(machineData),
       });
 
-      showSuccessAlert('Maschine erfolgreich erstellt');
       await this.loadMachines();
       return response;
     } catch (error) {
@@ -359,7 +345,6 @@ class MachinesManager {
         body: JSON.stringify(machineData),
       });
 
-      showSuccessAlert('Maschine erfolgreich aktualisiert');
       await this.loadMachines();
       return response;
     } catch (error) {
@@ -427,6 +412,74 @@ class MachinesManager {
     }
   }
 
+  async showMachineModal(): Promise<void> {
+    const modal = document.querySelector('#machine-modal');
+    if (modal !== null) {
+      modal.classList.add('active');
+
+      // Reset form
+      const form = document.querySelector<HTMLFormElement>('#machine-form');
+      if (form !== null) form.reset();
+
+      // Reset modal title to "Neue Maschine"
+      const modalTitle = document.querySelector('#machine-modal-title');
+      if (modalTitle !== null) {
+        modalTitle.textContent = 'Neue Maschine';
+      }
+
+      // Load departments and areas for selects (using regular select elements)
+      await this.loadDepartmentsForMachineSelect();
+      await this.loadAreasForMachineSelect();
+    }
+  }
+
+  closeMachineModal(): void {
+    const modal = document.querySelector('#machine-modal');
+    if (modal !== null) {
+      modal.classList.remove('active');
+    }
+  }
+
+  async saveMachine(): Promise<void> {
+    const form = document.querySelector<HTMLFormElement>('#machine-form');
+    if (form === null) return;
+
+    const formData = new FormData(form);
+    const machineData: Record<string, string | number> = {};
+
+    // Convert FormData to object
+    formData.forEach((value, key) => {
+      if (typeof value === 'string' && value.length > 0) {
+        machineData[key] = value;
+      }
+    });
+
+    // Validate required fields
+    if (typeof machineData.name !== 'string' || machineData.name.length === 0) {
+      showErrorAlert('Bitte geben Sie einen Maschinennamen ein');
+      return;
+    }
+
+    try {
+      // Check if we're editing (machine-id has value) or creating new
+      const machineIdInput = document.querySelector<HTMLInputElement>('#machine-id');
+      const machineId = machineIdInput?.value;
+
+      if (machineId !== undefined && machineId !== '') {
+        await this.updateMachine(Number.parseInt(machineId, 10), machineData as Partial<Machine>);
+        showSuccessAlert('Maschine erfolgreich aktualisiert');
+      } else {
+        await this.createMachine(machineData as Partial<Machine>);
+        showSuccessAlert('Maschine erfolgreich erstellt');
+      }
+
+      this.closeMachineModal();
+    } catch (error) {
+      console.error('Error saving machine:', error);
+      // Error messages are already shown by createMachine/updateMachine
+    }
+  }
+
   async loadDepartmentsForMachineSelect(): Promise<void> {
     try {
       const response = await this.apiClient.request<Department[]>('/departments', {
@@ -434,36 +487,23 @@ class MachinesManager {
       });
 
       const departments = response;
-      const dropdownOptions = document.querySelector('#machine-department-dropdown');
+      const selectElement = document.querySelector<HTMLSelectElement>('#machine-department');
 
-      if (dropdownOptions === null) {
-        console.error('[MachinesManager] Machine department dropdown not found');
+      if (selectElement === null) {
+        console.error('[MachinesManager] Machine department select not found');
         return;
       }
 
-      // Clear existing options
-      dropdownOptions.innerHTML = '';
-
-      // Add placeholder option
-      const defaultOption = document.createElement('div');
-      defaultOption.className = 'dropdown-option';
-      defaultOption.dataset.value = '';
-      defaultOption.dataset.text = 'Keine Abteilung';
-      defaultOption.textContent = 'Keine Abteilung';
-      dropdownOptions.append(defaultOption);
+      // Clear existing options except the first one (placeholder)
+      selectElement.innerHTML = '<option value="">Keine Abteilung</option>';
 
       // Add department options
       departments.forEach((dept: Department) => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'dropdown-option';
-        optionDiv.dataset.value = dept.id.toString();
-        optionDiv.dataset.text = dept.name;
-        optionDiv.textContent = dept.name;
-        dropdownOptions.append(optionDiv);
+        const option = document.createElement('option');
+        option.value = dept.id.toString();
+        option.textContent = dept.name;
+        selectElement.append(option);
       });
-
-      // Setup event delegation
-      this.setupDropdownEventDelegation('machine-department-dropdown', 'machine-department');
 
       console.info('[MachinesManager] Loaded departments:', departments.length);
     } catch (error) {
@@ -479,36 +519,23 @@ class MachinesManager {
       });
 
       const areas = response;
-      const dropdownOptions = document.querySelector('#machine-area-dropdown');
+      const selectElement = document.querySelector<HTMLSelectElement>('#machine-area');
 
-      if (dropdownOptions === null) {
-        console.error('[MachinesManager] Machine area dropdown not found');
+      if (selectElement === null) {
+        console.error('[MachinesManager] Machine area select not found');
         return;
       }
 
-      // Clear existing options
-      dropdownOptions.innerHTML = '';
-
-      // Add placeholder option
-      const defaultOption = document.createElement('div');
-      defaultOption.className = 'dropdown-option';
-      defaultOption.dataset.value = '';
-      defaultOption.dataset.text = 'Kein Bereich';
-      defaultOption.textContent = 'Kein Bereich';
-      dropdownOptions.append(defaultOption);
+      // Clear existing options except the first one (placeholder)
+      selectElement.innerHTML = '<option value="">Kein Bereich</option>';
 
       // Add area options
       areas.forEach((area: Area) => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'dropdown-option';
-        optionDiv.dataset.value = area.id.toString();
-        optionDiv.dataset.text = area.name;
-        optionDiv.textContent = area.name;
-        dropdownOptions.append(optionDiv);
+        const option = document.createElement('option');
+        option.value = area.id.toString();
+        option.textContent = area.name;
+        selectElement.append(option);
       });
-
-      // Setup event delegation
-      this.setupDropdownEventDelegation('machine-area-dropdown', 'machine-area');
 
       console.info('[MachinesManager] Loaded areas:', areas.length);
     } catch (error) {
@@ -536,10 +563,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const w = window as unknown as WindowWithMachineHandlers;
     w.editMachine = async (id: number) => {
       const machine = await machinesManager?.getMachineDetails(id);
-      if (machine !== null) {
-        // TODO: Open edit modal with machine data
-        console.info('Edit machine:', machine);
-        showErrorAlert('Bearbeitungsmodal noch nicht implementiert');
+      if (machine !== null && machine !== undefined) {
+        // Open modal with loaded departments and areas
+        const modal = document.querySelector('#machine-modal');
+        if (modal !== null) {
+          modal.classList.add('active');
+
+          // First load departments and areas
+          await machinesManager?.loadDepartmentsForMachineSelect();
+          await machinesManager?.loadAreasForMachineSelect();
+
+          // Then fill form with machine data
+          const setInputValue = (id: string, value: string | number | undefined) => {
+            const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
+            if (input !== null && value !== undefined) {
+              input.value = value.toString();
+            }
+          };
+
+          setInputValue('machine-id', machine.id);
+          setInputValue('machine-name', machine.name);
+          setInputValue('machine-model', machine.model);
+          setInputValue('machine-manufacturer', machine.manufacturer);
+          setInputValue('machine-serial', machine.serialNumber);
+          setInputValue('machine-department', machine.departmentId);
+          setInputValue('machine-area', machine.areaId);
+          setInputValue('machine-type', machine.machineType);
+          setInputValue('machine-status', machine.status);
+          setInputValue('machine-hours', machine.operatingHours);
+
+          // Format date for input
+          if (machine.nextMaintenance !== undefined) {
+            const date = new Date(machine.nextMaintenance);
+            const formattedDate = date.toISOString().split('T')[0];
+            setInputValue('machine-next-maintenance', formattedDate);
+          }
+
+          // Update modal title
+          const modalTitle = document.querySelector('#machine-modal-title');
+          if (modalTitle !== null) {
+            modalTitle.textContent = 'Maschine bearbeiten';
+          }
+        }
       }
     };
 
@@ -556,61 +621,19 @@ document.addEventListener('DOMContentLoaded', () => {
       await machinesManager?.deleteMachine(id);
     };
 
-    // Handler for floating add button
+    // Handler for floating add button - not needed anymore as it's handled in initializeEventListeners
     w.showMachineModal = async () => {
-      const modal = document.querySelector('#machineModal');
-      if (modal !== null) {
-        modal.classList.add('active');
-
-        // Reset form
-        const form = document.querySelector<HTMLFormElement>('#machineForm');
-        if (form !== null) form.reset();
-
-        // Load departments and areas for dropdowns
-        if (machinesManager !== null) {
-          await machinesManager.loadDepartmentsForMachineSelect();
-          await machinesManager.loadAreasForMachineSelect();
-        }
-      }
+      await machinesManager?.showMachineModal();
     };
 
     // Close modal handler
     w.closeMachineModal = () => {
-      const modal = document.querySelector('#machineModal');
-      if (modal !== null) {
-        modal.classList.remove('active');
-      }
+      machinesManager?.closeMachineModal();
     };
 
     // Save machine handler
     w.saveMachine = async () => {
-      const form = document.querySelector<HTMLFormElement>('#machineForm');
-      if (form === null) return;
-
-      const formData = new FormData(form);
-      const machineData: Record<string, string | number> = {};
-
-      // Convert FormData to object
-      formData.forEach((value, key) => {
-        if (typeof value === 'string' && value.length > 0) {
-          machineData[key] = value;
-        }
-      });
-
-      // Validate required fields
-      if (typeof machineData.name !== 'string' || machineData.name.length === 0) {
-        showErrorAlert('Bitte geben Sie einen Maschinennamen ein');
-        return;
-      }
-
-      try {
-        await machinesManager?.createMachine(machineData as Partial<Machine>);
-        w.closeMachineModal?.();
-        showSuccessAlert('Maschine erfolgreich hinzugefügt');
-      } catch (error) {
-        console.error('Error creating machine:', error);
-        showErrorAlert('Fehler beim Hinzufügen der Maschine');
-      }
+      await machinesManager?.saveMachine();
     };
 
     // Function to check if machines section is visible

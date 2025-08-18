@@ -58,11 +58,18 @@ interface UserDetails {
  * Extract Bearer token from Authorization header
  */
 function extractBearerToken(req: PublicRequest): string | null {
+  // First check Authorization header
   const authHeader = req.headers.authorization;
-  if (typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
-    return null;
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
   }
-  return authHeader.substring(7);
+
+  // For SSE/EventSource, check query parameter (they can't send headers)
+  if (req.query.token && typeof req.query.token === "string") {
+    return req.query.token;
+  }
+
+  return null;
 }
 
 /**

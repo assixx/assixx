@@ -5,15 +5,16 @@
 
 import type { User, JWTPayload } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
+import { $$, $all, show, hide } from '../utils/dom-utils';
 
 import { getAuthToken } from './auth';
-import type UnifiedNavigation from './components/unified-navigation';
 
+// Extended window interface for chat-specific properties
 declare global {
   interface Window {
     chatClient?: ChatClient;
     selectChatDropdownOption?: (type: string, id: number, name: string, meta?: string) => void;
-    unifiedNav: UnifiedNavigation;
+    // unifiedNav is declared in components/unified-navigation.ts
   }
 }
 
@@ -21,6 +22,7 @@ interface ChatUser extends User {
   status?: 'online' | 'offline' | 'away';
   last_seen?: string;
   department_id?: number;
+
   department?: string;
   position?: string;
   profile_picture_url?: string;
@@ -30,12 +32,22 @@ interface ChatUser extends User {
 interface Message {
   id: number;
   conversation_id: number;
+  conversationId?: number; // API v2 compatibility
   sender_id: number;
+  senderId?: number; // API v2 compatibility
+  senderName?: string; // API v2 compatibility
+  senderUsername?: string; // API v2 compatibility
+  senderProfilePicture?: string; // API v2 compatibility
   content: string;
   created_at: string;
+  createdAt?: string; // API v2 compatibility
   is_read: boolean;
+  isRead?: boolean; // API v2 compatibility
+  readAt?: string; // API v2 compatibility
+  updatedAt?: string; // API v2 compatibility
   sender?: ChatUser;
   attachments?: Attachment[];
+  attachment?: string | null; // API v2 compatibility
   type?: 'text' | 'file' | 'system';
 }
 
@@ -1225,12 +1237,12 @@ class ChatClient {
       if (message.sender_id === this.currentUserId) {
         // For our own messages, we need to replace the temporary message
         // Find and remove the temporary message with matching content
-        const messagesContainer = document.querySelector('#messagesContainer');
+        const messagesContainer = $$('#messagesContainer');
         if (messagesContainer) {
           const tempMessages = messagesContainer.querySelectorAll('.message.own');
           tempMessages.forEach((msg) => {
             const msgText = msg.querySelector('.message-text')?.textContent;
-            if (msgText === message.content && (msg.dataset.messageId?.length ?? 0) > 10) {
+            if (msgText === message.content && ((msg as HTMLElement).dataset.messageId?.length ?? 0) > 10) {
               // Remove temporary message (IDs > 10 chars are timestamps)
               msg.remove();
             }
@@ -1255,7 +1267,7 @@ class ChatClient {
       this.playNotificationSound();
 
       // Update the unread messages badge in the sidebar
-      if (typeof window.unifiedNav.updateUnreadMessages === 'function') {
+      if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
         void window.unifiedNav.updateUnreadMessages();
       }
     }
@@ -1311,7 +1323,7 @@ class ChatClient {
 
   handleMessageRead(data: { messageId: number; userId: number }): void {
     // Update read status in UI
-    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    const messageElement = $$(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
       const readIndicator = messageElement.querySelector('.read-indicator');
       if (readIndicator) {
@@ -1348,11 +1360,11 @@ class ChatClient {
     this.currentConversationId = conversationId;
 
     // Update UI
-    document.querySelectorAll('.conversation-item').forEach((item) => {
+    $all('.conversation-item').forEach((item) => {
       item.classList.remove('active');
     });
 
-    const selectedItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
+    const selectedItem = $$(`[data-conversation-id="${conversationId}"]`);
     if (selectedItem) {
       selectedItem.classList.add('active');
     }
@@ -1374,18 +1386,18 @@ class ChatClient {
     this.renderChatHeader();
 
     // Show chat elements
-    const chatHeader = document.querySelector('#chat-header');
-    const chatArea = document.querySelector('#chatArea');
-    const noChatSelected = document.querySelector('#noChatSelected');
-    const chatMain = document.querySelector('.chat-main');
+    const chatHeader = $$('#chat-header');
+    const chatArea = $$('#chatArea');
+    const noChatSelected = $$('#noChatSelected');
+    const chatMain = $$('.chat-main');
 
     if (chatHeader) chatHeader.classList.remove('u-hidden');
-    if (chatArea) chatArea.style.display = 'block';
-    if (noChatSelected) noChatSelected.style.display = 'none';
+    show(chatArea);
+    hide(noChatSelected);
     if (chatMain) chatMain.classList.remove('u-hidden');
 
     // Show chat view on mobile
-    const chatContainer = document.querySelector('.chat-container');
+    const chatContainer = $$('.chat-container');
     if (chatContainer) {
       chatContainer.classList.add('show-chat');
     }
@@ -1416,7 +1428,7 @@ class ChatClient {
       }
 
       // Update the navigation badge
-      if (typeof window.unifiedNav.updateUnreadMessages === 'function') {
+      if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
         void window.unifiedNav.updateUnreadMessages();
       }
     } catch (error) {
@@ -1461,7 +1473,7 @@ class ChatClient {
   }
 
   displayMessages(messages: Message[]): void {
-    const messagesContainer = document.querySelector('#messagesContainer');
+    const messagesContainer = $$('#messagesContainer');
     if (!messagesContainer) return;
 
     // Hide container before updating
@@ -1472,23 +1484,25 @@ class ChatClient {
 
     messages.forEach((message) => {
       // Handle both camelCase and snake_case for created_at/createdAt
-      const createdAt = message.created_at;
+      const createdAt = message.createdAt ?? message.created_at;
 
       // Check if we need to add a date separator
-      if (createdAt === '') {
+      if (!createdAt || createdAt === '') {
         console.warn('Message without created date:', message);
         this.displayMessage(message);
         return;
       }
 
-      const messageDate = new Date(createdAt).toLocaleDateString('de-DE');
+      const parsedDate = new Date(createdAt);
 
       // Check if date is valid
-      if (messageDate === 'Invalid Date') {
+      if (isNaN(parsedDate.getTime())) {
         console.warn('Invalid date for message:', createdAt, message);
         this.displayMessage(message);
         return;
       }
+
+      const messageDate = parsedDate.toLocaleDateString('de-DE');
 
       if (lastMessageDate !== messageDate) {
         this.addDateSeparator(messageDate, messagesContainer);
@@ -1510,20 +1524,25 @@ class ChatClient {
   }
 
   displayMessage(message: Message): void {
-    const messagesContainer = document.querySelector('#messagesContainer');
+    const messagesContainer = $$('#messagesContainer');
     if (!messagesContainer) return;
 
     // Handle both camelCase and snake_case for created_at/createdAt
-    const createdAt = message.created_at;
-    if (createdAt === '') {
+    const createdAt = message.createdAt ?? message.created_at;
+    if (!createdAt || createdAt === '') {
       console.warn('Message without created date:', message);
       return;
     }
 
     // Check if we need to add a date separator
-    const messageDate = new Date(createdAt).toLocaleDateString('de-DE');
+    const parsedDate = new Date(createdAt);
+    if (isNaN(parsedDate.getTime())) {
+      console.error('Invalid date for message:', createdAt, message);
+      return;
+    }
+    const messageDate = parsedDate.toLocaleDateString('de-DE');
     const messages = messagesContainer.querySelectorAll('.message');
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages[messages.length - 1] as HTMLElement;
 
     // Check if a date separator for this date already exists
     const existingSeparators = messagesContainer.querySelectorAll('.date-separator');
@@ -1723,7 +1742,7 @@ class ChatClient {
 
   async sendMessage(content?: string): Promise<void> {
     console.info('sendMessage called');
-    const messageInput = document.querySelector('#messageInput');
+    const messageInput = $$<HTMLTextAreaElement>('#messageInput');
     const messageContent = content ?? messageInput?.value.trim();
 
     console.info('Message content:', messageContent);
@@ -1852,7 +1871,7 @@ class ChatClient {
   }
 
   showFilePreview(): void {
-    const previewContainer = document.querySelector('#filePreview');
+    const previewContainer = $$('#filePreview');
     if (!previewContainer) return;
 
     previewContainer.innerHTML = '';
@@ -1918,7 +1937,7 @@ class ChatClient {
   removeFile(index: number): void {
     this.pendingFiles.splice(index, 1);
     if (this.pendingFiles.length === 0) {
-      const previewContainer = document.querySelector('#filePreview');
+      const previewContainer = $$('#filePreview');
       if (previewContainer) {
         previewContainer.style.display = 'none';
       }
@@ -1928,7 +1947,7 @@ class ChatClient {
   }
 
   toggleEmojiPicker(): void {
-    const emojiPicker = document.querySelector('#emojiPicker');
+    const emojiPicker = $$('#emojiPicker');
     if (!emojiPicker) return;
 
     if (emojiPicker.style.display === 'none' || emojiPicker.style.display === '') {
@@ -1940,7 +1959,7 @@ class ChatClient {
   }
 
   showEmojiCategory(categoryName: string): void {
-    const emojiContent = document.querySelector('#emojiContent');
+    const emojiContent = $$('#emojiContent');
     if (!emojiContent) return;
 
     const emojis = this.emojiCategories[categoryName] ?? [];
@@ -1958,11 +1977,11 @@ class ChatClient {
   }
 
   insertEmoji(emoji: string): void {
-    const messageInput = document.querySelector('#messageInput');
+    const messageInput = $$<HTMLTextAreaElement>('#messageInput');
     if (!messageInput) return;
 
-    const start = messageInput.selectionStart;
-    const end = messageInput.selectionEnd;
+    const start = messageInput.selectionStart ?? 0;
+    const end = messageInput.selectionEnd ?? 0;
     const text = messageInput.value;
 
     messageInput.value = text.substring(0, start) + emoji + text.substring(end);
@@ -1970,14 +1989,14 @@ class ChatClient {
     messageInput.focus();
 
     // Hide emoji picker
-    const emojiPicker = document.querySelector('#emojiPicker');
+    const emojiPicker = $$('#emojiPicker');
     if (emojiPicker) {
       emojiPicker.style.display = 'none';
     }
   }
 
   renderConversationList(): void {
-    const conversationsList = document.querySelector('#conversationsList');
+    const conversationsList = $$('#conversationsList');
     if (!conversationsList) return;
 
     conversationsList.innerHTML = '';
@@ -2079,9 +2098,9 @@ class ChatClient {
   }
 
   renderChatHeader(): void {
-    const chatAvatar = document.querySelector('#chat-avatar');
-    const chatPartnerName = document.querySelector('#chat-partner-name');
-    const chatPartnerStatus = document.querySelector('#chat-partner-status');
+    const chatAvatar = $$('#chat-avatar');
+    const chatPartnerName = $$('#chat-partner-name');
+    const chatPartnerStatus = $$('#chat-partner-status');
 
     if (this.currentConversationId === null || this.currentConversationId === 0) return;
 
@@ -2165,7 +2184,7 @@ class ChatClient {
     const canDelete = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
     // Re-attach delete button listener only for admins and root users
     if (canDelete) {
-      const deleteBtn = document.querySelector('#deleteConversationBtn');
+      const deleteBtn = $$<HTMLButtonElement>('#deleteConversationBtn');
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
           void this.deleteCurrentConversation();
@@ -2216,7 +2235,7 @@ class ChatClient {
   }
 
   showNewConversationModal(): void {
-    const modal = document.querySelector('#newConversationModal');
+    const modal = $$('#newConversationModal');
     if (!modal) return;
 
     // Reset modal state
@@ -2238,43 +2257,43 @@ class ChatClient {
 
   private resetModalState(): void {
     // Reset tabs
-    document.querySelectorAll('.chat-type-tab').forEach((tab) => {
+    $all('.chat-type-tab').forEach((tab) => {
       tab.classList.remove('active');
     });
-    document.querySelector('#employeeTab')?.classList.add('active');
+    $$('#employeeTab')?.classList.add('active');
 
     // Reset selections
-    document.querySelectorAll('.recipient-selection').forEach((section) => {
-      (section as HTMLElement).style.display = 'none';
+    $all('.recipient-selection').forEach((section) => {
+      section.style.display = 'none';
     });
-    const employeeSection = document.querySelector('#employeeSelection');
+    const employeeSection = $$('#employeeSelection');
     if (employeeSection) employeeSection.style.display = 'block';
 
     // Reset dropdowns
-    const deptDisplay = document.querySelector('#departmentDisplay')?.querySelector('span');
+    const deptDisplay = $$('#departmentDisplay span');
     if (deptDisplay) deptDisplay.textContent = 'Abteilung wählen';
 
-    const empDisplay = document.querySelector('#employeeDisplay')?.querySelector('span');
+    const empDisplay = $$('#employeeDisplay span');
     if (empDisplay) empDisplay.textContent = 'Mitarbeiter wählen';
 
-    const adminDisplayElem = document.querySelector('#adminDisplay')?.querySelector('span');
+    const adminDisplayElem = $$('#adminDisplay span');
     if (adminDisplayElem) adminDisplayElem.textContent = 'Administrator wählen';
 
     // Hide employee dropdown initially
-    const employeeGroup = document.querySelector('#employeeDropdownGroup');
+    const employeeGroup = $$('#employeeDropdownGroup');
     if (employeeGroup) employeeGroup.style.display = 'none';
 
     // Clear selected recipients
-    const selectedList = document.querySelector('#selectedRecipientsList');
+    const selectedList = $$('#selectedRecipientsList');
     if (selectedList) selectedList.innerHTML = '';
 
     // Hide group options
-    const groupOptions = document.querySelector('#groupChatOptions');
+    const groupOptions = $$('#groupChatOptions');
     if (groupOptions) groupOptions.style.display = 'none';
   }
 
   private setupTabListeners(): void {
-    const tabs = document.querySelectorAll('.chat-type-tab');
+    const tabs = $all('.chat-type-tab');
     tabs.forEach((tab) => {
       // Remove any existing listeners first
       const newTab = tab.cloneNode(true) as HTMLElement;
@@ -2292,21 +2311,21 @@ class ChatClient {
         console.info('Tab clicked:', type);
 
         // Update active tab
-        document.querySelectorAll('.chat-type-tab').forEach((t) => {
+        $all('.chat-type-tab').forEach((t) => {
           t.classList.remove('active');
         });
         target.classList.add('active');
 
         // Show corresponding section
-        document.querySelectorAll('.recipient-selection').forEach((section) => {
-          (section as HTMLElement).style.display = 'none';
+        $all('.recipient-selection').forEach((section) => {
+          section.style.display = 'none';
         });
 
         if (type === 'employee') {
-          const section = document.querySelector('#employeeSelection');
+          const section = $$('#employeeSelection');
           if (section) section.style.display = 'block';
         } else if (type === 'admin') {
-          const section = document.querySelector('#adminSelection');
+          const section = $$('#adminSelection');
           if (section) section.style.display = 'block';
         }
       });
@@ -2323,7 +2342,7 @@ class ChatClient {
           method: 'GET',
         });
 
-        const dropdown = document.querySelector('#departmentDropdown');
+        const dropdown = $$<HTMLSelectElement>('#departmentDropdown');
 
         if (dropdown) {
           dropdown.innerHTML = '';
@@ -2357,7 +2376,7 @@ class ChatClient {
 
         if (response.ok) {
           const departments = (await response.json()) as { id: number; name: string }[];
-          const dropdown = document.querySelector('#departmentDropdown');
+          const dropdown = $$<HTMLSelectElement>('#departmentDropdown');
 
           if (dropdown) {
             dropdown.innerHTML = '';
@@ -2394,7 +2413,7 @@ class ChatClient {
         (user) => user.role === 'employee' && user.department_id?.toString() === departmentId,
       );
 
-      const dropdown = document.querySelector('#employeeDropdown');
+      const dropdown = $$<HTMLSelectElement>('#employeeDropdown');
 
       if (dropdown) {
         dropdown.innerHTML = '';
@@ -2436,7 +2455,7 @@ class ChatClient {
   private loadAdmins(): void {
     const admins = this.availableUsers.filter((user) => user.role === 'admin' || user.role === 'root');
 
-    const dropdown = document.querySelector('#adminDropdown');
+    const dropdown = $$<HTMLSelectElement>('#adminDropdown');
 
     if (dropdown) {
       dropdown.innerHTML = '';
@@ -2486,19 +2505,19 @@ class ChatClient {
 
     try {
       // Get selected recipient based on active tab
-      const activeTab = document.querySelector('.chat-type-tab.active');
-      const tabType = (activeTab as HTMLElement | null)?.dataset.type;
+      const activeTab = $$('.chat-type-tab.active');
+      const tabType = activeTab?.dataset.type;
 
       let selectedUserId: number | null = null;
 
       if (tabType === 'employee') {
-        const employeeInput = document.querySelector('#selectedEmployee');
+        const employeeInput = $$<HTMLInputElement>('#selectedEmployee');
         selectedUserId =
           employeeInput?.value !== undefined && employeeInput.value !== ''
             ? Number.parseInt(employeeInput.value, 10)
             : null;
       } else if (tabType === 'admin') {
-        const adminInput = document.querySelector('#selectedAdmin');
+        const adminInput = $$<HTMLInputElement>('#selectedAdmin');
         selectedUserId =
           adminInput?.value !== undefined && adminInput.value !== '' ? Number.parseInt(adminInput.value, 10) : null;
       }
@@ -2511,7 +2530,7 @@ class ChatClient {
 
       // For now, we only support 1:1 chats
       const isGroup = false;
-      const groupNameInput = document.querySelector('#groupChatName');
+      const groupNameInput = $$<HTMLInputElement>('#groupChatName');
       const groupName = groupNameInput?.value.trim() ?? null;
       const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
         participantIds: [selectedUserId],
@@ -2637,7 +2656,7 @@ class ChatClient {
   }
 
   showConversationsList(): void {
-    const chatContainer = document.querySelector('.chat-container');
+    const chatContainer = $$('.chat-container');
     if (chatContainer) {
       chatContainer.classList.remove('show-chat');
     }
@@ -2645,7 +2664,7 @@ class ChatClient {
 
   initializeEventListeners(): void {
     // Message input
-    const messageInput = document.querySelector('#messageInput');
+    const messageInput = $$<HTMLTextAreaElement>('#messageInput');
     if (messageInput) {
       // Enter key to send
       messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
@@ -2663,7 +2682,7 @@ class ChatClient {
     }
 
     // Send button
-    const sendBtn = document.querySelector('#sendButton');
+    const sendBtn = $$<HTMLButtonElement>('#sendButton');
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
         console.info('Send button clicked');
@@ -2674,8 +2693,8 @@ class ChatClient {
     }
 
     // File upload handler
-    const fileInput = document.querySelector('#fileInput');
-    const attachmentBtn = document.querySelector('#attachmentBtn');
+    const fileInput = $$<HTMLInputElement>('#fileInput');
+    const attachmentBtn = $$<HTMLButtonElement>('#attachmentBtn');
 
     if (attachmentBtn && fileInput) {
       attachmentBtn.addEventListener('click', (e) => {
@@ -2696,7 +2715,7 @@ class ChatClient {
     }
 
     // Emoji picker handler
-    const emojiBtn = document.querySelector('#emojiBtn');
+    const emojiBtn = $$<HTMLButtonElement>('#emojiBtn');
     if (emojiBtn) {
       emojiBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2705,7 +2724,7 @@ class ChatClient {
     }
 
     // Emoji category handlers
-    const emojiCategories = document.querySelectorAll<HTMLElement>('.emoji-category');
+    const emojiCategories = $all('.emoji-category');
     emojiCategories.forEach((category) => {
       category.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
@@ -2715,7 +2734,7 @@ class ChatClient {
           this.showEmojiCategory(categoryName);
 
           // Update active state
-          document.querySelectorAll('.emoji-category').forEach((cat) => {
+          $all('.emoji-category').forEach((cat) => {
             cat.classList.remove('active');
           });
           target.classList.add('active');
@@ -2725,8 +2744,8 @@ class ChatClient {
 
     // Click outside to close emoji picker
     document.addEventListener('click', (e) => {
-      const emojiPicker = document.querySelector('#emojiPicker');
-      const emojiBtnElement = document.querySelector('#emojiBtn');
+      const emojiPicker = $$('#emojiPicker');
+      const emojiBtnElement = $$('#emojiBtn');
       if (
         emojiPicker &&
         !emojiPicker.contains(e.target as Node) &&
@@ -2738,7 +2757,7 @@ class ChatClient {
     });
 
     // New conversation button
-    const newConvBtn = document.querySelector('#newConversationBtn');
+    const newConvBtn = $$<HTMLButtonElement>('#newConversationBtn');
     if (newConvBtn) {
       newConvBtn.addEventListener('click', () => {
         this.showNewConversationModal();
@@ -2746,7 +2765,7 @@ class ChatClient {
     }
 
     // Create conversation button
-    const createConvBtn = document.querySelector('#createConversationBtn');
+    const createConvBtn = $$<HTMLButtonElement>('#createConversationBtn');
     if (createConvBtn) {
       createConvBtn.addEventListener('click', () => {
         void this.createConversation();
@@ -2754,8 +2773,8 @@ class ChatClient {
     }
 
     // Modal close buttons
-    const closeModalBtn = document.querySelector('#closeModalBtn');
-    const cancelModalBtn = document.querySelector('#cancelModalBtn');
+    const closeModalBtn = $$<HTMLButtonElement>('#closeModalBtn');
+    const cancelModalBtn = $$<HTMLButtonElement>('#cancelModalBtn');
 
     if (closeModalBtn) {
       closeModalBtn.addEventListener('click', () => {
@@ -2772,7 +2791,7 @@ class ChatClient {
     // Delete conversation button (only for admin and root)
     const canDelete = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
     if (canDelete) {
-      const deleteBtn = document.querySelector('#deleteConversationBtn');
+      const deleteBtn = $$<HTMLButtonElement>('#deleteConversationBtn');
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
           console.info('Delete button clicked');
@@ -2840,7 +2859,7 @@ class ChatClient {
   }
 
   updateTypingIndicator(): void {
-    const typingIndicator = document.querySelector('#typingIndicator');
+    const typingIndicator = $$('#typingIndicator');
     if (!typingIndicator) return;
 
     const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
@@ -2880,7 +2899,7 @@ class ChatClient {
   }
 
   resizeTextarea(): void {
-    const textarea = document.querySelector('#messageInput');
+    const textarea = $$<HTMLTextAreaElement>('#messageInput');
     if (!textarea) return;
 
     textarea.style.height = 'auto';
@@ -2888,7 +2907,7 @@ class ChatClient {
   }
 
   updateConnectionStatus(connected: boolean): void {
-    const statusIndicator = document.querySelector('#connectionStatus');
+    const statusIndicator = $$('#connectionStatus');
     if (statusIndicator) {
       statusIndicator.className = connected ? 'connected' : 'disconnected';
       statusIndicator.title = connected ? 'Verbunden' : 'Getrennt';
@@ -2921,7 +2940,7 @@ class ChatClient {
   }
 
   showNotification(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info'): void {
-    const notification = document.querySelector('#notification');
+    const notification = $$('#notification');
     if (!notification) return;
 
     notification.className = `notification ${type}`;
@@ -2937,7 +2956,7 @@ class ChatClient {
     let typingTimer: NodeJS.Timeout | null = null;
     let isTyping = false;
 
-    const messageInput = document.querySelector('#message-input');
+    const messageInput = $$<HTMLInputElement>('#message-input');
     if (!messageInput) return;
 
     messageInput.addEventListener('input', () => {

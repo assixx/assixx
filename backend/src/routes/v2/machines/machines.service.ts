@@ -246,7 +246,7 @@ export class MachinesService {
     return this.getMachineById(id, tenantId);
   }
 
-  // Delete machine (soft delete)
+  // Delete machine (hard delete)
   /**
    *
    * @param id
@@ -277,6 +277,90 @@ export class MachinesService {
       entity_type: "machine",
       entity_id: id,
       old_values: machine as unknown as Record<string, unknown>,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
+  }
+
+  // Deactivate machine
+  /**
+   *
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
+  async deactivateMachine(
+    id: number,
+    tenantId: number,
+    userId: number,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    // Verify machine exists
+    await this.getMachineById(id, tenantId);
+
+    const success = await MachineModel.deactivate(id, tenantId);
+    if (!success) {
+      throw new ServiceError(
+        "UPDATE_FAILED",
+        "Failed to deactivate machine",
+        500,
+      );
+    }
+
+    // Log the action
+    await RootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: "deactivate_machine",
+      entity_type: "machine",
+      entity_id: id,
+      old_values: { is_active: true },
+      new_values: { is_active: false },
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
+  }
+
+  // Activate machine
+  /**
+   *
+   * @param id
+   * @param tenantId
+   * @param userId
+   * @param ipAddress
+   * @param userAgent
+   */
+  async activateMachine(
+    id: number,
+    tenantId: number,
+    userId: number,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    // Verify machine exists
+    await this.getMachineById(id, tenantId);
+
+    const success = await MachineModel.activate(id, tenantId);
+    if (!success) {
+      throw new ServiceError(
+        "UPDATE_FAILED",
+        "Failed to activate machine",
+        500,
+      );
+    }
+
+    // Log the action
+    await RootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: "activate_machine",
+      entity_type: "machine",
+      entity_id: id,
+      old_values: { is_active: false },
+      new_values: { is_active: true },
       ip_address: ipAddress,
       user_agent: userAgent,
     });

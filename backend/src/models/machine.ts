@@ -272,11 +272,38 @@ class MachineModel {
     return result.affectedRows > 0;
   }
 
-  // Delete machine (soft delete)
+  // Delete machine (hard delete)
   async delete(id: number, tenant_id: number): Promise<boolean> {
+    const query = `
+      DELETE FROM machines 
+      WHERE id = ? AND tenant_id = ?
+    `;
+    const [result] = await executeQuery<ResultSetHeader>(query, [
+      id,
+      tenant_id,
+    ]);
+    return result.affectedRows > 0;
+  }
+
+  // Deactivate machine (soft delete)
+  async deactivate(id: number, tenant_id: number): Promise<boolean> {
     const query = `
       UPDATE machines 
       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND tenant_id = ?
+    `;
+    const [result] = await executeQuery<ResultSetHeader>(query, [
+      id,
+      tenant_id,
+    ]);
+    return result.affectedRows > 0;
+  }
+
+  // Activate machine
+  async activate(id: number, tenant_id: number): Promise<boolean> {
+    const query = `
+      UPDATE machines 
+      SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `;
     const [result] = await executeQuery<ResultSetHeader>(query, [

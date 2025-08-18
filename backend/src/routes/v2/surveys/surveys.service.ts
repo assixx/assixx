@@ -5,6 +5,7 @@
 
 import RootLog from "../../../models/rootLog";
 import Survey from "../../../models/survey.js";
+import { eventBus } from "../../../utils/eventBus.js";
 import { dbToApi } from "../../../utils/fieldMapping.js";
 import { ServiceError } from "../../../utils/ServiceError.js";
 
@@ -259,6 +260,14 @@ export class SurveysService {
         new_values: { title: data.title, status: data.status ?? "draft" },
         ip_address: ipAddress,
         user_agent: userAgent,
+      });
+
+      // Emit event for SSE notifications
+      eventBus.emitSurveyCreated(tenantId, {
+        id: surveyId,
+        title: data.title,
+        deadline: data.endDate ?? undefined,
+        created_at: new Date().toISOString(),
       });
 
       // Return the created survey

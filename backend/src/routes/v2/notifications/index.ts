@@ -10,6 +10,7 @@ import { typed } from "../../../utils/routeHandlers.js";
 
 import * as notificationsController from "./notifications.controller.js";
 import * as notificationsValidation from "./notifications.validation.js";
+import { SSENotificationController } from "./sse.controller.js";
 
 const router = Router();
 
@@ -111,5 +112,16 @@ router.delete(
   notificationsValidation.deleteNotification,
   typed.auth(notificationsController.deleteNotification),
 );
+
+// SSE Stream endpoint for real-time notifications
+const sseController = new SSENotificationController();
+router.get("/stream", authenticateV2, (req, res) => {
+  void sseController.stream(req as any, res);
+});
+
+// SSE Statistics endpoint for monitoring
+router.get("/stream/stats", authenticateV2, (req, res) => {
+  void sseController.getStats(req as any, res);
+});
 
 export default router;

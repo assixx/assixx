@@ -324,8 +324,9 @@ export class TeamsService {
    * Delete a team
    * @param id
    * @param tenantId
+   * @param force - If true, removes all team members before deleting the team
    */
-  async deleteTeam(id: number, tenantId: number) {
+  async deleteTeam(id: number, tenantId: number, force = false) {
     try {
       // Check if team exists and belongs to tenant
       const team = await Team.findById(id);
@@ -336,12 +337,19 @@ export class TeamsService {
       // Check if team has members
       const members = await Team.getTeamMembers(id);
       if (members.length > 0) {
-        throw new ServiceError(
-          "BAD_REQUEST",
-          "Cannot delete team with members",
-          400,
-          { memberCount: members.length },
-        );
+        if (force) {
+          // Remove all team members first
+          for (const member of members) {
+            await Team.removeUserFromTeam(member.id, id);
+          }
+        } else {
+          throw new ServiceError(
+            "BAD_REQUEST",
+            "Cannot delete team with members",
+            400,
+            { memberCount: members.length },
+          );
+        }
       }
 
       const success = await Team.delete(id);

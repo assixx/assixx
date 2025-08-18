@@ -697,7 +697,7 @@ router.put(
  * /api/v2/machines/{id}:
  *   delete:
  *     summary: Delete machine
- *     description: Soft delete a machine (marks as inactive, admin only)
+ *     description: Hard delete a machine (permanently removes from database, admin only)
  *     tags: [Machines v2]
  *     security:
  *       - bearerAuth: []
@@ -737,6 +737,100 @@ router.delete(
   requireRoleV2(["admin"]) as RequestHandler,
   machineValidation.machineId,
   typed.auth(machinesController.deleteMachine),
+);
+
+/**
+ * @swagger
+ * /api/v2/machines/{id}/deactivate:
+ *   put:
+ *     summary: Deactivate machine
+ *     description: Deactivate a machine (marks as inactive, admin only)
+ *     tags: [Machines v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Machine ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Machine deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: Machine deactivated successfully
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put(
+  "/:id/deactivate",
+  authenticateV2 as RequestHandler,
+  requireRoleV2(["admin"]) as RequestHandler,
+  machineValidation.machineId,
+  typed.auth(machinesController.deactivateMachine),
+);
+
+/**
+ * @swagger
+ * /api/v2/machines/{id}/activate:
+ *   put:
+ *     summary: Activate machine
+ *     description: Activate a previously deactivated machine (admin only)
+ *     tags: [Machines v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Machine ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Machine activated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: Machine activated successfully
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put(
+  "/:id/activate",
+  authenticateV2 as RequestHandler,
+  requireRoleV2(["admin"]) as RequestHandler,
+  machineValidation.machineId,
+  typed.auth(machinesController.activateMachine),
 );
 
 export default router;

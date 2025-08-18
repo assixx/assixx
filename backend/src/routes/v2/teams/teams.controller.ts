@@ -300,6 +300,9 @@ export class TeamsController {
   async deleteTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const teamId = Number.parseInt(req.params.id);
+      // Get force parameter from query string (e.g., /teams/123?force=true)
+      const force = req.query.force === "true";
+
       if (!req.user) {
         res
           .status(401)
@@ -312,7 +315,11 @@ export class TeamsController {
         req.user.tenant_id,
       );
 
-      const result = await teamsService.deleteTeam(teamId, req.user.tenant_id);
+      const result = await teamsService.deleteTeam(
+        teamId,
+        req.user.tenant_id,
+        force,
+      );
 
       // Log team deletion
       await RootLog.create({

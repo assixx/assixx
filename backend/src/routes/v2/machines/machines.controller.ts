@@ -263,7 +263,7 @@ export const machinesController = {
   },
 
   /**
-   * Delete machine (soft delete)
+   * Delete machine (hard delete)
    * DELETE /api/v2/machines/:id
    * @param req
    * @param res
@@ -302,6 +302,102 @@ export const machinesController = {
         res
           .status(500)
           .json(errorResponse("SERVER_ERROR", "Failed to delete machine"));
+      }
+    }
+  },
+
+  /**
+   * Deactivate machine
+   * PUT /api/v2/machines/:id/deactivate
+   * @param req
+   * @param res
+   */
+  async deactivateMachine(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      if (!req.tenantId || !req.userId) {
+        res
+          .status(401)
+          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        return;
+      }
+
+      const machineId = Number.parseInt(req.params.id);
+      if (isNaN(machineId)) {
+        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        return;
+      }
+
+      await machinesService.deactivateMachine(
+        machineId,
+        req.tenantId,
+        req.userId,
+        req.ip,
+        req.headers["user-agent"],
+      );
+
+      res.json(
+        successResponse({ message: "Machine deactivated successfully" }),
+      );
+    } catch (error: unknown) {
+      logger.error("[Machines v2] Deactivate error:", error);
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        res
+          .status(500)
+          .json(errorResponse("SERVER_ERROR", "Failed to deactivate machine"));
+      }
+    }
+  },
+
+  /**
+   * Activate machine
+   * PUT /api/v2/machines/:id/activate
+   * @param req
+   * @param res
+   */
+  async activateMachine(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      if (!req.tenantId || !req.userId) {
+        res
+          .status(401)
+          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        return;
+      }
+
+      const machineId = Number.parseInt(req.params.id);
+      if (isNaN(machineId)) {
+        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        return;
+      }
+
+      await machinesService.activateMachine(
+        machineId,
+        req.tenantId,
+        req.userId,
+        req.ip,
+        req.headers["user-agent"],
+      );
+
+      res.json(successResponse({ message: "Machine activated successfully" }));
+    } catch (error: unknown) {
+      logger.error("[Machines v2] Activate error:", error);
+      if (error instanceof ServiceError) {
+        res
+          .status(error.statusCode)
+          .json(errorResponse(error.code, error.message));
+      } else {
+        res
+          .status(500)
+          .json(errorResponse("SERVER_ERROR", "Failed to activate machine"));
       }
     }
   },
