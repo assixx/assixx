@@ -25,6 +25,8 @@ interface NavigationItems {
   admin: NavItem[];
   employee: NavItem[];
   root: NavItem[];
+
+
 }
 
 interface TokenPayload {
@@ -466,26 +468,26 @@ class UnifiedNavigation {
           // userData is always defined from apiClient.get, no need to check
 
           // Update company info - check tenant and fallback properties
-          const companyElement = $$('#sidebar-company-name');
+          const companyElement = $$<HTMLElement>('#sidebar-company-name');
           const companyName = userData.tenant?.company_name ?? userData.companyName;
           if (companyElement && companyName !== undefined) {
             console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
             companyElement.textContent = companyName;
           }
 
-          const domainElement = $$('#sidebar-domain');
+          const domainElement = $$<HTMLElement>('#sidebar-domain');
           const subdomain = userData.tenant?.subdomain ?? userData.subdomain;
           if (domainElement && subdomain !== undefined) {
             domainElement.textContent = `${subdomain}.assixx.de`;
           }
 
           // Update user info card with full details
-          const sidebarUserName = $$('#sidebar-user-name');
+          const sidebarUserName = $$<HTMLElement>('#sidebar-user-name');
           if (sidebarUserName) {
             sidebarUserName.textContent = userData.email;
           }
 
-          const sidebarFullName = $$('#sidebar-user-fullname');
+          const sidebarFullName = $$<HTMLElement>('#sidebar-user-fullname');
           if (sidebarFullName) {
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
             const lastName = userData.lastName ?? userData.data?.lastName ?? '';
@@ -498,7 +500,7 @@ class UnifiedNavigation {
           // Birthdate removed as requested
 
           // Update employee number
-          const sidebarEmployeeNumber = $$('#sidebar-employee-number');
+          const sidebarEmployeeNumber = $$<HTMLElement>('#sidebar-employee-number');
           interface UserDataWithEmployeeNumber extends UserProfileResponse {
             employee_number?: string;
             data?: {
@@ -523,7 +525,7 @@ class UnifiedNavigation {
           }
 
           // Update header user name with full name
-          const headerUserName = $$('#user-name');
+          const headerUserName = $$<HTMLElement>('#user-name');
           if (headerUserName) {
             // Same logic as sidebar-user-fullname which works correctly
             const firstName = userData.firstName ?? userData.data?.firstName ?? '';
@@ -542,7 +544,7 @@ class UnifiedNavigation {
           }
 
           // Update avatar if we have profile picture
-          const sidebarAvatar = $$('#sidebar-user-avatar');
+          const sidebarAvatar = $$<HTMLElement>('#sidebar-user-avatar');
           if (sidebarAvatar) {
             // API v2 uses profilePictureUrl
             const profilePic =
@@ -557,7 +559,7 @@ class UnifiedNavigation {
           }
 
           // Also update header avatar
-          const headerAvatar = $$('#user-avatar');
+          const headerAvatar = $$<HTMLElement>('#user-avatar');
           if (headerAvatar) {
             // API v2 uses profilePictureUrl
             const profilePic =
@@ -1500,7 +1502,7 @@ class UnifiedNavigation {
       }
 
       // Submenu Link Clicks
-      const submenuLink = (e.target as HTMLElement).closest('.submenu-link');
+      const submenuLink = (e.target as HTMLElement).closest('.submenu-link') as HTMLElement | null;
       if (submenuLink) {
         // Store the parent submenu state
         const parentSubmenu = submenuLink.closest('.submenu');
@@ -1539,7 +1541,7 @@ class UnifiedNavigation {
     this.isEventListenerAttached = true;
 
     // Add direct listener as fallback for logout button
-    const logoutBtnCheck = $$('#logout-btn');
+    const logoutBtnCheck = $$<HTMLElement>('#logout-btn');
     if (logoutBtnCheck) {
       logoutBtnCheck.onclick = (e: MouseEvent) => {
         e.preventDefault();
@@ -1562,7 +1564,7 @@ class UnifiedNavigation {
   }
 
   private attachSidebarToggle(): void {
-    const toggleBtn = $$('#sidebar-toggle');
+    const toggleBtn = $$<HTMLElement>('#sidebar-toggle');
 
     // Debug: Check how many sidebars exist
     const allSidebars = document.querySelectorAll('.sidebar');
@@ -1573,11 +1575,11 @@ class UnifiedNavigation {
     });
 
     // Try to find the navigation sidebar specifically
-    const navContainer = $$('#navigation-container');
-    const sidebar = navContainer ? navContainer.querySelector('.sidebar') : $$('.sidebar');
-    const mainContent = $$('.main-content');
-    const chatMain = $$('.chat-main');
-    const chatSidebar = $$('.chat-sidebar');
+    const navContainer = $$<HTMLElement>('#navigation-container');
+    const sidebar = navContainer ? navContainer.querySelector('.sidebar') as HTMLElement | null : $$<HTMLElement>('.sidebar');
+    const mainContent = $$<HTMLElement>('.main-content');
+    const chatMain = $$<HTMLElement>('.chat-main');
+    const chatSidebar = $$<HTMLElement>('.chat-sidebar');
 
     console.info('[UnifiedNav] Toggle button:', toggleBtn);
     console.info('[UnifiedNav] Sidebar:', sidebar);
@@ -1723,7 +1725,7 @@ class UnifiedNavigation {
 
   private async handleLogout(): Promise<void> {
     // Show logout confirmation modal instead of direct logout
-    const modal = $$('#logoutModal');
+    const modal = $$<HTMLElement>('#logoutModal');
 
     if (modal) {
       // Ensure modal is visible with proper z-index and positioning
@@ -1742,7 +1744,7 @@ class UnifiedNavigation {
       // Setup modal event handlers
       const confirmBtn = $$<HTMLButtonElement>('#confirmLogout');
       const cancelBtn = $$<HTMLButtonElement>('#cancelLogout');
-      const overlay = modal.querySelector('.modal-overlay');
+      const overlay = modal.querySelector('.modal-overlay') as HTMLElement | null;
 
       const closeModal = () => {
         modal.style.display = 'none';
@@ -1789,8 +1791,8 @@ class UnifiedNavigation {
     // Simplified: Root users always get root handlers, admin users always get admin handlers
     // The dropdown HTML already shows the correct options based on userRole
     if (userRole === 'root') {
-      const dropdownDisplay = $$('#roleSwitchDisplay');
-      const dropdownOptions = $$('#roleSwitchDropdown');
+      const dropdownDisplay = $$<HTMLElement>('#roleSwitchDisplay');
+      const dropdownOptions = $$<HTMLElement>('#roleSwitchDropdown');
 
       if (dropdownDisplay && dropdownOptions) {
         // Check if already initialized
@@ -1878,8 +1880,8 @@ class UnifiedNavigation {
 
     // Handle admin users (but not root users, they already have their handler)
     else if (userRole === 'admin') {
-      const dropdownDisplay = $$('#roleSwitchDisplay');
-      const dropdownOptions = $$('#roleSwitchDropdown');
+      const dropdownDisplay = $$<HTMLElement>('#roleSwitchDisplay');
+      const dropdownOptions = $$<HTMLElement>('#roleSwitchDropdown');
 
       if (dropdownDisplay && dropdownOptions) {
         // Check if already initialized
@@ -2282,7 +2284,7 @@ class UnifiedNavigation {
         }[];
       }>('/chat/unread-count');
 
-      const badge = $$('#chat-unread-badge');
+      const badge = $$<HTMLElement>('#chat-unread-badge');
       if (badge) {
         // v2 API uses totalUnread (camelCase)
         const count = data.totalUnread;
@@ -2314,7 +2316,7 @@ class UnifiedNavigation {
         }[];
       }>('/calendar/unread-events');
 
-      const badge = $$('#calendar-unread-badge');
+      const badge = $$<HTMLElement>('#calendar-unread-badge');
       if (badge) {
         // Nur Events mit Statusanfrage zählen
         const count = data.totalUnread;
@@ -2338,7 +2340,7 @@ class UnifiedNavigation {
 
       // Only show badge for admin/root users
       if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
-        const badge = $$('#kvp-badge');
+        const badge = $$<HTMLElement>('#kvp-badge');
         if (badge) badge.style.display = 'none';
         return;
       }
@@ -2351,7 +2353,7 @@ class UnifiedNavigation {
         rejected: number;
         avgSavings: number | null;
       }>('/kvp/dashboard/stats');
-      const badge = $$('#kvp-badge');
+      const badge = $$<HTMLElement>('#kvp-badge');
       if (badge !== null) {
         const currentCount = data.newSuggestions;
 
@@ -2401,8 +2403,8 @@ class UnifiedNavigation {
 
       const data = await apiClient.get<{ pendingCount: number }>('/surveys/pending-count');
       console.info('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
-      const badge = $$('#surveys-pending-badge');
-      const parentBadge = $$('#lean-management-badge');
+      const badge = $$<HTMLElement>('#surveys-pending-badge');
+      const parentBadge = $$<HTMLElement>('#lean-management-badge');
       console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
       console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
 
@@ -2434,7 +2436,7 @@ class UnifiedNavigation {
     } catch (error) {
       console.error('[UnifiedNav] updatePendingSurveys - Exception:', error);
       // Silently handle errors for pending surveys
-      const badge = $$('#surveys-pending-badge');
+      const badge = $$<HTMLElement>('#surveys-pending-badge');
       if (badge) {
         badge.style.display = 'none';
       }
@@ -2491,7 +2493,7 @@ class UnifiedNavigation {
         });
 
         // Update main documents badge
-        const mainBadge = $$('#documents-unread-badge');
+        const mainBadge = $$<HTMLElement>('#documents-unread-badge');
         if (mainBadge) {
           if (unreadCounts.total > 0) {
             mainBadge.textContent = unreadCounts.total > 99 ? '99+' : unreadCounts.total.toString();
@@ -2534,7 +2536,7 @@ class UnifiedNavigation {
       await apiClient.post('/documents/mark-all-read');
 
       // Hide the badge immediately
-      const badge = $$('#documents-unread-badge');
+      const badge = $$<HTMLElement>('#documents-unread-badge');
       if (badge) {
         badge.style.display = 'none';
       }
@@ -2546,7 +2548,7 @@ class UnifiedNavigation {
   // Reset KVP badge when admin/root clicks on KVP
   private async resetKvpBadge(): Promise<void> {
     console.info('[UnifiedNav] Resetting KVP badge');
-    const badge = $$('#kvp-badge');
+    const badge = $$<HTMLElement>('#kvp-badge');
     if (badge) {
       badge.style.display = 'none';
       badge.textContent = '0';
@@ -2731,7 +2733,7 @@ class UnifiedNavigation {
       // Update UI
       const usedElement = $$('#storage-used');
       const totalElement = $$('#storage-total');
-      const progressBar = $$('#storage-progress-bar');
+      const progressBar = $$<HTMLElement>('#storage-progress-bar');
       const percentageElement = $$('#storage-percentage');
 
       if (usedElement) usedElement.textContent = this.formatBytes(used);
@@ -4000,7 +4002,7 @@ window.UnifiedNavigation = UnifiedNavigation;
 
 // Global function to dismiss role switch banner
 window.dismissRoleSwitchBanner = function () {
-  const banner = $$('#role-switch-warning-banner');
+  const banner = $$<HTMLElement>('#role-switch-warning-banner');
   if (banner) {
     banner.style.display = 'none';
 
@@ -4012,7 +4014,7 @@ window.dismissRoleSwitchBanner = function () {
     }
 
     // Reset sidebar position
-    const sidebar = $$('.sidebar');
+    const sidebar = $$<HTMLElement>('.sidebar');
     if (sidebar) {
       sidebar.style.top = '';
       sidebar.style.height = '';
