@@ -218,7 +218,8 @@ class ShiftService {
 
   /**
    * Get all shift templates for a tenant
-   * @param tenantId
+   * @param tenantId - The tenant ID
+   * @returns Promise resolving to array of shift templates
    */
   async getShiftTemplates(tenantId: number): Promise<ShiftTemplate[]> {
     try {
@@ -240,6 +241,7 @@ class ShiftService {
    * @param templateData.break_minutes
    * @param templateData.color
    * @param templateData.created_by
+   * @returns Promise resolving to the created shift template
    */
   async createShiftTemplate(templateData: {
     tenant_id: number;
@@ -277,6 +279,7 @@ class ShiftService {
    * @param tenantId
    * @param userId
    * @param options
+   * @returns Promise resolving to shift plans with metadata
    */
   async getShiftPlans(
     tenantId: number,
@@ -310,6 +313,7 @@ class ShiftService {
    * @param planData.department_id
    * @param planData.team_id
    * @param planData.created_by
+   * @returns Promise resolving to the created shift plan
    */
   async createShiftPlan(planData: {
     tenant_id: number;
@@ -334,6 +338,7 @@ class ShiftService {
    * @param planId
    * @param tenantId
    * @param userId
+   * @returns Promise resolving to array of shift entries
    */
   async getShiftsByPlan(
     planId: number,
@@ -366,6 +371,7 @@ class ShiftService {
   /**
    * Create a shift
    * @param shiftData
+   * @returns Promise resolving to the created shift entry
    */
   async createShift(
     shiftData: ShiftCreateData & { created_by: number },
@@ -411,6 +417,7 @@ class ShiftService {
    * @param assignmentData.employee_id
    * @param assignmentData.tenant_id
    * @param assignmentData.assigned_by
+   * @returns Promise resolving to the shift assignment details
    */
   async assignEmployeeToShift(assignmentData: {
     shift_id: number;
@@ -451,6 +458,7 @@ class ShiftService {
    * @param userId
    * @param startDate
    * @param endDate
+   * @returns Promise resolving to array of employee shifts
    */
   async getEmployeeShifts(
     tenantId: number,

@@ -12,6 +12,17 @@ import { logger } from "../utils/logger";
 
 import User from "./user";
 
+// Error Messages
+const ERROR_MESSAGES = {
+  MISSING_REQUIRED_FIELDS: "Missing required fields",
+} as const;
+
+// SQL Query Fragments
+const SQL_FRAGMENTS = {
+  DEPARTMENT_FILTER: " AND sp.department_id = ?",
+  TEAM_FILTER: " AND sp.team_id = ?",
+} as const;
+
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
  */
@@ -288,7 +299,7 @@ export async function createShiftTemplate(
       !duration_hours ||
       !created_by
     ) {
-      throw new Error("Missing required fields");
+      throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     const query = `
@@ -369,10 +380,10 @@ export async function getShiftPlans(
     // Apply access control for non-admin users
     if (role !== "admin" && role !== "root") {
       if (role === "manager") {
-        query += " AND sp.department_id = ?";
+        query += SQL_FRAGMENTS.DEPARTMENT_FILTER;
         queryParams.push(departmentId);
       } else if (role === "team_lead") {
-        query += " AND sp.team_id = ?";
+        query += SQL_FRAGMENTS.TEAM_FILTER;
         queryParams.push(teamId);
       } else {
         // Regular employees can only see published plans for their department/team
@@ -384,12 +395,12 @@ export async function getShiftPlans(
 
     // Apply filters
     if (department_id != null && department_id !== 0) {
-      query += " AND sp.department_id = ?";
+      query += SQL_FRAGMENTS.DEPARTMENT_FILTER;
       queryParams.push(department_id);
     }
 
     if (team_id != null && team_id !== 0) {
-      query += " AND sp.team_id = ?";
+      query += SQL_FRAGMENTS.TEAM_FILTER;
       queryParams.push(team_id);
     }
 
@@ -423,10 +434,10 @@ export async function getShiftPlans(
     // Apply same access control for count
     if (role !== "admin" && role !== "root") {
       if (role === "manager") {
-        countQuery += " AND sp.department_id = ?";
+        countQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
         countParams.push(departmentId);
       } else if (role === "team_lead") {
-        countQuery += " AND sp.team_id = ?";
+        countQuery += SQL_FRAGMENTS.TEAM_FILTER;
         countParams.push(teamId);
       } else {
         countQuery +=
@@ -437,12 +448,12 @@ export async function getShiftPlans(
 
     // Apply same filters for count
     if (department_id != null && department_id !== 0) {
-      countQuery += " AND sp.department_id = ?";
+      countQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
       countParams.push(department_id);
     }
 
     if (team_id != null && team_id !== 0) {
-      countQuery += " AND sp.team_id = ?";
+      countQuery += SQL_FRAGMENTS.TEAM_FILTER;
       countParams.push(team_id);
     }
 
@@ -500,7 +511,7 @@ export async function createShiftPlan(
 
     // Validate required fields
     if (tenant_id === 0 || name === "" || created_by === 0) {
-      throw new Error("Missing required fields");
+      throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     // Validate date range
@@ -616,7 +627,7 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
       end_time === "" ||
       created_by === 0
     ) {
-      throw new Error("Missing required fields");
+      throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     const query = `
@@ -661,7 +672,7 @@ export async function assignEmployeeToShift(
 
     // Validate required fields
     if (!tenant_id || !shift_id || !user_id || !assigned_by) {
-      throw new Error("Missing required fields");
+      throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     // Check if already assigned to this specific shift
@@ -781,7 +792,7 @@ export async function setEmployeeAvailability(
 
     // Validate required fields
     if (tenant_id === 0 || user_id === 0) {
-      throw new Error("Missing required fields");
+      throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     // Check if availability already exists for this date
@@ -905,7 +916,7 @@ export async function createShiftExchangeRequest(
 
     // Validate required fields
     if (!tenant_id || !shift_id || !requester_id) {
-      throw new Error("Missing required fields");
+      throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     const query = `
@@ -976,14 +987,10 @@ export async function canAccessShiftPlan(
     }
 
     // Employees can access published plans for their department/team
-    if (
+    return (
       plan.status === "published" &&
       (plan.department_id === departmentId || plan.team_id === teamId)
-    ) {
-      return true;
-    }
-
-    return false;
+    );
   } catch (error: unknown) {
     console.error("Error in canAccessShiftPlan:", error);
     throw error;
@@ -1445,49 +1452,79 @@ async function update(
     ];
 
     for (const field of allowedFields) {
-      if (data[field] !== undefined) {
+      // Get value safely using switch to avoid object injection
+      const fieldValue = (() => {
+        switch (field) {
+          case "user_id":
+            return data.user_id;
+          case "plan_id":
+            return data.plan_id;
+          case "template_id":
+            return data.template_id;
+          case "date":
+            return data.date;
+          case "start_time":
+            return data.start_time;
+          case "end_time":
+            return data.end_time;
+          case "actual_start":
+            return data.actual_start;
+          case "actual_end":
+            return data.actual_end;
+          case "department_id":
+            return data.department_id;
+          case "team_id":
+            return data.team_id;
+          case "title":
+            return data.title;
+          case "required_employees":
+            return data.required_employees;
+          case "break_minutes":
+            return data.break_minutes;
+          case "status":
+            return data.status;
+          case "type":
+            return data.type;
+          case "notes":
+            return data.notes;
+          default:
+            return null;
+        }
+      })();
+
+      if (fieldValue !== undefined) {
         updateFields.push(`${field} = ?`);
-        if (field === "date") {
-          values.push(formatDateOnlyForMysql(data[field]));
+        if (field === "date" && fieldValue != null) {
+          values.push(formatDateOnlyForMysql(fieldValue as string | Date));
         } else if (
-          field === "start_time" &&
-          data.start_time != null &&
-          data.start_time !== ""
+          (field === "start_time" || field === "end_time") &&
+          fieldValue != null &&
+          fieldValue !== ""
         ) {
           // Convert time to datetime by combining with date
           const dateToUse = data.date ?? currentDate;
           if (dateToUse !== undefined && dateToUse !== "") {
-            values.push(formatDateForMysql(`${dateToUse} ${data.start_time}`));
+            values.push(
+              formatDateForMysql(`${dateToUse} ${String(fieldValue)}`),
+            );
           } else {
-            values.push(data.start_time); // Fallback
-          }
-        } else if (
-          field === "end_time" &&
-          data.end_time != null &&
-          data.end_time !== ""
-        ) {
-          // Convert time to datetime by combining with date
-          const dateToUse = data.date ?? currentDate;
-          if (dateToUse !== undefined && dateToUse !== "") {
-            values.push(formatDateForMysql(`${dateToUse} ${data.end_time}`));
-          } else {
-            values.push(data.end_time); // Fallback
+            values.push(fieldValue); // Fallback
           }
         } else if (
           field === "actual_start" &&
-          data.actual_start != null &&
-          data.actual_start !== ""
+          fieldValue != null &&
+          fieldValue !== ""
         ) {
           // actual_start/end already includes date and time
-          values.push(formatDateForMysql(data.actual_start));
+          values.push(formatDateForMysql(fieldValue as string | Date));
         } else if (
           field === "actual_end" &&
-          data.actual_end != null &&
-          data.actual_end !== ""
+          fieldValue != null &&
+          fieldValue !== ""
         ) {
-          values.push(formatDateForMysql(data.actual_end));
+          values.push(formatDateForMysql(fieldValue as string | Date));
         } else {
-          values.push(data[field] as string | number | Date | null);
+          values.push(fieldValue as string | number | Date | null);
         }
       }
     }

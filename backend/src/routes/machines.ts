@@ -3,9 +3,12 @@
  * API endpoints for machine management
  */
 
+import { RowDataPacket } from "mysql2/promise";
+
 import express, { Router, Request } from "express";
 
 import { authenticateToken } from "../auth";
+import { execute } from "../database";
 import { getErrorMessage } from "../utils/errorHandler";
 
 const router: Router = express.Router();
@@ -39,7 +42,110 @@ interface Machine {
  * Get all machines
  * GET /api/machines
  */
-router.get("/", authenticateToken, (req, res): void => {
+router.get("/", authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    // Build query with optional department filter
+    let query = `
+      SELECT
+        m.id,
+        m.name,
+        m.model,
+        m.manufacturer,
+        m.department_id,
+        m.area_id,
+        m.status,
+        m.location,
+        m.machine_type,
+        d.name as department_name
+      FROM machines m
+      LEFT JOIN departments d ON m.department_id = d.id
+      WHERE m.tenant_id = ?
+        AND m.is_active = 1
+    `;
+
+    const params: (string | number)[] = [authReq.user.tenant_id];
+
+    // Filter by department if specified
+    if (
+      req.query.department_id !== undefined &&
+      req.query.department_id !== ""
+    ) {
+      query += " AND m.department_id = ?";
+      params.push(Number(req.query.department_id));
+    }
+
+    query += " ORDER BY m.name ASC";
+
+    const [machines] = await execute<RowDataPacket[]>(query, params);
+
+    // Return raw array for frontend compatibility
+    res.json(machines);
+  } catch (error: unknown) {
+    console.error("[Machines] List error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching machines",
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * Get teams assigned to a machine
+ * GET /api/machines/:machineId/teams
+ */
+router.get(
+  "/:machineId/teams",
+  authenticateToken,
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const machineId = Number(req.params.machineId);
+
+      // Query teams via machine_teams junction table
+      const query = `
+      SELECT
+        t.id,
+        t.name,
+        t.description,
+        t.department_id,
+        t.team_lead_id,
+        mt.is_primary,
+        d.name as department_name
+      FROM teams t
+      INNER JOIN machine_teams mt ON t.id = mt.team_id
+      LEFT JOIN departments d ON t.department_id = d.id
+      WHERE mt.machine_id = ?
+        AND mt.tenant_id = ?
+        AND t.is_active = 1
+      ORDER BY mt.is_primary DESC, t.name ASC
+    `;
+
+      const [teams] = await execute<RowDataPacket[]>(query, [
+        machineId,
+        authReq.user.tenant_id,
+      ]);
+
+      // Return raw array for frontend compatibility
+      res.json(teams);
+    } catch (error: unknown) {
+      console.error("[Machines] Teams list error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching teams for machine",
+        error: getErrorMessage(error),
+      });
+    }
+  },
+);
+
+/**
+ * Get all machines (MOCK DATA - OLD VERSION)
+ * GET /api/machines/mock
+ */
+router.get("/mock", authenticateToken, (req, res): void => {
   try {
     // const authReq = req as AuthenticatedRequest;
     // For now, return dummy machine data
@@ -96,7 +202,7 @@ router.get("/:id", authenticateToken, (req, res): void => {
     // Dummy machine data
     const machine: Machine = {
       id: machineId,
-      name: `Maschine ${machineId}`,
+      name: `Maschine ${String(machineId)}`,
       department_id: 1,
       status: "active",
       description: "Automatisch generierte Maschine",

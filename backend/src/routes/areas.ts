@@ -3,13 +3,21 @@
  * API endpoints for area/location management
  */
 
+import { RowDataPacket } from "mysql2/promise";
+
 import express, { Router } from "express";
 
 import { authenticateToken } from "../auth";
+import { execute } from "../database";
 import type { AuthenticatedRequest } from "../types/request.types";
 import { getErrorMessage } from "../utils/errorHandler";
 
 const router: Router = express.Router();
+
+// Constants
+const ERROR_MESSAGES = {
+  TENANT_NOT_FOUND: "Tenant ID not found",
+} as const;
 
 // Request body interfaces
 interface CreateAreaBody {
@@ -35,54 +43,41 @@ interface Area {
  * Get all areas for the authenticated tenant
  * GET /api/areas
  */
-router.get("/", authenticateToken, (req, res): void => {
+router.get("/", authenticateToken, async (req, res): Promise<void> => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
   try {
     if (authReq.tenantId == null || authReq.tenantId === 0) {
       res.status(401).json({
         success: false,
-        message: "Tenant ID not found",
+        message: ERROR_MESSAGES.TENANT_NOT_FOUND,
       });
       return;
     }
-    // Mock implementation - replace with actual database query
-    const areas: Area[] = [
-      {
-        id: 1,
-        name: "Hauptgebäude",
-        description: "Verwaltungsgebäude mit Büros",
-        type: "building",
-        capacity: 100,
-        tenant_id: authReq.tenantId,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        id: 2,
-        name: "Lager Nord",
-        description: "Hauptlagerbereich",
-        type: "warehouse",
-        capacity: 500,
-        tenant_id: authReq.tenantId,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    ];
 
-    // Filter by tenant_id
-    const tenantAreas = areas.filter(
-      (area) => area.tenant_id === authReq.tenantId,
+    // REAL database query implementation
+    const [areas] = await execute<RowDataPacket[]>(
+      `SELECT
+        id,
+        name,
+        description,
+        type,
+        capacity,
+        parent_id,
+        address,
+        is_active,
+        tenant_id,
+        created_at,
+        updated_at
+      FROM areas
+      WHERE tenant_id = ?
+        AND is_active = 1
+      ORDER BY name ASC`,
+      [authReq.tenantId],
     );
 
-    res.json({
-      success: true,
-      data: tenantAreas,
-      meta: {
-        total: tenantAreas.length,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    // Return raw array for frontend compatibility
+    res.json(areas);
   } catch (error: unknown) {
     console.error("[Areas] List error:", error);
     res.status(500).json({
@@ -105,7 +100,7 @@ router.get("/:id", authenticateToken, (req, res): void => {
     if (authReq.tenantId == null || authReq.tenantId === 0) {
       res.status(401).json({
         success: false,
-        message: "Tenant ID not found",
+        message: ERROR_MESSAGES.TENANT_NOT_FOUND,
       });
       return;
     }
@@ -167,7 +162,7 @@ router.post("/", authenticateToken, (req, res): void => {
     if (authReq.tenantId == null || authReq.tenantId === 0) {
       res.status(401).json({
         success: false,
-        message: "Tenant ID not found",
+        message: ERROR_MESSAGES.TENANT_NOT_FOUND,
       });
       return;
     }

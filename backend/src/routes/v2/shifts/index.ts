@@ -1,7 +1,8 @@
 /**
  * Shifts API v2 Routes
- * @swagger
- * tags:
+ *
+ * OpenAPI/Swagger documentation:
+ * Tags:
  *   - name: Shifts v2
  *     description: Shift planning and management API v2
  */
@@ -17,10 +18,14 @@ import { shiftsValidation } from "./shifts.validation";
 
 const router = Router();
 
+// Route constants
+const ROUTES = {
+  TEMPLATE_BY_ID: "/templates/:id",
+} as const;
+
 // ============= SHIFTS CRUD =============
 
 /**
- * @swagger
  * /api/v2/shifts:
  *   get:
  *     summary: List shifts
@@ -99,7 +104,6 @@ router.get(
 // ============= TEMPLATES (MUST BE BEFORE /:id) =============
 
 /**
- * @swagger
  * /api/v2/shifts/templates:
  *   get:
  *     summary: List shift templates
@@ -121,7 +125,6 @@ router.get(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/templates/{id}:
  *   get:
  *     summary: Get template by ID
@@ -146,14 +149,13 @@ router.get(
  *         description: Template not found
  */
 router.get(
-  "/templates/:id",
+  ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
   shiftsValidation.getTemplateById,
   typed.auth(shiftsController.getTemplateById),
 );
 
 /**
- * @swagger
  * /api/v2/shifts/templates:
  *   post:
  *     summary: Create shift template
@@ -183,7 +185,6 @@ router.post(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/templates/{id}:
  *   put:
  *     summary: Update shift template
@@ -214,7 +215,7 @@ router.post(
  *         description: Template not found
  */
 router.put(
-  "/templates/:id",
+  ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
   requireRoleV2(["admin", "root"]),
   shiftsValidation.updateTemplate,
@@ -222,7 +223,6 @@ router.put(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/templates/{id}:
  *   delete:
  *     summary: Delete shift template
@@ -243,7 +243,7 @@ router.put(
  *         description: Template not found
  */
 router.delete(
-  "/templates/:id",
+  ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
   requireRoleV2(["admin", "root"]),
   shiftsValidation.deleteTemplate,
@@ -253,7 +253,6 @@ router.delete(
 // ============= SWAP REQUESTS (MUST BE BEFORE /:id) =============
 
 /**
- * @swagger
  * /api/v2/shifts/swap-requests:
  *   get:
  *     summary: List swap requests
@@ -288,7 +287,6 @@ router.get(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/swap-requests:
  *   post:
  *     summary: Create swap request
@@ -321,7 +319,6 @@ router.post(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/swap-requests/{id}/status:
  *   put:
  *     summary: Update swap request status
@@ -364,7 +361,6 @@ router.put(
 // ============= OVERTIME (MUST BE BEFORE /:id) =============
 
 /**
- * @swagger
  * /api/v2/shifts/overtime:
  *   get:
  *     summary: Get overtime report
@@ -411,7 +407,6 @@ router.get(
 // ============= EXPORT (MUST BE BEFORE /:id) =============
 
 /**
- * @swagger
  * /api/v2/shifts/export:
  *   get:
  *     summary: Export shifts
@@ -476,7 +471,6 @@ router.get(
 // ============= DYNAMIC ROUTES (MUST BE LAST) =============
 
 /**
- * @swagger
  * /api/v2/shifts/{id}:
  *   get:
  *     summary: Get shift by ID
@@ -508,7 +502,6 @@ router.get(
 );
 
 /**
- * @swagger
  * /api/v2/shifts:
  *   post:
  *     summary: Create new shift
@@ -538,7 +531,6 @@ router.post(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/{id}:
  *   put:
  *     summary: Update shift
@@ -577,7 +569,6 @@ router.put(
 );
 
 /**
- * @swagger
  * /api/v2/shifts/{id}:
  *   delete:
  *     summary: Delete shift

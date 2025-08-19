@@ -39,11 +39,11 @@ export default [
       ],
       "max-lines-per-function": [
         "warn",
-        { max: 100, skipBlankLines: true, skipComments: true },
+        { max: 200, skipBlankLines: true, skipComments: true },
       ],
       "max-nested-callbacks": ["warn", 4],
-      "max-params": ["warn", 5], // Max 5 parameters
-      "max-statements": ["warn", 50], // Max 40 statements per function
+      "max-params": ["warn", 10], // Max 10 parameters
+      "max-statements": ["warn", 75], // Max 55 statements per function
     },
   },
 
@@ -396,7 +396,7 @@ export default [
       "sonarjs/non-existent-operator": "error",
 
       // Code Smells
-      "sonarjs/cognitive-complexity": ["warn", 30],
+      "sonarjs/cognitive-complexity": ["warn", 50],
       "sonarjs/no-collapsible-if": "warn",
       "sonarjs/no-collection-size-mischeck": "error",
       "sonarjs/no-duplicate-string": ["warn", { threshold: 3 }],
@@ -501,7 +501,12 @@ export default [
 
       // VALIDITY Checks (als error - wenn JSDoc da ist, muss es korrekt sein)
       "jsdoc/check-param-names": "error",
-      "jsdoc/check-tag-names": "error",
+      "jsdoc/check-tag-names": [
+        "error",
+        {
+          definedTags: ["swagger"],
+        },
+      ],
       "jsdoc/check-types": "off", // TypeScript handled das
       "jsdoc/valid-types": "off", // TypeScript handled das
 

@@ -10,6 +10,14 @@ import { Request, Response } from "express";
 import shiftService from "../services/shift.service";
 import type { AuthenticatedRequest } from "../types/request.types";
 
+// Error Messages
+const ERROR_MESSAGES = {
+  TENANT_DB_NOT_AVAILABLE: "Tenant database not available",
+  SHIFT_NOT_FOUND: "Shift not found",
+  INVALID_ID: "Invalid ID",
+  UNKNOWN_ERROR: "Unknown error",
+} as const;
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -94,7 +102,7 @@ class ShiftController {
   getAll(req: ShiftQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: ERROR_MESSAGES.TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -120,7 +128,8 @@ class ShiftController {
       console.error("Error in ShiftController.getAll:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message:
+          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -134,13 +143,13 @@ class ShiftController {
   getById(req: ShiftGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: ERROR_MESSAGES.TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: ERROR_MESSAGES.INVALID_ID });
         return;
       }
 
@@ -154,7 +163,8 @@ class ShiftController {
       console.error("Error in ShiftController.getById:", error);
       res.status(500).json({
         error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message:
+          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -168,7 +178,7 @@ class ShiftController {
   create(req: ShiftCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: ERROR_MESSAGES.TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -191,7 +201,8 @@ class ShiftController {
       console.error("Error in ShiftController.create:", error);
       res.status(500).json({
         error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message:
+          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -205,13 +216,13 @@ class ShiftController {
   update(req: ShiftUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: ERROR_MESSAGES.TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: ERROR_MESSAGES.INVALID_ID });
         return;
       }
 
@@ -221,7 +232,8 @@ class ShiftController {
       console.error("Error in ShiftController.update:", error);
       res.status(500).json({
         error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message:
+          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -235,13 +247,13 @@ class ShiftController {
   delete(req: ShiftGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: ERROR_MESSAGES.TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: ERROR_MESSAGES.INVALID_ID });
         return;
       }
 
@@ -251,7 +263,8 @@ class ShiftController {
       console.error("Error in ShiftController.delete:", error);
       res.status(500).json({
         error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message:
+          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }

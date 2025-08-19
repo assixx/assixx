@@ -15,6 +15,15 @@ import { ServiceError } from "../../../utils/ServiceError";
 
 import { shiftsService } from "./shifts.service";
 
+// Constants
+const ERROR_CODES = {
+  SERVER_ERROR: "SERVER_ERROR",
+} as const;
+
+const HEADERS = {
+  USER_AGENT: "user-agent",
+} as const;
+
 // Import types from service for type safety
 interface ShiftCreateData {
   planId?: number;
@@ -81,37 +90,56 @@ interface SwapRequestCreateData {
 // ============= SHIFTS CRUD =============
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function listShifts(req: AuthenticatedRequest, res: Response) {
+export async function listShifts(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const filters = {
       date: req.query.date as string,
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
-      userId: req.query.userId
-        ? Number.parseInt(req.query.userId as string)
-        : undefined,
-      departmentId: req.query.departmentId
-        ? Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId: req.query.teamId
-        ? Number.parseInt(req.query.teamId as string)
-        : undefined,
+      userId:
+        req.query.userId !== undefined
+          ? Number.parseInt(req.query.userId as string)
+          : undefined,
+      departmentId:
+        req.query.departmentId !== undefined
+          ? Number.parseInt(req.query.departmentId as string)
+          : undefined,
+      teamId:
+        req.query.teamId !== undefined
+          ? Number.parseInt(req.query.teamId as string)
+          : undefined,
       status: req.query.status as string,
       type: req.query.type as string,
-      templateId: req.query.templateId
-        ? Number.parseInt(req.query.templateId as string)
-        : undefined,
-      planId: req.query.planId
-        ? Number.parseInt(req.query.planId as string)
-        : undefined,
-      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
-      sortBy: (req.query.sortBy as string) ?? "date",
-      sortOrder: (req.query.sortOrder as "asc" | "desc") ?? "desc",
+      templateId:
+        req.query.templateId !== undefined
+          ? Number.parseInt(req.query.templateId as string)
+          : undefined,
+      planId:
+        req.query.planId !== undefined
+          ? Number.parseInt(req.query.planId as string)
+          : undefined,
+      page:
+        req.query.page !== undefined
+          ? Number.parseInt(req.query.page as string)
+          : 1,
+      limit:
+        req.query.limit !== undefined
+          ? Number.parseInt(req.query.limit as string)
+          : 20,
+      sortBy:
+        req.query.sortBy !== undefined ? (req.query.sortBy as string) : "date",
+      sortOrder:
+        req.query.sortOrder !== undefined
+          ? (req.query.sortOrder as "asc" | "desc")
+          : "desc",
     };
 
     const shifts = await shiftsService.listShifts(req.user.tenant_id, filters);
@@ -130,7 +158,7 @@ export async function listShifts(req: AuthenticatedRequest, res: Response) {
       .status(500)
       .json(
         errorResponse(
-          "SERVER_ERROR",
+          ERROR_CODES.SERVER_ERROR,
           error instanceof Error ? error.message : "Failed to list shifts",
         ),
       );
@@ -138,11 +166,15 @@ export async function listShifts(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function getShiftById(req: AuthenticatedRequest, res: Response) {
+export async function getShiftById(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const shift = await shiftsService.getShiftById(id, req.user.tenant_id);
@@ -155,7 +187,7 @@ export async function getShiftById(req: AuthenticatedRequest, res: Response) {
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error ? error.message : "Failed to get shift",
           ),
         );
@@ -164,18 +196,22 @@ export async function getShiftById(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function createShift(req: AuthenticatedRequest, res: Response) {
+export async function createShift(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const shift = await shiftsService.createShift(
       req.body as ShiftCreateData, // Validated by middleware
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.status(201).json(successResponse(shift));
   } catch (error: unknown) {
@@ -183,7 +219,7 @@ export async function createShift(req: AuthenticatedRequest, res: Response) {
       .status(500)
       .json(
         errorResponse(
-          "SERVER_ERROR",
+          ERROR_CODES.SERVER_ERROR,
           error instanceof Error ? error.message : "Failed to create shift",
         ),
       );
@@ -191,11 +227,15 @@ export async function createShift(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function updateShift(req: AuthenticatedRequest, res: Response) {
+export async function updateShift(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const shift = await shiftsService.updateShift(
@@ -204,7 +244,7 @@ export async function updateShift(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.json(successResponse(shift));
   } catch (error: unknown) {
@@ -215,7 +255,7 @@ export async function updateShift(req: AuthenticatedRequest, res: Response) {
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error ? error.message : "Failed to update shift",
           ),
         );
@@ -224,11 +264,15 @@ export async function updateShift(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function deleteShift(req: AuthenticatedRequest, res: Response) {
+export async function deleteShift(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const result = await shiftsService.deleteShift(
@@ -236,7 +280,7 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.json(successResponse(result));
   } catch (error: unknown) {
@@ -247,7 +291,7 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response) {
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error ? error.message : "Failed to delete shift",
           ),
         );
@@ -258,11 +302,15 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response) {
 // ============= TEMPLATES =============
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function listTemplates(req: AuthenticatedRequest, res: Response) {
+export async function listTemplates(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const templates = await shiftsService.listTemplates(req.user.tenant_id);
     res.json(successResponse(templates));
@@ -271,7 +319,7 @@ export async function listTemplates(req: AuthenticatedRequest, res: Response) {
       .status(500)
       .json(
         errorResponse(
-          "SERVER_ERROR",
+          ERROR_CODES.SERVER_ERROR,
           error instanceof Error ? error.message : "Failed to list templates",
         ),
       );
@@ -279,14 +327,15 @@ export async function listTemplates(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
 export async function getTemplateById(
   req: AuthenticatedRequest,
   res: Response,
-) {
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const template = await shiftsService.getTemplateById(
@@ -302,7 +351,7 @@ export async function getTemplateById(
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error ? error.message : "Failed to get template",
           ),
         );
@@ -311,18 +360,22 @@ export async function getTemplateById(
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function createTemplate(req: AuthenticatedRequest, res: Response) {
+export async function createTemplate(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const template = await shiftsService.createTemplate(
       req.body as TemplateCreateData, // Validated by middleware
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.status(201).json(successResponse(template));
   } catch (error: unknown) {
@@ -330,7 +383,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       .status(500)
       .json(
         errorResponse(
-          "SERVER_ERROR",
+          ERROR_CODES.SERVER_ERROR,
           error instanceof Error ? error.message : "Failed to create template",
         ),
       );
@@ -338,11 +391,15 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
+export async function updateTemplate(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const template = await shiftsService.updateTemplate(
@@ -351,7 +408,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.json(successResponse(template));
   } catch (error: unknown) {
@@ -362,7 +419,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error
               ? error.message
               : "Failed to update template",
@@ -373,11 +430,15 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
+export async function deleteTemplate(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const result = await shiftsService.deleteTemplate(
@@ -385,7 +446,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.json(successResponse(result));
   } catch (error: unknown) {
@@ -396,7 +457,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error
               ? error.message
               : "Failed to delete template",
@@ -409,19 +470,21 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 // ============= SWAP REQUESTS =============
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
 export async function listSwapRequests(
   req: AuthenticatedRequest,
   res: Response,
-) {
+): Promise<void> {
   try {
     const filters = {
-      userId: req.query.userId
-        ? Number.parseInt(req.query.userId as string)
-        : undefined,
+      userId:
+        req.query.userId !== undefined
+          ? Number.parseInt(req.query.userId as string)
+          : undefined,
       status: req.query.status as string,
     };
 
@@ -435,7 +498,7 @@ export async function listSwapRequests(
       .status(500)
       .json(
         errorResponse(
-          "SERVER_ERROR",
+          ERROR_CODES.SERVER_ERROR,
           error instanceof Error
             ? error.message
             : "Failed to list swap requests",
@@ -445,21 +508,22 @@ export async function listSwapRequests(
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
 export async function createSwapRequest(
   req: AuthenticatedRequest,
   res: Response,
-) {
+): Promise<void> {
   try {
     const request = await shiftsService.createSwapRequest(
       req.body as SwapRequestCreateData, // Validated by middleware
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.status(201).json(successResponse(request));
   } catch (error: unknown) {
@@ -475,7 +539,7 @@ export async function createSwapRequest(
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error
               ? error.message
               : "Failed to create swap request",
@@ -486,14 +550,15 @@ export async function createSwapRequest(
 }
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
 export async function updateSwapRequestStatus(
   req: AuthenticatedRequest,
   res: Response,
-) {
+): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id);
     const { status } = req.body as { status: string };
@@ -504,7 +569,7 @@ export async function updateSwapRequestStatus(
       req.user.tenant_id,
       req.user.id,
       req.ip,
-      req.get("user-agent"),
+      req.get(HEADERS.USER_AGENT),
     );
     res.json(successResponse(result));
   } catch (error: unknown) {
@@ -518,7 +583,7 @@ export async function updateSwapRequestStatus(
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error
               ? error.message
               : "Failed to update swap request",
@@ -531,18 +596,20 @@ export async function updateSwapRequestStatus(
 // ============= OVERTIME =============
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
 export async function getOvertimeReport(
   req: AuthenticatedRequest,
   res: Response,
-) {
+): Promise<void> {
   try {
-    const userId = req.query.userId
-      ? Number.parseInt(req.query.userId as string)
-      : req.user.id;
+    const userId =
+      req.query.userId !== undefined
+        ? Number.parseInt(req.query.userId as string)
+        : req.user.id;
     const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
 
@@ -568,7 +635,7 @@ export async function getOvertimeReport(
       .status(500)
       .json(
         errorResponse(
-          "SERVER_ERROR",
+          ERROR_CODES.SERVER_ERROR,
           error instanceof Error
             ? error.message
             : "Failed to get overtime report",
@@ -580,27 +647,37 @@ export async function getOvertimeReport(
 // ============= EXPORT =============
 
 /**
- *
+ * List all shifts with filters
  * @param req
  * @param res
+ * @returns Promise resolving to response
  */
-export async function exportShifts(req: AuthenticatedRequest, res: Response) {
+export async function exportShifts(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const filters = {
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
-      departmentId: req.query.departmentId
-        ? Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId: req.query.teamId
-        ? Number.parseInt(req.query.teamId as string)
-        : undefined,
-      userId: req.query.userId
-        ? Number.parseInt(req.query.userId as string)
-        : undefined,
+      departmentId:
+        req.query.departmentId !== undefined
+          ? Number.parseInt(req.query.departmentId as string)
+          : undefined,
+      teamId:
+        req.query.teamId !== undefined
+          ? Number.parseInt(req.query.teamId as string)
+          : undefined,
+      userId:
+        req.query.userId !== undefined
+          ? Number.parseInt(req.query.userId as string)
+          : undefined,
     };
 
-    const format = (req.query.format as "csv" | "excel") ?? "csv";
+    const format =
+      req.query.format !== undefined
+        ? (req.query.format as "csv" | "excel")
+        : "csv";
     const csvData = await shiftsService.exportShifts(
       filters,
       req.user.tenant_id,
@@ -621,7 +698,7 @@ export async function exportShifts(req: AuthenticatedRequest, res: Response) {
         .status(500)
         .json(
           errorResponse(
-            "SERVER_ERROR",
+            ERROR_CODES.SERVER_ERROR,
             error instanceof Error ? error.message : "Failed to export shifts",
           ),
         );

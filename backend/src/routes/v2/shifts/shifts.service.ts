@@ -16,7 +16,9 @@ interface ShiftFilters {
   startDate?: string;
   endDate?: string;
   userId?: number;
+  areaId?: number;
   departmentId?: number;
+  machineId?: number;
   teamId?: number;
   status?: string;
   type?: string;
@@ -41,8 +43,10 @@ interface ShiftCreateData {
   status?: string;
   type?: string;
   notes?: string;
+  areaId?: number;
   departmentId: number;
   teamId?: number;
+  machineId?: number;
 }
 
 interface ShiftUpdateData {
@@ -60,8 +64,10 @@ interface ShiftUpdateData {
   status?: string;
   type?: string;
   notes?: string;
+  areaId?: number;
   departmentId?: number;
   teamId?: number;
+  machineId?: number;
 }
 
 interface TemplateCreateData {
@@ -146,8 +152,9 @@ interface DbShiftData extends RowDataPacket {
 
 // Helper function to convert DB shift to API format
 /**
- *
- * @param dbShift
+ * Convert database shift to API format
+ * @param dbShift - Database shift data
+ * @returns Shift in API response format
  */
 function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
   const apiShift = dbToApi(dbShift) as unknown as ShiftApiResponse;
@@ -156,7 +163,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
   if (dbShift.start_time) {
     try {
       const startTime = new Date(dbShift.start_time);
-      if (!isNaN(startTime.getTime())) {
+      if (!Number.isNaN(startTime.getTime())) {
         // Get hours and minutes in local timezone
         const hours = startTime.getHours().toString().padStart(2, "0");
         const minutes = startTime.getMinutes().toString().padStart(2, "0");
@@ -170,7 +177,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
   if (dbShift.end_time) {
     try {
       const endTime = new Date(dbShift.end_time);
-      if (!isNaN(endTime.getTime())) {
+      if (!Number.isNaN(endTime.getTime())) {
         // Get hours and minutes in local timezone
         const hours = endTime.getHours().toString().padStart(2, "0");
         const minutes = endTime.getMinutes().toString().padStart(2, "0");
@@ -185,7 +192,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
   if (dbShift.date) {
     try {
       const date = new Date(dbShift.date);
-      if (!isNaN(date.getTime())) {
+      if (!Number.isNaN(date.getTime())) {
         apiShift.date = date.toISOString().split("T")[0]; // YYYY-MM-DD format
       }
     } catch (error: unknown) {
@@ -203,9 +210,10 @@ export class ShiftsService {
   // ============= SHIFTS CRUD =============
 
   /**
-   *
+   * List shifts for a tenant with filters
    * @param tenantId
    * @param filters
+   * @returns Promise resolving to array of shifts
    */
   async listShifts(
     tenantId: number,
@@ -229,9 +237,10 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Get shift by ID
    * @param id
    * @param tenantId
+   * @returns Promise resolving to shift or throws error
    */
   async getShiftById(id: number, tenantId: number): Promise<ShiftApiResponse> {
     try {
@@ -248,7 +257,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param data
    * @param tenantId
    * @param userId
@@ -292,7 +302,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param id
    * @param data
    * @param tenantId
@@ -337,7 +348,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param id
    * @param tenantId
    * @param userId
@@ -379,7 +391,8 @@ export class ShiftsService {
   // ============= TEMPLATES =============
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param tenantId
    */
   async listTemplates(tenantId: number): Promise<unknown[]> {
@@ -396,9 +409,10 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Get shift by ID
    * @param id
    * @param tenantId
+   * @returns Promise resolving to shift or throws error
    */
   async getTemplateById(id: number, tenantId: number): Promise<unknown> {
     try {
@@ -414,7 +428,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param data
    * @param tenantId
    * @param userId
@@ -472,7 +487,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param id
    * @param data
    * @param tenantId
@@ -531,7 +547,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param id
    * @param tenantId
    * @param userId
@@ -576,7 +593,8 @@ export class ShiftsService {
   // ============= SWAP REQUESTS =============
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param tenantId
    * @param filters
    * @param filters.userId
@@ -599,7 +617,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param data
    * @param tenantId
    * @param userId
@@ -665,7 +684,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param id
    * @param status
    * @param tenantId
@@ -719,7 +739,8 @@ export class ShiftsService {
   // ============= OVERTIME =============
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param data
    * @param tenantId
    */
@@ -747,7 +768,8 @@ export class ShiftsService {
   // ============= EXPORT =============
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param filters
    * @param tenantId
    * @param format
@@ -780,7 +802,8 @@ export class ShiftsService {
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param shifts
    */
   private generateCSV(shifts: ShiftApiResponse[]): string {
@@ -812,12 +835,13 @@ export class ShiftsService {
 
     return [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...rows.map((row) => row.map((cell) => `"${String(cell)}"`).join(",")),
     ].join("\n");
   }
 
   /**
-   *
+   * Method implementation
+   * @returns Promise resolving to result
    * @param startTime
    * @param endTime
    * @param breakMinutes

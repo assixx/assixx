@@ -99,7 +99,6 @@
         align-items: center;
         text-align: center;
         position: relative;
-        z-index: 10;
       }
 
       .info-label {
@@ -827,8 +826,25 @@
 
         <div class="container">
           <div class="shift-planning-container">
-            <!-- Info Row -->
+            <!-- Info Row - KORREKTE HIERARCHIE: Area → Department → Machine → Team -->
             <div class="shift-info-row">
+              <!-- 1. AREA Filter (NEU!) -->
+              <div class="info-item">
+                <div class="info-label">Bereich</div>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="areaDisplay" onclick="toggleDropdown('area')">
+                    <span>Bereich wählen...</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="areaDropdown">
+                    <!-- Options will be populated dynamically -->
+                  </div>
+                </div>
+                <input type="hidden" id="areaSelect" />
+              </div>
+              <!-- 2. DEPARTMENT Filter -->
               <div class="info-item">
                 <div class="info-label">Abteilung</div>
                 <div class="custom-dropdown">
@@ -844,21 +860,7 @@
                 </div>
                 <input type="hidden" id="departmentSelect" />
               </div>
-              <div class="info-item">
-                <div class="info-label">Team</div>
-                <div class="custom-dropdown">
-                  <div class="dropdown-display" id="teamDisplay" onclick="toggleDropdown('team')">
-                    <span>Team wählen...</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                  </div>
-                  <div class="dropdown-options" id="teamDropdown">
-                    <!-- Options will be populated dynamically -->
-                  </div>
-                </div>
-                <input type="hidden" id="teamSelect" />
-              </div>
+              <!-- 3. MACHINE Filter (JETZT VOR TEAM!) -->
               <div class="info-item">
                 <div class="info-label">Maschine</div>
                 <div class="custom-dropdown">
@@ -873,6 +875,22 @@
                   </div>
                 </div>
                 <input type="hidden" id="machineSelect" />
+              </div>
+              <!-- 4. TEAM Filter (JETZT NACH MACHINE!) -->
+              <div class="info-item">
+                <div class="info-label">Team</div>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="teamDisplay" onclick="toggleDropdown('team')">
+                    <span>Team wählen...</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="teamDropdown">
+                    <!-- Options will be populated dynamically -->
+                  </div>
+                </div>
+                <input type="hidden" id="teamSelect" />
               </div>
             </div>
 

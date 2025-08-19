@@ -6,6 +6,7 @@
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
+import { $$id, createElement } from '../utils/dom-utils';
 
 import { getAuthToken, showSuccess, showError, showInfo } from './auth';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
@@ -33,16 +34,25 @@ interface ShiftAssignment {
   updated_at: string;
 }
 
+interface Area {
+  id: number;
+  name: string;
+  description?: string;
+  type?: string;
+}
+
 interface Department {
   id: number;
   name: string;
   description?: string;
+  area_id?: number;
 }
 
 interface Machine {
   id: number;
   name: string;
   department_id: number;
+  area_id?: number;
   description?: string;
 }
 
@@ -70,17 +80,53 @@ interface TeamLeader {
 }
 
 interface SelectedContext {
+  areaId: number | null; // NEU!
   departmentId: number | null;
   machineId: number | null;
   teamId: number | null;
   teamLeaderId: number | null;
 }
 
-type WeeklyShifts = Record<string, Record<string, number[]>>;
-
 interface ShiftsWindow extends Window {
   selectOption: (type: string, value: string, text: string) => void;
 }
+
+// CSS Selectors Constants
+const CSS_SELECTORS = {
+  EMPLOYEE_ITEM: '.employee-item',
+  SHIFT_CELL: '.shift-cell',
+  EMPLOYEE_ASSIGNMENT: '.employee-assignment',
+  SHIFT_HEADER: '.shift-header',
+} as const;
+
+// DOM Element IDs
+const DOM_IDS = {
+  WEEKLY_NOTES: '#weeklyNotes',
+  CURRENT_WEEK_INFO: '#currentWeekInfo',
+  NOTES_TOGGLE: '#notesToggle',
+  NOTES_PANEL: '#notesPanel',
+  USER_NAME: '#userName',
+  CURRENT_DEPARTMENT: '#currentDepartment',
+  CURRENT_TEAM_LEADER: '#currentTeamLeader',
+  PREV_WEEK_BTN: '#prevWeekBtn',
+  NEXT_WEEK_BTN: '#nextWeekBtn',
+  SAVE_SCHEDULE_BTN: '#saveScheduleBtn',
+  RESET_SCHEDULE_BTN: '#resetScheduleBtn',
+  AREA_SELECT: '#areaSelect',
+  DEPARTMENT_SELECT: '#departmentSelect',
+  TEAM_SELECT: '#teamSelect',
+} as const;
+
+// CSS Classes to avoid duplicate strings
+const CSS_CLASSES = {
+  DROPDOWN_OPTION: 'dropdown-option',
+  EMPLOYEE_NAME: 'employee-name',
+} as const;
+
+// Error Messages
+const ERROR_MESSAGES = {
+  SHIFT_ASSIGNMENT_FAILED: 'Fehler beim Zuweisen der Schicht',
+} as const;
 
 class ShiftPlanningSystem {
   private apiClient: ApiClient;
@@ -88,8 +134,8 @@ class ShiftPlanningSystem {
   private currentWeek: Date;
   private selectedEmployee: Employee | null;
   private employees: Employee[];
-  private weeklyShifts: WeeklyShifts;
-  private shiftDetails: Record<
+  private weeklyShifts: Map<string, Map<string, number[]>>;
+  private shiftDetails: Map<
     string,
     {
       employee_id: number;
@@ -104,13 +150,12 @@ class ShiftPlanningSystem {
   private isDragging: boolean;
 
   // Context data for shift planning
+  private areas: Area[];
   private departments: Department[];
   private machines: Machine[];
   private teams: Team[];
   private teamLeaders: TeamLeader[];
   private selectedContext: SelectedContext;
-
-  private weeklyNotes: string;
 
   constructor() {
     // Initialize API client and check feature flag
@@ -121,28 +166,79 @@ class ShiftPlanningSystem {
     this.currentWeek = new Date();
     this.selectedEmployee = null;
     this.employees = [];
-    this.weeklyShifts = {};
-    this.shiftDetails = {};
+    this.weeklyShifts = new Map();
+    this.shiftDetails = new Map();
     this.isAdmin = false;
     this.userRole = '';
     this.currentUserId = null;
     this.isDragging = false;
 
     // Context data for shift planning
+    this.areas = [];
     this.departments = [];
     this.machines = [];
     this.teams = [];
     this.teamLeaders = [];
     this.selectedContext = {
+      areaId: null,
       departmentId: null,
       machineId: null,
       teamId: null,
       teamLeaderId: null,
     };
 
-    this.weeklyNotes = '';
+    // weeklyNotes removed - notes are part of shifts in v2
 
     void this.init();
+  }
+
+  /**
+   * Safe accessor for weeklyShifts to prevent Object Injection
+   */
+  private getShiftEmployees(date: string, shift: string): number[] {
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return [];
+    }
+    // Validate shift type
+    const validShifts = ['early', 'late', 'night'] as const;
+    if (!validShifts.includes(shift as (typeof validShifts)[number])) {
+      return [];
+    }
+
+    // Get from nested Map structure
+    const dateShifts = this.weeklyShifts.get(date);
+    if (!dateShifts) {
+      return [];
+    }
+
+    return dateShifts.get(shift) ?? [];
+  }
+
+  /**
+   * Safe setter for weeklyShifts to prevent Object Injection
+   */
+  private setShiftEmployees(date: string, shift: string, employees: number[]): void {
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return;
+    }
+    // Validate shift type
+    const validShifts = ['early', 'late', 'night'] as const;
+    if (!validShifts.includes(shift as (typeof validShifts)[number])) {
+      return;
+    }
+
+    // Initialize date Map if not exists
+    if (!this.weeklyShifts.has(date)) {
+      this.weeklyShifts.set(date, new Map());
+    }
+
+    // Set the shift data
+    const dateShifts = this.weeklyShifts.get(date);
+    if (dateShifts) {
+      dateShifts.set(shift, employees);
+    }
   }
 
   async init(): Promise<void> {
@@ -172,7 +268,7 @@ class ShiftPlanningSystem {
 
       console.info('[SHIFTS DEBUG] Loading weekly notes...');
       try {
-        await this.loadWeeklyNotes();
+        this.loadWeeklyNotes();
       } catch (error) {
         console.error('[SHIFTS ERROR] Failed to load weekly notes:', error);
       }
@@ -192,7 +288,7 @@ class ShiftPlanningSystem {
       // Load notes again after department is properly set
       if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
         console.info('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
-        await this.loadWeeklyNotes();
+        this.loadWeeklyNotes();
       }
 
       // Highlight employee's own shifts
@@ -295,7 +391,7 @@ class ShiftPlanningSystem {
     // Employee selection (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      const employeeItem = target.closest('.employee-item');
+      const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
       if (employeeItem && !this.isDragging) {
         this.selectEmployee(employeeItem as HTMLElement);
       }
@@ -304,7 +400,7 @@ class ShiftPlanningSystem {
     // Shift cell assignment (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell');
+      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
       if (shiftCell && this.isAdmin && !this.isDragging) {
         this.assignEmployeeToShift(shiftCell as HTMLElement);
       } else if (shiftCell && !this.isAdmin && !this.isDragging) {
@@ -343,7 +439,7 @@ class ShiftPlanningSystem {
     // Drag start on employee items
     document.addEventListener('dragstart', (e) => {
       const target = e.target as HTMLElement;
-      const employeeItem = target.closest('.employee-item');
+      const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
 
       if (employeeItem) {
         console.info('[SHIFTS DEBUG] Drag start on employee:', (employeeItem as HTMLElement).dataset.employeeId);
@@ -370,7 +466,7 @@ class ShiftPlanningSystem {
     // Drag end
     document.addEventListener('dragend', (e) => {
       const target = e.target as HTMLElement;
-      const employeeItem = target.closest('.employee-item');
+      const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
 
       if (employeeItem) {
         this.isDragging = false;
@@ -381,7 +477,7 @@ class ShiftPlanningSystem {
     // Drag over shift cells
     document.addEventListener('dragover', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell');
+      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
 
       if (shiftCell) {
         e.preventDefault();
@@ -395,7 +491,7 @@ class ShiftPlanningSystem {
     // Drag leave
     document.addEventListener('dragleave', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell');
+      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
 
       if (shiftCell) {
         shiftCell.classList.remove('drag-over');
@@ -405,7 +501,7 @@ class ShiftPlanningSystem {
     // Drop on shift cells
     document.addEventListener('drop', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest('.shift-cell');
+      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
 
       console.info('[SHIFTS DEBUG] Drop event on:', target);
 
@@ -426,6 +522,16 @@ class ShiftPlanningSystem {
   }
 
   setupContextEvents(): void {
+    // Area selection (TOP of hierarchy)
+    const areaSelect = document.querySelector('#areaSelect');
+    if (areaSelect !== null) {
+      areaSelect.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.selectedContext.areaId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+        void this.onAreaSelected();
+      });
+    }
+
     // Department selection
     const departmentSelect = document.querySelector('#departmentSelect');
     if (departmentSelect !== null) {
@@ -447,20 +553,21 @@ class ShiftPlanningSystem {
       });
     }
 
-    // Machine selection
+    // Machine selection (now filters teams!)
     const machineSelect = document.querySelector('#machineSelect');
     if (machineSelect !== null) {
       machineSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
         this.selectedContext.machineId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+        void this.onMachineSelected();
       });
     }
   }
 
   setupNotesEvents(): void {
-    const notesToggle = document.querySelector('#notesToggle');
-    const notesPanel = document.querySelector('#notesPanel');
-    const notesTextarea = document.querySelector('#weeklyNotes');
+    const notesToggle = document.querySelector(DOM_IDS.NOTES_TOGGLE);
+    const notesPanel = document.querySelector(DOM_IDS.NOTES_PANEL);
+    const notesTextarea = document.querySelector(DOM_IDS.WEEKLY_NOTES);
 
     if (notesToggle !== null) {
       notesToggle.addEventListener('click', () => {
@@ -475,12 +582,46 @@ class ShiftPlanningSystem {
   }
 
   async loadContextData(): Promise<void> {
+    // Load areas first (top of hierarchy)
+    await this.loadAreas();
+    // Then load departments and machines
     await Promise.all([this.loadDepartments(), this.loadMachines()]);
   }
 
-  async loadDepartments(): Promise<void> {
+  async loadAreas(): Promise<void> {
     try {
-      const response = await fetch('/api/departments', {
+      // Use v2 API for areas
+      const response = await this.apiClient.get<{ success: boolean; data: Area[]; message: string }>('/areas');
+
+      // Handle v2 response format
+      if ('data' in response && Array.isArray(response.data)) {
+        console.info('[SHIFTS] Areas loaded:', response.data);
+        this.areas = response.data;
+      } else if (Array.isArray(response)) {
+        // Fallback for direct array response
+        console.info('[SHIFTS] Areas loaded:', response);
+        this.areas = response;
+      } else {
+        console.warn('[SHIFTS] Unexpected areas response format:', response);
+        this.areas = [];
+      }
+    } catch (error) {
+      console.error('Error loading areas:', error);
+      // Continue without areas if endpoint doesn't exist
+      this.areas = [];
+    }
+    this.populateAreaSelect();
+  }
+
+  async loadDepartments(areaId?: number): Promise<void> {
+    try {
+      let url = '/api/departments';
+      // Filter by area if specified
+      if (areaId !== undefined) {
+        url += `?area_id=${String(areaId)}`;
+      }
+
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${getAuthToken() ?? ''}`,
           'Content-Type': 'application/json',
@@ -497,13 +638,17 @@ class ShiftPlanningSystem {
       }
     } catch (error) {
       console.error('Error loading departments:', error);
-      // Fallback data
-      this.departments = [
-        { id: 1, name: 'Produktion' },
-        { id: 2, name: 'Logistik' },
-        { id: 3, name: 'Qualitätssicherung' },
-        { id: 4, name: 'Wartung' },
-      ];
+      // Fallback data only if no area filter
+      if (areaId === undefined) {
+        this.departments = [
+          { id: 1, name: 'Produktion' },
+          { id: 2, name: 'Logistik' },
+          { id: 3, name: 'Qualitätssicherung' },
+          { id: 4, name: 'Wartung' },
+        ];
+      } else {
+        this.departments = [];
+      }
     }
     this.populateDepartmentSelect();
   }
@@ -567,7 +712,7 @@ class ShiftPlanningSystem {
     } else {
       // Use v2 API with ApiClient
       try {
-        let url = '/v2/teams';
+        let url = '/teams';
         if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
           url += `?departmentId=${String(this.selectedContext.departmentId)}`;
         }
@@ -576,19 +721,17 @@ class ShiftPlanningSystem {
           method: 'GET',
         });
 
-        if (response) {
-          // Map snake_case to camelCase
-          const mappedTeams = mapTeams(response);
-          // Convert to internal Team interface
-          this.teams = mappedTeams.map((t) => ({
-            id: t.id,
-            name: t.name,
-            department_id: t.departmentId ?? 0,
-            team_lead_id: (t as any).teamLeadId,
-            description: t.description,
-          }));
-          console.info('Teams loaded (v2):', this.teams);
-        }
+        // Map snake_case to camelCase
+        const mappedTeams = mapTeams(response);
+        // Convert to internal Team interface
+        this.teams = mappedTeams.map((t) => ({
+          id: t.id,
+          name: t.name,
+          department_id: t.departmentId ?? 0,
+          team_lead_id: t.leaderId ?? undefined,
+          description: t.description,
+        }));
+        console.info('Teams loaded (v2):', this.teams);
       } catch (error) {
         console.error('Error loading teams (v2):', error);
         this.teams = [];
@@ -604,6 +747,38 @@ class ShiftPlanningSystem {
     this.populateTeamLeaderSelect();
   }
 
+  populateAreaSelect(): void {
+    const dropdown = document.querySelector('#areaDropdown');
+    if (!dropdown) {
+      console.error('Area dropdown element not found');
+      return;
+    }
+
+    dropdown.innerHTML = '';
+
+    // Add default option
+    const defaultOption = document.createElement('div');
+    defaultOption.className = CSS_CLASSES.DROPDOWN_OPTION;
+    defaultOption.dataset.value = '';
+    defaultOption.textContent = 'Alle Bereiche';
+    defaultOption.onclick = () => {
+      this.selectOption('area', '', 'Alle Bereiche');
+    };
+    dropdown.append(defaultOption);
+
+    // Add area options
+    this.areas.forEach((area) => {
+      const option = document.createElement('div');
+      option.className = CSS_CLASSES.DROPDOWN_OPTION;
+      option.dataset.value = String(area.id);
+      option.textContent = area.name;
+      option.onclick = () => {
+        this.selectOption('area', String(area.id), area.name);
+      };
+      dropdown.append(option);
+    });
+  }
+
   populateDepartmentSelect(): void {
     const dropdown = document.querySelector('#departmentDropdown');
     if (!dropdown) {
@@ -616,7 +791,7 @@ class ShiftPlanningSystem {
     console.info('Populating departments:', this.departments);
     this.departments.forEach((dept) => {
       const option = document.createElement('div');
-      option.className = 'dropdown-option';
+      option.className = CSS_CLASSES.DROPDOWN_OPTION;
       option.textContent = dept.name;
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption('department', dept.id.toString(), dept.name);
@@ -641,7 +816,7 @@ class ShiftPlanningSystem {
 
     filteredMachines.forEach((machine) => {
       const option = document.createElement('div');
-      option.className = 'dropdown-option';
+      option.className = CSS_CLASSES.DROPDOWN_OPTION;
       option.textContent = machine.name;
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption('machine', machine.id.toString(), machine.name);
@@ -664,7 +839,7 @@ class ShiftPlanningSystem {
 
     filteredTeams.forEach((team) => {
       const option = document.createElement('div');
-      option.className = 'dropdown-option';
+      option.className = CSS_CLASSES.DROPDOWN_OPTION;
       option.textContent = team.name;
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption('team', team.id.toString(), team.name);
@@ -681,7 +856,7 @@ class ShiftPlanningSystem {
 
     this.teamLeaders.forEach((leader) => {
       const option = document.createElement('div');
-      option.className = 'dropdown-option';
+      option.className = CSS_CLASSES.DROPDOWN_OPTION;
       option.textContent = leader.name !== '' ? leader.name : leader.username;
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption(
@@ -694,28 +869,125 @@ class ShiftPlanningSystem {
     });
   }
 
+  async onAreaSelected(areaId?: number): Promise<void> {
+    // Store the selected area
+    this.selectedContext.areaId = areaId ?? null;
+
+    // Reset downstream selections when area changes
+    this.selectedContext.departmentId = null;
+    this.selectedContext.machineId = null;
+    this.selectedContext.teamId = null;
+
+    // Reload departments filtered by area
+    if (this.selectedContext.areaId !== null && this.selectedContext.areaId !== 0) {
+      await this.loadDepartments(this.selectedContext.areaId);
+    } else {
+      await this.loadDepartments(); // Load all departments
+    }
+
+    // Clear machines and teams
+    this.machines = [];
+    this.teams = [];
+    this.populateMachineSelect();
+    this.populateTeamSelect();
+
+    // Clear employees
+    this.employees = [];
+    this.renderEmployeeList();
+  }
+
   async onContextChange(): Promise<void> {
+    // Reset downstream selections when department changes
+    this.selectedContext.machineId = null;
+    this.selectedContext.teamId = null;
+
     // Reload machines and teams when department changes
     if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
       await Promise.all([this.loadMachines(), this.loadTeams()]);
+    } else {
+      // Clear if no department selected
+      this.machines = [];
+      this.teams = [];
+      this.populateMachineSelect();
+      this.populateTeamSelect();
     }
 
     // Reload employees based on context
     await this.loadEmployees();
 
     // Reload weekly notes for new department
-    await this.loadWeeklyNotes();
+    this.loadWeeklyNotes();
   }
 
-  async onTeamSelected(): Promise<void> {
+  async onMachineSelected(machineId?: number): Promise<void> {
+    // Store the selected machine
+    this.selectedContext.machineId = machineId ?? null;
+    // Reset team selection when machine changes
+    this.selectedContext.teamId = null;
+
+    // Clear team dropdown display
+    const teamDisplay = document.querySelector('#teamDisplay span');
+    if (teamDisplay) teamDisplay.textContent = 'Team wählen...';
+
+    // Clear hidden input
+    const teamSelect = $$id<HTMLInputElement>('teamSelect');
+    if (teamSelect !== null) {
+      teamSelect.value = '';
+    }
+
+    // Load teams for this machine (via machine_teams junction)
+    if (this.selectedContext.machineId !== null && this.selectedContext.machineId !== 0) {
+      await this.loadTeamsForMachine(this.selectedContext.machineId);
+    } else if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+      // If no machine selected, show all department teams
+      await this.loadTeams();
+    } else {
+      // Clear teams if no context
+      this.teams = [];
+      this.populateTeamSelect();
+    }
+  }
+
+  async onTeamSelected(teamId?: number): Promise<void> {
+    // Store the selected team
+    this.selectedContext.teamId = teamId ?? null;
     // Load team members when a team is selected
     if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
       await this.loadTeamMembers();
     }
   }
 
+  async loadTeamsForMachine(machineId: number): Promise<void> {
+    try {
+      // Load teams assigned to this specific machine via machine_teams junction
+      const response = await fetch(`/api/machines/${String(machineId)}/teams`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as Team[];
+        console.info('[SHIFTS] Teams for machine loaded:', data);
+        this.teams = Array.isArray(data) ? data : [];
+      } else {
+        console.warn('[SHIFTS] Could not load teams for machine, loading all department teams');
+        // Fallback to all department teams
+        await this.loadTeams();
+      }
+    } catch (error) {
+      console.error('Error loading teams for machine:', error);
+      // Fallback to all department teams
+      await this.loadTeams();
+    }
+    this.populateTeamSelect();
+  }
+
   async loadTeamMembers(): Promise<void> {
-    if (!this.selectedContext.teamId) return;
+    if (this.selectedContext.teamId === null || this.selectedContext.teamId === 0) {
+      return;
+    }
 
     if (!this.useV2API) {
       // Fallback to v1 API
@@ -739,23 +1011,21 @@ class ShiftPlanningSystem {
       // Use v2 API with ApiClient
       try {
         const response = await this.apiClient.request<UserAPIResponse[]>(
-          `/v2/teams/${String(this.selectedContext.teamId)}/members`,
+          `/teams/${String(this.selectedContext.teamId)}/members`,
           { method: 'GET' },
         );
 
-        if (response) {
-          // Map snake_case to camelCase and convert to TeamMember interface
-          const mappedUsers = mapUsers(response);
-          const members: TeamMember[] = mappedUsers.map((user) => ({
-            id: user.id,
-            username: user.username,
-            first_name: user.firstName ?? '',
-            last_name: user.lastName ?? '',
-            role: 'member' as const,
-          }));
-          console.info('Team members loaded (v2):', members);
-          this.displayTeamMembers(members);
-        }
+        // Map snake_case to camelCase and convert to TeamMember interface
+        const mappedUsers = mapUsers(response);
+        const members: TeamMember[] = mappedUsers.map((user) => ({
+          id: user.id,
+          username: user.username,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          role: 'member' as const,
+        }));
+        console.info('Team members loaded (v2):', members);
+        this.displayTeamMembers(members);
       } catch (error) {
         console.error('Error loading team members (v2):', error);
         showErrorAlert('Fehler beim Laden der Team-Mitglieder');
@@ -774,21 +1044,37 @@ class ShiftPlanningSystem {
     // Show the panel
     memberPanel.classList.remove('u-hidden');
 
-    memberPanel.innerHTML = `
-      <h3>Team-Mitglieder</h3>
-      <div class="members-list">
-        ${members
-          .map(
-            (member) => `
-          <div class="member-card" draggable="true" data-user-id="${String(member.id)}">
-            <div class="member-name">${member.first_name} ${member.last_name}</div>
-            <div class="member-role">${member.role === 'lead' ? 'Team Lead' : 'Mitglied'}</div>
-          </div>
-        `,
-          )
-          .join('')}
-      </div>
-    `;
+    // Clear panel and rebuild with DOM methods
+    while (memberPanel.firstChild) {
+      memberPanel.firstChild.remove();
+    }
+
+    const h3 = createElement('h3', {}, 'Team-Mitglieder');
+    memberPanel.append(h3);
+
+    const membersList = createElement('div', { className: 'members-list' });
+
+    members.forEach((member) => {
+      const card = createElement('div', {
+        className: 'member-card',
+        draggable: true,
+      });
+      card.dataset.userId = String(member.id);
+
+      const nameDiv = createElement('div', { className: 'member-name' }, `${member.first_name} ${member.last_name}`);
+
+      const roleDiv = createElement(
+        'div',
+        { className: 'member-role' },
+        member.role === 'lead' ? 'Team Lead' : 'Mitglied',
+      );
+
+      card.append(nameDiv);
+      card.append(roleDiv);
+      membersList.append(card);
+    });
+
+    memberPanel.append(membersList);
 
     // Initialize drag and drop for member cards
     this.initializeMemberDragAndDrop();
@@ -818,7 +1104,7 @@ class ShiftPlanningSystem {
   }
 
   makeShiftCellsDroppable(): void {
-    const shiftCells = document.querySelectorAll('.shift-cell');
+    const shiftCells = document.querySelectorAll(CSS_SELECTORS.SHIFT_CELL);
 
     shiftCells.forEach((cell) => {
       cell.addEventListener('dragover', (e) => {
@@ -834,26 +1120,91 @@ class ShiftPlanningSystem {
         cell.classList.remove('drag-over');
       });
 
-      cell.addEventListener('drop', async (e) => {
+      cell.addEventListener('drop', (e) => {
         e.preventDefault();
         cell.classList.remove('drag-over');
 
         const dragEvent = e as DragEvent;
         if (!dragEvent.dataTransfer) return;
 
-        const userId = dragEvent.dataTransfer.getData('userId');
+        const userId = dragEvent.dataTransfer.getData('userId'); // Always returns string
         const cellElement = cell as HTMLElement;
-        const date = cellElement.dataset.date;
-        const shiftType = cellElement.dataset.shiftType;
+        const date = cellElement.dataset.date; // Can be string | undefined
+        const shiftType = cellElement.dataset.shiftType; // Can be string | undefined
 
-        if (userId && date && shiftType) {
-          await this.assignUserToShift(Number(userId), date, shiftType, cellElement);
+        if (
+          userId !== '' && // userId is always string from getData
+          date !== undefined &&
+          date !== '' &&
+          shiftType !== undefined &&
+          shiftType !== ''
+        ) {
+          // Wrap async call in void to handle promise correctly
+          void this.assignUserToShift(Number(userId), date, shiftType, cellElement);
         }
       });
     });
   }
 
+  validateHierarchy(): { valid: boolean; message?: string } {
+    // Check if area is selected (if areas are available)
+    if (this.areas.length > 0 && (this.selectedContext.areaId === null || this.selectedContext.areaId === 0)) {
+      return { valid: false, message: 'Bitte wählen Sie einen Bereich aus' };
+    }
+
+    // Check if essential context is selected
+    if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
+      return { valid: false, message: 'Bitte wählen Sie eine Abteilung aus' };
+    }
+
+    // If machine is selected, verify it belongs to the department
+    if (this.selectedContext.machineId !== null && this.selectedContext.machineId !== 0) {
+      const machine = this.machines.find((m) => m.id === this.selectedContext.machineId);
+      if (!machine) {
+        return { valid: false, message: 'Ungültige Maschinen-Auswahl' };
+      }
+      if (machine.department_id !== this.selectedContext.departmentId) {
+        return { valid: false, message: 'Maschine gehört nicht zur ausgewählten Abteilung' };
+      }
+    }
+
+    // If team is selected, verify it belongs to the department
+    if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+      const team = this.teams.find((t) => t.id === this.selectedContext.teamId);
+      if (!team) {
+        return { valid: false, message: 'Ungültige Team-Auswahl' };
+      }
+      if (team.department_id !== this.selectedContext.departmentId) {
+        return { valid: false, message: 'Team gehört nicht zur ausgewählten Abteilung' };
+      }
+
+      // If both machine and team are selected, verify they are linked via machine_teams
+      // Note: This would require loading machine_teams data, for now we trust the UI filtering
+    }
+
+    // If area is selected, verify department belongs to it
+    if (this.selectedContext.areaId !== null && this.selectedContext.areaId !== 0) {
+      const department = this.departments.find((d) => d.id === this.selectedContext.departmentId);
+      if (
+        department?.area_id !== undefined &&
+        department.area_id !== 0 &&
+        department.area_id !== this.selectedContext.areaId
+      ) {
+        return { valid: false, message: 'Abteilung gehört nicht zum ausgewählten Bereich' };
+      }
+    }
+
+    return { valid: true };
+  }
+
   async assignUserToShift(userId: number, date: string, shiftType: string, cellElement: HTMLElement): Promise<void> {
+    // Validate hierarchy before creating shift
+    const validation = this.validateHierarchy();
+    if (!validation.valid) {
+      showError(validation.message ?? 'Ungültige Auswahl-Hierarchie');
+      return;
+    }
+
     if (!this.useV2API) {
       // Fallback to v1 API
       try {
@@ -880,7 +1231,7 @@ class ShiftPlanningSystem {
           showSuccess('Schicht zugewiesen');
           this.updateShiftCell(cellElement, userId, shiftType);
         } else {
-          showError('Fehler beim Zuweisen der Schicht');
+          showError(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
         }
       } catch (error) {
         console.error('Error assigning shift (v1):', error);
@@ -889,7 +1240,7 @@ class ShiftPlanningSystem {
     } else {
       // Use v2 API with ApiClient
       try {
-        const response = await this.apiClient.request('/v2/shifts', {
+        await this.apiClient.request('/v2/shifts', {
           method: 'POST',
           body: JSON.stringify({
             userId,
@@ -903,26 +1254,69 @@ class ShiftPlanningSystem {
           }),
         });
 
-        if (response) {
-          showSuccessAlert('Schicht erfolgreich zugewiesen');
-          this.updateShiftCell(cellElement, userId, shiftType);
-        }
+        // Response is always truthy after successful await (throws on error)
+        showSuccessAlert('Schicht erfolgreich zugewiesen');
+        this.updateShiftCell(cellElement, userId, shiftType);
       } catch (error) {
         console.error('Error assigning shift (v2):', error);
-        showErrorAlert('Fehler beim Zuweisen der Schicht');
+        showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
       }
     }
   }
 
   private updateShiftCell(cellElement: HTMLElement, userId: number, shiftType: string): void {
     const memberName = this.getMemberNameById(userId);
-    cellElement.innerHTML = `
-      <div class="employee-assignment">
-        <div class="employee-name">${memberName}</div>
-        <div class="shift-time">${this.getShiftTimeDisplay(shiftType)}</div>
-      </div>
-    `;
+
+    // Clear existing content
+    while (cellElement.firstChild) {
+      cellElement.firstChild.remove();
+    }
+
+    // Build DOM structure safely
+    const assignmentDiv = createElement('div', { className: 'employee-assignment' });
+    const nameDiv = createElement('div', { className: CSS_CLASSES.EMPLOYEE_NAME }, memberName);
+    const timeDiv = createElement('div', { className: 'shift-time' }, this.getShiftTimeDisplay(shiftType));
+
+    assignmentDiv.append(nameDiv, timeDiv);
+    cellElement.append(assignmentDiv);
     cellElement.classList.add('assigned');
+  }
+
+  private selectOption(type: string, value: string, displayText: string): void {
+    // Update the dropdown display
+    const displayElement = $$id(`${type}Display`);
+    if (displayElement) {
+      const span = displayElement.querySelector('span');
+      if (span) {
+        span.textContent = displayText;
+      }
+      // Close dropdown - use 'active' class like in HTML
+      const dropdown = $$id(`${type}Dropdown`);
+      if (dropdown) {
+        dropdown.classList.remove('active');
+      }
+      // Also remove active from display element
+      displayElement.classList.remove('active');
+    }
+
+    // Handle selection based on type
+    if (type === 'area') {
+      const areaId = value !== '' ? Number(value) : undefined;
+      void this.onAreaSelected(areaId);
+    } else if (type === 'department') {
+      this.selectedContext.departmentId = value !== '' ? Number(value) : null;
+      void this.onContextChange();
+    } else if (type === 'machine') {
+      const machineId = value !== '' ? Number(value) : undefined;
+      if (machineId !== undefined) {
+        void this.onMachineSelected(machineId);
+      }
+    } else if (type === 'team') {
+      const teamId = value !== '' ? Number(value) : undefined;
+      if (teamId !== undefined) {
+        void this.onTeamSelected(teamId);
+      }
+    }
   }
 
   getMemberNameById(userId: number): string {
@@ -935,30 +1329,48 @@ class ShiftPlanningSystem {
   }
 
   getShiftStartTime(shiftType: string): string {
-    const times: Record<string, string> = {
+    // Validate shift type to prevent object injection
+    const validShiftTypes = ['early', 'late', 'night'] as const;
+    if (!validShiftTypes.includes(shiftType as (typeof validShiftTypes)[number])) {
+      return '08:00';
+    }
+
+    const times: Record<(typeof validShiftTypes)[number], string> = {
       early: '06:00',
       late: '14:00',
       night: '22:00',
     };
-    return times[shiftType] ?? '08:00';
+    return times[shiftType as (typeof validShiftTypes)[number]];
   }
 
   getShiftEndTime(shiftType: string): string {
-    const times: Record<string, string> = {
+    // Validate shift type to prevent object injection
+    const validShiftTypes = ['early', 'late', 'night'] as const;
+    if (!validShiftTypes.includes(shiftType as (typeof validShiftTypes)[number])) {
+      return '17:00';
+    }
+
+    const times: Record<(typeof validShiftTypes)[number], string> = {
       early: '14:00',
       late: '22:00',
       night: '06:00',
     };
-    return times[shiftType] ?? '17:00';
+    return times[shiftType as (typeof validShiftTypes)[number]];
   }
 
   getShiftTimeDisplay(shiftType: string): string {
-    const displays: Record<string, string> = {
+    // Validate shift type to prevent object injection
+    const validShiftTypes = ['early', 'late', 'night'] as const;
+    if (!validShiftTypes.includes(shiftType as (typeof validShiftTypes)[number])) {
+      return 'Ganztags';
+    }
+
+    const displays: Record<(typeof validShiftTypes)[number], string> = {
       early: '06:00 - 14:00',
       late: '14:00 - 22:00',
       night: '22:00 - 06:00',
     };
-    return displays[shiftType] ?? 'Ganztags';
+    return displays[shiftType as (typeof validShiftTypes)[number]];
   }
 
   togglePlanningAreaVisibility(): void {
@@ -975,13 +1387,14 @@ class ShiftPlanningSystem {
       if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'flex';
 
       // Load data for the selected department
-      void this.loadCurrentWeekData().then(() => {
+      void (async () => {
+        await this.loadCurrentWeekData();
         // Load notes after shift data is loaded
         if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
           console.info('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
-          void this.loadWeeklyNotes();
+          this.loadWeeklyNotes();
         }
-      });
+      })();
     } else {
       // No department selected (only for admins) - show notice
       if (departmentNotice) (departmentNotice as HTMLElement).style.display = 'block';
@@ -1031,8 +1444,7 @@ class ShiftPlanningSystem {
         console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
         console.info('[SHIFTS DEBUG] Employee data:', this.employees);
 
-        // Now load current availability status
-        await this.loadAvailabilityStatus();
+        // Availability is now part of user data, no need for separate call
 
         this.renderEmployeeList();
       } else {
@@ -1047,41 +1459,11 @@ class ShiftPlanningSystem {
     }
   }
 
-  async loadAvailabilityStatus(): Promise<void> {
-    try {
-      const response = await fetch('/api/availability/current', {
-        headers: {
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as {
-          employees?: { employeeId: number; availabilityStatus?: string }[];
-        };
-        const availabilityData = data.employees ?? [];
-
-        // Update employees with availability status
-        this.employees = this.employees.map((emp) => {
-          const availability = availabilityData.find(
-            (a: { employeeId: number; availabilityStatus?: string }) => a.employeeId === emp.id,
-          );
-          if (availability !== undefined) {
-            emp.availability_status = (availability.availabilityStatus ?? 'available') as
-              | 'available'
-              | 'unavailable'
-              | 'vacation'
-              | 'sick'
-              | undefined;
-          }
-          return emp;
-        });
-      }
-    } catch (error) {
-      console.error('Error loading availability status:', error);
-      // Continue without availability status
-    }
+  loadAvailabilityStatus(): void {
+    // Availability is now part of user data in v2
+    // This method is kept for backward compatibility but does nothing
+    // Employee availability status is loaded with user data in loadEmployees()
+    console.info('[SHIFTS] Availability status is now loaded with user data');
   }
 
   renderEmployeeList(): void {
@@ -1128,19 +1510,30 @@ class ShiftPlanningSystem {
 
       const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
       const displayName = name !== '' ? name : employee.username;
-      const statusIcon = this.getAvailabilityIcon(employee.availability_status);
-      const statusBadge = this.getAvailabilityBadge(employee.availability_status);
 
-      item.innerHTML = `
-        <div class="employee-info">
-          <span class="employee-name">${this.escapeHtml(displayName)}</span>
-          ${statusIcon}
-          ${statusBadge}
-        </div>
-        <div class="employee-stats">
-          <span class="shift-count">0</span>
-        </div>
-      `;
+      // Build DOM structure safely
+      const infoDiv = createElement('div', { className: 'employee-info' });
+      const nameSpan = createElement('span', { className: CSS_CLASSES.EMPLOYEE_NAME }, displayName);
+      infoDiv.append(nameSpan);
+
+      // Add status icon if present
+      const iconElement = this.createAvailabilityIcon(employee.availability_status);
+      if (iconElement) {
+        infoDiv.append(iconElement);
+      }
+
+      // Add status badge if present
+      const badgeElement = this.createAvailabilityBadge(employee.availability_status);
+      if (badgeElement) {
+        infoDiv.append(badgeElement);
+      }
+
+      const statsDiv = createElement('div', { className: 'employee-stats' });
+      const countSpan = createElement('span', { className: 'shift-count' }, '0');
+      statsDiv.append(countSpan);
+
+      item.append(infoDiv);
+      item.append(statsDiv);
 
       container.append(item);
     });
@@ -1150,6 +1543,75 @@ class ShiftPlanningSystem {
     this.updateEmployeeShiftCounts();
   }
 
+  // Create icon element instead of HTML string
+  createAvailabilityIcon(status?: string): HTMLElement | null {
+    let iconClass = '';
+    let title = '';
+    let statusClass = '';
+
+    switch (status) {
+      case 'vacation':
+        iconClass = 'fa-plane';
+        statusClass = 'vacation';
+        title = 'Im Urlaub';
+        break;
+      case 'sick':
+        iconClass = 'fa-notes-medical';
+        statusClass = 'sick';
+        title = 'Krank';
+        break;
+      case 'unavailable':
+        iconClass = 'fa-ban';
+        statusClass = 'unavailable';
+        title = 'Nicht verfügbar';
+        break;
+      default:
+        return null;
+    }
+
+    return createElement('i', {
+      className: `fas ${iconClass} status-icon ${statusClass}`,
+      title: title,
+    });
+  }
+
+  // Create badge element instead of HTML string
+  createAvailabilityBadge(status?: string): HTMLElement | null {
+    let badgeClass = '';
+    let text = '';
+
+    switch (status) {
+      case 'available':
+        badgeClass = 'badge-success';
+        text = 'Verfügbar';
+        break;
+      case 'vacation':
+        badgeClass = 'badge-warning';
+        text = 'Urlaub';
+        break;
+      case 'sick':
+        badgeClass = 'badge-danger';
+        text = 'Krank';
+        break;
+      case 'unavailable':
+        badgeClass = 'badge-secondary';
+        text = 'Nicht verfügbar';
+        break;
+      default:
+        // Default to available if no status is set
+        return this.createAvailabilityBadge('available'); // Avoid code duplication
+    }
+
+    return createElement(
+      'span',
+      {
+        className: `badge ${badgeClass}`,
+      },
+      text,
+    );
+  }
+
+  // Keep the old methods for backward compatibility if needed elsewhere
   getAvailabilityIcon(status?: string): string {
     switch (status) {
       case 'vacation':
@@ -1185,20 +1647,22 @@ class ShiftPlanningSystem {
       el.textContent = '0';
     });
 
-    // Count shifts for each employee
-    const shiftCounts: Record<number, number> = {};
+    // Count shifts for each employee - use Map for safety
+    const shiftCounts = new Map<number, number>();
 
-    Object.values(this.weeklyShifts).forEach((dayShifts) => {
-      Object.values(dayShifts).forEach((employeeIds) => {
+    this.weeklyShifts.forEach((dayShifts) => {
+      dayShifts.forEach((employeeIds) => {
         employeeIds.forEach((employeeId) => {
-          shiftCounts[employeeId] = (shiftCounts[employeeId] ?? 0) + 1;
+          // Map is safe from prototype pollution
+          const currentCount = shiftCounts.get(employeeId) ?? 0;
+          shiftCounts.set(employeeId, currentCount + 1);
         });
       });
     });
 
     // Update UI
-    Object.entries(shiftCounts).forEach(([employeeId, count]) => {
-      const item = document.querySelector(`[data-employee-id="${employeeId}"] .shift-count`);
+    shiftCounts.forEach((count, employeeId) => {
+      const item = document.querySelector(`[data-employee-id="${String(employeeId)}"] .shift-count`);
       if (item !== null) {
         item.textContent = count.toString();
       }
@@ -1209,7 +1673,7 @@ class ShiftPlanningSystem {
     if (!this.isAdmin) return;
 
     // Remove previous selection
-    document.querySelectorAll('.employee-item').forEach((item) => {
+    document.querySelectorAll(CSS_SELECTORS.EMPLOYEE_ITEM).forEach((item) => {
       item.classList.remove('selected');
     });
 
@@ -1225,23 +1689,6 @@ class ShiftPlanningSystem {
 
     // Let assignShift handle the date calculation
     this.assignShift(shiftCell, this.selectedEmployee.id);
-  }
-
-  // Safe helper to access nested shift data
-  private getShiftArray(date: string, shift: string): number[] {
-    const dateKey = String(date);
-    const shiftKey = String(shift);
-
-    if (!Object.prototype.hasOwnProperty.call(this.weeklyShifts, dateKey)) {
-      this.weeklyShifts[dateKey] = {};
-    }
-
-    const dayShifts = this.weeklyShifts[dateKey];
-    if (!Object.prototype.hasOwnProperty.call(dayShifts, shiftKey)) {
-      dayShifts[shiftKey] = [];
-    }
-
-    return dayShifts[shiftKey];
   }
 
   assignShift(shiftCell: HTMLElement, employeeId: number): void {
@@ -1295,39 +1742,55 @@ class ShiftPlanningSystem {
       return;
     }
 
+    // Validate date format to prevent object injection
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      console.error('Invalid date format:', date);
+      return;
+    }
+
     // Check if employee already has a shift on this day
-    const shiftsOnThisDay = this.weeklyShifts[date] ?? {};
+    const shiftsOnThisDay = new Map<string, number[]>();
+    const shiftTypes = ['early', 'late', 'night'] as const;
+    for (const shiftType of shiftTypes) {
+      const employees = this.getShiftEmployees(date, shiftType);
+      if (employees.length > 0) {
+        shiftsOnThisDay.set(shiftType, employees);
+      }
+    }
     const name2 = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
     const employeeName = name2 !== '' ? name2 : employee.username;
 
     // Check all shifts on this day
-    for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
+    for (const [shiftType, employeeIds] of shiftsOnThisDay) {
       if (shiftType !== shift && employeeIds.includes(employeeId)) {
         // Employee already has another shift on this day
-        const shiftNames: Record<string, string> = {
-          early: 'Frühschicht',
-          late: 'Spätschicht',
-          night: 'Nachtschicht',
-        };
+        const shiftNames = new Map<string, string>([
+          ['early', 'Frühschicht'],
+          ['late', 'Spätschicht'],
+          ['night', 'Nachtschicht'],
+        ]);
 
         showError(
-          `Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames[shiftType]} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`,
+          `Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames.get(shiftType) ?? shiftType} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`,
         );
         return;
       }
     }
 
-    // Use safe helper to get shift array
-    const shiftArray = this.getShiftArray(date, shift);
+    // Get current employees for this shift
+    const currentEmployees = this.getShiftEmployees(date, shift);
 
     // Check if employee is already assigned to this shift
-    const index = shiftArray.indexOf(employeeId);
+    const index = currentEmployees.indexOf(employeeId);
     if (index !== -1) {
       // Remove assignment
-      shiftArray.splice(index, 1);
+      const updatedEmployees = [...currentEmployees];
+      updatedEmployees.splice(index, 1);
+      this.setShiftEmployees(date, shift, updatedEmployees);
     } else {
       // Add assignment
-      shiftArray.push(employeeId);
+      const updatedEmployees = [...currentEmployees, employeeId];
+      this.setShiftEmployees(date, shift, updatedEmployees);
     }
 
     // Update UI - pass the cell directly
@@ -1337,7 +1800,7 @@ class ShiftPlanningSystem {
 
   renderShiftAssignments(shiftCell: HTMLElement, date: string, shift: string): void {
     // Find the employee-assignment div within the cell
-    const assignmentDiv = shiftCell.querySelector('.employee-assignment');
+    const assignmentDiv = shiftCell.querySelector(CSS_SELECTORS.EMPLOYEE_ASSIGNMENT);
     if (assignmentDiv === null) {
       console.error('[SHIFTS ERROR] No employee-assignment div found in cell');
       return;
@@ -1346,8 +1809,7 @@ class ShiftPlanningSystem {
     // Clear existing content
     assignmentDiv.innerHTML = '';
 
-    const employeeIds =
-      date in this.weeklyShifts && shift in this.weeklyShifts[date] ? this.weeklyShifts[date][shift] : [];
+    const employeeIds = this.getShiftEmployees(date, shift);
 
     if (employeeIds.length === 0) {
       // Show empty slot
@@ -1418,8 +1880,8 @@ class ShiftPlanningSystem {
       username: string;
     }[],
   ): void {
-    this.weeklyShifts = {};
-    this.shiftDetails = {}; // Store full shift details including names
+    this.weeklyShifts = new Map();
+    this.shiftDetails = new Map(); // Store full shift details including names
     console.info('[SHIFTS DEBUG] Processing shifts:', shifts);
 
     shifts.forEach((shift) => {
@@ -1442,20 +1904,19 @@ class ShiftPlanningSystem {
         employee_name: `${shift.first_name} ${shift.last_name}`,
       });
 
-      this.weeklyShifts[date] ??= {};
-      this.weeklyShifts[date][shiftType] ??= [];
-
-      this.weeklyShifts[date][shiftType].push(shift.employee_id);
+      // Use safe setter method to avoid object injection
+      const currentEmployees = this.getShiftEmployees(date, shiftType);
+      this.setShiftEmployees(date, shiftType, [...currentEmployees, shift.employee_id]);
 
       // Store the full shift details including names
       const shiftKey = `${date}_${shiftType}_${String(shift.employee_id)}`;
-      if (!(shiftKey in this.shiftDetails)) {
-        this.shiftDetails[shiftKey] = {
+      if (!this.shiftDetails.has(shiftKey)) {
+        this.shiftDetails.set(shiftKey, {
           employee_id: shift.employee_id,
           first_name: shift.first_name,
           last_name: shift.last_name,
           username: shift.username,
-        };
+        });
       }
     });
 
@@ -1469,7 +1930,7 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
 
     // Update week display
-    const currentWeekElement = document.querySelector('#currentWeekInfo');
+    const currentWeekElement = document.querySelector(DOM_IDS.CURRENT_WEEK_INFO);
     if (currentWeekElement) {
       currentWeekElement.textContent = this.formatWeekRange(weekStart);
     } else {
@@ -1493,13 +1954,15 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS DEBUG] New week after:', this.currentWeek);
 
     // Load both shift data and notes for the new week
-    Promise.all([this.loadCurrentWeekData(), this.loadWeeklyNotes()])
-      .then(() => {
+    void (async () => {
+      try {
+        await this.loadCurrentWeekData();
+        this.loadWeeklyNotes();
         console.info('[SHIFTS DEBUG] Week data and notes loaded successfully');
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         console.error('[SHIFTS ERROR] Failed to load week data:', error);
-      });
+      }
+    })();
   }
 
   getWeekStart(date: Date): Date {
@@ -1572,15 +2035,12 @@ class ShiftPlanningSystem {
         const dateKey = this.formatDateKey(date);
 
         // Clear existing assignments
-        const assignmentDiv = cell.querySelector('.employee-assignment');
+        const assignmentDiv = cell.querySelector(CSS_SELECTORS.EMPLOYEE_ASSIGNMENT);
         if (assignmentDiv) {
           assignmentDiv.innerHTML = '';
 
           // Get assignments for this shift
-          const assignments =
-            dateKey in this.weeklyShifts && shiftType in this.weeklyShifts[dateKey]
-              ? this.weeklyShifts[dateKey][shiftType]
-              : [];
+          const assignments = this.getShiftEmployees(dateKey, shiftType);
 
           console.info('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
 
@@ -1592,7 +2052,7 @@ class ShiftPlanningSystem {
 
               // If not found, try shift details (for employees who can't load all users)
               const shiftDetailKey = `${dateKey}_${shiftType}_${String(employeeId)}`;
-              const shiftDetail = shiftDetailKey in this.shiftDetails ? this.shiftDetails[shiftDetailKey] : undefined;
+              const shiftDetail = this.shiftDetails.get(shiftDetailKey);
 
               console.info(
                 '[SHIFTS DEBUG] Looking for employee:',
@@ -1630,7 +2090,7 @@ class ShiftPlanningSystem {
                 const tempCard = document.createElement('div');
                 tempCard.className = 'employee-card';
                 const nameDiv = document.createElement('div');
-                nameDiv.className = 'employee-name';
+                nameDiv.className = CSS_CLASSES.EMPLOYEE_NAME;
                 nameDiv.textContent = `Mitarbeiter #${String(employeeId)}`;
                 tempCard.append(nameDiv);
                 assignmentDiv.append(tempCard);
@@ -1657,19 +2117,20 @@ class ShiftPlanningSystem {
     const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
     const name = fullName !== '' ? fullName : employee.username;
 
-    card.innerHTML = `
-      <div class="employee-name">${this.escapeHtml(name)}</div>
-      <div class="employee-position">${employee.position ?? 'Mitarbeiter'}</div>
-    `;
+    // Build card content with DOM methods
+    const nameDiv = createElement('div', { className: CSS_CLASSES.EMPLOYEE_NAME }, name);
+    const positionDiv = createElement('div', { className: 'employee-position' }, employee.position ?? 'Mitarbeiter');
+    card.append(nameDiv, positionDiv);
 
     // Add remove button for admins
     if (this.isAdmin) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
-      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      const removeIcon = createElement('i', { className: 'fas fa-times' });
+      removeBtn.append(removeIcon);
       removeBtn.onclick = (e) => {
         e.stopPropagation();
-        const cell = card.closest('.shift-cell');
+        const cell = card.closest(CSS_SELECTORS.SHIFT_CELL);
         if (cell) {
           this.assignShift(cell as HTMLElement, employee.id);
         }
@@ -1705,61 +2166,121 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Get notes from textarea
-      const notesTextarea = document.querySelector('#weeklyNotes')!;
+      const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
-      // Prepare shift assignments
-      const assignments: {
-        employee_id: number;
-        shift_date: string;
-        shift_type: string;
-        week_start: string;
-        week_end: string;
-        department_id?: number;
-        machine_id?: number;
-        team_leader_id?: number;
-      }[] = [];
+      if (!this.useV2API) {
+        // v1 API - Legacy bulk save
+        const assignments: {
+          employee_id: number;
+          shift_date: string;
+          shift_type: string;
+          week_start: string;
+          week_end: string;
+          department_id?: number;
+          machine_id?: number;
+          team_leader_id?: number;
+        }[] = [];
 
-      Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
-        Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
-          employeeIds.forEach((employeeId) => {
-            assignments.push({
-              employee_id: employeeId,
-              shift_date: date,
-              shift_type: shiftType,
-              week_start: weekStart,
-              week_end: weekEnd,
-              department_id: this.selectedContext.departmentId ?? undefined,
-              machine_id: this.selectedContext.machineId ?? undefined,
+        this.weeklyShifts.forEach((shifts, date) => {
+          shifts.forEach((employeeIds, shiftType) => {
+            employeeIds.forEach((employeeId) => {
+              assignments.push({
+                employee_id: employeeId,
+                shift_date: date,
+                shift_type: shiftType,
+                week_start: weekStart,
+                week_end: weekEnd,
+                department_id: this.selectedContext.departmentId ?? undefined,
+                machine_id: this.selectedContext.machineId ?? undefined,
+              });
             });
           });
         });
-      });
 
-      const response = await fetch('/api/shifts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-        },
-        body: JSON.stringify({
-          week_start: weekStart,
-          week_end: weekEnd,
-          assignments,
-          notes,
-        }),
-      });
+        const response = await fetch('/api/shifts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          },
+          body: JSON.stringify({
+            week_start: weekStart,
+            week_end: weekEnd,
+            assignments,
+            notes,
+          }),
+        });
 
-      if (response.ok) {
-        showSuccess('Schichtplan erfolgreich gespeichert!');
-        await this.loadCurrentWeekData();
+        if (response.ok) {
+          showSuccess('Schichtplan erfolgreich gespeichert!');
+          await this.loadCurrentWeekData();
+        } else {
+          const error = (await response.json()) as { message?: string };
+          showError(error.message ?? 'Fehler beim Speichern des Schichtplans');
+        }
       } else {
-        const error = (await response.json()) as { message?: string };
-        showError(error.message ?? 'Fehler beim Speichern des Schichtplans');
+        // v2 API - Create individual shifts with notes
+        const shiftsToCreate: {
+          userId: number;
+          date: string;
+          type: string;
+          startTime: string;
+          endTime: string;
+          departmentId?: number;
+          teamId?: number;
+          machineId?: number;
+          notes?: string;
+        }[] = [];
+
+        this.weeklyShifts.forEach((shifts, date) => {
+          shifts.forEach((employeeIds, shiftType) => {
+            employeeIds.forEach((employeeId) => {
+              shiftsToCreate.push({
+                userId: employeeId,
+                date,
+                type: shiftType,
+                startTime: this.getShiftStartTime(shiftType),
+                endTime: this.getShiftEndTime(shiftType),
+                departmentId: this.selectedContext.departmentId ?? undefined,
+                teamId: this.selectedContext.teamId ?? undefined,
+                machineId: this.selectedContext.machineId ?? undefined,
+                notes: notes !== '' ? notes : undefined, // Include notes with each shift
+              });
+            });
+          });
+        });
+
+        // Create shifts one by one (v2 doesn't have bulk endpoint yet)
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const shift of shiftsToCreate) {
+          try {
+            await this.apiClient.request('/v2/shifts', {
+              method: 'POST',
+              body: JSON.stringify(shift),
+            });
+            successCount++;
+          } catch (error) {
+            console.error('Error creating shift:', error);
+            errorCount++;
+          }
+        }
+
+        if (errorCount === 0) {
+          showSuccessAlert('Schichtplan erfolgreich gespeichert!');
+        } else if (successCount > 0) {
+          showInfo(`${String(successCount)} Schichten gespeichert, ${String(errorCount)} fehlgeschlagen`);
+        } else {
+          showErrorAlert('Fehler beim Speichern des Schichtplans');
+        }
+
+        await this.loadCurrentWeekData();
       }
     } catch (error) {
       console.error('Error saving schedule:', error);
-      showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      showErrorAlert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
 
@@ -1787,7 +2308,7 @@ class ShiftPlanningSystem {
   confirmReset(): void {
     if (!this.isAdmin) return;
 
-    this.weeklyShifts = {};
+    this.weeklyShifts = new Map();
     this.renderWeekView();
     this.updateEmployeeShiftCounts();
     showInfo('Schichtplan wurde zurückgesetzt');
@@ -1798,110 +2319,33 @@ class ShiftPlanningSystem {
     }
   }
 
-  async loadWeeklyNotes(): Promise<void> {
-    try {
-      const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
-      console.info('[SHIFTS DEBUG] Loading notes for week:', weekStart);
-      console.info('[SHIFTS DEBUG] Current week:', this.currentWeek);
-      console.info('[SHIFTS DEBUG] Week start date:', this.getWeekStart(this.currentWeek));
-      console.info('[SHIFTS DEBUG] Selected department ID:', this.selectedContext.departmentId);
+  loadWeeklyNotes(): void {
+    // In v2, notes are part of individual shifts
+    // For now, we'll keep the UI element but not load separate notes
+    // Notes will be saved with each shift in saveSchedule()
+    console.info('[SHIFTS] Weekly notes are now part of individual shifts in v2');
 
-      let url = `/api/shifts/notes?week=${weekStart}`;
-      if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        url += `&department_id=${String(this.selectedContext.departmentId)}`;
-      }
-      console.info('[SHIFTS DEBUG] Notes API URL:', url);
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-        },
-      });
-
-      console.info('[SHIFTS DEBUG] Notes API response status:', response.status);
-
-      if (response.ok) {
-        const data = (await response.json()) as { notes?: string | null };
-        console.info('[SHIFTS DEBUG] Notes API response data:', data);
-        console.info('[SHIFTS DEBUG] Type of notes:', typeof data.notes);
-        console.info('[SHIFTS DEBUG] Notes value:', data.notes);
-
-        // Make sure we're getting a string, not an object
-        if (data.notes !== null && typeof data.notes === 'object') {
-          console.error('[SHIFTS ERROR] Notes is an object, not a string:', data.notes);
-          this.weeklyNotes = '';
-        } else if (typeof data.notes === 'string') {
-          this.weeklyNotes = data.notes;
-        } else {
-          this.weeklyNotes = '';
-        }
-
-        const notesTextarea = document.querySelector('#weeklyNotes');
-        if (notesTextarea !== null) {
-          // If notes are empty, show placeholder by clearing value
-          (notesTextarea as HTMLTextAreaElement).value = this.weeklyNotes;
-          console.info('[SHIFTS DEBUG] Set textarea value to:', this.weeklyNotes);
-        }
-      } else {
-        console.info('[SHIFTS DEBUG] Notes API error response');
-        // If error, clear the notes
-        const notesTextarea = document.querySelector('#weeklyNotes');
-        if (notesTextarea !== null) {
-          (notesTextarea as HTMLTextAreaElement).value = '';
-        }
-        this.weeklyNotes = '';
-      }
-    } catch (error) {
-      console.error('[SHIFTS ERROR] Error loading weekly notes:', error);
-      // Clear notes on error
-      const notesTextarea = document.querySelector('#weeklyNotes');
-      if (notesTextarea !== null) {
-        (notesTextarea as HTMLTextAreaElement).value = '';
-      }
-      this.weeklyNotes = '';
+    // Clear the textarea
+    const notesTextarea = document.querySelector(DOM_IDS.WEEKLY_NOTES);
+    if (notesTextarea !== null) {
+      (notesTextarea as HTMLTextAreaElement).value = '';
     }
+    // weeklyNotes removed - notes are part of shifts in v2
   }
 
-  async saveWeeklyNotes(): Promise<void> {
+  saveWeeklyNotes(): void {
+    // In v2, notes are saved with individual shifts
+    // This method is kept for backward compatibility
+    // Notes will be included when saving the schedule
     if (!this.isAdmin) return;
 
-    try {
-      const notesTextarea = document.querySelector('#weeklyNotes');
-      if (notesTextarea === null) return;
-
-      const newNotes = (notesTextarea as HTMLTextAreaElement).value;
-
-      // Only save if notes have actually changed
-      if (newNotes === this.weeklyNotes) {
-        return;
-      }
-
-      this.weeklyNotes = newNotes;
-
-      const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
-
-      const response = await fetch('/api/shifts/notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-        },
-        body: JSON.stringify({
-          week: weekStart,
-          notes: this.weeklyNotes,
-          department_id: this.selectedContext.departmentId,
-        }),
-      });
-
-      if (response.ok) {
-        showSuccess('Notizen gespeichert');
-      } else {
-        showError('Fehler beim Speichern der Notizen');
-      }
-    } catch (error) {
-      console.error('Error saving notes:', error);
-      showError('Ein Fehler ist aufgetreten');
+    const notesTextarea = document.querySelector(DOM_IDS.WEEKLY_NOTES);
+    if (notesTextarea !== null) {
+      // Notes are saved with each shift in v2, not separately
     }
+
+    // Notes will be saved with shifts in saveSchedule()
+    showInfo('Notizen werden beim Speichern des Schichtplans mitübernommen');
   }
 
   updateUIForRole(): void {
@@ -1910,7 +2354,7 @@ class ShiftPlanningSystem {
     const adminActions = document.querySelector('#adminActions');
     const employeeSidebar = document.querySelector('.employee-sidebar');
     const mainPlanningArea = document.querySelector('.main-planning-area');
-    const notesTextarea = document.querySelector('#weeklyNotes');
+    const notesTextarea = document.querySelector(DOM_IDS.WEEKLY_NOTES);
     const infoRow = document.querySelector('.shift-info-row');
 
     if (this.isAdmin) {
@@ -1976,8 +2420,8 @@ class ShiftPlanningSystem {
     });
 
     // Highlight current employee's shifts
-    Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
-      Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
+    this.weeklyShifts.forEach((shifts, date) => {
+      shifts.forEach((employeeIds, shiftType) => {
         if (this.currentUserId !== null && employeeIds.includes(this.currentUserId)) {
           const shiftCell = document.querySelector(`[data-date="${date}"][data-shift="${shiftType}"]`);
           shiftCell?.classList.add('employee-shift');
@@ -1987,14 +2431,14 @@ class ShiftPlanningSystem {
   }
 
   private escapeHtml(text: string): string {
-    const map: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    };
-    return text.replace(/["&'<>]/g, (m) => map[m]);
+    const map = new Map<string, string>([
+      ['&', '&amp;'],
+      ['<', '&lt;'],
+      ['>', '&gt;'],
+      ['"', '&quot;'],
+      ["'", '&#039;'],
+    ]);
+    return text.replace(/["&'<>]/g, (m) => map.get(m) ?? m);
   }
 
   private showShiftDetailsModal(shiftCell: HTMLElement): void {
@@ -2009,21 +2453,20 @@ class ShiftPlanningSystem {
     const dateStr = shiftDate.toLocaleDateString('de-DE');
 
     // Get shift time based on type
-    const shiftTimes: Record<string, string> = {
-      early: '06:00 - 14:00',
-      late: '14:00 - 22:00',
-      night: '22:00 - 06:00',
-    };
+    const shiftTimes = new Map<string, string>([
+      ['early', '06:00 - 14:00'],
+      ['late', '14:00 - 22:00'],
+      ['night', '22:00 - 06:00'],
+    ]);
 
-    const shiftNames: Record<string, string> = {
-      early: 'Frühschicht',
-      late: 'Spätschicht',
-      night: 'Nachtschicht',
-    };
+    const shiftNames = new Map<string, string>([
+      ['early', 'Frühschicht'],
+      ['late', 'Spätschicht'],
+      ['night', 'Nachtschicht'],
+    ]);
 
     // Get assigned employees for this shift
-    const employeeIds =
-      date in this.weeklyShifts && shift in this.weeklyShifts[date] ? this.weeklyShifts[date][shift] : [];
+    const employeeIds = this.getShiftEmployees(date, shift);
     const assignedEmployees = employeeIds
       .map((id) => {
         const employee = this.employees.find((e) => e.id === id);
@@ -2039,7 +2482,7 @@ class ShiftPlanningSystem {
 
     const modalContent = `
       <div class="shift-detail-modal">
-        <h3>${shiftNames[shift]} - ${dayName}</h3>
+        <h3>${shiftNames.get(shift) ?? shift} - ${dayName}</h3>
         <div class="shift-detail-info">
           <div class="detail-row">
             <span class="detail-label">Datum:</span>
@@ -2047,7 +2490,7 @@ class ShiftPlanningSystem {
           </div>
           <div class="detail-row">
             <span class="detail-label">Zeit:</span>
-            <span class="detail-value">${shiftTimes[shift]}</span>
+            <span class="detail-value">${shiftTimes.get(shift) ?? ''}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Zugewiesene Mitarbeiter:</span>
@@ -2088,6 +2531,36 @@ class ShiftPlanningSystem {
 // Initialize the system when the page loads
 let shiftPlanningSystemInstance: ShiftPlanningSystem;
 
+// Global function for dropdown selection (called from HTML onclick)
+function selectOption(type: string, value: string, text: string): void {
+  console.info(`[SHIFTS] Selected ${type}: ${value} - ${text}`);
+
+  // Update display
+  const display = document.querySelector(`#${type}Display span`);
+  if (display) {
+    display.textContent = text;
+  }
+
+  // Update hidden input
+  const hiddenInput = document.querySelector<HTMLInputElement>(`#${type}Select`);
+  if (hiddenInput !== null) {
+    hiddenInput.value = value;
+    // Trigger change event
+    const changeEvent = new Event('change', { bubbles: true });
+    hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  // Close dropdown
+  const dropdown = document.querySelector(`#${type}Dropdown`);
+  if (dropdown) {
+    dropdown.classList.remove('active');
+  }
+  const displayElement = document.querySelector(`#${type}Display`);
+  if (displayElement) {
+    displayElement.classList.remove('active');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   shiftPlanningSystemInstance = new ShiftPlanningSystem();
 });
@@ -2097,8 +2570,10 @@ if (typeof window !== 'undefined') {
   interface WindowWithShiftPlanning extends Window {
     ShiftPlanningSystem: typeof ShiftPlanningSystem;
     shiftPlanning: ShiftPlanningSystem;
+    selectOption: typeof selectOption;
   }
   (window as unknown as WindowWithShiftPlanning).ShiftPlanningSystem = ShiftPlanningSystem;
+  (window as unknown as WindowWithShiftPlanning).selectOption = selectOption;
 
   // Add global reference for modal callbacks
   Object.defineProperty(window, 'shiftPlanning', {

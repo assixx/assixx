@@ -24,6 +24,18 @@ import { typed } from "../utils/routeHandlers";
 
 const router: Router = express.Router();
 
+// Validation Messages
+const VALIDATION_MESSAGES = {
+  STARTDATUM_ERFORDERLICH: "Startdatum ist erforderlich",
+  ENDDATUM_ERFORDERLICH: "Enddatum ist erforderlich",
+} as const;
+
+// SQL Queries
+const SQL_QUERIES = {
+  GET_USER_DEPARTMENT:
+    "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
+} as const;
+
 // Request body interfaces
 interface ShiftTemplateBody {
   name: string;
@@ -114,10 +126,10 @@ interface WeeklyNotesBody {
 const shiftTemplateValidation = createValidation([
   body("name").notEmpty().trim().withMessage("Name ist erforderlich"),
   body("start_time")
-    .matches(/^\d{2}:\d{2}(:\d{2})?$/)
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/)
     .withMessage("Ungültige Startzeit"),
   body("end_time")
-    .matches(/^\d{2}:\d{2}(:\d{2})?$/)
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/)
     .withMessage("Ungültige Endzeit"),
   body("break_duration").optional().isInt({ min: 0 }),
   body("required_staff").optional().isInt({ min: 1 }),
@@ -161,10 +173,10 @@ const availabilityValidation = createValidation([
   body("user_id").optional().isInt({ min: 1 }),
   body("start_time")
     .optional()
-    .matches(/^\d{2}:\d{2}(:\d{2})?$/),
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/),
   body("end_time")
     .optional()
-    .matches(/^\d{2}:\d{2}(:\d{2})?$/),
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/),
 ]);
 
 const exchangeRequestValidation = createValidation([
@@ -174,7 +186,7 @@ const exchangeRequestValidation = createValidation([
   body("requested_date").optional().isISO8601(),
   body("requested_time")
     .optional()
-    .matches(/^\d{2}:\d{2}(:\d{2})?$/),
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/),
   body("reason").optional().trim(),
 ]);
 
@@ -567,11 +579,11 @@ router.get(
       query("start")
         .notEmpty()
         .isISO8601()
-        .withMessage("Startdatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.STARTDATUM_ERFORDERLICH),
       query("end")
         .notEmpty()
         .isISO8601()
-        .withMessage("Enddatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.ENDDATUM_ERFORDERLICH),
     ]),
   ),
   typed.auth(async (req, res) => {
@@ -636,7 +648,7 @@ router.get(
         if (req.user.role === "employee") {
           // First get the employee's department
           const [userRows] = await executeQuery<RowDataPacket[]>(
-            "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
+            SQL_QUERIES.GET_USER_DEPARTMENT,
             [req.user.id, tenantId],
           );
 
@@ -717,7 +729,7 @@ router.get(
         // For employees, get their department
         if (req.user.role === "employee") {
           const [userRows] = await executeQuery<RowDataPacket[]>(
-            "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
+            SQL_QUERIES.GET_USER_DEPARTMENT,
             [req.user.id, tenantId],
           );
           if (
@@ -834,10 +846,10 @@ router.post(
       body("date").optional().isISO8601(),
       body("start_time")
         .optional()
-        .matches(/^\d{2}:\d{2}(:\d{2})?$/),
+        .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/),
       body("end_time")
         .optional()
-        .matches(/^\d{2}:\d{2}(:\d{2})?$/),
+        .matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/),
       body("week_start").optional().isISO8601(),
       body("week_end").optional().isISO8601(),
       body("assignments").optional().isArray(),
@@ -926,10 +938,15 @@ router.post(
 
             // Convert date and time to datetime
             const startDateTime = `${assignment.shift_date} ${shiftTime.start}`;
-            const endDateTime =
-              assignment.shift_type === "night"
-                ? `${assignment.shift_date} ${shiftTime.end}` // Night shift ends next day at 6am, handle this later
-                : `${assignment.shift_date} ${shiftTime.end}`;
+
+            // Night shift ends next day at 6am
+            let endDate = assignment.shift_date;
+            if (assignment.shift_type === "night") {
+              const nextDay = new Date(assignment.shift_date);
+              nextDay.setDate(nextDay.getDate() + 1);
+              endDate = nextDay.toISOString().split("T")[0];
+            }
+            const endDateTime = `${endDate} ${shiftTime.end}`;
 
             const [shiftResult] = await connection.execute<ResultSetHeader>(
               `INSERT INTO shifts (tenant_id, user_id, date, start_time, end_time, title, required_employees, department_id, created_by)
@@ -1084,11 +1101,11 @@ router.get(
       query("start_date")
         .notEmpty()
         .isISO8601()
-        .withMessage("Startdatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.STARTDATUM_ERFORDERLICH),
       query("end_date")
         .notEmpty()
         .isISO8601()
-        .withMessage("Enddatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.ENDDATUM_ERFORDERLICH),
       query("user_id").optional().isInt({ min: 1 }),
     ]),
   ),
@@ -1291,11 +1308,11 @@ router.get(
       query("start_date")
         .notEmpty()
         .isISO8601()
-        .withMessage("Startdatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.STARTDATUM_ERFORDERLICH),
       query("end_date")
         .notEmpty()
         .isISO8601()
-        .withMessage("Enddatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.ENDDATUM_ERFORDERLICH),
     ]),
   ),
   typed.auth(async (req, res) => {
@@ -1402,11 +1419,11 @@ router.get(
       query("start_date")
         .notEmpty()
         .isISO8601()
-        .withMessage("Startdatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.STARTDATUM_ERFORDERLICH),
       query("end_date")
         .notEmpty()
         .isISO8601()
-        .withMessage("Enddatum ist erforderlich"),
+        .withMessage(VALIDATION_MESSAGES.ENDDATUM_ERFORDERLICH),
     ]),
   ),
   typed.auth(async (req, res) => {
@@ -1502,7 +1519,7 @@ router.post(
       // For employees, get their department
       if (req.user.role === "employee") {
         const [userRows] = await executeQuery<RowDataPacket[]>(
-          "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
+          SQL_QUERIES.GET_USER_DEPARTMENT,
           [req.user.id, tenantId],
         );
         if (

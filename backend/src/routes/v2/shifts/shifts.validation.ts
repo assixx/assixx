@@ -7,6 +7,24 @@ import { body, param, query } from "express-validator";
 
 import { handleValidationErrors } from "../../../middleware/validation";
 
+// Validation Messages
+const MESSAGES = {
+  INVALID_USER_ID: "Invalid user ID",
+  INVALID_DEPARTMENT_ID: "Invalid department ID",
+  INVALID_TEAM_ID: "Invalid team ID",
+  INVALID_STATUS: "Invalid status",
+  INVALID_TYPE: "Invalid type",
+  INVALID_TEMPLATE_ID: "Invalid template ID",
+  INVALID_PLAN_ID: "Invalid plan ID",
+  SHIFT_ID_POSITIVE: "Shift ID must be a positive integer",
+  START_TIME_FORMAT: "Start time must be in HH:MM format",
+  END_TIME_FORMAT: "End time must be in HH:MM format",
+  DEPARTMENT_ID_REQUIRED: "Department ID is required",
+  NOTES_TOO_LONG: "Notes cannot exceed 1000 characters",
+  BREAK_MINUTES_NON_NEGATIVE: "Break minutes must be a non-negative integer",
+  TEMPLATE_ID_POSITIVE: "Template ID must be a positive integer",
+} as const;
+
 export const shiftsValidation = {
   // ============= SHIFTS CRUD =============
 
@@ -20,25 +38,34 @@ export const shiftsValidation = {
       .optional()
       .isISO8601()
       .withMessage("Invalid end date format"),
-    query("userId").optional().isInt({ min: 1 }).withMessage("Invalid user ID"),
+    query("userId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_USER_ID),
     query("departmentId")
       .optional()
       .isInt({ min: 1 })
-      .withMessage("Invalid department ID"),
-    query("teamId").optional().isInt({ min: 1 }).withMessage("Invalid team ID"),
+      .withMessage(MESSAGES.INVALID_DEPARTMENT_ID),
+    query("teamId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_TEAM_ID),
     query("status")
       .optional()
       .isIn(["planned", "confirmed", "in_progress", "completed", "cancelled"])
-      .withMessage("Invalid status"),
+      .withMessage(MESSAGES.INVALID_STATUS),
     query("type")
       .optional()
       .isIn(["regular", "overtime", "standby", "vacation", "sick", "holiday"])
-      .withMessage("Invalid type"),
+      .withMessage(MESSAGES.INVALID_TYPE),
     query("templateId")
       .optional()
       .isInt({ min: 1 })
-      .withMessage("Invalid template ID"),
-    query("planId").optional().isInt({ min: 1 }).withMessage("Invalid plan ID"),
+      .withMessage(MESSAGES.INVALID_TEMPLATE_ID),
+    query("planId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_PLAN_ID),
     query("page")
       .optional()
       .isInt({ min: 1 })
@@ -59,9 +86,7 @@ export const shiftsValidation = {
   ],
 
   getShiftById: [
-    param("id")
-      .isInt({ min: 1 })
-      .withMessage("Shift ID must be a positive integer"),
+    param("id").isInt({ min: 1 }).withMessage(MESSAGES.SHIFT_ID_POSITIVE),
     handleValidationErrors,
   ],
 
@@ -70,18 +95,21 @@ export const shiftsValidation = {
     body("date").isISO8601().withMessage("Date is required in ISO8601 format"),
     body("startTime")
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("Start time must be in HH:MM format"),
+      .withMessage(MESSAGES.START_TIME_FORMAT),
     body("endTime")
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("End time must be in HH:MM format"),
+      .withMessage(MESSAGES.END_TIME_FORMAT),
     body("departmentId")
       .isInt({ min: 1 })
-      .withMessage("Department ID is required"),
-    body("planId").optional().isInt({ min: 1 }).withMessage("Invalid plan ID"),
+      .withMessage(MESSAGES.DEPARTMENT_ID_REQUIRED),
+    body("planId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_PLAN_ID),
     body("templateId")
       .optional()
       .isInt({ min: 1 })
-      .withMessage("Invalid template ID"),
+      .withMessage(MESSAGES.INVALID_TEMPLATE_ID),
     body("title")
       .optional()
       .trim()
@@ -94,38 +122,42 @@ export const shiftsValidation = {
     body("breakMinutes")
       .optional()
       .isInt({ min: 0 })
-      .withMessage("Break minutes must be a non-negative integer"),
+      .withMessage(MESSAGES.BREAK_MINUTES_NON_NEGATIVE),
     body("status")
       .optional()
       .isIn(["planned", "confirmed", "in_progress", "completed", "cancelled"])
-      .withMessage("Invalid status"),
+      .withMessage(MESSAGES.INVALID_STATUS),
     body("type")
       .optional()
       .isIn(["regular", "overtime", "standby", "vacation", "sick", "holiday"])
-      .withMessage("Invalid type"),
+      .withMessage(MESSAGES.INVALID_TYPE),
     body("notes")
       .optional()
       .trim()
       .isLength({ max: 1000 })
-      .withMessage("Notes cannot exceed 1000 characters"),
-    body("teamId").optional().isInt({ min: 1 }).withMessage("Invalid team ID"),
+      .withMessage(MESSAGES.NOTES_TOO_LONG),
+    body("teamId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_TEAM_ID),
     handleValidationErrors,
   ],
 
   updateShift: [
-    param("id")
+    param("id").isInt({ min: 1 }).withMessage(MESSAGES.SHIFT_ID_POSITIVE),
+    body("userId")
+      .optional()
       .isInt({ min: 1 })
-      .withMessage("Shift ID must be a positive integer"),
-    body("userId").optional().isInt({ min: 1 }).withMessage("Invalid user ID"),
+      .withMessage(MESSAGES.INVALID_USER_ID),
     body("date").optional().isISO8601().withMessage("Invalid date format"),
     body("startTime")
       .optional()
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("Start time must be in HH:MM format"),
+      .withMessage(MESSAGES.START_TIME_FORMAT),
     body("endTime")
       .optional()
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("End time must be in HH:MM format"),
+      .withMessage(MESSAGES.END_TIME_FORMAT),
     body("actualStart")
       .optional()
       .matches(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/)
@@ -137,12 +169,15 @@ export const shiftsValidation = {
     body("departmentId")
       .optional()
       .isInt({ min: 1 })
-      .withMessage("Invalid department ID"),
-    body("planId").optional().isInt({ min: 1 }).withMessage("Invalid plan ID"),
+      .withMessage(MESSAGES.INVALID_DEPARTMENT_ID),
+    body("planId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_PLAN_ID),
     body("templateId")
       .optional()
       .isInt({ min: 1 })
-      .withMessage("Invalid template ID"),
+      .withMessage(MESSAGES.INVALID_TEMPLATE_ID),
     body("title")
       .optional()
       .trim()
@@ -155,37 +190,36 @@ export const shiftsValidation = {
     body("breakMinutes")
       .optional()
       .isInt({ min: 0 })
-      .withMessage("Break minutes must be a non-negative integer"),
+      .withMessage(MESSAGES.BREAK_MINUTES_NON_NEGATIVE),
     body("status")
       .optional()
       .isIn(["planned", "confirmed", "in_progress", "completed", "cancelled"])
-      .withMessage("Invalid status"),
+      .withMessage(MESSAGES.INVALID_STATUS),
     body("type")
       .optional()
       .isIn(["regular", "overtime", "standby", "vacation", "sick", "holiday"])
-      .withMessage("Invalid type"),
+      .withMessage(MESSAGES.INVALID_TYPE),
     body("notes")
       .optional()
       .trim()
       .isLength({ max: 1000 })
-      .withMessage("Notes cannot exceed 1000 characters"),
-    body("teamId").optional().isInt({ min: 1 }).withMessage("Invalid team ID"),
+      .withMessage(MESSAGES.NOTES_TOO_LONG),
+    body("teamId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_TEAM_ID),
     handleValidationErrors,
   ],
 
   deleteShift: [
-    param("id")
-      .isInt({ min: 1 })
-      .withMessage("Shift ID must be a positive integer"),
+    param("id").isInt({ min: 1 }).withMessage(MESSAGES.SHIFT_ID_POSITIVE),
     handleValidationErrors,
   ],
 
   // ============= TEMPLATES =============
 
   getTemplateById: [
-    param("id")
-      .isInt({ min: 1 })
-      .withMessage("Template ID must be a positive integer"),
+    param("id").isInt({ min: 1 }).withMessage(MESSAGES.TEMPLATE_ID_POSITIVE),
     handleValidationErrors,
   ],
 
@@ -198,14 +232,14 @@ export const shiftsValidation = {
       .withMessage("Name cannot exceed 100 characters"),
     body("startTime")
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("Start time must be in HH:MM format"),
+      .withMessage(MESSAGES.START_TIME_FORMAT),
     body("endTime")
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("End time must be in HH:MM format"),
+      .withMessage(MESSAGES.END_TIME_FORMAT),
     body("breakMinutes")
       .optional()
       .isInt({ min: 0 })
-      .withMessage("Break minutes must be a non-negative integer"),
+      .withMessage(MESSAGES.BREAK_MINUTES_NON_NEGATIVE),
     body("color")
       .optional()
       .matches(/^#[0-9A-Fa-f]{6}$/)
@@ -222,9 +256,7 @@ export const shiftsValidation = {
   ],
 
   updateTemplate: [
-    param("id")
-      .isInt({ min: 1 })
-      .withMessage("Template ID must be a positive integer"),
+    param("id").isInt({ min: 1 }).withMessage(MESSAGES.TEMPLATE_ID_POSITIVE),
     body("name")
       .optional()
       .trim()
@@ -235,15 +267,15 @@ export const shiftsValidation = {
     body("startTime")
       .optional()
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("Start time must be in HH:MM format"),
+      .withMessage(MESSAGES.START_TIME_FORMAT),
     body("endTime")
       .optional()
       .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-      .withMessage("End time must be in HH:MM format"),
+      .withMessage(MESSAGES.END_TIME_FORMAT),
     body("breakMinutes")
       .optional()
       .isInt({ min: 0 })
-      .withMessage("Break minutes must be a non-negative integer"),
+      .withMessage(MESSAGES.BREAK_MINUTES_NON_NEGATIVE),
     body("color")
       .optional()
       .matches(/^#[0-9A-Fa-f]{6}$/)
@@ -260,20 +292,21 @@ export const shiftsValidation = {
   ],
 
   deleteTemplate: [
-    param("id")
-      .isInt({ min: 1 })
-      .withMessage("Template ID must be a positive integer"),
+    param("id").isInt({ min: 1 }).withMessage(MESSAGES.TEMPLATE_ID_POSITIVE),
     handleValidationErrors,
   ],
 
   // ============= SWAP REQUESTS =============
 
   listSwapRequests: [
-    query("userId").optional().isInt({ min: 1 }).withMessage("Invalid user ID"),
+    query("userId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_USER_ID),
     query("status")
       .optional()
       .isIn(["pending", "approved", "rejected", "cancelled"])
-      .withMessage("Invalid status"),
+      .withMessage(MESSAGES.INVALID_STATUS),
     handleValidationErrors,
   ],
 
@@ -304,7 +337,10 @@ export const shiftsValidation = {
   // ============= OVERTIME =============
 
   getOvertimeReport: [
-    query("userId").optional().isInt({ min: 1 }).withMessage("Invalid user ID"),
+    query("userId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_USER_ID),
     query("startDate")
       .notEmpty()
       .isISO8601()
@@ -330,9 +366,15 @@ export const shiftsValidation = {
     query("departmentId")
       .optional()
       .isInt({ min: 1 })
-      .withMessage("Invalid department ID"),
-    query("teamId").optional().isInt({ min: 1 }).withMessage("Invalid team ID"),
-    query("userId").optional().isInt({ min: 1 }).withMessage("Invalid user ID"),
+      .withMessage(MESSAGES.INVALID_DEPARTMENT_ID),
+    query("teamId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_TEAM_ID),
+    query("userId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage(MESSAGES.INVALID_USER_ID),
     query("format")
       .optional()
       .isIn(["csv", "excel"])

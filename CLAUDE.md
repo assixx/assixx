@@ -40,7 +40,7 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 #### Warum diese Änderung?
 
 - **Mobile-First:** Modals funktionieren schlecht auf Smartphones
-- **Better UX:** User bleibt im Kontext, kein Workflow-Unterbruch  
+- **Better UX:** User bleibt im Kontext, kein Workflow-Unterbruch
 - **Accessibility:** Screen-Reader und Keyboard-Navigation freundlicher
 - **Modern Standards:** Inline-Forms sind 2025 Best Practice
 - **Performance:** Weniger JavaScript, keine Z-Index Probleme
@@ -57,7 +57,7 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
    - Edit-Form klappt direkt in der Zeile auf
    - Beispiel: KVP-Vorschläge, Blackboard-Einträge
 
-3. **Slide-in Panel Pattern** 
+3. **Slide-in Panel Pattern**
    - Von rechts einfahrendes Panel (nicht modal!)
    - Overlay nur partial, Liste bleibt sichtbar
    - Beispiel: Chat, Notifications
@@ -80,7 +80,7 @@ Modals NUR noch für:
 
 Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden:
 - Priority 1: Häufig genutzte Features (Mitarbeiter, Shifts, Calendar)
-- Priority 2: Admin-Features (Areas, Departments, Teams)  
+- Priority 2: Admin-Features (Areas, Departments, Teams)
 - Priority 3: Seltene Features (Settings, Profile)
 
 ## **Use MCP Tools Before Everything:**
@@ -225,7 +225,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 1. Docker-Check
 2. TODO.md (AKTUELLE PHASE + FORTSCHRITTS-TRACKING!)
 3. CLAUDE.md
-4. TypeScript Architecture Guide (bei Backend)
+4. TypeScript-Standards
 5. Design Standards
 6. TypeScript Standards
 7. README.md
@@ -420,7 +420,7 @@ weitere Notes:
 
 ## Aktuelle Notizen (26.06.2025)
 
-- **WICHTIG:** TypeScript Architecture Guide ist PFLICHTLEKTÜRE für Backend-Entwicklung
+- **WICHTIG:** TypeScript-Standards.md PFLICHTLEKTÜRE für Backend-Entwicklung
 - **NEU:** docs/TYPESCRIPT-STANDARDS.md muss IMMER beachtet werden
 - TypeScript Migration abgeschlossen: 426 → 0 Errors
 - Shift Planning Design wurde in FEATURES.md integriert
