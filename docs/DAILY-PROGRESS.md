@@ -6,6 +6,57 @@
 
 ---
 
+## 📅 19.08.2025 (Montag) - Shift System Deep Dive & Bug Fixes
+
+### 🎯 Tagesaufgabe
+
+- Shift-System Bugs analysieren und dokumentieren
+- Hierarchische Filterung reparieren
+- Datenmodell für Schichtpläne neu konzipieren
+- showConfirm Dialog für Warnungen implementieren
+
+### ✅ Erfolge
+
+**Shift System Fixes:**
+- ✅ Doppelter v2 API-Pfad behoben (/api/v2/v2/shifts → /api/v2/shifts)
+- ✅ Dropdown-Verhalten korrigiert (active vs show class)
+- ✅ Hierarchische Filterung implementiert (Area → Department → Machine → Team)
+- ✅ Team-Auswahl lädt jetzt korrekt den Wochenplan
+- ✅ Employee-Filterung behoben (alle Team-Mitglieder, nicht nur 'employee' role)
+- ✅ Toast-Notifications für alle Fehler integriert
+- ✅ Shift-Type Validation erweitert (early/late/night erlaubt)
+- ✅ showConfirm Dialog mit Glassmorphismus-Design implementiert
+- ✅ Warnung bei unvollständigem Schichtplan (<10 Schichten)
+
+**Dokumentation:**
+- ✅ saving_shift_bug_plan_fix.md erstellt (komplett durchdachter Fix-Plan)
+- ✅ Datenmodell neu konzipiert (shift_plans → shifts → shift_notes)
+- ✅ Migration auf API v2 geplant (keine v1 Kompatibilität mehr nötig)
+- ✅ Option A für Multi-Mitarbeiter gewählt (mehrere shifts mit gleichem plan_id)
+
+### 🐛 Identifizierte Probleme
+
+1. **Falsches Datenmodell:** Direkte Speicherung in shifts ohne plan_id
+2. **machine_id fehlt:** Wird nicht in shifts gespeichert (immer NULL)
+3. **Redundante Notizen:** "Testnotiz" 10x statt 1x in shift_notes
+4. **shift_plans Tabelle:** Braucht machine_id und area_id Spalten
+
+### 📊 Metriken
+
+- **Zeit:** 8 Stunden intensives Debugging und Planung
+- **Commits:** 5 (shift fixes, validation updates, documentation)
+- **Files:** shifts.ts, shifts.validation.ts, alerts.ts, saving_shift_bug_plan_fix.md
+- **Tests:** 10 Schichten erfolgreich gespeichert (aber noch falsches Modell)
+
+### 🚀 Nächste Schritte
+
+1. Datenbank-Migration für shift_plans (machine_id, area_id hinzufügen)
+2. POST /api/v2/shifts/plan Endpoint implementieren
+3. Frontend auf Plan-basierte Speicherung umstellen
+4. Automatisches Laden nach Team-Auswahl
+
+---
+
 ## 📅 28.01.2025 (Dienstag) - Phase 8 Planning & Organization (Calendar KOMPLETT!)
 
 ### 🎯 Tagesaufgabe

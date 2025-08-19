@@ -1,33 +1,46 @@
 # Assixx TODO-Liste
 
-## 🚀 AKTUELLER STATUS (28.01.2025)
+## 🚀 AKTUELLER STATUS (19.08.2025)
 
 **Gerade erledigt:**
 
+- ✅ **SHIFT SYSTEM DEBUG & DOKUMENTATION** 🔧
+  - ✅ Doppelter v2 API-Pfad behoben
+  - ✅ Hierarchische Filterung repariert (Area → Department → Machine → Team)
+  - ✅ Toast-Notifications integriert
+  - ✅ showConfirm Dialog mit Glassmorphismus implementiert
+  - ✅ saving_shift_bug_plan_fix.md erstellt (kompletter Fix-Plan)
+  - ✅ Datenmodell neu konzipiert (ohne shift_assignments)
+  - ✅ Multi-Mitarbeiter Option A gewählt
+
+**Nächste Schritte (Morgen):**
+
+1. **Datenbank-Migration ausführen:**
+   - shift_plans um machine_id und area_id erweitern
+   - Migration 004-shift-plans-fix.sql erstellen und ausführen
+
+2. **Backend API v2 erweitern:**
+   - POST /api/v2/shifts/plan implementieren (Transaction-basiert)
+   - GET /api/v2/shifts/plan für Laden existierender Pläne
+   - Frontend loadShifts() auf v2 umstellen
+
+3. **Frontend Shift-Speicherung umbauen:**
+   - Plan-basierte Speicherung (mit plan_id)
+   - machine_id und area_id korrekt mitsenden
+   - Notizen nur 1x pro Tag in shift_notes
+
+**Vorherige Erfolge:**
+
 - ✅ **CALENDAR v2 API VOLLSTÄNDIG MIGRIERT UND PRODUKTIV!** 🎉
-  - ✅ Frontend komplett auf v2 API umgestellt
-  - ✅ Alle camelCase/snake_case Field-Mappings implementiert
-  - ✅ Badge-System für ungelesene Events implementiert
-  - ✅ Statusanfrage-Feature (requires_response) hinzugefügt
-  - ✅ Modal für "Neue Termine mit Statusanfrage"
-  - ✅ Automatische Farbzuweisung basierend auf Event-Ebene
-  - ✅ Privacy-Fix: Admins sehen keine privaten Events anderer mehr
-  - ✅ Feature Flag USE_API_V2_CALENDAR = true (ENABLED)
 - ✅ 31/64 Frontend-Dateien migriert (48.4%)
 
-**Nächste Schritte:**
+## 🎉 BACKEND API v2 ABGESCHLOSSEN! (03.08.2025) 🎉
+## ⚠️ FRONTEND MIGRATION LÄUFT NOCH! (Phase 7 von 12)
 
-- shifts.ts migrieren (nächste Planning & Organization Datei)
-- shifts.html Templates anpassen
-- Weitere 33 Frontend-Dateien (31/64 = 48.4% fertig)
-
-## 🎉 API v2 MIGRATION ABGESCHLOSSEN! (03.08.2025 - 01:00 Uhr) 🎉
-
-**FINALER API v2 Status:**
-
-- **Phase 1:** 13/13 APIs fertig (100%) ✅ KOMPLETT!
-- **Phase 2:** 14/14 APIs fertig (100%) ✅ KOMPLETT!
-- **Gesamt:** 27/27 APIs fertig (100%) 🏆
+**Backend API v2 Status:**
+- **Backend:** 27/27 APIs fertig (100%) ✅ KOMPLETT!
+- **Frontend:** 31/64 Dateien migriert (48.4%) 🚧 IN ARBEIT!
+- **Aktuell:** Phase 7 - Planning & Organization (shifts.ts)
 - **Alle Tests:** 576+ grün ✅
 - **TypeScript:** 0 Errors ✅
 - **ESLint:** 0 Errors ✅
