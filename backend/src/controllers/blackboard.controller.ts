@@ -3,8 +3,9 @@
  * Handles blackboard-related operations
  */
 
-import { Response } from "express";
 import { Pool } from "mysql2/promise";
+
+import { Response } from "express";
 
 import blackboardService from "../services/blackboard.service";
 import { AuthenticatedRequest } from "../types/request.types";

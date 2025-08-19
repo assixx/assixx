@@ -6,9 +6,10 @@
 import path from "path";
 
 import bcrypt from "bcryptjs";
-import express, { Router } from "express";
 import { param } from "express-validator";
 import multer from "multer";
+
+import express, { Router } from "express";
 
 const router: Router = express.Router();
 

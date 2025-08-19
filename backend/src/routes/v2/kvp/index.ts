@@ -9,8 +9,9 @@
 
 import path from "path";
 
-import { Router } from "express";
 import multer from "multer";
+
+import { Router } from "express";
 
 import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
 import {

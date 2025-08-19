@@ -6,8 +6,9 @@
 import { promises as fs } from "fs";
 import * as path from "path";
 
-import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
+
+import { Request, Response } from "express";
 
 import chatService from "../services/chat.service";
 import type { AuthenticatedRequest } from "../types/request.types";

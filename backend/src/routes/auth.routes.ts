@@ -3,8 +3,9 @@
  * Uses controller pattern for cleaner code
  */
 
-import express, { Router } from "express";
 import { body } from "express-validator";
+
+import express, { Router } from "express";
 
 import authController from "../controllers/auth.controller";
 import { security } from "../middleware/security";

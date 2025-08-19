@@ -5,9 +5,10 @@
 
 import path from "path";
 
-import express, { Router } from "express";
 import { body, param, query } from "express-validator";
 import multer from "multer";
+
+import express, { Router } from "express";
 
 import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
 import { createValidation } from "../../../middleware/validation.js";

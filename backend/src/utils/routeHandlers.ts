@@ -3,9 +3,10 @@
  * Provides type-safe wrappers for Express route handlers with custom request types
  */
 
-import { Request, Response, NextFunction, RequestHandler } from "express";
 import { ParamsDictionary } from "express-serve-static-core";
 import { ParsedQs } from "qs";
+
+import { Request, Response, NextFunction, RequestHandler } from "express";
 
 import {
   AuthenticatedRequest,

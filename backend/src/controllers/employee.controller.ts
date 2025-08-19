@@ -4,8 +4,9 @@
  * NOTE: This controller was previously named UserController but renamed for consistency
  */
 
-import { Request, Response } from "express";
 import { Pool } from "mysql2/promise";
+
+import { Request, Response } from "express";
 
 import type { UserCreateData } from "../models/user";
 import employeeService from "../services/employee.service";

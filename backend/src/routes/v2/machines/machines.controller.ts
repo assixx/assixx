@@ -3,8 +3,9 @@
  * Handles HTTP requests and delegates business logic to service layer
  */
 
-import { Response } from "express";
 import { validationResult, ValidationError } from "express-validator";
+
+import { Response } from "express";
 
 import type { AuthenticatedRequest } from "../../../types/request.types";
 import { successResponse, errorResponse } from "../../../utils/apiResponse";

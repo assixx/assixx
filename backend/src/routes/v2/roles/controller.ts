@@ -3,8 +3,9 @@
  * HTTP request handlers for roles API
  */
 
-import { Response } from "express";
 import { validationResult } from "express-validator";
+
+import { Response } from "express";
 
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { logger } from "../../../utils/logger.js";

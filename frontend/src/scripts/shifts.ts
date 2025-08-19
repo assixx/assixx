@@ -1231,16 +1231,16 @@ class ShiftPlanningSystem {
   private getShiftArray(date: string, shift: string): number[] {
     const dateKey = String(date);
     const shiftKey = String(shift);
-    
+
     if (!Object.prototype.hasOwnProperty.call(this.weeklyShifts, dateKey)) {
       this.weeklyShifts[dateKey] = {};
     }
-    
+
     const dayShifts = this.weeklyShifts[dateKey];
     if (!Object.prototype.hasOwnProperty.call(dayShifts, shiftKey)) {
       dayShifts[shiftKey] = [];
     }
-    
+
     return dayShifts[shiftKey];
   }
 

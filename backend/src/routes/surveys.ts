@@ -7,8 +7,9 @@
  *   description: Survey creation, management and responses
  */
 
-import express, { Router } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+
+import express, { Router } from "express";
 
 import db, { execute } from "../database";
 import { checkFeature } from "../middleware/features";

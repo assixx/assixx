@@ -3,8 +3,9 @@
  * HTTP request handlers for signup API
  */
 
-import { Request, Response } from "express";
 import { validationResult } from "express-validator";
+
+import { Request, Response } from "express";
 
 import RootLog from "../../../models/rootLog";
 import { logger } from "../../../utils/logger.js";

@@ -7,9 +7,10 @@
  *   description: Shift planning and management
  */
 
-import express, { Router } from "express";
 import { body, param, query } from "express-validator";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
+
+import express, { Router } from "express";
 
 import db, { executeQuery } from "../database";
 import { security } from "../middleware/security";

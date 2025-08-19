@@ -3,8 +3,9 @@
  * Types for Express middleware functions with proper typing
  */
 
-import { Request, Response, NextFunction, RequestHandler } from "express";
 import { ValidationChain } from "express-validator";
+
+import { Request, Response, NextFunction, RequestHandler } from "express";
 
 import type { AuthenticatedRequest, AuthUser } from "./request.types";
 import { RateLimiterType, RateLimiterMiddleware } from "./security.types";

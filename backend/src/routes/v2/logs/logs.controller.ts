@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+
 import { Response } from "express";
 
 import User from "../../../models/user.js";

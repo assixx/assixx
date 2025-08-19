@@ -9,9 +9,10 @@
 
 import path from "path";
 
-import express, { Router } from "express";
 import { body, param, query } from "express-validator";
 import multer from "multer";
+
+import express, { Router } from "express";
 
 import chatController from "../controllers/chat.controller";
 import { security } from "../middleware/security";

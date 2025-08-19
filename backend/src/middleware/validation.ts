@@ -3,7 +3,6 @@
  * Provides request validation using express-validator with proper TypeScript types
  */
 
-import { Request, Response, NextFunction } from "express";
 import {
   body,
   param,
@@ -11,6 +10,8 @@ import {
   validationResult,
   ValidationChain,
 } from "express-validator";
+
+import { Request, Response, NextFunction } from "express";
 
 import { ValidationMiddleware } from "../types/middleware.types";
 import { errorResponse } from "../utils/apiResponse";

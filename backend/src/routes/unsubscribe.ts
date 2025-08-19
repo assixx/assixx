@@ -2,9 +2,10 @@
  * Routen für die Abmeldung von E-Mail-Benachrichtigungen
  */
 
-import express, { Router } from "express";
 import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
+
+import express, { Router } from "express";
 
 import User from "../models/user";
 import { getErrorMessage } from "../utils/errorHandler";

@@ -3,8 +3,9 @@
  * Checks tenant deletion status and blocks access to suspended/deleting tenants
  */
 
-import { Request, Response, NextFunction } from "express";
 import { RowDataPacket } from "mysql2";
+
+import { Request, Response, NextFunction } from "express";
 
 import type { AuthenticatedRequest } from "../types/request.types";
 import { query } from "../utils/db";

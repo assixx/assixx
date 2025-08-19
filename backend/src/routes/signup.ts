@@ -3,8 +3,9 @@
  * API endpoints for tenant registration and subdomain validation
  */
 
-import express, { Router } from "express";
 import { body, param } from "express-validator";
+
+import express, { Router } from "express";
 
 import { security } from "../middleware/security";
 import { authLimiter, apiLimiter } from "../middleware/security-enhanced";
