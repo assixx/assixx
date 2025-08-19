@@ -8,7 +8,7 @@ import { ApiClient } from '../utils/api-client';
 import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
 import { $$id, createElement } from '../utils/dom-utils';
 
-import { getAuthToken, showSuccess, showError, showInfo } from './auth';
+import { getAuthToken, showInfo } from './auth';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 import { openModal } from './utils/modal-manager';
 
@@ -120,6 +120,7 @@ const DOM_IDS = {
 // CSS Classes to avoid duplicate strings
 const CSS_CLASSES = {
   DROPDOWN_OPTION: 'dropdown-option',
+  DROPDOWN_MESSAGE: 'dropdown-message',
   EMPLOYEE_NAME: 'employee-name',
 } as const;
 
@@ -549,7 +550,7 @@ class ShiftPlanningSystem {
       teamSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
         this.selectedContext.teamId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
-        void this.onTeamSelected();
+        void this.onTeamSelected(this.selectedContext.teamId ?? undefined);
       });
     }
 
@@ -559,7 +560,7 @@ class ShiftPlanningSystem {
       machineSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
         this.selectedContext.machineId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
-        void this.onMachineSelected();
+        void this.onMachineSelected(this.selectedContext.machineId ?? undefined);
       });
     }
   }
@@ -582,10 +583,19 @@ class ShiftPlanningSystem {
   }
 
   async loadContextData(): Promise<void> {
-    // Load areas first (top of hierarchy)
+    // Load ONLY areas first (top of hierarchy)
+    // Departments and machines will be loaded after area selection
     await this.loadAreas();
-    // Then load departments and machines
-    await Promise.all([this.loadDepartments(), this.loadMachines()]);
+
+    // Clear departments and machines initially
+    this.departments = [];
+    this.machines = [];
+    this.teams = [];
+
+    // Update dropdowns to show empty state
+    this.populateDepartmentSelect();
+    this.populateMachineSelect();
+    this.populateTeamSelect();
   }
 
   async loadAreas(): Promise<void> {
@@ -656,8 +666,20 @@ class ShiftPlanningSystem {
   async loadMachines(): Promise<void> {
     try {
       let url = '/api/machines';
+      const params: string[] = [];
+
+      // Filter by department if selected
       if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        url += `?department_id=${String(this.selectedContext.departmentId)}`;
+        params.push(`department_id=${String(this.selectedContext.departmentId)}`);
+      }
+
+      // Filter by area if selected
+      if (this.selectedContext.areaId !== null && this.selectedContext.areaId !== 0) {
+        params.push(`area_id=${String(this.selectedContext.areaId)}`);
+      }
+
+      if (params.length > 0) {
+        url += `?${params.join('&')}`;
       }
 
       const response = await fetch(url, {
@@ -668,8 +690,10 @@ class ShiftPlanningSystem {
       });
 
       if (response.ok) {
-        const data = (await response.json()) as { machines?: Machine[] };
-        this.machines = data.machines ?? [];
+        // API returns array directly, not wrapped in object
+        const data = (await response.json()) as Machine[];
+        this.machines = Array.isArray(data) ? data : [];
+        console.info('[SHIFTS] Machines loaded:', this.machines);
       } else {
         throw new Error('Failed to load machines');
       }
@@ -737,7 +761,7 @@ class ShiftPlanningSystem {
         this.teams = [];
       }
     }
-    this.populateTeamSelect();
+    // populateTeamSelect() is called by the calling function
   }
 
   loadTeamLeaders(): void {
@@ -788,6 +812,18 @@ class ShiftPlanningSystem {
 
     dropdown.innerHTML = '';
 
+    // Show message if no area selected
+    if (this.departments.length === 0) {
+      const message = document.createElement('div');
+      message.className = CSS_CLASSES.DROPDOWN_MESSAGE;
+      message.textContent = 'Bitte erst Bereich auswählen';
+      message.style.padding = '10px';
+      message.style.color = '#999';
+      message.style.fontStyle = 'italic';
+      dropdown.append(message);
+      return;
+    }
+
     console.info('Populating departments:', this.departments);
     this.departments.forEach((dept) => {
       const option = document.createElement('div');
@@ -808,10 +844,32 @@ class ShiftPlanningSystem {
 
     dropdown.innerHTML = '';
 
-    // Filter machines by selected department if any
-    let filteredMachines = this.machines;
-    if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-      filteredMachines = this.machines.filter((machine) => machine.department_id === this.selectedContext.departmentId);
+    // Show message if no department selected
+    if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
+      const message = document.createElement('div');
+      message.className = CSS_CLASSES.DROPDOWN_MESSAGE;
+      message.textContent = 'Bitte erst Abteilung auswählen';
+      message.style.padding = '10px';
+      message.style.color = '#999';
+      message.style.fontStyle = 'italic';
+      dropdown.append(message);
+      return;
+    }
+
+    // Filter machines by selected department (we already know departmentId is set)
+    const filteredMachines = this.machines.filter(
+      (machine) => machine.department_id === this.selectedContext.departmentId,
+    );
+
+    if (filteredMachines.length === 0) {
+      const message = document.createElement('div');
+      message.className = CSS_CLASSES.DROPDOWN_MESSAGE;
+      message.textContent = 'Keine Maschinen verfügbar';
+      message.style.padding = '10px';
+      message.style.color = '#999';
+      message.style.fontStyle = 'italic';
+      dropdown.append(message);
+      return;
     }
 
     filteredMachines.forEach((machine) => {
@@ -831,13 +889,31 @@ class ShiftPlanningSystem {
 
     dropdown.innerHTML = '';
 
-    // Filter teams by selected department if any
-    let filteredTeams = this.teams;
-    if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-      filteredTeams = this.teams.filter((team) => team.department_id === this.selectedContext.departmentId);
+    // Show message if no machine selected
+    if (this.selectedContext.machineId === null || this.selectedContext.machineId === 0) {
+      const message = document.createElement('div');
+      message.className = CSS_CLASSES.DROPDOWN_MESSAGE;
+      message.textContent = 'Bitte erst Maschine auswählen';
+      message.style.padding = '10px';
+      message.style.color = '#999';
+      message.style.fontStyle = 'italic';
+      dropdown.append(message);
+      return;
     }
 
-    filteredTeams.forEach((team) => {
+    // Teams are already filtered by machine via loadTeamsForMachine
+    if (this.teams.length === 0) {
+      const message = document.createElement('div');
+      message.className = CSS_CLASSES.DROPDOWN_MESSAGE;
+      message.textContent = 'Keine Teams verfügbar';
+      message.style.padding = '10px';
+      message.style.color = '#999';
+      message.style.fontStyle = 'italic';
+      dropdown.append(message);
+      return;
+    }
+
+    this.teams.forEach((team) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
       option.textContent = team.name;
@@ -938,9 +1014,11 @@ class ShiftPlanningSystem {
     // Load teams for this machine (via machine_teams junction)
     if (this.selectedContext.machineId !== null && this.selectedContext.machineId !== 0) {
       await this.loadTeamsForMachine(this.selectedContext.machineId);
+      this.populateTeamSelect(); // Update dropdown after loading teams
     } else if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
       // If no machine selected, show all department teams
       await this.loadTeams();
+      this.populateTeamSelect(); // Update dropdown after loading teams
     } else {
       // Clear teams if no context
       this.teams = [];
@@ -949,11 +1027,26 @@ class ShiftPlanningSystem {
   }
 
   async onTeamSelected(teamId?: number): Promise<void> {
+    console.info('[SHIFTS DEBUG] onTeamSelected called with teamId:', teamId);
+
     // Store the selected team
     this.selectedContext.teamId = teamId ?? null;
+
+    console.info('[SHIFTS DEBUG] selectedContext after setting teamId:', this.selectedContext);
+
     // Load team members when a team is selected
     if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+      console.info('[SHIFTS DEBUG] Team selected, loading data...');
       await this.loadTeamMembers();
+
+      // Now show the planning area and load shifts
+      this.togglePlanningAreaVisibility();
+      await this.loadCurrentWeekData();
+      await this.loadEmployees();
+    } else {
+      console.info('[SHIFTS DEBUG] No team selected, hiding planning area');
+      // Hide planning area if no team selected
+      this.togglePlanningAreaVisibility();
     }
   }
 
@@ -981,7 +1074,7 @@ class ShiftPlanningSystem {
       // Fallback to all department teams
       await this.loadTeams();
     }
-    this.populateTeamSelect();
+    // populateTeamSelect() is called in onMachineSelected
   }
 
   async loadTeamMembers(): Promise<void> {
@@ -1201,7 +1294,7 @@ class ShiftPlanningSystem {
     // Validate hierarchy before creating shift
     const validation = this.validateHierarchy();
     if (!validation.valid) {
-      showError(validation.message ?? 'Ungültige Auswahl-Hierarchie');
+      showErrorAlert(validation.message ?? 'Ungültige Auswahl-Hierarchie');
       return;
     }
 
@@ -1228,14 +1321,14 @@ class ShiftPlanningSystem {
 
         if (response.ok) {
           await response.json();
-          showSuccess('Schicht zugewiesen');
+          showSuccessAlert('Schicht zugewiesen');
           this.updateShiftCell(cellElement, userId, shiftType);
         } else {
-          showError(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
+          showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
         }
       } catch (error) {
         console.error('Error assigning shift (v1):', error);
-        showError('Fehler beim Zuweisen der Schicht');
+        showErrorAlert('Fehler beim Zuweisen der Schicht');
       }
     } else {
       // Use v2 API with ApiClient
@@ -1379,8 +1472,25 @@ class ShiftPlanningSystem {
     const adminActions = document.querySelector('#adminActions');
     const weekNavigation = document.querySelector('.week-navigation');
 
-    if ((this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) || !this.isAdmin) {
-      // Department selected (or employee with auto-selected dept) - show planning area
+    console.info('[SHIFTS DEBUG] togglePlanningAreaVisibility called');
+    console.info('[SHIFTS DEBUG] isAdmin:', this.isAdmin);
+    console.info('[SHIFTS DEBUG] selectedContext:', this.selectedContext);
+    console.info('[SHIFTS DEBUG] Elements found:', {
+      departmentNotice: !!departmentNotice,
+      mainPlanningArea: !!mainPlanningArea,
+      adminActions: !!adminActions,
+      weekNavigation: !!weekNavigation,
+    });
+
+    // Show planning area only when team is selected (or for employees with auto-selected team)
+    const shouldShowPlanning = this.isAdmin
+      ? this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0
+      : this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0;
+
+    console.info('[SHIFTS DEBUG] shouldShowPlanning:', shouldShowPlanning);
+
+    if (shouldShowPlanning) {
+      // Team selected (or employee with auto-selected dept) - show planning area
       if (departmentNotice) (departmentNotice as HTMLElement).style.display = 'none';
       if (mainPlanningArea) (mainPlanningArea as HTMLElement).style.display = '';
       if (adminActions && this.isAdmin) (adminActions as HTMLElement).style.display = 'block';
@@ -1388,7 +1498,9 @@ class ShiftPlanningSystem {
 
       // Load data for the selected department
       void (async () => {
+        console.info('[SHIFTS DEBUG] About to call loadCurrentWeekData');
         await this.loadCurrentWeekData();
+        console.info('[SHIFTS DEBUG] loadCurrentWeekData completed');
         // Load notes after shift data is loaded
         if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
           console.info('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
@@ -1413,20 +1525,27 @@ class ShiftPlanningSystem {
     }
 
     try {
-      // First load users
+      // If a team is selected, load team members via user_teams junction
       let url = '/api/users';
-      const params = new URLSearchParams();
+      if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+        // Load team members directly via teams endpoint
+        url = `/api/teams/${String(this.selectedContext.teamId)}/members`;
+        console.info('[SHIFTS DEBUG] Loading team members from user_teams junction');
+      } else {
+        // Otherwise load all department users
+        const params = new URLSearchParams();
 
-      if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        params.append('department_id', this.selectedContext.departmentId.toString());
-      }
-      if (this.selectedContext.teamLeaderId !== null && this.selectedContext.teamLeaderId !== 0) {
-        params.append('team_leader_id', this.selectedContext.teamLeaderId.toString());
-      }
+        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+          params.append('department_id', this.selectedContext.departmentId.toString());
+        }
+        if (this.selectedContext.teamLeaderId !== null && this.selectedContext.teamLeaderId !== 0) {
+          params.append('team_leader_id', this.selectedContext.teamLeaderId.toString());
+        }
 
-      const paramsString = params.toString();
-      if (paramsString !== '') {
-        url += `?${paramsString}`;
+        const paramsString = params.toString();
+        if (paramsString !== '') {
+          url += `?${paramsString}`;
+        }
       }
 
       const response = await fetch(url, {
@@ -1439,10 +1558,15 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = (await response.json()) as User[] | { users?: User[] };
         const users = Array.isArray(data) ? data : ((data as { users?: User[] }).users ?? []);
-        this.employees = users.filter((user: User) => user.role === 'employee');
+        // Include all users from team (not just 'employee' role, as admins can also be team members)
+        this.employees = users as Employee[];
 
         console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
         console.info('[SHIFTS DEBUG] Employee data:', this.employees);
+        console.info(
+          '[SHIFTS DEBUG] Employee IDs:',
+          this.employees.map((e) => e.id),
+        );
 
         // Availability is now part of user data, no need for separate call
 
@@ -1738,7 +1862,7 @@ class ShiftPlanningSystem {
       const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
       const employeeName = name !== '' ? name : employee.username;
 
-      showError(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
+      showErrorAlert(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
       return;
     }
 
@@ -1770,7 +1894,7 @@ class ShiftPlanningSystem {
           ['night', 'Nachtschicht'],
         ]);
 
-        showError(
+        showErrorAlert(
           `Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames.get(shiftType) ?? shiftType} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`,
         );
         return;
@@ -2157,7 +2281,7 @@ class ShiftPlanningSystem {
 
     // Validate department selection
     if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
-      showError('Bitte wählen Sie zuerst eine Abteilung aus');
+      showErrorAlert('Bitte wählen Sie zuerst eine Abteilung aus');
       return;
     }
 
@@ -2213,11 +2337,11 @@ class ShiftPlanningSystem {
         });
 
         if (response.ok) {
-          showSuccess('Schichtplan erfolgreich gespeichert!');
+          showSuccessAlert('Schichtplan erfolgreich gespeichert!');
           await this.loadCurrentWeekData();
         } else {
           const error = (await response.json()) as { message?: string };
-          showError(error.message ?? 'Fehler beim Speichern des Schichtplans');
+          showErrorAlert(error.message ?? 'Fehler beim Speichern des Schichtplans');
         }
       } else {
         // v2 API - Create individual shifts with notes
