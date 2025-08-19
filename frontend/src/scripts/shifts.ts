@@ -9,7 +9,7 @@ import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '
 import { $$id, createElement } from '../utils/dom-utils';
 
 import { getAuthToken, showInfo } from './auth';
-import { showSuccessAlert, showErrorAlert } from './utils/alerts';
+import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 import { openModal } from './utils/modal-manager';
 
 interface Employee extends User {
@@ -1333,7 +1333,7 @@ class ShiftPlanningSystem {
     } else {
       // Use v2 API with ApiClient
       try {
-        await this.apiClient.request('/v2/shifts', {
+        await this.apiClient.request('/shifts', {
           method: 'POST',
           body: JSON.stringify({
             userId,
@@ -2375,19 +2375,42 @@ class ShiftPlanningSystem {
           });
         });
 
+        // Log all shifts that will be created
+        console.info('[SHIFTS DEBUG] ==========================================');
+        console.info('[SHIFTS DEBUG] Total shifts to create:', shiftsToCreate.length);
+        console.info('[SHIFTS DEBUG] Shifts data:', JSON.stringify(shiftsToCreate, null, 2));
+        console.info('[SHIFTS DEBUG] Selected context:', this.selectedContext);
+        console.info('[SHIFTS DEBUG] Notes:', notes);
+        console.info('[SHIFTS DEBUG] ==========================================');
+
+        // Check if shift plan is incomplete (less than 10 shifts for Mo-Fr with early+late)
+        const expectedMinShifts = 10; // Mo-Fr je 2 Schichten (früh+spät)
+        if (shiftsToCreate.length < expectedMinShifts) {
+          const confirmed = await showConfirm(
+            `Der Schichtplan ist unvollständig (${String(shiftsToCreate.length)} von mindestens ${String(expectedMinShifts)} Schichten ausgefüllt). Trotzdem speichern?`,
+          );
+          if (!confirmed) {
+            console.info('[SHIFTS DEBUG] User cancelled save due to incomplete plan');
+            return;
+          }
+        }
+
         // Create shifts one by one (v2 doesn't have bulk endpoint yet)
         let successCount = 0;
         let errorCount = 0;
 
         for (const shift of shiftsToCreate) {
           try {
-            await this.apiClient.request('/v2/shifts', {
+            console.info('[SHIFTS DEBUG] Sending shift to API:', shift);
+            const response = await this.apiClient.request('/shifts', {
               method: 'POST',
               body: JSON.stringify(shift),
             });
+            console.info('[SHIFTS DEBUG] API Response:', response);
             successCount++;
           } catch (error) {
-            console.error('Error creating shift:', error);
+            console.error('[SHIFTS DEBUG] Failed to create shift:', shift);
+            console.error('[SHIFTS DEBUG] Error details:', error);
             errorCount++;
           }
         }
