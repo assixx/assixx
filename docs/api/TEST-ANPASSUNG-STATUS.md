@@ -8,13 +8,13 @@ Versuch, Tests minimal an bestehende API anzupassen, zeigt fundamentale Architek
 
 ## Calendar API (/api/calendar)
 
-### Was funktioniert:
+### Was funktioniert
 
 - ✅ 6 von 40 Tests bestehen (15%)
 - ✅ Basic CRUD operations
 - ✅ Auth funktioniert
 
-### Hauptprobleme:
+### Hauptprobleme
 
 1. **Field Mapping Chaos:**
    - API: `start_time`, `end_time`, `org_level`, `org_id`
@@ -27,12 +27,12 @@ Versuch, Tests minimal an bestehende API anzupassen, zeigt fundamentale Architek
 
 ## Chat API (/api/chat)
 
-### Was funktioniert:
+### Was funktioniert
 
 - ✅ 1 von 60 Tests besteht (1.7%)
 - ✅ GET /api/chat/conversations gibt 200
 
-### Hauptprobleme:
+### Hauptprobleme
 
 1. **Komplett andere Konzepte:**
    - Tests: channels, messages als top-level
@@ -50,16 +50,16 @@ Versuch, Tests minimal an bestehende API anzupassen, zeigt fundamentale Architek
 
 ## Fazit
 
-### Zahlen:
+### Zahlen
 
 - **Gesamt:** ~40 von 502+ Tests bestehen (< 10%)
 - **Tendenz:** Mit jedem Fix werden neue Probleme sichtbar
 
-### Problem:
+### Problem
 
 Die API und Tests wurden offensichtlich von verschiedenen Teams/zu verschiedenen Zeiten entwickelt ohne gemeinsame Spec.
 
-### Empfehlung:
+### Empfehlung
 
 **STOPP der Test-Anpassungen!**
 
@@ -70,7 +70,7 @@ Stattdessen:
 3. Entscheidung: Welche Version ist "richtig"?
 4. Systematische Überarbeitung
 
-### Zeitschätzung:
+### Zeitschätzung
 
 - Test-Anpassung fortsetzen: 2-3 Wochen (fragiles Ergebnis)
 - API neu designen: 2-3 Wochen (nachhaltiges Ergebnis)

@@ -148,7 +148,7 @@
 
 ## ✅ Fortschritt: 29/64 Files (45.3% abgeschlossen)
 
-### ⚠️ WICHTIGE NOTIZEN:
+### ⚠️ WICHTIGE NOTIZEN
 
 - **Chat**: ✅ Migration abgeschlossen! Feature Flag USE_API_V2_CHAT kann nach Testing aktiviert werden
 - **KVP stats**: Gleiches Problem - Navigation nutzt v2, aber KVP-Seite noch v1
@@ -156,7 +156,7 @@
 
 **LEARNING:** Badge-Updates in Navigation sollten eigentlich NACH der Haupt-Feature-Migration kommen!
 
-### 🎯 HEUTE MIGRIERT - WARTET AUF TEST (06.08.2025):
+### 🎯 HEUTE MIGRIERT - WARTET AUF TEST (06.08.2025)
 
 1. **root-dashboard.ts** → Vollständige v2 API Migration mit apiClient (WARTET AUF TEST)
 2. **root-dashboard.html** → Bestätigt keine direkten API Calls (WARTET AUF GENEHMIGUNG)
@@ -171,7 +171,7 @@
    - `/api/user/profile` → `/api/v2/users/profile`
    - `/api/logs` → `/api/v2/logs`
 
-### 🎯 ERREICHT AM 04.08.2025:
+### 🎯 ERREICHT AM 04.08.2025
 
 1. **departments.html** → v2 API Migration + Feature Flag `USE_API_V2_DEPARTMENTS` aktiviert ✅
 2. **Employee Creation** → Departments Dropdown funktioniert mit v2 API ✅
@@ -188,7 +188,7 @@
 - profile.html, employee-profile.html, admin-profile.html
 - account-settings.html (settings API)
 
-### 🚨 KRITISCHE REGEL:
+### 🚨 KRITISCHE REGEL
 
 **NIEMALS eine Checkbox abhaken ohne:**
 
@@ -198,7 +198,7 @@
 
 **Nur weil eine API 200 OK zurückgibt, heißt das NICHT dass die Feature funktioniert!**
 
-## 🎯 Test-Strategie nach jeder Phase:
+## 🎯 Test-Strategie nach jeder Phase
 
 ### Nach Phase 1-2 (Signup & Auth): ✅ GETESTET
 
@@ -213,36 +213,36 @@
 3. User Info im Header korrekt ✅
 4. Phase 4 komplett abgeschlossen ✅
 
-### Nach Phase 5 (Dashboards):
+### Nach Phase 5 (Dashboards)
 
 1. Alle Dashboards laden
 2. Daten werden angezeigt
 3. Keine 401 Errors
 
-### Nach Phase 6-10:
+### Nach Phase 6-10
 
 - Feature für Feature testen
 - Immer prüfen ob Auth noch funktioniert
 
-## ⚠️ WICHTIG:
+## ⚠️ WICHTIG
 
 - **NIEMALS** Phase 2 vor Phase 1 machen
 - **IMMER** nach Auth sofort testen
 - **Bei Fehlern** sofort stoppen und debuggen
 
-## 📝 API Coverage (27 APIs):
+## 📝 API Coverage (27 APIs)
 
 Alle 27 Backend v2 APIs sind durch diese 64 Files abgedeckt.
 Einzige Ausnahme: `machines` API hat keine Frontend Implementation.
 
-## 🚀 Implementierte Komponenten:
+## 🚀 Implementierte Komponenten
 
 1. **API Client** (`/frontend/src/utils/api-client.ts`) - Zentrale v1/v2 Kommunikation ✅
 2. **Feature Flags** (`/frontend/public/feature-flags.js`) - Granulare API-Kontrolle ✅
 3. **Response Adapter** (`/frontend/src/utils/response-adapter.ts`) - Format-Konvertierung ✅
 4. **Test Script** (`/test-v2-api.sh`) - Automatisierte v2 API Tests ✅
 
-## 📊 Nächste Schritte:
+## 📊 Nächste Schritte
 
 - Phase 4: Post-Login UI Components (header-user-info.ts, unified-navigation.ts, role-switch.ts)
 - Phase 5: Dashboards Migration

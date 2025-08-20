@@ -9,7 +9,7 @@
 
 ## 📊 Migration Scope
 
-### Was sich ändert:
+### Was sich ändert
 
 1. **Authentication**
    - Cookie-based → JWT Bearer Token
@@ -26,7 +26,7 @@
    - ~2,500 Zeilen Code anzupassen
    - Neue API Client Library erforderlich
 
-### Was gleich bleibt:
+### Was gleich bleibt
 
 - Datenbank Schema
 - Business Logic
@@ -35,7 +35,7 @@
 
 ## 🚦 Go/No-Go Kriterien
 
-### ✅ GO Kriterien:
+### ✅ GO Kriterien
 
 - Alle 27 v2 APIs implementiert ✅
 - Test Coverage > 80% ✅
@@ -43,7 +43,7 @@
 - Rollback Plan getestet ⏳
 - Team Training abgeschlossen ⏳
 
-### ❌ NO-GO Kriterien:
+### ❌ NO-GO Kriterien
 
 - Kritische Bugs in v2 APIs
 - Performance Degradation > 20%
@@ -111,7 +111,7 @@
 
 ## 🎲 Risk Assessment
 
-### High Risks:
+### High Risks
 
 1. **Authentication Migration**
    - Impact: Alle User betroffen
@@ -121,7 +121,7 @@
    - Impact: User Sessions, Preferences
    - Mitigation: Backup & Restore Procedures
 
-### Medium Risks:
+### Medium Risks
 
 1. **Performance Issues**
    - Impact: User Experience
@@ -131,7 +131,7 @@
    - Impact: External Services
    - Mitigation: Compatibility Layer
 
-### Low Risks:
+### Low Risks
 
 1. **Documentation Gaps**
    - Impact: Developer Productivity
@@ -139,14 +139,14 @@
 
 ## 📈 Success Metrics
 
-### Technical KPIs:
+### Technical KPIs
 
 - API Response Time: < 200ms (p95)
 - Error Rate: < 0.1%
 - Uptime: 99.9%
 - Zero Data Loss
 
-### Business KPIs:
+### Business KPIs
 
 - User Complaints: < 5 total
 - Support Tickets: < 10 migration-related
@@ -185,7 +185,7 @@
 
 ## 🚨 Critical Path & Entscheidungspunkte
 
-### Go/No-Go Entscheidungen nach jeder Phase:
+### Go/No-Go Entscheidungen nach jeder Phase
 
 1. **Nach Auth Migration (Ende Woche 1-2)**
    - ✅ Wenn erfolgreich → Weiter mit Core APIs
@@ -199,7 +199,7 @@
    - ✅ Wenn < 5% Fehlerrate → Rollout starten
    - ❌ Wenn > 5% Fehlerrate → Verschieben
 
-### Abbruch-Kriterien:
+### Abbruch-Kriterien
 
 - Auth Migration scheitert nach 5 Tagen
 - Performance 50% schlechter als v1
@@ -215,7 +215,7 @@
 
 ## 🎯 Next Steps - Pragmatischer Ansatz
 
-### Sofort starten (ohne großes Budget):
+### Sofort starten (ohne großes Budget)
 
 1. **Pilot mit 1 Developer**
    - Nur Auth API migrieren
@@ -227,7 +227,7 @@
    - Immer mit Test-Usern validieren
    - Budget nach Bedarf erhöhen
 
-### Minimal-Team für Start:
+### Minimal-Team für Start
 
 - 1 Senior Frontend Developer (50%)
 - 1 QA Tester (25%)
@@ -235,7 +235,7 @@
 
 ## 💡 Key Recommendations
 
-### DO's:
+### DO's
 
 ✅ Klein anfangen (nur Auth)  
 ✅ Viel testen (lieber zu viel als zu wenig)  
@@ -243,7 +243,7 @@
 ✅ Rollback immer möglich  
 ✅ User früh einbeziehen
 
-### DON'Ts:
+### DON'Ts
 
 ❌ Alle APIs auf einmal migrieren  
 ❌ Ohne Rollback-Plan starten  
@@ -252,19 +252,19 @@
 
 ## 📊 Erfolgs-Metriken für Management
 
-### Nach 2 Wochen:
+### Nach 2 Wochen
 
 - Auth API stabil migriert ✓/✗
 - 0 kritische Bugs ✓/✗
 - Performance gleich oder besser ✓/✗
 
-### Nach 4 Wochen:
+### Nach 4 Wochen
 
 - 50% der APIs migriert ✓/✗
 - < 3% Fehlerrate ✓/✗
 - Positive User Feedback ✓/✗
 
-### Nach 8 Wochen:
+### Nach 8 Wochen
 
 - 100% Migration abgeschlossen ✓/✗
 - Alte API kann abgeschaltet werden ✓/✗

@@ -26,7 +26,7 @@
 - Animationen müssen identisch ablaufen
 - Hover-Effekte müssen gleich bleiben
 
-## ⚠️ KRITISCH: Layout-System beachten!
+## ⚠️ KRITISCH: Layout-System beachten
 
 ### Navigation Container System
 
@@ -124,7 +124,7 @@
 
 ### Phase 0: Layout-System Respektieren (NEUE HÖCHSTE PRIORITÄT)
 
-#### 0.1 Keine parallelen Container-Systeme erstellen!
+#### 0.1 Keine parallelen Container-Systeme erstellen
 
 **WICHTIG:** Bevor wir CSS-Variablen oder andere Optimierungen angehen, müssen wir sicherstellen, dass wir das bestehende Layout-System respektieren:
 

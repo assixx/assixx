@@ -285,7 +285,7 @@ Monitor these headers and plan migration accordingly.
 
 ## Testing
 
-1. **Use Swagger Documentation**: http://localhost:3000/api-docs/v2
+1. **Use Swagger Documentation**: <http://localhost:3000/api-docs/v2>
 2. **Test with curl**:
 
    ```bash
@@ -300,9 +300,9 @@ Monitor these headers and plan migration accordingly.
 
 ## Support
 
-- **Documentation**: http://localhost:3000/api-docs/v2
+- **Documentation**: <http://localhost:3000/api-docs/v2>
 - **Migration Issues**: Create issue in GitHub repository
-- **Questions**: Contact support@scs-technik.de
+- **Questions**: Contact <support@scs-technik.de>
 
 ## Endpoint Mapping
 

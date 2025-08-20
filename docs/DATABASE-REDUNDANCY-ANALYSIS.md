@@ -47,7 +47,7 @@
 
 ### 3. BRUTALE ANALYSE - Weitere potentielle Redundanzen
 
-#### Views - TEILWEISE REDUNDANT!
+#### Views - TEILWEISE REDUNDANT
 
 **GENUTZTE Views**:
 
@@ -79,7 +79,7 @@
 - deletion_partial_options
   **ANALYSE**: Scheint überdimensioniert für Tenant-Löschung
 
-#### Shift-System - AKTIV GENUTZT!
+#### Shift-System - AKTIV GENUTZT
 
 **weekly_shift_notes** wird AKTIV GENUTZT in:
 
@@ -104,13 +104,13 @@
 - weekly_shift_notes
   **ANALYSE**: System ist komplex aber WIRD GENUTZT - KEINE REDUNDANZ!
 
-## BRUTALE WAHRHEIT - FAST NICHTS IST REDUNDANT!
+## BRUTALE WAHRHEIT - FAST NICHTS IST REDUNDANT
 
 Das System befindet sich in einer UNFERTIGEN MIGRATION von alten zu neuen Tabellenstrukturen. Die "\_old" Tabellen sind NICHT redundant, sondern Teil eines nicht abgeschlossenen Migrationsprozesses.
 
 ## Empfehlungen (EXTREME VORSICHT!)
 
-### KRITISCHE KORREKTUR - NICHTS IST REDUNDANT!
+### KRITISCHE KORREKTUR - NICHTS IST REDUNDANT
 
 #### employee_availability vs employee_availability_old
 
@@ -125,7 +125,7 @@ Das System befindet sich in einer UNFERTIGEN MIGRATION von alten zu neuen Tabell
 
 **STATUS**: BEIDE TABELLEN MÜSSEN BLEIBEN bis Migration abgeschlossen!
 
-### NICHTS LÖSCHEN - MIGRATION ABSCHLIESSEN:
+### NICHTS LÖSCHEN - MIGRATION ABSCHLIESSEN
 
 1. **employee_availability Migration**:
    - Code nutzt bereits neue Tabelle
@@ -138,14 +138,15 @@ Das System befindet sich in einer UNFERTIGEN MIGRATION von alten zu neuen Tabell
    - Neue Tabelle wird aktiv genutzt
    - Alte Tabelle hat noch Foreign Keys
    - Migration muss abgeschlossen werden:
+
      ```sql
      -- Foreign Keys von chat_notifications, message_attachments, message_read_receipts
      -- müssen auf neue messages Tabelle zeigen
      ```
 
-### ECHTE REDUNDANZ-KANDIDATEN:
+### ECHTE REDUNDANZ-KANDIDATEN
 
-#### 1. UNGENUTZTE VIEWS (können gelöscht werden):
+#### 1. UNGENUTZTE VIEWS (können gelöscht werden)
 
 - `active_shifts_today`
 - `active_surveys`
@@ -157,11 +158,11 @@ Das System befindet sich in einer UNFERTIGEN MIGRATION von alten zu neuen Tabell
 
 **Empfehlung**: Views haben keine Daten, nur Definitionen. Löschung ist risikoarm ABER prüfen ob Frontend/Reports diese nutzen!
 
-#### 2. MIGRATION LOGS (nach erfolgreicher Migration):
+#### 2. MIGRATION LOGS (nach erfolgreicher Migration)
 
 - `migration_log` - Nur wenn alle Migrationen abgeschlossen
 
-### WEITERE UNTERSUCHUNG NÖTIG:
+### WEITERE UNTERSUCHUNG NÖTIG
 
 1. **Deletion-System**: 9 Tabellen für Tenant-Löschung wirkt übertrieben
 2. **Shift-System**: 13 Tabellen - Konsolidierung prüfen

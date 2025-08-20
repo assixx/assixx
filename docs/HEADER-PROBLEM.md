@@ -4,7 +4,7 @@
 
 Auf der blackboard.html Seite wurden das Profilbild und die Role-Badge im Header nicht angezeigt, obwohl sie im HTML vorhanden waren.
 
-### Symptome:
+### Symptome
 
 - Avatar und Role-Badge waren für ~1ms sichtbar beim Laden der Seite
 - Danach verschwanden sie komplett
@@ -100,14 +100,14 @@ if (userInfoDiv && userInfoDiv.children.length === 0) {
 
 Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge komplett im Header.
 
-### Symptome:
+### Symptome
 
 - Kein Role Switch Button vorhanden
 - Role Badge (`<span id="role-indicator">`) fehlte im user-info div
 - Nur Avatar und Username wurden angezeigt
 - Header sah anders aus als bei admin-dashboard.html
 
-### Ursache:
+### Ursache
 
 1. **Fehlende HTML-Elemente**: Die Header-Struktur war unvollständig
 2. **Fehlende Scripts**: role-switch.ts wurde nicht geladen
@@ -207,14 +207,14 @@ window.addEventListener("DOMContentLoaded", function () {
 
 Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header komplett falsch dargestellt.
 
-### Symptome:
+### Symptome
 
 - Role-Switch Button war neben dem Logo statt rechts im Header
 - Profilbild war überdimensional groß
 - Header-Layout stimmte nicht mit anderen Seiten überein
 - Console zeigte: `[UnifiedNav] Using cached loadUserInfo` aber Header war trotzdem falsch
 
-### Ursache:
+### Ursache
 
 1. **Falsche CSS-Lade-Methode**:
    - KVP-Seiten nutzten `<link rel="stylesheet">` Tags
@@ -324,14 +324,14 @@ Wenn der Header falsch aussieht:
 
 Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig ausschließenden Fehlern.
 
-### Symptome:
+### Symptome
 
 - **Mit statischer Script-Reihenfolge**: Blackboard-Einträge ✓, aber Profilbild ✗
 - **Mit dynamischer Script-Reihenfolge**: Profilbild ✓, aber Blackboard-Einträge ✗
 - Build zeigte manchmal 145, manchmal 146 transformierte Module
 - `user-info` div wurde mit reinem Text "Son Goku" überschrieben
 
-### Ursachen:
+### Ursachen
 
 1. **CSS-Import-Methode** (Hauptproblem für fehlendes Profilbild):
    - `user-info-update.css` wurde mit `<link>` statt `@import` geladen

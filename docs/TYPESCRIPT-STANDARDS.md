@@ -31,7 +31,7 @@ Alle Code-Formatierung wird durch Prettier automatisch gehandhabt. **KEINE** Dis
 }
 ```
 
-### Beispiele:
+### Beispiele
 
 ```typescript
 // ✅ RICHTIG - Prettier formatiert
@@ -842,7 +842,6 @@ interface UserData {
 **Basiert auf:** eslint.config.js (Backend & Frontend) + .prettierrc.json
 **Maintainer:** Assixx Development Team
 
-
 # TypeScript Architecture Guide
 
 An Claude: Korriegire und opitmiere diese Datei ständig, wenn du meinst, dass was geändert hat oder wir es besser machen können.
@@ -1023,7 +1022,7 @@ try {
 
 ## Migration from Old Patterns
 
-### Old Pattern:
+### Old Pattern
 
 ```typescript
 router.post("/endpoint", authenticateToken as any, authorizeRole("admin") as any, async (req: any, res: any) => {
@@ -1031,7 +1030,7 @@ router.post("/endpoint", authenticateToken as any, authorizeRole("admin") as any
 });
 ```
 
-### New Pattern:
+### New Pattern
 
 ```typescript
 router.post(

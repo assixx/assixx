@@ -30,6 +30,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    - Badges, Avatar, User-Info werden zentral verwaltet
 
 3. **Beispiel-Implementierung** (shifts.html):
+
    ```html
    <script type="module" src="/scripts/auth.ts"></script>
    <script type="module" src="/scripts/shifts.ts"></script>
@@ -65,6 +66,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    ```
 
 2. **Mehrere Scripts für verschiedene Funktionen**:
+
    ```html
    <script src="/scripts/header-user-info.ts"></script>
    <script src="/scripts/role-switch.ts"></script>
@@ -218,7 +220,7 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 
 - [ ] `employee-profile.html` - Mitarbeiter Profil (braucht komplette Überarbeitung - verwendet altes Design-System)
 
-### ✅ Erfolgreich migrierte Seiten:
+### ✅ Erfolgreich migrierte Seiten
 
 **Admin Dashboard & Seiten:**
 

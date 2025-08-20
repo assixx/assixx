@@ -55,7 +55,7 @@ Füge dieses Script im `<head>` Tag ein - **VOR allen CSS-Dateien**!
 - employee-dashboard.html ✅
 - root-dashboard.html ✅
 
-## Alle anderen Seiten brauchen das Script!
+## Alle anderen Seiten brauchen das Script
 
 Praktisch ALLE anderen HTML-Dateien im Projekt haben eine Sidebar:
 

@@ -4,7 +4,7 @@ Alle Änderungen an der API v2 werden hier dokumentiert.
 
 ## [1.0.0] - 2025-08-03 - API v2 Migration Complete! 🎉
 
-### 03.08.2025 - FINALE: 100% Migration abgeschlossen!
+### 03.08.2025 - FINALE: 100% Migration abgeschlossen
 
 #### Added
 

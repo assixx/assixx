@@ -1972,7 +1972,7 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 
 ## 🎯 FINALE CHECKLISTE
 
-### Vor der Implementierung prüfen:
+### Vor der Implementierung prüfen
 
 - [ ] Alle Foreign Key Relationships dokumentiert?
 - [ ] Backup-Strategie definiert?
@@ -1985,7 +1985,7 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 - [ ] Legal Department Approval?
 - [ ] Disaster Recovery Plan?
 
-### Technische Voraussetzungen:
+### Technische Voraussetzungen
 
 - [ ] MySQL Event Scheduler aktiviert?
 - [ ] Genug Speicherplatz für Backups?
@@ -2006,7 +2006,7 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 
 ## 🐳 DOCKER SETUP FÜR DELETION WORKER
 
-### Worker Service starten:
+### Worker Service starten
 
 ```bash
 cd /home/scs/projects/Assixx/docker
@@ -2018,7 +2018,7 @@ docker-compose up -d deletion-worker
 docker-compose up -d
 ```
 
-### Worker Status prüfen:
+### Worker Status prüfen
 
 ```bash
 # Container Status anzeigen
@@ -2034,7 +2034,7 @@ docker-compose logs -f deletion-worker
 docker-compose logs --tail=100 deletion-worker
 ```
 
-### Worker Debugging:
+### Worker Debugging
 
 ```bash
 # In den Container verbinden
@@ -2059,7 +2059,7 @@ docker-compose exec deletion-worker node -e "
 "
 ```
 
-### Worker Management:
+### Worker Management
 
 ```bash
 # Worker stoppen
@@ -2075,7 +2075,7 @@ docker-compose rm -f deletion-worker
 docker-compose logs --no-log-prefix deletion-worker > deletion-worker.log
 ```
 
-### Environment Variables:
+### Environment Variables
 
 Der Worker nutzt folgende Umgebungsvariablen (siehe docker-compose.yml):
 
@@ -2084,7 +2084,7 @@ Der Worker nutzt folgende Umgebungsvariablen (siehe docker-compose.yml):
 - `REDIS_*`: Redis Verbindung für Session Cleanup
 - `SMTP_*`: Email-Versand für Löschbenachrichtigungen
 
-### Monitoring:
+### Monitoring
 
 ```bash
 # Worker Health Status als JSON
@@ -2100,7 +2100,7 @@ curl -s http://localhost:3001/health | jq '.'
 }
 ```
 
-### Troubleshooting:
+### Troubleshooting
 
 1. **Worker startet nicht**:
    - Prüfe ob MySQL und Redis laufen: `docker-compose ps`
@@ -2126,7 +2126,7 @@ curl -s http://localhost:3001/health | jq '.'
 
 **Implementierung:**
 
-#### Database Migration:
+#### Database Migration
 
 ```sql
 -- Erweitere tenant_deletion_queue Tabelle
@@ -2151,7 +2151,7 @@ CREATE TABLE tenant_deletion_approvals (
 );
 ```
 
-#### Service Erweiterung:
+#### Service Erweiterung
 
 ```typescript
 // In TenantDeletionService
@@ -2216,7 +2216,7 @@ async approveDeletion(queueId: number, approverId: number): Promise<void> {
 
 **Implementierung:**
 
-#### Worker Erweiterung:
+#### Worker Erweiterung
 
 ```typescript
 // In DeletionWorker
@@ -2269,7 +2269,7 @@ class DeletionWorker {
 }
 ```
 
-#### API Endpoint:
+#### API Endpoint
 
 ```typescript
 // Emergency Stop Endpoint
@@ -2308,7 +2308,7 @@ router.post("/deletion-queue/:id/emergency-stop", auth, requireRole("root"), asy
 
 **Implementierung:**
 
-#### Alert Service:
+#### Alert Service
 
 ```typescript
 // backend/src/services/alerting.service.ts
@@ -2405,7 +2405,7 @@ private async alertOnFailure(queueId: number, error: Error): Promise<void> {
 
 ### 4. Weitere fehlende Features
 
-#### 4.1 Dry-Run Modus:
+#### 4.1 Dry-Run Modus
 
 ```typescript
 async performDryRun(tenantId: number): Promise<DryRunReport> {
@@ -2428,7 +2428,7 @@ async performDryRun(tenantId: number): Promise<DryRunReport> {
 }
 ```
 
-#### 4.2 Cronjobs Cleanup Step:
+#### 4.2 Cronjobs Cleanup Step
 
 ```typescript
 {
@@ -2457,7 +2457,7 @@ async performDryRun(tenantId: number): Promise<DryRunReport> {
 }
 ```
 
-#### 4.3 MySQL Event für Backup Cleanup:
+#### 4.3 MySQL Event für Backup Cleanup
 
 ```sql
 -- In Migration hinzufügen
@@ -2503,7 +2503,7 @@ DELIMITER ;
 2. **Partial Deletion**
 3. **MySQL Events** für Cleanup
 
-### Priorisierung:
+### Priorisierung
 
 - 🔴 **KRITISCH**: Zwei-Personen-Prinzip, Emergency Stop
 - 🟠 **WICHTIG**: Monitoring, 24h Cooling-Off

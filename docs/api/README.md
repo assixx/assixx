@@ -2,7 +2,7 @@
 
 ## 🚀 API v2 - Aktuelle Dokumentation
 
-### Für verschiedene Zielgruppen:
+### Für verschiedene Zielgruppen
 
 1. **[API-V2-QUICK-REFERENCE.md](./API-V2-QUICK-REFERENCE.md)** 📋
    - **Für:** Alle Entwickler
@@ -24,7 +24,7 @@
    - **Inhalt:** Breaking Changes, Vergleiche, Timeline
    - **Nutzen:** Smooth Migration von alter zu neuer API
 
-### Für Tracking und Historie:
+### Für Tracking und Historie
 
 5. **[API-V2-PROGRESS-LOG.md](./API-V2-PROGRESS-LOG.md)** 📝
    - Detailliertes Arbeitsprotokoll Tag für Tag
@@ -66,9 +66,9 @@
 
 ## 🔗 Live Resources
 
-- **Swagger UI v2:** http://localhost:3000/api-docs/v2
-- **Swagger UI v1:** http://localhost:3000/api-docs/
-- **API v2 Base:** http://localhost:3000/api/v2/
+- **Swagger UI v2:** <http://localhost:3000/api-docs/v2>
+- **Swagger UI v1:** <http://localhost:3000/api-docs/>
+- **API v2 Base:** <http://localhost:3000/api/v2/>
 
 ---
 

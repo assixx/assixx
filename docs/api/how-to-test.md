@@ -1,6 +1,6 @@
 # How to Write Tests for Assixx API v2
 
-## 🚨 Critical Testing Patterns - MUST READ!
+## 🚨 Critical Testing Patterns - MUST READ
 
 This guide documents the CORRECT way to write tests for the Assixx API v2. These patterns have been discovered through extensive debugging and are essential for successful test implementation.
 

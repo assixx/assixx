@@ -7,12 +7,14 @@ Dieses Dokument beschreibt die Implementierung von Server-Sent Events (SSE) für
 ## Warum SSE statt Polling?
 
 ### Aktuelles Problem (Polling)
+
 - **10 Minuten Verzögerung** für neue Benachrichtigungen
 - **Unnötige Server-Last** durch konstante API-Calls
 - **Verschwendete Ressourcen** wenn keine neuen Events vorliegen
 - **Schlechte User Experience** - Mitarbeiter sehen neue Umfragen erst nach bis zu 10 Minuten
 
 ### Lösung mit SSE
+
 - **Instant Updates** - Benachrichtigungen in < 1 Sekunde
 - **Effizient** - Nur eine persistente HTTP-Verbindung
 - **Automatisches Reconnect** - Built-in Fehlerbehandlung
@@ -395,6 +397,7 @@ export class UnifiedNavigation {
 ## Migration Plan
 
 ### Phase 1: Surveys (JETZT)
+
 1. ✅ EventBus implementieren
 2. ✅ SSE Endpoint erstellen
 3. ✅ Survey Service integrieren
@@ -402,6 +405,7 @@ export class UnifiedNavigation {
 5. ✅ Polling für Surveys entfernen
 
 ### Phase 2: Weitere Notifications (SPÄTER)
+
 - Documents
 - KVP Suggestions
 - Calendar Events
@@ -444,6 +448,7 @@ data: {"type":"NEW_SURVEY","survey":{"id":1,"title":"Test Survey"}}
 ## Browser Compatibility
 
 SSE wird von allen modernen Browsern unterstützt (98% Coverage):
+
 - ✅ Chrome 6+
 - ✅ Firefox 6+
 - ✅ Safari 5+
@@ -463,16 +468,19 @@ SSE wird von allen modernen Browsern unterstützt (98% Coverage):
 ## Troubleshooting
 
 ### Problem: Connection drops frequently
+
 - Check Nginx/Apache proxy timeout settings
 - Ensure `X-Accel-Buffering: no` header is set
 - Verify heartbeat interval < proxy timeout
 
 ### Problem: Events not received
+
 - Check tenant_id matching
 - Verify role-based filtering
 - Ensure EventBus is properly initialized
 
 ### Problem: High memory usage
+
 - Limit max SSE connections per user
 - Implement connection pooling
 - Check for memory leaks in event handlers

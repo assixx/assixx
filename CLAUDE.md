@@ -5,10 +5,10 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 ## QUICK REFERENCE
 
 - Projekt: Multi-Tenant SaaS für Industriefirmen
-- GitHub: https://github.com/SCS-Technik/Assixx
+- GitHub: <https://github.com/SCS-Technik/Assixx>
 - Aktueller Branch: debugging/v0.1.0--R2Stable
 - Tech Stack: TypeScript, Express, MySQL, Docker, Redis, Vite
-- Dev URL: http://localhost:3000
+- Dev URL: <http://localhost:3000>
 - Docker Dir: /home/scs/projects/Assixx/docker
 - Package Manager: pnpm
 - Datenbank: MySQL (Port 3307), Redis (Port 6379)
@@ -33,7 +33,7 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 
 ## 🎨 UX/UI DESIGN STANDARDS (NEU - 16.08.2025)
 
-### KEINE MODALS MEHR FÜR DATENEINGABE!
+### KEINE MODALS MEHR FÜR DATENEINGABE
 
 **Ab sofort gilt:** Alle Formulare für Dateneingabe werden als **Inline-Formulare** implementiert, KEINE Modals mehr!
 
@@ -45,7 +45,7 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 - **Modern Standards:** Inline-Forms sind 2025 Best Practice
 - **Performance:** Weniger JavaScript, keine Z-Index Probleme
 
-#### Neue UI-Patterns für Formulare:
+#### Neue UI-Patterns für Formulare
 
 1. **Split-View Pattern (Bevorzugt für Desktop)**
    - Links: Liste/Tabelle der Einträge
@@ -70,15 +70,17 @@ Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf 
 #### Was ist noch erlaubt für Modals?
 
 Modals NUR noch für:
+
 - ❌ Lösch-Bestätigungen ("Wirklich löschen?")
 - ⚠️ Kritische Warnungen (Datenverlust-Warnung)
 - ℹ️ Info-Dialoge (Hilfe, About)
 - 🔒 Session-Timeouts
 - NIEMALS für Dateneingabe!
 
-#### Migration bestehender Modals:
+#### Migration bestehender Modals
 
 Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden:
+
 - Priority 1: Häufig genutzte Features (Mitarbeiter, Shifts, Calendar)
 - Priority 2: Admin-Features (Areas, Departments, Teams)
 - Priority 3: Seltene Features (Settings, Profile)
@@ -146,7 +148,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 1. docker exec assixx-backend pnpm run build:ts
 2. Browser Cache leeren (Ctrl+Shift+R)
-3. Testen auf http://localhost:3000
+3. Testen auf <http://localhost:3000>
 
 ### Backend API-Änderung
 

@@ -1422,7 +1422,7 @@ document.addEventListener("click", function (e) {
 
 ## 💬 Chat System Design Standards
 
-### WebSocket-Nachrichten Format:
+### WebSocket-Nachrichten Format
 
 ```javascript
 // Standard Message Format
@@ -1449,7 +1449,7 @@ document.addEventListener("click", function (e) {
 }
 ```
 
-### Chat UI Standards:
+### Chat UI Standards
 
 ```css
 /* Chat Container - Glassmorphismus */
@@ -1479,13 +1479,13 @@ document.addEventListener("click", function (e) {
 }
 ```
 
-### Chat-Berechtigungen:
+### Chat-Berechtigungen
 
 - **Admins**: Können mit allen chatten (Employees und andere Admins)
 - **Employees**: Können nur mit anderen Employees und Admins chatten
 - **Tenant-Isolation**: Chats nur innerhalb des gleichen Tenants
 
-### Best Practices:
+### Best Practices
 
 1. **Buffer zu Base64**: Immer `Buffer.from(data).toString('base64')` für Attachments
 2. **Undefined-Checks**: Immer prüfen ob Conversation existiert bevor Zugriff
@@ -1654,7 +1654,7 @@ document.addEventListener("click", function (e) {
 
 Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemeinen CSS-Selektoren zu verwenden, da diese die Standard-Styles überschreiben können.
 
-#### ❌ FALSCH - Zu globale Selektoren:
+#### ❌ FALSCH - Zu globale Selektoren
 
 ```css
 /* NIEMALS so allgemein definieren! */
@@ -1669,7 +1669,7 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 }
 ```
 
-#### ✅ RICHTIG - Spezifische Selektoren:
+#### ✅ RICHTIG - Spezifische Selektoren
 
 ```css
 /* Immer mit spezifischem Kontext */
@@ -1683,7 +1683,7 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 }
 ```
 
-### Pflicht-Includes für konsistente Header:
+### Pflicht-Includes für konsistente Header
 
 Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 
@@ -1694,7 +1694,7 @@ Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 <link rel="stylesheet" href="/styles/user-info-update.css" />
 ```
 
-### Debugging-Tipps:
+### Debugging-Tipps
 
 1. **Vergleiche mit funktionierenden Seiten** (z.B. root-dashboard.html)
 2. **Prüfe alle CSS-Includes** - fehlende Dateien sind oft die Ursache
@@ -1704,7 +1704,7 @@ Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 Für alle modals gilt bei:
 backdrop-filter: blur(20px) saturate(500%);
 
-## background: #1a1a1a4a;
+## background: #1a1a1a4a
 
 ## 🎯 Checkliste für neue Komponenten
 

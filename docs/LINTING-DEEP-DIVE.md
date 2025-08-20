@@ -75,7 +75,7 @@ if (user) { // Jetzt macht die Prüfung Sinn
 
 ## 2. Import/Export Organisation - Strukturierter Code
 
-### Warum Import-Reihenfolge wichtig ist:
+### Warum Import-Reihenfolge wichtig ist
 
 ```javascript
 // ❌ SCHLECHT - Chaotische Imports
@@ -110,7 +110,7 @@ import "./styles.css";
 - **Performance:** Built-ins zuerst kann minimal schneller sein
 - **Debugging:** Einfacher Dependencies zu tracken
 
-### Import Cycle Detection:
+### Import Cycle Detection
 
 ```javascript
 // ❌ SCHLECHT - Zirkuläre Abhängigkeit
@@ -217,7 +217,7 @@ const obj = {
 
 ## 5. Pre-commit Hooks - Automatische Qualitätssicherung
 
-### Wie es funktioniert:
+### Wie es funktioniert
 
 ```bash
 # Wenn du committest:
@@ -238,7 +238,7 @@ git commit -m "feat: new feature"
 - **Team-Konsistenz:** Jeder committed sauberen Code
 - **Zeit sparen:** Keine manuellen Checks nötig
 
-### Typisches Setup:
+### Typisches Setup
 
 ```json
 // .husky/pre-commit

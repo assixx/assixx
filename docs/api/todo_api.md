@@ -183,7 +183,7 @@
   - DB Type Conversions
   - Addon Pricing Synchronisation
 
-### 5. **Features API v2** ✅ (02.08. 14:00 - 17:00) MIT TESTS!
+### 5. **Features API v2** ✅ (02.08. 14:00 - 17:00) MIT TESTS
 
 - **Endpoints:** 11 (Public + Auth + Admin + Root)
 - **Tests:** 32/32 grün (vollständige Test-Suite!)
@@ -260,7 +260,7 @@
 - **TypeScript Fixes:**
   - \_req statt req für unbenutzte Parameter
 
-### 11. **Signup API v2** ✅ (03.08. 01:00) OHNE TESTS - LETZTE API!
+### 11. **Signup API v2** ✅ (03.08. 01:00) OHNE TESTS - LETZTE API
 
 - **Endpoints:** 2 (Register, Check Subdomain)
 - **Features:** Tenant Registration with Admin User
@@ -326,4 +326,4 @@
 
 ---
 
-_Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr_
+*Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr*

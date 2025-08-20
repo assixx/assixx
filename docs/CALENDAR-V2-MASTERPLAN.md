@@ -67,7 +67,7 @@ ALTER TABLE calendar_events
 
 **Migration Script bereit:** `/database/migrations/016-calendar-tenant-isolation.sql`
 
-#### Ausführung:
+#### Ausführung
 
 ```bash
 # 1. Backup erstellen (PFLICHT!)
@@ -81,7 +81,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DESCRIBE calendar_attendees;"'
 ```
 
-#### Was macht die Migration:
+#### Was macht die Migration
 
 1. ✅ Prüft ob tenant_id bereits existiert (Safety)
 2. ✅ Fügt tenant_id Spalte hinzu
@@ -547,6 +547,6 @@ const eventIcons = {
 
 ---
 
-_Erstellt: 08.08.2025_
-_Version: 1.0_
-_Status: Ready for Implementation_
+*Erstellt: 08.08.2025*
+*Version: 1.0*
+*Status: Ready for Implementation*

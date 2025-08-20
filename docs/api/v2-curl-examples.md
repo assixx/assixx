@@ -54,7 +54,7 @@ curl -X POST http://localhost:3000/api/v2/signup \
 
 ## Login v2
 
-### Mit JSON-Datei:
+### Mit JSON-Datei
 
 ```bash
 cat > /tmp/login-test.json << 'EOF'
@@ -69,7 +69,7 @@ curl -X POST http://localhost:3000/api/v2/auth/login \
   -d @/tmp/login-test.json
 ```
 
-### Direkt:
+### Direkt
 
 ```bash
 curl -X POST http://localhost:3000/api/v2/auth/login \

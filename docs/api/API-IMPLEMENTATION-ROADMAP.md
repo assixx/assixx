@@ -334,7 +334,7 @@ Ziel: 400+ von 502 Tests (80%)
 - **Workshop Decisions:** `/docs/api/API-WORKSHOP-MATERIALS/workshop-decisions.md`
 - **API Standards:** `/docs/TYPESCRIPT-STANDARDS.md` (Abschnitt 12)
 - **Original Plan:** `/docs/api/API-WORKSHOP-MATERIALS/workshop-final-summary.md`
-- **Swagger UI:** http://localhost:3000/api-docs/
+- **Swagger UI:** <http://localhost:3000/api-docs/>
 
 ---
 

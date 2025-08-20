@@ -31,7 +31,7 @@
 
 ## 📁 Implementierung
 
-### GitHub Workflow:
+### GitHub Workflow
 
 ```
 .github/workflows/
@@ -39,7 +39,7 @@
 └── test.yml.disabled     # ❌ Deaktiviert (hatte DB-Probleme)
 ```
 
-### Lokale Scripts:
+### Lokale Scripts
 
 ```
 scripts/
@@ -49,7 +49,7 @@ scripts/
 
 ## 🚀 Verwendung
 
-### Entwickler-Workflow:
+### Entwickler-Workflow
 
 ```bash
 # Lokal: Alle DB-Tests

@@ -202,7 +202,7 @@ export class RateLimitError extends Error implements ApiError {
 
 ## 🔍 Konkrete Beispiele aus der Migration
 
-### Vorher (mit `as any`):
+### Vorher (mit `as any`)
 
 ```typescript
 // ❌ users.ts - Unsicher
@@ -211,7 +211,7 @@ router.get("/profile/:id", authenticateToken as any, rateLimiter as any, async (
 });
 ```
 
-### Nachher (typsicher):
+### Nachher (typsicher)
 
 ```typescript
 // ✅ users.ts - Sicher
@@ -222,7 +222,7 @@ router.get("/profile/:id", ...security.admin(), async (req: AuthenticatedRequest
 });
 ```
 
-### Multi-Tenant Security Fix:
+### Multi-Tenant Security Fix
 
 ```typescript
 // ❌ Vorher - Sicherheitslücke

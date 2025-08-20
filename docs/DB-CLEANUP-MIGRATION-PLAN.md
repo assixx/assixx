@@ -18,7 +18,7 @@
 
 ## Phase 1: Foreign Key Migration (ZUERST!)
 
-### Problem:
+### Problem
 
 `messages_old_backup` hat 3 Foreign Keys von:
 
@@ -26,7 +26,7 @@
 - message_attachments (0 rows)
 - message_read_receipts (0 rows)
 
-### Lösung:
+### Lösung
 
 ```sql
 -- 1. Foreign Keys entfernen
@@ -50,18 +50,18 @@ ALTER TABLE message_read_receipts
 
 ## Phase 2: Tabellen-Analyse (NACH Foreign Keys)
 
-### SICHER zu löschen (nach FK Migration):
+### SICHER zu löschen (nach FK Migration)
 
 1. **messages_old_backup** (0 rows, keine Nutzung im Code)
 2. **employee_availability_old** (0 rows, keine FKs, keine Nutzung)
 
-### VORSICHT - Weitere Prüfung nötig:
+### VORSICHT - Weitere Prüfung nötig
 
 - employee_availability (neue Version) - auch 0 rows, aber im Code referenziert!
 
 ## Phase 3: Views (NIEDRIGE PRIORITÄT)
 
-### Ungenutzte Views (7 Stück):
+### Ungenutzte Views (7 Stück)
 
 1. active_shifts_today
 2. active_surveys
@@ -71,7 +71,7 @@ ALTER TABLE message_read_receipts
 6. feature_usage_summary
 7. tenant_statistics
 
-### Empfehlung:
+### Empfehlung
 
 - BEHALTEN für 30 Tage
 - Könnten für geplante Features sein
@@ -86,9 +86,9 @@ ALLE Tabellen MÜSSEN tenant_id haben:
 - messages: ✅ HAT tenant_id
 - employee_availability: ✅ HAT tenant_id
 
-## Execution Plan:
+## Execution Plan
 
-### ✅ ALLE CLEANUP-AUFGABEN ABGESCHLOSSEN!
+### ✅ ALLE CLEANUP-AUFGABEN ABGESCHLOSSEN
 
 1. [✅] Foreign Keys migrieren - ERLEDIGT 24.07.2025
 2. [✅] Views gelöscht (7 Stück) - ERLEDIGT 24.07.2025
@@ -96,14 +96,14 @@ ALLE Tabellen MÜSSEN tenant_id haben:
 4. [✅] employee_availability_old gelöscht - ERLEDIGT 24.07.2025
 5. [✅] Backup vorhanden falls Rollback nötig
 
-## Rollback Plan:
+## Rollback Plan
 
 ```bash
 # Bei Problemen:
 mysql -u root -p main < /home/scs/projects/Assixx/backups/quick/quick_backup_20250724_164416_before_db_cleanup_apiv2.sql.gz
 ```
 
-## NICHT LÖSCHEN:
+## NICHT LÖSCHEN
 
 - weekly_shift_notes (wird aktiv genutzt!)
 - employee_availability (neue Version, im Code referenziert)
@@ -112,11 +112,11 @@ mysql -u root -p main < /home/scs/projects/Assixx/backups/quick/quick_backup_202
 
 ---
 
-## NEU ENTDECKT: Weitere Cleanup-Kandidaten!
+## NEU ENTDECKT: Weitere Cleanup-Kandidaten
 
 ### Problem: 141 Tabellen insgesamt (zu viele!)
 
-### 1. DELETION-SYSTEM OVERKILL (9 Tabellen, alle leer!):
+### 1. DELETION-SYSTEM OVERKILL (9 Tabellen, alle leer!)
 
 ```
 tenant_deletion_queue       - 0 rows
@@ -136,14 +136,14 @@ deletion_partial_options   - 0 rows
 - tenant_deletion_queue (aktive Jobs)
 - Rest LÖSCHEN oder in JSON-Spalten konsolidieren
 
-### 2. WEITERE ANALYSE NÖTIG:
+### 2. WEITERE ANALYSE NÖTIG
 
 - [ ] Survey-System (wie viele Tabellen?)
 - [ ] Document-System (redundante Tabellen?)
 - [ ] Feature-Tabellen (genutzt?)
 - [ ] Test-Tabellen in Production?
 
-### 3. ERWEITETER CLEANUP PLAN:
+### 3. ERWEITETER CLEANUP PLAN
 
 #### Phase 4: Deletion-System Cleanup (Woche 3)
 
@@ -158,7 +158,7 @@ deletion_partial_options   - 0 rows
 14. [ ] Nutzungsanalyse pro Tabelle
 15. [ ] Konsolidierungsplan erstellen
 
-### ✅ ZIEL TEILWEISE ERREICHT: Von 141 auf 126 Tabellen!
+### ✅ ZIEL TEILWEISE ERREICHT: Von 141 auf 126 Tabellen
 
 - 15 Tabellen/Views entfernt
 - Deletion-System (9 Tabellen) behalten - wichtig für Feature

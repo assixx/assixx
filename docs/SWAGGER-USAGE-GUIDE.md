@@ -2,14 +2,14 @@
 
 ## 🎯 Quick Start
 
-1. **Öffne Swagger UI**: http://localhost:3000/api-docs/
+1. **Öffne Swagger UI**: <http://localhost:3000/api-docs/>
 2. **Login** über die API um einen Token zu erhalten
 3. **Authorisiere** dich mit dem Token
 4. **Teste** die Endpoints direkt in der UI
 
 ## 🔐 Schritt 1: Token erhalten
 
-### Via Swagger UI:
+### Via Swagger UI
 
 1. Finde den Endpoint: `POST /api/auth/login`
 2. Klicke "Try it out"
@@ -25,7 +25,7 @@
 4. Klicke "Execute"
 5. Kopiere den Token aus der Response
 
-### Via Terminal:
+### Via Terminal
 
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
@@ -102,26 +102,26 @@ Body:
 
 ### 4. **Export-Funktionen**
 
-- Download OpenAPI Spec: http://localhost:3000/api-docs/swagger.json
+- Download OpenAPI Spec: <http://localhost:3000/api-docs/swagger.json>
 - Import in Postman oder Insomnia
 - Generiere Client-Code
 
 ## 🛠️ Entwickler-Workflow
 
-### Frontend-Entwicklung:
+### Frontend-Entwicklung
 
 1. Teste API-Calls in Swagger
 2. Kopiere funktionierende Requests
 3. Implementiere im Frontend mit `fetchWithAuth()`
 
-### Backend-Entwicklung:
+### Backend-Entwicklung
 
 1. Entwickle neuen Endpoint
 2. Füge Swagger-Dokumentation hinzu
 3. Teste direkt in Swagger UI
 4. Verifiziere Response-Format
 
-### Testing & Debugging:
+### Testing & Debugging
 
 1. Reproduziere Fehler in Swagger
 2. Prüfe Request/Response Details
@@ -174,8 +174,8 @@ Body:
 
 ## 📚 Weiterführende Ressourcen
 
-- OpenAPI Specification: https://swagger.io/specification/
-- Swagger UI Docs: https://swagger.io/tools/swagger-ui/
+- OpenAPI Specification: <https://swagger.io/specification/>
+- Swagger UI Docs: <https://swagger.io/tools/swagger-ui/>
 - Postman Import: File → Import → Link → `http://localhost:3000/api-docs/swagger.json`
 
 ## 🎯 Nächste Schritte

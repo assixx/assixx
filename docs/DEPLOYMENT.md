@@ -207,6 +207,7 @@ docker exec assixx-nginx nginx -s reload
    ```
 
 3. **Separate .env für Production**
+
    ```bash
    # Production-spezifische Variablen
    NODE_ENV=production
@@ -264,6 +265,7 @@ sudo ufw enable
    ```
 
 3. **Netzwerk-Isolation**
+
    ```yaml
    networks:
      frontend:
@@ -298,6 +300,7 @@ sudo ufw enable
    ```
 
 3. **Backup-Monitoring**
+
    ```bash
    # Prüfen ob Backup erfolgreich
    if [ $? -eq 0 ]; then
@@ -326,9 +329,9 @@ Die `docker-compose.monitoring.yml` enthält:
 
 ### Zugriff auf Monitoring
 
-- Grafana: http://localhost:3001 (admin/admin)
-- Prometheus: http://localhost:9090
-- Alertmanager: http://localhost:9093
+- Grafana: <http://localhost:3001> (admin/admin)
+- Prometheus: <http://localhost:9090>
+- Alertmanager: <http://localhost:9093>
 
 ### Wichtige Metriken
 
@@ -591,6 +594,7 @@ services:
    ```
 
 3. **Health Check optimieren**
+
    ```yaml
    healthcheck:
      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]

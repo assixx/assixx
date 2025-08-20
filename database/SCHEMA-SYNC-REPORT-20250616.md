@@ -20,7 +20,7 @@
 
 ## 📋 Migration History
 
-### Applied Migrations:
+### Applied Migrations
 
 1. `001-tenant-isolation-fixes.sql` - Multi-tenant security improvements
 2. `002-add-is-primary-to-tenant-admins.sql` - Admin role enhancements

@@ -2,14 +2,14 @@
 
 ## ✅ Abgeschlossene Arbeiten
 
-### Neue Middleware-Dateien:
+### Neue Middleware-Dateien
 
 1. **`/middleware/auth-refactored.ts`** - Typsichere Authentication
 2. **`/middleware/validation.ts`** - Validation Schemas mit express-validator
 3. **`/middleware/security.ts`** - Kombinierte Security Stacks
 4. **`/routes/users-refactored.example.ts`** - Beispiel-Migration
 
-### Vorteile der neuen Implementierung:
+### Vorteile der neuen Implementierung
 
 - ✅ Keine `as any` mehr nötig
 - ✅ Automatische Rate Limiting
@@ -124,19 +124,19 @@ Für jede Route-Datei:
 
 ## 🛠️ Hilfreiche Commands
 
-### Type Check einzelner Dateien:
+### Type Check einzelner Dateien
 
 ```bash
 npx tsc --noEmit src/routes/users.ts
 ```
 
-### Finde alle 'as any' Vorkommen:
+### Finde alle 'as any' Vorkommen
 
 ```bash
 grep -r "as any" src/routes/
 ```
 
-### ESLint für spezifische Datei:
+### ESLint für spezifische Datei
 
 ```bash
 npx eslint src/routes/users.ts

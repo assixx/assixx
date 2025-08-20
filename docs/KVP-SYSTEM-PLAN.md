@@ -6,7 +6,7 @@ Dieser Plan beschreibt die Erweiterung des KVP-Systems um department-basierte Si
 
 ## 📚 VORBEREITUNG - PFLICHTLEKTÜRE VOR BEGINN
 
-### ⚠️ WICHTIG: Diese Dokumente MÜSSEN vor der Implementierung gelesen werden:
+### ⚠️ WICHTIG: Diese Dokumente MÜSSEN vor der Implementierung gelesen werden
 
 1. **DATABASE-MIGRATION-GUIDE.MD**
    - Verstehen der Migrationsstrategie
@@ -27,7 +27,7 @@ Dieser Plan beschreibt die Erweiterung des KVP-Systems um department-basierte Si
 
 5. Beachte bite genau das design!!
 
-### 🔍 Nach DATABASE-MIGRATION-GUIDE.MD:
+### 🔍 Nach DATABASE-MIGRATION-GUIDE.MD
 
 ```bash
 # Direkte MySQL Prüfung (SQL-Dateien können veraltet sein!)
@@ -51,7 +51,7 @@ SHOW CREATE TABLE kvp_suggestions;
 SELECT COUNT(*) FROM kvp_suggestions WHERE department_id IS NULL;
 ```
 
-### ✅ Checkliste vor Start:
+### ✅ Checkliste vor Start
 
 - [ ] DATABASE-MIGRATION-GUIDE.MD gelesen
 - [ ] MySQL Datenbank direkt geprüft (nicht SQL-Dateien!)
@@ -65,7 +65,7 @@ SELECT COUNT(*) FROM kvp_suggestions WHERE department_id IS NULL;
 
 ## 🏗️ Aktuelle Situation
 
-### Bestehende Strukturen:
+### Bestehende Strukturen
 
 - ✅ `departments` Tabelle mit hierarchischer Struktur
 - ✅ `users` Tabelle mit `department_id`
@@ -73,7 +73,7 @@ SELECT COUNT(*) FROM kvp_suggestions WHERE department_id IS NULL;
 - ✅ `admin_department_permissions` für granulare Rechte
 - ✅ `department_groups` für Bereichsleiter-Struktur
 
-### Fehlende Komponenten:
+### Fehlende Komponenten
 
 - ❌ `visibility_scope` in `kvp_suggestions`
 - ❌ Department-basierte Filterung im Frontend
@@ -134,13 +134,13 @@ SET department_id = (SELECT department_id FROM users WHERE id = submitted_by)
 WHERE department_id IS NULL;
 ```
 
-### 📝 Logik für Sichtbarkeit:
+### 📝 Logik für Sichtbarkeit
 
 - `org_level = 'department'` + `org_id = [department_id]` → Abteilungs-KVP
 - `org_level = 'company'` + `org_id = [tenant_id]` → Firmenweit geteilt
 - `org_level = 'team'` + `org_id = [team_id]` → Team-Level (zukünftig)
 
-### 🔒 Status-basierte Editierbarkeit:
+### 🔒 Status-basierte Editierbarkeit
 
 ```sql
 -- Keine neue Spalte nötig!
@@ -558,7 +558,7 @@ if (suggestion.visibility_scope === "company" && suggestion.shared_by !== adminI
 
 ## 🎉 IMPLEMENTIERUNGSSTATUS
 
-### ✅ Erfolgreich umgesetzt:
+### ✅ Erfolgreich umgesetzt
 
 - Database Migration (004-kvp-department-visibility.sql)
 - Backend Services (kvpPermission.service.ts, kvp.controller.ts)
@@ -569,7 +569,7 @@ if (suggestion.visibility_scope === "company" && suggestion.shared_by !== adminI
 - Custom Dropdowns gemäß Design Standards
 - Filter System für verschiedene Ansichten
 
-### 📝 Aufgetretene Probleme und Lösungen:
+### 📝 Aufgetretene Probleme und Lösungen
 
 #### 1. MySQL Execute Bug (KRITISCH)
 
@@ -582,7 +582,7 @@ if (suggestion.visibility_scope === "company" && suggestion.shared_by !== adminI
 
 - Alle `execute()` durch `query()` ersetzt
 - Dokumentiert in MYSQL-EXECUTE-BUG.md
-- GitHub Issue: https://github.com/sidorares/node-mysql2/issues/1239
+- GitHub Issue: <https://github.com/sidorares/node-mysql2/issues/1239>
 
 #### 2. TypeScript Compilation Errors
 
@@ -632,9 +632,9 @@ connection.release();
 - JavaScript Funktionen für Toggle/Select
 - Event Listener auf hidden inputs umgestellt
 
-### 🔧 Technische Implementierungsdetails:
+### 🔧 Technische Implementierungsdetails
 
-#### Database Changes:
+#### Database Changes
 
 ```sql
 -- Neue Spalten für Sharing
@@ -646,32 +646,32 @@ ADD COLUMN shared_at TIMESTAMP NULL;
 UPDATE kvp_suggestions SET status = 'in_review' WHERE status = 'pending';
 ```
 
-#### Permission Logic:
+#### Permission Logic
 
 - Employees: Eigene + Abteilung + Firmenweit geteilte
 - Admins: Alle aus verwalteten Departments + Firmenweit
 - Root: Alles
 
-#### Frontend Architecture:
+#### Frontend Architecture
 
 - Single Page mit Filter System (keine Submenus)
 - Role-basierte UI Elements
 - Glassmorphismus Design durchgehend
 
-### 📊 Performance Optimierungen:
+### 📊 Performance Optimierungen
 
 - Indices auf department_id, org_level, org_id
 - Connection Pooling für DB Queries
 - Lazy Loading für Suggestions
 
-### 🔒 Security Features:
+### 🔒 Security Features
 
 - Employees können nach Submit nicht mehr editieren
 - Admins können nur eigene Departments verwalten
 - Audit Trail für alle Admin-Aktionen
 - CSRF Protection auf allen Endpoints
 
-### 📱 Responsive Design:
+### 📱 Responsive Design
 
 - Mobile-First Approach
 - Grid Layout für Filter

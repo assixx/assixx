@@ -10,7 +10,7 @@ Dieses Dokument beschreibt das Konzept für Abteilungszuweisungen und die damit 
 
 ## 📊 Aktuelle Situation (IST-Zustand)
 
-### Probleme:
+### Probleme
 
 1. **Schichtplanung ohne Abteilung möglich** ❌
    - Man kann aktuell Schichtpläne erstellen ohne eine Abteilung auszuwählen
@@ -77,7 +77,7 @@ CREATE TABLE admin_department_permissions (
 );
 ```
 
-### Erweiterte Logik:
+### Erweiterte Logik
 
 1. **Root User kann:**
    - Admin-Berechtigungen für spezifische Abteilungen vergeben

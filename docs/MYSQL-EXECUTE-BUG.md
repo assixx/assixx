@@ -20,7 +20,7 @@ Error: Incorrect arguments to mysqld_stmt_execute
 
 MySQL 8.0.22 und höher haben einen bekannten Bug bei der Verwendung von Prepared Statements über die `execute()` Methode in der mysql2 Node.js Library.
 
-**GitHub Issue:** https://github.com/sidorares/node-mysql2/issues/1239
+**GitHub Issue:** <https://github.com/sidorares/node-mysql2/issues/1239>
 
 ### Technische Details
 

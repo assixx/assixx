@@ -56,11 +56,13 @@ Das Assixx Multi-Tenant SaaS System ist ein Enterprise-Level Projekt mit klarer 
 ```
 
 config order wurde wieder in root verschoben
+
 ```
 
 ### 📁 backend/ (TypeScript Express API)
 
 ```
+
 backend/
 ├── 📄 package.json                 # Backend-spezifische Dependencies
 ├── 📄 tsconfig.json                # TypeScript Config für Backend
@@ -384,7 +386,7 @@ backend/
 │   │   ├── 📄 deletionWorker.ts   # Tenant Deletion Worker
 │   │   └── 📄 start-deletion-worker.js # Worker Starter Script
 │   │
-│   └── 📁 __tests__/              # Integration Tests
+│   └── 📁 **tests**/              # Integration Tests
 │       ├── 📄 setup.ts            # Test Environment Setup
 │       ├── 📄 testUtils.ts        # Test Helper Functions
 │       ├── 📄 test-env-setup.ts   # Environment Variables für Tests
@@ -416,11 +418,13 @@ backend/
 │
 ├── 📁 dist/                       # Build Output (git-ignoriert)
 └── 📁 logs/                       # Application Logs (git-ignoriert)
+
 ```
 
 ### 📁 frontend/ (Vite TypeScript Frontend)
 
 ```
+
 frontend/
 ├── 📄 package.json                # Frontend Dependencies
 ├── 📄 tsconfig.json               # TypeScript Config
@@ -644,11 +648,13 @@ frontend/
 │           └── [Font Awesome Fonts] # FA Icons
 │
 └── 📁 dist/                       # Build Output (git-ignoriert)
+
 ```
 
 ### 📁 database/ (Schema & Migrationen)
 
 ```
+
 database/
 ├── 📄 README.md                   # Database Dokumentation
 ├── 📄 SCHEMA-SYNC-REPORT-20250616.md # Schema Sync Report
@@ -682,11 +688,13 @@ database/
 │   └── [Module-specific Updates]
 │
 └── 📁 test-data/                  # Test-Daten für Development
+
 ```
 
 ### 📁 docker/ (Container-Orchestrierung)
 
 ```
+
 docker/
 ├── 📄 docker-compose.yml          # 🔴 PRODUKTION (Standard)
 ├── 📄 docker-compose.dev.yml      # 🟡 DEVELOPMENT (mit HMR)
@@ -703,11 +711,13 @@ docker/
 ├── 📄 test-mysql-startup.sh       # MySQL Startup Test
 ├── 📁 scripts/                    # Docker Utility Scripts
 └── 📁 uploads/                    # Mounted Upload Directory
+
 ```
 
 ### 📁 scripts/ (Build & Deployment Tools)
 
 ```
+
 scripts/
 ├── 📁 [Database Scripts]          # DB Management
 ├── 📄 backup-database.sh          # Automatisches Backup
@@ -736,11 +746,13 @@ scripts/
     ├── 📄 migrate-inline-styles.sh # CSS Migration
     ├── 📄 add-layout-shift-fix.sh  # Layout Shift Fix
     └── 📄 update-font-awesome.sh   # Font Awesome Update
+
 ```
 
 ### 📁 backups/ (Automatische DB-Backups)
 
 ```
+
 backups/
 ├── 📄 latest_backup.sql.gz        # Symlink zum neuesten Backup
 ├── 📄 cron.log                    # Backup Cron Log
@@ -755,15 +767,17 @@ backups/
 │   └── assixx_monthly_[DATE].sql.gz
 │
 ├── 📁 quick/                      # Manuelle Quick-Backups
-│   └── quick_backup_[DATE]_[REASON].sql.gz
+│   └── quick_backup_[DATE]*[REASON].sql.gz
 │
 └── 📁 tenant-specific/            # Tenant-spezifische Backups
-    └── tenant_[ID]_final_[TIMESTAMP].sql.gz
+    └── tenant*[ID]*final*[TIMESTAMP].sql.gz
+
 ```
 
 ### 📁 docs/ (Umfangreiche Dokumentation)
 
 ```
+
 docs/
 ├── 📁 [Kern-Dokumentation]        # Wichtigste Dokumente
 ├── 📄 PROJEKTSTRUKTUR.md          # Diese Datei
@@ -784,6 +798,7 @@ docs/
 │   └── [Bug-Fix Dokumentationen]
 │
 └── 📁 [Weitere Dokumentationen]   # Testing, Security, etc.
+
 ```
 
 ## 📋 Wichtige Hinweise

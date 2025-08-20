@@ -6,12 +6,12 @@
 
 ## 📊 Aktuelle Situation
 
-### Zwei redundante Tabellen:
+### Zwei redundante Tabellen
 
 - **activity_logs** - Alte Tabelle, wird im Frontend angezeigt
 - **root_logs** - Neue Tabelle mit mehr Details
 
-### Problem:
+### Problem
 
 - v1 APIs loggen in `activity_logs`
 - v2 APIs loggen in `root_logs`
@@ -173,7 +173,7 @@ FROM root_logs al
 
 ## 🔍 Prüfung
 
-### SQL Query zum Testen:
+### SQL Query zum Testen
 
 ```sql
 -- Zeige alle Logs der letzten Stunde
@@ -188,9 +188,9 @@ WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
 ORDER BY created_at DESC;
 ```
 
-### Frontend-Test:
+### Frontend-Test
 
-1. Öffne http://localhost:3000/logs
+1. Öffne <http://localhost:3000/logs>
 2. Sollte alle Aktionen aus `root_logs` anzeigen
 3. Filter sollten funktionieren
 4. Details sollten auf Deutsch sein

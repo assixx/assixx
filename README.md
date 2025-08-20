@@ -20,7 +20,7 @@ Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehm
 
 ## ⚡ Schnellstart
 
-### 🐳 Docker Setup (Empfohlen):
+### 🐳 Docker Setup (Empfohlen)
 
 Für die schnellste und einfachste Einrichtung der Entwicklungsumgebung:
 
@@ -76,7 +76,7 @@ Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisunge
 
 ## 🎯 Kernfeatures
 
-### ✅ Bereits verfügbar:
+### ✅ Bereits verfügbar
 
 - **Benutzerverwaltung** (Multi-Tenant, Rollen)
 - **Multi-Tenant Security** (Verbesserte Tenant-Isolation)
@@ -89,13 +89,13 @@ Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisunge
 - **Schichtplanung** (Wochenansicht, Drag & Drop)
 - **Chat-System** (Echtzeit, Gruppen, Dateianhänge)
 
-### 🚨 Deal-Breaker Features (in Entwicklung):
+### 🚨 Deal-Breaker Features (in Entwicklung)
 
 - **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut docs/QUESTIONS.md)
 - **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut docs/QUESTIONS.md)
 - **Urlaubsantrag** - Digitaler Workflow (KRITISCH laut docs/QUESTIONS.md)
 
-### 🔮 Geplant:
+### 🔮 Geplant
 
 - **Microsoft Integration** (Outlook, Azure AD, SharePoint)
 - **Mobile App** (iOS/Android)
@@ -308,7 +308,7 @@ Details siehe [FINAL-TEST-STRATEGY.md](./docs/FINAL-TEST-STRATEGY.md)
 ## 👥 Team & Kontakt
 
 - **Entwicklung**: SCS-Technik Team
-- **Support**: support@assixx.com
+- **Support**: <support@assixx.com>
 - **GitHub**: [SCS-Technik/Assixx](https://github.com/SCS-Technik/Assixx)
 
 ## 📄 Lizenz

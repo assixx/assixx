@@ -122,7 +122,7 @@
 
 ## 📈 Fortschritt
 
-### Nach Test-Dateien:
+### Nach Test-Dateien
 
 ```
 Funktionierend: ████░░░░░░░░░░░░░░░░ 22% (5/23 Dateien)
@@ -130,7 +130,7 @@ Teilweise:      ██░░░░░░░░░░░░░░░░░░ 17%
 Fehlerhaft:     ████████████░░░░░░░░ 61% (14/23 Dateien)
 ```
 
-### Nach einzelnen Tests:
+### Nach einzelnen Tests
 
 ```
 Bestanden:      ██░░░░░░░░░░░░░░░░░░   8% (42/519+ Tests)
@@ -187,7 +187,7 @@ Fehlgeschlagen: █████████████████░░░ 92%
 
 **Letzte Aktualisierung:** 25.07.2025 17:00
 
-### 📊 Fortschritt Update:
+### 📊 Fortschritt Update
 
 - ✅ **Phase 0 abgeschlossen:** Alle Syntax-Fehler behoben (shifts, calendar, chat)
 - ✅ **Phase 1 fast fertig:** Foreign Keys & Schema-Probleme in users, departments, teams gefixt

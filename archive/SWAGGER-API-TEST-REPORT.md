@@ -2,7 +2,7 @@
 
 **Datum:** 26.06.2025  
 **Getestet von:** Claude  
-**API URL:** http://localhost:3000/api-docs/  
+**API URL:** <http://localhost:3000/api-docs/>  
 **Status:** ⚠️ Teilweise funktionsfähig
 
 ## 🔍 Zusammenfassung
@@ -90,7 +90,7 @@ POST-Endpoints setzen `tenant_id` nicht automatisch aus dem JWT Token.
 
 ### Verwendete Credentials
 
-- Admin: admin@scs.de (Tenant: scs)
+- Admin: <admin@scs.de> (Tenant: scs)
 - JWT Token erfolgreich generiert und verwendet
 
 ### Test-Umgebung

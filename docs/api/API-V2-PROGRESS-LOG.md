@@ -7,7 +7,7 @@
 **Zeit:** 5 Stunden
 **Status:** ✅ ABGESCHLOSSEN
 
-#### Erfolge:
+#### Erfolge
 
 - ✅ calendar.ts vollständig migriert (15+ API Calls)
 - ✅ Feature Flag USE_API_V2_CALENDAR aktiviert
@@ -17,7 +17,7 @@
 - ✅ Privacy-Bug gefixt (Admins sehen keine privaten Events mehr)
 - ✅ Automatische Farbzuweisung basierend auf Event-Ebene
 
-#### Neue Features implementiert:
+#### Neue Features implementiert
 
 1. **Badge-System für ungelesene Events:**
    - Backend-Endpoint `/api/v2/calendar/unread-events`
@@ -31,7 +31,7 @@
    - Direkte Zusage/Absage-Buttons im Modal
    - Seite lädt automatisch neu nach Antwort
 
-#### Kritische Bug-Fixes:
+#### Kritische Bug-Fixes
 
 1. **Privacy-Bug:**
 
@@ -61,7 +61,7 @@
    const firstName = user.first_name ?? user.firstName ?? "";
    ```
 
-#### Technische Details:
+#### Technische Details
 
 - ApiClient Integration vollständig
 - TypeScript strict typing durchgesetzt
@@ -69,7 +69,7 @@
 - Modal-Management optimiert
 - WebSocket-Updates für Badge-Count
 
-#### Fortschritt:
+#### Fortschritt
 
 - **31/64 Files migriert (48.4%)**
 - Phase 8 Planning & Organization: 1/3 abgeschlossen
@@ -84,14 +84,14 @@
 **Zeit:** 2 Stunden
 **Status:** ✅ ABGESCHLOSSEN
 
-#### Erfolge:
+#### Erfolge
 
 - ✅ blackboard.ts vollständig migriert (20+ API Calls)
 - ✅ Feature Flag USE_API_V2_BLACKBOARD aktiviert
 - ✅ Backend Routes bereits vorhanden (nur Routing-Fix benötigt)
 - ✅ blackboard-modal-update.html gelöscht (redundant)
 
-#### Kritischer Bug behoben:
+#### Kritischer Bug behoben
 
 ```typescript
 // Problem: v2 API nutzt andere Endpunkt-Struktur
@@ -104,7 +104,7 @@
 "/api/v2/blackboard/entries/{id}/attachments";
 ```
 
-#### Technische Details:
+#### Technische Details
 
 - ApiClient Integration implementiert
 - Custom Modal statt browser confirm()
@@ -112,7 +112,7 @@
 - Async arrow functions → Promise.resolve()
 - TypeScript strict typing (kein `any`)
 
-#### Fortschritt:
+#### Fortschritt
 
 - **27/64 Files migriert (42.2%)**
 - Phase 7 Communication teilweise abgeschlossen
@@ -128,7 +128,7 @@
 
 **Ergebnis: 32/32 Tests grün (100%)!** 💯
 
-#### Implementierte Features:
+#### Implementierte Features
 
 - ✅ **11 Endpoints** vollständig implementiert
 - ✅ **Multi-Tenant Feature Flags** mit Isolation
@@ -137,7 +137,7 @@
 - ✅ **Feature Categories** (basic, core, premium, enterprise)
 - ✅ **Tenant-spezifische Konfiguration**
 
-#### Vollständige Test-Suite:
+#### Vollständige Test-Suite
 
 1. **Public Endpoints** (3 Tests)
    - GET /features
@@ -163,7 +163,7 @@
    - Not Found Errors
    - Permission Errors
 
-#### Technische Herausforderungen gelöst:
+#### Technische Herausforderungen gelöst
 
 1. **Database Schema Mismatch** ✅
    - tenant_features fehlen: usage_limit, current_usage, custom_price
@@ -199,7 +199,7 @@
    - toInt(), toBoolean(), isFloat() existieren nicht mehr
    - Lösung: Alternative Methoden verwendet
 
-#### Security Issue entdeckt:
+#### Security Issue entdeckt
 
 ⚠️ **Admin Cross-Tenant Feature Activation**
 
@@ -207,11 +207,11 @@
 - Controller prüft nur Role, nicht Tenant-Zugehörigkeit
 - TODO: Tenant-Check in activateFeature() hinzufügen
 
-#### Neue Utils erstellt:
+#### Neue Utils erstellt
 
 - `fieldMapper.ts` - Konvertiert snake_case ↔ camelCase
 
-### 📊 Status Update:
+### 📊 Status Update
 
 - **Phase 2:** 3/4 APIs fertig (75%)
 - **Gesamt:** 16/27 APIs implementiert (59%)
@@ -225,7 +225,7 @@
 
 **Ergebnis: 15/15 Tests grün nach intensivem Debugging!** 💯
 
-#### Implementierte Features:
+#### Implementierte Features
 
 - ✅ **8 Endpoints** vollständig implementiert
 - ✅ **Subscription Plans** mit Features
@@ -233,7 +233,7 @@
 - ✅ **Cost Calculation** mit detaillierter Aufschlüsselung
 - ✅ **Plan Upgrades/Downgrades**
 
-#### Debug-Marathon:
+#### Debug-Marathon
 
 1. **Jest Module Resolution** ✅
    - Problem: `Cannot find module './plans.service'`
@@ -272,7 +272,7 @@
 
 **Ergebnis: 27/27 Tests grün (100%)!** 💯
 
-#### Test-Fehler Analyse & Fixes:
+#### Test-Fehler Analyse & Fixes
 
 1. **DB Schema Mismatches** ✅
 
@@ -304,7 +304,7 @@
    - Entfernt aus UPDATE Query
    - shift_swap_requests hat nur: status, approved_by, rejected_by
 
-#### Finale Test-Statistik:
+#### Finale Test-Statistik
 
 - **Shifts v2:** 27/27 Tests ✅
 - **Gesamt API v2:** 142 Tests passing
@@ -356,6 +356,7 @@
    - AdminLog für alle Änderungen
 
 5. **Test Coverage** ✅
+
    ```bash
    ✓ Shifts CRUD Operations (6 tests)
    ✓ Shift Templates (4 tests)
@@ -417,6 +418,7 @@
    - Interface definitions für alle DTOs
 
 5. **Docker Volume Fix** ✅
+
    ```yaml
    # jest.setup.ts war nicht gemountet!
    - ../jest.setup.ts:/app/jest.setup.ts:delegated
@@ -569,6 +571,7 @@
 6. **Trigger-Konflikt bei Cleanup** ✅
    - Problem: DB Trigger update_attachment_count kollidiert mit Subquery
    - Fix: Entry IDs erst fetchen, dann direkt verwenden:
+
    ```typescript
    const [entries] = await testDb.execute<any[]>("SELECT id FROM blackboard_entries WHERE tenant_id = ?", [tenantId]);
    if (entryIds.length > 0) {
@@ -1146,7 +1149,7 @@ curl -X GET http://localhost:3000/api/v2/auth/verify \
    - Beispiele für alle Endpoints
    - Try-it-out Funktionalität
 
-**Test:** http://localhost:3000/api-docs/v2
+**Test:** <http://localhost:3000/api-docs/v2>
 
 ### 📚 Migration Guide (17:00 - 17:30)
 
@@ -1735,13 +1738,13 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 
 **Ergebnis: Komplette Neuimplementierung - 24/24 Tests grün (100%)!** 💯
 
-#### Ausgangslage:
+#### Ausgangslage
 
 - 13 von 24 Tests schlugen fehl
 - Problem: v1 Chat Service nutzte eigene DB-Connection Pool
 - Entscheidung: Komplette v2 Implementation ohne v1 Dependencies
 
-#### Service Layer Neuimplementierung:
+#### Service Layer Neuimplementierung
 
 1. **Alle 9 Service-Methoden neu geschrieben:** ✅
 
@@ -1784,7 +1787,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
    - Zero 'any' types
    - Clean Code
 
-### 📊 API v2 Status Update: 12/13 APIs (92%)!
+### 📊 API v2 Status Update: 12/13 APIs (92%)
 
 **Nur noch Reports/Analytics v2 fehlt!**
 
@@ -1888,7 +1891,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 - Hierarchie mit Level-System (100, 50, 10)
 - Permission Arrays pro Rolle
 
-#### 3. Signup API v2 ✅ (00:30 - 01:00) - LETZTE API!
+#### 3. Signup API v2 ✅ (00:30 - 01:00) - LETZTE API
 
 - 2 Endpoints (Register, Check Subdomain)
 - Public API ohne Authentifizierung
@@ -1897,7 +1900,7 @@ curl -s http://localhost:3000/api-docs/v2/swagger.json | jq '.paths | keys'
 
 ## 📊 FINALE MIGRATION STATISTIK
 
-### 🏆 Migration erfolgreich abgeschlossen!
+### 🏆 Migration erfolgreich abgeschlossen
 
 **Zeitraum:** 28.07.2025 - 03.08.2025 (6 Tage)
 

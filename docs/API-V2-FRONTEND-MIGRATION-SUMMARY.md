@@ -69,7 +69,7 @@ Die Frontend-Migration zur API v2 wurde erfolgreich implementiert. Alle Core-Kom
 
 ## Feature Flag Verwendung
 
-### Aktivierung im Browser Console:
+### Aktivierung im Browser Console
 
 ```javascript
 // Einzelne API aktivieren
@@ -83,7 +83,7 @@ window.migrationHelpers.status();
 window.migrationHelpers.enableAll();
 ```
 
-### Verfügbare Flags:
+### Verfügbare Flags
 
 - `USE_API_V2_AUTH` - Authentication endpoints
 - `USE_API_V2_SIGNUP` - Signup/Registration

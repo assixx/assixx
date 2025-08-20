@@ -12,7 +12,7 @@ Die API v2 Implementation ist zu **100% abgeschlossen** (27/27 APIs). Dieser Pla
 
 **27 APIs vollständig implementiert:**
 
-#### Phase 1 APIs (13/13):
+#### Phase 1 APIs (13/13)
 
 1. Auth API v2 ✅
 2. Users API v2 ✅
@@ -28,7 +28,7 @@ Die API v2 Implementation ist zu **100% abgeschlossen** (27/27 APIs). Dieser Pla
 12. Surveys API v2 ✅
 13. Notifications API v2 ✅
 
-#### Phase 2 APIs (14/14):
+#### Phase 2 APIs (14/14)
 
 1. Settings API v2 ✅
 2. Machines API v2 ✅

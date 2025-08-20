@@ -18,6 +18,7 @@
 ### ✅ Erfolge
 
 **Shift System Fixes:**
+
 - ✅ Doppelter v2 API-Pfad behoben (/api/v2/v2/shifts → /api/v2/shifts)
 - ✅ Dropdown-Verhalten korrigiert (active vs show class)
 - ✅ Hierarchische Filterung implementiert (Area → Department → Machine → Team)
@@ -29,6 +30,7 @@
 - ✅ Warnung bei unvollständigem Schichtplan (<10 Schichten)
 
 **Dokumentation:**
+
 - ✅ saving_shift_bug_plan_fix.md erstellt (komplett durchdachter Fix-Plan)
 - ✅ Datenmodell neu konzipiert (shift_plans → shifts → shift_notes)
 - ✅ Migration auf API v2 geplant (keine v1 Kompatibilität mehr nötig)
@@ -503,4 +505,4 @@ const createdAt = doc.created_at ?? doc.createdAt ?? "";
 
 ---
 
-_Hinweis: Die vorherige DAILY-PROGRESS.md wurde archiviert unter `/docs/archive/daily-progress/DAILY-PROGRESS-2025-07-28-to-2025-08-03.md`_
+*Hinweis: Die vorherige DAILY-PROGRESS.md wurde archiviert unter `/docs/archive/daily-progress/DAILY-PROGRESS-2025-07-28-to-2025-08-03.md`*

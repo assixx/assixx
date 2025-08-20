@@ -1,4 +1,4 @@
-#BACKEND LINT ERROR FIX
+# BACKEND LINT ERROR FIX
 USE SUB-AGENTS LIBERALLY TO PARALLELIZE WORK AND SAVE ON CONTEXT — BUT THINK CAREFULLY ABOUT WHEN IT'S MOST EFFECTIVE.
 FIX ALL ERRORS.
 
@@ -209,7 +209,6 @@ scs@SOSCSPC1M16:~/projects/Assixx/backend$ pnpm run lint:fixnowarn
 
 > assixx-backend@1.0.0 lint:fixnowarn /home/scs/projects/Assixx/backend
 > eslint src/**/*.ts --no-warn-ignored --fix --quiet
-
 
 /home/scs/projects/Assixx/backend/src/middleware/departmentAccess.ts
   66:24  error  Unsafe member access .departmentId on an `any` value  @typescript-eslint/no-unsafe-member-access
@@ -1549,4 +1548,4 @@ If your function does not access `this`, you can annotate it with `this: void`, 
 ✖ 1097 problems (1097 errors, 0 warnings)
 
  ELIFECYCLE  Command failed with exit code 1.
-scs@SOSCSPC1M16:~/projects/Assixx/backend$ 
+scs@SOSCSPC1M16:~/projects/Assixx/backend$

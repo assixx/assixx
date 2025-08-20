@@ -4,7 +4,7 @@
 
 Die Calendar API und die Datenbank sprechen verschiedene Sprachen!
 
-### API erwartet (calendar.ts):
+### API erwartet (calendar.ts)
 
 ```javascript
 const eventData = {
@@ -17,7 +17,7 @@ const eventData = {
 };
 ```
 
-### Datenbank hat (calendar_events table):
+### Datenbank hat (calendar_events table)
 
 ```sql
 start_date DATETIME      -- ✅ (nicht start_time)
@@ -71,7 +71,7 @@ API sollte die DB-Feldnamen verwenden:
 - created_by → user_id
 - org_level/org_id Features entfernen oder anders implementieren
 
-## Sofort-Maßnahme erforderlich!
+## Sofort-Maßnahme erforderlich
 
 **Das ist kein Test-Problem - das ist ein Production Bug!**
 

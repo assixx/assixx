@@ -4,7 +4,7 @@
 
 Die API v2 Implementation ist erfolgreich gestartet! Die moderne, konsistente und gut dokumentierte REST API ist bereits für Auth-Endpoints verfügbar.
 
-**Live Documentation:** http://localhost:3000/api-docs/v2
+**Live Documentation:** <http://localhost:3000/api-docs/v2>
 
 ## ✅ Fertiggestellt (24.07.2025)
 
@@ -265,4 +265,4 @@ Für Entwickler, die von v1 zu v2 migrieren möchten:
 - **Migration Guide:** [/docs/api/MIGRATION-GUIDE-V1-TO-V2.md](./MIGRATION-GUIDE-V1-TO-V2.md)
 - **API v2 Changelog:** [/docs/api/API-V2-CHANGELOG.md](./API-V2-CHANGELOG.md)
 - **Workshop Decisions:** [/docs/api/API-WORKSHOP-MATERIALS/workshop-decisions.md](./API-WORKSHOP-MATERIALS/workshop-decisions.md)
-- **Live Swagger UI:** http://localhost:3000/api-docs/v2
+- **Live Swagger UI:** <http://localhost:3000/api-docs/v2>

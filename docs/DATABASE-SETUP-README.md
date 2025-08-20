@@ -1,7 +1,7 @@
 # 🚀 ASSIXX - Database Setup Guide
 
 **SaaS Platform für Industrieunternehmen**
-_Komplette Anleitung für neue Entwickler_
+*Komplette Anleitung für neue Entwickler*
 
 ---
 
@@ -486,7 +486,7 @@ Das Assixx-System verwendet **55+ Haupttabellen** in 10 Kategorien:
 - `plan_features` - Plan ↔ Feature-Zuordnung
 - `feature_usage_logs` - Nutzungsstatistiken
 
-##### Feature-Tabellen-Details:
+##### Feature-Tabellen-Details
 
 **features:**
 
@@ -756,7 +756,7 @@ ALLOWED_FILE_TYPES=pdf,jpg,jpeg,png,doc,docx,xls,xlsx
 
 ### 🔐 Sicherheits-Secrets generieren
 
-#### Linux/WSL:
+#### Linux/WSL
 
 ```bash
 # JWT Secret (64 Zeichen)
@@ -769,7 +769,7 @@ openssl rand -base64 64
 openssl rand -hex 64
 ```
 
-#### Windows PowerShell:
+#### Windows PowerShell
 
 ```powershell
 # Zufällige Secrets generieren
@@ -1054,11 +1054,11 @@ npm run build
 
 ### 🔗 Nützliche Links
 
-- **Node.js**: https://nodejs.org/
-- **MySQL**: https://dev.mysql.com/doc/
-- **Express.js**: https://expressjs.com/
-- **Bootstrap**: https://getbootstrap.com/
-- **JWT.io**: https://jwt.io/
+- **Node.js**: <https://nodejs.org/>
+- **MySQL**: <https://dev.mysql.com/doc/>
+- **Express.js**: <https://expressjs.com/>
+- **Bootstrap**: <https://getbootstrap.com/>
+- **JWT.io**: <https://jwt.io/>
 
 ### 🆘 Support
 
@@ -1154,5 +1154,5 @@ const userId = req.user.id; // Bereits Number aus Auth
 
 **🎉 Herzlichen Glückwunsch! Assixx ist jetzt einsatzbereit!**
 
-_Generiert am: 2025-05-29_
-_Version: 2025-05-29_
+*Generiert am: 2025-05-29*
+*Version: 2025-05-29*

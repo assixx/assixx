@@ -79,10 +79,12 @@ window.selectActiveStatusOption = function(value, text) { ... }
 
 1. **IMMER eindeutige IDs verwenden** - Besonders bei mehreren Modals/Formularen
 2. **ID-Kollisionen prüfen** mit Browser DevTools:
+
    ```javascript
    document.querySelectorAll('[id="employee-status-dropdown"]').length;
    // Sollte 1 sein, nicht 2!
    ```
+
 3. **Namenskonvention für ähnliche Komponenten:**
    - `employee-availability-*` für Verfügbarkeitsstatus
    - `employee-active-status-*` für Aktiv/Inaktiv
@@ -95,10 +97,12 @@ Wenn ein Dropdown nicht funktioniert:
 1. Prüfe ob die ID eindeutig ist
 2. Prüfe ob CSS-Klassen definiert sind (`.active`, `.show`)
 3. Logge das gefundene Element:
+
    ```javascript
    console.info("Element:", document.getElementById("dropdown-id"));
    console.info("Classes:", element.className);
    ```
+
 4. Verwende Browser DevTools Element-Inspektor während des Klicks
 
 ## Betroffene Dateien

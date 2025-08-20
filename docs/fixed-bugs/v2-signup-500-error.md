@@ -43,7 +43,7 @@ Das Problem waren **UNIQUE Constraints** in der Datenbank:
 1. **employee_number**: War hart auf '000001' codiert → Konflikt bei mehreren Tenants
 2. **phone**: Telefonnummer muss über alle User eindeutig sein
 
-### Fix:
+### Fix
 
 In `/backend/src/models/tenant.ts`:
 

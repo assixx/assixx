@@ -16,7 +16,7 @@
 
 ## 📊 Aktuelle Situation
 
-### Die Zahlen:
+### Die Zahlen
 
 ```
 ✅ Passing Tests:    40 (~8%)
@@ -24,7 +24,7 @@
 🚧 Total Tests:     502+
 ```
 
-### Hauptprobleme:
+### Hauptprobleme
 
 1. **Chat API**: Tests erwarten `channels`, API bietet `conversations`
 2. **Calendar API**: Tests erwarten `/events` suffix, API hat keinen
@@ -35,7 +35,7 @@
 
 ## 🔍 Beispiel: Chat API Mismatch
 
-### Test erwartet:
+### Test erwartet
 
 ```javascript
 POST /api/chat/channels
@@ -46,7 +46,7 @@ POST /api/chat/channels
 }
 ```
 
-### API bietet:
+### API bietet
 
 ```javascript
 POST /api/chat/conversations
@@ -88,7 +88,7 @@ POST /api/chat/conversations
 
 ## 🎨 API Standards Preview
 
-### Resource Naming:
+### Resource Naming
 
 ```
 ✅ Plural:     /users, /departments, /teams
@@ -96,7 +96,7 @@ POST /api/chat/conversations
 ✅ Actions:    POST /users/:id/activate
 ```
 
-### Response Format:
+### Response Format
 
 ```javascript
 // Success
@@ -129,7 +129,7 @@ Für jeden Endpoint:
 4. **ADD** - Neuer Endpoint benötigt
 5. **REMOVE** - Nicht mehr benötigt
 
-### Bewertungskriterien:
+### Bewertungskriterien
 
 - Frontend Impact
 - Backend Complexity
@@ -160,19 +160,19 @@ Für jeden Endpoint:
 
 ## 🌟 Best Practices von anderen
 
-### Stripe:
+### Stripe
 
 - **Konsistenz** über alles
 - **Idempotency** Keys
 - Exzellente Docs
 
-### GitHub:
+### GitHub
 
 - **HATEOAS** Links
 - Rate Limiting Headers
 - Webhook Events
 
-### Was wir übernehmen sollten:
+### Was wir übernehmen sollten
 
 1. Konsistente Naming Conventions
 2. Standardisierte Error Responses
@@ -183,14 +183,14 @@ Für jeden Endpoint:
 
 ## 🎯 Workshop Outcomes
 
-### Was wir heute erreichen:
+### Was wir heute erreichen
 
 1. ✅ Einheitliche API Standards
 2. ✅ Decision Matrix ausgefüllt
 3. ✅ Klare Migration Timeline
 4. ✅ Verantwortlichkeiten definiert
 
-### Nächste Schritte:
+### Nächste Schritte
 
 1. OpenAPI Spec Update (2 Tage)
 2. Postman Tests erstellen (3 Tage)
@@ -199,12 +199,12 @@ Für jeden Endpoint:
 
 ---
 
-## 💡 Denkt daran:
+## 💡 Denkt daran
 
 > "APIs sind wie Benutzeroberflächen für Entwickler.
 > Sie sollten intuitiv, konsistent und gut dokumentiert sein."
 
-### Unsere Prinzipien:
+### Unsere Prinzipien
 
 - **Developer Experience First**
 - **Consistency over Cleverness**
@@ -213,7 +213,7 @@ Für jeden Endpoint:
 
 ---
 
-## 🚀 Let's Build a Better API!
+## 🚀 Let's Build a Better API
 
 ### Fragen vor dem Start?
 
@@ -226,7 +226,7 @@ Für jeden Endpoint:
 
 **Tools bereit:**
 
-- ✅ Swagger UI: http://localhost:3000/api-docs/
+- ✅ Swagger UI: <http://localhost:3000/api-docs/>
 - ✅ Postman Collection
 - ✅ Whiteboard/Miro
 
@@ -234,7 +234,7 @@ Für jeden Endpoint:
 
 ## 📝 Notizen-Template
 
-### Für jeden Teilnehmer:
+### Für jeden Teilnehmer
 
 ```markdown
 ## Endpoint: /api/...

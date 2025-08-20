@@ -235,7 +235,7 @@ router.post("/logout", authenticateToken, authController.logout);
 
 ### Phase 3: Feature-Routes dokumentieren (2-3 Std)
 
-#### Priorität nach Nutzungshäufigkeit:
+#### Priorität nach Nutzungshäufigkeit
 
 1. **Dashboard/Stats Routes**
 
@@ -418,17 +418,17 @@ jobs:
 
 **Gesamt: 1-2 Tage für vollständige Integration**
 
-### ✅ Bisher abgeschlossen:
+### ✅ Bisher abgeschlossen
 
-#### Phase 1 (Komplett):
+#### Phase 1 (Komplett)
 
 - ✅ Dependencies installiert (swagger-jsdoc, swagger-ui-express)
 - ✅ Swagger-Konfiguration erstellt (`backend/src/config/swagger.ts`)
 - ✅ Swagger UI in app.ts eingebunden
-- ✅ Swagger UI erreichbar unter http://localhost:3000/api-docs
-- ✅ JSON Spec erreichbar unter http://localhost:3000/api-docs/swagger.json
+- ✅ Swagger UI erreichbar unter <http://localhost:3000/api-docs>
+- ✅ JSON Spec erreichbar unter <http://localhost:3000/api-docs/swagger.json>
 
-#### Phase 2 (Teilweise):
+#### Phase 2 (Teilweise)
 
 - ✅ Authentication Routes dokumentiert:
   - `/auth/login` - User login mit Fingerprint-Support

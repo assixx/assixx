@@ -23,6 +23,7 @@ echo 'window.FEATURE_FLAGS = { USE_API_V2_AUTH: true };' > frontend/public/featu
 ### 🔴 Phase 1: Signup (VOR ALLEM ANDEREN!)
 
 1. **signup.html** - Tenant Registration
+
    ```
    WARUM ZUERST: Ohne Signup keine neuen Tenants!
    ZEITAUFWAND: 1-2 Stunden
@@ -57,6 +58,7 @@ echo 'window.FEATURE_FLAGS = { USE_API_V2_AUTH: true };' > frontend/public/featu
    ```
 
 4. **login.html** - Login Page
+
    ```
    WARUM: Login UI muss mit neuem auth.ts funktionieren
    ZEITAUFWAND: 1 Stunde
@@ -505,7 +507,7 @@ export function getCurrentUser() {
 }
 ```
 
-#### ✅ TEST CHECKLIST für Auth Migration:
+#### ✅ TEST CHECKLIST für Auth Migration
 
 ```javascript
 // Browser Console Tests:
@@ -812,7 +814,7 @@ export const config = {
 
 ## 🚨 Troubleshooting Guide
 
-### Die 5 häufigsten Fehler und ihre Lösungen:
+### Die 5 häufigsten Fehler und ihre Lösungen
 
 #### 1. ❌ "401 Unauthorized" nach Login
 
@@ -920,7 +922,7 @@ console.info("Debug utilities loaded! Try: debugMigration.showConfig()");
 
 ## 📞 Support & Hilfe
 
-### Bei Problemen:
+### Bei Problemen
 
 1. **Zuerst:** `debugMigration.showConfig()` in Console
 2. **Dann:** Network Tab prüfen (401? 500? CORS?)

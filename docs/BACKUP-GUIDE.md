@@ -164,6 +164,7 @@ bash setup-docker-db.sh
    - Umgebungsvariablen verwenden
 
 3. **Externe Speicherung**:
+
    ```bash
    # Backup zu externem Server kopieren
    rsync -avz backups/ user@backup-server:/path/to/backups/

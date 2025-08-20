@@ -2,7 +2,7 @@
 
 ## 🚀 Workshop Start Checklist
 
-- [ ] Swagger UI geöffnet: http://localhost:3000/api-docs/
+- [ ] Swagger UI geöffnet: <http://localhost:3000/api-docs/>
 - [ ] Decision Matrix ausgedruckt/geteilt
 - [ ] Whiteboard/Miro bereit
 - [ ] Screen Sharing funktioniert

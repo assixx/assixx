@@ -87,6 +87,7 @@ Successfully fixed all TypeScript errors in the frontend script files. The proje
    ```
 
 3. **Event Target Null Checks**:
+
    ```typescript
    const target = event.target as HTMLElement | null;
    if (target) {

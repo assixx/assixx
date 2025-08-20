@@ -91,7 +91,7 @@ export async function showConfirm(message: string): Promise<boolean> {
         background: rgba(255, 255, 255, 0.15);
       }
     `;
-    document.head.appendChild(style);
+    document.head.append(style);
 
     // Use notification service with action buttons
     const confirmDiv = document.createElement('div');

@@ -70,7 +70,7 @@ private showRoleSwitchIndicator(): void {
 
 ## 2️⃣ Backend Restrictions für Employee-View
 
-### In sensitiven Routes ergänzen:
+### In sensitiven Routes ergänzen
 
 ```typescript
 // z.B. in /backend/src/routes/users.ts
@@ -95,7 +95,7 @@ router.get(
 
 ## 3️⃣ Auto-Timeout nach Inaktivität
 
-### Backend Middleware:
+### Backend Middleware
 
 ```typescript
 // Neue Datei: /backend/src/middleware/roleSwitchTimeout.ts
@@ -134,7 +134,7 @@ export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFu
 
 ## 4️⃣ Erweiterte Audit-Logs
 
-### SQL Migration:
+### SQL Migration
 
 ```sql
 -- Neue Felder für besseres Tracking
@@ -147,7 +147,7 @@ ADD COLUMN viewed_sensitive_data JSON;
 CREATE INDEX idx_role_switch_logs ON admin_logs(was_role_switched, created_at);
 ```
 
-### Im Code:
+### Im Code
 
 ```typescript
 // Bei jedem sensitiven Zugriff loggen
@@ -170,7 +170,7 @@ if (req.user.isRoleSwitched) {
 
 ## 5️⃣ Multi-Tab Sync
 
-### Frontend BroadcastChannel:
+### Frontend BroadcastChannel
 
 ```typescript
 // Role-Switch Event Broadcasting
@@ -196,19 +196,19 @@ channel.onmessage = (event) => {
 
 ## 🚀 Implementierungs-Prioritäten
 
-### Phase 1 (Diese Woche):
+### Phase 1 (Diese Woche)
 
 1. ✅ Visueller Banner für Role-Switch
 2. ✅ Basis-Restrictions für Employee View
 3. ✅ Erweiterte Logs mit was_role_switched Flag
 
-### Phase 2 (Nächste Woche):
+### Phase 2 (Nächste Woche)
 
 1. Auto-Timeout Middleware
 2. Multi-Tab Synchronisation
 3. Audit-Dashboard (Read-only für Betriebsrat)
 
-### Phase 3 (Später):
+### Phase 3 (Später)
 
 1. Delegation System
 2. Emergency Access

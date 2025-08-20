@@ -28,7 +28,7 @@
 2. **DB-Ansatz** (documents.test.ts) → Scheiterte an Schema-Drift
 3. **Mix-Ansatz** → Verletzt "Test = Production" Prinzip
 
-### Wichtige Commits & Lessons:
+### Wichtige Commits & Lessons
 
 ```bash
 # Success: auth-refactored mit Mocks
@@ -56,13 +56,13 @@ f536003: "Revert fix: Support different DB schemas"
 - Keine separaten Test-Migrations mehr
 - Test = Production garantiert
 
-### Relevante Dokumente:
+### Relevante Dokumente
 
 - `docs/DEBUGGING-WORKFLOW-LESSONS.md` → One-by-One, Test=Production
 - `docs/DATABASE-MIGRATION-GUIDE.md` → Schema Management
 - `backend/src/routes/__tests__/documents.test.ts` → Aktueller Stand (gemockt)
 
-### Warum KEINE Unit/Integration Trennung:
+### Warum KEINE Unit/Integration Trennung
 
 **Von 20 Tests sind nur 5 echte Unit-Test-Kandidaten:**
 
@@ -78,13 +78,13 @@ f536003: "Revert fix: Support different DB schemas"
 
 **Fazit**: Künstlich Routes in "Units" zu zerlegen ist Selbstbetrug!
 
-### Jest console.info Problem:
+### Jest console.info Problem
 
 - console.info wird in Tests unterdrückt
 - Lösung: Error throwing für Debugging
 - Dokumentiert in DEBUGGING-WORKFLOW-LESSONS.md (Zeile 130-180)
 
-### Aktuelle Probleme die wir lösen:
+### Aktuelle Probleme die wir lösen
 
 1. **403 Forbidden** - User not found (DB Mismatch)
 2. **Foreign Key Constraints** - department_id fails
@@ -364,21 +364,21 @@ UPDATE users SET status = 'active' WHERE id = ?;
 
 ## 🤔 Kritische Betrachtung (100% ehrlich)
 
-### Was gut ist:
+### Was gut ist
 
 - ✅ Keine Mock-Wartung mehr
 - ✅ Test = Production garantiert
 - ✅ Schema-Drift gelöst
 - ✅ Einfacher zu verstehen
 
-### Was problematisch ist:
+### Was problematisch ist
 
 - ❌ CI wird langsamer (1-2 Min statt 30s)
 - ❌ Race Conditions bei parallelen Tests möglich
 - ❌ Echte Unit Tests (Utils) verlieren wir
 - ❌ Mehr DB-Last bei Entwicklung
 
-### Alternative die wir verworfen haben:
+### Alternative die wir verworfen haben
 
 **Hybrid-Ansatz**:
 

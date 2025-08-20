@@ -55,14 +55,14 @@ rm backend/ZERO-TYPESCRIPT-ERRORS-ACHIEVED.md
 
 ## 🧹 WEITERE AUFRÄUMARBEITEN
 
-### Scripts die gelöscht werden können:
+### Scripts die gelöscht werden können
 
 ```bash
 # Migrationsskripte (falls vorhanden)
 rm backend/scripts/migrate-routes.sh
 ```
 
-### Temporäre Dateien:
+### Temporäre Dateien
 
 ```bash
 # TypeScript Build-Artefakte werden automatisch neu generiert

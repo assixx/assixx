@@ -4,7 +4,7 @@
 
 Die Dropdown-Menüs im Employee Modal zeigten keine Daten aus der Datenbank an, obwohl die API erfolgreich Daten zurücklieferte.
 
-### Fehlermeldung in der Konsole:
+### Fehlermeldung in der Konsole
 
 ```javascript
 [loadDepartmentsForEmployeeSelect] Dropdown options element not found!
@@ -12,7 +12,7 @@ Die Dropdown-Menüs im Employee Modal zeigten keine Daten aus der Datenbank an, 
 
 ## 🔍 Root Cause Analyse
 
-### Das Problem war ein **ID-Mismatch** zwischen HTML und JavaScript:
+### Das Problem war ein **ID-Mismatch** zwischen HTML und JavaScript
 
 | Element             | HTML ID (falsch)              | JavaScript erwartet (richtig)  |
 | ------------------- | ----------------------------- | ------------------------------ |
@@ -23,7 +23,7 @@ Die Dropdown-Menüs im Employee Modal zeigten keine Daten aus der Datenbank an, 
 | Team Display        | `employeeTeam-display`        | `employee-team-display`        |
 | Team Select         | `employeeTeamSelect`          | `employee-team-select`         |
 
-### Code-Analyse:
+### Code-Analyse
 
 **Kompilierte admin-dashboard.js suchte nach:**
 
@@ -41,7 +41,7 @@ const dropdown = document.getElementById("employee-department-dropdown");
 
 Alle IDs in der HTML-Datei wurden angepasst, um mit den erwarteten IDs aus der kompilierten JavaScript-Datei übereinzustimmen:
 
-### Vorher (falsch):
+### Vorher (falsch)
 
 ```html
 <!-- Department Dropdown -->
@@ -59,7 +59,7 @@ Alle IDs in der HTML-Datei wurden angepasst, um mit den erwarteten IDs aus der k
 </div>
 ```
 
-### Nachher (korrekt):
+### Nachher (korrekt)
 
 ```html
 <!-- Department Dropdown -->
@@ -104,6 +104,6 @@ Nach der Korrektur der IDs funktionieren die Dropdowns einwandfrei und zeigen di
 
 ---
 
-_Bug gefunden und behoben am: 11.08.2025_
-_Debugging-Zeit: ~45 Minuten_
-_Root Cause: Inkonsistente ID-Namenskonvention zwischen HTML und JavaScript_
+*Bug gefunden und behoben am: 11.08.2025*
+*Debugging-Zeit: ~45 Minuten*
+*Root Cause: Inkonsistente ID-Namenskonvention zwischen HTML und JavaScript*

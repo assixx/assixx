@@ -31,7 +31,7 @@ When an admin uses role switch to view as employee, they could still see admin f
 
 ## Implementation Details
 
-### role-switch.ts Changes:
+### role-switch.ts Changes
 
 ```typescript
 // Added sessionStorage sync
@@ -45,7 +45,7 @@ if (data.user.activeRole === "employee" && userRole === "admin") {
 window.location.reload(); // Instead of redirecting to dashboard
 ```
 
-### unified-navigation.ts Changes:
+### unified-navigation.ts Changes
 
 ```typescript
 // Check for role switch in loadUserInfo()

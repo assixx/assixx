@@ -1,48 +1,51 @@
 # 🚨 SHIFT SAVING BUG FIX PLAN - Korrektes Datenmodell Implementation
 
+## 📅 USER SZENARIO: Albert Einstein & Mahatma Gandhi
+
+- **Albert Einstein**: Frühschicht Mo-Fr (5 Schichten)
+- **Mahatma Gandhi**: Spätschicht Mo-Fr (5 Schichten)
+- **Total**: 10 Schichten für KW 34/2025
+- **Team**: 2080, Machine: 166, Area: 38, Department: 2765
+- **Notiz**: "Testnotiz" (soll nur 1x pro Tag gespeichert werden)
+
 ## 📊 AKTUELLE SITUATION (FALSCH)
 
-### Was passiert aktuell beim Speichern:
+### Was passiert aktuell beim Speichern
+
 - ❌ 10 Einträge direkt in `shifts` Tabelle
 - ❌ `plan_id` = NULL (kein Schichtplan erstellt)
 - ❌ `machine_id` = NULL (wird nicht gespeichert)
-- ❌ Notizen redundant 10x in `shifts.notes` 
-- ❌ Keine Einträge in `shift_assignments`
+- ❌ Notizen redundant 10x in `shifts.notes`
 - ❌ Keine Einträge in `shift_notes`
 - ❌ Keine Einträge in `shift_plans`
 
-### Probleme:
+### Probleme
+
 1. **Falsches Datenmodell**: Direkte Speicherung in shifts statt korrekter Struktur
 2. **Keine Editierbarkeit**: Ohne plan_id kann der Plan nicht wieder geladen werden
 3. **Redundanz**: "Testnotiz" 10x statt 1x
 4. **Fehlende Verknüpfungen**: machine_id wird nicht gespeichert
-5. **KRITISCH: GET /api/shifts lädt nichts** - Der v1 Endpoint erwartet `shift_assignments`:
-   ```sql
-   -- v1 API GET /api/shifts sucht nach:
-   FROM shift_assignments sa
-   JOIN shifts s ON sa.shift_id = s.id
-   WHERE sa.status = 'accepted'
-   -- Aber wir haben keine shift_assignments erstellt!
-   ```
+5. **Frontend nutzt noch alten v1 Endpoint** - GET /api/shifts statt /api/v2/shifts
 
 ## ✅ KORREKTES DATENMODELL
 
-### Hierarchie:
-```
+### Hierarchie
+
+```text
 shift_plans (1)
-    ├── shifts (n) - Schicht-Definitionen/Zeitslots
-    │   └── shift_assignments (n) - Mitarbeiter-Zuordnungen
+    ├── shifts (n) - Schichten mit direkter Mitarbeiter-Zuordnung
     └── shift_notes (n) - Tagesnotizen
 ```
 
-### Korrekte Speicherung sollte sein:
+### Korrekte Speicherung sollte sein
 
 #### 1. **shift_plans** (1 Eintrag)
+
 ```sql
 INSERT INTO shift_plans (
-    tenant_id, name, description, 
-    department_id, team_id, 
-    start_date, end_date, 
+    tenant_id, name, description,
+    department_id, team_id,
+    start_date, end_date,
     status, created_by
 ) VALUES (
     5115, 'Wochenplan KW 34/2025', 'Team 2080 - Machine 166',
@@ -54,24 +57,27 @@ INSERT INTO shift_plans (
 ```
 
 #### 2. **shifts** (10 Einträge mit plan_id)
+
 ```sql
 INSERT INTO shifts (
     tenant_id, plan_id, user_id,
     date, start_time, end_time,
     type, status,
-    department_id, team_id, machine_id,
+    department_id, team_id, machine_id, area_id,
     created_by
 ) VALUES (
     5115, 31, 35491,
     '2025-08-18', '2025-08-18 06:00:00', '2025-08-18 14:00:00',
     'early', 'planned',
-    2765, 2080, 166,
+    2765, 2080, 166, 38,
     [current_user_id]
 );
 -- OHNE notes! (gehört in shift_notes)
+-- area_id MUSS auch gespeichert werden!
 ```
 
 #### 3. **shift_notes** (1 Eintrag pro Tag mit Notiz)
+
 ```sql
 INSERT INTO shift_notes (
     tenant_id, date, notes, created_by
@@ -81,28 +87,18 @@ INSERT INTO shift_notes (
 -- Nur 1x pro Tag, nicht pro Schicht!
 ```
 
-#### 4. **shift_assignments** (Optional für erweiterte Features)
-```sql
--- Für zukünftige Features wie Verfügbarkeit, Anfragen etc.
-INSERT INTO shift_assignments (
-    tenant_id, shift_id, user_id,
-    assignment_type, status, assigned_by
-) VALUES (
-    5115, [shift_id], 35491,
-    'assigned', 'accepted', [current_user_id]
-);
-```
-
 ## 🔧 IMPLEMENTATION PLAN
 
 ### Phase 1: Backend API v2 Anpassung
 
 #### 1.1 Neue Endpoint-Struktur
+
 ```typescript
 // POST /api/v2/shifts/plan
 interface CreateShiftPlanRequest {
   startDate: string;
   endDate: string;
+  areaId: number;        // NEU: area_id muss auch gespeichert werden!
   departmentId: number;
   teamId: number;
   machineId: number;
@@ -127,10 +123,11 @@ interface CreateShiftPlanResponse {
 ```
 
 #### 1.2 Service-Methode
+
 ```typescript
 async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResponse> {
   const trx = await db.transaction();
-  
+
   try {
     // 1. Create shift_plan
     const plan = await trx('shift_plans').insert({
@@ -143,11 +140,11 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
       status: 'draft',
       created_by: req.user.id
     });
-    
+
     // 2. Create shifts with plan_id
     const shiftIds = [];
     for (const shift of data.shifts) {
-      const id = await trx('shifts').insert({
+      const [shiftResult] = await trx('shifts').insert({
         tenant_id: req.user.tenantId,
         plan_id: plan.id,
         user_id: shift.userId,
@@ -155,15 +152,17 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
         start_time: `${shift.date} ${shift.startTime}:00`,
         end_time: `${shift.date} ${shift.endTime}:00`,
         type: shift.type,
+        area_id: data.areaId,  // NEU: area_id speichern!
         department_id: data.departmentId,
         team_id: data.teamId,
         machine_id: data.machineId,
         status: 'planned',
         created_by: req.user.id
       });
-      shiftIds.push(id);
+
+      shiftIds.push(shiftResult.insertId);
     }
-    
+
     // 3. Create daily notes (nur wenn vorhanden)
     const noteIds = [];
     for (const [date, notes] of Object.entries(data.dailyNotes)) {
@@ -177,10 +176,10 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
         noteIds.push(id);
       }
     }
-    
+
     await trx.commit();
     return { planId: plan.id, shiftIds, noteIds };
-    
+
   } catch (error) {
     await trx.rollback();
     throw error;
@@ -191,6 +190,7 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
 ### Phase 2: Frontend Anpassung
 
 #### 2.0 Admin Actions - Bearbeiten Button hinzufügen
+
 ```html
 <!-- In shifts.html bei Admin Actions -->
 <div class="admin-actions">
@@ -213,15 +213,15 @@ private setupEditButton(): void {
       showErrorAlert('Kein Schichtplan zum Bearbeiten vorhanden');
       return;
     }
-    
+
     try {
       // Lade existierenden Plan
       await this.loadShiftPlan();
-      
+
       // Aktiviere Edit-Modus
       this.isEditMode = true;
       this.showEditModeUI();
-      
+
     } catch (error) {
       showErrorAlert('Fehler beim Laden des Schichtplans');
     }
@@ -232,7 +232,7 @@ private setupEditButton(): void {
 private updateActionButtons(): void {
   const editBtn = document.getElementById('editShiftsBtn') as HTMLButtonElement;
   const saveBtn = document.getElementById('saveShiftsBtn') as HTMLButtonElement;
-  
+
   if (this.currentPlanId) {
     editBtn.style.display = 'inline-block';
     saveBtn.textContent = this.isEditMode ? 'Aktualisieren' : 'Speichern';
@@ -244,19 +244,21 @@ private updateActionButtons(): void {
 ```
 
 #### 2.1 Shift-Speicherung umbauen
+
 ```typescript
 async saveShifts(): Promise<void> {
   // Sammle Daten für Plan
   const planData: CreateShiftPlanRequest = {
     startDate: this.startDate,
     endDate: this.endDate,
+    areaId: this.selectedContext.areaId!,  // NEU: area_id mitsenden!
     departmentId: this.selectedContext.departmentId!,
     teamId: this.selectedContext.teamId!,
     machineId: this.selectedContext.machineId!,
     shifts: [],
     dailyNotes: {}
   };
-  
+
   // Sammle alle Schichten
   this.weeklyShifts.forEach((assignments, key) => {
     const [date, shiftType] = key.split('_');
@@ -270,7 +272,7 @@ async saveShifts(): Promise<void> {
       });
     });
   });
-  
+
   // Sammle Notizen (einmal pro Tag!)
   const processedDates = new Set<string>();
   this.shiftDetails.forEach((detail, key) => {
@@ -280,37 +282,81 @@ async saveShifts(): Promise<void> {
       processedDates.add(date);
     }
   });
-  
+
   // Speichere Plan
   const response = await this.apiClient.request('/shifts/plan', {
     method: 'POST',
     body: JSON.stringify(planData)
   });
-  
+
   // Speichere plan_id für späteren Edit
   this.currentPlanId = response.planId;
 }
 ```
 
-#### 2.2 Plan laden für Edit
+#### 2.2 Frontend loadShifts() auf API v2 umstellen
+
+```typescript
+// ALT (v1 API):
+private async loadShifts(): Promise<void> {
+  const response = await fetch(`/api/shifts?start=${startDate}&end=${endDate}`);
+}
+
+// NEU (v2 API):
+private async loadShifts(): Promise<void> {
+  // ApiClient nutzt automatisch /api/v2 prefix!
+  const response = await this.apiClient.request('/shifts', {
+    params: {
+      startDate: this.startDate,
+      endDate: this.endDate,
+      teamId: this.selectedContext.teamId,
+      machineId: this.selectedContext.machineId,
+      planId: this.currentPlanId  // Falls vorhanden
+    }
+  });
+
+  // v2 API gibt direkt shifts zurück, nicht shift_assignments
+  this.processShifts(response.shifts);
+}
+```
+
+#### 2.3 Automatisches Laden nach Team-Auswahl
+
+```typescript
+// WICHTIG: Nach Team-Auswahl automatisch prüfen ob Plan existiert!
+private async onTeamSelected(teamId: number): Promise<void> {
+  this.selectedContext.teamId = teamId;
+
+  // Automatisch versuchen existierenden Plan zu laden
+  await this.loadShiftPlan();
+
+  // Update UI basierend auf Ergebnis
+  this.updateActionButtons();
+}
+```
+
+#### 2.3 Plan laden für Edit
+
 ```typescript
 async loadShiftPlan(): Promise<void> {
   if (!this.selectedContext.teamId) return;
-  
+
   // Lade existierenden Plan
   const response = await this.apiClient.request('/shifts/plan', {
     method: 'GET',
     params: {
+      areaId: this.selectedContext.areaId,
+      departmentId: this.selectedContext.departmentId,
       teamId: this.selectedContext.teamId,
       machineId: this.selectedContext.machineId,
       startDate: this.startDate,
       endDate: this.endDate
     }
   });
-  
+
   if (response.plan) {
     this.currentPlanId = response.plan.id;
-    
+
     // Lade Schichten in UI
     response.shifts.forEach(shift => {
       const key = `${shift.date}_${shift.type}`;
@@ -319,7 +365,7 @@ async loadShiftPlan(): Promise<void> {
         employeeName: shift.user_name
       }]);
     });
-    
+
     // Lade Notizen
     response.notes.forEach(note => {
       // Setze Notiz für alle Schichten des Tages
@@ -330,7 +376,7 @@ async loadShiftPlan(): Promise<void> {
         }
       });
     });
-    
+
     this.renderWeekPlan();
   }
 }
@@ -338,19 +384,21 @@ async loadShiftPlan(): Promise<void> {
 
 ### Phase 3: API Endpoints
 
-#### Neue Endpoints:
+#### Neue Endpoints
+
 1. **POST /api/v2/shifts/plan** - Erstellt kompletten Schichtplan
 2. **GET /api/v2/shifts/plan** - Lädt existierenden Plan
 3. **PUT /api/v2/shifts/plan/:id** - Aktualisiert Plan
 4. **DELETE /api/v2/shifts/plan/:id** - Löscht kompletten Plan
 
-#### Bestehende anpassen:
+#### Bestehende anpassen
+
 1. **GET /api/v2/shifts** - Muss plan_id, machine_id, notes zurückgeben
 2. **POST /api/v2/shifts** - Nur für einzelne Schichten (nicht für Plan)
 
 ## 📋 TESTING CHECKLIST
 
-### Nach Implementation testen:
+### Nach Implementation testen
 
 1. **Speichern:**
    - [ ] shift_plans hat 1 Eintrag mit korrekten Daten
@@ -375,9 +423,10 @@ async loadShiftPlan(): Promise<void> {
 ## 🎯 PRIORITÄTEN
 
 1. **HÖCHSTE**: Plan-basiertes Speichern implementieren
-2. **HOCH**: machine_id korrekt speichern
-3. **MITTEL**: Notizen in shift_notes statt redundant
-4. **NIEDRIG**: shift_assignments für zukünftige Features
+2. **HÖCHSTE**: Frontend komplett auf API v2 umstellen (kein v1 mehr!)
+3. **HOCH**: machine_id und area_id korrekt speichern
+4. **HOCH**: Automatisches Laden nach Team-Auswahl
+5. **MITTEL**: Notizen in shift_notes statt redundant
 
 ## ⚠️ WICHTIGE HINWEISE
 
@@ -387,10 +436,100 @@ async loadShiftPlan(): Promise<void> {
 - **Plan-Status**: draft → published → locked workflow
 - **Berechtigungen**: created_by und approved_by tracken
 
+## ✅ ENTSCHIEDEN: Mehrere Mitarbeiter pro Schicht - Option A
+
+**Frontend erlaubt bereits mehrere Mitarbeiter per Drag&Drop in eine Schicht!**
+
+### Gewählte Lösung: Option A - Mehrere Einträge in shifts Tabelle
+
+```sql
+-- Für jeden Mitarbeiter ein separater Eintrag mit gleichem plan_id
+INSERT INTO shifts (plan_id, date, start_time, end_time, user_id, type, team_id, machine_id) VALUES
+(31, '2025-08-18', '06:00', '14:00', 35491, 'early', 2080, 166),  -- Einstein
+(31, '2025-08-18', '06:00', '14:00', 35490, 'early', 2080, 166);  -- Gandhi
+
+-- plan_id gruppiert automatisch zusammengehörige Schichten!
+```
+
+**Vorteile:**
+
+- ✅ Einfachste Lösung, funktioniert SOFORT
+- ✅ Kein DB-Schema Change nötig
+- ✅ plan_id gruppiert automatisch
+- ✅ Jeder Mitarbeiter hat eigene shift_id (für Krankmeldung, Tausch etc.)
+- ✅ Kompatibel mit bestehendem Code
+
+**Implementation im Backend:**
+
+```typescript
+// In createShiftPlan():
+for (const shift of data.shifts) {
+  // shifts Array kann mehrere Einträge mit gleicher Zeit haben!
+  await trx('shifts').insert({
+    plan_id: plan.id,
+    user_id: shift.userId,
+    date: shift.date,
+    start_time: `${shift.date} ${shift.startTime}:00`,
+    end_time: `${shift.date} ${shift.endTime}:00`,
+    type: shift.type,
+    // Alle haben gleiche Werte:
+    team_id: data.teamId,
+    machine_id: data.machineId,
+    department_id: data.departmentId
+  });
+}
+
+## 🗄️ DATENBANK-MIGRATION ERFORDERLICH
+
+### Migration für shift_plans Tabelle
+```sql
+-- Prüfen ob machine_id column in shift_plans existiert
+ALTER TABLE shift_plans
+ADD COLUMN IF NOT EXISTS machine_id INT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS area_id INT DEFAULT NULL,
+ADD CONSTRAINT fk_shift_plans_machine FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE SET NULL,
+ADD CONSTRAINT fk_shift_plans_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL;
+
+-- Index für Performance
+CREATE INDEX IF NOT EXISTS idx_shift_plans_machine ON shift_plans(machine_id);
+CREATE INDEX IF NOT EXISTS idx_shift_plans_area ON shift_plans(area_id);
+```
+
+### Migration ausführen (siehe DATABASE-MIGRATION-GUIDE.md)
+
+```bash
+# 1. Backup
+bash scripts/quick-backup.sh "before_shift_fix_$(date +%Y%m%d_%H%M%S)"
+
+# 2. Migration erstellen
+cat > database/migrations/004-shift-plans-fix.sql << 'EOF'
+-- Add machine_id and area_id to shift_plans
+ALTER TABLE shift_plans
+ADD COLUMN IF NOT EXISTS machine_id INT DEFAULT NULL AFTER team_id,
+ADD COLUMN IF NOT EXISTS area_id INT DEFAULT NULL AFTER machine_id;
+
+-- Add foreign keys
+ALTER TABLE shift_plans
+ADD CONSTRAINT fk_shift_plans_machine FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE SET NULL,
+ADD CONSTRAINT fk_shift_plans_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL;
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS idx_shift_plans_machine ON shift_plans(machine_id);
+CREATE INDEX IF NOT EXISTS idx_shift_plans_area ON shift_plans(area_id);
+EOF
+
+# 3. Migration ausführen
+docker cp database/migrations/004-shift-plans-fix.sql assixx-mysql:/tmp/
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/004-shift-plans-fix.sql'
+
+# 4. Verifizieren
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DESCRIBE shift_plans;"'
+```
+
 ## 🚀 NÄCHSTE SCHRITTE
 
-1. Backend-Service für Plan-Erstellung implementieren
-2. Frontend auf neue API umstellen
-3. Migrations für fehlende Constraints
+1. **ZUERST**: Datenbank-Migration ausführen (shift_plans erweitern)
+2. Backend-Service für Plan-Erstellung implementieren
+3. Frontend auf neue API umstellen
 4. Test-Suite für Plan-Management
 5. UI für Plan-Status-Workflow

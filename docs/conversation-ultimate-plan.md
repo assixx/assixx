@@ -220,7 +220,7 @@ CREATE TABLE messages (
 
 ## 🔒 MULTI-TENANT SECURITY CHECKLIST
 
-### JEDE Query MUSS tenant_id prüfen!
+### JEDE Query MUSS tenant_id prüfen
 
 ```typescript
 // ❌ FALSCH - Keine Tenant-Isolation!
@@ -235,7 +235,7 @@ const messages = await query(
 );
 ```
 
-### Code-Updates erforderlich in:
+### Code-Updates erforderlich in
 
 - `/backend/src/routes/v2/chat/chat.service.ts`
 - `/backend/src/routes/v2/chat/chat.controller.ts`
@@ -301,6 +301,6 @@ Manuell die 14 ungenutzten Tabellen löschen (siehe Phase 2)
 
 ---
 
-_Erstellt: 2025-08-08_  
-_Status: BEREIT ZUR AUSFÜHRUNG_  
-_Priorität: KRITISCH (Security Fix)_
+*Erstellt: 2025-08-08*  
+*Status: BEREIT ZUR AUSFÜHRUNG*  
+*Priorität: KRITISCH (Security Fix)*

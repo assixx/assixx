@@ -18,6 +18,7 @@
    ```
 
 3. **Beispiel für sicheres Secret**:
+
    ```env
    JWT_SECRET=QTZHLkeMTNXwPF2JdKxrTu+2LRFhkzSFYRNt22+lQdY=
    ```
@@ -28,7 +29,7 @@
 - Mit dem Secret kann jeder gültige Tokens erstellen
 - Ein kompromittiertes Secret = Vollzugriff auf alle Accounts
 
-### Best Practices:
+### Best Practices
 
 1. **Unterschiedliche Secrets** für Dev/Staging/Prod
 2. **Rotiere Secrets** regelmäßig (z.B. alle 3-6 Monate)
@@ -36,7 +37,7 @@
 4. **Niemals committen** - .env sollte in .gitignore sein
 5. **Mindestlänge**: 32+ Zeichen, besser 64
 
-### Weitere Sicherheits-Checks:
+### Weitere Sicherheits-Checks
 
 - [ ] SESSION_SECRET ebenfalls ändern
 - [ ] Datenbank-Passwörter ändern

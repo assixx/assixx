@@ -78,20 +78,20 @@ ADD COLUMN was_role_switched BOOLEAN DEFAULT FALSE AFTER user_agent;
 
 Das System ist bereits sicher und funktional.
 
-### Nice-to-Have:
+### Nice-to-Have
 
 1. **Erweiterte Logs** für Compliance (was_role_switched Flag)
 2. **Optionaler Banner** für extra Klarheit
 
 ## 📝 Dokumentation der Features
 
-### Für Endnutzer:
+### Für Endnutzer
 
 - "Sie sehen Ihre aktuelle Rolle im User-Badge oben rechts"
 - "Nach Logout sind Sie immer in Ihrer Original-Rolle"
 - "Alle Rollenwechsel werden protokolliert"
 
-### Für Betriebsrat:
+### Für Betriebsrat
 
 - "Alle Admin-Aktivitäten als Employee werden geloggt"
 - "Audit-Trail vollständig nachvollziehbar"

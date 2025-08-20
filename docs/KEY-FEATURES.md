@@ -171,4 +171,4 @@
 
 ---
 
-_Dieses Dokument wird bei Feature-Änderungen aktualisiert._
+*Dieses Dokument wird bei Feature-Änderungen aktualisiert.*

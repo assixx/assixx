@@ -1,6 +1,6 @@
 # API v2 Known Issues and Solutions
 
-## ✅ UPDATE 31.07.2025: All Major Issues Resolved!
+## ✅ UPDATE 31.07.2025: All Major Issues Resolved
 
 - Settings v2 validation middleware bug: **FIXED**
 - Users v2 duplicate entry test error: **FIXED**
@@ -131,14 +131,19 @@ Cannot add or update a child row: a foreign key constraint fails (`main`.`users`
 
 1. **Always use `--runInBand` for v2 tests** to prevent race conditions
 2. **Run test suites individually** when debugging:
+
    ```bash
    docker exec assixx-backend pnpm test -- backend/src/routes/__tests__/calendar-v2.test.ts --runInBand
    ```
+
 3. **Check for leftover test data** before running tests:
+
    ```bash
    docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
    ```
+
 4. **Clean test data manually if needed**:
+
    ```bash
    docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DELETE FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
    ```
@@ -373,6 +378,7 @@ Create conversation error: {
 1. **Console-Import Fix** - Ermöglicht Debug-Ausgaben in Jest
 2. **Erweiterte Logging** in `createConversation()`
 3. **Error-Logging** in `getConversations()` hinzugefügt:
+
    ```typescript
    } catch (error) {
      logError("[Chat Service] getConversations error:", error);

@@ -171,6 +171,7 @@ if (response.status !== 201) {
    ```
 
 5. **DEBUG Environment Variable**:
+
    ```bash
    DEBUG=* npm test
    ```
@@ -181,4 +182,4 @@ if (response.status !== 201) {
 - Errors werden IMMER in der Ausgabe gezeigt
 - Bei kritischem Debugging: Error werfen statt loggen
 - Verschiedene Jest-Versionen verhalten sich unterschiedlich
-  siehe: https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest
+  siehe: <https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest>
