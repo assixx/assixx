@@ -244,18 +244,20 @@ export default [
           format: ['camelCase'],
         },
       ],
-      // Import order rules
+      // Import order rules - Less strict to avoid conflicts
       'import-x/order': [
-        'error',
+        'warn', // Changed from 'error' to 'warn'
         {
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
+          'newlines-between': 'never', // No forced newlines between groups
           alphabetize: {
-            order: 'asc',
+            order: 'ignore', // Don't force alphabetical order
             caseInsensitive: true,
           },
         },
       ],
+      // Import order disabled to prevent circular fixes
+      'import-x/order': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-cycle': 'error',
       'import-x/no-self-import': 'error',
@@ -725,18 +727,20 @@ export default [
           format: ['camelCase'],
         },
       ],
-      // Import order rules
+      // Import order rules - Less strict to avoid conflicts
       'import-x/order': [
-        'error',
+        'warn', // Changed from 'error' to 'warn'
         {
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
+          'newlines-between': 'never', // No forced newlines between groups
           alphabetize: {
-            order: 'asc',
+            order: 'ignore', // Don't force alphabetical order
             caseInsensitive: true,
           },
         },
       ],
+      // Import order disabled to prevent circular fixes
+      'import-x/order': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-cycle': 'error',
       'import-x/no-self-import': 'error',

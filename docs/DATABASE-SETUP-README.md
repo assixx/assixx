@@ -1,7 +1,7 @@
 # 🚀 ASSIXX - Database Setup Guide
 
 **SaaS Platform für Industrieunternehmen**
-*Komplette Anleitung für neue Entwickler*
+_Komplette Anleitung für neue Entwickler_
 
 ---
 

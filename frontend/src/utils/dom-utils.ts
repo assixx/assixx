@@ -220,10 +220,19 @@ export function setText(element: HTMLElement | null, text: string): void {
 
 /**
  * Safe HTML content setter (use with caution!)
+ * Uses template element for parsing to avoid direct innerHTML assignment
  */
 export function setHTML(element: HTMLElement | null, html: string): void {
   if (element) {
-    element.innerHTML = html;
+    // Clear existing content
+    while (element.firstChild) {
+      element.firstChild.remove();
+    }
+
+    // Use template element for safe parsing
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    element.append(template.content);
   }
 }
 

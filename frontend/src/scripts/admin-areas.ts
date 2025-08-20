@@ -4,6 +4,7 @@
  */
 
 import { ApiClient } from '../utils/api-client';
+import { setHTML } from '../utils/dom-utils';
 
 import { showSuccess, showError } from './auth';
 
@@ -40,6 +41,13 @@ class AreasManager {
   private currentFilter: 'all' | 'production' | 'warehouse' | 'office' = 'all';
   private searchTerm = '';
 
+  private escapeHtml(text: string | null | undefined): string {
+    if (text == null) return '-';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   constructor() {
     this.apiClient = ApiClient.getInstance();
     this.initializeEventListeners();
@@ -69,14 +77,14 @@ class AreasManager {
 
     // Search
     document.querySelector('#area-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#area-search');
+      const searchInput = document.querySelector<HTMLInputElement>('#area-search');
       this.searchTerm = searchInput ? searchInput.value : '';
       void this.loadAreas();
     });
 
     // Enter key on search
     document.querySelector('#area-search')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+      if ((e as KeyboardEvent).key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
         void this.loadAreas();
@@ -110,42 +118,45 @@ class AreasManager {
   }
 
   private renderAreasTable(): void {
-    const tbody = document.querySelector('#areas-table-body');
+    const tbody = document.querySelector<HTMLElement>('#areas-table-body');
     if (!tbody) return;
 
     if (this.areas.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="text-center text-muted">Keine Bereiche gefunden</td>
-        </tr>
-      `;
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 7;
+      td.className = 'text-center text-muted';
+      td.textContent = 'Keine Bereiche gefunden';
+      tr.append(td);
+      tbody.innerHTML = '';
+      tbody.append(tr);
       return;
     }
 
-    tbody.innerHTML = this.areas
+    const safeHTML = this.areas
       .map(
         (area) => `
       <tr>
         <td>
-          <strong>${area.name}</strong>
+          <strong>${this.escapeHtml(area.name)}</strong>
         </td>
-        <td>${area.description ?? '-'}</td>
-        <td>${this.getTypeLabel(area.type)}</td>
-        <td>${area.capacity != null ? `${area.capacity} Plätze` : '-'}</td>
-        <td>${area.address ?? '-'}</td>
+        <td>${this.escapeHtml(area.description)}</td>
+        <td>${this.escapeHtml(this.getTypeLabel(area.type))}</td>
+        <td>${area.capacity != null ? `${String(area.capacity)} Plätze` : '-'}</td>
+        <td>${this.escapeHtml(area.address)}</td>
         <td>
           <span class="badge ${area.isActive !== false ? 'badge-success' : 'badge-secondary'}">
             ${area.isActive !== false ? 'Aktiv' : 'Inaktiv'}
           </span>
         </td>
         <td>
-          <button class="btn btn-sm btn-secondary" onclick="window.editArea(${area.id})">
+          <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${String(area.id)}">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn btn-sm btn-secondary" onclick="window.viewAreaDetails(${area.id})">
+          <button class="btn btn-sm btn-secondary" data-action="view" data-id="${String(area.id)}">
             <i class="fas fa-eye"></i>
           </button>
-          <button class="btn btn-sm btn-danger" onclick="window.deleteArea(${area.id})">
+          <button class="btn btn-sm btn-danger" data-action="delete" data-id="${String(area.id)}">
             <i class="fas fa-trash"></i>
           </button>
         </td>
@@ -153,6 +164,28 @@ class AreasManager {
     `,
       )
       .join('');
+
+    // Use setHTML from dom-utils to safely set content
+    // This clears existing content and uses template element for safe parsing
+    setHTML(tbody, safeHTML);
+
+    // Add event listeners for buttons
+    tbody.querySelectorAll('button[data-action]').forEach((button) => {
+      button.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const action = target.dataset.action;
+        const id = Number.parseInt(target.dataset.id ?? '0', 10);
+        const w = window as WindowWithAreaHandlers;
+
+        if (action === 'edit' && w.editArea) {
+          void w.editArea(id);
+        } else if (action === 'view' && w.viewAreaDetails) {
+          void w.viewAreaDetails(id);
+        } else if (action === 'delete' && w.deleteArea) {
+          void w.deleteArea(id);
+        }
+      });
+    });
   }
 
   private getTypeLabel(type: string): string {
@@ -193,7 +226,7 @@ class AreasManager {
 
   async updateArea(id: number, areaData: Partial<Area>): Promise<Area> {
     try {
-      const response = await this.apiClient.request<Area>(`/areas/${id}`, {
+      const response = await this.apiClient.request<Area>(`/areas/${String(id)}`, {
         method: 'PUT',
         body: JSON.stringify(areaData),
       });
@@ -234,7 +267,7 @@ class AreasManager {
 
   async getAreaDetails(id: number): Promise<Area | null> {
     try {
-      return await this.apiClient.request<Area>(`/areas/${id}`, {
+      return await this.apiClient.request<Area>(`/areas/${String(id)}`, {
         method: 'GET',
       });
     } catch (error) {
@@ -290,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('active');
 
         // Reset form
-        const form = document.querySelector('#areaForm');
+        const form = document.querySelector<HTMLFormElement>('#areaForm');
         if (form) form.reset();
       }
     };
@@ -305,22 +338,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save area handler
     w.saveArea = async (): Promise<void> => {
-      const form = document.querySelector('#areaForm');
+      const form = document.querySelector<HTMLFormElement>('#areaForm');
       if (!form) return;
 
       const formData = new FormData(form);
       const areaData: Record<string, string | number> = {};
 
-      // Convert FormData to object
+      // Convert FormData to object with safe key assignment
+      const allowedKeys = ['name', 'description', 'type', 'capacity', 'parentId', 'address', 'isActive'];
+
       formData.forEach((value, key) => {
-        if (typeof value === 'string' && value.length > 0) {
+        if (typeof value === 'string' && value.length > 0 && allowedKeys.includes(key)) {
           if (key === 'capacity' || key === 'parentId') {
             const numValue = Number.parseInt(value, 10);
-            if (!isNaN(numValue)) {
-              areaData[key] = numValue;
+            if (!Number.isNaN(numValue)) {
+              Object.assign(areaData, { [key]: numValue });
             }
           } else {
-            areaData[key] = value;
+            Object.assign(areaData, { [key]: value });
           }
         }
       });

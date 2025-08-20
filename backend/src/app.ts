@@ -350,6 +350,8 @@ app.use(
         if (!absoluteTsPath.startsWith(expectedSrcRoot)) {
           throw new Error('Invalid file path');
         }
+        // Safe: Path has been validated above - no "..", within srcPath, and access checked
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         const tsContent = await fs.promises.readFile(absoluteTsPath, 'utf8');
 
         // Transform TypeScript to JavaScript-compatible code
@@ -656,6 +658,7 @@ app.use(htmlRoutes);
 // Root and dashboard redirect - send users to appropriate dashboard or landing page
 // HTML Routes - Serve pages (AFTER root redirect)
 // Error handling middleware
+// eslint-disable-next-line promise/prefer-await-to-callbacks
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   // Check if it's a ServiceError
   if (err.name === 'ServiceError' && 'statusCode' in err) {
@@ -699,6 +702,7 @@ app.use((req: Request, res: Response): void => {
 });
 
 // Error handler
+// eslint-disable-next-line promise/prefer-await-to-callbacks
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   console.error('[ERROR]', err.stack ?? (err.message !== '' ? err.message : String(err)));
 
