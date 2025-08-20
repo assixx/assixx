@@ -101,12 +101,12 @@ const CSS_SELECTORS = {
 
 // DOM Element IDs
 const DOM_IDS = {
-  WEEKLY_NOTES: '#weeklyNotes',
-  CURRENT_WEEK_INFO: '#currentWeekInfo',
-  NOTES_TOGGLE: '#notesToggle',
-  NOTES_PANEL: '#notesPanel',
-  USER_NAME: '#userName',
-  CURRENT_DEPARTMENT: '#currentDepartment',
+  WEEKLY_NOTES: 'weeklyNotes',
+  CURRENT_WEEK_INFO: 'currentWeekInfo',
+  NOTES_TOGGLE: 'notesToggle',
+  NOTES_PANEL: 'notesPanel',
+  USER_NAME: 'userName',
+  CURRENT_DEPARTMENT: 'currentDepartment',
   CURRENT_TEAM_LEADER: '#currentTeamLeader',
   PREV_WEEK_BTN: '#prevWeekBtn',
   NEXT_WEEK_BTN: '#nextWeekBtn',
@@ -122,6 +122,13 @@ const CSS_CLASSES = {
   DROPDOWN_OPTION: 'dropdown-option',
   DROPDOWN_MESSAGE: 'dropdown-message',
   EMPLOYEE_NAME: 'employee-name',
+} as const;
+
+// Display values
+const DISPLAY = {
+  NONE: 'none',
+  BLOCK: 'block',
+  INLINE_BLOCK: 'inline-block',
 } as const;
 
 // Error Messages
@@ -249,6 +256,62 @@ class ShiftPlanningSystem {
   async init(): Promise<void> {
     console.info('[SHIFTS] Initializing Shift Planning System...');
 
+    // Check if there's a saved context from before a reload
+    const savedContextStr = localStorage.getItem('shiftsReloadContext');
+    if (savedContextStr !== null) {
+      try {
+        const savedContext = JSON.parse(savedContextStr) as {
+          areaId: number | null;
+          departmentId: number | null;
+          machineId: number | null;
+          teamId: number | null;
+          currentWeek: string;
+          planId: number | null;
+          timestamp: number;
+        };
+
+        // Check if the saved context is recent (less than 5 minutes old)
+        const ageInMs = Date.now() - savedContext.timestamp;
+        if (ageInMs < 5 * 60 * 1000) {
+          console.info('[SHIFTS RELOAD DEBUG] Restoring saved context after reload:', savedContext);
+
+          // Restore the context
+          this.selectedContext.areaId = savedContext.areaId;
+          this.selectedContext.departmentId = savedContext.departmentId;
+          this.selectedContext.machineId = savedContext.machineId;
+          this.selectedContext.teamId = savedContext.teamId;
+          this.currentWeek = new Date(savedContext.currentWeek);
+          this.currentPlanId = savedContext.planId;
+
+          // Mark that we're restoring from reload - will be processed after dropdowns are loaded
+          // Store this for later use after loadContextData() populates the dropdowns
+          // Using window object to store temporary data to avoid TypeScript issues
+          (
+            window as Window & {
+              shiftsRestoringFromReload?: boolean;
+              shiftsSavedReloadContext?: typeof savedContext;
+            }
+          ).shiftsRestoringFromReload = true;
+          (
+            window as Window & {
+              shiftsRestoringFromReload?: boolean;
+              shiftsSavedReloadContext?: typeof savedContext;
+            }
+          ).shiftsSavedReloadContext = savedContext;
+
+          // Clear the saved context from localStorage
+          localStorage.removeItem('shiftsReloadContext');
+          console.info('[SHIFTS RELOAD DEBUG] Context restored and cleared from localStorage');
+        } else {
+          console.info('[SHIFTS RELOAD DEBUG] Saved context is too old, ignoring');
+          localStorage.removeItem('shiftsReloadContext');
+        }
+      } catch (error) {
+        console.error('[SHIFTS RELOAD DEBUG] Error parsing saved context:', error);
+        localStorage.removeItem('shiftsReloadContext');
+      }
+    }
+
     try {
       // Check user authentication and role
       console.info('[SHIFTS DEBUG] Checking user role...');
@@ -262,6 +325,97 @@ class ShiftPlanningSystem {
       // Load context data
       console.info('[SHIFTS DEBUG] Loading context data...');
       await this.loadContextData();
+
+      // If we're restoring from reload, set the custom dropdowns
+      const windowWithShifts = window as Window & {
+        shiftsRestoringFromReload?: boolean;
+        shiftsSavedReloadContext?: {
+          areaId: number | null;
+          departmentId: number | null;
+          machineId: number | null;
+          teamId: number | null;
+          currentWeek: string;
+          planId: number | null;
+          timestamp: number;
+        };
+      };
+
+      if (
+        windowWithShifts.shiftsRestoringFromReload === true &&
+        windowWithShifts.shiftsSavedReloadContext !== undefined
+      ) {
+        console.info('[SHIFTS RELOAD DEBUG] Restoring dropdown selections...');
+        const context = windowWithShifts.shiftsSavedReloadContext;
+
+        // Helper function to set custom dropdown
+        const setCustomDropdown = (selectId: string, displayId: string, value: number | null, label?: string): void => {
+          if (value === null) return;
+
+          // Set the hidden input value
+          const hiddenInput = $$id<HTMLInputElement>(selectId);
+          if (hiddenInput !== null) {
+            hiddenInput.value = String(value);
+          }
+
+          // Update the display element
+          const display = $$id(displayId);
+          if (display !== null && label !== undefined) {
+            const span = display.querySelector('span');
+            if (span !== null) {
+              span.textContent = label;
+            }
+          }
+        };
+
+        // Load and set dropdowns in cascade order
+        // 1. Set Area
+        if (context.areaId !== null) {
+          const area = this.areas.find((a) => a.id === context.areaId);
+          if (area !== undefined) {
+            setCustomDropdown('areaSelect', 'areaDisplay', context.areaId, area.name);
+            // Load departments for this area
+            await this.loadDepartments(context.areaId);
+            this.populateDepartmentSelect();
+          }
+        }
+
+        // 2. Set Department
+        if (context.departmentId !== null) {
+          const dept = this.departments.find((d) => d.id === context.departmentId);
+          if (dept !== undefined) {
+            setCustomDropdown('departmentSelect', 'departmentDisplay', context.departmentId, dept.name);
+            // Load machines for this department
+            this.selectedContext.departmentId = context.departmentId; // Set context before loading
+            await this.loadMachines();
+            this.populateMachineSelect();
+          }
+        }
+
+        // 3. Set Machine
+        if (context.machineId !== null) {
+          const machine = this.machines.find((m) => m.id === context.machineId);
+          if (machine !== undefined) {
+            setCustomDropdown('machineSelect', 'machineDisplay', context.machineId, machine.name);
+            // Load teams for this machine (or department if no machine-specific teams)
+            await this.loadTeamsForMachine(context.machineId);
+            this.populateTeamSelect();
+          }
+        }
+
+        // 4. Set Team
+        if (context.teamId !== null) {
+          const team = this.teams.find((t) => t.id === context.teamId);
+          if (team !== undefined) {
+            setCustomDropdown('teamSelect', 'teamDisplay', context.teamId, team.name);
+          }
+        }
+
+        // Clean up temporary properties
+        delete windowWithShifts.shiftsRestoringFromReload;
+        delete windowWithShifts.shiftsSavedReloadContext;
+
+        console.info('[SHIFTS RELOAD DEBUG] Dropdown selections restored');
+      }
 
       // Only load data if a team is already selected (e.g., from saved state)
       // For admins, check if teamId is selected
@@ -805,16 +959,6 @@ class ShiftPlanningSystem {
 
     dropdown.innerHTML = '';
 
-    // Add default option
-    const defaultOption = document.createElement('div');
-    defaultOption.className = CSS_CLASSES.DROPDOWN_OPTION;
-    defaultOption.dataset.value = '';
-    defaultOption.textContent = 'Alle Bereiche';
-    defaultOption.onclick = () => {
-      this.selectOption('area', '', 'Alle Bereiche');
-    };
-    dropdown.append(defaultOption);
-
     // Add area options
     this.areas.forEach((area) => {
       const option = document.createElement('div');
@@ -1056,6 +1200,11 @@ class ShiftPlanningSystem {
 
     // Store the selected team
     this.selectedContext.teamId = teamId ?? null;
+
+    // WICHTIG: Reset planId when team changes (different team = different plan)
+    this.currentPlanId = null;
+    this.isEditMode = false;
+    console.info('[SHIFTS DEBUG] PlanId reset to null due to team change');
 
     console.info('[SHIFTS DEBUG] selectedContext after setting teamId:', this.selectedContext);
 
@@ -1978,6 +2127,10 @@ class ShiftPlanningSystem {
   }
 
   async loadCurrentWeekData(): Promise<void> {
+    console.info('[SHIFTS RELOAD DEBUG] loadCurrentWeekData called');
+    console.info('[SHIFTS RELOAD DEBUG] Current context:', this.selectedContext);
+    console.info('[SHIFTS RELOAD DEBUG] useV2API:', this.useV2API);
+
     try {
       const weekStart = this.getWeekStart(this.currentWeek);
       const weekEnd = this.getWeekEnd(this.currentWeek);
@@ -2042,13 +2195,16 @@ class ShiftPlanningSystem {
           }
 
           console.info('[SHIFTS PLAN DEBUG] Loading plan with params:', params.toString());
+          console.info('[SHIFTS PLAN DEBUG] Making GET request to /api/v2/shifts/plan');
 
           // Use /api/v2/shifts/plan endpoint
           const response = await this.apiClient.request(`/shifts/plan?${params.toString()}`, {
             method: 'GET',
           });
 
-          console.info('[SHIFTS PLAN DEBUG] Plan Response:', response);
+          console.info('[SHIFTS PLAN DEBUG] Plan Response received');
+          console.info('[SHIFTS PLAN DEBUG] Response type:', typeof response);
+          console.info('[SHIFTS PLAN DEBUG] Response:', response);
 
           // Check if response has shifts array (API v2 format)
           if (response !== null && typeof response === 'object' && 'shifts' in response) {
@@ -2089,8 +2245,9 @@ class ShiftPlanningSystem {
               this.isEditMode = false;
 
               // Load notes from plan.shiftNotes (camelCase from API v2)
-              if ((planData.plan as { shiftNotes?: string }).shiftNotes && notesTextarea !== null) {
-                notesTextarea.value = (planData.plan as { shiftNotes: string }).shiftNotes;
+              const shiftNotes = (planData.plan as { shiftNotes?: string }).shiftNotes;
+              if (shiftNotes !== undefined && shiftNotes !== '' && notesTextarea !== null) {
+                notesTextarea.value = shiftNotes;
               } else if (notesTextarea !== null) {
                 // Plan exists but no notes - clear textarea
                 notesTextarea.value = '';
@@ -2162,6 +2319,15 @@ class ShiftPlanningSystem {
       console.error('Error loading shift data:', error);
       this.renderWeekView();
     }
+
+    // ALWAYS update counts and re-render employee list after loading data
+    console.info('[SHIFTS RELOAD DEBUG] Updating employee shift counts after load...');
+    this.updateEmployeeShiftCounts();
+
+    console.info('[SHIFTS RELOAD DEBUG] Re-rendering employee list after load...');
+    this.renderEmployeeList();
+
+    console.info('[SHIFTS RELOAD DEBUG] loadCurrentWeekData fully completed');
   }
 
   processShiftData(
@@ -2238,6 +2404,7 @@ class ShiftPlanningSystem {
   navigateWeek(direction: number): void {
     console.info('[SHIFTS DEBUG] Navigating week. Direction:', direction);
     console.info('[SHIFTS DEBUG] Current week before:', this.currentWeek);
+    console.info('[SHIFTS DEBUG] Current planId before navigation:', this.currentPlanId);
 
     const newDate = new Date(this.currentWeek);
 
@@ -2245,7 +2412,15 @@ class ShiftPlanningSystem {
     newDate.setDate(newDate.getDate() + daysToAdd);
     this.currentWeek = newDate;
 
+    // WICHTIG: Reset planId when navigating to a different week!
+    this.currentPlanId = null;
+    this.isEditMode = false;
+
     console.info('[SHIFTS DEBUG] New week after:', this.currentWeek);
+    console.info('[SHIFTS DEBUG] PlanId reset to null for new week');
+
+    // Update button visibility after resetting planId
+    this.updateButtonVisibility();
 
     // Load both shift data and notes for the new week
     void (async () => {
@@ -2451,10 +2626,18 @@ class ShiftPlanningSystem {
   }
 
   async saveSchedule(isUpdate = false): Promise<void> {
-    if (!this.isAdmin) return;
+    console.info('[SHIFTS SAVE DEBUG] saveSchedule called, isUpdate:', isUpdate);
+    console.info('[SHIFTS SAVE DEBUG] currentPlanId:', this.currentPlanId);
+    console.info('[SHIFTS SAVE DEBUG] useV2API:', this.useV2API);
+
+    if (!this.isAdmin) {
+      console.warn('[SHIFTS SAVE DEBUG] Not admin, returning');
+      return;
+    }
 
     // Validate department selection
     if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
+      console.warn('[SHIFTS SAVE DEBUG] No department selected, returning');
       showErrorAlert('Bitte wählen Sie zuerst eine Abteilung aus');
       return;
     }
@@ -2462,6 +2645,7 @@ class ShiftPlanningSystem {
     // Success message constant
     const SAVE_SUCCESS_MESSAGE = 'Schichtplan erfolgreich gespeichert!';
 
+    console.info('[SHIFTS SAVE DEBUG] Starting save process...');
     try {
       const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
@@ -2623,10 +2807,27 @@ class ShiftPlanningSystem {
             this.toggleEditMode(false);
           }
 
-          // Reload data with slight delay so user sees success message
-          setTimeout(async () => {
-            await this.loadCurrentWeekData();
-            console.info('[SHIFTS PLAN DEBUG] Data reloaded after save');
+          // Save current context and week to localStorage before full page reload
+          console.info('[SHIFTS RELOAD DEBUG] Saving context and doing full page reload...');
+
+          // Save current filters and week to localStorage so they can be restored after reload
+          const reloadContext = {
+            areaId: this.selectedContext.areaId,
+            departmentId: this.selectedContext.departmentId,
+            machineId: this.selectedContext.machineId,
+            teamId: this.selectedContext.teamId,
+            currentWeek: this.currentWeek.toISOString(),
+            planId: this.currentPlanId,
+            timestamp: Date.now(),
+          };
+
+          localStorage.setItem('shiftsReloadContext', JSON.stringify(reloadContext));
+          console.info('[SHIFTS RELOAD DEBUG] Saved context to localStorage:', reloadContext);
+
+          // Perform full page reload after slight delay so user sees success message
+          setTimeout(() => {
+            console.info('[SHIFTS RELOAD DEBUG] Performing full page reload...');
+            window.location.reload();
           }, 500);
         } catch (error) {
           console.error('[SHIFTS PLAN DEBUG] Failed to create shift plan:', error);
@@ -2702,9 +2903,9 @@ class ShiftPlanningSystem {
    * Update button visibility based on plan state and edit mode
    */
   updateButtonVisibility(): void {
-    const saveBtn = document.querySelector('#saveScheduleBtn') as HTMLButtonElement | null;
-    const resetBtn = document.querySelector('#resetScheduleBtn') as HTMLButtonElement | null;
-    const adminActions = document.querySelector('#adminActions') as HTMLElement | null;
+    const saveBtn = $$id<HTMLButtonElement>('saveScheduleBtn');
+    const resetBtn = $$id<HTMLButtonElement>('resetScheduleBtn');
+    const adminActions = $$id('adminActions');
 
     if (!adminActions || !this.isAdmin) return;
 
@@ -2718,14 +2919,18 @@ class ShiftPlanningSystem {
       // Plan exists
       if (this.isEditMode) {
         // In edit mode - show update button
-        if (saveBtn) saveBtn.style.display = 'none';
-        if (resetBtn) resetBtn.style.display = 'inline-block';
+        if (saveBtn) saveBtn.style.display = DISPLAY.NONE;
+        if (resetBtn) resetBtn.style.display = DISPLAY.INLINE_BLOCK;
 
         const updateBtn = document.createElement('button');
         updateBtn.id = 'updateScheduleBtn';
         updateBtn.className = 'admin-btn';
         updateBtn.textContent = 'Schichtplan aktualisieren';
-        adminActions.insertBefore(updateBtn, resetBtn);
+        if (resetBtn) {
+          resetBtn.before(updateBtn);
+        } else {
+          adminActions.append(updateBtn);
+        }
       } else {
         // Read-only mode - show edit button
         if (saveBtn) saveBtn.style.display = 'none';
@@ -2739,8 +2944,8 @@ class ShiftPlanningSystem {
       }
     } else {
       // No plan exists - show normal save button
-      if (saveBtn) saveBtn.style.display = 'inline-block';
-      if (resetBtn) resetBtn.style.display = 'inline-block';
+      if (saveBtn) saveBtn.style.display = DISPLAY.INLINE_BLOCK;
+      if (resetBtn) resetBtn.style.display = DISPLAY.INLINE_BLOCK;
     }
   }
 
@@ -2756,19 +2961,19 @@ class ShiftPlanningSystem {
     });
 
     // Disable shift cells
-    const shiftCells = document.querySelectorAll('.shift-cell');
+    const shiftCells = document.querySelectorAll(CSS_SELECTORS.SHIFT_CELL);
     shiftCells.forEach((cell) => {
       cell.classList.add('locked');
     });
 
     // Hide remove buttons
-    const removeButtons = document.querySelectorAll('.shift-cell .remove-btn');
+    const removeButtons = document.querySelectorAll(`${CSS_SELECTORS.SHIFT_CELL} .remove-btn`);
     removeButtons.forEach((btn) => {
       (btn as HTMLElement).style.display = 'none';
     });
 
     // Make notes readonly
-    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+    const notesTextarea = document.querySelector('#weeklyNotes');
     if (notesTextarea) {
       notesTextarea.setAttribute('readonly', 'readonly');
     }
@@ -2786,19 +2991,19 @@ class ShiftPlanningSystem {
     });
 
     // Enable shift cells
-    const shiftCells = document.querySelectorAll('.shift-cell');
+    const shiftCells = document.querySelectorAll(CSS_SELECTORS.SHIFT_CELL);
     shiftCells.forEach((cell) => {
       cell.classList.remove('locked');
     });
 
     // Show remove buttons
-    const removeButtons = document.querySelectorAll('.shift-cell .remove-btn');
+    const removeButtons = document.querySelectorAll(`${CSS_SELECTORS.SHIFT_CELL} .remove-btn`);
     removeButtons.forEach((btn) => {
       (btn as HTMLElement).style.display = '';
     });
 
     // Make notes editable
-    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+    const notesTextarea = document.querySelector('#weeklyNotes');
     if (notesTextarea) {
       notesTextarea.removeAttribute('readonly');
     }

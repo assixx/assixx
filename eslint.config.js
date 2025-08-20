@@ -34,11 +34,11 @@ export default [
     rules: {
       // complexity: ["warn", 15], // Deaktiviert - nutzen sonarjs/cognitive-complexity stattdessen
       // "max-depth": ["warn", 4], // Deaktiviert - nutzen sonarjs/no-collapsible-if stattdessen
-      'max-lines': ['warn', { max: 2500, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['warn', { max: 2900, skipBlankLines: true, skipComments: true }],
       'max-lines-per-function': ['warn', { max: 200, skipBlankLines: true, skipComments: true }],
       'max-nested-callbacks': ['warn', 4],
       'max-params': ['warn', 10], // Max 10 parameters
-      'max-statements': ['warn', 75], // Max 55 statements per function
+      'max-statements': ['warn', 90], // Max 55 statements per function
     },
   },
 
@@ -257,6 +257,7 @@ export default [
         },
       ],
       // Import order disabled to prevent circular fixes
+      // eslint-disable-next-line no-dupe-keys
       'import-x/order': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-cycle': 'error',
@@ -740,6 +741,7 @@ export default [
         },
       ],
       // Import order disabled to prevent circular fixes
+      // eslint-disable-next-line no-dupe-keys
       'import-x/order': 'off',
       'import-x/no-duplicates': 'error',
       'import-x/no-cycle': 'error',

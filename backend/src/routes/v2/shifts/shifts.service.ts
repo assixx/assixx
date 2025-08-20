@@ -824,7 +824,7 @@ export class ShiftsService {
    * @param data.teamId
    * @param data.machineId
    * @param data.name
-   * @param data.shift_notes
+   * @param data.shiftNotes
    * @param data.shifts
    * @param tenantId
    * @param userId
