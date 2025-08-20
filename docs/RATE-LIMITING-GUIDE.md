@@ -46,7 +46,7 @@ Das Assixx-System implementiert ein mehrschichtiges Rate-Limiting-System zum Sch
 
 ```typescript
 // Beispiel: HTML Route mit Rate Limiting
-router.get("/dashboard", rateLimiter.authenticated, authenticateToken, servePage("dashboard"));
+router.get('/dashboard', rateLimiter.authenticated, authenticateToken, servePage('dashboard'));
 ```
 
 ### API Routes mit Security Middleware
@@ -54,7 +54,7 @@ router.get("/dashboard", rateLimiter.authenticated, authenticateToken, servePage
 ```typescript
 // Beispiel: API Route mit integriertem Rate Limiting
 router.get(
-  "/api/users",
+  '/api/users',
   ...security.user(), // Enthält bereits rateLimiter.authenticated
   async (req, res) => {
     // Handler code

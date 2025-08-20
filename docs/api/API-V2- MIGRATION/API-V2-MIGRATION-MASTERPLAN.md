@@ -101,49 +101,49 @@ curl -X POST http://localhost:3000/api/v2/auth/login \
 ```typescript
 // frontend/src/utils/api-client.ts
 class ApiClient {
-  private version: "v1" | "v2" = "v1"; // START MIT v1!
+  private version: 'v1' | 'v2' = 'v1'; // START MIT v1!
 
   async fetch(endpoint: string, options?: RequestInit) {
     // Feature Flag Check
-    const featureKey = `USE_API_V2_${endpoint.split("/")[1]?.toUpperCase()}`;
+    const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
     if (window.FEATURE_FLAGS?.[featureKey]) {
-      this.version = "v2";
+      this.version = 'v2';
     }
 
-    const baseUrl = this.version === "v2" ? "/api/v2" : "/api";
+    const baseUrl = this.version === 'v2' ? '/api/v2' : '/api';
     const url = `${baseUrl}${endpoint}`;
 
     // v1 nutzt Cookies, v2 nutzt Bearer Token
     const headers = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...options?.headers,
     };
 
-    if (this.version === "v2") {
-      const token = localStorage.getItem("accessToken");
+    if (this.version === 'v2') {
+      const token = localStorage.getItem('accessToken');
       if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
       }
     }
 
     const response = await fetch(url, {
       ...options,
       headers,
-      credentials: this.version === "v1" ? "include" : "omit",
+      credentials: this.version === 'v1' ? 'include' : 'omit',
     });
 
     // Error Handling mit Fallback
-    if (!response.ok && this.version === "v2") {
-      console.error("v2 API failed, falling back to v1");
-      this.version = "v1";
+    if (!response.ok && this.version === 'v2') {
+      console.error('v2 API failed, falling back to v1');
+      this.version = 'v1';
       return this.fetch(endpoint, options); // Retry mit v1
     }
 
     const data = await response.json();
 
-    if (this.version === "v2") {
+    if (this.version === 'v2') {
       if (!data.success) {
-        throw new Error(data.error?.message || "API Error");
+        throw new Error(data.error?.message || 'API Error');
       }
       return data.data;
     }
@@ -221,21 +221,22 @@ class ResponseAdapter {
 // 2. common.ts - Shared Functions
 // 3. auth.ts - Login/Logout
 // 4. login.html - Login Page
-
 // auth.ts Beispiel:
-import { apiClient } from "./api-service"; // NEUE zentrale API
+import { apiClient } from './api-service';
+
+// NEUE zentrale API
 
 export async function login(email: string, password: string) {
   // Feature Flag Check entfernt - wir migrieren ALLES
-  const response = await apiClient.post("/auth/login", {
+  const response = await apiClient.post('/auth/login', {
     email,
     password,
   });
 
   // v2 Response - Tokens speichern
-  localStorage.setItem("accessToken", response.accessToken);
-  localStorage.setItem("refreshToken", response.refreshToken);
-  localStorage.setItem("user", JSON.stringify(response.user));
+  localStorage.setItem('accessToken', response.accessToken);
+  localStorage.setItem('refreshToken', response.refreshToken);
+  localStorage.setItem('user', JSON.stringify(response.user));
 
   return response;
 }
@@ -243,19 +244,19 @@ export async function login(email: string, password: string) {
 // SCHRITT 3: Logout anpassen
 export async function logout() {
   try {
-    await apiClient.fetch("/auth/logout", { method: "POST" });
+    await apiClient.fetch('/auth/logout', { method: 'POST' });
 
     if (window.FEATURE_FLAGS?.USE_API_V2_AUTH) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
     }
 
-    window.location.href = "/login";
+    window.location.href = '/login';
   } catch (error) {
-    console.error("Logout failed:", error);
+    console.error('Logout failed:', error);
     // Trotzdem ausloggen
-    window.location.href = "/login";
+    window.location.href = '/login';
   }
 }
 ```
@@ -341,8 +342,8 @@ MANUAL TEST CHECKLIST für $API_NAME:
 ```typescript
 // frontend/src/utils/migration-monitor.ts
 class MigrationMonitor {
-  static logApiCall(endpoint: string, version: "v1" | "v2", success: boolean, responseTime: number) {
-    const stats = JSON.parse(localStorage.getItem("migrationStats") || "{}");
+  static logApiCall(endpoint: string, version: 'v1' | 'v2', success: boolean, responseTime: number) {
+    const stats = JSON.parse(localStorage.getItem('migrationStats') || '{}');
 
     if (!stats[endpoint]) {
       stats[endpoint] = { v1: { calls: 0, errors: 0, avgTime: 0 }, v2: { calls: 0, errors: 0, avgTime: 0 } };
@@ -353,7 +354,7 @@ class MigrationMonitor {
     if (!success) versionStats.errors++;
     versionStats.avgTime = (versionStats.avgTime * (versionStats.calls - 1) + responseTime) / versionStats.calls;
 
-    localStorage.setItem("migrationStats", JSON.stringify(stats));
+    localStorage.setItem('migrationStats', JSON.stringify(stats));
 
     // Alert bei hoher Fehlerrate
     const errorRate = versionStats.errors / versionStats.calls;
@@ -363,7 +364,7 @@ class MigrationMonitor {
   }
 
   static getReport() {
-    const stats = JSON.parse(localStorage.getItem("migrationStats") || "{}");
+    const stats = JSON.parse(localStorage.getItem('migrationStats') || '{}');
     console.table(stats);
     return stats;
   }
@@ -378,7 +379,7 @@ class MigrationMonitor {
 // frontend/src/config/rollout.js
 const ROLLOUT_CONFIG = {
   // Start mit einzelnen Test-Usern
-  testUsers: ["admin@test.com", "developer@test.com"],
+  testUsers: ['admin@test.com', 'developer@test.com'],
 
   // Dann Abteilungen
   departments: {
@@ -429,13 +430,13 @@ window.emergencyRollback = emergencyRollback;
 
 ```javascript
 // v1
-fetch("/api/auth/login", {
-  credentials: "include",
+fetch('/api/auth/login', {
+  credentials: 'include',
   // Cookie-based auth
 });
 
 // v2
-fetch("/api/v2/auth/login", {
+fetch('/api/v2/auth/login', {
   headers: {
     Authorization: `Bearer ${token}`,
   },

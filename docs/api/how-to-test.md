@@ -12,13 +12,13 @@ This guide documents the CORRECT way to write tests for the Assixx API v2. These
 ✅ **DO** use real database with test utilities
 
 ```typescript
-// WRONG - Don't mock services
-jest.mock("./plans.service");
-const mockPlansService = PlansService as jest.Mocked<typeof PlansService>;
-
 // CORRECT - Use real app with real database
-import app from "../../../../app.js";
-import { createTestDatabase, createTestUser } from "../../../mocks/database.js";
+import app from '../../../../app.js';
+import { createTestDatabase, createTestUser } from '../../../mocks/database.js';
+
+// WRONG - Don't mock services
+jest.mock('./plans.service');
+const mockPlansService = PlansService as jest.Mocked<typeof PlansService>;
 ```
 
 ### 2. **Test File Location**
@@ -39,14 +39,15 @@ backend/src/routes/v2/
 Standard console.info doesn't work in Jest. Use direct imports:
 
 ```typescript
-// WRONG - Won't show in test output
-console.info("Debug message");
-console.error("Error message");
-
 // CORRECT - Import console functions directly
-import { log, error as logError } from "console";
-log("Debug message");
-logError("Error message");
+import { log, error as logError } from 'console';
+
+// WRONG - Won't show in test output
+console.info('Debug message');
+console.error('Error message');
+
+log('Debug message');
+logError('Error message');
 ```
 
 ### 4. **Always Run Tests with --runInBand**
@@ -96,22 +97,22 @@ await request(app).post("/api/v2/auth/login").send({
  * Tests for [Feature] API v2
  * [Description of what's being tested]
  */
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
+// For debugging if needed
+import { log, error as logError } from 'console';
+import { Pool } from 'mysql2/promise';
+import request from 'supertest';
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "@jest/globals";
-import request from "supertest";
-import app from "../../../../app.js";
-import { Pool } from "mysql2/promise";
+import app from '../../../../app.js';
 import {
-  createTestDatabase,
   cleanupTestData,
   closeTestDatabase,
+  createTestDatabase,
   createTestTenant,
   createTestUser,
-} from "../../../mocks/database.js";
-// For debugging if needed
-import { log, error as logError } from "console";
+} from '../../../mocks/database.js';
 
-describe("[Feature] API v2", () => {
+describe('[Feature] API v2', () => {
   let testDb: Pool;
   let tenantId: number;
   let adminToken: string;
@@ -123,41 +124,41 @@ describe("[Feature] API v2", () => {
     await cleanupTestData();
 
     // Create test tenant
-    tenantId = await createTestTenant(testDb, "feature-test", "Test Feature Tenant");
+    tenantId = await createTestTenant(testDb, 'feature-test', 'Test Feature Tenant');
 
     // Create admin user
     const adminUser = await createTestUser(testDb, {
-      username: "feature_admin_v2",
-      email: "admin@feature.test",
-      password: "Admin123!",
-      first_name: "Admin",
-      last_name: "User",
-      role: "admin",
+      username: 'feature_admin_v2',
+      email: 'admin@feature.test',
+      password: 'Admin123!',
+      first_name: 'Admin',
+      last_name: 'User',
+      role: 'admin',
       tenant_id: tenantId,
     });
     adminUserId = adminUser.id;
 
     // Create regular user
     const regularUser = await createTestUser(testDb, {
-      username: "feature_user_v2",
-      email: "user@feature.test",
-      password: "User123!",
-      first_name: "Regular",
-      last_name: "User",
-      role: "employee",
+      username: 'feature_user_v2',
+      email: 'user@feature.test',
+      password: 'User123!',
+      first_name: 'Regular',
+      last_name: 'User',
+      role: 'employee',
       tenant_id: tenantId,
     });
 
     // Login to get tokens - USE RETURNED EMAILS!
-    const adminLogin = await request(app).post("/api/v2/auth/login").send({
+    const adminLogin = await request(app).post('/api/v2/auth/login').send({
       email: adminUser.email, // ✅ Use returned email
-      password: "Admin123!",
+      password: 'Admin123!',
     });
     adminToken = adminLogin.body.data.accessToken;
 
-    const userLogin = await request(app).post("/api/v2/auth/login").send({
+    const userLogin = await request(app).post('/api/v2/auth/login').send({
       email: regularUser.email, // ✅ Use returned email
-      password: "User123!",
+      password: 'User123!',
     });
     userToken = userLogin.body.data.accessToken;
 
@@ -175,11 +176,11 @@ describe("[Feature] API v2", () => {
     // But DON'T delete users or tenants created in beforeAll
   });
 
-  describe("GET /api/v2/[feature]", () => {
-    it("should return data for authenticated user", async () => {
+  describe('GET /api/v2/[feature]', () => {
+    it('should return data for authenticated user', async () => {
       const response = await request(app)
-        .get("/api/v2/[feature]")
-        .set("Authorization", `Bearer ${userToken}`)
+        .get('/api/v2/[feature]')
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -187,13 +188,13 @@ describe("[Feature] API v2", () => {
         data: expect.any(Array),
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
     });
 
-    it("should require authentication", async () => {
-      await request(app).get("/api/v2/[feature]").expect(401);
+    it('should require authentication', async () => {
+      await request(app).get('/api/v2/[feature]').expect(401);
     });
   });
 });
@@ -235,11 +236,11 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ### 1. Enable Console Output
 
 ```typescript
-import { log, error as logError } from "console";
+import { log, error as logError } from 'console';
 
 // In your test or service
-log("Debug info:", someVariable);
-logError("Error occurred:", error);
+log('Debug info:', someVariable);
+logError('Error occurred:', error);
 ```
 
 ### 2. Run Single Test
@@ -405,10 +406,10 @@ docker exec assixx-mysql sh -c 'mysql -u user -ppass db -e "SELECT * FROM table"
 
 ```typescript
 // Add strategic logging points:
-console.info("[Controller] Method entry:", { params, body });
-console.info("[Service] Before DB call:", query);
-console.info("[Service] After DB call:", result);
-console.info("[Controller] Sending response:", responseData);
+console.info('[Controller] Method entry:', { params, body });
+console.info('[Service] Before DB call:', query);
+console.info('[Service] After DB call:', result);
+console.info('[Controller] Sending response:', responseData);
 ```
 
 ### 12. **Version and Dependency Conflicts**

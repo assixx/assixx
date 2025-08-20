@@ -232,29 +232,29 @@ AND e.org_level = 'personal'
 
 ```javascript
 // Bei org_level Änderung
-document.getElementById("eventOrgLevel").addEventListener("change", (e) => {
+document.getElementById('eventOrgLevel').addEventListener('change', (e) => {
   const level = e.target.value;
-  const orgIdGroup = document.getElementById("orgIdGroup");
-  const attendeesGroup = document.getElementById("attendeesGroup");
+  const orgIdGroup = document.getElementById('orgIdGroup');
+  const attendeesGroup = document.getElementById('attendeesGroup');
 
   switch (level) {
-    case "company":
-      orgIdGroup.style.display = "none";
-      attendeesGroup.style.display = "none";
+    case 'company':
+      orgIdGroup.style.display = 'none';
+      attendeesGroup.style.display = 'none';
       break;
-    case "department":
-      orgIdGroup.style.display = "block";
+    case 'department':
+      orgIdGroup.style.display = 'block';
       loadDepartments(); // Lade Abteilungen
-      attendeesGroup.style.display = "none";
+      attendeesGroup.style.display = 'none';
       break;
-    case "team":
-      orgIdGroup.style.display = "block";
+    case 'team':
+      orgIdGroup.style.display = 'block';
       loadTeams(); // Lade Teams
-      attendeesGroup.style.display = "block";
+      attendeesGroup.style.display = 'block';
       break;
-    case "personal":
-      orgIdGroup.style.display = "none";
-      attendeesGroup.style.display = "block";
+    case 'personal':
+      orgIdGroup.style.display = 'none';
+      attendeesGroup.style.display = 'block';
       break;
   }
 });
@@ -370,7 +370,7 @@ async createEvent(dto: CreateEventDto, user: AuthUser) {
 
 ```typescript
 // Filter-State in localStorage speichern
-let currentFilter = localStorage.getItem("calendarFilter") || "all";
+let currentFilter = localStorage.getItem('calendarFilter') || 'all';
 
 // Update loadCalendarEvents function mit Pagination
 async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
@@ -378,11 +378,11 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     start: fetchInfo.startStr,
     end: fetchInfo.endStr,
     filter: currentFilter,
-    limit: "200", // Performance-Limit
-    page: "1",
+    limit: '200', // Performance-Limit
+    page: '1',
   });
 
-  const useV2 = featureFlags.isEnabled("USE_API_V2_CALENDAR");
+  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
   const apiUrl = useV2 ? `/api/v2/calendar/events?${params}` : `/api/calendar?${params}`;
 
   try {
@@ -393,10 +393,10 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     if (!response.ok) {
       // Error handling für Berechtigungsfehler
       if (response.status === 403) {
-        console.error("Permission denied for filter:", currentFilter);
+        console.error('Permission denied for filter:', currentFilter);
         // Fallback zu personal wenn keine Berechtigung
-        currentFilter = "personal";
-        localStorage.setItem("calendarFilter", currentFilter);
+        currentFilter = 'personal';
+        localStorage.setItem('calendarFilter', currentFilter);
         return loadCalendarEvents(fetchInfo); // Retry mit personal
       }
       throw new Error(`HTTP ${response.status}`);
@@ -404,16 +404,16 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 
     return await response.json();
   } catch (error) {
-    console.error("Calendar load failed:", error);
+    console.error('Calendar load failed:', error);
     return [];
   }
 }
 
 // Filter-Button Handler mit State-Save
 filterButtons.forEach((btn) => {
-  document.getElementById(btn.id)?.addEventListener("click", () => {
+  document.getElementById(btn.id)?.addEventListener('click', () => {
     currentFilter = btn.value;
-    localStorage.setItem("calendarFilter", currentFilter);
+    localStorage.setItem('calendarFilter', currentFilter);
     calendar.refetchEvents();
   });
 });
@@ -494,25 +494,25 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 
 ```css
 /* Company Events - Blau */
-.fc-event[data-org-level="company"] {
+.fc-event[data-org-level='company'] {
   background-color: #2196f3;
   border-color: #1976d2;
 }
 
 /* Department Events - Grün */
-.fc-event[data-org-level="department"] {
+.fc-event[data-org-level='department'] {
   background-color: #4caf50;
   border-color: #388e3c;
 }
 
 /* Team Events - Orange */
-.fc-event[data-org-level="team"] {
+.fc-event[data-org-level='team'] {
   background-color: #ff9800;
   border-color: #f57c00;
 }
 
 /* Personal Events - Lila */
-.fc-event[data-org-level="personal"] {
+.fc-event[data-org-level='personal'] {
   background-color: #9c27b0;
   border-color: #7b1fa2;
 }
@@ -523,10 +523,10 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 ```javascript
 // Icons je nach Level
 const eventIcons = {
-  company: "🏢",
-  department: "🏬",
-  team: "👥",
-  personal: "👤",
+  company: '🏢',
+  department: '🏬',
+  team: '👥',
+  personal: '👤',
 };
 ```
 
@@ -547,6 +547,6 @@ const eventIcons = {
 
 ---
 
-*Erstellt: 08.08.2025*
-*Version: 1.0*
-*Status: Ready for Implementation*
+_Erstellt: 08.08.2025_
+_Version: 1.0_
+_Status: Ready for Implementation_

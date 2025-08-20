@@ -96,25 +96,25 @@ alerting:
 
 scrape_configs:
   # Node Exporter
-  - job_name: "node"
+  - job_name: 'node'
     static_configs:
-      - targets: ["node-exporter:9100"]
+      - targets: ['node-exporter:9100']
 
   # MySQL Exporter
-  - job_name: "mysql"
+  - job_name: 'mysql'
     static_configs:
-      - targets: ["mysql-exporter:9104"]
+      - targets: ['mysql-exporter:9104']
 
   # Assixx Backend Metrics
-  - job_name: "assixx-backend"
+  - job_name: 'assixx-backend'
     static_configs:
-      - targets: ["backend:3000"]
-    metrics_path: "/metrics"
+      - targets: ['backend:3000']
+    metrics_path: '/metrics'
 
   # Docker Metrics
-  - job_name: "docker"
+  - job_name: 'docker'
     static_configs:
-      - targets: ["docker-exporter:9323"]
+      - targets: ['docker-exporter:9323']
 ```
 
 ## 📈 Backend Metrics Integration
@@ -123,43 +123,43 @@ Füge Prometheus-Metriken zum Backend hinzu:
 
 ```typescript
 // backend/src/utils/metrics.ts
-import { Registry, Counter, Histogram, Gauge } from "prom-client";
+import { Counter, Gauge, Histogram, Registry } from 'prom-client';
 
 export const register = new Registry();
 
 // HTTP Request Metrics
 export const httpRequestDuration = new Histogram({
-  name: "http_request_duration_seconds",
-  help: "Duration of HTTP requests in seconds",
-  labelNames: ["method", "route", "status_code"],
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
   registers: [register],
 });
 
 export const httpRequestTotal = new Counter({
-  name: "http_requests_total",
-  help: "Total number of HTTP requests",
-  labelNames: ["method", "route", "status_code"],
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code'],
   registers: [register],
 });
 
 // Business Metrics
 export const activeUsers = new Gauge({
-  name: "assixx_active_users",
-  help: "Number of active users",
+  name: 'assixx_active_users',
+  help: 'Number of active users',
   registers: [register],
 });
 
 export const documentsUploaded = new Counter({
-  name: "assixx_documents_uploaded_total",
-  help: "Total documents uploaded",
-  labelNames: ["tenant", "type"],
+  name: 'assixx_documents_uploaded_total',
+  help: 'Total documents uploaded',
+  labelNames: ['tenant', 'type'],
   registers: [register],
 });
 
 // WebSocket Metrics
 export const wsConnections = new Gauge({
-  name: "assixx_websocket_connections",
-  help: "Current WebSocket connections",
+  name: 'assixx_websocket_connections',
+  help: 'Current WebSocket connections',
   registers: [register],
 });
 ```
@@ -226,8 +226,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 80% (current value: {{ $value }}%)"
+          summary: 'High CPU usage detected'
+          description: 'CPU usage is above 80% (current value: {{ $value }}%)'
 
       # High Memory Usage
       - alert: HighMemoryUsage
@@ -236,8 +236,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High memory usage detected"
-          description: "Memory usage is above 85% (current value: {{ $value }}%)"
+          summary: 'High memory usage detected'
+          description: 'Memory usage is above 85% (current value: {{ $value }}%)'
 
       # Service Down
       - alert: ServiceDown
@@ -246,8 +246,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Assixx Backend is down"
-          description: "The Assixx backend service has been down for more than 1 minute"
+          summary: 'Assixx Backend is down'
+          description: 'The Assixx backend service has been down for more than 1 minute'
 
       # High Response Time
       - alert: HighResponseTime
@@ -256,8 +256,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High response time"
-          description: "95th percentile response time is above 1 second"
+          summary: 'High response time'
+          description: '95th percentile response time is above 1 second'
 
       # Database Connection Issues
       - alert: DatabaseConnectionError
@@ -266,8 +266,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "MySQL database is down"
-          description: "Cannot connect to MySQL database"
+          summary: 'MySQL database is down'
+          description: 'Cannot connect to MySQL database'
 
       # Disk Space Low
       - alert: DiskSpaceLow
@@ -276,8 +276,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Low disk space"
-          description: "Disk space is below 10% (current: {{ $value }}%)"
+          summary: 'Low disk space'
+          description: 'Disk space is below 10% (current: {{ $value }}%)'
 ```
 
 ## 📱 Benachrichtigungen
@@ -288,36 +288,36 @@ groups:
 
 ```yaml
 global:
-  smtp_from: "alerts@assixx.com"
-  smtp_smarthost: "smtp.gmail.com:587"
-  smtp_auth_username: "alerts@assixx.com"
-  smtp_auth_password: "app-specific-password"
+  smtp_from: 'alerts@assixx.com'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: 'alerts@assixx.com'
+  smtp_auth_password: 'app-specific-password'
 
 route:
-  group_by: ["alertname", "severity"]
+  group_by: ['alertname', 'severity']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
-  receiver: "email-notifications"
+  receiver: 'email-notifications'
 
 receivers:
-  - name: "email-notifications"
+  - name: 'email-notifications'
     email_configs:
-      - to: "admin@example.com"
+      - to: 'admin@example.com'
         headers:
-          Subject: "Assixx Alert: {{ .GroupLabels.alertname }}"
+          Subject: 'Assixx Alert: {{ .GroupLabels.alertname }}'
 ```
 
 ### Slack Integration
 
 ```yaml
 receivers:
-  - name: "slack-notifications"
+  - name: 'slack-notifications'
     slack_configs:
-      - api_url: "YOUR_SLACK_WEBHOOK_URL"
-        channel: "#assixx-alerts"
-        title: "Assixx Alert"
-        text: "{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}"
+      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+        channel: '#assixx-alerts'
+        title: 'Assixx Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
 ```
 
 ## 🔍 Log Queries (Loki)
@@ -346,25 +346,25 @@ receivers:
 ```typescript
 // Aktive Benutzer pro Tenant
 const usersByTenant = new Gauge({
-  name: "assixx_users_by_tenant",
-  help: "Number of users per tenant",
-  labelNames: ["tenant"],
+  name: 'assixx_users_by_tenant',
+  help: 'Number of users per tenant',
+  labelNames: ['tenant'],
   registers: [register],
 });
 
 // Feature-Nutzung
 const featureUsage = new Counter({
-  name: "assixx_feature_usage_total",
-  help: "Feature usage counter",
-  labelNames: ["feature", "tenant"],
+  name: 'assixx_feature_usage_total',
+  help: 'Feature usage counter',
+  labelNames: ['feature', 'tenant'],
   registers: [register],
 });
 
 // Upload-Größen
 const uploadSize = new Histogram({
-  name: "assixx_upload_size_bytes",
-  help: "Size of uploaded files",
-  labelNames: ["type"],
+  name: 'assixx_upload_size_bytes',
+  help: 'Size of uploaded files',
+  labelNames: ['type'],
   buckets: [1000, 10000, 100000, 1000000, 10000000],
   registers: [register],
 });

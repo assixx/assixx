@@ -75,15 +75,15 @@ private showRoleSwitchIndicator(): void {
 ```typescript
 // z.B. in /backend/src/routes/users.ts
 router.get(
-  "/api/users/:id/private-data",
+  '/api/users/:id/private-data',
   ...security.user(),
   typed.params<{ id: string }>(async (req, res) => {
     // NEU: Check für Role-Switch
-    if (req.user.isRoleSwitched && req.user.activeRole === "employee") {
+    if (req.user.isRoleSwitched && req.user.activeRole === 'employee') {
       // Nur eigene Daten erlauben
       if (parseInt(req.params.id) !== req.user.id) {
         return res.status(403).json({
-          message: "Im Employee-Modus können Sie nur Ihre eigenen Daten einsehen",
+          message: 'Im Employee-Modus können Sie nur Ihre eigenen Daten einsehen',
         });
       }
     }
@@ -116,12 +116,12 @@ export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFu
         isRoleSwitched: false,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: "8h" },
+      { expiresIn: '8h' },
     );
 
-    res.cookie("token", originalToken);
+    res.cookie('token', originalToken);
     return res.status(401).json({
-      message: "Role-Switch Timeout - Sie wurden zur Original-Rolle zurückgesetzt",
+      message: 'Role-Switch Timeout - Sie wurden zur Original-Rolle zurückgesetzt',
       newToken: originalToken,
     });
   }
@@ -155,13 +155,13 @@ if (req.user.isRoleSwitched) {
   await AdminLog.create({
     user_id: req.user.id,
     tenant_id: req.user.tenant_id,
-    action: "viewed_employee_data",
-    entity_type: "user",
+    action: 'viewed_employee_data',
+    entity_type: 'user',
     entity_id: targetUserId,
     was_role_switched: true,
     switched_from_role: req.user.role,
     viewed_sensitive_data: {
-      dataType: "salary",
+      dataType: 'salary',
       timestamp: new Date(),
     },
   });
@@ -174,12 +174,12 @@ if (req.user.isRoleSwitched) {
 
 ```typescript
 // Role-Switch Event Broadcasting
-const channel = new BroadcastChannel("role_switch_channel");
+const channel = new BroadcastChannel('role_switch_channel');
 
 // Beim Rollenwechsel
 function notifyRoleSwitch(newRole: string) {
   channel.postMessage({
-    type: "ROLE_SWITCHED",
+    type: 'ROLE_SWITCHED',
     newRole: newRole,
     timestamp: Date.now(),
   });
@@ -187,7 +187,7 @@ function notifyRoleSwitch(newRole: string) {
 
 // In allen Tabs lauschen
 channel.onmessage = (event) => {
-  if (event.data.type === "ROLE_SWITCHED") {
+  if (event.data.type === 'ROLE_SWITCHED') {
     // UI aktualisieren
     location.reload(); // Oder eleganter mit State Update
   }

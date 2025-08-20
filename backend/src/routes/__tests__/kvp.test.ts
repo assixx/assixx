@@ -366,7 +366,7 @@ describe("KVP API Endpoints", () => {
       const result1 = asTestRows<unknown>(rows);
       publicSuggestionId = (result1 as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rows2] = await testDb.execute(
         `INSERT INTO kvp_suggestions 
         (title, description, category, status, visibility, department_id, submitted_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -381,10 +381,10 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result2 = asTestRows<unknown>(rows);
+      const result2 = asTestRows<unknown>(rows2);
       dept1SuggestionId = (result2 as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rows3] = await testDb.execute(
         `INSERT INTO kvp_suggestions 
         (title, description, category, status, visibility, department_id, submitted_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -399,10 +399,10 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result3 = asTestRows<unknown>(rows);
+      const result3 = asTestRows<unknown>(rows3);
       dept2SuggestionId = (result3 as any).insertId;
 
-      const [rows] = await testDb.execute(
+      const [rows4] = await testDb.execute(
         `INSERT INTO kvp_suggestions 
         (title, description, category, status, visibility, submitted_by, is_anonymous, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -417,7 +417,7 @@ describe("KVP API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result4 = asTestRows<unknown>(rows);
+      const result4 = asTestRows<unknown>(rows4);
       anonymousSuggestionId = (result4 as any).insertId;
     });
 
@@ -895,11 +895,11 @@ describe("KVP API Endpoints", () => {
       expect(suggestions[0].status).toBe("in_review");
 
       // Verify status history
-      const [rows] = await testDb.execute(
+      const [historyRows] = await testDb.execute(
         "SELECT * FROM kvp_status_history WHERE suggestion_id = ?",
         [suggestionId],
       );
-      const history = asTestRows<unknown>(rows);
+      const history = asTestRows<unknown>(historyRows);
       expect(history[0]).toMatchObject({
         old_status: "submitted",
         new_status: "in_review",

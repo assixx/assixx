@@ -39,10 +39,10 @@ Dieses Dokument ist deine zentrale Anlaufstelle für die API v2 Implementation.
 ```typescript
 export function deprecationMiddleware(version: string, sunset: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith("/api/v1")) {
-      res.setHeader("Deprecation", "true");
-      res.setHeader("Sunset", sunset);
-      res.setHeader("Link", '</api/v2>; rel="successor-version"');
+    if (req.path.startsWith('/api/v1')) {
+      res.setHeader('Deprecation', 'true');
+      res.setHeader('Sunset', sunset);
+      res.setHeader('Link', '</api/v2>; rel="successor-version"');
     }
     next();
   };
@@ -52,7 +52,7 @@ export function deprecationMiddleware(version: string, sunset: string) {
 **Einbinden in:** `backend/src/app.ts`
 
 ```typescript
-app.use(deprecationMiddleware("v1", "2025-12-31"));
+app.use(deprecationMiddleware('v1', '2025-12-31'));
 ```
 
 ### 2️⃣ Response Wrapper erstellen
@@ -60,7 +60,7 @@ app.use(deprecationMiddleware("v1", "2025-12-31"));
 **Datei:** `backend/src/utils/apiResponse.ts`
 
 ```typescript
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ApiSuccessResponse<T> {
   success: true;
@@ -94,7 +94,7 @@ export function successResponse<T>(data: T, message?: string): ApiSuccessRespons
     data,
     meta: {
       timestamp: new Date().toISOString(),
-      version: "2.0",
+      version: '2.0',
     },
   };
 }
@@ -120,7 +120,7 @@ export function errorResponse(code: string, message: string, details?: any[]): A
 **Datei:** `backend/src/utils/fieldMapping.ts`
 
 ```typescript
-import { camelCase, snakeCase, mapKeys } from "lodash";
+import { camelCase, mapKeys, snakeCase } from 'lodash';
 
 export const dbToApi = <T>(dbObject: any): T => {
   return mapKeys(dbObject, (_, key) => camelCase(key)) as T;

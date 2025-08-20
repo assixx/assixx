@@ -181,8 +181,8 @@ X-Sunset-Date: 2025-10-01
 
 ```javascript
 // Old endpoint internally calls new logic
-router.get("/calendar", (req, res) => {
-  console.warn("Deprecated endpoint used");
+router.get('/calendar', (req, res) => {
+  console.warn('Deprecated endpoint used');
   return calendarEventsController.list(req, res);
 });
 ```

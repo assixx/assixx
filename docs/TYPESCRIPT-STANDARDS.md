@@ -19,15 +19,15 @@ Alle Code-Formatierung wird durch Prettier automatisch gehandhabt. **KEINE** Dis
 
 ```json
 {
-  "semi": true,                    // IMMER Semikolons
-  "trailingComma": "all",          // IMMER trailing commas
-  "singleQuote": false,             // IMMER double quotes
-  "printWidth": 80,                 // Max 80 Zeichen pro Zeile
-  "tabWidth": 2,                    // 2 Spaces Einrückung
-  "useTabs": false,                 // KEINE Tabs
-  "arrowParens": "always",          // IMMER Klammern bei Arrow Functions
-  "endOfLine": "lf",                // Unix Line Endings
-  "bracketSpacing": true            // Spaces in Objekten { foo: bar }
+  "semi": true, // IMMER Semikolons
+  "trailingComma": "all", // IMMER trailing commas
+  "singleQuote": false, // IMMER double quotes
+  "printWidth": 80, // Max 80 Zeichen pro Zeile
+  "tabWidth": 2, // 2 Spaces Einrückung
+  "useTabs": false, // KEINE Tabs
+  "arrowParens": "always", // IMMER Klammern bei Arrow Functions
+  "endOfLine": "lf", // Unix Line Endings
+  "bracketSpacing": true // Spaces in Objekten { foo: bar }
 }
 ```
 
@@ -226,27 +226,28 @@ const confirmed = await showConfirmDialog('Wirklich löschen?');
 
 ```typescript
 // ❌ FALSCH - ESLint Error: @typescript-eslint/no-unused-vars
-app.use((req, res, next, error) => {  // error nicht genutzt
-  console.log("Middleware");
+app.use((req, res, next, error) => {
+  // error nicht genutzt
+  console.log('Middleware');
   next();
 });
 
 // ✅ RICHTIG - Underscore für bewusst ungenutzt
 app.use((req, res, next, _error) => {
-  console.log("Middleware");
+  console.log('Middleware');
   next();
 });
 
 // ✅ RICHTIG - Destructuring mit Rest
-const { id, name, ...rest } = user;  // rest ignoriert ungenutzte Felder
+const { id, name, ...rest } = user; // rest ignoriert ungenutzte Felder
 ```
 
 ### 3.2 Const über Let, niemals Var
 
 ```typescript
 // ❌ FALSCH - ESLint Error: prefer-const, no-var
-var oldStyle = "bad";
-let unchanged = 42;  // Wird nie geändert
+var oldStyle = 'bad';
+let unchanged = 42; // Wird nie geändert
 
 // ✅ RICHTIG
 const immutable = 42;
@@ -258,7 +259,7 @@ mutable += 1;
 
 ```typescript
 // ❌ FALSCH - ESLint Warning: prefer-arrow-callback
-array.map(function(item) {
+array.map(function (item) {
   return item * 2;
 });
 
@@ -317,7 +318,8 @@ async function fetchData(): Promise<Data> {
 
 ```typescript
 // ❌ FALSCH - ESLint Error: @typescript-eslint/no-misused-promises
-uploadMiddleware(req, res, async (err) => {  // async in void callback
+uploadMiddleware(req, res, async (err) => {
+  // async in void callback
   await processFile();
 });
 
@@ -339,25 +341,25 @@ uploadMiddleware(req, res, (err) => {
 // ✅ RICHTIG - RESTful URLs
 const API_ENDPOINTS = {
   // Collection Endpoints (Plural)
-  USERS: "/api/v2/users",
-  TEAMS: "/api/v2/teams",
-  DOCUMENTS: "/api/v2/documents",
+  USERS: '/api/v2/users',
+  TEAMS: '/api/v2/teams',
+  DOCUMENTS: '/api/v2/documents',
 
   // Resource Endpoints
-  USER: "/api/v2/users/:id",
-  TEAM: "/api/v2/teams/:id",
-  DOCUMENT: "/api/v2/documents/:id",
+  USER: '/api/v2/users/:id',
+  TEAM: '/api/v2/teams/:id',
+  DOCUMENT: '/api/v2/documents/:id',
 
   // Nested Resources (nur wenn sinnvoll)
-  TEAM_MEMBERS: "/api/v2/teams/:id/members",
-  USER_DOCUMENTS: "/api/v2/users/:id/documents",
+  TEAM_MEMBERS: '/api/v2/teams/:id/members',
+  USER_DOCUMENTS: '/api/v2/users/:id/documents',
 } as const;
 
 // ❌ FALSCH - Nicht RESTful
-"/api/v2/getUsers"         // Kein Verb in URL
-"/api/v2/user"            // Singular für Collection
-"/api/v2/User"            // Großschreibung
-"/api/v2/fetch-user-data" // Kebab-case mit Verb
+('/api/v2/getUsers'); // Kein Verb in URL
+('/api/v2/user'); // Singular für Collection
+('/api/v2/User'); // Großschreibung
+('/api/v2/fetch-user-data'); // Kebab-case mit Verb
 ```
 
 ### 5.2 API Response Types
@@ -384,8 +386,8 @@ interface ApiSuccessResponse<T> {
 interface ApiErrorResponse {
   success: false;
   error: {
-    code: string;        // "VALIDATION_ERROR", "NOT_FOUND", etc.
-    message: string;     // User-friendly message
+    code: string; // "VALIDATION_ERROR", "NOT_FOUND", etc.
+    message: string; // User-friendly message
     details?: Array<{
       field: string;
       message: string;
@@ -399,8 +401,8 @@ interface ApiErrorResponse {
 
 // Usage
 export async function getUsers(): Promise<User[]> {
-  const response = await fetch("/api/v2/users");
-  const data = await response.json() as ApiSuccessResponse<User[]>;
+  const response = await fetch('/api/v2/users');
+  const data = (await response.json()) as ApiSuccessResponse<User[]>;
 
   if (!response.ok) {
     const error = data as unknown as ApiErrorResponse;
@@ -417,22 +419,22 @@ export async function getUsers(): Promise<User[]> {
 // ✅ RICHTIG - camelCase für alle API Fields
 interface User {
   id: number;
-  firstName: string;        // NICHT first_name
-  lastName: string;         // NICHT last_name
-  createdAt: string;        // NICHT created_at
-  updatedAt: string;        // NICHT updated_at
-  isActive: boolean;        // NICHT is_active
-  hasPermission: boolean;   // NICHT has_permission
-  userId: number;           // NICHT user_id
-  tenantId: number;         // NICHT tenant_id
+  firstName: string; // NICHT first_name
+  lastName: string; // NICHT last_name
+  createdAt: string; // NICHT created_at
+  updatedAt: string; // NICHT updated_at
+  isActive: boolean; // NICHT is_active
+  hasPermission: boolean; // NICHT has_permission
+  userId: number; // NICHT user_id
+  tenantId: number; // NICHT tenant_id
 }
 
 // ❌ FALSCH - snake_case NIEMALS in API
 interface WrongUser {
-  user_id: number;         // ❌ snake_case
-  first_name: string;      // ❌ snake_case
-  created_at: string;      // ❌ snake_case
-  is_active: boolean;      // ❌ snake_case
+  user_id: number; // ❌ snake_case
+  first_name: string; // ❌ snake_case
+  created_at: string; // ❌ snake_case
+  is_active: boolean; // ❌ snake_case
 }
 ```
 
@@ -475,13 +477,13 @@ const price = `Price: ${amount}€`;
 
 ```typescript
 // ❌ FALSCH - ESLint Error: no-console
-console.log("Debug info");  // Nicht erlaubt
+console.log('Debug info'); // Nicht erlaubt
 
 // ✅ RICHTIG - Erlaubte Console Methods
-console.warn("Warning: Deprecated API");
-console.error("Error:", error);
-console.info("Server started on port 3000");
-console.debug("Debug mode:", config);  // Backend only
+console.warn('Warning: Deprecated API');
+console.error('Error:', error);
+console.info('Server started on port 3000');
+console.debug('Debug mode:', config); // Backend only
 ```
 
 ### 7.2 Error Handling
@@ -508,8 +510,9 @@ throw new ValidationError("email", "Invalid email format");
 
 ```typescript
 // ❌ FALSCH - ESLint Error: @typescript-eslint/use-unknown-in-catch-callback-variable
-promise.catch((error) => {  // error ist implizit any
-  console.error(error.message);  // Unsicher!
+promise.catch((error) => {
+  // error ist implizit any
+  console.error(error.message); // Unsicher!
 });
 
 // ✅ RICHTIG - Explizit unknown
@@ -517,7 +520,7 @@ promise.catch((error: unknown) => {
   if (error instanceof Error) {
     console.error(error.message);
   } else {
-    console.error("Unknown error:", error);
+    console.error('Unknown error:', error);
   }
 });
 
@@ -528,7 +531,7 @@ function isError(error: unknown): error is Error {
 
 promise.catch((error: unknown) => {
   const message = isError(error) ? error.message : String(error);
-  console.error("Error:", message);
+  console.error('Error:', message);
 });
 ```
 
@@ -607,8 +610,9 @@ if (element instanceof HTMLElement) {
 
 ```typescript
 // ❌ FALSCH - Unsichere Annahme über dataset
-const role = (element as HTMLElement).dataset.role as "admin" | "user";
-if (role) {  // Gefährlich!
+const role = (element as HTMLElement).dataset.role as 'admin' | 'user';
+if (role) {
+  // Gefährlich!
   setUserRole(role);
 }
 
@@ -617,22 +621,22 @@ const element = event.target;
 if (element instanceof HTMLElement) {
   const roleValue = element.dataset.role;
   // Dataset values sind immer string | undefined
-  if (roleValue === "admin" || roleValue === "user") {
-    setUserRole(roleValue);  // Jetzt type-safe!
+  if (roleValue === 'admin' || roleValue === 'user') {
+    setUserRole(roleValue); // Jetzt type-safe!
   }
 }
 
 // 🚀 NOCH BESSER - Type Guard Function
-type UserRole = "admin" | "user" | "guest";
+type UserRole = 'admin' | 'user' | 'guest';
 
 function isValidRole(value: unknown): value is UserRole {
-  return value === "admin" || value === "user" || value === "guest";
+  return value === 'admin' || value === 'user' || value === 'guest';
 }
 
 if (element instanceof HTMLElement) {
   const roleValue = element.dataset.role;
   if (isValidRole(roleValue)) {
-    setUserRole(roleValue);  // Type-safe!
+    setUserRole(roleValue); // Type-safe!
   }
 }
 ```
@@ -725,10 +729,10 @@ NUR in Test-Dateien (`*.test.ts`, `*.spec.ts`) sind erlaubt:
 
 ```typescript
 // Test files only - Ausnahmen aktiviert
-describe("UserService", () => {
-  it("should handle any data", () => {
-    const mockData: any = { test: true };  // any erlaubt in Tests
-    console.log("Test output");  // console.log erlaubt in Tests
+describe('UserService', () => {
+  it('should handle any data', () => {
+    const mockData: any = { test: true }; // any erlaubt in Tests
+    console.log('Test output'); // console.log erlaubt in Tests
 
     expect(mockData).toBeDefined();
   });
@@ -807,7 +811,7 @@ const oldData: any = getLegacyData();
 
 // Phase 2: Schrittweise Migration
 interface LegacyData {
-  [key: string]: unknown;  // Besser als any
+  [key: string]: unknown; // Besser als any
 }
 
 // Phase 3: Vollständige Typisierung
@@ -822,17 +826,17 @@ interface UserData {
 
 ## 📚 Quick Reference
 
-| Was | Verwenden | Nicht verwenden |
-|-----|-----------|-----------------|
-| Types | `unknown`, spezifische Types | `any` |
-| Defaults | `??` (nullish) | `||` (logical) |
-| Strings | Template Literals | String Concatenation |
-| Functions | Arrow Functions | function keyword |
-| Variables | `const`, `let` | `var` |
-| Async | `async/await` | `.then()` chains |
-| Loops | `for...of`, `.map()` | `for...in` |
-| Checks | Explizite Boolean | Truthy/Falsy |
-| Exports | Named Exports | Default Exports (meist) |
+| Was       | Verwenden                    | Nicht verwenden         |
+| --------- | ---------------------------- | ----------------------- | --- | ----------- |
+| Types     | `unknown`, spezifische Types | `any`                   |
+| Defaults  | `??` (nullish)               | `                       |     | ` (logical) |
+| Strings   | Template Literals            | String Concatenation    |
+| Functions | Arrow Functions              | function keyword        |
+| Variables | `const`, `let`               | `var`                   |
+| Async     | `async/await`                | `.then()` chains        |
+| Loops     | `for...of`, `.map()`         | `for...in`              |
+| Checks    | Explizite Boolean            | Truthy/Falsy            |
+| Exports   | Named Exports                | Default Exports (meist) |
 
 ---
 
@@ -883,11 +887,11 @@ interface QueryRequest<Q = any> extends AuthenticatedRequest {
 Due to Express.js type incompatibilities, we use wrapper functions:
 
 ```typescript
-import { typed } from "../utils/routeHandlers";
+import { typed } from '../utils/routeHandlers';
 
 // For authenticated routes
 router.get(
-  "/profile",
+  '/profile',
   ...security.user(),
   typed.auth(async (req, res) => {
     // req is AuthenticatedRequest
@@ -897,7 +901,7 @@ router.get(
 
 // For routes with params
 router.get(
-  "/user/:id",
+  '/user/:id',
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
     const userId = req.params.id; // typed as string
@@ -906,7 +910,7 @@ router.get(
 
 // For routes with body
 router.post(
-  "/create",
+  '/create',
   ...security.admin(validateCreateUser),
   typed.body<CreateUserBody>(async (req, res) => {
     const { email, password } = req.body; // fully typed
@@ -920,16 +924,16 @@ Pre-configured security stacks for different endpoint types:
 
 ```typescript
 // Public endpoints (no auth, rate limited)
-router.get("/public", ...security.public(), handler);
+router.get('/public', ...security.public(), handler);
 
 // Authenticated user endpoints
-router.get("/profile", ...security.user(), handler);
+router.get('/profile', ...security.user(), handler);
 
 // Admin-only endpoints
-router.get("/admin/users", ...security.admin(), handler);
+router.get('/admin/users', ...security.admin(), handler);
 
 // With validation
-router.post("/user", ...security.admin(validateCreateUser), handler);
+router.post('/user', ...security.admin(validateCreateUser), handler);
 ```
 
 ## Implementation Guidelines
@@ -939,10 +943,11 @@ router.post("/user", ...security.admin(validateCreateUser), handler);
 1. Import required components:
 
 ```typescript
-import { Router } from "express";
-import { security } from "../middleware/security";
-import { typed } from "../utils/routeHandlers";
-import { successResponse, errorResponse } from "../types/response.types";
+import { Router } from 'express';
+
+import { security } from '../middleware/security';
+import { errorResponse, successResponse } from '../types/response.types';
+import { typed } from '../utils/routeHandlers';
 ```
 
 2. Define request interfaces if needed:
@@ -959,7 +964,7 @@ interface CreateUserBody {
 
 ```typescript
 router.post(
-  "/users",
+  '/users',
   ...security.admin(validateCreateUser),
   typed.body<CreateUserBody>(async (req, res) => {
     try {
@@ -970,7 +975,7 @@ router.post(
 
       res.json(successResponse(result));
     } catch (error) {
-      res.status(500).json(errorResponse("Server error", 500));
+      res.status(500).json(errorResponse('Server error', 500));
     }
   }),
 );
@@ -981,13 +986,13 @@ router.post(
 **IMPORTANT**: Due to TypeScript union type issues between mysql2 Pool and MockDatabase, always use the centralized database utilities from `/src/utils/db.ts`:
 
 ```typescript
-import { execute, query, getConnection, transaction, RowDataPacket, ResultSetHeader } from "../utils/db";
+import { ResultSetHeader, RowDataPacket, execute, getConnection, query, transaction } from '../utils/db';
 
 // SELECT queries - use execute or query
-const [rows] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE id = ?", [userId]);
+const [rows] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId]);
 
 // INSERT/UPDATE/DELETE queries
-const [result] = await execute<ResultSetHeader>("INSERT INTO users (email, password) VALUES (?, ?)", [
+const [result] = await execute<ResultSetHeader>('INSERT INTO users (email, password) VALUES (?, ?)', [
   email,
   hashedPassword,
 ]);
@@ -995,8 +1000,8 @@ const insertId = result.insertId;
 
 // Transactions
 await transaction(async (connection) => {
-  await connection.execute("INSERT INTO users (email) VALUES (?)", [email]);
-  await connection.execute("INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())", []);
+  await connection.execute('INSERT INTO users (email) VALUES (?)', [email]);
+  await connection.execute('INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())', []);
 });
 ```
 
@@ -1009,12 +1014,12 @@ await transaction(async (connection) => {
 Use the standardized error handler:
 
 ```typescript
-import { getErrorMessage } from "../utils/errorHandler";
+import { getErrorMessage } from '../utils/errorHandler';
 
 try {
   // Your code
 } catch (error) {
-  console.error("Operation failed:", error);
+  console.error('Operation failed:', error);
   const message = getErrorMessage(error);
   res.status(500).json(errorResponse(message, 500));
 }
@@ -1025,7 +1030,7 @@ try {
 ### Old Pattern
 
 ```typescript
-router.post("/endpoint", authenticateToken as any, authorizeRole("admin") as any, async (req: any, res: any) => {
+router.post('/endpoint', authenticateToken as any, authorizeRole('admin') as any, async (req: any, res: any) => {
   // Untyped implementation
 });
 ```
@@ -1034,7 +1039,7 @@ router.post("/endpoint", authenticateToken as any, authorizeRole("admin") as any
 
 ```typescript
 router.post(
-  "/endpoint",
+  '/endpoint',
   ...security.admin(validationRules),
   typed.body<RequestBody>(async (req, res) => {
     // Fully typed implementation
@@ -1083,11 +1088,11 @@ backend/src/
 ### Multi-tenant Query Pattern
 
 ```typescript
-import { execute, RowDataPacket } from "../utils/db";
+import { RowDataPacket, execute } from '../utils/db';
 
-const [users] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE tenant_id = ? AND role = ?", [
+const [users] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE tenant_id = ? AND role = ?', [
   req.user.tenant_id,
-  "employee",
+  'employee',
 ]);
 ```
 
@@ -1095,12 +1100,12 @@ const [users] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE tenant
 
 ```typescript
 router.post(
-  "/upload",
+  '/upload',
   ...security.user(),
-  upload.single("file"),
+  upload.single('file'),
   typed.auth(async (req, res) => {
     if (!req.file) {
-      return res.status(400).json(errorResponse("No file uploaded", 400));
+      return res.status(400).json(errorResponse('No file uploaded', 400));
     }
     // Process file
   }),
@@ -1116,11 +1121,11 @@ interface PaginationQuery {
 }
 
 router.get(
-  "/items",
+  '/items',
   ...security.user(),
   typed.query<PaginationQuery>(async (req, res) => {
-    const page = parseInt(req.query.page || "1");
-    const limit = parseInt(req.query.limit || "10");
+    const page = parseInt(req.query.page || '1');
+    const limit = parseInt(req.query.limit || '10');
     // Implementation
   }),
 );
@@ -1131,15 +1136,16 @@ router.get(
 When testing typed routes, use proper type assertions:
 
 ```typescript
-import request from "supertest";
-import app from "../app";
+import request from 'supertest';
 
-describe("User Routes", () => {
-  it("should create user with proper types", async () => {
-    const response = await request(app).post("/api/users").set("Authorization", `Bearer ${token}`).send({
-      email: "test@example.com",
-      password: "SecurePass123",
-      role: "employee",
+import app from '../app';
+
+describe('User Routes', () => {
+  it('should create user with proper types', async () => {
+    const response = await request(app).post('/api/users').set('Authorization', `Bearer ${token}`).send({
+      email: 'test@example.com',
+      password: 'SecurePass123',
+      role: 'employee',
     });
 
     expect(response.status).toBe(201);

@@ -98,7 +98,7 @@ INSERT INTO shift_notes (
 interface CreateShiftPlanRequest {
   startDate: string;
   endDate: string;
-  areaId: number;        // NEU: area_id muss auch gespeichert werden!
+  areaId: number; // NEU: area_id muss auch gespeichert werden!
   departmentId: number;
   teamId: number;
   machineId: number;
@@ -194,9 +194,7 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
 ```html
 <!-- In shifts.html bei Admin Actions -->
 <div class="admin-actions">
-  <button id="saveShiftsBtn" class="btn btn-primary">
-    <i class="fas fa-save"></i> Speichern
-  </button>
+  <button id="saveShiftsBtn" class="btn btn-primary"><i class="fas fa-save"></i> Speichern</button>
   <!-- NEU: Bearbeiten Button -->
   <button id="editShiftsBtn" class="btn btn-secondary" style="display: none;">
     <i class="fas fa-edit"></i> Bearbeiten
@@ -461,7 +459,7 @@ INSERT INTO shifts (plan_id, date, start_time, end_time, user_id, type, team_id,
 
 **Implementation im Backend:**
 
-```typescript
+````typescript
 // In createShiftPlan():
 for (const shift of data.shifts) {
   // shifts Array kann mehrere Einträge mit gleicher Zeit haben!
@@ -493,7 +491,7 @@ ADD CONSTRAINT fk_shift_plans_area FOREIGN KEY (area_id) REFERENCES areas(id) ON
 -- Index für Performance
 CREATE INDEX IF NOT EXISTS idx_shift_plans_machine ON shift_plans(machine_id);
 CREATE INDEX IF NOT EXISTS idx_shift_plans_area ON shift_plans(area_id);
-```
+````
 
 ### Migration ausführen (siehe DATABASE-MIGRATION-GUIDE.md)
 

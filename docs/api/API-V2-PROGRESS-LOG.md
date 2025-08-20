@@ -58,7 +58,7 @@
    }
 
    // Lösung: Bidirektionales Mapping
-   const firstName = user.first_name ?? user.firstName ?? "";
+   const firstName = user.first_name ?? user.firstName ?? '';
    ```
 
 #### Technische Details
@@ -96,12 +96,12 @@
 ```typescript
 // Problem: v2 API nutzt andere Endpunkt-Struktur
 // Alt (falsch):
-"/api/v2/blackboard";
+'/api/v2/blackboard';
 
 // Neu (korrekt):
-"/api/v2/blackboard/entries";
-"/api/v2/blackboard/entries/{id}";
-"/api/v2/blackboard/entries/{id}/attachments";
+'/api/v2/blackboard/entries';
+'/api/v2/blackboard/entries/{id}';
+'/api/v2/blackboard/entries/{id}/attachments';
 ```
 
 #### Technische Details
@@ -191,7 +191,8 @@
    ```typescript
    // FALSCH: import { camelCase } from "lodash";
    // RICHTIG:
-   import lodash from "lodash";
+   import lodash from 'lodash';
+
    const { camelCase, snakeCase } = lodash;
    ```
 
@@ -295,7 +296,7 @@
    // Tests erstellten keine shift_assignments
    // Lösung: Assignment vor Swap Request erstellen
    await testDb.execute(
-     "INSERT INTO shift_assignments (tenant_id, shift_id, user_id, assigned_by) VALUES (?, ?, ?, ?)",
+     'INSERT INTO shift_assignments (tenant_id, shift_id, user_id, assigned_by) VALUES (?, ?, ?, ?)',
      [tenantId, shiftId, employeeUserId, adminUserId],
    );
    ```
@@ -551,7 +552,7 @@
 
    ```typescript
    if (entry.tags && Array.isArray(entry.tags)) {
-     transformed.tags = entry.tags.map((tag: any) => (typeof tag === "string" ? tag : tag.name));
+     transformed.tags = entry.tags.map((tag: any) => (typeof tag === 'string' ? tag : tag.name));
    }
    ```
 
@@ -573,10 +574,10 @@
    - Fix: Entry IDs erst fetchen, dann direkt verwenden:
 
    ```typescript
-   const [entries] = await testDb.execute<any[]>("SELECT id FROM blackboard_entries WHERE tenant_id = ?", [tenantId]);
+   const [entries] = await testDb.execute<any[]>('SELECT id FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
    if (entryIds.length > 0) {
      await testDb.execute(
-       `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+       `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
        entryIds,
      );
    }

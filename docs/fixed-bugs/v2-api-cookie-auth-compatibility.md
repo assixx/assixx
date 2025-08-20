@@ -46,11 +46,11 @@ if (useV2) {
 
 ```javascript
 if (useV2) {
-  localStorage.setItem("accessToken", token);
+  localStorage.setItem('accessToken', token);
   if (refreshToken) {
-    localStorage.setItem("refreshToken", refreshToken);
+    localStorage.setItem('refreshToken', refreshToken);
   }
-  localStorage.setItem("token", token);
+  localStorage.setItem('token', token);
 
   // Set cookie for server-side page protection
   document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
@@ -61,7 +61,7 @@ if (useV2) {
 
 ```javascript
 // Clear cookie for server-side page protection
-document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
 ```
 
 ## Cookie-Einstellungen
@@ -82,8 +82,8 @@ document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSi
 1. Feature Flags aktivieren:
 
    ```javascript
-   window.migrationHelpers.enableApi("auth");
-   window.migrationHelpers.enableApi("signup");
+   window.migrationHelpers.enableApi('auth');
+   window.migrationHelpers.enableApi('signup');
    ```
 
 2. Browser-Cache leeren (Ctrl+Shift+R)

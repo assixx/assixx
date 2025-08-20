@@ -228,8 +228,8 @@ const messages = await query(`SELECT * FROM messages WHERE conversation_id = ?`,
 
 // ✅ RICHTIG - Mit Tenant-Isolation!
 const messages = await query(
-  `SELECT * FROM messages 
-   WHERE conversation_id = ? 
+  `SELECT * FROM messages
+   WHERE conversation_id = ?
    AND tenant_id = ?`,
   [conversationId, tenantId],
 );
@@ -301,6 +301,6 @@ Manuell die 14 ungenutzten Tabellen löschen (siehe Phase 2)
 
 ---
 
-*Erstellt: 2025-08-08*  
-*Status: BEREIT ZUR AUSFÜHRUNG*  
-*Priorität: KRITISCH (Security Fix)*
+_Erstellt: 2025-08-08_  
+_Status: BEREIT ZUR AUSFÜHRUNG_  
+_Priorität: KRITISCH (Security Fix)_

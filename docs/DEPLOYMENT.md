@@ -520,18 +520,18 @@ services:
   traefik:
     image: traefik:v2.9
     command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
+      - '--api.insecure=true'
+      - '--providers.docker=true'
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
   app:
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`assixx.de`) || HostRegexp(`{subdomain:[a-z]+}.assixx.de`)"
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.app.rule=Host(`assixx.de`) || HostRegexp(`{subdomain:[a-z]+}.assixx.de`)'
 ```
 
 ## Troubleshooting
@@ -579,10 +579,10 @@ services:
        deploy:
          resources:
            limits:
-             cpus: "2"
+             cpus: '2'
              memory: 2G
            reservations:
-             cpus: "1"
+             cpus: '1'
              memory: 1G
    ```
 
@@ -597,7 +597,7 @@ services:
 
    ```yaml
    healthcheck:
-     test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+     test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
      interval: 30s
      timeout: 10s
      retries: 3

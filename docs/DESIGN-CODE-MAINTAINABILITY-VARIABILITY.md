@@ -291,7 +291,7 @@
 
 ```css
 /* Am Ende von dashboard-theme.css */
-@import url("./utilities.css");
+@import url('./utilities.css');
 ```
 
 ### Phase 2.5: Layout-Shift Fix sicherstellen
@@ -305,14 +305,14 @@
   <!-- Critical Layout State - Prevents Layout Shift -->
   <script>
     (function () {
-      const sidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+      const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
       const root = document.documentElement;
-      root.setAttribute("data-sidebar", sidebarCollapsed ? "collapsed" : "expanded");
-      root.style.setProperty("--sidebar-width", sidebarCollapsed ? "60px" : "250px");
-      root.style.setProperty("--content-margin", sidebarCollapsed ? "60px" : "250px");
-      root.style.setProperty("--grid-columns", sidebarCollapsed ? "4" : "3");
-      root.style.setProperty("--widget-columns", sidebarCollapsed ? "5" : "3");
-      root.style.setProperty("--card-padding", sidebarCollapsed ? "2rem" : "1.5rem");
+      root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+      root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+      root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+      root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+      root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+      root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
     })();
   </script>
 
@@ -342,23 +342,23 @@ class ModalManager {
   show(modalId: string): void {
     const modal = document.getElementById(modalId);
     if (modal) {
-      modal.classList.remove("u-hidden");
-      modal.classList.add("u-flex");
+      modal.classList.remove('u-hidden');
+      modal.classList.add('u-flex');
     }
   }
 
   hide(modalId: string): void {
     const modal = document.getElementById(modalId);
     if (modal) {
-      modal.classList.remove("u-flex");
-      modal.classList.add("u-hidden");
+      modal.classList.remove('u-flex');
+      modal.classList.add('u-hidden');
     }
   }
 
   hideAll(): void {
-    document.querySelectorAll(".modal").forEach((modal) => {
-      modal.classList.remove("u-flex");
-      modal.classList.add("u-hidden");
+    document.querySelectorAll('.modal').forEach((modal) => {
+      modal.classList.remove('u-flex');
+      modal.classList.add('u-hidden');
     });
   }
 }
@@ -389,17 +389,17 @@ class DropdownManager {
   }
 
   private initializeEventListeners(): void {
-    document.addEventListener("click", (e) => {
+    document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
 
       // Toggle dropdown
-      if (target.classList.contains("dropdown-display")) {
+      if (target.classList.contains('dropdown-display')) {
         e.stopPropagation();
         this.toggle(target);
       }
 
       // Close on outside click
-      if (!target.closest(".custom-dropdown")) {
+      if (!target.closest('.custom-dropdown')) {
         this.closeAll();
       }
     });
@@ -407,22 +407,22 @@ class DropdownManager {
 
   private toggle(trigger: HTMLElement): void {
     const dropdown = trigger.nextElementSibling;
-    const isActive = trigger.classList.contains("active");
+    const isActive = trigger.classList.contains('active');
 
     this.closeAll();
 
     if (!isActive && dropdown) {
-      trigger.classList.add("active");
-      dropdown.classList.add("active");
+      trigger.classList.add('active');
+      dropdown.classList.add('active');
     }
   }
 
   private closeAll(): void {
-    document.querySelectorAll(".dropdown-display.active").forEach((el) => {
-      el.classList.remove("active");
+    document.querySelectorAll('.dropdown-display.active').forEach((el) => {
+      el.classList.remove('active');
     });
-    document.querySelectorAll(".dropdown-options.active").forEach((el) => {
-      el.classList.remove("active");
+    document.querySelectorAll('.dropdown-options.active').forEach((el) => {
+      el.classList.remove('active');
     });
   }
 }
@@ -473,13 +473,14 @@ export { DropdownManager };
 <!-- ALT -->
 <script>
   function showModal(modalId) {
-    document.getElementById(modalId).style.display = "block";
+    document.getElementById(modalId).style.display = 'block';
   }
 </script>
 
 <!-- NEU -->
 <script type="module">
-  import "/scripts/utils/modal-manager.js";
+  import '/scripts/utils/modal-manager.js';
+
   // showModal ist jetzt global verfügbar
 </script>
 ```
@@ -556,17 +557,17 @@ echo "✅ Screenshots saved. Make your changes and run 'npm run screenshot:after
 **Neue Datei:** `/scripts/migration-progress.js`
 
 ```javascript
-const fs = require("fs");
-const path = require("path");
-const glob = require("glob");
+const fs = require('fs');
+const path = require('path');
+const glob = require('glob');
 
 // Zähle Inline-Styles
 const countInlineStyles = () => {
-  const files = glob.sync("frontend/src/pages/**/*.html");
+  const files = glob.sync('frontend/src/pages/**/*.html');
   let total = 0;
 
   files.forEach((file) => {
-    const content = fs.readFileSync(file, "utf8");
+    const content = fs.readFileSync(file, 'utf8');
     const matches = content.match(/style="/g) || [];
     total += matches.length;
   });
@@ -575,8 +576,8 @@ const countInlineStyles = () => {
 };
 
 // Progress Report
-console.info("🎯 Migration Progress Report");
-console.info("===========================");
+console.info('🎯 Migration Progress Report');
+console.info('===========================');
 console.info(`Inline Styles remaining: ${countInlineStyles()}`);
 console.info(`Target: 0`);
 console.info(`Progress: ${100 - (countInlineStyles() / 91) * 100}%`);

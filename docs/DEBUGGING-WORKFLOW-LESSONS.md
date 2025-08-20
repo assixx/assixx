@@ -40,7 +40,7 @@
 
 ```typescript
 // NIEMALS SO:
-if (process.env.NODE_ENV === "test") {
+if (process.env.NODE_ENV === 'test') {
   // Anderer Code für Tests
 } else {
   // Produktions-Code
@@ -89,12 +89,15 @@ Erst wenn ALLE grün sind → committen und pushen!
 **Lösung:**
 
 ```javascript
+// 3. ERST DANN imports
+import { authenticateToken } from '../auth-refactored';
+
 // 1. DB Connection verhindern VOR allen Imports
-process.env.DB_HOST = "mock";
-process.env.NODE_ENV = "test";
+process.env.DB_HOST = 'mock';
+process.env.NODE_ENV = 'test';
 
 // 2. Mock mit expliziter Funktion
-jest.mock("../../database", () => {
+jest.mock('../../database', () => {
   const mockExecuteQuery = jest.fn();
   return {
     executeQuery: mockExecuteQuery,
@@ -103,9 +106,6 @@ jest.mock("../../database", () => {
     },
   };
 });
-
-// 3. ERST DANN imports
-import { authenticateToken } from "../auth-refactored";
 ```
 
 **Lessons Learned:**
@@ -136,7 +136,7 @@ import { authenticateToken } from "../auth-refactored";
 
 ```javascript
 // STATT console.info (wird oft unterdrückt):
-console.info("Response:", response.status, response.body);
+console.info('Response:', response.status, response.body);
 
 // BESSER - Error werfen (wird IMMER angezeigt):
 if (response.status !== 201) {
@@ -155,13 +155,13 @@ if (response.status !== 201) {
 2. **Absichtlich falscher Expect**:
 
    ```javascript
-   expect(response.body).toBe("DEBUG: " + JSON.stringify(response.body));
+   expect(response.body).toBe('DEBUG: ' + JSON.stringify(response.body));
    ```
 
 3. **console.error statt console.info**:
 
    ```javascript
-   console.error("DEBUG:", data); // Wird manchmal angezeigt
+   console.error('DEBUG:', data); // Wird manchmal angezeigt
    ```
 
 4. **Jest Flags kombinieren**:

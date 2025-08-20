@@ -4,7 +4,7 @@
 
 The Assixx backend uses both a real MySQL2 Pool in production and a MockDatabase for testing. These have incompatible type signatures, causing TypeScript union type errors:
 
-```
+```text
 Error: This expression is not callable.
 Each member of the union type has signatures, but none of those signatures are compatible with each other.
 ```

@@ -161,19 +161,19 @@ Link: </api/v2>; rel="successor-version"
 
 ```javascript
 // v2 Login
-const response = await fetch("/api/v2/auth/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
+const response = await fetch('/api/v2/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    email: "user@example.com",
-    password: "password",
+    email: 'user@example.com',
+    password: 'password',
   }),
 });
 
 const data = await response.json();
 if (data.success) {
-  localStorage.setItem("accessToken", data.data.accessToken);
-  localStorage.setItem("refreshToken", data.data.refreshToken);
+  localStorage.setItem('accessToken', data.data.accessToken);
+  localStorage.setItem('refreshToken', data.data.refreshToken);
 }
 ```
 

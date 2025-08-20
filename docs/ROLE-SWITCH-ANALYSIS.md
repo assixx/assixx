@@ -102,8 +102,8 @@ Und jeweils zurück ✅
 ```javascript
 // Visueller Indikator für aktive Rolle
 if (user.isRoleSwitched) {
-  showBanner("Sie agieren als: " + user.activeRole);
-  document.body.classList.add("role-switched-mode");
+  showBanner('Sie agieren als: ' + user.activeRole);
+  document.body.classList.add('role-switched-mode');
 }
 ```
 

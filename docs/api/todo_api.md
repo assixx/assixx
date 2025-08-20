@@ -326,4 +326,4 @@
 
 ---
 
-*Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr*
+_Diese Datei wird täglich aktualisiert. Letzte Änderung: 03.08.2025, 00:00 Uhr_

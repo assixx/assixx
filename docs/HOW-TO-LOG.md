@@ -61,12 +61,12 @@ interface RootLogData {
 await RootLog.create({
   tenant_id: req.user.tenant_id,
   user_id: req.user.id,
-  action: "login", // z.B. login, logout, create, update, delete
-  entity_type: "user", // z.B. user, document, department, etc.
+  action: 'login', // z.B. login, logout, create, update, delete
+  entity_type: 'user', // z.B. user, document, department, etc.
   entity_id: userId,
 
   // FÜR FRONTEND (einfache Anzeige):
-  details: "Angemeldet als Admin", // Deutscher Text für User
+  details: 'Angemeldet als Admin', // Deutscher Text für User
 
   // FÜR AUDIT (detailliert):
   old_values: {
@@ -78,7 +78,7 @@ await RootLog.create({
 
   // META-DATEN:
   ip_address: req.ip,
-  user_agent: req.get("user-agent"),
+  user_agent: req.get('user-agent'),
   was_role_switched: false,
 });
 ```

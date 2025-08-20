@@ -71,7 +71,7 @@ Successfully fixed all TypeScript errors in the frontend script files. The proje
 1. **DOM Element Null Checks**:
 
    ```typescript
-   const element = document.getElementById("id");
+   const element = document.getElementById('id');
    if (element) {
      // Use element safely
    }

@@ -227,12 +227,12 @@
 
 ```typescript
 // Alt (v1)
-fetch("/api/user/profile", { headers: { Authorization: `Bearer ${token}` } });
+fetch('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } });
 
 // Neu (v2)
 const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
 if (useV2Users) {
-  userData = await apiClient.get<User>("/users/profile");
+  userData = await apiClient.get<User>('/users/profile');
 }
 ```
 
@@ -305,7 +305,7 @@ Start der Frontend Migration - Phase 1 & 2 (Signup & Auth)
 const timestamp = Date.now().toString().slice(-6);
 const random = Math.floor(Math.random() * 1000)
   .toString()
-  .padStart(3, "0");
+  .padStart(3, '0');
 const employeeNumber = `TEMP-${timestamp}${random}`;
 ```
 
@@ -466,11 +466,11 @@ Migration von admin-dashboard.ts auf API v2
 const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
 
 // v2 API Aufruf mit korrektem Typing
-employees = (await apiClient.get<User[]>("/users?role=employee")) ?? [];
+employees = (await apiClient.get<User[]>('/users?role=employee')) ?? [];
 
 // Feldnamen-Mapping für Kompatibilität
-const fileName = doc.file_name ?? doc.fileName ?? "Unknown";
-const createdAt = doc.created_at ?? doc.createdAt ?? "";
+const fileName = doc.file_name ?? doc.fileName ?? 'Unknown';
+const createdAt = doc.created_at ?? doc.createdAt ?? '';
 ```
 
 ### 📊 Metriken
@@ -505,4 +505,4 @@ const createdAt = doc.created_at ?? doc.createdAt ?? "";
 
 ---
 
-*Hinweis: Die vorherige DAILY-PROGRESS.md wurde archiviert unter `/docs/archive/daily-progress/DAILY-PROGRESS-2025-07-28-to-2025-08-03.md`*
+_Hinweis: Die vorherige DAILY-PROGRESS.md wurde archiviert unter `/docs/archive/daily-progress/DAILY-PROGRESS-2025-07-28-to-2025-08-03.md`_

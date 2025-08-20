@@ -46,3 +46,10 @@ frontend/src/scripts/lib/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Test files - excluded due to syntax issues
+**/__tests__/**
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js

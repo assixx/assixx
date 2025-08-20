@@ -196,11 +196,11 @@ describe("Survey API Endpoints", () => {
       });
 
       // Verify questions were created
-      const [rows] = await testDb.execute(
+      const [questionRows] = await testDb.execute(
         "SELECT * FROM survey_questions WHERE survey_id = ? ORDER BY order_position",
         [response.body.data.surveyId],
       );
-      const questions = asTestRows<unknown>(rows);
+      const questions = asTestRows<unknown>(questionRows);
       expect(questions.length).toBe(3);
     });
 
@@ -432,7 +432,7 @@ describe("Survey API Endpoints", () => {
       activeSurveyId = (result1 as any).insertId;
 
       // Draft survey
-      const [rows] = await testDb.execute(
+      const [draftRows] = await testDb.execute(
         `INSERT INTO surveys 
         (title, type, visibility_scope, status, start_date, end_date, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -447,11 +447,11 @@ describe("Survey API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result2 = asTestRows<unknown>(rows);
+      const result2 = asTestRows<unknown>(draftRows);
       draftSurveyId = (result2 as any).insertId;
 
       // Completed survey
-      const [rows] = await testDb.execute(
+      const [completedRows] = await testDb.execute(
         `INSERT INTO surveys 
         (title, type, visibility_scope, status, start_date, end_date, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -466,11 +466,11 @@ describe("Survey API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result3 = asTestRows<unknown>(rows);
+      const result3 = asTestRows<unknown>(completedRows);
       completedSurveyId = (result3 as any).insertId;
 
       // Department survey
-      const [rows] = await testDb.execute(
+      const [deptRows] = await testDb.execute(
         `INSERT INTO surveys 
         (title, type, visibility_scope, target_id, status, start_date, end_date, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -486,7 +486,7 @@ describe("Survey API Endpoints", () => {
           tenant1Id,
         ],
       );
-      const result4 = asTestRows<unknown>(rows);
+      const result4 = asTestRows<unknown>(deptRows);
       deptSurveyId = (result4 as any).insertId;
     });
 

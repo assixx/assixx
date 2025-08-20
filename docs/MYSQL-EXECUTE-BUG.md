@@ -35,13 +35,13 @@ Alle `execute()` Aufrufe wurden durch `query()` ersetzt.
 ### Beispiel Vorher (Fehler)
 
 ```typescript
-const [results] = await pool.execute("SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?", [tenantId, id]);
+const [results] = await pool.execute('SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?', [tenantId, id]);
 ```
 
 ### Beispiel Nachher (Funktioniert)
 
 ```typescript
-const [results] = await pool.query("SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?", [tenantId, id]);
+const [results] = await pool.query('SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?', [tenantId, id]);
 ```
 
 ## Betroffene Dateien
@@ -107,7 +107,7 @@ Bei der Umstellung wurde auch ein Encoding-Problem mit deutschen Umlauten festge
 
 ```typescript
 const connection = await pool.getConnection();
-await connection.query("SET NAMES utf8mb4");
+await connection.query('SET NAMES utf8mb4');
 // ... queries ...
 connection.release();
 ```

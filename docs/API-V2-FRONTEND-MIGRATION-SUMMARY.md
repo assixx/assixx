@@ -73,8 +73,8 @@ Die Frontend-Migration zur API v2 wurde erfolgreich implementiert. Alle Core-Kom
 
 ```javascript
 // Einzelne API aktivieren
-window.migrationHelpers.enableApi("auth");
-window.migrationHelpers.enableApi("signup");
+window.migrationHelpers.enableApi('auth');
+window.migrationHelpers.enableApi('signup');
 
 // Status anzeigen
 window.migrationHelpers.status();

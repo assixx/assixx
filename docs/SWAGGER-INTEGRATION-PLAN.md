@@ -35,33 +35,34 @@ pnpm add -D @types/swagger-jsdoc @types/swagger-ui-express
 **Neue Datei:** `backend/src/config/swagger.ts`
 
 ```typescript
-import swaggerJsdoc from "swagger-jsdoc";
-import { version } from "../../package.json";
+import swaggerJsdoc from 'swagger-jsdoc';
+
+import { version } from '../../package.json';
 
 const options: swaggerJsdoc.Options = {
   definition: {
-    openapi: "3.0.0",
+    openapi: '3.0.0',
     info: {
-      title: "Assixx API Documentation",
+      title: 'Assixx API Documentation',
       version,
-      description: "Multi-Tenant SaaS Platform für Industrieunternehmen",
+      description: 'Multi-Tenant SaaS Platform für Industrieunternehmen',
       contact: {
-        name: "SCS-Technik",
-        email: "support@scs-technik.de",
+        name: 'SCS-Technik',
+        email: 'support@scs-technik.de',
       },
     },
     servers: [
       {
-        url: process.env.NODE_ENV === "production" ? "https://api.assixx.com/api" : "http://localhost:3000/api",
-        description: process.env.NODE_ENV === "production" ? "Production" : "Development",
+        url: process.env.NODE_ENV === 'production' ? 'https://api.assixx.com/api' : 'http://localhost:3000/api',
+        description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
       },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
         },
       },
       schemas: {}, // Wird mit Model-Definitionen gefüllt
@@ -73,10 +74,10 @@ const options: swaggerJsdoc.Options = {
     ],
   },
   apis: [
-    "./backend/src/routes/*.ts",
-    "./backend/src/routes/**/*.ts",
-    "./backend/src/models/*.ts",
-    "./backend/src/types/*.ts",
+    './backend/src/routes/*.ts',
+    './backend/src/routes/**/*.ts',
+    './backend/src/models/*.ts',
+    './backend/src/types/*.ts',
   ],
 };
 
@@ -87,25 +88,26 @@ export const swaggerSpec = swaggerJsdoc(options);
 
 ```typescript
 // backend/src/app.ts
-import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./config/swagger";
+import swaggerUi from 'swagger-ui-express';
+
+import { swaggerSpec } from './config/swagger';
 
 // Nach Security-Middleware, vor Routes
 app.use(
-  "/api-docs",
+  '/api-docs',
   (req, res, next) => {
     // Nur in Development oder für Admins
-    if (process.env.NODE_ENV === "development" || req.user?.role === "admin" || req.user?.role === "root") {
+    if (process.env.NODE_ENV === 'development' || req.user?.role === 'admin' || req.user?.role === 'root') {
       next();
     } else {
-      res.status(403).json({ error: "Access denied" });
+      res.status(403).json({ error: 'Access denied' });
     }
   },
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
-    customCss: ".swagger-ui .topbar { display: none }",
-    customSiteTitle: "Assixx API Docs",
-    customfavIcon: "/favicon.ico",
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Assixx API Docs',
+    customfavIcon: '/favicon.ico',
   }),
 );
 ```
@@ -166,7 +168,7 @@ app.use(
  *       429:
  *         description: Too many login attempts
  */
-router.post("/login", authLimiter, authController.login);
+router.post('/login', authLimiter, authController.login);
 
 /**
  * @swagger
@@ -182,7 +184,7 @@ router.post("/login", authLimiter, authController.login);
  *       401:
  *         description: Not authenticated
  */
-router.post("/logout", authenticateToken, authController.logout);
+router.post('/logout', authenticateToken, authController.logout);
 ```
 
 #### 2.2 Model Schemas definieren
@@ -361,10 +363,10 @@ const swaggerOptions = {
     .swagger-ui .info { margin-bottom: 20px }
     .swagger-ui .scheme-container { display: none }
   `,
-  customSiteTitle: "Assixx API Documentation",
-  customfavIcon: "/favicon.ico",
+  customSiteTitle: 'Assixx API Documentation',
+  customfavIcon: '/favicon.ico',
   swaggerOptions: {
-    docExpansion: "none",
+    docExpansion: 'none',
     filter: true,
     showRequestDuration: true,
     tryItOutEnabled: true,

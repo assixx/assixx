@@ -28,7 +28,7 @@ Die Dropdown-Menüs im Employee Modal zeigten keine Daten aus der Datenbank an, 
 **Kompilierte admin-dashboard.js suchte nach:**
 
 ```javascript
-const dropdown = document.getElementById("employee-department-dropdown");
+const dropdown = document.getElementById('employee-department-dropdown');
 ```
 
 **HTML hatte aber:**
@@ -104,6 +104,6 @@ Nach der Korrektur der IDs funktionieren die Dropdowns einwandfrei und zeigen di
 
 ---
 
-*Bug gefunden und behoben am: 11.08.2025*
-*Debugging-Zeit: ~45 Minuten*
-*Root Cause: Inkonsistente ID-Namenskonvention zwischen HTML und JavaScript*
+_Bug gefunden und behoben am: 11.08.2025_
+_Debugging-Zeit: ~45 Minuten_
+_Root Cause: Inkonsistente ID-Namenskonvention zwischen HTML und JavaScript_

@@ -159,4 +159,4 @@ Der Plan wurde erfolgreich umgesetzt mit einem **Maintainability Score von 71%**
 
 ---
 
-*Generiert am 15.07.2025 durch maintainability-progress.sh*
+_Generiert am 15.07.2025 durch maintainability-progress.sh_

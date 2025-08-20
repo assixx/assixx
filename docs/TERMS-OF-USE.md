@@ -46,4 +46,4 @@ Diese Nutzungsbedingungen unterliegen deutschem Recht. Ausschließlicher Gericht
 Bei Fragen zu diesen Nutzungsbedingungen oder für Genehmigungen wenden Sie sich bitte an:
 <info@scs-technik.de>
 
-*Letzte Aktualisierung: Mai 2025*
+_Letzte Aktualisierung: Mai 2025_

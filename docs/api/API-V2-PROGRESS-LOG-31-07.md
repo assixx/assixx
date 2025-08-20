@@ -226,4 +226,4 @@
 
 ---
 
-*Ende des Logs für 31.07.2025*
+_Ende des Logs für 31.07.2025_

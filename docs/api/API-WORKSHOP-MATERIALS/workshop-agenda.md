@@ -179,4 +179,4 @@ Eine einheitliche, dokumentierte API-Struktur für Assixx etablieren und alle In
 ---
 
 **Notizen während des Workshops:**
-*[Platz für Live-Notizen]*
+_[Platz für Live-Notizen]_

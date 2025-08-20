@@ -42,10 +42,10 @@ Klare API-Standards definiert für wartbare, sichere und konsistente APIs.
 // backend/src/middleware/deprecation.ts
 export function deprecationMiddleware(version: string, sunset: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith("/api/v1")) {
-      res.setHeader("Deprecation", "true");
-      res.setHeader("Sunset", sunset);
-      res.setHeader("Link", '</api/v2>; rel="successor-version"');
+    if (req.path.startsWith('/api/v1')) {
+      res.setHeader('Deprecation', 'true');
+      res.setHeader('Sunset', sunset);
+      res.setHeader('Link', '</api/v2>; rel="successor-version"');
     }
     next();
   };
@@ -62,7 +62,7 @@ export function successResponse<T>(data: T, message?: string): ApiSuccessRespons
     data,
     meta: {
       timestamp: new Date().toISOString(),
-      version: "2.0",
+      version: '2.0',
     },
   };
 }
@@ -87,7 +87,7 @@ export function errorResponse(error: ApiError): ApiErrorResponse {
 
 ```typescript
 // backend/src/utils/fieldMapping.ts
-import { camelCase, snakeCase, mapKeys } from "lodash";
+import { camelCase, mapKeys, snakeCase } from 'lodash';
 
 export const dbToApi = <T>(dbObject: any): T => {
   return mapKeys(dbObject, (_, key) => camelCase(key)) as T;

@@ -476,7 +476,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 /* Gemeinsamer Hover-Effekt */
 .btn-primary::before,
 .btn-primary-first::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: -100%;
@@ -798,7 +798,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .compact-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -822,7 +822,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .compact-card .card-title::before {
-  content: "";
+  content: '';
   width: 4px;
   height: 20px;
   background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
@@ -837,7 +837,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ### Schriftfamilie
 
 ```css
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Ubuntu", Roboto, sans-serif;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sans-serif;
 ```
 
 ### Schriftgrößen
@@ -983,8 +983,8 @@ transition: all 0.6s ease-out;
 
 ```javascript
 function showSuccessMessage() {
-  const overlay = document.createElement("div");
-  overlay.className = "success-overlay";
+  const overlay = document.createElement('div');
+  overlay.className = 'success-overlay';
   overlay.innerHTML = `
     <div class="success-message">
       <div class="success-icon">
@@ -1361,7 +1361,7 @@ function showSuccessMessage() {
 function showModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    modal.style.display = "flex";
+    modal.style.display = 'flex';
   }
 }
 
@@ -1369,14 +1369,14 @@ function showModal(modalId) {
 function hideModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    modal.style.display = "none";
+    modal.style.display = 'none';
   }
 }
 
 // Click-Outside-to-Close
-window.addEventListener("click", function (event) {
-  if (event.target.classList.contains("modal")) {
-    event.target.style.display = "none";
+window.addEventListener('click', function (event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
   }
 });
 ```
@@ -1386,34 +1386,34 @@ window.addEventListener("click", function (event) {
 ```javascript
 // Toggle Dropdown
 function toggleDropdown(type) {
-  const display = document.getElementById(type + "Display");
-  const dropdown = document.getElementById(type + "Dropdown");
+  const display = document.getElementById(type + 'Display');
+  const dropdown = document.getElementById(type + 'Dropdown');
 
   // Alle anderen schließen
-  document.querySelectorAll(".dropdown-display").forEach((d) => {
-    if (d !== display) d.classList.remove("active");
+  document.querySelectorAll('.dropdown-display').forEach((d) => {
+    if (d !== display) d.classList.remove('active');
   });
-  document.querySelectorAll(".dropdown-options").forEach((d) => {
-    if (d !== dropdown) d.classList.remove("active");
+  document.querySelectorAll('.dropdown-options').forEach((d) => {
+    if (d !== dropdown) d.classList.remove('active');
   });
 
-  display.classList.toggle("active");
-  dropdown.classList.toggle("active");
+  display.classList.toggle('active');
+  dropdown.classList.toggle('active');
 }
 
 // Option auswählen
 function selectOption(value, text) {
-  document.getElementById("myDropdownDisplay").querySelector("span").textContent = text;
-  document.getElementById("myDropdownValue").value = value;
-  document.getElementById("myDropdownDisplay").classList.remove("active");
-  document.getElementById("myDropdownDropdown").classList.remove("active");
+  document.getElementById('myDropdownDisplay').querySelector('span').textContent = text;
+  document.getElementById('myDropdownValue').value = value;
+  document.getElementById('myDropdownDisplay').classList.remove('active');
+  document.getElementById('myDropdownDropdown').classList.remove('active');
 }
 
 // Click-Outside-to-Close
-document.addEventListener("click", function (e) {
-  if (!e.target.closest(".custom-dropdown")) {
-    document.querySelectorAll(".dropdown-display").forEach((d) => d.classList.remove("active"));
-    document.querySelectorAll(".dropdown-options").forEach((d) => d.classList.remove("active"));
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
   }
 });
 ```
@@ -1609,7 +1609,7 @@ document.addEventListener("click", function (e) {
 }
 
 .card-title::before {
-  content: "";
+  content: '';
   width: 4px;
   height: 20px;
   background: linear-gradient(180deg, var(--primary-color), var(--primary-light));

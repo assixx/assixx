@@ -60,10 +60,10 @@ pnpm add -D supertest @types/supertest
 
 ```typescript
 // errorHandler.test.ts
-describe("errorHandler", () => {
-  it("should extract message from Error object", () => {
-    const error = new Error("Test error");
-    expect(getErrorMessage(error)).toBe("Test error");
+describe('errorHandler', () => {
+  it('should extract message from Error object', () => {
+    const error = new Error('Test error');
+    expect(getErrorMessage(error)).toBe('Test error');
   });
 });
 ```

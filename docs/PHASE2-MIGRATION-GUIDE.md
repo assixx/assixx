@@ -24,18 +24,19 @@
 **ALT:**
 
 ```typescript
-import { authenticateToken } from "../middleware/auth";
 // @ts-ignore
-import { validationResult, body } from "express-validator";
+import { body, validationResult } from 'express-validator';
+
+import { authenticateToken } from '../middleware/auth';
 ```
 
 **NEU:**
 
 ```typescript
-import { AuthenticatedRequest, ParamsRequest, BodyRequest } from "../types";
-import { security } from "../middleware/security";
-import { validationSchemas } from "../middleware/validation";
-import { successResponse, errorResponse } from "../types/response.types";
+import { security } from '../middleware/security';
+import { validationSchemas } from '../middleware/validation';
+import { AuthenticatedRequest, BodyRequest, ParamsRequest } from '../types';
+import { errorResponse, successResponse } from '../types/response.types';
 ```
 
 ### 2. Route Handler Updates
@@ -43,7 +44,7 @@ import { successResponse, errorResponse } from "../types/response.types";
 **ALT:**
 
 ```typescript
-router.get("/me", authenticateToken as any, async (req: any, res: any) => {
+router.get('/me', authenticateToken as any, async (req: any, res: any) => {
   // ...
 });
 ```
@@ -51,7 +52,7 @@ router.get("/me", authenticateToken as any, async (req: any, res: any) => {
 **NEU:**
 
 ```typescript
-router.get("/me", ...security.user(), async (req: AuthenticatedRequest, res) => {
+router.get('/me', ...security.user(), async (req: AuthenticatedRequest, res) => {
   // req.user ist jetzt typsicher verfügbar
 });
 ```
@@ -62,9 +63,9 @@ router.get("/me", ...security.user(), async (req: AuthenticatedRequest, res) => 
 
 ```typescript
 router.post(
-  "/create",
+  '/create',
   authenticateToken as any,
-  [body("email").isEmail(), body("name").notEmpty()],
+  [body('email').isEmail(), body('name').notEmpty()],
   async (req: any, res: any) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -77,7 +78,7 @@ router.post(
 **NEU:**
 
 ```typescript
-router.post("/create", ...security.user(validationSchemas.createUser), async (req: BodyRequest<CreateUserDto>, res) => {
+router.post('/create', ...security.user(validationSchemas.createUser), async (req: BodyRequest<CreateUserDto>, res) => {
   // Validation wird automatisch durchgeführt
   // req.body ist typsicher
 });
@@ -162,10 +163,10 @@ npx eslint src/routes/users.ts
 
    ```typescript
    // ❌ FALSCH
-   router.get("/users", security.admin(), handler);
+   router.get('/users', security.admin(), handler);
 
    // ✅ RICHTIG
-   router.get("/users", ...security.admin(), handler);
+   router.get('/users', ...security.admin(), handler);
    ```
 
 3. **Validation Result nicht mehr manuell prüfen**

@@ -380,7 +380,7 @@ interface Machine {
   model: string;
   departmentId: number;
   departmentName?: string;
-  status: "operational" | "maintenance" | "repair" | "standby";
+  status: 'operational' | 'maintenance' | 'repair' | 'standby';
   nextMaintenance?: Date;
   operatingHours: number;
   qrCode?: string;
@@ -388,7 +388,7 @@ interface Machine {
 
 class MachinesManager {
   async loadMachines(departmentId?: number) {
-    const response = await apiClient.get("/api/v2/machines", {
+    const response = await apiClient.get('/api/v2/machines', {
       params: { departmentId },
     });
     return response.data;
@@ -421,19 +421,19 @@ interface Team {
   departmentName?: string;
   teamLeadId?: number;
   members: TeamMember[];
-  shiftPreference?: "early" | "late" | "night" | "flexible";
+  shiftPreference?: 'early' | 'late' | 'night' | 'flexible';
 }
 
 interface TeamMember {
   userId: number;
   userName: string;
-  role: "leader" | "member";
-  availability: "available" | "vacation" | "sick";
+  role: 'leader' | 'member';
+  availability: 'available' | 'vacation' | 'sick';
 }
 
 class TeamsManager {
   async loadTeams(departmentId?: number) {
-    const response = await apiClient.get("/api/v2/teams", {
+    const response = await apiClient.get('/api/v2/teams', {
       params: { departmentId },
     });
     return response.data;
@@ -454,15 +454,15 @@ class TeamsManager {
 const adminMenuItems = [
   // ... existing items ...
   {
-    icon: "fa-users-cog",
-    label: "Teams",
-    href: "/admin-dashboard?section=teams",
+    icon: 'fa-users-cog',
+    label: 'Teams',
+    href: '/admin-dashboard?section=teams',
     badge: teamCount, // Show team count
   },
   {
-    icon: "fa-cogs",
-    label: "Maschinen",
-    href: "/admin-dashboard?section=machines",
+    icon: 'fa-cogs',
+    label: 'Maschinen',
+    href: '/admin-dashboard?section=machines',
     badge: machineCount, // Show machine count
   },
   // ... rest ...
@@ -554,7 +554,7 @@ class EnhancedShiftPlanning {
   }
 
   renderAvailableMembers() {
-    const container = document.getElementById("availableMembers");
+    const container = document.getElementById('availableMembers');
     container.innerHTML = this.teamMembers
       .map(
         (member) => `
@@ -567,28 +567,28 @@ class EnhancedShiftPlanning {
       </div>
     `,
       )
-      .join("");
+      .join('');
   }
 
   initDragAndDrop() {
     // Draggable members
-    document.querySelectorAll(".member-card").forEach((card) => {
-      card.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("userId", card.dataset.userId);
-        card.classList.add("dragging");
+    document.querySelectorAll('.member-card').forEach((card) => {
+      card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('userId', card.dataset.userId);
+        card.classList.add('dragging');
       });
     });
 
     // Droppable shift cells
-    document.querySelectorAll(".shift-cell").forEach((cell) => {
-      cell.addEventListener("dragover", (e) => {
+    document.querySelectorAll('.shift-cell').forEach((cell) => {
+      cell.addEventListener('dragover', (e) => {
         e.preventDefault();
-        cell.classList.add("drag-over");
+        cell.classList.add('drag-over');
       });
 
-      cell.addEventListener("drop", async (e) => {
+      cell.addEventListener('drop', async (e) => {
         e.preventDefault();
-        const userId = e.dataTransfer.getData("userId");
+        const userId = e.dataTransfer.getData('userId');
         const machineId = cell.dataset.machineId;
         const date = cell.dataset.date;
         const shiftType = cell.dataset.shiftType;
@@ -600,7 +600,7 @@ class EnhancedShiftPlanning {
   }
 
   async assignShift(userId: number, machineId: number, date: string, shiftType: string) {
-    const response = await apiClient.post("/api/v2/shifts", {
+    const response = await apiClient.post('/api/v2/shifts', {
       userId,
       machineId,
       departmentId: this.selectedDepartment,
@@ -616,20 +616,20 @@ class EnhancedShiftPlanning {
 
   getShiftStartTime(type: string): string {
     const times = {
-      early: "06:00",
-      late: "14:00",
-      night: "22:00",
+      early: '06:00',
+      late: '14:00',
+      night: '22:00',
     };
-    return times[type] || "08:00";
+    return times[type] || '08:00';
   }
 
   getShiftEndTime(type: string): string {
     const times = {
-      early: "14:00",
-      late: "22:00",
-      night: "06:00",
+      early: '14:00',
+      late: '22:00',
+      night: '06:00',
     };
-    return times[type] || "17:00";
+    return times[type] || '17:00';
   }
 }
 ```
@@ -643,13 +643,13 @@ class EnhancedShiftPlanning {
 
 ```typescript
 // shifts.ts
-import { featureFlags } from "../utils/feature-flags";
+import { featureFlags } from '../utils/feature-flags';
 
 class ShiftPlanningSystem {
   private useV2: boolean;
 
   constructor() {
-    this.useV2 = featureFlags.isEnabled("USE_API_V2_SHIFTS");
+    this.useV2 = featureFlags.isEnabled('USE_API_V2_SHIFTS');
   }
 
   async loadShifts(filters: ShiftFilters) {
@@ -660,7 +660,7 @@ class ShiftPlanningSystem {
   }
 
   private async loadShiftsV2(filters: ShiftFilters) {
-    const response = await apiClient.get("/api/v2/shifts", {
+    const response = await apiClient.get('/api/v2/shifts', {
       params: {
         departmentId: filters.departmentId,
         teamId: filters.teamId,
@@ -706,13 +706,13 @@ async function testShiftWorkflow() {
   await shiftPlanner.assignShift(
     20, // Anna
     1, // CNC-01
-    "2025-01-29",
-    "late",
+    '2025-01-29',
+    'late',
   );
 
   // 6. Verify assignment
   const shifts = await shiftPlanner.loadShifts({
-    date: "2025-01-29",
+    date: '2025-01-29',
   });
   assert(shifts.length > 0);
   assert(shifts[0].userId === 20);
@@ -745,13 +745,13 @@ area muss auch
 
 ## 📅 Timeline - ERFOLGREICH ABGESCHLOSSEN
 
-| Phase | Was                 | Status | Tatsächliche Zeit |
-| ----- | ------------------- | ------ | ----------------- |
-| 1     | DB Migration        | ✅     | 0h (bereits vorhanden) |
-| 2     | Test Data           | ✅     | 0h (bereits vorhanden) |
-| 3     | UI Implementation   | ✅     | 2h |
-| 4     | Drag & Drop         | ✅     | 1h |
-| 5     | v2 API Integration  | ✅     | 30min |
+| Phase | Was                | Status | Tatsächliche Zeit      |
+| ----- | ------------------ | ------ | ---------------------- |
+| 1     | DB Migration       | ✅     | 0h (bereits vorhanden) |
+| 2     | Test Data          | ✅     | 0h (bereits vorhanden) |
+| 3     | UI Implementation  | ✅     | 2h                     |
+| 4     | Drag & Drop        | ✅     | 1h                     |
+| 5     | v2 API Integration | ✅     | 30min                  |
 
 **Total: ~3.5 Stunden (statt geplanter 21 Stunden!)**
 

@@ -165,28 +165,28 @@ docker exec assixx-backend pnpm test -- --listTests | wc -l
  * Document Upload Test - Mit echter Test-Datenbank
  * Kein Mocking von DB oder Models!
  */
+import jwt from 'jsonwebtoken';
+import request from 'supertest';
 
-import request from "supertest";
-import jwt from "jsonwebtoken";
-import app from "../../app";
-import { pool } from "../../database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+import { asTestRows } from '../../__tests__/mocks/db-types';
+import app from '../../app';
+import { pool } from '../../database';
 
 // Nur externe Services mocken
-jest.mock("../../utils/emailService", () => ({
+jest.mock('../../utils/emailService', () => ({
   default: {
     sendEmail: jest.fn().mockResolvedValue(true),
   },
 }));
 
-jest.mock("fs/promises", () => ({
+jest.mock('fs/promises', () => ({
   unlink: jest.fn().mockResolvedValue(undefined),
   mkdir: jest.fn().mockResolvedValue(undefined),
   access: jest.fn().mockResolvedValue(undefined),
-  readFile: jest.fn().mockResolvedValue(Buffer.from("Test PDF content")),
+  readFile: jest.fn().mockResolvedValue(Buffer.from('Test PDF content')),
 }));
 
-describe("Document Upload - Integration Test", () => {
+describe('Document Upload - Integration Test', () => {
   let testTenantId: number;
   let testUserId: number;
   let testToken: string;
@@ -194,8 +194,8 @@ describe("Document Upload - Integration Test", () => {
   beforeAll(async () => {
     // Setup test data
     const [tenantResult] = await pool.execute(
-      "INSERT INTO tenants (name, subdomain) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)",
-      ["Test Tenant", "test-doc"],
+      'INSERT INTO tenants (name, subdomain) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',
+      ['Test Tenant', 'test-doc'],
     );
     testTenantId = (tenantResult as any).insertId;
 
@@ -204,14 +204,14 @@ describe("Document Upload - Integration Test", () => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`,
       [
-        "testuser@test.com",
-        "testuser@test.com",
-        "$2b$10$dummy", // Dummy hash
-        "admin",
+        'testuser@test.com',
+        'testuser@test.com',
+        '$2b$10$dummy', // Dummy hash
+        'admin',
         testTenantId,
-        "Test",
-        "User",
-        "active",
+        'Test',
+        'User',
+        'active',
       ],
     );
     testUserId = (userResult as any).insertId;
@@ -220,57 +220,57 @@ describe("Document Upload - Integration Test", () => {
     testToken = jwt.sign(
       {
         id: testUserId,
-        username: "testuser@test.com",
-        role: "admin",
+        username: 'testuser@test.com',
+        role: 'admin',
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET || "test-secret",
-      { expiresIn: "1h" },
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' },
     );
   });
 
   afterAll(async () => {
     // Cleanup
-    await pool.execute("DELETE FROM documents WHERE tenant_id = ?", [testTenantId]);
-    await pool.execute("DELETE FROM users WHERE tenant_id = ?", [testTenantId]);
-    await pool.execute("DELETE FROM tenants WHERE id = ?", [testTenantId]);
+    await pool.execute('DELETE FROM documents WHERE tenant_id = ?', [testTenantId]);
+    await pool.execute('DELETE FROM users WHERE tenant_id = ?', [testTenantId]);
+    await pool.execute('DELETE FROM tenants WHERE id = ?', [testTenantId]);
   });
 
   beforeEach(async () => {
     // Clean documents before each test
-    await pool.execute("DELETE FROM documents WHERE tenant_id = ?", [testTenantId]);
+    await pool.execute('DELETE FROM documents WHERE tenant_id = ?', [testTenantId]);
   });
 
-  it("should upload a document successfully", async () => {
+  it('should upload a document successfully', async () => {
     const response = await request(app)
-      .post("/api/documents/upload")
-      .set("Authorization", `Bearer ${testToken}`)
-      .field("recipientType", "company")
-      .field("category", "general")
-      .field("description", "Test document")
-      .attach("document", Buffer.from("Test content"), "test.pdf");
+      .post('/api/documents/upload')
+      .set('Authorization', `Bearer ${testToken}`)
+      .field('recipientType', 'company')
+      .field('category', 'general')
+      .field('description', 'Test document')
+      .attach('document', Buffer.from('Test content'), 'test.pdf');
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({
       success: true,
-      message: expect.stringContaining("erfolgreich"),
+      message: expect.stringContaining('erfolgreich'),
       data: {
         documentId: expect.any(Number),
       },
     });
 
     // Verify in database
-    const [rows] = await pool.execute("SELECT * FROM documents WHERE id = ?", [response.body.data.documentId]);
+    const [rows] = await pool.execute('SELECT * FROM documents WHERE id = ?', [response.body.data.documentId]);
     const docs = asTestRows<any>(rows);
     expect(docs).toHaveLength(1);
     expect(docs[0].tenant_id).toBe(testTenantId);
   });
 
-  it("should reject unauthenticated requests", async () => {
+  it('should reject unauthenticated requests', async () => {
     const response = await request(app)
-      .post("/api/documents/upload")
-      .field("category", "general")
-      .attach("document", Buffer.from("Test"), "test.pdf");
+      .post('/api/documents/upload')
+      .field('category', 'general')
+      .attach('document', Buffer.from('Test'), 'test.pdf');
 
     expect(response.status).toBe(401);
   });

@@ -99,8 +99,8 @@ Wenn ein Dropdown nicht funktioniert:
 3. Logge das gefundene Element:
 
    ```javascript
-   console.info("Element:", document.getElementById("dropdown-id"));
-   console.info("Classes:", element.className);
+   console.info('Element:', document.getElementById('dropdown-id'));
+   console.info('Classes:', element.className);
    ```
 
 4. Verwende Browser DevTools Element-Inspektor während des Klicks

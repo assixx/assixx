@@ -41,32 +41,32 @@ import { EventEmitter } from 'events';
 
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus;
-  
+
   private constructor() {
     super();
     this.setMaxListeners(100); // Support many SSE connections
   }
-  
+
   static getInstance(): NotificationEventBus {
     if (!NotificationEventBus.instance) {
       NotificationEventBus.instance = new NotificationEventBus();
     }
     return NotificationEventBus.instance;
   }
-  
+
   // Type-safe event emitters
   emitSurveyCreated(tenantId: number, survey: any) {
     this.emit('survey.created', { tenantId, survey });
   }
-  
+
   emitSurveyUpdated(tenantId: number, survey: any) {
     this.emit('survey.updated', { tenantId, survey });
   }
-  
+
   emitDocumentUploaded(tenantId: number, document: any) {
     this.emit('document.uploaded', { tenantId, document });
   }
-  
+
   emitKvpSubmitted(tenantId: number, kvp: any) {
     this.emit('kvp.submitted', { tenantId, kvp });
   }
@@ -79,6 +79,7 @@ export const eventBus = NotificationEventBus.getInstance();
 
 ```typescript
 import { Response } from 'express';
+
 import { AuthenticatedRequest } from '../../../types/auth';
 import { eventBus } from '../../../utils/eventBus';
 import { logger } from '../../../utils/logger';
@@ -92,103 +93,111 @@ export class SSENotificationController {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
-    
+
     const { tenant_id: tenantId, role, id: userId } = req.user;
-    
+
     // Setup SSE headers
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'X-Accel-Buffering': 'no', // Disable Nginx buffering
     });
-    
+
     // Send initial connection event
     res.write(`data: ${JSON.stringify({ type: 'CONNECTED', timestamp: new Date() })}\n\n`);
-    
+
     // Heartbeat to keep connection alive
     const heartbeat = setInterval(() => {
       res.write(': heartbeat\n\n');
     }, 30000);
-    
+
     // Event handlers based on role
     const handlers: Record<string, (data: any) => void> = {};
-    
+
     // Survey notifications for employees
     if (role === 'employee') {
       handlers['survey.created'] = (data) => {
         if (data.tenantId === tenantId) {
-          res.write(`data: ${JSON.stringify({
-            type: 'NEW_SURVEY',
-            survey: {
-              id: data.survey.id,
-              title: data.survey.title,
-              deadline: data.survey.deadline
-            }
-          })}\n\n`);
+          res.write(
+            `data: ${JSON.stringify({
+              type: 'NEW_SURVEY',
+              survey: {
+                id: data.survey.id,
+                title: data.survey.title,
+                deadline: data.survey.deadline,
+              },
+            })}\n\n`,
+          );
         }
       };
-      
+
       handlers['survey.updated'] = (data) => {
         if (data.tenantId === tenantId) {
-          res.write(`data: ${JSON.stringify({
-            type: 'SURVEY_UPDATED',
-            survey: {
-              id: data.survey.id,
-              title: data.survey.title
-            }
-          })}\n\n`);
+          res.write(
+            `data: ${JSON.stringify({
+              type: 'SURVEY_UPDATED',
+              survey: {
+                id: data.survey.id,
+                title: data.survey.title,
+              },
+            })}\n\n`,
+          );
         }
       };
     }
-    
+
     // Document notifications for all users
     handlers['document.uploaded'] = (data) => {
       if (data.tenantId === tenantId) {
-        res.write(`data: ${JSON.stringify({
-          type: 'NEW_DOCUMENT',
-          document: {
-            id: data.document.id,
-            filename: data.document.filename,
-            category: data.document.category
-          }
-        })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'NEW_DOCUMENT',
+            document: {
+              id: data.document.id,
+              filename: data.document.filename,
+              category: data.document.category,
+            },
+          })}\n\n`,
+        );
       }
     };
-    
+
     // KVP notifications for admins
     if (role === 'admin' || role === 'root') {
       handlers['kvp.submitted'] = (data) => {
         if (data.tenantId === tenantId) {
-          res.write(`data: ${JSON.stringify({
-            type: 'NEW_KVP',
-            kvp: {
-              id: data.kvp.id,
-              title: data.kvp.title,
-              submittedBy: data.kvp.submitted_by
-            }
-          })}\n\n`);
+          res.write(
+            `data: ${JSON.stringify({
+              type: 'NEW_KVP',
+              kvp: {
+                id: data.kvp.id,
+                title: data.kvp.title,
+                submittedBy: data.kvp.submitted_by,
+              },
+            })}\n\n`,
+          );
         }
       };
     }
-    
+
     // Register all handlers
     Object.entries(handlers).forEach(([event, handler]) => {
       eventBus.on(event, handler);
     });
-    
+
     // Cleanup on client disconnect
     req.on('close', () => {
       clearInterval(heartbeat);
-      
+
       // Remove all handlers
       Object.entries(handlers).forEach(([event, handler]) => {
         eventBus.off(event, handler);
       });
-      
+
       logger.info(`SSE connection closed for user ${userId}`);
     });
-    
+
     logger.info(`SSE connection established for user ${userId} (${role})`);
   }
 }
@@ -202,9 +211,9 @@ import { eventBus } from '../../../utils/eventBus';
 
 async createSurvey(data: SurveyInput, tenantId: number) {
   // ... existing survey creation logic ...
-  
+
   const survey = await Survey.create(surveyData);
-  
+
   // Emit event for SSE notifications
   eventBus.emitSurveyCreated(tenantId, {
     id: survey.id,
@@ -212,7 +221,7 @@ async createSurvey(data: SurveyInput, tenantId: number) {
     deadline: survey.deadline,
     created_at: survey.created_at
   });
-  
+
   return survey;
 }
 ```
@@ -227,25 +236,25 @@ export class SSEClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  
+
   constructor(private url: string) {}
-  
+
   connect(): void {
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('[SSE] No token available');
       return;
     }
-    
+
     // Add token as query parameter (SSE doesn't support headers easily)
     this.eventSource = new EventSource(`${this.url}?token=${encodeURIComponent(token)}`);
-    
+
     this.eventSource.onopen = () => {
       console.info('[SSE] Connection established');
       this.reconnectAttempts = 0;
       this.reconnectDelay = 1000;
     };
-    
+
     this.eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -254,90 +263,91 @@ export class SSEClient {
         console.error('[SSE] Failed to parse message:', error);
       }
     };
-    
+
     this.eventSource.onerror = (error) => {
       console.error('[SSE] Connection error:', error);
       this.eventSource?.close();
       this.handleReconnect();
     };
   }
-  
+
   private handleMessage(data: any): void {
     console.info('[SSE] Received:', data.type);
-    
+
     switch (data.type) {
       case 'CONNECTED':
         console.info('[SSE] Successfully connected to notification stream');
         break;
-        
+
       case 'NEW_SURVEY':
         // Update survey badge immediately
         if (window.unifiedNav?.updatePendingSurveys) {
           void window.unifiedNav.updatePendingSurveys();
         }
-        
+
         // Show toast notification
         this.showToast(`Neue Umfrage: ${data.survey.title}`, 'info');
         break;
-        
+
       case 'SURVEY_UPDATED':
         // Refresh survey badge
         if (window.unifiedNav?.updatePendingSurveys) {
           void window.unifiedNav.updatePendingSurveys();
         }
         break;
-        
+
       case 'NEW_DOCUMENT':
         // Update document badge
         if (window.unifiedNav?.updateUnreadDocuments) {
           void window.unifiedNav.updateUnreadDocuments();
         }
-        
+
         this.showToast(`Neues Dokument: ${data.document.filename}`, 'info');
         break;
-        
+
       case 'NEW_KVP':
         // Update KVP badge for admins
         if (window.unifiedNav?.updateNewKvpSuggestions) {
           void window.unifiedNav.updateNewKvpSuggestions();
         }
-        
+
         this.showToast(`Neuer KVP-Vorschlag: ${data.kvp.title}`, 'info');
         break;
-        
+
       default:
         console.warn('[SSE] Unknown message type:', data.type);
     }
   }
-  
+
   private handleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('[SSE] Max reconnection attempts reached');
       return;
     }
-    
+
     this.reconnectAttempts++;
     console.info(`[SSE] Reconnecting in ${this.reconnectDelay}ms (attempt ${this.reconnectAttempts})`);
-    
+
     setTimeout(() => {
       this.connect();
     }, this.reconnectDelay);
-    
+
     // Exponential backoff
     this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
   }
-  
+
   private showToast(message: string, type: 'info' | 'success' | 'error'): void {
     // Use existing toast system
-    const showFn = type === 'error' ? window.showErrorAlert :
-                   type === 'success' ? window.showSuccessAlert :
-                   window.showInfoAlert;
-    
+    const showFn =
+      type === 'error' ? window.showErrorAlert
+      : type === 'success' ? window.showSuccessAlert
+      : window.showInfoAlert;
+
     if (showFn) {
       showFn(message);
     }
   }
-  
+
   disconnect(): void {
     this.eventSource?.close();
     this.eventSource = null;
@@ -350,18 +360,17 @@ export class SSEClient {
 
 ```typescript
 // frontend/src/scripts/components/unified-navigation.ts
-
 import { SSEClient } from '../utils/sse-client';
 
 export class UnifiedNavigation {
   private sseClient: SSEClient | null = null;
-  
+
   constructor() {
     // ... existing constructor code ...
-    
+
     // Initialize SSE instead of polling
     this.initializeSSE();
-    
+
     // Remove the 10-minute polling interval!
     // DELETE THIS:
     // setInterval(() => {
@@ -370,17 +379,17 @@ export class UnifiedNavigation {
     //   void this.updateUnreadDocuments();
     // }, 600000);
   }
-  
+
   private initializeSSE(): void {
     const token = localStorage.getItem('token');
     if (!token || token === 'test-mode') {
       return;
     }
-    
+
     // Connect to SSE endpoint
     this.sseClient = new SSEClient('/api/v2/notifications/stream');
     this.sseClient.connect();
-    
+
     // Reconnect on visibility change
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && !this.sseClient) {
@@ -388,7 +397,7 @@ export class UnifiedNavigation {
       }
     });
   }
-  
+
   // Keep existing update methods for manual refresh
   // They will now be called by SSE events instead of polling
 }
@@ -430,12 +439,12 @@ data: {"type":"NEW_SURVEY","survey":{"id":1,"title":"Test Survey"}}
 
 ## Vorteile gegenüber Polling
 
-| Metric | Polling (Alt) | SSE (Neu) | Verbesserung |
-|--------|--------------|-----------|--------------|
-| Latenz | 10 Minuten | < 1 Sekunde | **600x schneller** |
-| API Calls/Stunde | 6 pro User | 0 (persistent) | **100% Reduktion** |
-| Server Load | Konstant | Event-basiert | **90% weniger** |
-| User Experience | Verzögert | Instant | **Deutlich besser** |
+| Metric           | Polling (Alt) | SSE (Neu)      | Verbesserung        |
+| ---------------- | ------------- | -------------- | ------------------- |
+| Latenz           | 10 Minuten    | < 1 Sekunde    | **600x schneller**  |
+| API Calls/Stunde | 6 pro User    | 0 (persistent) | **100% Reduktion**  |
+| Server Load      | Konstant      | Event-basiert  | **90% weniger**     |
+| User Experience  | Verzögert     | Instant        | **Deutlich besser** |
 
 ## Security Considerations
 

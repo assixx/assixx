@@ -12,7 +12,7 @@ if (userName) {
 }
 
 // ✅ GUT - Explizit und klar
-if (userName !== undefined && userName !== null && userName !== "") {
+if (userName !== undefined && userName !== null && userName !== '') {
   console.info(userName);
 }
 
@@ -172,12 +172,13 @@ function getValue(obj: any, key: typeof allowedKeys[number]) {
 ### `security/detect-unsafe-regex`
 
 ```javascript
+// Bei Input wie "aaaa@aaaa@aaaa@..." kann exponentiell lange dauern!
+// ✅ SICHER - Einfachere Regex oder Library nutzen
+import validator from 'validator';
+
 // ❌ GEFÄHRLICH - ReDoS (Regular Expression Denial of Service)
 const emailRegex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-// Bei Input wie "aaaa@aaaa@aaaa@..." kann exponentiell lange dauern!
 
-// ✅ SICHER - Einfachere Regex oder Library nutzen
-import validator from "validator";
 if (validator.isEmail(email)) {
   // ...
 }

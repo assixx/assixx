@@ -300,13 +300,13 @@ Can't update table 'blackboard_entries' in stored function/trigger because it is
 
 ```typescript
 // Get entry IDs first
-const [entries] = await testDb.execute<any[]>("SELECT id FROM blackboard_entries WHERE tenant_id = ?", [tenantId]);
+const [entries] = await testDb.execute<any[]>('SELECT id FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
 const entryIds = entries.map((e) => e.id);
 
 // Delete using IDs directly, not subqueries
 if (entryIds.length > 0) {
   await testDb.execute(
-    `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+    `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
     entryIds,
   );
 }
@@ -333,7 +333,7 @@ Die Chat v2 Tests schlugen mit 500-Fehlern fehl, ohne dass die eigentlichen Fehl
 
 ```typescript
 // Statt console.info/console.error verwenden:
-import { log, error as logError } from "console";
+import { log, error as logError } from 'console';
 ```
 
 **Angewendet in:**
