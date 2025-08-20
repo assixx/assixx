@@ -1,24 +1,41 @@
 {
   "semi": true,
   "trailingComma": "all",
-  "singleQuote": false,
-  "printWidth": 80,
+  "singleQuote": true,
+  "printWidth": 100,
   "tabWidth": 2,
   "useTabs": false,
   "arrowParens": "always",
   "endOfLine": "lf",
   "bracketSpacing": true,
   "bracketSameLine": false,
+  "jsxSingleQuote": false,
   "proseWrap": "preserve",
   "quoteProps": "as-needed",
-  "jsxSingleQuote": false,
   "htmlWhitespaceSensitivity": "css",
   "embeddedLanguageFormatting": "auto",
+  "experimentalTernaries": true,
+  "singleAttributePerLine": false,
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "importOrder": [
+    "^react",
+    "^@?\\w",
+    "^(@/|src/)",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
   "overrides": [
     {
       "files": "*.md",
       "options": {
         "printWidth": 120
+      }
+    },
+    {
+      "files": "*.{yml,yaml}",
+      "options": {
+        "singleQuote": false
       }
     }
   ]

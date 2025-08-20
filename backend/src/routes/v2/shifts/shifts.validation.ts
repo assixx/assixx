@@ -56,7 +56,19 @@ export const shiftsValidation = {
       .withMessage(MESSAGES.INVALID_STATUS),
     query("type")
       .optional()
-      .isIn(["regular", "overtime", "standby", "vacation", "sick", "holiday", "early", "late", "night", "day", "flexible"])
+      .isIn([
+        "regular",
+        "overtime",
+        "standby",
+        "vacation",
+        "sick",
+        "holiday",
+        "early",
+        "late",
+        "night",
+        "day",
+        "flexible",
+      ])
       .withMessage(MESSAGES.INVALID_TYPE),
     query("templateId")
       .optional()
@@ -129,7 +141,19 @@ export const shiftsValidation = {
       .withMessage(MESSAGES.INVALID_STATUS),
     body("type")
       .optional()
-      .isIn(["regular", "overtime", "standby", "vacation", "sick", "holiday", "early", "late", "night", "day", "flexible"])
+      .isIn([
+        "regular",
+        "overtime",
+        "standby",
+        "vacation",
+        "sick",
+        "holiday",
+        "early",
+        "late",
+        "night",
+        "day",
+        "flexible",
+      ])
       .withMessage(MESSAGES.INVALID_TYPE),
     body("notes")
       .optional()
@@ -197,7 +221,19 @@ export const shiftsValidation = {
       .withMessage(MESSAGES.INVALID_STATUS),
     body("type")
       .optional()
-      .isIn(["regular", "overtime", "standby", "vacation", "sick", "holiday", "early", "late", "night", "day", "flexible"])
+      .isIn([
+        "regular",
+        "overtime",
+        "standby",
+        "vacation",
+        "sick",
+        "holiday",
+        "early",
+        "late",
+        "night",
+        "day",
+        "flexible",
+      ])
       .withMessage(MESSAGES.INVALID_TYPE),
     body("notes")
       .optional()

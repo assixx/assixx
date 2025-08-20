@@ -92,7 +92,7 @@ export async function showConfirm(message: string): Promise<boolean> {
       }
     `;
     document.head.appendChild(style);
-    
+
     // Use notification service with action buttons
     const confirmDiv = document.createElement('div');
     confirmDiv.className = 'custom-confirm-dialog';
