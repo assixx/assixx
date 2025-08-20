@@ -465,6 +465,89 @@ router.get(
 // ============= DYNAMIC ROUTES (MUST BE LAST) =============
 
 /**
+ * /api/v2/shifts/plan:
+ *   get:
+ *     summary: Get shift plan with all shifts and notes
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Shift plan retrieved successfully
+ */
+router.get('/plan', authenticateV2, typed.auth(shiftsController.getShiftPlan));
+
+/**
+ * @swagger
+ * /api/v2/shifts/plan/{id}:
+ *   put:
+ *     summary: Update existing shift plan
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Plan ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               shiftNotes:
+ *                 type: string
+ *               departmentId:
+ *                 type: integer
+ *               teamId:
+ *                 type: integer
+ *               machineId:
+ *                 type: integer
+ *               areaId:
+ *                 type: integer
+ *               shifts:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     date:
+ *                       type: string
+ *                       format: date
+ *                     type:
+ *                       type: string
+ *                       enum: [early, late, night]
+ *                     userId:
+ *                       type: integer
+ *     responses:
+ *       200:
+ *         description: Plan updated successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Plan not found
+ */
+router.put('/plan/:id', authenticateV2, typed.auth(shiftsController.updateShiftPlan));
+
+/**
  * /api/v2/shifts/{id}:
  *   get:
  *     summary: Get shift by ID
@@ -590,4 +673,113 @@ router.delete(
   typed.auth(shiftsController.deleteShift),
 );
 
+// ============= SHIFT PLAN ENDPOINTS =============
+
+/**
+ * /api/v2/shifts/plan:
+ *   post:
+ *     summary: Create a complete shift plan with multiple shifts
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - startDate
+ *               - endDate
+ *               - departmentId
+ *               - shifts
+ *             properties:
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *               areaId:
+ *                 type: integer
+ *               departmentId:
+ *                 type: integer
+ *               teamId:
+ *                 type: integer
+ *               machineId:
+ *                 type: integer
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               shifts:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: integer
+ *                     date:
+ *                       type: string
+ *                       format: date
+ *                     type:
+ *                       type: string
+ *                       enum: [early, late, night, day, flexible]
+ *                     startTime:
+ *                       type: string
+ *                       format: time
+ *                     endTime:
+ *                       type: string
+ *                       format: time
+ *               dailyNotes:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Shift plan created successfully
+ */
+router.post(
+  '/plan',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(shiftsController.createShiftPlan),
+);
+
+/**
+ * /api/v2/shifts/plan:
+ *   get:
+ *     summary: Get shift plan with all shifts and notes
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: areaId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: departmentId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: teamId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: machineId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Shift plan retrieved successfully
+ */
 export default router;

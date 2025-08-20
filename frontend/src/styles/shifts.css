@@ -981,3 +981,60 @@
   justify-content: flex-end;
   margin-top: var(--spacing-xl);
 }
+
+/* Read-Only / Edit Mode Styles */
+.employee-item.locked {
+  cursor: not-allowed;
+  opacity: 0.7;
+  background: rgb(0 0 0 / 20%);
+}
+
+.employee-item.locked:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.shift-cell.locked {
+  cursor: not-allowed;
+  pointer-events: none;
+  background: rgb(0 0 0 / 10%);
+  opacity: 0.8;
+}
+
+.shift-cell.locked::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgb(255 255 255 / 5%) 10px,
+    rgb(255 255 255 / 5%) 20px
+  );
+  pointer-events: none;
+}
+
+#weeklyNotes[readonly] {
+  background: rgb(0 0 0 / 20%);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Edit Mode Button */
+#editScheduleBtn,
+#updateScheduleBtn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+#editScheduleBtn:hover,
+#updateScheduleBtn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgb(102 126 234 / 40%);
+}

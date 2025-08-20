@@ -123,7 +123,13 @@ export function asyncHandler(
   handler: (req: Request, res: Response, next: NextFunction) => Promise<void>,
 ): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
-    Promise.resolve(handler(req, res, next)).catch(next);
+    void (async () => {
+      try {
+        await handler(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+    })();
   };
 }
 
@@ -134,15 +140,13 @@ export function authAsyncHandler(
   handler: (req: AuthenticatedRequest, res: Response) => Promise<void>,
 ): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
-    Promise.resolve(
-      (async () => {
-        try {
-          await handler(req as AuthenticatedRequest, res);
-        } catch (error: unknown) {
-          next(error);
-        }
-      })(),
-    ).catch(next);
+    void (async () => {
+      try {
+        await handler(req as AuthenticatedRequest, res);
+      } catch (error: unknown) {
+        next(error);
+      }
+    })();
   };
 }
 

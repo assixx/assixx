@@ -598,3 +598,151 @@ export async function exportShifts(req: AuthenticatedRequest, res: Response): Pr
     }
   }
 }
+
+// ============= SHIFT PLAN ENDPOINTS =============
+
+/**
+ * Create a complete shift plan
+ * @param req
+ * @param res
+ */
+export async function createShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = req.body as {
+      startDate: string;
+      endDate: string;
+      areaId?: number;
+      departmentId: number;
+      teamId?: number;
+      machineId?: number;
+      name?: string;
+      shift_notes?: string; // Renamed from description for consistency
+      shifts: {
+        userId: number;
+        date: string;
+        type: string;
+        startTime: string;
+        endTime: string;
+      }[];
+      // dailyNotes removed - redundant with shift_notes
+    };
+
+    const result = await shiftsService.createShiftPlan(data, req.user.tenant_id, req.user.id);
+
+    res.status(201).json(successResponse(result, result.message));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res.status(400).json(errorResponse(error.code, error.message));
+    } else {
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            ERROR_CODES.SERVER_ERROR,
+            error instanceof Error ? error.message : 'Failed to create shift plan',
+          ),
+        );
+    }
+  }
+}
+
+/**
+ * Get shift plan with shifts and notes
+ * @param req
+ * @param res
+ */
+export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const filters = {
+      areaId:
+        req.query.areaId !== undefined ? Number.parseInt(req.query.areaId as string) : undefined,
+      departmentId:
+        req.query.departmentId !== undefined ?
+          Number.parseInt(req.query.departmentId as string)
+        : undefined,
+      teamId:
+        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
+      machineId:
+        req.query.machineId !== undefined ?
+          Number.parseInt(req.query.machineId as string)
+        : undefined,
+      startDate: req.query.startDate as string,
+      endDate: req.query.endDate as string,
+    };
+
+    const result = await shiftsService.getShiftPlan(filters, req.user.tenant_id);
+
+    res.json(successResponse(result, 'Shift plan retrieved successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res.status(400).json(errorResponse(error.code, error.message));
+    } else {
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            ERROR_CODES.SERVER_ERROR,
+            error instanceof Error ? error.message : 'Failed to get shift plan',
+          ),
+        );
+    }
+  }
+}
+
+/**
+ * Update existing shift plan
+ * @param req
+ * @param res
+ */
+export async function updateShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const planId = Number.parseInt(req.params.id);
+
+    if (Number.isNaN(planId)) {
+      res.status(400).json(errorResponse('INVALID_ID', 'Invalid plan ID'));
+      return;
+    }
+
+    const data = req.body as {
+      startDate?: string;
+      endDate?: string;
+      areaId?: number;
+      departmentId?: number;
+      teamId?: number;
+      machineId?: number;
+      name?: string;
+      shiftNotes?: string;
+      shifts?: {
+        date: string;
+        type: string;
+        userId: number;
+        startTime?: string;
+        endTime?: string;
+      }[];
+    };
+
+    const result = await shiftsService.updateShiftPlan(
+      planId,
+      data,
+      req.user.tenant_id,
+      req.user.id,
+    );
+
+    res.json(successResponse(result, 'Shift plan updated successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res
+        .status(error.code === 'NOT_FOUND' ? 404 : 400)
+        .json(errorResponse(error.code, error.message));
+    } else {
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            ERROR_CODES.SERVER_ERROR,
+            error instanceof Error ? error.message : 'Failed to update shift plan',
+          ),
+        );
+    }
+  }
+}

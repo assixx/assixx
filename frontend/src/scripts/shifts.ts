@@ -149,6 +149,8 @@ class ShiftPlanningSystem {
   private userRole: string;
   private currentUserId: number | null;
   private isDragging: boolean;
+  private currentPlanId: number | null; // Store current plan ID for updates
+  private isEditMode: boolean; // Track if we're in edit mode
 
   // Context data for shift planning
   private areas: Area[];
@@ -187,6 +189,8 @@ class ShiftPlanningSystem {
       teamId: null,
       teamLeaderId: null,
     };
+    this.currentPlanId = null;
+    this.isEditMode = false;
 
     // weeklyNotes removed - notes are part of shifts in v2
 
@@ -436,6 +440,16 @@ class ShiftPlanningSystem {
     });
     document.querySelector('#resetScheduleBtn')?.addEventListener('click', () => {
       this.resetSchedule();
+    });
+
+    // Edit mode button (will be created dynamically)
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.id === 'editScheduleBtn') {
+        this.toggleEditMode(true);
+      } else if (target.id === 'updateScheduleBtn') {
+        void this.updateSchedule();
+      }
     });
 
     // Remove logout functionality - handled by unified navigation
@@ -1972,34 +1986,177 @@ class ShiftPlanningSystem {
       const startStr = this.formatDate(weekStart);
       const endStr = this.formatDate(weekEnd);
 
-      console.info('[SHIFTS DEBUG] Loading shifts for range:', startStr, 'to', endStr);
+      console.info('[SHIFTS PLAN DEBUG] Loading shifts for range:', startStr, 'to', endStr);
 
-      const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
-        headers: {
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-        },
-      });
+      // Check if v2 API is enabled
+      if (!this.useV2API) {
+        // Legacy v1 API
+        const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          },
+        });
 
-      if (response.ok) {
-        const data = (await response.json()) as {
-          shifts?: {
-            date: string;
-            shift_type: string;
-            employee_id: number;
-            first_name: string;
-            last_name: string;
-            username: string;
-          }[];
-        };
-        console.info('[SHIFTS DEBUG] API Response:', data);
-        console.info('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
-        if (data.shifts !== undefined && data.shifts.length > 0) {
-          console.info('[SHIFTS DEBUG] First shift:', data.shifts[0]);
+        if (response.ok) {
+          const data = (await response.json()) as {
+            shifts?: {
+              date: string;
+              shift_type: string;
+              employee_id: number;
+              first_name: string;
+              last_name: string;
+              username: string;
+            }[];
+          };
+          console.info('[SHIFTS DEBUG] API Response:', data);
+          console.info('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
+          if (data.shifts !== undefined && data.shifts.length > 0) {
+            console.info('[SHIFTS DEBUG] First shift:', data.shifts[0]);
+          }
+          this.processShiftData(data.shifts ?? []);
+          this.renderWeekView();
+        } else {
+          throw new Error('Failed to load shift data');
         }
-        this.processShiftData(data.shifts ?? []);
-        this.renderWeekView();
       } else {
-        throw new Error('Failed to load shift data');
+        // NEW v2 API - Plan-based loading
+        try {
+          // Build query parameters for v2 API
+          const params = new URLSearchParams({
+            startDate: startStr,
+            endDate: endStr,
+          });
+
+          // Add context filters if selected
+          if (this.selectedContext.departmentId !== null) {
+            params.append('departmentId', String(this.selectedContext.departmentId));
+          }
+          if (this.selectedContext.teamId !== null) {
+            params.append('teamId', String(this.selectedContext.teamId));
+          }
+          if (this.selectedContext.machineId !== null) {
+            params.append('machineId', String(this.selectedContext.machineId));
+          }
+          if (this.selectedContext.areaId !== null) {
+            params.append('areaId', String(this.selectedContext.areaId));
+          }
+
+          console.info('[SHIFTS PLAN DEBUG] Loading plan with params:', params.toString());
+
+          // Use /api/v2/shifts/plan endpoint
+          const response = await this.apiClient.request(`/shifts/plan?${params.toString()}`, {
+            method: 'GET',
+          });
+
+          console.info('[SHIFTS PLAN DEBUG] Plan Response:', response);
+
+          // Check if response has shifts array (API v2 format)
+          if (response !== null && typeof response === 'object' && 'shifts' in response) {
+            const planData = response as {
+              plan?: {
+                id: number;
+                name: string;
+                shiftNotes?: string; // API v2 uses camelCase
+                startDate: string;
+                endDate: string;
+              };
+              shifts: {
+                id?: number;
+                userId: number;
+                date: string;
+                type: string;
+                startTime?: string;
+                endTime?: string;
+                user?: {
+                  id: number;
+                  firstName: string;
+                  lastName: string;
+                  username: string;
+                };
+              }[];
+              notes?: Record<string, { note: string }> | unknown[];
+            };
+
+            // Check if we have a plan or just shifts
+            const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+
+            if (planData.plan) {
+              console.info('[SHIFTS PLAN DEBUG] Plan loaded:', planData.plan);
+              // Store current plan ID for update functionality
+              this.currentPlanId = planData.plan.id;
+
+              // Reset edit mode when loading a plan
+              this.isEditMode = false;
+
+              // Load notes from plan.shiftNotes (camelCase from API v2)
+              if ((planData.plan as { shiftNotes?: string }).shiftNotes && notesTextarea !== null) {
+                notesTextarea.value = (planData.plan as { shiftNotes: string }).shiftNotes;
+              } else if (notesTextarea !== null) {
+                // Plan exists but no notes - clear textarea
+                notesTextarea.value = '';
+              }
+
+              // Update button visibility and lock the plan
+              this.updateButtonVisibility();
+              this.lockShiftPlan();
+            } else {
+              // No plan for this week - clear everything
+              console.info('[SHIFTS PLAN DEBUG] No plan found for this week - clearing notes');
+              this.currentPlanId = null;
+              this.isEditMode = false;
+
+              if (notesTextarea !== null) {
+                notesTextarea.value = '';
+              }
+
+              // Update button visibility and unlock for new plan creation
+              this.updateButtonVisibility();
+              this.unlockShiftPlan();
+            }
+
+            console.info('[SHIFTS PLAN DEBUG] Number of shifts:', planData.shifts.length);
+
+            // Convert v2 format to legacy format for processShiftData
+            const legacyShifts = planData.shifts.map((shift) => ({
+              date: shift.date,
+              shift_type: shift.type,
+              employee_id: shift.userId,
+              first_name: shift.user?.firstName ?? 'Unknown',
+              last_name: shift.user?.lastName ?? 'User',
+              username: shift.user?.username ?? `user_${String(shift.userId)}`,
+            }));
+
+            this.processShiftData(legacyShifts);
+          } else if (response !== null && typeof response === 'object' && 'message' in response) {
+            // No plan found for this week, that's okay
+            console.info('[SHIFTS PLAN DEBUG] No plan found for this week');
+            this.weeklyShifts = new Map();
+            this.shiftDetails = new Map();
+            this.currentPlanId = null;
+
+            // Clear the notes textarea when no plan exists
+            const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+            if (notesTextarea !== null) {
+              notesTextarea.value = '';
+            }
+          }
+
+          this.renderWeekView();
+        } catch (error) {
+          console.error('[SHIFTS PLAN DEBUG] Error loading plan, falling back:', error);
+          // If plan endpoint fails, clear the data
+          this.weeklyShifts = new Map();
+          this.shiftDetails = new Map();
+          this.currentPlanId = null;
+
+          // Clear the notes textarea on error
+          const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+          if (notesTextarea !== null) {
+            notesTextarea.value = '';
+          }
+
+          this.renderWeekView();
+        }
       }
     } catch (error) {
       console.error('Error loading shift data:', error);
@@ -2259,7 +2416,7 @@ class ShiftPlanningSystem {
     const positionDiv = createElement('div', { className: 'employee-position' }, employee.position ?? 'Mitarbeiter');
     card.append(nameDiv, positionDiv);
 
-    // Add remove button for admins
+    // Add remove button for admins (only in edit mode)
     if (this.isAdmin) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
@@ -2272,6 +2429,10 @@ class ShiftPlanningSystem {
           this.assignShift(cell as HTMLElement, employee.id);
         }
       };
+      // Hide button if not in edit mode
+      if (!this.isEditMode && this.currentPlanId !== null) {
+        removeBtn.style.display = 'none';
+      }
       card.append(removeBtn);
     }
 
@@ -2289,7 +2450,7 @@ class ShiftPlanningSystem {
     return `${String(year)}-${month}-${day}`;
   }
 
-  async saveSchedule(): Promise<void> {
+  async saveSchedule(isUpdate = false): Promise<void> {
     if (!this.isAdmin) return;
 
     // Validate department selection
@@ -2297,6 +2458,9 @@ class ShiftPlanningSystem {
       showErrorAlert('Bitte wählen Sie zuerst eine Abteilung aus');
       return;
     }
+
+    // Success message constant
+    const SAVE_SUCCESS_MESSAGE = 'Schichtplan erfolgreich gespeichert!';
 
     try {
       const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
@@ -2350,93 +2514,131 @@ class ShiftPlanningSystem {
         });
 
         if (response.ok) {
-          showSuccessAlert('Schichtplan erfolgreich gespeichert!');
+          showSuccessAlert(SAVE_SUCCESS_MESSAGE);
           await this.loadCurrentWeekData();
         } else {
           const error = (await response.json()) as { message?: string };
           showErrorAlert(error.message ?? 'Fehler beim Speichern des Schichtplans');
         }
       } else {
-        // v2 API - Create individual shifts with notes
-        const shiftsToCreate: {
+        // v2 API - Plan-basierte Speicherung (NEU!)
+        // Sammle alle Shifts für den Plan
+        const shiftsForPlan: {
           userId: number;
           date: string;
           type: string;
           startTime: string;
           endTime: string;
-          departmentId?: number;
-          teamId?: number;
-          machineId?: number;
-          notes?: string;
         }[] = [];
+
+        // REMOVED: dailyNotes - we use plan.description/shift_notes instead
+        // Daily notes for each day are redundant when we have one note for the whole plan
 
         this.weeklyShifts.forEach((shifts, date) => {
           shifts.forEach((employeeIds, shiftType) => {
             employeeIds.forEach((employeeId) => {
-              shiftsToCreate.push({
+              shiftsForPlan.push({
                 userId: employeeId,
                 date,
                 type: shiftType,
                 startTime: this.getShiftStartTime(shiftType),
                 endTime: this.getShiftEndTime(shiftType),
-                departmentId: this.selectedContext.departmentId ?? undefined,
-                teamId: this.selectedContext.teamId ?? undefined,
-                machineId: this.selectedContext.machineId ?? undefined,
-                notes: notes !== '' ? notes : undefined, // Include notes with each shift
               });
             });
           });
         });
 
         // Log all shifts that will be created
-        console.info('[SHIFTS DEBUG] ==========================================');
-        console.info('[SHIFTS DEBUG] Total shifts to create:', shiftsToCreate.length);
-        console.info('[SHIFTS DEBUG] Shifts data:', JSON.stringify(shiftsToCreate, null, 2));
-        console.info('[SHIFTS DEBUG] Selected context:', this.selectedContext);
-        console.info('[SHIFTS DEBUG] Notes:', notes);
-        console.info('[SHIFTS DEBUG] ==========================================');
+        console.info('[SHIFTS PLAN DEBUG] ==========================================');
+        console.info('[SHIFTS PLAN DEBUG] Total shifts in plan:', shiftsForPlan.length);
+        console.info('[SHIFTS PLAN DEBUG] Week start:', weekStart);
+        console.info('[SHIFTS PLAN DEBUG] Week end:', weekEnd);
+        console.info('[SHIFTS PLAN DEBUG] Selected context:', this.selectedContext);
+        console.info('[SHIFTS PLAN DEBUG] Notes:', notes);
+        console.info('[SHIFTS PLAN DEBUG] ==========================================');
 
         // Check if shift plan is incomplete (less than 10 shifts for Mo-Fr with early+late)
         const expectedMinShifts = 10; // Mo-Fr je 2 Schichten (früh+spät)
-        if (shiftsToCreate.length < expectedMinShifts) {
+        if (shiftsForPlan.length < expectedMinShifts) {
           const confirmed = await showConfirm(
-            `Der Schichtplan ist unvollständig (${String(shiftsToCreate.length)} von mindestens ${String(expectedMinShifts)} Schichten ausgefüllt). Trotzdem speichern?`,
+            `Der Schichtplan ist unvollständig (${String(shiftsForPlan.length)} von mindestens ${String(expectedMinShifts)} Schichten ausgefüllt). Trotzdem speichern?`,
           );
           if (!confirmed) {
-            console.info('[SHIFTS DEBUG] User cancelled save due to incomplete plan');
+            console.info('[SHIFTS PLAN DEBUG] User cancelled save due to incomplete plan');
             return;
           }
         }
 
-        // Create shifts one by one (v2 doesn't have bulk endpoint yet)
-        let successCount = 0;
-        let errorCount = 0;
+        // Helper to convert null to undefined for API
+        const nullToUndefined = <T>(value: T | null): T | undefined => {
+          return value ?? undefined;
+        };
 
-        for (const shift of shiftsToCreate) {
-          try {
-            console.info('[SHIFTS DEBUG] Sending shift to API:', shift);
-            const response = await this.apiClient.request('/shifts', {
-              method: 'POST',
-              body: JSON.stringify(shift),
-            });
-            console.info('[SHIFTS DEBUG] API Response:', response);
-            successCount++;
-          } catch (error) {
-            console.error('[SHIFTS DEBUG] Failed to create shift:', shift);
-            console.error('[SHIFTS DEBUG] Error details:', error);
-            errorCount++;
+        // Erstelle Plan-Request für neuen /api/v2/shifts/plan Endpoint
+        const planRequest = {
+          startDate: weekStart,
+          endDate: weekEnd,
+          areaId: nullToUndefined(this.selectedContext.areaId),
+          departmentId: nullToUndefined(this.selectedContext.departmentId),
+          teamId: nullToUndefined(this.selectedContext.teamId),
+          machineId: nullToUndefined(this.selectedContext.machineId),
+          name: `Schichtplan KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`,
+          shiftNotes: notes !== '' ? notes : undefined, // API v2 uses camelCase
+          shifts: shiftsForPlan,
+          // dailyNotes removed - redundant with shiftNotes
+        };
+
+        try {
+          if (isUpdate && this.currentPlanId !== null) {
+            console.info('[SHIFTS PLAN DEBUG] Updating existing plan:', this.currentPlanId);
+          } else {
+            console.info('[SHIFTS PLAN DEBUG] Creating new plan');
+          }
+          console.info('[SHIFTS PLAN DEBUG] Sending plan to API:', planRequest);
+
+          // NEUER ENDPOINT: /api/v2/shifts/plan
+          const endpoint =
+            isUpdate && this.currentPlanId !== null ? `/shifts/plan/${String(this.currentPlanId)}` : '/shifts/plan';
+
+          const response = await this.apiClient.request(endpoint, {
+            method: isUpdate && this.currentPlanId !== null ? 'PUT' : 'POST',
+            body: JSON.stringify(planRequest),
+          });
+
+          console.info('[SHIFTS PLAN DEBUG] API Response:', response);
+
+          // Response enthält planId und shiftIds
+          if (response !== null && typeof response === 'object' && 'planId' in response) {
+            const result = response as { planId: number; shiftIds: number[]; message?: string };
+            console.info('[SHIFTS PLAN DEBUG] Created plan ID:', result.planId);
+            console.info('[SHIFTS PLAN DEBUG] Created shift IDs:', result.shiftIds);
+            this.currentPlanId = result.planId; // Store plan ID for future updates
+            showSuccessAlert(result.message ?? SAVE_SUCCESS_MESSAGE);
+          } else {
+            showSuccessAlert(isUpdate ? 'Schichtplan wurde aktualisiert' : SAVE_SUCCESS_MESSAGE);
+          }
+
+          // If we were in edit mode, exit it after successful save
+          if (isUpdate && this.isEditMode) {
+            this.toggleEditMode(false);
+          }
+
+          // Reload data with slight delay so user sees success message
+          setTimeout(async () => {
+            await this.loadCurrentWeekData();
+            console.info('[SHIFTS PLAN DEBUG] Data reloaded after save');
+          }, 500);
+        } catch (error) {
+          console.error('[SHIFTS PLAN DEBUG] Failed to create shift plan:', error);
+
+          // Fallback auf alten Modus falls Plan-Endpoint nicht verfügbar
+          if (error instanceof Error && error.message.includes('404')) {
+            console.warn('[SHIFTS PLAN DEBUG] Plan endpoint not available, falling back to individual creation');
+            showErrorAlert('Plan-basierte Speicherung noch nicht verfügbar. Bitte Backend aktualisieren.');
+          } else {
+            showErrorAlert('Fehler beim Speichern des Schichtplans');
           }
         }
-
-        if (errorCount === 0) {
-          showSuccessAlert('Schichtplan erfolgreich gespeichert!');
-        } else if (successCount > 0) {
-          showInfo(`${String(successCount)} Schichten gespeichert, ${String(errorCount)} fehlgeschlagen`);
-        } else {
-          showErrorAlert('Fehler beim Speichern des Schichtplans');
-        }
-
-        await this.loadCurrentWeekData();
       }
     } catch (error) {
       console.error('Error saving schedule:', error);
@@ -2479,17 +2681,147 @@ class ShiftPlanningSystem {
     }
   }
 
+  /**
+   * Toggle edit mode for existing shift plans
+   */
+  toggleEditMode(enable: boolean): void {
+    this.isEditMode = enable;
+
+    if (enable) {
+      this.unlockShiftPlan();
+      showInfo('Bearbeitungsmodus aktiviert');
+    } else {
+      this.lockShiftPlan();
+      showInfo('Bearbeitungsmodus beendet');
+    }
+
+    this.updateButtonVisibility();
+  }
+
+  /**
+   * Update button visibility based on plan state and edit mode
+   */
+  updateButtonVisibility(): void {
+    const saveBtn = document.querySelector('#saveScheduleBtn') as HTMLButtonElement | null;
+    const resetBtn = document.querySelector('#resetScheduleBtn') as HTMLButtonElement | null;
+    const adminActions = document.querySelector('#adminActions') as HTMLElement | null;
+
+    if (!adminActions || !this.isAdmin) return;
+
+    // Remove any existing edit/update buttons
+    const existingEditBtn = document.querySelector('#editScheduleBtn');
+    const existingUpdateBtn = document.querySelector('#updateScheduleBtn');
+    if (existingEditBtn) existingEditBtn.remove();
+    if (existingUpdateBtn) existingUpdateBtn.remove();
+
+    if (this.currentPlanId !== null) {
+      // Plan exists
+      if (this.isEditMode) {
+        // In edit mode - show update button
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'inline-block';
+
+        const updateBtn = document.createElement('button');
+        updateBtn.id = 'updateScheduleBtn';
+        updateBtn.className = 'admin-btn';
+        updateBtn.textContent = 'Schichtplan aktualisieren';
+        adminActions.insertBefore(updateBtn, resetBtn);
+      } else {
+        // Read-only mode - show edit button
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'none';
+
+        const editBtn = document.createElement('button');
+        editBtn.id = 'editScheduleBtn';
+        editBtn.className = 'admin-btn';
+        editBtn.textContent = 'Bearbeiten';
+        adminActions.insertBefore(editBtn, adminActions.firstChild);
+      }
+    } else {
+      // No plan exists - show normal save button
+      if (saveBtn) saveBtn.style.display = 'inline-block';
+      if (resetBtn) resetBtn.style.display = 'inline-block';
+    }
+  }
+
+  /**
+   * Lock shift plan (make read-only)
+   */
+  lockShiftPlan(): void {
+    // Disable drag and drop
+    const draggableEmployees = document.querySelectorAll('.employee-item[draggable="true"]');
+    draggableEmployees.forEach((el) => {
+      el.setAttribute('draggable', 'false');
+      el.classList.add('locked');
+    });
+
+    // Disable shift cells
+    const shiftCells = document.querySelectorAll('.shift-cell');
+    shiftCells.forEach((cell) => {
+      cell.classList.add('locked');
+    });
+
+    // Hide remove buttons
+    const removeButtons = document.querySelectorAll('.shift-cell .remove-btn');
+    removeButtons.forEach((btn) => {
+      (btn as HTMLElement).style.display = 'none';
+    });
+
+    // Make notes readonly
+    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+    if (notesTextarea) {
+      notesTextarea.setAttribute('readonly', 'readonly');
+    }
+  }
+
+  /**
+   * Unlock shift plan (make editable)
+   */
+  unlockShiftPlan(): void {
+    // Enable drag and drop
+    const draggableEmployees = document.querySelectorAll('.employee-item[draggable="false"]');
+    draggableEmployees.forEach((el) => {
+      el.setAttribute('draggable', 'true');
+      el.classList.remove('locked');
+    });
+
+    // Enable shift cells
+    const shiftCells = document.querySelectorAll('.shift-cell');
+    shiftCells.forEach((cell) => {
+      cell.classList.remove('locked');
+    });
+
+    // Show remove buttons
+    const removeButtons = document.querySelectorAll('.shift-cell .remove-btn');
+    removeButtons.forEach((btn) => {
+      (btn as HTMLElement).style.display = '';
+    });
+
+    // Make notes editable
+    const notesTextarea = document.querySelector('#weeklyNotes') as HTMLTextAreaElement | null;
+    if (notesTextarea) {
+      notesTextarea.removeAttribute('readonly');
+    }
+  }
+
+  /**
+   * Update existing shift plan (PUT request)
+   */
+  async updateSchedule(): Promise<void> {
+    if (!this.isAdmin || this.currentPlanId === null) return;
+
+    // Reuse saveSchedule logic but with PUT request
+    await this.saveSchedule(true);
+  }
+
   loadWeeklyNotes(): void {
     // In v2, notes are part of individual shifts
     // For now, we'll keep the UI element but not load separate notes
     // Notes will be saved with each shift in saveSchedule()
     console.info('[SHIFTS] Weekly notes are now part of individual shifts in v2');
 
-    // Clear the textarea
-    const notesTextarea = document.querySelector(DOM_IDS.WEEKLY_NOTES);
-    if (notesTextarea !== null) {
-      (notesTextarea as HTMLTextAreaElement).value = '';
-    }
+    // DO NOT clear the textarea - it contains plan.description loaded from DB
+    // The notes are part of the plan, not individual shifts
     // weeklyNotes removed - notes are part of shifts in v2
   }
 
@@ -2685,6 +3017,15 @@ class ShiftPlanningSystem {
       title: 'Schichtdetails',
       size: 'md',
     });
+  }
+
+  // Helper method to get ISO week number
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() !== 0 ? d.getUTCDay() : 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 }
 

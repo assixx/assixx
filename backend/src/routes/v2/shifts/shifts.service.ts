@@ -7,6 +7,7 @@ import { RowDataPacket } from 'mysql2';
 import RootLog from '../../../models/rootLog';
 import Shift from '../../../models/shift';
 import { ServiceError } from '../../../utils/ServiceError';
+import { execute, query } from '../../../utils/db';
 import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
 import { logger } from '../../../utils/logger';
 
@@ -809,6 +810,423 @@ export class ShiftsService {
     const diffHours = diffMs / (1000 * 60 * 60);
     const breakHours = breakMinutes / 60;
     return Math.round((diffHours - breakHours) * 100) / 100;
+  }
+
+  // ============= SHIFT PLAN METHODS =============
+
+  /**
+   * Create a complete shift plan with shifts and notes
+   * @param data
+   * @param data.startDate
+   * @param data.endDate
+   * @param data.areaId
+   * @param data.departmentId
+   * @param data.teamId
+   * @param data.machineId
+   * @param data.name
+   * @param data.shift_notes
+   * @param data.shifts
+   * @param tenantId
+   * @param userId
+   * @returns Object containing planId, shiftIds array and success message
+   */
+  async createShiftPlan(
+    data: {
+      startDate: string;
+      endDate: string;
+      areaId?: number;
+      departmentId: number;
+      teamId?: number;
+      machineId?: number;
+      name?: string;
+      shiftNotes?: string; // Renamed from description, using camelCase
+      shifts: {
+        userId: number;
+        date: string;
+        type: string;
+        startTime: string;
+        endTime: string;
+      }[];
+      // dailyNotes removed - redundant with shift_notes
+    },
+    tenantId: number,
+    userId: number,
+  ): Promise<{ planId: number; shiftIds: number[]; message: string }> {
+    try {
+      // Debug logging
+      console.info('[SHIFT PLAN CREATE] Starting with data:', {
+        startDate: data.startDate,
+        endDate: data.endDate,
+        shiftsCount: data.shifts.length,
+        departmentId: data.departmentId,
+        teamId: data.teamId,
+        machineId: data.machineId,
+        areaId: data.areaId,
+        tenantId,
+        userId,
+      });
+
+      // Start transaction (using query, not execute, because transactions don't work with prepared statements)
+      await query('START TRANSACTION');
+
+      // 1. Create shift_plan
+      const weekNumber = this.getWeekNumber(new Date(data.startDate));
+      const planName =
+        data.name ??
+        `Wochenplan KW ${String(weekNumber)}/${String(new Date(data.startDate).getFullYear())}`;
+
+      const [planResult] = await execute(
+        `INSERT INTO shift_plans (
+          tenant_id, name, shift_notes,
+          department_id, team_id, machine_id, area_id,
+          start_date, end_date, status, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+        [
+          tenantId,
+          planName,
+          data.shiftNotes ?? '',
+          data.departmentId,
+          data.teamId ?? null,
+          data.machineId ?? null,
+          data.areaId ?? null,
+          data.startDate,
+          data.endDate,
+          userId,
+        ],
+      );
+
+      const planId = (planResult as { insertId: number }).insertId;
+
+      // 2. Create shifts with plan_id
+      const shiftIds: number[] = [];
+      for (const shift of data.shifts) {
+        const [shiftResult] = await execute(
+          `INSERT INTO shifts (
+            tenant_id, plan_id, user_id,
+            date, start_time, end_time, type,
+            area_id, department_id, team_id, machine_id,
+            status, created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?)`,
+          [
+            tenantId,
+            planId,
+            shift.userId,
+            shift.date,
+            `${shift.date} ${shift.startTime}:00`,
+            `${shift.date} ${shift.endTime}:00`,
+            shift.type,
+            data.areaId ?? null,
+            data.departmentId,
+            data.teamId ?? null,
+            data.machineId ?? null,
+            userId,
+          ],
+        );
+        shiftIds.push((shiftResult as { insertId: number }).insertId);
+      }
+
+      // 3. REMOVED: shift_notes - using shift_plans.description instead
+      // Daily notes are redundant when we have shift_plans.description
+      // If we need daily notes in future, they should be DIFFERENT per day
+
+      // Commit transaction
+      await query('COMMIT');
+
+      return {
+        planId,
+        shiftIds,
+        message: `Schichtplan erfolgreich erstellt (${String(shiftIds.length)} Schichten)`,
+      };
+    } catch (error) {
+      // Rollback on error
+      await query('ROLLBACK');
+      logger.error('Error creating shift plan:', error);
+
+      // More detailed error for debugging
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[SHIFT PLAN ERROR] Details:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        data: {
+          startDate: data.startDate,
+          endDate: data.endDate,
+          shiftsCount: data.shifts.length,
+          tenantId,
+          userId,
+        },
+      });
+
+      throw new ServiceError('CREATE_PLAN_ERROR', `Failed to create shift plan: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get shift plan with all shifts and notes
+   * @param filters
+   * @param filters.areaId
+   * @param filters.departmentId
+   * @param filters.teamId
+   * @param filters.machineId
+   * @param filters.startDate
+   * @param filters.endDate
+   * @param tenantId
+   * @returns Object containing plan details, shifts array and notes
+   */
+  async getShiftPlan(
+    filters: {
+      areaId?: number;
+      departmentId?: number;
+      teamId?: number;
+      machineId?: number;
+      startDate?: string;
+      endDate?: string;
+    },
+    tenantId: number,
+  ): Promise<{
+    plan?: unknown;
+    shifts: unknown[];
+    notes: unknown[];
+  }> {
+    try {
+      // Find plan
+      let planQuery = `
+        SELECT * FROM shift_plans
+        WHERE tenant_id = ?
+      `;
+      const params: (string | number)[] = [tenantId];
+
+      if (filters.departmentId !== undefined) {
+        planQuery += ' AND department_id = ?';
+        params.push(filters.departmentId);
+      }
+      if (filters.teamId !== undefined) {
+        planQuery += ' AND team_id = ?';
+        params.push(filters.teamId);
+      }
+      if (filters.machineId !== undefined) {
+        planQuery += ' AND machine_id = ?';
+        params.push(filters.machineId);
+      }
+      if (filters.areaId !== undefined) {
+        planQuery += ' AND area_id = ?';
+        params.push(filters.areaId);
+      }
+      if (
+        filters.startDate !== undefined &&
+        filters.startDate !== '' &&
+        filters.endDate !== undefined &&
+        filters.endDate !== ''
+      ) {
+        planQuery += ' AND start_date <= ? AND end_date >= ?';
+        params.push(filters.endDate, filters.startDate);
+      }
+
+      planQuery += ' ORDER BY created_at DESC LIMIT 1';
+
+      const [plans] = await execute(planQuery, params);
+      const plan = (plans as unknown[])[0];
+
+      if (plan === undefined || plan === null) {
+        return { shifts: [], notes: [] };
+      }
+
+      // Get shifts for this plan
+      const [shifts] = await execute(
+        `SELECT s.*, u.first_name, u.last_name, u.username
+         FROM shifts s
+         LEFT JOIN users u ON s.user_id = u.id
+         WHERE s.plan_id = ?
+         ORDER BY s.date, s.start_time`,
+        [(plan as { id: number }).id],
+      );
+
+      // REMOVED: Loading from shift_notes - using shift_plans.description instead
+      // The plan.description contains the weekly notes
+      // Return empty notes array for backward compatibility
+
+      return {
+        plan: dbToApi(plan as Record<string, unknown>),
+        shifts: (shifts as unknown[]).map((s) => dbToApi(s as Record<string, unknown>)),
+        notes: [], // Empty - notes are in plan.description now
+      };
+    } catch (error) {
+      logger.error('Error getting shift plan:', error);
+      throw new ServiceError('GET_PLAN_ERROR', 'Failed to get shift plan');
+    }
+  }
+
+  /**
+   * Update existing shift plan
+   * @param planId - Plan ID to update
+   * @param data - Update data
+   * @param data.startDate - Start date
+   * @param data.endDate - End date
+   * @param data.areaId - Area ID
+   * @param data.departmentId - Department ID
+   * @param data.teamId - Team ID
+   * @param data.machineId - Machine ID
+   * @param data.name - Plan name
+   * @param data.shiftNotes - Shift notes
+   * @param data.shifts - Array of shifts
+   * @param tenantId - Tenant ID
+   * @param userId - User ID
+   * @returns Update result
+   */
+  async updateShiftPlan(
+    planId: number,
+    data: {
+      startDate?: string;
+      endDate?: string;
+      areaId?: number;
+      departmentId?: number;
+      teamId?: number;
+      machineId?: number;
+      name?: string;
+      shiftNotes?: string;
+      shifts?: {
+        date: string;
+        type: string;
+        userId: number;
+        startTime?: string;
+        endTime?: string;
+      }[];
+    },
+    tenantId: number,
+    userId: number,
+  ): Promise<{
+    planId: number;
+    shiftIds: number[];
+    message: string;
+  }> {
+    try {
+      await query('START TRANSACTION');
+
+      // Check if plan exists and belongs to tenant
+      const [existingPlans] = await execute(
+        'SELECT id, department_id FROM shift_plans WHERE id = ? AND tenant_id = ?',
+        [planId, tenantId],
+      );
+
+      if ((existingPlans as unknown[]).length === 0) {
+        throw new ServiceError('NOT_FOUND', 'Shift plan not found');
+      }
+
+      const existingPlan = (existingPlans as { id: number; department_id: number }[])[0];
+      const currentDepartmentId = data.departmentId ?? existingPlan.department_id;
+
+      // Update plan metadata
+      const updateFields: string[] = [];
+      const updateValues: unknown[] = [];
+
+      if (data.name !== undefined) {
+        updateFields.push('name = ?');
+        updateValues.push(data.name);
+      }
+      if (data.shiftNotes !== undefined) {
+        updateFields.push('shift_notes = ?');
+        updateValues.push(data.shiftNotes);
+      }
+      if (data.startDate !== undefined) {
+        updateFields.push('start_date = ?');
+        updateValues.push(data.startDate);
+      }
+      if (data.endDate !== undefined) {
+        updateFields.push('end_date = ?');
+        updateValues.push(data.endDate);
+      }
+      if (data.departmentId !== undefined) {
+        updateFields.push('department_id = ?');
+        updateValues.push(data.departmentId);
+      }
+      if (data.teamId !== undefined) {
+        updateFields.push('team_id = ?');
+        updateValues.push(data.teamId);
+      }
+      if (data.machineId !== undefined) {
+        updateFields.push('machine_id = ?');
+        updateValues.push(data.machineId);
+      }
+      if (data.areaId !== undefined) {
+        updateFields.push('area_id = ?');
+        updateValues.push(data.areaId);
+      }
+
+      // Always update updated_at
+      updateFields.push('updated_at = NOW()');
+      updateValues.push(planId, tenantId);
+
+      if (updateFields.length > 0) {
+        await execute(
+          `UPDATE shift_plans SET ${updateFields.join(', ')} WHERE id = ? AND tenant_id = ?`,
+          updateValues,
+        );
+      }
+
+      // If shifts are provided, update them
+      const shiftIds: number[] = [];
+      if (data.shifts !== undefined && data.shifts.length > 0) {
+        // Delete existing shifts for this plan
+        await execute('DELETE FROM shifts WHERE plan_id = ? AND tenant_id = ?', [planId, tenantId]);
+
+        // Insert new shifts
+        for (const shift of data.shifts) {
+          const [result] = await execute(
+            `INSERT INTO shifts (
+              tenant_id, plan_id, user_id, date, type,
+              start_time, end_time, department_id, created_by, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [
+              tenantId,
+              planId,
+              shift.userId,
+              shift.date,
+              shift.type,
+              shift.startTime ?? '06:00:00',
+              shift.endTime ?? '14:00:00',
+              currentDepartmentId,
+              userId,
+            ],
+          );
+
+          const insertResult = result as { insertId: number };
+          shiftIds.push(insertResult.insertId);
+        }
+      }
+
+      await query('COMMIT');
+
+      return {
+        planId,
+        shiftIds,
+        message: `Schichtplan erfolgreich aktualisiert${
+          shiftIds.length > 0 ? ` (${String(shiftIds.length)} Schichten)` : ''
+        }`,
+      };
+    } catch (error) {
+      await query('ROLLBACK');
+
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+
+      throw new ServiceError(
+        'UPDATE_FAILED',
+        error instanceof Error ? error.message : 'Failed to update shift plan',
+      );
+    }
+  }
+
+  /**
+   * Helper to get week number
+   * @param date
+   * @returns ISO week number
+   */
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() !== 0 ? d.getUTCDay() : 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 }
 
