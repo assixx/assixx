@@ -829,7 +829,7 @@ interface UserData {
 | Was       | Verwenden                    | Nicht verwenden         |
 | --------- | ---------------------------- | ----------------------- | --- | ----------- |
 | Types     | `unknown`, spezifische Types | `any`                   |
-| Defaults  | `??` (nullish)               | `                       |     | ` (logical) |
+| Defaults  | `??` (nullish)               | ` |     | ` (logical) |
 | Strings   | Template Literals            | String Concatenation    |
 | Functions | Arrow Functions              | function keyword        |
 | Variables | `const`, `let`               | `var`                   |
@@ -846,7 +846,7 @@ interface UserData {
 **Basiert auf:** eslint.config.js (Backend & Frontend) + .prettierrc.json
 **Maintainer:** Assixx Development Team
 
-# TypeScript Architecture Guide
+## TypeScript Architecture Guide
 
 An Claude: Korriegire und opitmiere diese Datei ständig, wenn du meinst, dass was geändert hat oder wir es besser machen können.
 
@@ -950,7 +950,7 @@ import { errorResponse, successResponse } from '../types/response.types';
 import { typed } from '../utils/routeHandlers';
 ```
 
-2. Define request interfaces if needed:
+1. Define request interfaces if needed:
 
 ```typescript
 interface CreateUserBody {
@@ -960,7 +960,7 @@ interface CreateUserBody {
 }
 ```
 
-3. Implement route with proper typing:
+2.Implement route with proper typing:
 
 ```typescript
 router.post(
