@@ -259,19 +259,30 @@ class ShiftPlanningSystem {
       console.info('[SHIFTS DEBUG] Loading context data...');
       await this.loadContextData();
 
-      // Load initial data
-      console.info('[SHIFTS DEBUG] Loading employees...');
-      await this.loadEmployees();
-      console.info('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
+      // Only load data if a team is already selected (e.g., from saved state)
+      // For admins, check if teamId is selected
+      // For employees, they will have departmentId pre-selected
+      const shouldLoadData = this.isAdmin
+        ? this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0
+        : this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0;
 
-      console.info('[SHIFTS DEBUG] Loading current week data...');
-      await this.loadCurrentWeekData();
+      if (shouldLoadData) {
+        console.info('[SHIFTS DEBUG] Team/Department selected, loading data...');
+        console.info('[SHIFTS DEBUG] Loading employees...');
+        await this.loadEmployees();
+        console.info('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
 
-      console.info('[SHIFTS DEBUG] Loading weekly notes...');
-      try {
-        this.loadWeeklyNotes();
-      } catch (error) {
-        console.error('[SHIFTS ERROR] Failed to load weekly notes:', error);
+        console.info('[SHIFTS DEBUG] Loading current week data...');
+        await this.loadCurrentWeekData();
+
+        console.info('[SHIFTS DEBUG] Loading weekly notes...');
+        try {
+          this.loadWeeklyNotes();
+        } catch (error) {
+          console.error('[SHIFTS ERROR] Failed to load weekly notes:', error);
+        }
+      } else {
+        console.info('[SHIFTS DEBUG] No team/department selected, skipping initial data load');
       }
 
       // Update UI based on user role
@@ -1498,6 +1509,8 @@ class ShiftPlanningSystem {
 
       // Load data for the selected department
       void (async () => {
+        console.info('[SHIFTS DEBUG] Loading employees for selected team/department');
+        await this.loadEmployees();
         console.info('[SHIFTS DEBUG] About to call loadCurrentWeekData');
         await this.loadCurrentWeekData();
         console.info('[SHIFTS DEBUG] loadCurrentWeekData completed');
