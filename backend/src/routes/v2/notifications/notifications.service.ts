@@ -2,19 +2,13 @@
  * Notifications v2 Service
  * Business logic for notification management
  */
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import { RowDataPacket, ResultSetHeader } from "mysql2";
-
-import { executeQuery } from "../../../database.js";
-import RootLog from "../../../models/rootLog";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import {
-  NotificationFilters,
-  NotificationData,
-  NotificationPreferences,
-} from "./types.js";
+import { executeQuery } from '../../../database.js';
+import RootLog from '../../../models/rootLog';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
+import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 /**
  * Get notifications for a user with filters
@@ -61,7 +55,7 @@ export async function listNotifications(
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
     LEFT JOIN users u ON n.created_by = u.id
-    WHERE ${String(conditions.join(" AND "))}
+    WHERE ${String(conditions.join(' AND '))}
   `;
 
   // Add unread filter if specified
@@ -81,14 +75,11 @@ export async function listNotifications(
     SELECT COUNT(*) as total
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${String(conditions.join(" AND "))}
-    ${filters.unread === true ? "AND nrs.id IS NULL" : ""}
+    WHERE ${String(conditions.join(' AND '))}
+    ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
   `;
   const countParams = [userId, ...params.slice(1, -2)]; // Exclude limit/offset
-  const [[countResult]] = await executeQuery<RowDataPacket[]>(
-    countQuery,
-    countParams,
-  );
+  const [[countResult]] = await executeQuery<RowDataPacket[]>(countQuery, countParams);
   const total = countResult.total;
 
   // Get unread count
@@ -96,7 +87,7 @@ export async function listNotifications(
     SELECT COUNT(*) as unread
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${String(conditions.join(" AND "))} AND nrs.id IS NULL
+    WHERE ${String(conditions.join(' AND '))} AND nrs.id IS NULL
   `;
   const [[unreadResult]] = await executeQuery<RowDataPacket[]>(unreadQuery, [
     userId,
@@ -140,7 +131,7 @@ export async function createNotification(
       data.type,
       data.title,
       data.message,
-      data.priority ?? "normal",
+      data.priority ?? 'normal',
       data.recipient_id ?? null,
       data.recipient_type,
       data.action_url ?? null,
@@ -156,8 +147,8 @@ export async function createNotification(
   await RootLog.create({
     tenant_id: tenantId,
     user_id: createdBy,
-    action: "notification_created",
-    entity_type: "notification",
+    action: 'notification_created',
+    entity_type: 'notification',
     entity_id: result.insertId,
     new_values: data as unknown as Record<string, unknown>,
     ip_address: ipAddress,
@@ -173,11 +164,7 @@ export async function createNotification(
  * @param userId
  * @param tenantId
  */
-export async function markAsRead(
-  notificationId: number,
-  userId: number,
-  tenantId: number,
-) {
+export async function markAsRead(notificationId: number, userId: number, tenantId: number) {
   // Check if notification exists and user has access
   const [[notification]] = await executeQuery<RowDataPacket[]>(
     `SELECT * FROM notifications 
@@ -189,7 +176,7 @@ export async function markAsRead(
   );
 
   if (!notification) {
-    throw new ServiceError("NOT_FOUND", "Notification not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
 
   // Check if already read
@@ -263,30 +250,25 @@ export async function deleteNotification(
   );
 
   if (!notification) {
-    throw new ServiceError("NOT_FOUND", "Notification not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
 
   // Check permissions - admin can delete any, users only their own
-  if (userRole !== "admin" && userRole !== "root") {
-    if (
-      notification.recipient_type !== "user" ||
-      notification.recipient_id !== userId
-    ) {
-      throw new ServiceError("NOT_FOUND", "Notification not found", 404);
+  if (userRole !== 'admin' && userRole !== 'root') {
+    if (notification.recipient_type !== 'user' || notification.recipient_id !== userId) {
+      throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
     }
   }
 
   // Delete notification
-  await executeQuery(`DELETE FROM notifications WHERE id = ?`, [
-    notificationId,
-  ]);
+  await executeQuery(`DELETE FROM notifications WHERE id = ?`, [notificationId]);
 
   // Log the action
   await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
-    action: "notification_deleted",
-    entity_type: "notification",
+    action: 'notification_deleted',
+    entity_type: 'notification',
     entity_id: notificationId,
     old_values: notification,
     ip_address: ipAddress,
@@ -327,14 +309,9 @@ export async function getPreferences(userId: number, tenantId: number) {
     if (prefs.preferences) {
       try {
         notificationTypes =
-          typeof prefs.preferences === "string"
-            ? JSON.parse(prefs.preferences)
-            : prefs.preferences;
+          typeof prefs.preferences === 'string' ? JSON.parse(prefs.preferences) : prefs.preferences;
       } catch (error: unknown) {
-        console.error(
-          "[Notifications Service] Failed to parse preferences:",
-          error,
-        );
+        console.error('[Notifications Service] Failed to parse preferences:', error);
         notificationTypes = {};
       }
     }
@@ -346,7 +323,7 @@ export async function getPreferences(userId: number, tenantId: number) {
       notification_types: notificationTypes,
     };
   } catch (error: unknown) {
-    console.error("[Notifications Service] getPreferences error:", error);
+    console.error('[Notifications Service] getPreferences error:', error);
     throw error;
   }
 }
@@ -409,8 +386,8 @@ export async function updatePreferences(
   await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
-    action: "notification_preferences_updated",
-    entity_type: "user",
+    action: 'notification_preferences_updated',
+    entity_type: 'user',
     entity_id: userId,
     new_values: preferences as unknown as Record<string, unknown>,
     ip_address: ipAddress,
@@ -455,9 +432,9 @@ export async function getStatistics(tenantId: number) {
   );
 
   const readRate =
-    readRateResult.total_notifications > 0
-      ? readRateResult.read_notifications / readRateResult.total_notifications
-      : 0;
+    readRateResult.total_notifications > 0 ?
+      readRateResult.read_notifications / readRateResult.total_notifications
+    : 0;
 
   // Trends (last 30 days)
   const [trendsRows] = await executeQuery<RowDataPacket[]>(

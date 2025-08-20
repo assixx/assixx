@@ -2,17 +2,16 @@
  * Type-safe Rate Limiter Implementation
  * Provides different rate limiting strategies for various endpoint types
  */
-
-import rateLimit from "express-rate-limit";
+import rateLimit from 'express-rate-limit';
 
 import {
+  RateLimitMiddleware,
   RateLimiterMiddleware,
   RateLimiterType,
-  RateLimitMiddleware,
-} from "../types/security.types";
+} from '../types/security.types';
 
 // Check if we're in test environment
-const isTestEnv = process.env.NODE_ENV === "test";
+const isTestEnv = process.env.NODE_ENV === 'test';
 
 // Rate limiter configurations
 const rateLimiterConfigs = {
@@ -20,7 +19,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.PUBLIC]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: isTestEnv ? 100000 : 10000, // Very high limit for tests
-    message: "Too many requests from this IP, please try again later.",
+    message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
@@ -30,7 +29,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.AUTH]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: isTestEnv ? 100000 : 5000, // Erhöht von 500 auf 5000 für Entwicklung
-    message: "Too many authentication attempts, please try again later.",
+    message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful logins
@@ -41,7 +40,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.AUTHENTICATED]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: isTestEnv ? 100000 : 20000, // Very high limit for tests
-    message: "Rate limit exceeded, please slow down.",
+    message: 'Rate limit exceeded, please slow down.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
@@ -52,7 +51,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.ADMIN]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: isTestEnv ? 100000 : 2000, // Very high limit for tests
-    message: "Admin rate limit exceeded.",
+    message: 'Admin rate limit exceeded.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
@@ -63,7 +62,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.API]: {
     windowMs: 60 * 1000, // 1 minute
     max: isTestEnv ? 100000 : 60, // Very high limit for tests
-    message: "API rate limit exceeded.",
+    message: 'API rate limit exceeded.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
@@ -74,7 +73,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.UPLOAD]: {
     windowMs: 60 * 60 * 1000, // 1 hour
     max: isTestEnv ? 100000 : 20, // Very high limit for tests
-    message: "Upload limit exceeded, please try again later.",
+    message: 'Upload limit exceeded, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests
@@ -85,7 +84,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.DOWNLOAD]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: isTestEnv ? 100000 : 100, // Very high limit for tests
-    message: "Download limit exceeded, please try again later.",
+    message: 'Download limit exceeded, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => isTestEnv, // Skip rate limiting in tests

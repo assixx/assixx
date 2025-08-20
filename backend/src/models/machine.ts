@@ -1,6 +1,6 @@
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import { executeQuery } from "../config/database.js";
+import { executeQuery } from '../config/database.js';
 
 export interface MachineStatistics extends RowDataPacket {
   total_machines: number;
@@ -32,19 +32,8 @@ export interface Machine extends RowDataPacket {
   department_id?: number;
   area_id?: number;
   location?: string;
-  machine_type:
-    | "production"
-    | "packaging"
-    | "quality_control"
-    | "logistics"
-    | "utility"
-    | "other";
-  status:
-    | "operational"
-    | "maintenance"
-    | "repair"
-    | "standby"
-    | "decommissioned";
+  machine_type: 'production' | 'packaging' | 'quality_control' | 'logistics' | 'utility' | 'other';
+  status: 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
   purchase_date?: Date;
   installation_date?: Date;
   warranty_until?: Date;
@@ -68,12 +57,12 @@ export interface MachineMaintenanceHistory extends RowDataPacket {
   tenant_id: number;
   machine_id: number;
   maintenance_type:
-    | "preventive"
-    | "corrective"
-    | "inspection"
-    | "calibration"
-    | "cleaning"
-    | "other";
+    | 'preventive'
+    | 'corrective'
+    | 'inspection'
+    | 'calibration'
+    | 'cleaning'
+    | 'other';
   performed_date: Date;
   performed_by?: number;
   external_company?: string;
@@ -81,7 +70,7 @@ export interface MachineMaintenanceHistory extends RowDataPacket {
   parts_replaced?: string;
   cost?: number;
   duration_hours?: number;
-  status_after: "operational" | "needs_repair" | "decommissioned";
+  status_after: 'operational' | 'needs_repair' | 'decommissioned';
   next_maintenance_date?: Date;
   report_url?: string;
   created_at: Date;
@@ -99,10 +88,7 @@ export interface MachineFilters {
 
 class MachineModel {
   // Find all machines with filters
-  async findAll(
-    tenant_id: number,
-    filters: MachineFilters = {},
-  ): Promise<Machine[]> {
+  async findAll(tenant_id: number, filters: MachineFilters = {}): Promise<Machine[]> {
     let query = `
       SELECT m.*, 
              d.name as department_name,
@@ -116,23 +102,23 @@ class MachineModel {
     `;
     const params: (string | number | boolean | null)[] = [tenant_id];
 
-    if (filters.status != null && filters.status !== "") {
-      query += " AND m.status = ?";
+    if (filters.status != null && filters.status !== '') {
+      query += ' AND m.status = ?';
       params.push(filters.status);
     }
 
-    if (filters.machine_type != null && filters.machine_type !== "") {
-      query += " AND m.machine_type = ?";
+    if (filters.machine_type != null && filters.machine_type !== '') {
+      query += ' AND m.machine_type = ?';
       params.push(filters.machine_type);
     }
 
     if (filters.department_id != null && filters.department_id !== 0) {
-      query += " AND m.department_id = ?";
+      query += ' AND m.department_id = ?';
       params.push(filters.department_id);
     }
 
     if (filters.is_active !== undefined) {
-      query += " AND m.is_active = ?";
+      query += ' AND m.is_active = ?';
       params.push(filters.is_active);
     }
 
@@ -141,14 +127,14 @@ class MachineModel {
         " AND (m.next_maintenance <= DATE_ADD(CURDATE(), INTERVAL 30 DAY) OR m.status = 'maintenance')";
     }
 
-    if (filters.search != null && filters.search !== "") {
+    if (filters.search != null && filters.search !== '') {
       query +=
-        " AND (m.name LIKE ? OR m.model LIKE ? OR m.manufacturer LIKE ? OR m.serial_number LIKE ? OR m.asset_number LIKE ?)";
+        ' AND (m.name LIKE ? OR m.model LIKE ? OR m.manufacturer LIKE ? OR m.serial_number LIKE ? OR m.asset_number LIKE ?)';
       const searchTerm = `%${filters.search}%`;
       params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
-    query += " ORDER BY m.name ASC";
+    query += ' ORDER BY m.name ASC';
 
     const [rows] = await executeQuery<Machine[]>(query, params);
     return rows;
@@ -190,8 +176,8 @@ class MachineModel {
       data.department_id ?? null,
       data.area_id ?? null,
       data.location ?? null,
-      data.machine_type ?? "production",
-      data.status ?? "operational",
+      data.machine_type ?? 'production',
+      data.status ?? 'operational',
       data.purchase_date ?? null,
       data.installation_date ?? null,
       data.warranty_until ?? null,
@@ -212,39 +198,35 @@ class MachineModel {
   }
 
   // Update machine
-  async update(
-    id: number,
-    tenant_id: number,
-    data: Partial<Machine>,
-  ): Promise<boolean> {
+  async update(id: number, tenant_id: number, data: Partial<Machine>): Promise<boolean> {
     const fields = [];
     const params = [];
 
     // Build dynamic update query
     const updateFields = [
-      "name",
-      "model",
-      "manufacturer",
-      "serial_number",
-      "asset_number",
-      "department_id",
-      "area_id",
-      "location",
-      "machine_type",
-      "status",
-      "purchase_date",
-      "installation_date",
-      "warranty_until",
-      "last_maintenance",
-      "next_maintenance",
-      "operating_hours",
-      "production_capacity",
-      "energy_consumption",
-      "manual_url",
-      "qr_code",
-      "notes",
-      "updated_by",
-      "is_active",
+      'name',
+      'model',
+      'manufacturer',
+      'serial_number',
+      'asset_number',
+      'department_id',
+      'area_id',
+      'location',
+      'machine_type',
+      'status',
+      'purchase_date',
+      'installation_date',
+      'warranty_until',
+      'last_maintenance',
+      'next_maintenance',
+      'operating_hours',
+      'production_capacity',
+      'energy_consumption',
+      'manual_url',
+      'qr_code',
+      'notes',
+      'updated_by',
+      'is_active',
     ];
 
     for (const field of updateFields) {
@@ -259,11 +241,11 @@ class MachineModel {
     }
 
     // Always update updated_at
-    fields.push("updated_at = CURRENT_TIMESTAMP");
+    fields.push('updated_at = CURRENT_TIMESTAMP');
 
     const query = `
       UPDATE machines 
-      SET ${fields.join(", ")}
+      SET ${fields.join(', ')}
       WHERE id = ? AND tenant_id = ?
     `;
     params.push(id, tenant_id);
@@ -278,10 +260,7 @@ class MachineModel {
       DELETE FROM machines 
       WHERE id = ? AND tenant_id = ?
     `;
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      id,
-      tenant_id,
-    ]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
     return result.affectedRows > 0;
   }
 
@@ -292,10 +271,7 @@ class MachineModel {
       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `;
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      id,
-      tenant_id,
-    ]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
     return result.affectedRows > 0;
   }
 
@@ -306,10 +282,7 @@ class MachineModel {
       SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `;
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      id,
-      tenant_id,
-    ]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
     return result.affectedRows > 0;
   }
 
@@ -328,17 +301,12 @@ class MachineModel {
       WHERE mh.machine_id = ? AND mh.tenant_id = ?
       ORDER BY mh.performed_date DESC
     `;
-    const [rows] = await executeQuery<MachineMaintenanceHistory[]>(query, [
-      machine_id,
-      tenant_id,
-    ]);
+    const [rows] = await executeQuery<MachineMaintenanceHistory[]>(query, [machine_id, tenant_id]);
     return rows;
   }
 
   // Add maintenance record
-  async addMaintenanceRecord(
-    data: Partial<MachineMaintenanceHistory>,
-  ): Promise<number> {
+  async addMaintenanceRecord(data: Partial<MachineMaintenanceHistory>): Promise<number> {
     const query = `
       INSERT INTO machine_maintenance_history (
         tenant_id, machine_id, maintenance_type, performed_date,
@@ -359,7 +327,7 @@ class MachineModel {
       data.parts_replaced ?? null,
       data.cost ?? null,
       data.duration_hours ?? null,
-      data.status_after ?? "operational",
+      data.status_after ?? 'operational',
       data.next_maintenance_date ?? null,
       data.report_url ?? null,
       data.created_by ?? null,
@@ -373,15 +341,13 @@ class MachineModel {
       interface MachineUpdateData {
         last_maintenance?: Date;
         next_maintenance?: Date;
-        status?: Machine["status"];
+        status?: Machine['status'];
       }
       const updateData: MachineUpdateData = {
         last_maintenance: data.performed_date,
         next_maintenance: data.next_maintenance_date,
         status:
-          data.status_after === "needs_repair"
-            ? "repair"
-            : (data.status_after ?? "operational"),
+          data.status_after === 'needs_repair' ? 'repair' : (data.status_after ?? 'operational'),
       };
       if (
         data.machine_id != null &&
@@ -389,11 +355,7 @@ class MachineModel {
         data.tenant_id != null &&
         data.tenant_id !== 0
       ) {
-        await this.update(
-          data.machine_id,
-          data.tenant_id,
-          updateData as Partial<Machine>,
-        );
+        await this.update(data.machine_id, data.tenant_id, updateData as Partial<Machine>);
       }
     }
 
@@ -401,10 +363,7 @@ class MachineModel {
   }
 
   // Get upcoming maintenance
-  async getUpcomingMaintenance(
-    tenant_id: number,
-    days = 30,
-  ): Promise<Machine[]> {
+  async getUpcomingMaintenance(tenant_id: number, days = 30): Promise<Machine[]> {
     const query = `
       SELECT m.*, d.name as department_name
       FROM machines m

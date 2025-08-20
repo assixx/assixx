@@ -2,14 +2,13 @@
  * Survey Model
  * Handles database operations for surveys
  */
-
 import {
-  query as typedQuery,
-  getConnection,
-  RowDataPacket,
-  ResultSetHeader,
   PoolConnection,
-} from "../utils/db";
+  ResultSetHeader,
+  RowDataPacket,
+  getConnection,
+  query as typedQuery,
+} from '../utils/db';
 
 // Database interfaces
 interface DbSurvey extends RowDataPacket {
@@ -18,7 +17,7 @@ interface DbSurvey extends RowDataPacket {
   title: string;
   description?: string | null;
   created_by: number;
-  status: "draft" | "active" | "closed";
+  status: 'draft' | 'active' | 'closed';
   is_anonymous: boolean | number;
   start_date?: Date | null;
   end_date?: Date | null;
@@ -37,12 +36,7 @@ interface DbSurveyQuestion extends RowDataPacket {
   id: number;
   survey_id: number;
   question_text: string;
-  question_type:
-    | "text"
-    | "single_choice"
-    | "multiple_choice"
-    | "rating"
-    | "number";
+  question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
   is_required: boolean | number;
   order_position: number;
   created_at: Date;
@@ -59,7 +53,7 @@ interface DbSurveyQuestionOption extends RowDataPacket {
 interface DbSurveyAssignment extends RowDataPacket {
   id: number;
   survey_id: number;
-  assignment_type: "company" | "department" | "team" | "individual";
+  assignment_type: 'company' | 'department' | 'team' | 'individual';
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -78,25 +72,20 @@ interface DbSurveyTemplate extends RowDataPacket {
 interface SurveyCreateData {
   title: string;
   description?: string;
-  status?: "draft" | "active" | "closed";
+  status?: 'draft' | 'active' | 'closed';
   is_anonymous?: boolean;
   is_mandatory?: boolean;
   start_date?: Date | string | null;
   end_date?: Date | string | null;
   questions?: {
     question_text: string;
-    question_type:
-      | "text"
-      | "single_choice"
-      | "multiple_choice"
-      | "rating"
-      | "number";
+    question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
     is_required?: boolean;
     order_position?: number;
     options?: string[];
   }[];
   assignments?: {
-    type: "all_users" | "department" | "team" | "user";
+    type: 'all_users' | 'department' | 'team' | 'user';
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;
@@ -106,19 +95,14 @@ interface SurveyCreateData {
 interface SurveyUpdateData {
   title?: string;
   description?: string;
-  status?: "draft" | "active" | "closed";
+  status?: 'draft' | 'active' | 'closed';
   is_anonymous?: boolean;
   is_mandatory?: boolean;
   start_date?: Date | string | null;
   end_date?: Date | string | null;
   questions?: {
     question_text: string;
-    question_type:
-      | "text"
-      | "single_choice"
-      | "multiple_choice"
-      | "rating"
-      | "number";
+    question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
     is_required?: boolean;
     order_position?: number;
     options?: string[];
@@ -126,7 +110,7 @@ interface SurveyUpdateData {
 }
 
 interface SurveyFilters {
-  status?: "draft" | "active" | "closed";
+  status?: 'draft' | 'active' | 'closed';
   page?: number;
   limit?: number;
 }
@@ -193,7 +177,7 @@ export async function createSurvey(
         surveyData.title,
         surveyData.description ?? null,
         createdBy,
-        surveyData.status ?? "draft",
+        surveyData.status ?? 'draft',
         surveyData.is_anonymous ?? false,
         surveyData.is_mandatory ?? false,
         surveyData.start_date ?? null,
@@ -219,9 +203,9 @@ export async function createSurvey(
             question.question_type,
             question.is_required !== false,
             question.order_position ?? index + 1,
-            question.options && question.options.length > 0
-              ? JSON.stringify(question.options)
-              : null,
+            question.options && question.options.length > 0 ?
+              JSON.stringify(question.options)
+            : null,
           ],
         );
 
@@ -286,11 +270,11 @@ export async function getAllSurveysByTenant(
   const params: unknown[] = [tenantId];
 
   if (status) {
-    query += " AND s.status = ?";
+    query += ' AND s.status = ?';
     params.push(status);
   }
 
-  query += " GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
+  query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
 
   const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -356,11 +340,11 @@ export async function getAllSurveysByTenantForEmployee(
   const params: unknown[] = [tenantId, department_id, team_id, employeeUserId];
 
   if (status) {
-    query += " AND s.status = ?";
+    query += ' AND s.status = ?';
     params.push(status);
   }
 
-  query += " GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
+  query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
 
   const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -409,11 +393,11 @@ export async function getAllSurveysByTenantForAdmin(
   const params: unknown[] = [adminUserId, tenantId, adminUserId];
 
   if (status) {
-    query += " AND s.status = ?";
+    query += ' AND s.status = ?';
     params.push(status);
   }
 
-  query += " GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
+  query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
 
   const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -423,10 +407,7 @@ export async function getAllSurveysByTenantForAdmin(
 /**
  * Get survey by ID with questions and options
  */
-export async function getSurveyById(
-  surveyId: number,
-  tenantId: number,
-): Promise<DbSurvey | null> {
+export async function getSurveyById(surveyId: number, tenantId: number): Promise<DbSurvey | null> {
   const [surveys] = await typedQuery<DbSurvey[]>(
     `
       SELECT s.*, 
@@ -448,7 +429,7 @@ export async function getSurveyById(
   // Convert Buffer to string if needed
   if (
     survey.description != null &&
-    survey.description !== "" &&
+    survey.description !== '' &&
     Buffer.isBuffer(survey.description)
   ) {
     survey.description = survey.description.toString();
@@ -471,22 +452,15 @@ export async function getSurveyById(
       question.question_text = question.question_text.toString();
     }
 
-    if (
-      ["multiple_choice", "single_choice"].includes(question.question_type) &&
-      question.options
-    ) {
+    if (['multiple_choice', 'single_choice'].includes(question.question_type) && question.options) {
       // Options are stored as JSON in the database
       try {
         question.options =
-          typeof question.options === "string"
-            ? (JSON.parse(question.options) as DbSurveyQuestionOption[])
-            : question.options;
+          typeof question.options === 'string' ?
+            (JSON.parse(question.options) as DbSurveyQuestionOption[])
+          : question.options;
       } catch (error: unknown) {
-        console.error(
-          "Error parsing options for question:",
-          question.id,
-          error,
-        );
+        console.error('Error parsing options for question:', question.id, error);
         question.options = [];
       }
     }
@@ -542,7 +516,7 @@ export async function updateSurvey(
       [
         surveyData.title,
         surveyData.description ?? null,
-        surveyData.status ?? "draft",
+        surveyData.status ?? 'draft',
         surveyData.is_anonymous ?? false,
         surveyData.start_date ?? null,
         surveyData.end_date ?? null,
@@ -554,10 +528,7 @@ export async function updateSurvey(
     // Update questions if provided
     if (surveyData.questions) {
       // Delete existing questions and options (cascade will handle options)
-      await connection.query(
-        "DELETE FROM survey_questions WHERE survey_id = ?",
-        [surveyId],
-      );
+      await connection.query('DELETE FROM survey_questions WHERE survey_id = ?', [surveyId]);
 
       // Add new questions
       for (const [index, question] of surveyData.questions.entries()) {
@@ -574,9 +545,9 @@ export async function updateSurvey(
             question.question_type,
             question.is_required !== false,
             question.order_position ?? index + 1,
-            question.options && question.options.length > 0
-              ? JSON.stringify(question.options)
-              : null,
+            question.options && question.options.length > 0 ?
+              JSON.stringify(question.options)
+            : null,
           ],
         );
 
@@ -597,12 +568,9 @@ export async function updateSurvey(
 /**
  * Delete survey
  */
-export async function deleteSurvey(
-  surveyId: number,
-  tenantId: number,
-): Promise<boolean> {
+export async function deleteSurvey(surveyId: number, tenantId: number): Promise<boolean> {
   const [result] = await typedQuery<ResultSetHeader>(
-    "DELETE FROM surveys WHERE id = ? AND tenant_id = ?",
+    'DELETE FROM surveys WHERE id = ? AND tenant_id = ?',
     [surveyId, tenantId],
   );
   return result.affectedRows > 0;
@@ -611,9 +579,7 @@ export async function deleteSurvey(
 /**
  * Get survey templates
  */
-export async function getSurveyTemplates(
-  tenantId: number,
-): Promise<DbSurveyTemplate[]> {
+export async function getSurveyTemplates(tenantId: number): Promise<DbSurveyTemplate[]> {
   const [templates] = await typedQuery<DbSurveyTemplate[]>(
     `
       SELECT * FROM survey_templates
@@ -642,7 +608,7 @@ export async function createSurveyFromTemplate(
   );
 
   if (templates.length === 0) {
-    throw new Error("Template not found");
+    throw new Error('Template not found');
   }
 
   const template = templates[0];
@@ -655,8 +621,8 @@ export async function createSurveyFromTemplate(
   const surveyData: SurveyCreateData = {
     title: templateData.title,
     description: templateData.description,
-    questions: templateData.questions as SurveyCreateData["questions"],
-    status: "draft",
+    questions: templateData.questions as SurveyCreateData['questions'],
+    status: 'draft',
   };
 
   return createSurvey(surveyData, tenantId, createdBy);
@@ -688,7 +654,7 @@ export async function getSurveyStatistics(
     // Get survey details with questions
     const survey = await getSurveyById(surveyId, tenantId);
     if (!survey) {
-      throw new Error("Survey not found");
+      throw new Error('Survey not found');
     }
 
     // Get question statistics
@@ -725,13 +691,14 @@ export async function getSurveyStatistics(
       };
 
       if (
-        question.question_type === "single_choice" ||
-        question.question_type === "multiple_choice"
+        question.question_type === 'single_choice' ||
+        question.question_type === 'multiple_choice'
       ) {
         // Get option statistics from JSON stored options
-        const options = question.options
-          ? typeof question.options === "string"
-            ? (JSON.parse(question.options) as unknown[])
+        const options =
+          question.options ?
+            typeof question.options === 'string' ?
+              (JSON.parse(question.options) as unknown[])
             : (question.options as unknown[])
           : [];
 
@@ -750,9 +717,9 @@ export async function getSurveyStatistics(
         const optionCounts: Record<number, number> = {};
         answers.forEach((answer) => {
           const selectedOptions =
-            typeof answer.answer_options === "string"
-              ? (JSON.parse(answer.answer_options) as number[])
-              : (answer.answer_options as number[]);
+            typeof answer.answer_options === 'string' ?
+              (JSON.parse(answer.answer_options) as number[])
+            : (answer.answer_options as number[]);
 
           if (Array.isArray(selectedOptions)) {
             selectedOptions.forEach((optionIndex: number) => {
@@ -762,14 +729,12 @@ export async function getSurveyStatistics(
         });
 
         // Format option statistics
-        questionStat.options = options.map(
-          (optionText: unknown, index: number) => ({
-            option_id: index,
-            option_text: String(optionText),
-            count: optionCounts[index] ?? 0,
-          }),
-        );
-      } else if (question.question_type === "text") {
+        questionStat.options = options.map((optionText: unknown, index: number) => ({
+          option_id: index,
+          option_text: String(optionText),
+          count: optionCounts[index] ?? 0,
+        }));
+      } else if (question.question_type === 'text') {
         // Get text responses
         const [textResponses] = await typedQuery<RowDataPacket[]>(
           `
@@ -786,9 +751,9 @@ export async function getSurveyStatistics(
           [question.id],
         );
         questionStat.responses = textResponses.map((row) => ({
-          answer_text: String(row.answer_text ?? ""),
+          answer_text: String(row.answer_text ?? ''),
         }));
-      } else if (question.question_type === "rating") {
+      } else if (question.question_type === 'rating') {
         // Get numeric statistics
         const [numericStats] = await typedQuery<RowDataPacket[]>(
           `
@@ -817,22 +782,19 @@ export async function getSurveyStatistics(
     return {
       survey_id: surveyId,
       total_responses: Number.parseInt(String(stats[0].total_responses)) || 0,
-      completed_responses:
-        Number.parseInt(String(stats[0].completed_responses)) || 0,
+      completed_responses: Number.parseInt(String(stats[0].completed_responses)) || 0,
       completion_rate:
-        (stats[0].total_responses as number) > 0
-          ? Math.round(
-              ((stats[0].completed_responses as number) /
-                (stats[0].total_responses as number)) *
-                100,
-            )
-          : 0,
+        (stats[0].total_responses as number) > 0 ?
+          Math.round(
+            ((stats[0].completed_responses as number) / (stats[0].total_responses as number)) * 100,
+          )
+        : 0,
       first_response: stats[0].first_response as Date | null,
       last_response: stats[0].last_response as Date | null,
       questions: questionStats,
     };
   } catch (error: unknown) {
-    console.error("Error in getStatistics:", error);
+    console.error('Error in getStatistics:', error);
     throw error;
   }
 }

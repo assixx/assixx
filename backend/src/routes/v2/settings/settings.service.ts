@@ -2,23 +2,22 @@
  * Settings v2 Service
  * Business logic for system, tenant, and user settings management
  */
+import { RowDataPacket } from 'mysql2';
 
-import { RowDataPacket } from "mysql2";
+import { executeQuery } from '../../../database.js';
+import RootLog from '../../../models/rootLog';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 
-import { executeQuery } from "../../../database.js";
-import RootLog from "../../../models/rootLog";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-export type SettingType = "string" | "number" | "boolean" | "json";
+export type SettingType = 'string' | 'number' | 'boolean' | 'json';
 export type SettingCategory =
-  | "general"
-  | "appearance"
-  | "notifications"
-  | "security"
-  | "workflow"
-  | "integration"
-  | "other";
+  | 'general'
+  | 'appearance'
+  | 'notifications'
+  | 'security'
+  | 'workflow'
+  | 'integration'
+  | 'other';
 
 export interface SettingData {
   setting_key: string;
@@ -47,11 +46,11 @@ function parseSettingValue(
   if (value === null) return null;
 
   switch (type) {
-    case "boolean":
-      return value === "true" || value === "1";
-    case "number":
+    case 'boolean':
+      return value === 'true' || value === '1';
+    case 'number':
       return Number.parseFloat(value);
-    case "json":
+    case 'json':
       try {
         return JSON.parse(value);
       } catch {
@@ -72,11 +71,11 @@ function serializeSettingValue(
   type: SettingType,
 ): string {
   switch (type) {
-    case "boolean":
-      return value ? "true" : "false";
-    case "number":
+    case 'boolean':
+      return value ? 'true' : 'false';
+    case 'number':
       return String(value);
-    case "json":
+    case 'json':
       return JSON.stringify(value);
     default:
       return String(value);
@@ -90,13 +89,10 @@ function serializeSettingValue(
  * @param filters
  * @param userRole
  */
-export async function getSystemSettings(
-  filters: SettingFilters,
-  userRole: string,
-) {
+export async function getSystemSettings(filters: SettingFilters, userRole: string) {
   // Only root can access system settings
-  if (userRole !== "root") {
-    throw new ServiceError("FORBIDDEN", "Access denied", 403);
+  if (userRole !== 'root') {
+    throw new ServiceError('FORBIDDEN', 'Access denied', 403);
   }
 
   let query = `SELECT * FROM system_settings WHERE 1=1`;
@@ -144,12 +140,12 @@ export async function getSystemSetting(key: string, userRole: string) {
   );
 
   if (!setting) {
-    throw new ServiceError("NOT_FOUND", "Setting not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Setting not found', 404);
   }
 
   // Non-admin users can only access public settings
-  if (userRole !== "root" && userRole !== "admin" && !setting.is_public) {
-    throw new ServiceError("FORBIDDEN", "Access denied", 403);
+  if (userRole !== 'root' && userRole !== 'admin' && !setting.is_public) {
+    throw new ServiceError('FORBIDDEN', 'Access denied', 403);
   }
 
   const apiData = dbToApi(setting);
@@ -177,18 +173,11 @@ export async function upsertSystemSetting(
   userAgent?: string,
 ) {
   // Only root can modify system settings
-  if (userRole !== "root") {
-    throw new ServiceError(
-      "FORBIDDEN",
-      "Only root can modify system settings",
-      403,
-    );
+  if (userRole !== 'root') {
+    throw new ServiceError('FORBIDDEN', 'Only root can modify system settings', 403);
   }
 
-  const serializedValue = serializeSettingValue(
-    data.setting_value,
-    data.value_type ?? "string",
-  );
+  const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
   const [[existing]] = await executeQuery<RowDataPacket[]>(
@@ -204,8 +193,8 @@ export async function upsertSystemSetting(
        WHERE setting_key = ?`,
       [
         serializedValue,
-        data.value_type ?? "string",
-        data.category ?? "other",
+        data.value_type ?? 'string',
+        data.category ?? 'other',
         data.description ?? null,
         data.is_public ? 1 : 0,
         data.setting_key,
@@ -220,8 +209,8 @@ export async function upsertSystemSetting(
       [
         data.setting_key,
         serializedValue,
-        data.value_type ?? "string",
-        data.category ?? "other",
+        data.value_type ?? 'string',
+        data.category ?? 'other',
         data.description ?? null,
         data.is_public ? 1 : 0,
       ],
@@ -232,8 +221,8 @@ export async function upsertSystemSetting(
   await RootLog.create({
     tenant_id: tenantId, // Use the root user's tenant_id
     user_id: userId,
-    action: existing ? "system_setting_updated" : "system_setting_created",
-    entity_type: "system_setting",
+    action: existing ? 'system_setting_updated' : 'system_setting_created',
+    entity_type: 'system_setting',
     entity_id: 0,
     new_values: data as unknown as Record<string, unknown>,
     ip_address: ipAddress,
@@ -260,12 +249,8 @@ export async function deleteSystemSetting(
   ipAddress?: string,
   userAgent?: string,
 ) {
-  if (userRole !== "root") {
-    throw new ServiceError(
-      "FORBIDDEN",
-      "Only root can delete system settings",
-      403,
-    );
+  if (userRole !== 'root') {
+    throw new ServiceError('FORBIDDEN', 'Only root can delete system settings', 403);
   }
 
   const [[setting]] = await executeQuery<RowDataPacket[]>(
@@ -274,19 +259,17 @@ export async function deleteSystemSetting(
   );
 
   if (!setting) {
-    throw new ServiceError("NOT_FOUND", "Setting not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Setting not found', 404);
   }
 
-  await executeQuery(`DELETE FROM system_settings WHERE setting_key = ?`, [
-    key,
-  ]);
+  await executeQuery(`DELETE FROM system_settings WHERE setting_key = ?`, [key]);
 
   // Log the action for system settings
   await RootLog.create({
     tenant_id: tenantId, // Use the root user's tenant_id
     user_id: userId,
-    action: "system_setting_deleted",
-    entity_type: "system_setting",
+    action: 'system_setting_deleted',
+    entity_type: 'system_setting',
     entity_id: 0,
     old_values: setting,
     ip_address: ipAddress,
@@ -303,10 +286,7 @@ export async function deleteSystemSetting(
  * @param tenantId
  * @param filters
  */
-export async function getTenantSettings(
-  tenantId: number,
-  filters: SettingFilters,
-) {
+export async function getTenantSettings(tenantId: number, filters: SettingFilters) {
   let query = `SELECT * FROM tenant_settings WHERE tenant_id = ?`;
   const params: (string | number | boolean)[] = [tenantId];
 
@@ -344,7 +324,7 @@ export async function getTenantSetting(key: string, tenantId: number) {
   );
 
   if (!setting) {
-    throw new ServiceError("NOT_FOUND", "Setting not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Setting not found', 404);
   }
 
   const apiData = dbToApi(setting);
@@ -371,18 +351,11 @@ export async function upsertTenantSetting(
   userAgent?: string,
 ) {
   // Only admin and root can modify tenant settings
-  if (userRole !== "admin" && userRole !== "root") {
-    throw new ServiceError(
-      "FORBIDDEN",
-      "Only admins can modify tenant settings",
-      403,
-    );
+  if (userRole !== 'admin' && userRole !== 'root') {
+    throw new ServiceError('FORBIDDEN', 'Only admins can modify tenant settings', 403);
   }
 
-  const serializedValue = serializeSettingValue(
-    data.setting_value,
-    data.value_type ?? "string",
-  );
+  const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
   const [[existing]] = await executeQuery<RowDataPacket[]>(
@@ -398,8 +371,8 @@ export async function upsertTenantSetting(
        WHERE setting_key = ? AND tenant_id = ?`,
       [
         serializedValue,
-        data.value_type ?? "string",
-        data.category ?? "other",
+        data.value_type ?? 'string',
+        data.category ?? 'other',
         data.setting_key,
         tenantId,
       ],
@@ -414,8 +387,8 @@ export async function upsertTenantSetting(
         tenantId,
         data.setting_key,
         serializedValue,
-        data.value_type ?? "string",
-        data.category ?? "other",
+        data.value_type ?? 'string',
+        data.category ?? 'other',
       ],
     );
   }
@@ -424,8 +397,8 @@ export async function upsertTenantSetting(
   await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
-    action: existing ? "tenant_setting_updated" : "tenant_setting_created",
-    entity_type: "tenant_setting",
+    action: existing ? 'tenant_setting_updated' : 'tenant_setting_created',
+    entity_type: 'tenant_setting',
     entity_id: 0,
     new_values: data as unknown as Record<string, unknown>,
     ip_address: ipAddress,
@@ -452,12 +425,8 @@ export async function deleteTenantSetting(
   ipAddress?: string,
   userAgent?: string,
 ) {
-  if (userRole !== "admin" && userRole !== "root") {
-    throw new ServiceError(
-      "FORBIDDEN",
-      "Only admins can delete tenant settings",
-      403,
-    );
+  if (userRole !== 'admin' && userRole !== 'root') {
+    throw new ServiceError('FORBIDDEN', 'Only admins can delete tenant settings', 403);
   }
 
   const [[setting]] = await executeQuery<RowDataPacket[]>(
@@ -466,20 +435,20 @@ export async function deleteTenantSetting(
   );
 
   if (!setting) {
-    throw new ServiceError("NOT_FOUND", "Setting not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Setting not found', 404);
   }
 
-  await executeQuery(
-    `DELETE FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
-    [key, tenantId],
-  );
+  await executeQuery(`DELETE FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`, [
+    key,
+    tenantId,
+  ]);
 
   // Log the action
   await RootLog.create({
     tenant_id: tenantId,
     user_id: userId,
-    action: "tenant_setting_deleted",
-    entity_type: "tenant_setting",
+    action: 'tenant_setting_deleted',
+    entity_type: 'tenant_setting',
     entity_id: 0,
     old_values: setting,
     ip_address: ipAddress,
@@ -534,7 +503,7 @@ export async function getUserSetting(key: string, userId: number) {
   );
 
   if (!setting) {
-    throw new ServiceError("NOT_FOUND", "Setting not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Setting not found', 404);
   }
 
   const apiData = dbToApi(setting);
@@ -556,10 +525,7 @@ export async function upsertUserSetting(
   _ipAddress?: string,
   _userAgent?: string,
 ) {
-  const serializedValue = serializeSettingValue(
-    data.setting_value,
-    data.value_type ?? "string",
-  );
+  const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
   const [[existing]] = await executeQuery<RowDataPacket[]>(
@@ -575,8 +541,8 @@ export async function upsertUserSetting(
        WHERE setting_key = ? AND user_id = ?`,
       [
         serializedValue,
-        data.value_type ?? "string",
-        data.category ?? "other",
+        data.value_type ?? 'string',
+        data.category ?? 'other',
         data.setting_key,
         userId,
       ],
@@ -591,8 +557,8 @@ export async function upsertUserSetting(
         userId,
         data.setting_key,
         serializedValue,
-        data.value_type ?? "string",
-        data.category ?? "other",
+        data.value_type ?? 'string',
+        data.category ?? 'other',
       ],
     );
   }
@@ -612,13 +578,13 @@ export async function deleteUserSetting(key: string, userId: number) {
   );
 
   if (!setting) {
-    throw new ServiceError("NOT_FOUND", "Setting not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Setting not found', 404);
   }
 
-  await executeQuery(
-    `DELETE FROM user_settings WHERE setting_key = ? AND user_id = ?`,
-    [key, userId],
-  );
+  await executeQuery(`DELETE FROM user_settings WHERE setting_key = ? AND user_id = ?`, [
+    key,
+    userId,
+  ]);
 
   return { success: true };
 }
@@ -634,12 +600,8 @@ export async function getAdminUserSettings(
   tenantId: number,
   userRole: string,
 ) {
-  if (userRole !== "admin" && userRole !== "root") {
-    throw new ServiceError(
-      "FORBIDDEN",
-      "Only admins can view other users' settings",
-      403,
-    );
+  if (userRole !== 'admin' && userRole !== 'root') {
+    throw new ServiceError('FORBIDDEN', "Only admins can view other users' settings", 403);
   }
 
   // Verify user belongs to same tenant
@@ -649,7 +611,7 @@ export async function getAdminUserSettings(
   );
 
   if (!user) {
-    throw new ServiceError("NOT_FOUND", "User not found", 404);
+    throw new ServiceError('NOT_FOUND', 'User not found', 404);
   }
 
   return getUserSettings(targetUserId, {});
@@ -661,36 +623,36 @@ export async function getAdminUserSettings(
 export async function getSettingsCategories() {
   return [
     {
-      key: "general",
-      label: "General",
-      description: "General application settings",
+      key: 'general',
+      label: 'General',
+      description: 'General application settings',
     },
     {
-      key: "appearance",
-      label: "Appearance",
-      description: "UI and theme settings",
+      key: 'appearance',
+      label: 'Appearance',
+      description: 'UI and theme settings',
     },
     {
-      key: "notifications",
-      label: "Notifications",
-      description: "Notification preferences",
+      key: 'notifications',
+      label: 'Notifications',
+      description: 'Notification preferences',
     },
     {
-      key: "security",
-      label: "Security",
-      description: "Security and privacy settings",
+      key: 'security',
+      label: 'Security',
+      description: 'Security and privacy settings',
     },
     {
-      key: "workflow",
-      label: "Workflow",
-      description: "Workflow and automation settings",
+      key: 'workflow',
+      label: 'Workflow',
+      description: 'Workflow and automation settings',
     },
     {
-      key: "integration",
-      label: "Integration",
-      description: "Third-party integrations",
+      key: 'integration',
+      label: 'Integration',
+      description: 'Third-party integrations',
     },
-    { key: "other", label: "Other", description: "Miscellaneous settings" },
+    { key: 'other', label: 'Other', description: 'Miscellaneous settings' },
   ];
 }
 
@@ -706,7 +668,7 @@ export async function getSettingsCategories() {
  * @param userAgent
  */
 export async function bulkUpdateSettings(
-  type: "system" | "tenant" | "user",
+  type: 'system' | 'tenant' | 'user',
   settings: SettingData[],
   contextId: number, // tenantId or userId
   userId: number,
@@ -720,27 +682,13 @@ export async function bulkUpdateSettings(
   for (const setting of settings) {
     try {
       switch (type) {
-        case "system":
-          await upsertSystemSetting(
-            setting,
-            userId,
-            userTenantId,
-            userRole,
-            ipAddress,
-            userAgent,
-          );
+        case 'system':
+          await upsertSystemSetting(setting, userId, userTenantId, userRole, ipAddress, userAgent);
           break;
-        case "tenant":
-          await upsertTenantSetting(
-            setting,
-            contextId,
-            userId,
-            userRole,
-            ipAddress,
-            userAgent,
-          );
+        case 'tenant':
+          await upsertTenantSetting(setting, contextId, userId, userRole, ipAddress, userAgent);
           break;
-        case "user":
+        case 'user':
           await upsertUserSetting(setting, contextId, ipAddress, userAgent);
           break;
       }
@@ -749,7 +697,7 @@ export async function bulkUpdateSettings(
       results.push({
         key: setting.setting_key,
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

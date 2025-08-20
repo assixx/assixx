@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from 'crypto';
 
 /**
  * Pagination metadata
@@ -48,16 +48,13 @@ export interface ApiErrorResponse {
  * @param message - Optional message (deprecated, kept for compatibility)
  * @returns Formatted success response
  */
-export function successResponse<T>(
-  data: T,
-  _message?: string,
-): ApiSuccessResponse<T> {
+export function successResponse<T>(data: T, _message?: string): ApiSuccessResponse<T> {
   return {
     success: true,
     data,
     meta: {
       timestamp: new Date().toISOString(),
-      version: "2.0",
+      version: '2.0',
     },
   };
 }
@@ -97,16 +94,13 @@ export function errorResponse(
  * @param pagination - Pagination metadata
  * @returns Formatted success response with pagination
  */
-export function paginatedResponse<T>(
-  data: T,
-  pagination: PaginationMeta,
-): ApiSuccessResponse<T> {
+export function paginatedResponse<T>(data: T, pagination: PaginationMeta): ApiSuccessResponse<T> {
   return {
     success: true,
     data,
     meta: {
       timestamp: new Date().toISOString(),
-      version: "2.0",
+      version: '2.0',
       pagination,
     },
   };

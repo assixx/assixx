@@ -17,12 +17,7 @@
   "experimentalTernaries": true,
   "singleAttributePerLine": false,
   "plugins": ["@trivago/prettier-plugin-sort-imports"],
-  "importOrder": [
-    "^react",
-    "^@?\\w",
-    "^(@/|src/)",
-    "^[./]"
-  ],
+  "importOrder": ["^react", "^@?\\w", "^(@/|src/)", "^[./]"],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
   "overrides": [

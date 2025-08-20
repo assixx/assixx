@@ -2,20 +2,18 @@
  * Shift Controller
  * Handles shift planning and scheduling operations
  */
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
 
-import { Pool } from "mysql2/promise";
-
-import { Request, Response } from "express";
-
-import shiftService from "../services/shift.service";
-import type { AuthenticatedRequest } from "../types/request.types";
+import shiftService from '../services/shift.service';
+import type { AuthenticatedRequest } from '../types/request.types';
 
 // Error Messages
 const ERROR_MESSAGES = {
-  TENANT_DB_NOT_AVAILABLE: "Tenant database not available",
-  SHIFT_NOT_FOUND: "Shift not found",
-  INVALID_ID: "Invalid ID",
-  UNKNOWN_ERROR: "Unknown error",
+  TENANT_DB_NOT_AVAILABLE: 'Tenant database not available',
+  SHIFT_NOT_FOUND: 'Shift not found',
+  INVALID_ID: 'Invalid ID',
+  UNKNOWN_ERROR: 'Unknown error',
 } as const;
 
 // Extended Request interface with tenant database
@@ -37,7 +35,7 @@ interface ShiftCreateRequest extends TenantRequest {
     position?: string;
     department_id?: number;
     location?: string;
-    status?: "scheduled" | "confirmed" | "completed" | "cancelled";
+    status?: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
     notes?: string;
     created_by: number;
     hourly_rate?: number;
@@ -57,7 +55,7 @@ interface ShiftUpdateRequest extends TenantRequest {
     position?: string;
     department_id?: number;
     location?: string;
-    status?: "scheduled" | "confirmed" | "completed" | "cancelled";
+    status?: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
     notes?: string;
     hourly_rate?: number;
   };
@@ -78,14 +76,14 @@ interface ShiftQueryRequest extends TenantRequest {
     user_id?: string;
     department_id?: string;
     position?: string;
-    status?: "scheduled" | "confirmed" | "completed" | "cancelled";
+    status?: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
     start_date?: string;
     end_date?: string;
     location?: string;
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
@@ -108,28 +106,23 @@ class ShiftController {
 
       const filters = {
         department_id:
-          req.query.department_id != null && req.query.department_id !== ""
-            ? Number.parseInt(req.query.department_id, 10)
-            : undefined,
+          req.query.department_id != null && req.query.department_id !== '' ?
+            Number.parseInt(req.query.department_id, 10)
+          : undefined,
         team_id: undefined as number | undefined, // Not in query but expected by ShiftFilters
         start_date: req.query.start_date,
         end_date: req.query.end_date,
-        status: req.query.status as
-          | "draft"
-          | "published"
-          | "archived"
-          | undefined,
+        status: req.query.status as 'draft' | 'published' | 'archived' | undefined,
         plan_id: undefined as number | undefined,
         template_id: undefined as number | undefined,
       };
       const result = shiftService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in ShiftController.getAll:", error);
+      console.error('Error in ShiftController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message:
-          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -155,16 +148,15 @@ class ShiftController {
 
       const result = shiftService.getById(req.tenantDb, id);
       if (!result) {
-        res.status(404).json({ error: "Nicht gefunden" });
+        res.status(404).json({ error: 'Nicht gefunden' });
         return;
       }
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in ShiftController.getById:", error);
+      console.error('Error in ShiftController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message:
-          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -185,7 +177,7 @@ class ShiftController {
       const shift_plan_id = req.body.shift_plan_id ?? req.body.plan_id;
 
       if (shift_plan_id == null || shift_plan_id === 0) {
-        res.status(400).json({ error: "Shift plan ID is required" });
+        res.status(400).json({ error: 'Shift plan ID is required' });
         return;
       }
 
@@ -198,11 +190,10 @@ class ShiftController {
       const result = shiftService.create(req.tenantDb, createData);
       res.status(201).json(result);
     } catch (error: unknown) {
-      console.error("Error in ShiftController.create:", error);
+      console.error('Error in ShiftController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message:
-          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -229,11 +220,10 @@ class ShiftController {
       const result = shiftService.update(req.tenantDb, id, req.body);
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in ShiftController.update:", error);
+      console.error('Error in ShiftController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message:
-          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }
@@ -260,11 +250,10 @@ class ShiftController {
       shiftService.delete(req.tenantDb, id);
       res.status(204).send();
     } catch (error: unknown) {
-      console.error("Error in ShiftController.delete:", error);
+      console.error('Error in ShiftController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message:
-          error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
       });
     }
   }

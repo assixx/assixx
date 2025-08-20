@@ -2,8 +2,7 @@
  * Field Mapper Utility
  * Converts between database snake_case and API camelCase
  */
-
-import lodash from "lodash";
+import lodash from 'lodash';
 
 // Wrap lodash methods to avoid unbound method issues
 const camelCase = (str: string): string => lodash.camelCase(str);
@@ -30,23 +29,19 @@ export const fieldMapper = {
         result[camelKey] = null;
       }
       // Handle boolean conversions (MySQL returns 0/1)
-      else if (
-        key.startsWith("is_") ||
-        key.startsWith("has_") ||
-        key === "active"
-      ) {
+      else if (key.startsWith('is_') || key.startsWith('has_') || key === 'active') {
         result[camelKey] = Boolean(value);
       }
       // Recursively handle nested objects
-      else if (value && typeof value === "object" && !Array.isArray(value)) {
+      else if (value && typeof value === 'object' && !Array.isArray(value)) {
         result[camelKey] = this.dbToApi(value as Record<string, unknown>);
       }
       // Handle arrays
       else if (Array.isArray(value)) {
         result[camelKey] = value.map((item) =>
-          item != null && typeof item === "object"
-            ? this.dbToApi(item as Record<string, unknown>)
-            : (item as unknown),
+          item != null && typeof item === 'object' ?
+            this.dbToApi(item as Record<string, unknown>)
+          : (item as unknown),
         );
       } else {
         result[camelKey] = value;
@@ -68,10 +63,7 @@ export const fieldMapper = {
       const snakeKey = snakeCase(key);
 
       // Handle Date strings
-      if (
-        typeof value === "string" &&
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)
-      ) {
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
         result[snakeKey] = value;
       }
       // Handle null values
@@ -79,15 +71,15 @@ export const fieldMapper = {
         result[snakeKey] = null;
       }
       // Recursively handle nested objects
-      else if (value && typeof value === "object" && !Array.isArray(value)) {
+      else if (value && typeof value === 'object' && !Array.isArray(value)) {
         result[snakeKey] = this.apiToDb(value as Record<string, unknown>);
       }
       // Handle arrays
       else if (Array.isArray(value)) {
         result[snakeKey] = value.map((item) =>
-          item != null && typeof item === "object"
-            ? this.apiToDb(item as Record<string, unknown>)
-            : (item as unknown),
+          item != null && typeof item === 'object' ?
+            this.apiToDb(item as Record<string, unknown>)
+          : (item as unknown),
         );
       } else {
         result[snakeKey] = value;
@@ -100,13 +92,13 @@ export const fieldMapper = {
   /**
    * Map specific field names (for exceptions to the camelCase rule)
    */
-  mapField(field: string, direction: "toApi" | "toDb"): string {
+  mapField(field: string, direction: 'toApi' | 'toDb'): string {
     const customMappings: Record<string, string> = {
       // Add any custom mappings here if needed
       // e.g., 'db_field': 'apiField'
     };
 
-    if (direction === "toApi") {
+    if (direction === 'toApi') {
       return customMappings[field] || camelCase(field);
     } else {
       // Reverse lookup for toDb

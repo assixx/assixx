@@ -6,14 +6,12 @@
  *   - name: Surveys v2
  *     description: Survey management API v2
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import * as surveysController from "./surveys.controller.js";
-import { surveysValidation } from "./surveys.validation.js";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as surveysController from './surveys.controller.js';
+import { surveysValidation } from './surveys.validation.js';
 
 const router = Router();
 
@@ -72,7 +70,7 @@ const router = Router();
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/",
+  '/',
   authenticateV2,
   surveysValidation.listSurveys,
   typed.auth(surveysController.listSurveys),
@@ -105,7 +103,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/templates",
+  '/templates',
   authenticateV2,
   surveysValidation.getTemplates,
   typed.auth(surveysController.getTemplates),
@@ -151,7 +149,7 @@ router.get(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.post(
-  "/templates/:templateId",
+  '/templates/:templateId',
   authenticateV2,
   surveysValidation.createFromTemplate,
   typed.auth(surveysController.createFromTemplate),
@@ -193,7 +191,7 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2,
   surveysValidation.getSurveyById,
   typed.auth(surveysController.getSurveyById),
@@ -234,7 +232,7 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post(
-  "/",
+  '/',
   authenticateV2,
   surveysValidation.createSurvey,
   typed.auth(surveysController.createSurvey),
@@ -290,7 +288,7 @@ router.post(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2,
   surveysValidation.updateSurvey,
   typed.auth(surveysController.updateSurvey),
@@ -341,7 +339,7 @@ router.put(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2,
   surveysValidation.deleteSurvey,
   typed.auth(surveysController.deleteSurvey),
@@ -383,7 +381,7 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id/statistics",
+  '/:id/statistics',
   authenticateV2,
   surveysValidation.getStatistics,
   typed.auth(surveysController.getStatistics),

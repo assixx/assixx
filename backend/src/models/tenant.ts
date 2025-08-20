@@ -1,19 +1,18 @@
-import { randomBytes } from "crypto";
-import * as fs from "fs/promises";
-import * as path from "path";
+import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
-import bcrypt from "bcryptjs";
-
-import { DatabaseTenant } from "../types/models";
-import { TenantTrialStatus } from "../types/tenant.types";
+import { DatabaseTenant } from '../types/models';
+import { TenantTrialStatus } from '../types/tenant.types';
 import {
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
   query as executeQuery,
   getConnection,
-  RowDataPacket,
-  ResultSetHeader,
-  PoolConnection,
-} from "../utils/db";
-import { logger } from "../utils/logger";
+} from '../utils/db';
+import { logger } from '../utils/logger';
 
 // Extended interface for internal use
 interface TenantTrialStatusComplete extends TenantTrialStatus {
@@ -53,12 +52,10 @@ interface TenantCreateResult {
 }
 
 // Neuen Tenant erstellen (Self-Service)
-export async function createTenant(
-  tenantData: TenantCreateData,
-): Promise<TenantCreateResult> {
-  logger.info("[DEBUG] Starting tenant creation...");
+export async function createTenant(tenantData: TenantCreateData): Promise<TenantCreateResult> {
+  logger.info('[DEBUG] Starting tenant creation...');
   const connection = await getConnection();
-  logger.info("[DEBUG] Got database connection");
+  logger.info('[DEBUG] Got database connection');
 
   try {
     await connection.beginTransaction();
@@ -77,12 +74,12 @@ export async function createTenant(
 
     // 1. Prüfe ob Subdomain bereits existiert
     const [existing] = await connection.query<RowDataPacket[]>(
-      "SELECT id FROM tenants WHERE subdomain = ?",
+      'SELECT id FROM tenants WHERE subdomain = ?',
       [subdomain],
     );
 
     if (existing.length > 0) {
-      throw new Error("Diese Subdomain ist bereits vergeben");
+      throw new Error('Diese Subdomain ist bereits vergeben');
     }
 
     // 2. Erstelle Tenant
@@ -92,15 +89,7 @@ export async function createTenant(
     const [tenantResult] = await connection.query<ResultSetHeader>(
       `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        company_name,
-        subdomain,
-        email,
-        phone,
-        address,
-        trialEndsAt,
-        admin_email,
-      ],
+      [company_name, subdomain, email, phone, address, trialEndsAt, admin_email],
     );
 
     const tenantId = tenantResult.insertId;
@@ -121,7 +110,7 @@ export async function createTenant(
       // 65000 = 65 * 1000, so values 0-64999 map uniformly to 0-999
     } while (randomInt >= 65000);
     randomInt = randomInt % 1000; // Now safe to use modulo without bias
-    const random = randomInt.toString().padStart(3, "0");
+    const random = randomInt.toString().padStart(3, '0');
     const employeeNumber = `TEMP-${timestamp}${random}`;
 
     const [userResult] = await connection.query<ResultSetHeader>(
@@ -142,26 +131,23 @@ export async function createTenant(
     const userId = userResult.insertId;
 
     // Generate employee_id using the same format as in root.ts
-    const { generateEmployeeId } = await import("../utils/employeeIdGenerator");
-    const employeeId = generateEmployeeId(subdomain, "root", userId);
+    const { generateEmployeeId } = await import('../utils/employeeIdGenerator');
+    const employeeId = generateEmployeeId(subdomain, 'root', userId);
 
     // Update user with generated employee_id
-    await connection.query("UPDATE users SET employee_id = ? WHERE id = ?", [
-      employeeId,
-      userId,
-    ]);
+    await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, userId]);
 
     // 4. Verknüpfe Admin mit Tenant
     await connection.query(
-      "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, TRUE)",
+      'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, TRUE)',
       [tenantId, userId],
     );
 
     // 5. Weise Basic-Plan zu
     // Hole Basic Plan ID
     const [plans] = await connection.query<RowDataPacket[]>(
-      "SELECT id FROM plans WHERE code = ? AND is_active = true",
-      ["basic"],
+      'SELECT id FROM plans WHERE code = ? AND is_active = true',
+      ['basic'],
     );
 
     if (plans.length > 0) {
@@ -175,10 +161,10 @@ export async function createTenant(
       );
 
       // Update tenant mit current_plan_id
-      await connection.query(
-        "UPDATE tenants SET current_plan_id = ? WHERE id = ?",
-        [basicPlanId, tenantId],
-      );
+      await connection.query('UPDATE tenants SET current_plan_id = ? WHERE id = ?', [
+        basicPlanId,
+        tenantId,
+      ]);
     }
 
     // 6. Aktiviere Trial-Features
@@ -196,9 +182,7 @@ export async function createTenant(
     };
   } catch (error: unknown) {
     await connection.rollback();
-    logger.error(
-      `Fehler beim Erstellen des Tenants: ${(error as Error).message}`,
-    );
+    logger.error(`Fehler beim Erstellen des Tenants: ${(error as Error).message}`);
     throw error;
   } finally {
     connection.release();
@@ -214,9 +198,7 @@ async function activateTrialFeatures(
 
   // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
   // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
-  const [features] = await conn.query<RowDataPacket[]>(
-    `SELECT id FROM features`,
-  );
+  const [features] = await conn.query<RowDataPacket[]>(`SELECT id FROM features`);
 
   // Aktiviere alle Features für 14 Tage Trial
   for (const feature of features) {
@@ -229,50 +211,44 @@ async function activateTrialFeatures(
 }
 
 // Subdomain validieren
-export function validateTenantSubdomain(
-  subdomain: string,
-): SubdomainValidationResult {
+export function validateTenantSubdomain(subdomain: string): SubdomainValidationResult {
   // Nur Buchstaben, Zahlen und Bindestriche
   const regex = /^[-0-9a-z]+$/;
 
   if (!regex.test(subdomain)) {
     return {
       valid: false,
-      error: "Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt",
+      error: 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt',
     };
   }
 
   if (subdomain.length < 3 || subdomain.length > 50) {
     return {
       valid: false,
-      error: "Subdomain muss zwischen 3 und 50 Zeichen lang sein",
+      error: 'Subdomain muss zwischen 3 und 50 Zeichen lang sein',
     };
   }
 
   // Reservierte Subdomains
-  const reserved = ["www", "api", "admin", "app", "mail", "ftp", "test", "dev"];
+  const reserved = ['www', 'api', 'admin', 'app', 'mail', 'ftp', 'test', 'dev'];
   if (reserved.includes(subdomain)) {
-    return { valid: false, error: "Diese Subdomain ist reserviert" };
+    return { valid: false, error: 'Diese Subdomain ist reserviert' };
   }
 
   return { valid: true };
 }
 
 // Prüfe ob Subdomain verfügbar ist
-export async function isTenantSubdomainAvailable(
-  subdomain: string,
-): Promise<boolean> {
+export async function isTenantSubdomainAvailable(subdomain: string): Promise<boolean> {
   const [result] = await executeQuery<RowDataPacket[]>(
-    "SELECT id FROM tenants WHERE subdomain = ?",
+    'SELECT id FROM tenants WHERE subdomain = ?',
     [subdomain],
   );
   return result.length === 0;
 }
 
 // Finde Tenant by Subdomain
-export async function findTenantBySubdomain(
-  subdomain: string,
-): Promise<DatabaseTenant | null> {
+export async function findTenantBySubdomain(subdomain: string): Promise<DatabaseTenant | null> {
   const [tenants] = await executeQuery<DbTenant[]>(
     'SELECT * FROM tenants WHERE subdomain = ? AND status != "cancelled"',
     [subdomain],
@@ -281,9 +257,7 @@ export async function findTenantBySubdomain(
 }
 
 // Finde Tenant by ID
-export async function findTenantById(
-  tenantId: number,
-): Promise<DatabaseTenant | null> {
+export async function findTenantById(tenantId: number): Promise<DatabaseTenant | null> {
   const [tenants] = await executeQuery<DbTenant[]>(
     'SELECT * FROM tenants WHERE id = ? AND status != "cancelled"',
     [tenantId],
@@ -309,7 +283,7 @@ export async function checkTenantTrialStatus(
   }
 
   const [result] = await executeQuery<TrialResult[]>(
-    "SELECT trial_ends_at, status FROM tenants WHERE id = ?",
+    'SELECT trial_ends_at, status FROM tenants WHERE id = ?',
     [tenantId],
   );
 
@@ -320,11 +294,9 @@ export async function checkTenantTrialStatus(
   const trialEnd = new Date(tenant.trial_ends_at);
 
   return {
-    isInTrial: tenant.status === "trial",
+    isInTrial: tenant.status === 'trial',
     trialEndsAt: trialEnd,
-    daysRemaining: Math.ceil(
-      (trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-    ),
+    daysRemaining: Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
     isExpired: now > trialEnd,
   };
 }
@@ -351,15 +323,11 @@ export async function upgradeTenantToPlan(
 }
 
 // Plan-Features aktivieren (private function)
-async function activatePlanFeatures(
-  tenantId: number,
-  plan: string,
-): Promise<void> {
+async function activatePlanFeatures(tenantId: number, plan: string): Promise<void> {
   // Deaktiviere alle aktuellen Features
-  await executeQuery(
-    "UPDATE tenant_features SET is_active = FALSE WHERE tenant_id = ?",
-    [tenantId],
-  );
+  await executeQuery('UPDATE tenant_features SET is_active = FALSE WHERE tenant_id = ?', [
+    tenantId,
+  ]);
 
   // Hole Features für den Plan
   const [planFeatures] = await executeQuery<DbFeature[]>(
@@ -392,8 +360,8 @@ async function safeDelete(
   } catch (error: unknown) {
     if (
       error instanceof Error &&
-      "code" in error &&
-      (error as Error & { code: string }).code === "ER_NO_SUCH_TABLE"
+      'code' in error &&
+      (error as Error & { code: string }).code === 'ER_NO_SUCH_TABLE'
     ) {
       logger.debug(`Table not found, skipping: ${error.message}`);
     } else {
@@ -413,7 +381,7 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
 
     // 1. Get all user IDs for this tenant (for file cleanup)
     const [users] = await connection.query<RowDataPacket[]>(
-      "SELECT id FROM users WHERE tenant_id = ?",
+      'SELECT id FROM users WHERE tenant_id = ?',
       [tenantId],
     );
     const userIds = users.map((u) => u.id as number);
@@ -423,180 +391,119 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
     // Delete chat-related data
     await safeDelete(
       connection,
-      "DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))",
+      'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))',
       [userIds.length > 0 ? userIds : [0]],
     );
-    await safeDelete(
-      connection,
-      "DELETE FROM messages WHERE sender_id IN (?)",
-      [userIds.length > 0 ? userIds : [0]],
-    );
-    await safeDelete(
-      connection,
-      "DELETE FROM conversation_participants WHERE user_id IN (?)",
-      [userIds.length > 0 ? userIds : [0]],
-    );
-    await safeDelete(
-      connection,
-      "DELETE FROM conversations WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM messages WHERE sender_id IN (?)', [
+      userIds.length > 0 ? userIds : [0],
+    ]);
+    await safeDelete(connection, 'DELETE FROM conversation_participants WHERE user_id IN (?)', [
+      userIds.length > 0 ? userIds : [0],
+    ]);
+    await safeDelete(connection, 'DELETE FROM conversations WHERE tenant_id = ?', [tenantId]);
 
     // Delete survey-related data
     await safeDelete(
       connection,
-      "DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))",
+      'DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
+      'DELETE FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))",
+      'DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
+      'DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM survey_assignments WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
+      'DELETE FROM survey_assignments WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM survey_reminders WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
+      'DELETE FROM survey_reminders WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
       [tenantId],
     );
-    await safeDelete(
-      connection,
-      "DELETE FROM survey_templates WHERE tenant_id = ?",
-      [tenantId],
-    );
-    await safeDelete(connection, "DELETE FROM surveys WHERE tenant_id = ?", [
-      tenantId,
-    ]);
+    await safeDelete(connection, 'DELETE FROM survey_templates WHERE tenant_id = ?', [tenantId]);
+    await safeDelete(connection, 'DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
 
     // Delete KVP-related data
     await safeDelete(
       connection,
-      "DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)",
+      'DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)',
       [tenantId],
     );
-    await safeDelete(
-      connection,
-      "DELETE FROM kvp_suggestions WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM kvp_suggestions WHERE tenant_id = ?', [tenantId]);
 
     // Delete shift-related data
     await safeDelete(
       connection,
-      "DELETE FROM shift_trades WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
+      'DELETE FROM shift_trades WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM shift_assignments WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
+      'DELETE FROM shift_assignments WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
       [tenantId],
     );
     await safeDelete(
       connection,
-      "DELETE FROM shift_notes WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
+      'DELETE FROM shift_notes WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
       [tenantId],
     );
-    await safeDelete(connection, "DELETE FROM shifts WHERE tenant_id = ?", [
-      tenantId,
-    ]);
-    await safeDelete(
-      connection,
-      "DELETE FROM shift_templates WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
+    await safeDelete(connection, 'DELETE FROM shift_templates WHERE tenant_id = ?', [tenantId]);
     // Delete shift_types
-    await safeDelete(
-      connection,
-      "DELETE FROM shift_types WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM shift_types WHERE tenant_id = ?', [tenantId]);
 
     // Delete calendar events
-    await safeDelete(
-      connection,
-      "DELETE FROM calendar_events WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM calendar_events WHERE tenant_id = ?', [tenantId]);
 
     // Delete blackboard entries
-    await safeDelete(
-      connection,
-      "DELETE FROM blackboard_entries WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
 
     // Delete documents
-    await safeDelete(connection, "DELETE FROM documents WHERE tenant_id = ?", [
-      tenantId,
-    ]);
+    await safeDelete(connection, 'DELETE FROM documents WHERE tenant_id = ?', [tenantId]);
 
     // Delete admin logs (using admin_id column)
-    await safeDelete(
-      connection,
-      "DELETE FROM admin_logs WHERE admin_id IN (?)",
-      [userIds.length > 0 ? userIds : [0]],
-    );
+    await safeDelete(connection, 'DELETE FROM admin_logs WHERE admin_id IN (?)', [
+      userIds.length > 0 ? userIds : [0],
+    ]);
 
     // Delete feature assignments
-    await safeDelete(
-      connection,
-      "DELETE FROM tenant_features WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM tenant_features WHERE tenant_id = ?', [tenantId]);
 
     // Delete department/team relationships
-    await safeDelete(
-      connection,
-      "DELETE FROM user_teams WHERE user_id IN (?)",
-      [userIds.length > 0 ? userIds : [0]],
-    );
-    await safeDelete(
-      connection,
-      "DELETE FROM user_departments WHERE user_id IN (?)",
-      [userIds.length > 0 ? userIds : [0]],
-    );
+    await safeDelete(connection, 'DELETE FROM user_teams WHERE user_id IN (?)', [
+      userIds.length > 0 ? userIds : [0],
+    ]);
+    await safeDelete(connection, 'DELETE FROM user_departments WHERE user_id IN (?)', [
+      userIds.length > 0 ? userIds : [0],
+    ]);
 
     // Delete teams and departments
-    await safeDelete(connection, "DELETE FROM teams WHERE tenant_id = ?", [
-      tenantId,
-    ]);
-    await safeDelete(
-      connection,
-      "DELETE FROM departments WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
+    await safeDelete(connection, 'DELETE FROM departments WHERE tenant_id = ?', [tenantId]);
 
     // Delete tenant admin associations
-    await safeDelete(
-      connection,
-      "DELETE FROM tenant_admins WHERE tenant_id = ?",
-      [tenantId],
-    );
+    await safeDelete(connection, 'DELETE FROM tenant_admins WHERE tenant_id = ?', [tenantId]);
 
     // Delete all users
-    await safeDelete(connection, "DELETE FROM users WHERE tenant_id = ?", [
-      tenantId,
-    ]);
+    await safeDelete(connection, 'DELETE FROM users WHERE tenant_id = ?', [tenantId]);
 
     // Finally, delete the tenant itself
-    const [result] = await connection.query<ResultSetHeader>(
-      "DELETE FROM tenants WHERE id = ?",
-      [tenantId],
-    );
+    const [result] = await connection.query<ResultSetHeader>('DELETE FROM tenants WHERE id = ?', [
+      tenantId,
+    ]);
 
     await connection.commit();
 
@@ -605,15 +512,10 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
       await cleanupTenantFiles(tenantId, userIds);
     } catch (fileError: unknown) {
       // Log error but don't fail the deletion
-      logger.error(
-        `Error cleaning up files for tenant ${tenantId}:`,
-        fileError,
-      );
+      logger.error(`Error cleaning up files for tenant ${tenantId}:`, fileError);
     }
 
-    logger.warn(
-      `Successfully deleted tenant ${tenantId} and all associated data`,
-    );
+    logger.warn(`Successfully deleted tenant ${tenantId} and all associated data`);
     return result.affectedRows > 0;
   } catch (error: unknown) {
     await connection.rollback();
@@ -625,34 +527,27 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
 }
 
 // Clean up uploaded files for a tenant
-async function cleanupTenantFiles(
-  tenantId: number,
-  userIds: number[],
-): Promise<void> {
-  const uploadsDir = path.join(__dirname, "../../../../uploads");
+async function cleanupTenantFiles(tenantId: number, userIds: number[]): Promise<void> {
+  const uploadsDir = path.join(__dirname, '../../../../uploads');
 
   try {
     // Clean up document files
-    const documentsDir = path.join(
-      uploadsDir,
-      "documents",
-      tenantId.toString(),
-    );
+    const documentsDir = path.join(uploadsDir, 'documents', tenantId.toString());
     await removeDirectory(documentsDir);
 
     // Clean up profile pictures for all users
-    const profilePicturesDir = path.join(uploadsDir, "profile-pictures");
+    const profilePicturesDir = path.join(uploadsDir, 'profile-pictures');
     for (const userId of userIds) {
       const userProfileDir = path.join(profilePicturesDir, userId.toString());
       await removeDirectory(userProfileDir);
     }
 
     // Clean up chat attachments
-    const chatDir = path.join(uploadsDir, "chat", tenantId.toString());
+    const chatDir = path.join(uploadsDir, 'chat', tenantId.toString());
     await removeDirectory(chatDir);
 
     // Clean up KVP attachments
-    const kvpDir = path.join(uploadsDir, "kvp", tenantId.toString());
+    const kvpDir = path.join(uploadsDir, 'kvp', tenantId.toString());
     await removeDirectory(kvpDir);
 
     logger.info(`Cleaned up all files for tenant ${tenantId}`);
@@ -669,7 +564,7 @@ async function removeDirectory(dirPath: string): Promise<void> {
     await fs.rm(dirPath, { recursive: true, force: true });
     logger.info(`Removed directory: ${dirPath}`);
   } catch (error: unknown) {
-    if ((error as globalThis.NodeJS.ErrnoException).code !== "ENOENT") {
+    if ((error as globalThis.NodeJS.ErrnoException).code !== 'ENOENT') {
       // Only log if it's not a "directory doesn't exist" error
       logger.error(`Error removing directory ${dirPath}:`, error);
     }
@@ -677,12 +572,7 @@ async function removeDirectory(dirPath: string): Promise<void> {
 }
 
 // Export types
-export type {
-  DbTenant,
-  TenantCreateData,
-  TenantCreateResult,
-  SubdomainValidationResult,
-};
+export type { DbTenant, TenantCreateData, TenantCreateResult, SubdomainValidationResult };
 
 // Default export object for backward compatibility
 const Tenant = {

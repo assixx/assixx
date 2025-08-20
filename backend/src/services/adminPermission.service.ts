@@ -2,14 +2,8 @@
  * Admin Permission Service
  * Handles department and group permissions for admin users
  */
-
-import {
-  execute,
-  getConnection,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger.js";
+import { ResultSetHeader, RowDataPacket, execute, getConnection } from '../utils/db';
+import { logger } from '../utils/logger.js';
 
 interface Permission {
   can_read: boolean;
@@ -41,7 +35,7 @@ class AdminPermissionService {
     adminId: number,
     departmentId: number,
     tenantId: number,
-    requiredPermission: "read" | "write" | "delete" = "read",
+    requiredPermission: 'read' | 'write' | 'delete' = 'read',
   ): Promise<boolean> {
     try {
       // First check direct department permissions
@@ -77,7 +71,7 @@ class AdminPermissionService {
 
       return false;
     } catch (error: unknown) {
-      logger.error("Error checking admin access:", error);
+      logger.error('Error checking admin access:', error);
       return false;
     }
   }
@@ -89,14 +83,14 @@ class AdminPermissionService {
    */
   private checkPermissionLevel(
     permission: RowDataPacket,
-    requiredLevel: "read" | "write" | "delete",
+    requiredLevel: 'read' | 'write' | 'delete',
   ): boolean {
     switch (requiredLevel) {
-      case "read":
+      case 'read':
         return permission.can_read === 1;
-      case "write":
+      case 'write':
         return permission.can_write === 1;
-      case "delete":
+      case 'delete':
         return permission.can_delete === 1;
       default:
         return false;
@@ -129,8 +123,7 @@ class AdminPermissionService {
       );
 
       const hasAllAccess =
-        adminInfo[0].dept_count === totalDepts[0].total &&
-        totalDepts[0].total > 0;
+        adminInfo[0].dept_count === totalDepts[0].total && totalDepts[0].total > 0;
 
       // Get direct department permissions
       const [directDepts] = await execute<RowDataPacket[]>(
@@ -196,7 +189,7 @@ class AdminPermissionService {
         hasAllAccess,
       };
     } catch (error: unknown) {
-      logger.error("Error getting admin departments:", error);
+      logger.error('Error getting admin departments:', error);
       return { departments: [], hasAllAccess: false };
     }
   }
@@ -265,9 +258,7 @@ class AdminPermissionService {
           sampleValue: values[0],
         });
 
-        const placeholders = departmentIds
-          .map(() => "(?, ?, ?, ?, ?, ?, ?)")
-          .join(", ");
+        const placeholders = departmentIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
 
         await connection.execute(
           `INSERT INTO admin_department_permissions 
@@ -284,15 +275,13 @@ class AdminPermissionService {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
-          "modify",
+          'modify',
           adminId,
           0, // No specific target, batch operation
-          "department",
+          'department',
           assignedBy,
           JSON.stringify(oldPerms),
-          JSON.stringify(
-            departmentIds.map((id) => ({ department_id: id, ...permissions })),
-          ),
+          JSON.stringify(departmentIds.map((id) => ({ department_id: id, ...permissions }))),
         ],
       );
 
@@ -301,8 +290,8 @@ class AdminPermissionService {
       return true;
     } catch (error: unknown) {
       await connection.rollback();
-      logger.error("Error setting admin permissions:", error);
-      logger.error("[DEBUG] Error details:", {
+      logger.error('Error setting admin permissions:', error);
+      logger.error('[DEBUG] Error details:', {
         message: (error as Error).message,
         code: (error as { code?: string }).code,
         sqlMessage: (error as { sqlMessage?: string }).sqlMessage,
@@ -356,9 +345,7 @@ class AdminPermissionService {
           assignedBy,
         ]);
 
-        const placeholders = groupIds
-          .map(() => "(?, ?, ?, ?, ?, ?, ?)")
-          .join(", ");
+        const placeholders = groupIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
 
         await connection.execute(
           `INSERT INTO admin_group_permissions 
@@ -372,7 +359,7 @@ class AdminPermissionService {
       return true;
     } catch (error: unknown) {
       await connection.rollback();
-      logger.error("Error setting admin group permissions:", error);
+      logger.error('Error setting admin group permissions:', error);
       return false;
     } finally {
       connection.release();
@@ -399,7 +386,7 @@ class AdminPermissionService {
 
       return result.affectedRows > 0;
     } catch (error: unknown) {
-      logger.error("Error removing admin permission:", error);
+      logger.error('Error removing admin permission:', error);
       return false;
     }
   }
@@ -424,7 +411,7 @@ class AdminPermissionService {
 
       return result.affectedRows > 0;
     } catch (error: unknown) {
-      logger.error("Error removing admin group permission:", error);
+      logger.error('Error removing admin group permission:', error);
       return false;
     }
   }
@@ -441,10 +428,10 @@ class AdminPermissionService {
    * @param newPermissions
    */
   async logPermissionChange(
-    action: "grant" | "revoke" | "modify",
+    action: 'grant' | 'revoke' | 'modify',
     adminId: number,
     targetId: number,
-    targetType: "department" | "group",
+    targetType: 'department' | 'group',
     changedBy: number,
     tenantId: number,
     oldPermissions?: unknown,
@@ -467,7 +454,7 @@ class AdminPermissionService {
         ],
       );
     } catch (error: unknown) {
-      logger.error("Error logging permission change:", error);
+      logger.error('Error logging permission change:', error);
     }
   }
 }

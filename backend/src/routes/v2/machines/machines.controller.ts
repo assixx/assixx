@@ -2,33 +2,24 @@
  * Machines API v2 Controller
  * Handles HTTP requests and delegates business logic to service layer
  */
+import { Response } from 'express';
+import { ValidationError, validationResult } from 'express-validator';
 
-import { validationResult, ValidationError } from "express-validator";
-
-import { Response } from "express";
-
-import type { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../utils/apiResponse";
-import { logger } from "../../../utils/logger";
-import { ServiceError } from "../../../utils/ServiceError";
-
-import { machinesService } from "./machines.service";
-import {
-  MachineCreateRequest,
-  MachineUpdateRequest,
-  MaintenanceRecordRequest,
-} from "./types";
+import type { AuthenticatedRequest } from '../../../types/request.types';
+import { ServiceError } from '../../../utils/ServiceError';
+import { errorResponse, successResponse } from '../../../utils/apiResponse';
+import { logger } from '../../../utils/logger';
+import { machinesService } from './machines.service';
+import { MachineCreateRequest, MachineUpdateRequest, MaintenanceRecordRequest } from './types';
 
 // Helper to map validation errors to our error response format
 /**
  *
  * @param errors
  */
-function mapValidationErrors(
-  errors: ValidationError[],
-): { field: string; message: string }[] {
+function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
   return errors.map((error) => ({
-    field: error.type === "field" ? error.path : "general",
+    field: error.type === 'field' ? error.path : 'general',
     message: error.msg,
   }));
 }
@@ -47,41 +38,31 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse(
-              "VALIDATION_ERROR",
-              "Invalid input",
-              mapValidationErrors(errors.array()),
-            ),
+            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
           );
         return;
       }
 
       if (!req.tenantId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
         return;
       }
 
       const filters = {
         status: req.query.status as string,
         machine_type: req.query.machineType as string,
-        department_id: req.query.departmentId
-          ? Number.parseInt(req.query.departmentId as string)
-          : undefined,
+        department_id:
+          req.query.departmentId ? Number.parseInt(req.query.departmentId as string) : undefined,
         search: req.query.search as string,
-        is_active: req.query.isActive === "false" ? false : true,
-        needs_maintenance: req.query.needsMaintenance === "true",
+        is_active: req.query.isActive === 'false' ? false : true,
+        needs_maintenance: req.query.needsMaintenance === 'true',
       };
 
-      const machines = await machinesService.listMachines(
-        req.tenantId,
-        filters,
-      );
+      const machines = await machinesService.listMachines(req.tenantId, filters);
 
       res.json(successResponse(machines));
     } catch (error: unknown) {
-      logger.error("[Machines v2] List error:", error);
+      logger.error('[Machines v2] List error:', error);
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -93,9 +74,7 @@ export const machinesController = {
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to fetch machines"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch machines'));
       }
     }
   },
@@ -109,33 +88,24 @@ export const machinesController = {
   async getMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
-        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
         return;
       }
 
-      const machine = await machinesService.getMachineById(
-        machineId,
-        req.tenantId,
-      );
+      const machine = await machinesService.getMachineById(machineId, req.tenantId);
       res.json(successResponse(machine));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Get error:", error);
+      logger.error('[Machines v2] Get error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to fetch machine"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch machine'));
       }
     }
   },
@@ -153,19 +123,13 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse(
-              "VALIDATION_ERROR",
-              "Invalid input",
-              mapValidationErrors(errors.array()),
-            ),
+            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
           );
         return;
       }
 
       if (!req.tenantId || !req.userId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
         return;
       }
 
@@ -174,12 +138,12 @@ export const machinesController = {
         req.tenantId,
         req.userId,
         req.ip,
-        req.headers["user-agent"],
+        req.headers['user-agent'],
       );
 
       res.status(201).json(successResponse(machine));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Create error:", error);
+      logger.error('[Machines v2] Create error:', error);
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -191,9 +155,7 @@ export const machinesController = {
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to create machine"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to create machine'));
       }
     }
   },
@@ -211,25 +173,19 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse(
-              "VALIDATION_ERROR",
-              "Invalid input",
-              mapValidationErrors(errors.array()),
-            ),
+            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
           );
         return;
       }
 
       if (!req.tenantId || !req.userId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
-        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
         return;
       }
 
@@ -239,12 +195,12 @@ export const machinesController = {
         req.tenantId,
         req.userId,
         req.ip,
-        req.headers["user-agent"],
+        req.headers['user-agent'],
       );
 
       res.json(successResponse(machine));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Update error:", error);
+      logger.error('[Machines v2] Update error:', error);
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -256,9 +212,7 @@ export const machinesController = {
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to update machine"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to update machine'));
       }
     }
   },
@@ -272,15 +226,13 @@ export const machinesController = {
   async deleteMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId || !req.userId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
-        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
         return;
       }
 
@@ -289,20 +241,16 @@ export const machinesController = {
         req.tenantId,
         req.userId,
         req.ip,
-        req.headers["user-agent"],
+        req.headers['user-agent'],
       );
 
-      res.json(successResponse({ message: "Machine deleted successfully" }));
+      res.json(successResponse({ message: 'Machine deleted successfully' }));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Delete error:", error);
+      logger.error('[Machines v2] Delete error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to delete machine"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to delete machine'));
       }
     }
   },
@@ -313,21 +261,16 @@ export const machinesController = {
    * @param req
    * @param res
    */
-  async deactivateMachine(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async deactivateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId || !req.userId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
-        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
         return;
       }
 
@@ -336,22 +279,16 @@ export const machinesController = {
         req.tenantId,
         req.userId,
         req.ip,
-        req.headers["user-agent"],
+        req.headers['user-agent'],
       );
 
-      res.json(
-        successResponse({ message: "Machine deactivated successfully" }),
-      );
+      res.json(successResponse({ message: 'Machine deactivated successfully' }));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Deactivate error:", error);
+      logger.error('[Machines v2] Deactivate error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to deactivate machine"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to deactivate machine'));
       }
     }
   },
@@ -362,21 +299,16 @@ export const machinesController = {
    * @param req
    * @param res
    */
-  async activateMachine(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async activateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId || !req.userId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
-        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
         return;
       }
 
@@ -385,20 +317,16 @@ export const machinesController = {
         req.tenantId,
         req.userId,
         req.ip,
-        req.headers["user-agent"],
+        req.headers['user-agent'],
       );
 
-      res.json(successResponse({ message: "Machine activated successfully" }));
+      res.json(successResponse({ message: 'Machine activated successfully' }));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Activate error:", error);
+      logger.error('[Machines v2] Activate error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to activate machine"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to activate machine'));
       }
     }
   },
@@ -409,44 +337,27 @@ export const machinesController = {
    * @param req
    * @param res
    */
-  async getMaintenanceHistory(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async getMaintenanceHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
       if (isNaN(machineId)) {
-        res.status(400).json(errorResponse("INVALID_ID", "Invalid machine ID"));
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
         return;
       }
 
-      const history = await machinesService.getMaintenanceHistory(
-        machineId,
-        req.tenantId,
-      );
+      const history = await machinesService.getMaintenanceHistory(machineId, req.tenantId);
       res.json(successResponse(history));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Get maintenance history error:", error);
+      logger.error('[Machines v2] Get maintenance history error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(
-            errorResponse(
-              "SERVER_ERROR",
-              "Failed to fetch maintenance history",
-            ),
-          );
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch maintenance history'));
       }
     }
   },
@@ -457,29 +368,20 @@ export const machinesController = {
    * @param req
    * @param res
    */
-  async addMaintenanceRecord(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async addMaintenanceRecord(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         res
           .status(400)
           .json(
-            errorResponse(
-              "VALIDATION_ERROR",
-              "Invalid input",
-              mapValidationErrors(errors.array()),
-            ),
+            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
           );
         return;
       }
 
       if (!req.tenantId || !req.userId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID or User ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
         return;
       }
 
@@ -488,12 +390,12 @@ export const machinesController = {
         req.tenantId,
         req.userId,
         req.ip,
-        req.headers["user-agent"],
+        req.headers['user-agent'],
       );
 
       res.status(201).json(successResponse(record));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Add maintenance record error:", error);
+      logger.error('[Machines v2] Add maintenance record error:', error);
       if (error instanceof ServiceError) {
         res
           .status(error.statusCode)
@@ -505,11 +407,7 @@ export const machinesController = {
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(
-            errorResponse("SERVER_ERROR", "Failed to add maintenance record"),
-          );
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to add maintenance record'));
       }
     }
   },
@@ -520,50 +418,27 @@ export const machinesController = {
    * @param req
    * @param res
    */
-  async getUpcomingMaintenance(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async getUpcomingMaintenance(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
         return;
       }
 
-      const days = req.query.days
-        ? Number.parseInt(req.query.days as string)
-        : 30;
+      const days = req.query.days ? Number.parseInt(req.query.days as string) : 30;
       if (isNaN(days) || days < 1 || days > 365) {
-        res
-          .status(400)
-          .json(
-            errorResponse("INVALID_DAYS", "Days must be between 1 and 365"),
-          );
+        res.status(400).json(errorResponse('INVALID_DAYS', 'Days must be between 1 and 365'));
         return;
       }
 
-      const machines = await machinesService.getUpcomingMaintenance(
-        req.tenantId,
-        days,
-      );
+      const machines = await machinesService.getUpcomingMaintenance(req.tenantId, days);
       res.json(successResponse(machines));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Get upcoming maintenance error:", error);
+      logger.error('[Machines v2] Get upcoming maintenance error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(
-            errorResponse(
-              "SERVER_ERROR",
-              "Failed to fetch upcoming maintenance",
-            ),
-          );
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch upcoming maintenance'));
       }
     }
   },
@@ -577,24 +452,18 @@ export const machinesController = {
   async getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res
-          .status(401)
-          .json(errorResponse("UNAUTHORIZED", "Tenant ID missing"));
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
         return;
       }
 
       const stats = await machinesService.getStatistics(req.tenantId);
       res.json(successResponse(stats));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Get statistics error:", error);
+      logger.error('[Machines v2] Get statistics error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to fetch statistics"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch statistics'));
       }
     }
   },
@@ -605,23 +474,16 @@ export const machinesController = {
    * @param _req
    * @param res
    */
-  async getCategories(
-    _req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async getCategories(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const categories = await machinesService.getCategories();
       res.json(successResponse(categories));
     } catch (error: unknown) {
-      logger.error("[Machines v2] Get categories error:", error);
+      logger.error('[Machines v2] Get categories error:', error);
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.code, error.message));
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("SERVER_ERROR", "Failed to fetch categories"));
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch categories'));
       }
     }
   },

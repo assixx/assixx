@@ -6,14 +6,12 @@
  *   - name: Reports v2
  *     description: Reporting and analytics API v2 - aggregated data and insights
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import * as reportsController from "./reports.controller.js";
-import { reportsValidation } from "./reports.validation.js";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as reportsController from './reports.controller.js';
+import { reportsValidation } from './reports.validation.js';
 
 const router = Router();
 
@@ -101,7 +99,7 @@ const router = Router();
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/overview",
+  '/overview',
   authenticateV2,
   reportsValidation.dateRange,
   typed.auth(reportsController.getOverviewReport),
@@ -180,7 +178,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/employees",
+  '/employees',
   authenticateV2,
   reportsValidation.employeeReport,
   typed.auth(reportsController.getEmployeeReport),
@@ -242,7 +240,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/departments",
+  '/departments',
   authenticateV2,
   reportsValidation.dateRange,
   typed.auth(reportsController.getDepartmentReport),
@@ -324,7 +322,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/shifts",
+  '/shifts',
   authenticateV2,
   reportsValidation.shiftReport,
   typed.auth(reportsController.getShiftReport),
@@ -413,7 +411,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/kvp",
+  '/kvp',
   authenticateV2,
   reportsValidation.kvpReport,
   typed.auth(reportsController.getKvpReport),
@@ -504,7 +502,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/attendance",
+  '/attendance',
   authenticateV2,
   reportsValidation.attendanceReport,
   typed.auth(reportsController.getAttendanceReport),
@@ -584,7 +582,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/compliance",
+  '/compliance',
   authenticateV2,
   reportsValidation.attendanceReport, // Same validation as attendance
   typed.auth(reportsController.getComplianceReport),
@@ -673,7 +671,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post(
-  "/custom",
+  '/custom',
   authenticateV2,
   reportsValidation.customReport,
   typed.auth(reportsController.generateCustomReport),
@@ -740,7 +738,7 @@ router.post(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/export/:type",
+  '/export/:type',
   authenticateV2,
   reportsValidation.exportReport,
   typed.auth(reportsController.exportReport),

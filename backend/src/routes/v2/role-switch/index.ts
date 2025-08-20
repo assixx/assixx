@@ -2,13 +2,11 @@
  * Role Switch API v2 Routes
  * Enhanced security and standardized responses
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { securityV2 } from "../../../middleware/v2/security.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { RoleSwitchController } from "./role-switch.controller.js";
+import { securityV2 } from '../../../middleware/v2/security.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { RoleSwitchController } from './role-switch.controller.js';
 
 const router = Router();
 
@@ -28,7 +26,7 @@ const router = Router();
  *         description: Insufficient permissions
  */
 router.post(
-  "/to-employee",
+  '/to-employee',
   ...securityV2.user(), // Any authenticated user, but service checks for admin/root
   typed.auth(RoleSwitchController.switchToEmployee),
 );
@@ -49,7 +47,7 @@ router.post(
  *         description: Insufficient permissions
  */
 router.post(
-  "/to-original",
+  '/to-original',
   ...securityV2.user(),
   typed.auth(RoleSwitchController.switchToOriginal),
 );
@@ -69,11 +67,7 @@ router.post(
  *       403:
  *         description: Only root users can use this endpoint
  */
-router.post(
-  "/root-to-admin",
-  ...securityV2.user(),
-  typed.auth(RoleSwitchController.rootToAdmin),
-);
+router.post('/root-to-admin', ...securityV2.user(), typed.auth(RoleSwitchController.rootToAdmin));
 
 /**
  * @swagger
@@ -88,10 +82,6 @@ router.post(
  *       200:
  *         description: Current role switch status
  */
-router.get(
-  "/status",
-  ...securityV2.user(),
-  typed.auth(RoleSwitchController.getStatus),
-);
+router.get('/status', ...securityV2.user(), typed.auth(RoleSwitchController.getStatus));
 
 export default router;

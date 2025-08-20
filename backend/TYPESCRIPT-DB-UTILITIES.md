@@ -18,30 +18,30 @@ Created `/src/utils/db.ts` to provide type-safe wrappers that handle both Pool a
 ### Basic Queries
 
 ```typescript
-import { execute, query, RowDataPacket, ResultSetHeader } from "../utils/db";
+import { ResultSetHeader, RowDataPacket, execute, query } from '../utils/db';
 
 // SELECT queries
-const [users] = await execute<RowDataPacket[]>("SELECT * FROM users WHERE tenant_id = ?", [tenantId]);
+const [users] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE tenant_id = ?', [tenantId]);
 
 // INSERT queries
-const [result] = await execute<ResultSetHeader>("INSERT INTO users (email, name) VALUES (?, ?)", [email, name]);
+const [result] = await execute<ResultSetHeader>('INSERT INTO users (email, name) VALUES (?, ?)', [email, name]);
 const userId = result.insertId;
 
 // UPDATE queries
-const [updateResult] = await execute<ResultSetHeader>("UPDATE users SET name = ? WHERE id = ?", [newName, userId]);
+const [updateResult] = await execute<ResultSetHeader>('UPDATE users SET name = ? WHERE id = ?', [newName, userId]);
 const affectedRows = updateResult.affectedRows;
 ```
 
 ### Transactions
 
 ```typescript
-import { transaction } from "../utils/db";
+import { transaction } from '../utils/db';
 
 const result = await transaction(async (connection) => {
   // All queries in this block are part of the transaction
-  const [userResult] = await connection.execute<ResultSetHeader>("INSERT INTO users (email) VALUES (?)", [email]);
+  const [userResult] = await connection.execute<ResultSetHeader>('INSERT INTO users (email) VALUES (?)', [email]);
 
-  await connection.execute("INSERT INTO profiles (user_id) VALUES (?)", [userResult.insertId]);
+  await connection.execute('INSERT INTO profiles (user_id) VALUES (?)', [userResult.insertId]);
 
   return userResult.insertId;
 });
@@ -50,12 +50,12 @@ const result = await transaction(async (connection) => {
 ### Getting a Connection
 
 ```typescript
-import { getConnection } from "../utils/db";
+import { getConnection } from '../utils/db';
 
 const connection = await getConnection();
 try {
   // Use connection
-  await connection.execute("...");
+  await connection.execute('...');
 } finally {
   connection.release();
 }
@@ -66,20 +66,21 @@ try {
 ### Before (Causes TypeScript Errors)
 
 ```typescript
-import pool from "../database";
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
+
+import pool from '../database';
 
 // This causes union type errors
-const [rows] = await pool.query("SELECT * FROM users");
+const [rows] = await pool.query('SELECT * FROM users');
 ```
 
 ### After (Type-Safe)
 
 ```typescript
-import { execute, RowDataPacket } from "../utils/db";
+import { RowDataPacket, execute } from '../utils/db';
 
 // This works with both Pool and MockDatabase
-const [rows] = await execute<RowDataPacket[]>("SELECT * FROM users");
+const [rows] = await execute<RowDataPacket[]>('SELECT * FROM users');
 ```
 
 ## Implementation Details
@@ -91,7 +92,7 @@ export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
   params?: unknown[],
 ): Promise<[T, FieldPacket[]]> {
-  if ("execute" in pool && typeof pool.execute === "function") {
+  if ('execute' in pool && typeof pool.execute === 'function') {
     const result = await (pool as unknown as Pool).execute(sql, params);
     // Handle both MySQL2 tuple and MockDatabase direct return
     if (Array.isArray(result) && result.length === 2) {

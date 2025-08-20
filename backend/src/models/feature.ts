@@ -1,5 +1,5 @@
-import { query as executeQuery, RowDataPacket } from "../utils/db";
-import { logger } from "../utils/logger";
+import { RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger';
 
 // Database interfaces
 interface DbFeature extends RowDataPacket {
@@ -18,7 +18,7 @@ interface DbTenantFeature extends RowDataPacket {
   id?: number;
   tenant_id: number;
   feature_id: number;
-  status: "active" | "trial" | "disabled";
+  status: 'active' | 'trial' | 'disabled';
   valid_from?: Date;
   valid_until?: Date | null;
   custom_price?: number | null;
@@ -48,7 +48,7 @@ interface FeatureUsageStat extends RowDataPacket {
 export async function findAllFeatures(): Promise<DbFeature[]> {
   try {
     const [features] = await executeQuery<DbFeature[]>(
-      "SELECT * FROM features WHERE is_active = true ORDER BY category, name",
+      'SELECT * FROM features WHERE is_active = true ORDER BY category, name',
     );
     return features;
   } catch (error: unknown) {
@@ -58,14 +58,11 @@ export async function findAllFeatures(): Promise<DbFeature[]> {
 }
 
 // Feature by Code finden
-export async function findFeatureByCode(
-  code: string,
-): Promise<DbFeature | undefined> {
+export async function findFeatureByCode(code: string): Promise<DbFeature | undefined> {
   try {
-    const [features] = await executeQuery<DbFeature[]>(
-      "SELECT * FROM features WHERE code = ?",
-      [code],
-    );
+    const [features] = await executeQuery<DbFeature[]>('SELECT * FROM features WHERE code = ?', [
+      code,
+    ]);
     return features[0];
   } catch (error: unknown) {
     logger.error(`Error finding feature by code: ${(error as Error).message}`);
@@ -89,10 +86,7 @@ export async function checkTenantFeatureAccess(
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `;
 
-    const [results] = await executeQuery<DbTenantFeature[]>(query, [
-      tenant_id,
-      featureCode,
-    ]);
+    const [results] = await executeQuery<DbTenantFeature[]>(query, [tenant_id, featureCode]);
 
     if (results.length === 0) {
       return false;
@@ -107,17 +101,13 @@ export async function checkTenantFeatureAccess(
       feature.current_usage !== undefined &&
       feature.current_usage >= feature.usage_limit
     ) {
-      logger.warn(
-        `Feature ${featureCode} usage limit reached for tenant ${tenant_id}`,
-      );
+      logger.warn(`Feature ${featureCode} usage limit reached for tenant ${tenant_id}`);
       return false;
     }
 
     return true;
   } catch (error: unknown) {
-    logger.error(
-      `Error checking tenant feature access: ${(error as Error).message}`,
-    );
+    logger.error(`Error checking tenant feature access: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -160,9 +150,7 @@ export async function activateFeatureForTenant(
     logger.info(`Feature ${featureCode} activated for tenant ${tenant_id}`);
     return true;
   } catch (error: unknown) {
-    logger.error(
-      `Error activating feature for tenant: ${(error as Error).message}`,
-    );
+    logger.error(`Error activating feature for tenant: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -188,9 +176,7 @@ export async function deactivateFeatureForTenant(
     logger.info(`Feature ${featureCode} deactivated for tenant ${tenant_id}`);
     return true;
   } catch (error: unknown) {
-    logger.error(
-      `Error deactivating feature for tenant: ${(error as Error).message}`,
-    );
+    logger.error(`Error deactivating feature for tenant: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -210,13 +196,13 @@ export async function logFeatureUsage(
 
     // Log erstellen
     await executeQuery(
-      "INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)",
+      'INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)',
       [tenant_id, feature.id, userId, JSON.stringify(metadata)],
     );
 
     // Current usage erhöhen
     await executeQuery(
-      "UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?",
+      'UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?',
       [tenant_id, feature.id],
     );
 
@@ -228,9 +214,7 @@ export async function logFeatureUsage(
 }
 
 // Alle Features eines Tenants abrufen
-export async function getTenantFeatures(
-  tenant_id: number,
-): Promise<DbTenantFeature[]> {
+export async function getTenantFeatures(tenant_id: number): Promise<DbTenantFeature[]> {
   try {
     const query = `
         SELECT 
@@ -249,9 +233,7 @@ export async function getTenantFeatures(
         ORDER BY f.category, f.name
       `;
 
-    const [features] = await executeQuery<DbTenantFeature[]>(query, [
-      tenant_id,
-    ]);
+    const [features] = await executeQuery<DbTenantFeature[]>(query, [tenant_id]);
     return features;
   } catch (error: unknown) {
     logger.error(`Error fetching tenant features: ${(error as Error).message}`);

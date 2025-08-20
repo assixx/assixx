@@ -2,17 +2,12 @@
  * Role Switch Controller v2
  * RESTful endpoints for role switching with enhanced security
  */
+import { Response } from 'express';
 
-import { Response } from "express";
-
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import {
-  errorResponse,
-  successResponse,
-} from "../../../types/response.types.js";
-import { getErrorMessage } from "../../../utils/errorHandler.js";
-
-import { RoleSwitchService, ServiceError } from "./role-switch.service.js";
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../types/response.types.js';
+import { getErrorMessage } from '../../../utils/errorHandler.js';
+import { RoleSwitchService, ServiceError } from './role-switch.service.js';
 
 /**
  *
@@ -25,10 +20,7 @@ export class RoleSwitchController {
    * @description Switch admin/root view to employee mode
    * @access Private (Admin/Root only)
    */
-  static async switchToEmployee(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async switchToEmployee(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // SECURITY: All values from authenticated token
       const userId = req.user.id;
@@ -49,10 +41,8 @@ export class RoleSwitchController {
           .status(error.statusCode)
           .json(errorResponse(error.message, error.statusCode, error.code));
       } else {
-        console.error("Role switch error:", getErrorMessage(error));
-        res
-          .status(500)
-          .json(errorResponse("Internal server error", 500, "INTERNAL_ERROR"));
+        console.error('Role switch error:', getErrorMessage(error));
+        res.status(500).json(errorResponse('Internal server error', 500, 'INTERNAL_ERROR'));
       }
     }
   }
@@ -64,19 +54,13 @@ export class RoleSwitchController {
    * @description Switch back to original role (admin/root)
    * @access Private
    */
-  static async switchToOriginal(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async switchToOriginal(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // SECURITY: All values from authenticated token
       const userId = req.user.id;
       const tenantId = req.user.tenant_id;
 
-      const result = await RoleSwitchService.switchToOriginalRole(
-        userId,
-        tenantId,
-      );
+      const result = await RoleSwitchService.switchToOriginalRole(userId, tenantId);
 
       res.json(
         successResponse({
@@ -91,10 +75,8 @@ export class RoleSwitchController {
           .status(error.statusCode)
           .json(errorResponse(error.message, error.statusCode, error.code));
       } else {
-        console.error("Role switch error:", getErrorMessage(error));
-        res
-          .status(500)
-          .json(errorResponse("Internal server error", 500, "INTERNAL_ERROR"));
+        console.error('Role switch error:', getErrorMessage(error));
+        res.status(500).json(errorResponse('Internal server error', 500, 'INTERNAL_ERROR'));
       }
     }
   }
@@ -106,10 +88,7 @@ export class RoleSwitchController {
    * @description Switch root to admin view
    * @access Private (Root only)
    */
-  static async rootToAdmin(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async rootToAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // SECURITY: All values from authenticated token
       const userId = req.user.id;
@@ -130,10 +109,8 @@ export class RoleSwitchController {
           .status(error.statusCode)
           .json(errorResponse(error.message, error.statusCode, error.code));
       } else {
-        console.error("Role switch error:", getErrorMessage(error));
-        res
-          .status(500)
-          .json(errorResponse("Internal server error", 500, "INTERNAL_ERROR"));
+        console.error('Role switch error:', getErrorMessage(error));
+        res.status(500).json(errorResponse('Internal server error', 500, 'INTERNAL_ERROR'));
       }
     }
   }
@@ -145,10 +122,7 @@ export class RoleSwitchController {
    * @description Get current role switch status
    * @access Private
    */
-  static async getStatus(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Return current role information from token
       const status = {
@@ -157,15 +131,13 @@ export class RoleSwitchController {
         originalRole: req.user.role,
         activeRole: req.user.activeRole ?? req.user.role,
         isRoleSwitched: req.user.isRoleSwitched ?? false,
-        canSwitch: req.user.role === "admin" || req.user.role === "root",
+        canSwitch: req.user.role === 'admin' || req.user.role === 'root',
       };
 
       res.json(successResponse(status));
     } catch (error: unknown) {
-      console.error("Get status error:", getErrorMessage(error));
-      res
-        .status(500)
-        .json(errorResponse("Internal server error", 500, "INTERNAL_ERROR"));
+      console.error('Get status error:', getErrorMessage(error));
+      res.status(500).json(errorResponse('Internal server error', 500, 'INTERNAL_ERROR'));
     }
   }
 }

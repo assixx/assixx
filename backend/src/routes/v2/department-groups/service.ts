@@ -2,21 +2,19 @@
  * Department Groups Service v2
  * Business logic for managing hierarchical department groups
  */
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
-import RootLog from "../../../models/rootLog";
-import { execute, getConnection } from "../../../utils/db.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
+import RootLog from '../../../models/rootLog';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute, getConnection } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
 import {
+  CreateGroupRequest,
   DepartmentGroup,
   DepartmentGroupWithHierarchy,
   GroupDepartment,
-  CreateGroupRequest,
   UpdateGroupRequest,
-} from "./types.js";
+} from './types.js';
 
 interface GroupRow extends RowDataPacket {
   id: number;
@@ -64,16 +62,9 @@ export class DepartmentGroupsService {
 
       // Check for circular dependencies if parent group is specified
       if (data.parentGroupId) {
-        const hasCircular = await this.checkCircularDependency(
-          data.parentGroupId,
-          0,
-          tenantId,
-        );
+        const hasCircular = await this.checkCircularDependency(data.parentGroupId, 0, tenantId);
         if (hasCircular) {
-          throw new ServiceError(
-            "CIRCULAR_DEPENDENCY",
-            "Circular dependency detected",
-          );
+          throw new ServiceError('CIRCULAR_DEPENDENCY', 'Circular dependency detected');
         }
       }
 
@@ -81,29 +72,16 @@ export class DepartmentGroupsService {
       const [result] = await connection.execute<ResultSetHeader>(
         `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by) 
          VALUES (?, ?, ?, ?, ?)`,
-        [
-          tenantId,
-          data.name,
-          data.description ?? null,
-          data.parentGroupId ?? null,
-          createdBy,
-        ],
+        [tenantId, data.name, data.description ?? null, data.parentGroupId ?? null, createdBy],
       );
 
       const groupId = result.insertId;
 
       // Add departments if provided
       if (data.departmentIds && data.departmentIds.length > 0) {
-        const values = data.departmentIds.map((deptId) => [
-          tenantId,
-          groupId,
-          deptId,
-          createdBy,
-        ]);
+        const values = data.departmentIds.map((deptId) => [tenantId, groupId, deptId, createdBy]);
 
-        const placeholders = data.departmentIds
-          .map(() => "(?, ?, ?, ?)")
-          .join(", ");
+        const placeholders = data.departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
         await connection.execute(
           `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
@@ -116,7 +94,7 @@ export class DepartmentGroupsService {
 
       // Log the creation
       await RootLog.log(
-        "department_group_created",
+        'department_group_created',
         createdBy,
         tenantId,
         `Created department group: ${data.name} (ID: ${groupId})`,
@@ -126,14 +104,14 @@ export class DepartmentGroupsService {
     } catch (error: unknown) {
       await connection.rollback();
 
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
-        throw new ServiceError("GROUP_EXISTS", "Group name already exists");
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+        throw new ServiceError('GROUP_EXISTS', 'Group name already exists');
       }
 
       if (error instanceof ServiceError) throw error;
 
-      logger.error("Error creating department group:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to create group");
+      logger.error('Error creating department group:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create group');
     } finally {
       connection.release();
     }
@@ -143,9 +121,7 @@ export class DepartmentGroupsService {
    * Get all groups with hierarchy
    * @param tenantId
    */
-  async getGroupHierarchy(
-    tenantId: number,
-  ): Promise<DepartmentGroupWithHierarchy[]> {
+  async getGroupHierarchy(tenantId: number): Promise<DepartmentGroupWithHierarchy[]> {
     try {
       // Get all groups with member count
       const [groups] = await execute<GroupRow[]>(
@@ -217,8 +193,8 @@ export class DepartmentGroupsService {
 
       return rootGroups;
     } catch (error: unknown) {
-      logger.error("Error getting group hierarchy:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to get groups");
+      logger.error('Error getting group hierarchy:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get groups');
     }
   }
 
@@ -227,10 +203,7 @@ export class DepartmentGroupsService {
    * @param groupId
    * @param tenantId
    */
-  async getGroupById(
-    groupId: number,
-    tenantId: number,
-  ): Promise<DepartmentGroup> {
+  async getGroupById(groupId: number, tenantId: number): Promise<DepartmentGroup> {
     try {
       const [rows] = await execute<GroupRow[]>(
         `SELECT g.*, 
@@ -241,7 +214,7 @@ export class DepartmentGroupsService {
       );
 
       if (rows.length === 0) {
-        throw new ServiceError("NOT_FOUND", "Group not found");
+        throw new ServiceError('NOT_FOUND', 'Group not found');
       }
 
       const row = rows[0];
@@ -257,8 +230,8 @@ export class DepartmentGroupsService {
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error getting group by ID:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to get group");
+      logger.error('Error getting group by ID:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get group');
     }
   }
 
@@ -284,23 +257,23 @@ export class DepartmentGroupsService {
       );
 
       if (result.affectedRows === 0) {
-        throw new ServiceError("NOT_FOUND", "Group not found");
+        throw new ServiceError('NOT_FOUND', 'Group not found');
       }
 
       // Log the update
       await RootLog.log(
-        "department_group_updated",
+        'department_group_updated',
         updatedBy,
         tenantId,
         `Updated department group: ${data.name} (ID: ${groupId})`,
       );
     } catch (error: unknown) {
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
-        throw new ServiceError("GROUP_EXISTS", "Group name already exists");
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+        throw new ServiceError('GROUP_EXISTS', 'Group name already exists');
       }
       if (error instanceof ServiceError) throw error;
-      logger.error("Error updating department group:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to update group");
+      logger.error('Error updating department group:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update group');
     }
   }
 
@@ -310,11 +283,7 @@ export class DepartmentGroupsService {
    * @param tenantId
    * @param deletedBy
    */
-  async deleteGroup(
-    groupId: number,
-    tenantId: number,
-    deletedBy: number,
-  ): Promise<void> {
+  async deleteGroup(groupId: number, tenantId: number, deletedBy: number): Promise<void> {
     const connection = await getConnection();
 
     try {
@@ -329,8 +298,8 @@ export class DepartmentGroupsService {
 
       if (permissions[0].count > 0) {
         throw new ServiceError(
-          "HAS_PERMISSIONS",
-          "Cannot delete group with active admin permissions",
+          'HAS_PERMISSIONS',
+          'Cannot delete group with active admin permissions',
         );
       }
 
@@ -342,10 +311,7 @@ export class DepartmentGroupsService {
       );
 
       if (subgroups[0].count > 0) {
-        throw new ServiceError(
-          "HAS_SUBGROUPS",
-          "Cannot delete group with subgroups",
-        );
+        throw new ServiceError('HAS_SUBGROUPS', 'Cannot delete group with subgroups');
       }
 
       // Get group name for logging
@@ -355,7 +321,7 @@ export class DepartmentGroupsService {
       );
 
       if (groupData.length === 0) {
-        throw new ServiceError("NOT_FOUND", "Group not found");
+        throw new ServiceError('NOT_FOUND', 'Group not found');
       }
 
       const groupName = groupData[0].name;
@@ -378,7 +344,7 @@ export class DepartmentGroupsService {
 
       // Log the deletion
       await RootLog.log(
-        "department_group_deleted",
+        'department_group_deleted',
         deletedBy,
         tenantId,
         `Deleted department group: ${groupName} (ID: ${groupId})`,
@@ -386,8 +352,8 @@ export class DepartmentGroupsService {
     } catch (error: unknown) {
       await connection.rollback();
       if (error instanceof ServiceError) throw error;
-      logger.error("Error deleting department group:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to delete group");
+      logger.error('Error deleting department group:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete group');
     } finally {
       connection.release();
     }
@@ -416,18 +382,13 @@ export class DepartmentGroupsService {
       );
 
       if (groupCheck.length === 0) {
-        throw new ServiceError("NOT_FOUND", "Group not found");
+        throw new ServiceError('NOT_FOUND', 'Group not found');
       }
 
       // Prepare bulk insert values
-      const values = departmentIds.map((deptId) => [
-        tenantId,
-        groupId,
-        deptId,
-        addedBy,
-      ]);
+      const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, addedBy]);
 
-      const placeholders = departmentIds.map(() => "(?, ?, ?, ?)").join(", ");
+      const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
       // Insert with ON DUPLICATE KEY UPDATE to handle existing assignments
       await execute(
@@ -439,15 +400,15 @@ export class DepartmentGroupsService {
 
       // Log the action
       await RootLog.log(
-        "departments_added_to_group",
+        'departments_added_to_group',
         addedBy,
         tenantId,
         `Added ${departmentIds.length} departments to group ${groupId}`,
       );
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error adding departments to group:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to add departments");
+      logger.error('Error adding departments to group:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to add departments');
     }
   }
 
@@ -472,20 +433,20 @@ export class DepartmentGroupsService {
       );
 
       if (result.affectedRows === 0) {
-        throw new ServiceError("NOT_FOUND", "Department not found in group");
+        throw new ServiceError('NOT_FOUND', 'Department not found in group');
       }
 
       // Log the action
       await RootLog.log(
-        "department_removed_from_group",
+        'department_removed_from_group',
         removedBy,
         tenantId,
         `Removed department ${departmentId} from group ${groupId}`,
       );
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error removing department from group:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to remove department");
+      logger.error('Error removing department from group:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to remove department');
     }
   }
 
@@ -522,10 +483,7 @@ export class DepartmentGroupsService {
 
       // Get departments from subgroups if requested
       if (includeSubgroups) {
-        const subgroupDepts = await this.getSubgroupDepartments(
-          groupId,
-          tenantId,
-        );
+        const subgroupDepts = await this.getSubgroupDepartments(groupId, tenantId);
         subgroupDepts.forEach((dept) => {
           departments.set(dept.id, dept);
         });
@@ -533,8 +491,8 @@ export class DepartmentGroupsService {
 
       return [...departments.values()];
     } catch (error: unknown) {
-      logger.error("Error getting group departments:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to get departments");
+      logger.error('Error getting group departments:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get departments');
     }
   }
 
@@ -595,11 +553,7 @@ export class DepartmentGroupsService {
       return false;
     }
 
-    return this.checkCircularDependency(
-      parents[0].parent_group_id,
-      targetId,
-      tenantId,
-    );
+    return this.checkCircularDependency(parents[0].parent_group_id, targetId, tenantId);
   }
 }
 

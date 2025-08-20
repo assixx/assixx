@@ -2,21 +2,14 @@
  * Department Groups Controller v2
  * HTTP request handlers for department groups API
  */
+import { Response } from 'express';
+import { validationResult } from 'express-validator';
 
-import { validationResult } from "express-validator";
-
-import { Response } from "express";
-
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { departmentGroupsService } from "./service.js";
-import {
-  CreateGroupRequest,
-  UpdateGroupRequest,
-  AddDepartmentsRequest,
-} from "./types.js";
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { logger } from '../../../utils/logger.js';
+import { departmentGroupsService } from './service.js';
+import { AddDepartmentsRequest, CreateGroupRequest, UpdateGroupRequest } from './types.js';
 
 /**
  *
@@ -29,21 +22,19 @@ export class DepartmentGroupsController {
    */
   async getGroups(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const groups = await departmentGroupsService.getGroupHierarchy(
-        req.user.tenant_id,
-      );
+      const groups = await departmentGroupsService.getGroupHierarchy(req.user.tenant_id);
 
       res.json({
         success: true,
         data: groups,
       });
     } catch (error: unknown) {
-      logger.error("Error getting department groups:", error);
+      logger.error('Error getting department groups:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: "SERVER_ERROR",
-          message: "Failed to fetch department groups",
+          code: 'SERVER_ERROR',
+          message: 'Failed to fetch department groups',
         },
       });
     }
@@ -57,10 +48,7 @@ export class DepartmentGroupsController {
   async getGroupById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const groupId = Number.parseInt(req.params.id);
-      const group = await departmentGroupsService.getGroupById(
-        groupId,
-        req.user.tenant_id,
-      );
+      const group = await departmentGroupsService.getGroupById(groupId, req.user.tenant_id);
 
       res.json({
         success: true,
@@ -76,12 +64,12 @@ export class DepartmentGroupsController {
           },
         });
       } else {
-        logger.error("Error getting group by ID:", error);
+        logger.error('Error getting group by ID:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to fetch group",
+            code: 'SERVER_ERROR',
+            message: 'Failed to fetch group',
           },
         });
       }
@@ -95,12 +83,12 @@ export class DepartmentGroupsController {
    */
   async createGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
-    if (req.user.role !== "root") {
+    if (req.user.role !== 'root') {
       res.status(403).json({
         success: false,
         error: {
-          code: "FORBIDDEN",
-          message: "Only root users can create department groups",
+          code: 'FORBIDDEN',
+          message: 'Only root users can create department groups',
         },
       });
       return;
@@ -112,10 +100,10 @@ export class DepartmentGroupsController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -135,7 +123,7 @@ export class DepartmentGroupsController {
         data: {
           id: groupId,
         },
-        message: "Department group created successfully",
+        message: 'Department group created successfully',
       });
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
@@ -147,12 +135,12 @@ export class DepartmentGroupsController {
           },
         });
       } else {
-        logger.error("Error creating department group:", error);
+        logger.error('Error creating department group:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to create department group",
+            code: 'SERVER_ERROR',
+            message: 'Failed to create department group',
           },
         });
       }
@@ -166,12 +154,12 @@ export class DepartmentGroupsController {
    */
   async updateGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
-    if (req.user.role !== "root") {
+    if (req.user.role !== 'root') {
       res.status(403).json({
         success: false,
         error: {
-          code: "FORBIDDEN",
-          message: "Only root users can update department groups",
+          code: 'FORBIDDEN',
+          message: 'Only root users can update department groups',
         },
       });
       return;
@@ -183,10 +171,10 @@ export class DepartmentGroupsController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -205,7 +193,7 @@ export class DepartmentGroupsController {
 
       res.json({
         success: true,
-        message: "Department group updated successfully",
+        message: 'Department group updated successfully',
       });
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
@@ -217,12 +205,12 @@ export class DepartmentGroupsController {
           },
         });
       } else {
-        logger.error("Error updating department group:", error);
+        logger.error('Error updating department group:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to update department group",
+            code: 'SERVER_ERROR',
+            message: 'Failed to update department group',
           },
         });
       }
@@ -236,12 +224,12 @@ export class DepartmentGroupsController {
    */
   async deleteGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
-    if (req.user.role !== "root") {
+    if (req.user.role !== 'root') {
       res.status(403).json({
         success: false,
         error: {
-          code: "FORBIDDEN",
-          message: "Only root users can delete department groups",
+          code: 'FORBIDDEN',
+          message: 'Only root users can delete department groups',
         },
       });
       return;
@@ -253,10 +241,10 @@ export class DepartmentGroupsController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -266,15 +254,11 @@ export class DepartmentGroupsController {
 
     try {
       const groupId = Number.parseInt(req.params.id);
-      await departmentGroupsService.deleteGroup(
-        groupId,
-        req.user.tenant_id,
-        req.user.id,
-      );
+      await departmentGroupsService.deleteGroup(groupId, req.user.tenant_id, req.user.id);
 
       res.json({
         success: true,
-        message: "Department group deleted successfully",
+        message: 'Department group deleted successfully',
       });
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
@@ -286,12 +270,12 @@ export class DepartmentGroupsController {
           },
         });
       } else {
-        logger.error("Error deleting department group:", error);
+        logger.error('Error deleting department group:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to delete department group",
+            code: 'SERVER_ERROR',
+            message: 'Failed to delete department group',
           },
         });
       }
@@ -303,17 +287,14 @@ export class DepartmentGroupsController {
    * @param req
    * @param res
    */
-  async addDepartments(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async addDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
-    if (req.user.role !== "root") {
+    if (req.user.role !== 'root') {
       res.status(403).json({
         success: false,
         error: {
-          code: "FORBIDDEN",
-          message: "Only root users can modify department groups",
+          code: 'FORBIDDEN',
+          message: 'Only root users can modify department groups',
         },
       });
       return;
@@ -325,10 +306,10 @@ export class DepartmentGroupsController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -348,7 +329,7 @@ export class DepartmentGroupsController {
 
       res.json({
         success: true,
-        message: "Departments added to group successfully",
+        message: 'Departments added to group successfully',
       });
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
@@ -360,12 +341,12 @@ export class DepartmentGroupsController {
           },
         });
       } else {
-        logger.error("Error adding departments to group:", error);
+        logger.error('Error adding departments to group:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to add departments",
+            code: 'SERVER_ERROR',
+            message: 'Failed to add departments',
           },
         });
       }
@@ -377,17 +358,14 @@ export class DepartmentGroupsController {
    * @param req
    * @param res
    */
-  async removeDepartment(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async removeDepartment(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
-    if (req.user.role !== "root") {
+    if (req.user.role !== 'root') {
       res.status(403).json({
         success: false,
         error: {
-          code: "FORBIDDEN",
-          message: "Only root users can modify department groups",
+          code: 'FORBIDDEN',
+          message: 'Only root users can modify department groups',
         },
       });
       return;
@@ -399,10 +377,10 @@ export class DepartmentGroupsController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -423,7 +401,7 @@ export class DepartmentGroupsController {
 
       res.json({
         success: true,
-        message: "Department removed from group successfully",
+        message: 'Department removed from group successfully',
       });
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
@@ -435,12 +413,12 @@ export class DepartmentGroupsController {
           },
         });
       } else {
-        logger.error("Error removing department from group:", error);
+        logger.error('Error removing department from group:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to remove department",
+            code: 'SERVER_ERROR',
+            message: 'Failed to remove department',
           },
         });
       }
@@ -452,20 +430,17 @@ export class DepartmentGroupsController {
    * @param req
    * @param res
    */
-  async getGroupDepartments(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async getGroupDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -475,7 +450,7 @@ export class DepartmentGroupsController {
 
     try {
       const groupId = Number.parseInt(req.params.id);
-      const includeSubgroups = req.query.includeSubgroups !== "false";
+      const includeSubgroups = req.query.includeSubgroups !== 'false';
 
       const departments = await departmentGroupsService.getGroupDepartments(
         groupId,
@@ -488,12 +463,12 @@ export class DepartmentGroupsController {
         data: departments,
       });
     } catch (error: unknown) {
-      logger.error("Error getting group departments:", error);
+      logger.error('Error getting group departments:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: "SERVER_ERROR",
-          message: "Failed to fetch departments",
+          code: 'SERVER_ERROR',
+          message: 'Failed to fetch departments',
         },
       });
     }

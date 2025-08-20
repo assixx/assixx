@@ -6,25 +6,23 @@
  *   name: Survey
  *   description: Survey creation, management and responses
  */
+import express, { Router } from 'express';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
-
-import express, { Router } from "express";
-
-import db, { execute } from "../database";
-import { checkFeature } from "../middleware/features";
-import { rateLimiter } from "../middleware/rateLimiter";
-import { security } from "../middleware/security";
+import db, { execute } from '../database';
+import { checkFeature } from '../middleware/features';
+import { rateLimiter } from '../middleware/rateLimiter';
+import { security } from '../middleware/security';
 import {
   validateCreateSurvey,
-  validateUpdateSurvey,
-  validateSurveyResponse,
   validatePaginationQuery,
-} from "../middleware/validators";
-import Survey from "../models/survey";
-import { successResponse, errorResponse } from "../types/response.types";
-import { getErrorStack } from "../utils/errorHandler";
-import { typed } from "../utils/routeHandlers";
+  validateSurveyResponse,
+  validateUpdateSurvey,
+} from '../middleware/validators';
+import Survey from '../models/survey';
+import { errorResponse, successResponse } from '../types/response.types';
+import { getErrorStack } from '../utils/errorHandler';
+import { typed } from '../utils/routeHandlers';
 
 // Import models and database (now ES modules)
 
@@ -32,9 +30,9 @@ const router: Router = express.Router();
 
 // Get pending surveys count for employee
 router.get(
-  "/pending-count",
+  '/pending-count',
   ...security.user(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.auth(async (req, res) => {
     try {
       const userId = req.user.id;
@@ -42,13 +40,11 @@ router.get(
 
       // First get the user's department_id
       const [userInfo] = await execute<RowDataPacket[]>(
-        "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
+        'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
         [userId, tenantId],
       );
 
-      const userDepartmentId: number | null = userInfo[0]?.department_id as
-        | number
-        | null;
+      const userDepartmentId: number | null = userInfo[0]?.department_id as number | null;
 
       // Get all active surveys assigned to the employee
       const [surveys] = await execute<RowDataPacket[]>(
@@ -81,10 +77,8 @@ router.get(
 
       res.json(successResponse({ pendingCount }));
     } catch (error: unknown) {
-      console.error("Error fetching pending surveys count:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der offenen Umfragen", 500));
+      console.error('Error fetching pending surveys count:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der offenen Umfragen', 500));
     }
   }),
 );
@@ -172,10 +166,10 @@ router.get(
  */
 // Get all surveys
 router.get(
-  "/",
+  '/',
   ...security.user(),
   validatePaginationQuery,
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.auth(async (req, res) => {
     try {
       const { status, page, limit } = req.query;
@@ -183,176 +177,141 @@ router.get(
       let surveys;
 
       // Root users see all surveys
-      if (req.user.role === "root") {
+      if (req.user.role === 'root') {
         surveys = await Survey.getAllByTenant(req.user.tenant_id, {
           status:
-            status != null && status !== ""
-              ? ((typeof status === "string"
-                  ? status
-                  : typeof status === "object"
-                    ? JSON.stringify(status)
-                    : String(status)) as "active" | "draft" | "closed")
-              : undefined,
+            status != null && status !== '' ?
+              ((typeof status === 'string' ? status
+              : typeof status === 'object' ? JSON.stringify(status)
+              : String(status)) as 'active' | 'draft' | 'closed')
+            : undefined,
           page:
-            page != null && page !== ""
-              ? Number.parseInt(
-                  typeof page === "string"
-                    ? page
-                    : typeof page === "number"
-                      ? String(page)
-                      : "1",
-                )
-              : 1,
+            page != null && page !== '' ?
+              Number.parseInt(
+                typeof page === 'string' ? page
+                : typeof page === 'number' ? String(page)
+                : '1',
+              )
+            : 1,
           limit:
-            limit != null && limit !== ""
-              ? Number.parseInt(
-                  typeof limit === "string"
-                    ? limit
-                    : typeof limit === "number"
-                      ? String(limit)
-                      : "20",
-                )
-              : 20,
+            limit != null && limit !== '' ?
+              Number.parseInt(
+                typeof limit === 'string' ? limit
+                : typeof limit === 'number' ? String(limit)
+                : '20',
+              )
+            : 20,
         });
       }
       // Admin users see filtered surveys based on department permissions
-      else if (req.user.role === "admin") {
-        surveys = await Survey.getAllByTenantForAdmin(
-          req.user.tenant_id,
-          req.user.id,
-          {
-            status:
-              status != null && status !== ""
-                ? ((typeof status === "string"
-                    ? status
-                    : typeof status === "object"
-                      ? JSON.stringify(status)
-                      : String(status)) as "active" | "draft" | "closed")
-                : undefined,
-            page:
-              page != null && page !== ""
-                ? Number.parseInt(
-                    typeof page === "string"
-                      ? page
-                      : typeof page === "number"
-                        ? String(page)
-                        : "1",
-                  )
-                : 1,
-            limit:
-              limit != null && limit !== ""
-                ? Number.parseInt(
-                    typeof limit === "string"
-                      ? limit
-                      : typeof limit === "number"
-                        ? String(limit)
-                        : "20",
-                  )
-                : 20,
-          },
-        );
+      else if (req.user.role === 'admin') {
+        surveys = await Survey.getAllByTenantForAdmin(req.user.tenant_id, req.user.id, {
+          status:
+            status != null && status !== '' ?
+              ((typeof status === 'string' ? status
+              : typeof status === 'object' ? JSON.stringify(status)
+              : String(status)) as 'active' | 'draft' | 'closed')
+            : undefined,
+          page:
+            page != null && page !== '' ?
+              Number.parseInt(
+                typeof page === 'string' ? page
+                : typeof page === 'number' ? String(page)
+                : '1',
+              )
+            : 1,
+          limit:
+            limit != null && limit !== '' ?
+              Number.parseInt(
+                typeof limit === 'string' ? limit
+                : typeof limit === 'number' ? String(limit)
+                : '20',
+              )
+            : 20,
+        });
       }
       // Employee users see surveys assigned to them
-      else if (req.user.role === "employee") {
-        surveys = await Survey.getAllByTenantForEmployee(
-          req.user.tenant_id,
-          req.user.id,
-          {
-            status:
-              status != null && status !== ""
-                ? ((typeof status === "string"
-                    ? status
-                    : typeof status === "object"
-                      ? JSON.stringify(status)
-                      : String(status)) as "active" | "draft" | "closed")
-                : undefined,
-            page:
-              page != null && page !== ""
-                ? Number.parseInt(
-                    typeof page === "string"
-                      ? page
-                      : typeof page === "number"
-                        ? String(page)
-                        : "1",
-                  )
-                : 1,
-            limit:
-              limit != null && limit !== ""
-                ? Number.parseInt(
-                    typeof limit === "string"
-                      ? limit
-                      : typeof limit === "number"
-                        ? String(limit)
-                        : "20",
-                  )
-                : 20,
-          },
-        );
+      else if (req.user.role === 'employee') {
+        surveys = await Survey.getAllByTenantForEmployee(req.user.tenant_id, req.user.id, {
+          status:
+            status != null && status !== '' ?
+              ((typeof status === 'string' ? status
+              : typeof status === 'object' ? JSON.stringify(status)
+              : String(status)) as 'active' | 'draft' | 'closed')
+            : undefined,
+          page:
+            page != null && page !== '' ?
+              Number.parseInt(
+                typeof page === 'string' ? page
+                : typeof page === 'number' ? String(page)
+                : '1',
+              )
+            : 1,
+          limit:
+            limit != null && limit !== '' ?
+              Number.parseInt(
+                typeof limit === 'string' ? limit
+                : typeof limit === 'number' ? String(limit)
+                : '20',
+              )
+            : 20,
+        });
       }
       // Other roles don't have access
       else {
-        res.status(403).json(errorResponse("Keine Berechtigung", 403));
+        res.status(403).json(errorResponse('Keine Berechtigung', 403));
         return;
       }
 
       res.json(successResponse(surveys));
     } catch (error: unknown) {
-      console.error("Error fetching surveys:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Umfragen", 500));
+      console.error('Error fetching surveys:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Umfragen', 500));
     }
   }),
 );
 
 // Get survey templates
 router.get(
-  "/templates",
+  '/templates',
   ...security.user(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.auth(async (req, res) => {
     try {
       const templates = await Survey.getTemplates(req.user.tenant_id);
       res.json(successResponse(templates));
     } catch (error: unknown) {
-      console.error("Error fetching templates:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Vorlagen", 500));
+      console.error('Error fetching templates:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Vorlagen', 500));
     }
   }),
 );
 
 // Get single survey
 router.get(
-  "/:id",
+  '/:id',
   ...security.user(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const survey = await Survey.getById(
-        Number.parseInt(req.params.id, 10),
-        req.user.tenant_id,
-      );
+      const survey = await Survey.getById(Number.parseInt(req.params.id, 10), req.user.tenant_id);
       if (!survey) {
-        res.status(404).json(errorResponse("Umfrage nicht gefunden", 404));
+        res.status(404).json(errorResponse('Umfrage nicht gefunden', 404));
         return;
       }
       res.json(successResponse(survey));
     } catch (error: unknown) {
-      console.error("Error fetching survey:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Umfrage", 500));
+      console.error('Error fetching survey:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Umfrage', 500));
     }
   }),
 );
 
 // Get survey statistics (admin only)
 router.get(
-  "/:id/statistics",
+  '/:id/statistics',
   ...security.admin(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const stats = await Survey.getStatistics(
@@ -361,38 +320,31 @@ router.get(
       );
       res.json(successResponse(stats));
     } catch (error: unknown) {
-      console.error("Error fetching statistics:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Statistiken", 500));
+      console.error('Error fetching statistics:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Statistiken', 500));
     }
   }),
 );
 
 // Create survey (admin only)
 router.post(
-  "/",
+  '/',
   ...security.admin(validateCreateSurvey),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.body<{
     title: string;
     description?: string;
     start_date: string;
     end_date: string;
     is_anonymous?: boolean;
-    status?: "draft" | "active" | "closed";
+    status?: 'draft' | 'active' | 'closed';
     questions?: {
       question_text: string;
-      question_type:
-        | "text"
-        | "single_choice"
-        | "multiple_choice"
-        | "rating"
-        | "number";
+      question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
       options?: string[];
     }[];
     assignments?: {
-      type: "company" | "department" | "team" | "individual";
+      type: 'company' | 'department' | 'team' | 'individual';
       department_id?: number;
       team_id?: number;
       user_id?: number;
@@ -400,7 +352,7 @@ router.post(
   }>(async (req, res) => {
     try {
       // For admin users, validate department assignments
-      if (req.user.role === "admin" && req.body.assignments) {
+      if (req.user.role === 'admin' && req.body.assignments) {
         // Get admin's authorized departments
         const [adminDepts] = await execute<RowDataPacket[]>(
           `SELECT department_id FROM admin_department_permissions
@@ -408,28 +360,25 @@ router.post(
           [req.user.id, req.user.tenant_id],
         );
 
-        const authorizedDeptIds = adminDepts.map(
-          (d) => d.department_id as number,
-        );
+        const authorizedDeptIds = adminDepts.map((d) => d.department_id as number);
 
         // Check each assignment
         for (const assignment of req.body.assignments) {
-          if (assignment.type === "department") {
+          if (assignment.type === 'department') {
             if (
               assignment.department_id === undefined ||
               !authorizedDeptIds.includes(assignment.department_id)
             ) {
               res.status(403).json({
-                error: "Sie haben keine Berechtigung für diese Abteilung",
+                error: 'Sie haben keine Berechtigung für diese Abteilung',
               });
               return;
             }
           }
           // Admins can always create surveys for "all_users"
-          else if (!["company", "all_users"].includes(assignment.type)) {
+          else if (!['company', 'all_users'].includes(assignment.type)) {
             res.status(403).json({
-              error:
-                "Sie können nur Umfragen für Ihre Abteilungen oder die ganze Firma erstellen",
+              error: 'Sie können nur Umfragen für Ihre Abteilungen oder die ganze Firma erstellen',
             });
             return;
           }
@@ -440,52 +389,39 @@ router.post(
       const mappedBody = {
         ...req.body,
         assignments: req.body.assignments?.map(
-          (a: {
-            type: string;
-            department_id?: number;
-            team_id?: number;
-            user_id?: number;
-          }) => ({
+          (a: { type: string; department_id?: number; team_id?: number; user_id?: number }) => ({
             ...a,
-            type: (a.type === "company"
-              ? "all_users"
-              : a.type === "individual"
-                ? "user"
-                : a.type) as "all_users" | "department" | "team" | "user",
+            type: (a.type === 'company' ? 'all_users'
+            : a.type === 'individual' ? 'user'
+            : a.type) as 'all_users' | 'department' | 'team' | 'user',
           }),
         ),
       };
 
-      const surveyId = await Survey.create(
-        mappedBody,
-        req.user.tenant_id,
-        req.user.id,
-      );
+      const surveyId = await Survey.create(mappedBody, req.user.tenant_id, req.user.id);
 
       res.status(201).json(
         successResponse({
           id: surveyId,
-          message: "Umfrage erfolgreich erstellt",
+          message: 'Umfrage erfolgreich erstellt',
         }),
       );
     } catch (error: unknown) {
-      console.error("Error creating survey:", error);
+      console.error('Error creating survey:', error);
       const stack = getErrorStack(error);
-      if (stack !== "") {
-        console.error("Error stack:", stack);
+      if (stack !== '') {
+        console.error('Error stack:', stack);
       }
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Erstellen der Umfrage", 500));
+      res.status(500).json(errorResponse('Fehler beim Erstellen der Umfrage', 500));
     }
   }),
 );
 
 // Create survey from template (admin only)
 router.post(
-  "/from-template/:templateId",
+  '/from-template/:templateId',
   ...security.admin(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.params<{ templateId: string }>(async (req, res) => {
     try {
       const surveyId = await Survey.createFromTemplate(
@@ -497,25 +433,21 @@ router.post(
       res.status(201).json(
         successResponse({
           id: surveyId,
-          message: "Umfrage aus Vorlage erstellt",
+          message: 'Umfrage aus Vorlage erstellt',
         }),
       );
     } catch (error: unknown) {
-      console.error("Error creating survey from template:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("Fehler beim Erstellen der Umfrage aus Vorlage", 500),
-        );
+      console.error('Error creating survey from template:', error);
+      res.status(500).json(errorResponse('Fehler beim Erstellen der Umfrage aus Vorlage', 500));
     }
   }),
 );
 
 // Update survey (admin only)
 router.put(
-  "/:id",
+  '/:id',
   ...security.admin(validateUpdateSurvey),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.paramsBody<
     { id: string },
     {
@@ -524,7 +456,7 @@ router.put(
       start_date?: string;
       end_date?: string;
       is_anonymous?: boolean;
-      status?: "draft" | "active" | "closed";
+      status?: 'draft' | 'active' | 'closed';
     }
   >(async (req, res) => {
     try {
@@ -535,54 +467,45 @@ router.put(
       );
 
       if (!success) {
-        res.status(404).json(errorResponse("Umfrage nicht gefunden", 404));
+        res.status(404).json(errorResponse('Umfrage nicht gefunden', 404));
         return;
       }
 
-      res.json(
-        successResponse({ message: "Umfrage erfolgreich aktualisiert" }),
-      );
+      res.json(successResponse({ message: 'Umfrage erfolgreich aktualisiert' }));
     } catch (error: unknown) {
-      console.error("Error updating survey:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Aktualisieren der Umfrage", 500));
+      console.error('Error updating survey:', error);
+      res.status(500).json(errorResponse('Fehler beim Aktualisieren der Umfrage', 500));
     }
   }),
 );
 
 // Delete survey (admin only)
 router.delete(
-  "/:id",
+  '/:id',
   ...security.admin(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const success = await Survey.delete(
-        Number.parseInt(req.params.id, 10),
-        req.user.tenant_id,
-      );
+      const success = await Survey.delete(Number.parseInt(req.params.id, 10), req.user.tenant_id);
 
       if (!success) {
-        res.status(404).json(errorResponse("Umfrage nicht gefunden", 404));
+        res.status(404).json(errorResponse('Umfrage nicht gefunden', 404));
         return;
       }
 
-      res.json(successResponse({ message: "Umfrage erfolgreich gelöscht" }));
+      res.json(successResponse({ message: 'Umfrage erfolgreich gelöscht' }));
     } catch (error: unknown) {
-      console.error("Error deleting survey:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Löschen der Umfrage", 500));
+      console.error('Error deleting survey:', error);
+      res.status(500).json(errorResponse('Fehler beim Löschen der Umfrage', 500));
     }
   }),
 );
 
 // Submit survey response
 router.post(
-  "/:id/responses",
+  '/:id/responses',
   ...security.user(validateSurveyResponse),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.paramsBody<
     { id: string },
     {
@@ -601,7 +524,7 @@ router.post(
       const userId = req.user.id;
       const answers = req.body.answers;
 
-      console.info("Submitting response:", {
+      console.info('Submitting response:', {
         surveyId,
         userId,
         userIdType: typeof userId,
@@ -613,42 +536,33 @@ router.post(
       // Check if survey exists and is active
       const survey = await Survey.getById(surveyId, req.user.tenant_id);
       if (!survey) {
-        res.status(404).json(errorResponse("Umfrage nicht gefunden", 404));
+        res.status(404).json(errorResponse('Umfrage nicht gefunden', 404));
         return;
       }
 
-      if (survey.status !== "active") {
-        res.status(400).json(errorResponse("Umfrage ist nicht aktiv", 400));
+      if (survey.status !== 'active') {
+        res.status(400).json(errorResponse('Umfrage ist nicht aktiv', 400));
         return;
       }
 
-      console.info(
-        "Survey is_anonymous:",
-        survey.is_anonymous,
-        typeof survey.is_anonymous,
-      );
+      console.info('Survey is_anonymous:', survey.is_anonymous, typeof survey.is_anonymous);
 
       // Check if user already responded (unless anonymous)
       const isAnonymous =
-        String(survey.is_anonymous) === "1" ||
+        String(survey.is_anonymous) === '1' ||
         survey.is_anonymous === 1 ||
         survey.is_anonymous === true;
 
       if (!isAnonymous) {
         const [existing] = await execute<RowDataPacket[]>(
-          "SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?",
+          'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?',
           [surveyId, userId],
         );
 
         if (existing.length > 0) {
           res
             .status(400)
-            .json(
-              errorResponse(
-                "Sie haben bereits an dieser Umfrage teilgenommen",
-                400,
-              ),
-            );
+            .json(errorResponse('Sie haben bereits an dieser Umfrage teilgenommen', 400));
           return;
         }
       }
@@ -667,9 +581,9 @@ router.post(
             req.user.tenant_id,
             surveyId,
             isAnonymous ? null : userId,
-            isAnonymous
-              ? `anon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-              : null,
+            isAnonymous ?
+              `anon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+            : null,
           ],
         );
 
@@ -677,15 +591,15 @@ router.post(
 
         // Save answers
         for (const answer of answers) {
-          console.info("Saving answer:", {
+          console.info('Saving answer:', {
             tenant_id: req.user.tenant_id,
             response_id: responseId,
             question_id: answer.question_id,
             answer_text: answer.answer_text ?? null,
             answer_options:
-              answer.answer_options != null && answer.answer_options !== ""
-                ? JSON.stringify(answer.answer_options)
-                : null,
+              answer.answer_options != null && answer.answer_options !== '' ?
+                JSON.stringify(answer.answer_options)
+              : null,
             answer_number: answer.answer_number ?? null,
             answer_date: answer.answer_date ?? null,
           });
@@ -702,9 +616,9 @@ router.post(
               responseId,
               answer.question_id,
               answer.answer_text ?? null,
-              answer.answer_options != null && answer.answer_options !== ""
-                ? JSON.stringify(answer.answer_options)
-                : null,
+              answer.answer_options != null && answer.answer_options !== '' ?
+                JSON.stringify(answer.answer_options)
+              : null,
               answer.answer_number ?? null,
               answer.answer_date ?? null,
             ],
@@ -723,39 +637,35 @@ router.post(
         );
         res.json(
           successResponse({
-            message: "Antworten erfolgreich gespeichert",
+            message: 'Antworten erfolgreich gespeichert',
             responseId,
           }),
         );
       } catch (error: unknown) {
         await connection.rollback();
-        console.error("Error in transaction:", error);
+        console.error('Error in transaction:', error);
         throw error;
       } finally {
         connection.release();
       }
     } catch (error: unknown) {
-      console.error("Error submitting response:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Speichern der Antworten", 500));
+      console.error('Error submitting response:', error);
+      res.status(500).json(errorResponse('Fehler beim Speichern der Antworten', 500));
     }
   }),
 );
 
 // Get user's response to a survey
 router.get(
-  "/:id/my-response",
+  '/:id/my-response',
   ...security.user(),
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const surveyId = Number.parseInt(req.params.id);
       const userId = req.user.id;
 
-      console.info(
-        `Checking response for survey ${surveyId} and user ${userId}`,
-      );
+      console.info(`Checking response for survey ${surveyId} and user ${userId}`);
 
       const [responses] = await execute<RowDataPacket[]>(
         `
@@ -768,9 +678,7 @@ router.get(
         [surveyId, userId],
       );
 
-      console.info(
-        `Found ${responses.length} responses for user ${userId} on survey ${surveyId}`,
-      );
+      console.info(`Found ${responses.length} responses for user ${userId} on survey ${surveyId}`);
 
       if (responses.length === 0) {
         res.json(successResponse({ responded: false }));
@@ -786,9 +694,9 @@ router.get(
             answers: responses.map((r) => ({
               question_id: r.question_id as number,
               answer_text:
-                r.answer_text != null && Buffer.isBuffer(r.answer_text)
-                  ? r.answer_text.toString()
-                  : (r.answer_text as string | null),
+                r.answer_text != null && Buffer.isBuffer(r.answer_text) ?
+                  r.answer_text.toString()
+                : (r.answer_text as string | null),
               answer_options: r.answer_options as string | null,
               answer_number: r.answer_number as number | null,
               answer_date: r.answer_date as Date | null,
@@ -797,99 +705,86 @@ router.get(
         }),
       );
     } catch (error: unknown) {
-      console.error("Error fetching user response:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Antwort", 500));
+      console.error('Error fetching user response:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Antwort', 500));
     }
   }),
 );
 
 // Export survey results to Excel - with rate limiting
 router.get(
-  "/:id/export",
+  '/:id/export',
   ...security.admin(),
   rateLimiter.api,
-  checkFeature("surveys"),
+  checkFeature('surveys'),
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const surveyId = Number.parseInt(req.params.id, 10);
       const format =
-        req.query.format != null && req.query.format !== ""
-          ? typeof req.query.format === "string"
-            ? req.query.format
-            : typeof req.query.format === "object"
-              ? JSON.stringify(req.query.format)
-              : String(req.query.format)
-          : "excel";
+        req.query.format != null && req.query.format !== '' ?
+          typeof req.query.format === 'string' ? req.query.format
+          : typeof req.query.format === 'object' ? JSON.stringify(req.query.format)
+          : String(req.query.format)
+        : 'excel';
 
       // Get survey with all responses
       const survey = await Survey.getById(surveyId, req.user.tenant_id);
       if (!survey) {
-        res.status(404).json(errorResponse("Umfrage nicht gefunden", 404));
+        res.status(404).json(errorResponse('Umfrage nicht gefunden', 404));
         return;
       }
 
       // Get statistics with all responses
-      const statistics = await Survey.getStatistics(
-        surveyId,
-        req.user.tenant_id,
-      );
+      const statistics = await Survey.getStatistics(surveyId, req.user.tenant_id);
 
-      if (format === "excel") {
+      if (format === 'excel') {
         // Create Excel export
-        const ExcelJS = await import("exceljs");
+        const ExcelJS = await import('exceljs');
         const workbook = new ExcelJS.default.Workbook();
 
         // Summary sheet
-        const summarySheet = workbook.addWorksheet("Zusammenfassung");
+        const summarySheet = workbook.addWorksheet('Zusammenfassung');
         summarySheet.columns = [
-          { header: "Eigenschaft", key: "property", width: 30 },
-          { header: "Wert", key: "value", width: 50 },
+          { header: 'Eigenschaft', key: 'property', width: 30 },
+          { header: 'Wert', key: 'value', width: 50 },
         ];
 
         summarySheet.addRows([
-          { property: "Umfrage-Titel", value: survey.title },
+          { property: 'Umfrage-Titel', value: survey.title },
           {
-            property: "Erstellt am",
-            value: new Date(survey.created_at).toLocaleDateString("de-DE"),
+            property: 'Erstellt am',
+            value: new Date(survey.created_at).toLocaleDateString('de-DE'),
           },
           {
-            property: "Endet am",
-            value: survey.end_date
-              ? new Date(survey.end_date).toLocaleDateString("de-DE")
-              : "N/A",
+            property: 'Endet am',
+            value: survey.end_date ? new Date(survey.end_date).toLocaleDateString('de-DE') : 'N/A',
           },
-          { property: "Status", value: survey.status },
+          { property: 'Status', value: survey.status },
           {
-            property: "Anonym",
-            value: survey.is_anonymous === true ? "Ja" : "Nein",
+            property: 'Anonym',
+            value: survey.is_anonymous === true ? 'Ja' : 'Nein',
           },
           {
-            property: "Anzahl Antworten",
+            property: 'Anzahl Antworten',
             value: statistics.total_responses,
           },
           {
-            property: "Abschlussrate",
+            property: 'Abschlussrate',
             value: `${statistics.completed_responses} von ${statistics.total_responses}`,
           },
         ]);
 
         // Questions sheet
-        const questionsSheet = workbook.addWorksheet("Fragen & Antworten");
+        const questionsSheet = workbook.addWorksheet('Fragen & Antworten');
 
         // Add headers based on question types
-        const headers = ["Frage", "Typ", "Antworten"];
+        const headers = ['Frage', 'Typ', 'Antworten'];
         questionsSheet.addRow(headers);
 
         // Add question results
         if (survey.questions) {
           for (const question of survey.questions) {
-            const row = [
-              question.question_text,
-              question.question_type,
-              "Siehe Details unten",
-            ];
+            const row = [question.question_text, question.question_type, 'Siehe Details unten'];
             questionsSheet.addRow(row);
 
             // Get responses for this question
@@ -904,9 +799,7 @@ router.get(
 
             // Add details based on question type
             if (
-              ["single_choice", "multiple_choice"].includes(
-                question.question_type,
-              ) &&
+              ['single_choice', 'multiple_choice'].includes(question.question_type) &&
               question.options
             ) {
               // Count responses per option
@@ -919,9 +812,7 @@ router.get(
                 // Parse answer_options if it's stored as JSON
                 if (resp.answer_options != null) {
                   try {
-                    const selectedOptions = JSON.parse(
-                      resp.answer_options as string,
-                    ) as number[];
+                    const selectedOptions = JSON.parse(resp.answer_options as string) as number[];
                     selectedOptions.forEach((optionId: number) => {
                       if (optionId in optionCounts) {
                         optionCounts[optionId]++;
@@ -936,41 +827,30 @@ router.get(
               question.options.forEach((option) => {
                 const count = optionCounts[option.id] ?? 0;
                 const percentage =
-                  responses.length > 0
-                    ? Math.round((count / responses.length) * 100)
-                    : 0;
-                questionsSheet.addRow([
-                  "",
-                  option.option_text,
-                  `${count} (${percentage}%)`,
-                ]);
+                  responses.length > 0 ? Math.round((count / responses.length) * 100) : 0;
+                questionsSheet.addRow(['', option.option_text, `${count} (${percentage}%)`]);
               });
-            } else if (question.question_type === "text") {
+            } else if (question.question_type === 'text') {
               responses.forEach((response) => {
                 questionsSheet.addRow([
-                  "",
-                  survey.is_anonymous === true
-                    ? "Anonym"
-                    : `${String(response.first_name ?? "")} ${String(response.last_name ?? "")}`.trim() ||
-                      "N/A",
-                  response.answer_text ?? "",
+                  '',
+                  survey.is_anonymous === true ?
+                    'Anonym'
+                  : `${String(response.first_name ?? '')} ${String(response.last_name ?? '')}`.trim() ||
+                    'N/A',
+                  response.answer_text ?? '',
                 ]);
               });
-            } else if (
-              question.question_type === "number" ||
-              question.question_type === "rating"
-            ) {
+            } else if (question.question_type === 'number' || question.question_type === 'rating') {
               const numbers = responses
                 .map((r) => r.answer_number as number | null | undefined)
                 .filter((n): n is number => n !== null && n !== undefined);
               if (numbers.length > 0) {
-                const avg =
-                  numbers.reduce((a: number, b: number) => a + b, 0) /
-                  numbers.length;
+                const avg = numbers.reduce((a: number, b: number) => a + b, 0) / numbers.length;
                 const min = Math.min(...numbers);
                 const max = Math.max(...numbers);
-                questionsSheet.addRow(["", "Durchschnitt", avg.toFixed(2)]);
-                questionsSheet.addRow(["", "Min/Max", `${min} / ${max}`]);
+                questionsSheet.addRow(['', 'Durchschnitt', avg.toFixed(2)]);
+                questionsSheet.addRow(['', 'Min/Max', `${min} / ${max}`]);
               }
             }
 
@@ -981,11 +861,11 @@ router.get(
 
         // Set response headers
         res.setHeader(
-          "Content-Type",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          'Content-Type',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         );
         res.setHeader(
-          "Content-Disposition",
+          'Content-Disposition',
           `attachment; filename=umfrage_${surveyId}_export.xlsx`,
         );
 
@@ -993,13 +873,11 @@ router.get(
         await workbook.xlsx.write(res);
         res.end();
       } else {
-        res.status(400).json(errorResponse("Nicht unterstütztes Format", 400));
+        res.status(400).json(errorResponse('Nicht unterstütztes Format', 400));
       }
     } catch (error: unknown) {
-      console.error("Error exporting survey:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Exportieren der Umfrage", 500));
+      console.error('Error exporting survey:', error);
+      res.status(500).json(errorResponse('Fehler beim Exportieren der Umfrage', 500));
     }
   }),
 );

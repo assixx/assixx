@@ -1,9 +1,5 @@
-import {
-  query as executeQuery,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger";
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger';
 
 // Database interfaces
 interface DbRootLog extends RowDataPacket {
@@ -47,14 +43,12 @@ export async function logRootAction(
     user_id: userId,
     tenant_id: tenantId,
     action,
-    new_values: typeof details === "string" ? { details } : details,
+    new_values: typeof details === 'string' ? { details } : details,
   };
   return createRootLog(logData);
 }
 
-export async function createRootLog(
-  logData: RootLogCreateData,
-): Promise<number> {
+export async function createRootLog(logData: RootLogCreateData): Promise<number> {
   const {
     user_id,
     action,
@@ -93,10 +87,7 @@ export async function createRootLog(
   }
 }
 
-export async function getRootLogsByUserId(
-  userId: number,
-  days = 0,
-): Promise<DbRootLog[]> {
+export async function getRootLogsByUserId(userId: number, days = 0): Promise<DbRootLog[]> {
   let query = `SELECT * FROM root_logs WHERE user_id = ?`;
   const params: unknown[] = [userId];
 
@@ -113,16 +104,12 @@ export async function getRootLogsByUserId(
     const [rows] = await executeQuery<DbRootLog[]>(query, params);
     return rows;
   } catch (error: unknown) {
-    logger.error(
-      `Error fetching root logs for user ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error fetching root logs for user ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
 
-export async function getLastRootLogin(
-  userId: number,
-): Promise<DbRootLog | null> {
+export async function getLastRootLogin(userId: number): Promise<DbRootLog | null> {
   const query = `SELECT * FROM root_logs 
                    WHERE user_id = ? AND action = 'login' 
                    ORDER BY created_at DESC LIMIT 1`;
@@ -131,9 +118,7 @@ export async function getLastRootLogin(
     const [rows] = await executeQuery<DbRootLog[]>(query, [userId]);
     return rows.length > 0 ? rows[0] : null;
   } catch (error: unknown) {
-    logger.error(
-      `Error fetching last login for user ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error fetching last login for user ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -163,40 +148,40 @@ export async function getAllRootLogs(options: {
     endDate,
   } = options;
 
-  let whereConditions: string[] = ["1=1"];
+  let whereConditions: string[] = ['1=1'];
   const params: unknown[] = [];
 
   if (userId != null && userId !== 0) {
-    whereConditions.push("user_id = ?");
+    whereConditions.push('user_id = ?');
     params.push(userId);
   }
 
-  if (action != null && action !== "") {
-    whereConditions.push("action = ?");
+  if (action != null && action !== '') {
+    whereConditions.push('action = ?');
     params.push(action);
   }
 
-  if (entityType != null && entityType !== "") {
-    whereConditions.push("entity_type = ?");
+  if (entityType != null && entityType !== '') {
+    whereConditions.push('entity_type = ?');
     params.push(entityType);
   }
 
   if (tenantId != null && tenantId !== 0) {
-    whereConditions.push("tenant_id = ?");
+    whereConditions.push('tenant_id = ?');
     params.push(tenantId);
   }
 
   if (startDate) {
-    whereConditions.push("created_at >= ?");
+    whereConditions.push('created_at >= ?');
     params.push(startDate);
   }
 
   if (endDate) {
-    whereConditions.push("created_at <= ?");
+    whereConditions.push('created_at <= ?');
     params.push(endDate);
   }
 
-  const whereClause = whereConditions.join(" AND ");
+  const whereClause = whereConditions.join(' AND ');
 
   try {
     // Get total count

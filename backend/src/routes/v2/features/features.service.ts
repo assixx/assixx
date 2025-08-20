@@ -1,28 +1,22 @@
-import RootLog from "../../../models/rootLog";
+import RootLog from '../../../models/rootLog';
+import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError';
+import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db';
+import { fieldMapper } from '../../../utils/fieldMapper';
+import { logger } from '../../../utils/logger';
 import {
-  execute,
-  query,
-  ResultSetHeader,
-  RowDataPacket,
-} from "../../../utils/db";
-import { fieldMapper } from "../../../utils/fieldMapper";
-import { logger } from "../../../utils/logger";
-import { ServiceError as ServiceErrorClass } from "../../../utils/ServiceError";
-
-import {
+  ActivationOptions,
+  DbFeature,
+  DbFeatureUsageStats,
+  DbTenantFeature,
   Feature,
-  TenantFeature,
-  FeatureWithTenantInfo,
   FeatureActivationRequest,
-  FeatureUsageStats,
   FeatureCategory,
+  FeatureUsageStats,
+  FeatureWithTenantInfo,
+  TenantFeature,
   TenantFeaturesSummary,
   TenantWithFeatures,
-  DbFeature,
-  DbTenantFeature,
-  DbFeatureUsageStats,
-  ActivationOptions,
-} from "./types";
+} from './types';
 
 /**
  *
@@ -35,7 +29,7 @@ export class FeaturesService {
    */
   static async getAllFeatures(includeInactive = false): Promise<Feature[]> {
     try {
-      const whereClause = includeInactive ? "" : "WHERE is_active = true";
+      const whereClause = includeInactive ? '' : 'WHERE is_active = true';
       const [rows] = await query<DbFeature[]>(
         `SELECT * FROM features ${whereClause} ORDER BY category, sort_order, name`,
       );
@@ -43,10 +37,8 @@ export class FeaturesService {
       return rows.map((row) => {
         const mapped = fieldMapper.dbToApi(row) as Feature;
         // Map base_price to price
-        if ("base_price" in row) {
-          mapped.price = row.base_price
-            ? Number.parseFloat(row.base_price as string)
-            : undefined;
+        if ('base_price' in row) {
+          mapped.price = row.base_price ? Number.parseFloat(row.base_price as string) : undefined;
         }
         return mapped;
       });
@@ -61,9 +53,7 @@ export class FeaturesService {
    *
    * @param includeInactive
    */
-  static async getFeaturesByCategory(
-    includeInactive = false,
-  ): Promise<FeatureCategory[]> {
+  static async getFeaturesByCategory(includeInactive = false): Promise<FeatureCategory[]> {
     try {
       const features = await this.getAllFeatures(includeInactive);
 
@@ -92,10 +82,7 @@ export class FeaturesService {
    */
   static async getFeatureByCode(code: string): Promise<Feature | null> {
     try {
-      const [rows] = await query<DbFeature[]>(
-        "SELECT * FROM features WHERE code = ?",
-        [code],
-      );
+      const [rows] = await query<DbFeature[]>('SELECT * FROM features WHERE code = ?', [code]);
 
       if (rows.length === 0) return null;
       return fieldMapper.dbToApi(rows[0]) as Feature;
@@ -131,7 +118,7 @@ export class FeaturesService {
       return rows.map((row) => {
         const mapped = fieldMapper.dbToApi(row) as TenantFeature;
         // Parse custom_config if it's a string
-        if (row.custom_config && typeof row.custom_config === "string") {
+        if (row.custom_config && typeof row.custom_config === 'string') {
           try {
             mapped.customConfig = JSON.parse(row.custom_config);
           } catch {
@@ -141,12 +128,12 @@ export class FeaturesService {
         // Set status based on is_active and expires_at
         if (row.is_active) {
           if (row.expires_at && new Date(row.expires_at) < new Date()) {
-            mapped.status = "disabled";
+            mapped.status = 'disabled';
           } else {
-            mapped.status = "active";
+            mapped.status = 'active';
           }
         } else {
-          mapped.status = "disabled";
+          mapped.status = 'disabled';
         }
         // Price is available through feature reference
         return mapped;
@@ -162,9 +149,7 @@ export class FeaturesService {
    *
    * @param tenantId
    */
-  static async getFeaturesWithTenantInfo(
-    tenantId: number,
-  ): Promise<FeatureWithTenantInfo[]> {
+  static async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
     try {
       const [rows] = await query<(DbFeature & Partial<DbTenantFeature>)[]>(
         `
@@ -216,21 +201,15 @@ export class FeaturesService {
           result.tenantFeature = {
             status: row.status,
             isActive: Boolean(row.tf_is_active),
-            validFrom: row.activated_at
-              ? new Date(row.activated_at).toISOString()
-              : undefined,
-            validUntil: row.expires_at
-              ? new Date(row.expires_at).toISOString()
-              : undefined,
+            validFrom: row.activated_at ? new Date(row.activated_at).toISOString() : undefined,
+            validUntil: row.expires_at ? new Date(row.expires_at).toISOString() : undefined,
           };
         }
 
         return result;
       });
     } catch (error: unknown) {
-      logger.error(
-        `Error fetching features with tenant info: ${String(error)}`,
-      );
+      logger.error(`Error fetching features with tenant info: ${String(error)}`);
       throw error;
     }
   }
@@ -249,10 +228,7 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(request.featureCode);
       if (!feature) {
-        throw new ServiceErrorClass(
-          "NOT_FOUND",
-          `Feature ${request.featureCode} not found`,
-        );
+        throw new ServiceErrorClass('NOT_FOUND', `Feature ${request.featureCode} not found`);
       }
 
       const options: ActivationOptions = {
@@ -262,7 +238,7 @@ export class FeaturesService {
 
       // Check if already activated
       const [existing] = await query<RowDataPacket[]>(
-        "SELECT id FROM tenant_features WHERE tenant_id = ? AND feature_id = ?",
+        'SELECT id FROM tenant_features WHERE tenant_id = ? AND feature_id = ?',
         [request.tenantId, feature.id],
       );
 
@@ -309,7 +285,7 @@ export class FeaturesService {
 
       // Log the activation
       await RootLog.log(
-        "feature_activated",
+        'feature_activated',
         activatedBy,
         request.tenantId,
         JSON.stringify({
@@ -318,9 +294,7 @@ export class FeaturesService {
         }),
       );
 
-      logger.info(
-        `Feature ${request.featureCode} activated for tenant ${request.tenantId}`,
-      );
+      logger.info(`Feature ${request.featureCode} activated for tenant ${request.tenantId}`);
     } catch (error: unknown) {
       logger.error(`Error activating feature: ${String(error)}`);
       throw error;
@@ -343,10 +317,7 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        throw new ServiceErrorClass(
-          "NOT_FOUND",
-          `Feature ${featureCode} not found`,
-        );
+        throw new ServiceErrorClass('NOT_FOUND', `Feature ${featureCode} not found`);
       }
 
       const [result] = await execute<ResultSetHeader>(
@@ -359,15 +330,12 @@ export class FeaturesService {
       );
 
       if (result.affectedRows === 0) {
-        throw new ServiceErrorClass(
-          "NOT_FOUND",
-          `Feature ${featureCode} not found for tenant`,
-        );
+        throw new ServiceErrorClass('NOT_FOUND', `Feature ${featureCode} not found for tenant`);
       }
 
       // Log the deactivation
       await RootLog.log(
-        "feature_deactivated",
+        'feature_deactivated',
         deactivatedBy,
         tenantId,
         JSON.stringify({ featureCode }),
@@ -398,10 +366,7 @@ export class FeaturesService {
       // Get feature by code
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        throw new ServiceErrorClass(
-          "NOT_FOUND",
-          `Feature ${featureCode} not found`,
-        );
+        throw new ServiceErrorClass('NOT_FOUND', `Feature ${featureCode} not found`);
       }
 
       const [rows] = await query<DbFeatureUsageStats[]>(
@@ -421,7 +386,7 @@ export class FeaturesService {
       );
 
       return rows.map((row) => ({
-        date: new Date(row.date).toISOString().split("T")[0],
+        date: new Date(row.date).toISOString().split('T')[0],
         featureCode,
         usageCount: row.usage_count,
         uniqueUsers: row.unique_users,
@@ -437,9 +402,7 @@ export class FeaturesService {
    *
    * @param tenantId
    */
-  static async getTenantFeaturesSummary(
-    tenantId: number,
-  ): Promise<TenantFeaturesSummary> {
+  static async getTenantFeaturesSummary(tenantId: number): Promise<TenantFeaturesSummary> {
     try {
       const features = await this.getTenantFeatures(tenantId);
 
@@ -453,12 +416,12 @@ export class FeaturesService {
       };
 
       features.forEach((feature) => {
-        if (feature.status === "active") {
+        if (feature.status === 'active') {
           summary.activeFeatures++;
           // Note: customPrice would be added here if it existed in DB
-        } else if (feature.status === "trial") {
+        } else if (feature.status === 'trial') {
           summary.trialFeatures++;
-        } else if (feature.status === "disabled") {
+        } else if (feature.status === 'disabled') {
           summary.disabledFeatures++;
         }
       });
@@ -476,10 +439,7 @@ export class FeaturesService {
    * @param tenantId
    * @param featureCode
    */
-  static async checkTenantAccess(
-    tenantId: number,
-    featureCode: string,
-  ): Promise<boolean> {
+  static async checkTenantAccess(tenantId: number, featureCode: string): Promise<boolean> {
     try {
       const [rows] = await query<RowDataPacket[]>(
         `
@@ -518,9 +478,7 @@ export class FeaturesService {
     try {
       const feature = await this.getFeatureByCode(featureCode);
       if (!feature) {
-        logger.warn(
-          `Trying to log usage for non-existent feature: ${featureCode}`,
-        );
+        logger.warn(`Trying to log usage for non-existent feature: ${featureCode}`);
         return;
       }
 
@@ -530,7 +488,7 @@ export class FeaturesService {
         INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, action, metadata)
         VALUES (?, ?, ?, ?, ?)
       `,
-        [tenantId, feature.id, userId ?? 0, "usage", JSON.stringify(metadata)],
+        [tenantId, feature.id, userId ?? 0, 'usage', JSON.stringify(metadata)],
       );
 
       // Note: current_usage tracking would go here if the column existed
@@ -571,9 +529,7 @@ export class FeaturesService {
         }),
       );
     } catch (error: unknown) {
-      logger.error(
-        `Error fetching all tenants with features: ${String(error)}`,
-      );
+      logger.error(`Error fetching all tenants with features: ${String(error)}`);
       throw error;
     }
   }

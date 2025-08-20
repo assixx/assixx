@@ -6,35 +6,28 @@
  *   - name: KVP v2
  *     description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess) API v2
  */
+import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
 
-import path from "path";
-
-import multer from "multer";
-
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import {
-  sanitizeFilename,
-  getUploadDirectory,
-} from "../../../utils/pathSecurity.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import * as kvpController from "./kvp.controller.js";
-import { kvpValidation } from "./kvp.validation.js";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as kvpController from './kvp.controller.js';
+import { kvpValidation } from './kvp.validation.js';
 
 const router = Router();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    const uploadDir = getUploadDirectory("kvp");
+    const uploadDir = getUploadDirectory('kvp');
     cb(null, uploadDir);
   },
   filename(_req, file, cb) {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + ext);
   },
 });
@@ -44,17 +37,17 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
     const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only JPG, PNG, PDF, DOC and DOCX files are allowed"));
+      cb(new Error('Only JPG, PNG, PDF, DOC and DOCX files are allowed'));
     }
   },
 });
@@ -100,11 +93,7 @@ const upload = multer({
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Categories endpoints
-router.get(
-  "/categories",
-  authenticateV2,
-  typed.auth(kvpController.getCategories),
-);
+router.get('/categories', authenticateV2, typed.auth(kvpController.getCategories));
 
 /**
  * @swagger
@@ -145,11 +134,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Dashboard statistics
-router.get(
-  "/dashboard/stats",
-  authenticateV2,
-  typed.auth(kvpController.getDashboardStats),
-);
+router.get('/dashboard/stats', authenticateV2, typed.auth(kvpController.getDashboardStats));
 
 /**
  * @swagger
@@ -209,7 +194,7 @@ router.get(
  */
 // Points endpoints
 router.post(
-  "/points/award",
+  '/points/award',
   authenticateV2,
   kvpValidation.awardPoints,
   typed.auth(kvpController.awardPoints),
@@ -262,7 +247,7 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/points/user/:userId",
+  '/points/user/:userId',
   authenticateV2,
   kvpValidation.getUserPoints,
   typed.auth(kvpController.getUserPoints),
@@ -304,7 +289,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/points/user",
+  '/points/user',
   authenticateV2,
   kvpValidation.getUserPoints,
   typed.auth(kvpController.getUserPoints),
@@ -372,12 +357,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Suggestions CRUD endpoints
-router.get(
-  "/",
-  authenticateV2,
-  kvpValidation.list,
-  typed.auth(kvpController.listSuggestions),
-);
+router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.listSuggestions));
 /**
  * @swagger
  * /api/v2/kvp/{id}:
@@ -412,7 +392,7 @@ router.get(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2,
   kvpValidation.getById,
   typed.auth(kvpController.getSuggestionById),
@@ -481,12 +461,7 @@ router.get(
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post(
-  "/",
-  authenticateV2,
-  kvpValidation.create,
-  typed.auth(kvpController.createSuggestion),
-);
+router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.createSuggestion));
 
 /**
  * @swagger
@@ -567,7 +542,7 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2,
   kvpValidation.update,
   typed.auth(kvpController.updateSuggestion),
@@ -612,7 +587,7 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2,
   kvpValidation.delete,
   typed.auth(kvpController.deleteSuggestion),
@@ -655,7 +630,7 @@ router.delete(
  */
 // Comments endpoints
 router.get(
-  "/:id/comments",
+  '/:id/comments',
   authenticateV2,
   kvpValidation.getById,
   typed.auth(kvpController.getComments),
@@ -713,7 +688,7 @@ router.get(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.post(
-  "/:id/comments",
+  '/:id/comments',
   authenticateV2,
   kvpValidation.addComment,
   typed.auth(kvpController.addComment),
@@ -756,7 +731,7 @@ router.post(
  */
 // Attachments endpoints
 router.get(
-  "/:id/attachments",
+  '/:id/attachments',
   authenticateV2,
   kvpValidation.getById,
   typed.auth(kvpController.getAttachments),
@@ -826,10 +801,10 @@ router.get(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.post(
-  "/:id/attachments",
+  '/:id/attachments',
   authenticateV2,
   kvpValidation.getById,
-  upload.array("files", 5), // Max 5 files
+  upload.array('files', 5), // Max 5 files
   typed.auth(kvpController.uploadAttachments),
 );
 
@@ -863,7 +838,7 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/attachments/:attachmentId/download",
+  '/attachments/:attachmentId/download',
   authenticateV2,
   kvpValidation.attachmentId,
   typed.auth(kvpController.downloadAttachment),

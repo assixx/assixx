@@ -2,34 +2,28 @@
  * Surveys API v2 Service Layer
  * Business logic for survey management
  */
-
-import RootLog from "../../../models/rootLog";
-import Survey from "../../../models/survey.js";
-import { eventBus } from "../../../utils/eventBus.js";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
+import RootLog from '../../../models/rootLog';
+import Survey from '../../../models/survey.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { eventBus } from '../../../utils/eventBus.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export interface SurveyFilters {
-  status?: "draft" | "active" | "closed";
+  status?: 'draft' | 'active' | 'closed';
   page?: number;
   limit?: number;
 }
 
 export interface QuestionCreateData {
   questionText: string;
-  questionType:
-    | "text"
-    | "single_choice"
-    | "multiple_choice"
-    | "rating"
-    | "number";
+  questionType: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
   isRequired?: boolean;
   orderPosition?: number;
   options?: string[];
 }
 
 export interface AssignmentCreateData {
-  type: "all_users" | "department" | "team" | "user";
+  type: 'all_users' | 'department' | 'team' | 'user';
   departmentId?: number | null;
   teamId?: number | null;
   userId?: number | null;
@@ -38,7 +32,7 @@ export interface AssignmentCreateData {
 export interface SurveyCreateData {
   title: string;
   description?: string;
-  status?: "draft" | "active" | "closed";
+  status?: 'draft' | 'active' | 'closed';
   isAnonymous?: boolean;
   isMandatory?: boolean;
   startDate?: string | null;
@@ -50,7 +44,7 @@ export interface SurveyCreateData {
 export interface SurveyUpdateData {
   title?: string;
   description?: string;
-  status?: "draft" | "active" | "closed";
+  status?: 'draft' | 'active' | 'closed';
   isAnonymous?: boolean;
   isMandatory?: boolean;
   startDate?: string | null;
@@ -88,23 +82,15 @@ export class SurveysService {
     try {
       let surveys;
 
-      if (userRole === "root") {
+      if (userRole === 'root') {
         // Root can see all surveys
         surveys = await Survey.getAllByTenant(tenantId, filters);
-      } else if (userRole === "admin") {
+      } else if (userRole === 'admin') {
         // Admin sees surveys based on department permissions
-        surveys = await Survey.getAllByTenantForAdmin(
-          tenantId,
-          userId,
-          filters,
-        );
+        surveys = await Survey.getAllByTenantForAdmin(tenantId, userId, filters);
       } else {
         // Employee sees assigned surveys
-        surveys = await Survey.getAllByTenantForEmployee(
-          tenantId,
-          userId,
-          filters,
-        );
+        surveys = await Survey.getAllByTenantForEmployee(tenantId, userId, filters);
       }
 
       // Transform to API format
@@ -119,8 +105,8 @@ export class SurveysService {
         };
       });
     } catch (error: unknown) {
-      console.error("Error listing surveys:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to list surveys");
+      console.error('Error listing surveys:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to list surveys');
     }
   }
 
@@ -141,39 +127,25 @@ export class SurveysService {
       const survey = await Survey.getById(surveyId, tenantId);
 
       if (!survey) {
-        throw new ServiceError("NOT_FOUND", "Survey not found");
+        throw new ServiceError('NOT_FOUND', 'Survey not found');
       }
 
       // Check access permissions
-      if (userRole === "employee") {
+      if (userRole === 'employee') {
         // Employee can only see surveys assigned to them
-        const assignedSurveys = await Survey.getAllByTenantForEmployee(
-          tenantId,
-          userId,
-          {},
-        );
+        const assignedSurveys = await Survey.getAllByTenantForEmployee(tenantId, userId, {});
         const hasAccess = assignedSurveys.some((s) => s.id === surveyId);
 
         if (!hasAccess) {
-          throw new ServiceError(
-            "FORBIDDEN",
-            "You don't have access to this survey",
-          );
+          throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
         }
-      } else if (userRole === "admin") {
+      } else if (userRole === 'admin') {
         // Admin can see surveys in their departments
-        const adminSurveys = await Survey.getAllByTenantForAdmin(
-          tenantId,
-          userId,
-          {},
-        );
+        const adminSurveys = await Survey.getAllByTenantForAdmin(tenantId, userId, {});
         const hasAccess = adminSurveys.some((s) => s.id === surveyId);
 
         if (!hasAccess) {
-          throw new ServiceError(
-            "FORBIDDEN",
-            "You don't have access to this survey",
-          );
+          throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
         }
       }
 
@@ -182,29 +154,25 @@ export class SurveysService {
 
       // Transform questions
       if (survey.questions) {
-        apiSurvey.questions = survey.questions.map(
-          (q: Record<string, unknown>) => {
-            const apiQuestion = dbToApi(q);
-            return {
-              ...apiQuestion,
-              orderPosition: q.order_position ?? q.order_index,
-            };
-          },
-        );
+        apiSurvey.questions = survey.questions.map((q: Record<string, unknown>) => {
+          const apiQuestion = dbToApi(q);
+          return {
+            ...apiQuestion,
+            orderPosition: q.order_position ?? q.order_index,
+          };
+        });
       }
 
       // Transform assignments
       if (survey.assignments) {
-        apiSurvey.assignments = survey.assignments.map(
-          (a: Record<string, unknown>) => dbToApi(a),
-        );
+        apiSurvey.assignments = survey.assignments.map((a: Record<string, unknown>) => dbToApi(a));
       }
 
       return apiSurvey;
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      console.error("Error getting survey:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to get survey");
+      console.error('Error getting survey:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get survey');
     }
   }
 
@@ -228,7 +196,7 @@ export class SurveysService {
       const surveyData = {
         title: data.title,
         description: data.description,
-        status: data.status ?? "draft",
+        status: data.status ?? 'draft',
         is_anonymous: data.isAnonymous ?? false,
         is_mandatory: data.isMandatory ?? false,
         start_date: data.startDate,
@@ -254,10 +222,10 @@ export class SurveysService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "create_survey",
-        entity_type: "survey",
+        action: 'create_survey',
+        entity_type: 'survey',
         entity_id: surveyId,
-        new_values: { title: data.title, status: data.status ?? "draft" },
+        new_values: { title: data.title, status: data.status ?? 'draft' },
         ip_address: ipAddress,
         user_agent: userAgent,
       });
@@ -271,10 +239,10 @@ export class SurveysService {
       });
 
       // Return the created survey
-      return await this.getSurveyById(surveyId, tenantId, userId, "admin");
+      return await this.getSurveyById(surveyId, tenantId, userId, 'admin');
     } catch (error: unknown) {
-      console.error("Error creating survey:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to create survey");
+      console.error('Error creating survey:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create survey');
     }
   }
 
@@ -299,30 +267,21 @@ export class SurveysService {
   ): Promise<unknown> {
     try {
       // Check if survey exists and user has access
-      const existingSurvey = await this.getSurveyById(
-        surveyId,
-        tenantId,
-        userId,
-        userRole,
-      );
+      const existingSurvey = await this.getSurveyById(surveyId, tenantId, userId, userRole);
 
       // Type assertions for existingSurvey properties
       const surveyData = existingSurvey as Record<string, unknown>;
       const existingTitle = surveyData.title as string;
       const existingStatus = surveyData.status as string;
-      const responseCount =
-        (surveyData.responseCount as number | undefined) ?? 0;
+      const responseCount = (surveyData.responseCount as number | undefined) ?? 0;
 
-      if (userRole === "employee") {
-        throw new ServiceError("FORBIDDEN", "Only admins can update surveys");
+      if (userRole === 'employee') {
+        throw new ServiceError('FORBIDDEN', 'Only admins can update surveys');
       }
 
       // Don't allow updating active surveys with responses
-      if (existingStatus === "active" && responseCount > 0) {
-        throw new ServiceError(
-          "CONFLICT",
-          "Cannot update survey with existing responses",
-        );
+      if (existingStatus === 'active' && responseCount > 0) {
+        throw new ServiceError('CONFLICT', 'Cannot update survey with existing responses');
       }
 
       // Transform API data to DB format
@@ -349,8 +308,8 @@ export class SurveysService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "update_survey",
-        entity_type: "survey",
+        action: 'update_survey',
+        entity_type: 'survey',
         entity_id: surveyId,
         old_values: {
           title: existingTitle,
@@ -368,8 +327,8 @@ export class SurveysService {
       return await this.getSurveyById(surveyId, tenantId, userId, userRole);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      console.error("Error updating survey:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to update survey");
+      console.error('Error updating survey:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update survey');
     }
   }
 
@@ -392,44 +351,35 @@ export class SurveysService {
   ): Promise<{ message: string }> {
     try {
       // Check if survey exists and user has access
-      const existingSurvey = await this.getSurveyById(
-        surveyId,
-        tenantId,
-        userId,
-        userRole,
-      );
+      const existingSurvey = await this.getSurveyById(surveyId, tenantId, userId, userRole);
 
       // Type assertions for existingSurvey properties
       const surveyData = existingSurvey as Record<string, unknown>;
       const existingTitle = surveyData.title as string;
       const existingStatus = surveyData.status as string;
-      const responseCount =
-        (surveyData.responseCount as number | undefined) ?? 0;
+      const responseCount = (surveyData.responseCount as number | undefined) ?? 0;
 
-      if (userRole === "employee") {
-        throw new ServiceError("FORBIDDEN", "Only admins can delete surveys");
+      if (userRole === 'employee') {
+        throw new ServiceError('FORBIDDEN', 'Only admins can delete surveys');
       }
 
       // Don't allow deleting surveys with responses
       if (responseCount > 0) {
-        throw new ServiceError(
-          "CONFLICT",
-          "Cannot delete survey with existing responses",
-        );
+        throw new ServiceError('CONFLICT', 'Cannot delete survey with existing responses');
       }
 
       const deleted = await Survey.delete(surveyId, tenantId);
 
       if (!deleted) {
-        throw new ServiceError("NOT_FOUND", "Survey not found");
+        throw new ServiceError('NOT_FOUND', 'Survey not found');
       }
 
       // Log the action
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "delete_survey",
-        entity_type: "survey",
+        action: 'delete_survey',
+        entity_type: 'survey',
         entity_id: surveyId,
         old_values: {
           title: existingTitle,
@@ -439,11 +389,11 @@ export class SurveysService {
         user_agent: userAgent,
       });
 
-      return { message: "Survey deleted successfully" };
+      return { message: 'Survey deleted successfully' };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      console.error("Error deleting survey:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to delete survey");
+      console.error('Error deleting survey:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete survey');
     }
   }
 
@@ -456,8 +406,8 @@ export class SurveysService {
       const templates = await Survey.getTemplates(tenantId);
       return templates.map((template) => dbToApi(template));
     } catch (error: unknown) {
-      console.error("Error getting templates:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to get survey templates");
+      console.error('Error getting templates:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get survey templates');
     }
   }
 
@@ -477,18 +427,14 @@ export class SurveysService {
     userAgent?: string,
   ): Promise<unknown> {
     try {
-      const surveyId = await Survey.createFromTemplate(
-        templateId,
-        tenantId,
-        userId,
-      );
+      const surveyId = await Survey.createFromTemplate(templateId, tenantId, userId);
 
       // Log the action
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "create_survey_from_template",
-        entity_type: "survey",
+        action: 'create_survey_from_template',
+        entity_type: 'survey',
         entity_id: surveyId,
         new_values: { templateId },
         ip_address: ipAddress,
@@ -496,13 +442,10 @@ export class SurveysService {
       });
 
       // Return the created survey
-      return await this.getSurveyById(surveyId, tenantId, userId, "admin");
+      return await this.getSurveyById(surveyId, tenantId, userId, 'admin');
     } catch (error: unknown) {
-      console.error("Error creating from template:", error);
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to create survey from template",
-      );
+      console.error('Error creating from template:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create survey from template');
     }
   }
 
@@ -523,11 +466,8 @@ export class SurveysService {
       // Check if survey exists and user has access
       await this.getSurveyById(surveyId, tenantId, userId, userRole);
 
-      if (userRole === "employee") {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "Only admins can view survey statistics",
-        );
+      if (userRole === 'employee') {
+        throw new ServiceError('FORBIDDEN', 'Only admins can view survey statistics');
       }
 
       const statistics = await Survey.getStatistics(surveyId, tenantId);
@@ -550,8 +490,9 @@ export class SurveysService {
             optionText: opt.option_text,
             count: opt.count,
           })),
-          statistics: q.statistics
-            ? {
+          statistics:
+            q.statistics ?
+              {
                 average: q.statistics.average,
                 min: q.statistics.min,
                 max: q.statistics.max,
@@ -562,8 +503,8 @@ export class SurveysService {
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      console.error("Error getting statistics:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to get survey statistics");
+      console.error('Error getting statistics:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get survey statistics');
     }
   }
 }

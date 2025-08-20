@@ -5,18 +5,18 @@
  */
 
 // Register TypeScript
-require("../register-ts");
+require('../register-ts');
 
 // Load environment variables
-require("dotenv").config();
+require('dotenv').config();
 
 // Import and start the worker
-const { DeletionWorker } = require("./deletionWorker");
+const { DeletionWorker } = require('./deletionWorker');
 
-console.info("Starting Tenant Deletion Worker...");
+console.info('Starting Tenant Deletion Worker...');
 
 const worker = new DeletionWorker();
 worker.start().catch((error) => {
-  console.error("Fatal error starting deletion worker:", error);
+  console.error('Fatal error starting deletion worker:', error);
   process.exit(1);
 });

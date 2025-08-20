@@ -2,10 +2,9 @@
  * Path Security Utilities
  * Provides functions for secure path handling to prevent path injection attacks
  */
+import path from 'path';
 
-import path from "path";
-
-import { logger } from "./logger";
+import { logger } from './logger';
 
 /**
  * Validates and sanitizes a file path to prevent directory traversal attacks
@@ -56,14 +55,14 @@ export function validatePath(filePath: string, baseDir: string): string | null {
 export function sanitizeFilename(filename: string): string {
   // Remove any path separators and dangerous characters
   let sanitized = filename
-    .replace(/[/\\]/g, "_") // Replace path separators
-    .replace(/\.\./g, "_") // Replace directory traversal
-    .replace(/[\0"*:<>?|]/g, "_") // Replace illegal characters
-    .replace(/^\.+/, "_") // Replace leading dots
+    .replace(/[/\\]/g, '_') // Replace path separators
+    .replace(/\.\./g, '_') // Replace directory traversal
+    .replace(/[\0"*:<>?|]/g, '_') // Replace illegal characters
+    .replace(/^\.+/, '_') // Replace leading dots
     .trim();
 
   // Ensure filename is not empty after sanitization
-  if (!sanitized || sanitized === "_") {
+  if (!sanitized || sanitized === '_') {
     sanitized = `file_${String(Date.now())}`;
   }
 
@@ -88,8 +87,8 @@ export function createSecurePath(baseDir: string, filename: string): string {
 
   // Validate the final path
   const validated = validatePath(sanitizedFilename, baseDir);
-  if (validated == null || validated === "") {
-    throw new Error("Invalid file path");
+  if (validated == null || validated === '') {
+    throw new Error('Invalid file path');
   }
 
   return validated;
@@ -101,10 +100,7 @@ export function createSecurePath(baseDir: string, filename: string): string {
  * @param allowedExtensions - Array of allowed extensions (e.g., ['.pdf', '.jpg'])
  * @returns True if the extension is allowed
  */
-export function isAllowedExtension(
-  filename: string,
-  allowedExtensions: string[],
-): boolean {
+export function isAllowedExtension(filename: string, allowedExtensions: string[]): boolean {
   const ext = path.extname(filename).toLowerCase();
   return allowedExtensions.includes(ext);
 }
@@ -115,14 +111,14 @@ export function isAllowedExtension(
  * @returns The absolute path to the upload directory
  */
 export function getUploadDirectory(type: string): string {
-  const baseUploadDir = path.resolve(process.cwd(), "uploads");
+  const baseUploadDir = path.resolve(process.cwd(), 'uploads');
 
   const uploadDirs: Record<string, string> = {
-    documents: path.join(baseUploadDir, "documents"),
-    profile_pictures: path.join(baseUploadDir, "profile_pictures"),
-    blackboard: path.join(baseUploadDir, "blackboard"),
-    chat: path.join(baseUploadDir, "chat"),
-    kvp: path.join(baseUploadDir, "kvp"),
+    documents: path.join(baseUploadDir, 'documents'),
+    profile_pictures: path.join(baseUploadDir, 'profile_pictures'),
+    blackboard: path.join(baseUploadDir, 'blackboard'),
+    chat: path.join(baseUploadDir, 'chat'),
+    kvp: path.join(baseUploadDir, 'kvp'),
   };
 
   const dir = uploadDirs[type];
@@ -141,7 +137,7 @@ export function getUploadDirectory(type: string): string {
 export async function safeDeleteFile(filePath: string): Promise<boolean> {
   try {
     // Validate the path is within the uploads directory
-    const uploadsDir = path.resolve(process.cwd(), "uploads");
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
     const validatedPath = validatePath(filePath, process.cwd());
 
     // Check if path validation failed
@@ -152,14 +148,12 @@ export async function safeDeleteFile(filePath: string): Promise<boolean> {
 
     // Check if path is outside uploads directory
     if (!validatedPath.startsWith(uploadsDir)) {
-      logger.warn(
-        `Attempted to delete file outside uploads directory: ${filePath}`,
-      );
+      logger.warn(`Attempted to delete file outside uploads directory: ${filePath}`);
       return false;
     }
 
     // Check if file exists before attempting to delete
-    const fs = await import("fs/promises");
+    const fs = await import('fs/promises');
     try {
       await fs.access(validatedPath);
       await fs.unlink(validatedPath);

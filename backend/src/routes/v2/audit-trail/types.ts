@@ -15,7 +15,7 @@ export interface AuditEntry {
   changes?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   errorMessage?: string;
   createdAt: string;
 }
@@ -26,14 +26,14 @@ export interface AuditFilter {
   action?: string;
   resourceType?: string;
   resourceId?: number;
-  status?: "success" | "failure";
+  status?: 'success' | 'failure';
   dateFrom?: string;
   dateTo?: string;
   search?: string;
   page?: number;
   limit?: number;
-  sortBy?: "created_at" | "action" | "user_id" | "resource_type";
-  sortOrder?: "asc" | "desc";
+  sortBy?: 'created_at' | 'action' | 'user_id' | 'resource_type';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface AuditStats {
@@ -47,7 +47,7 @@ export interface AuditStats {
 
 export interface ComplianceReport {
   tenantId: number;
-  reportType: "gdpr" | "data_access" | "data_changes" | "user_activity";
+  reportType: 'gdpr' | 'data_access' | 'data_changes' | 'user_activity';
   dateFrom: string;
   dateTo: string;
   entries: AuditEntry[];
@@ -68,59 +68,59 @@ export interface CreateAuditEntryDto {
   resourceId?: number;
   resourceName?: string;
   changes?: Record<string, unknown>;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   errorMessage?: string;
 }
 
 // Action types for consistent logging
 export const AUDIT_ACTIONS = {
   // Auth actions
-  LOGIN: "login",
-  LOGOUT: "logout",
-  PASSWORD_CHANGE: "password_change",
-  PASSWORD_RESET: "password_reset",
+  LOGIN: 'login',
+  LOGOUT: 'logout',
+  PASSWORD_CHANGE: 'password_change',
+  PASSWORD_RESET: 'password_reset',
 
   // CRUD actions
-  CREATE: "create",
-  READ: "read",
-  UPDATE: "update",
-  DELETE: "delete",
+  CREATE: 'create',
+  READ: 'read',
+  UPDATE: 'update',
+  DELETE: 'delete',
 
   // Bulk actions
-  BULK_CREATE: "bulk_create",
-  BULK_UPDATE: "bulk_update",
-  BULK_DELETE: "bulk_delete",
+  BULK_CREATE: 'bulk_create',
+  BULK_UPDATE: 'bulk_update',
+  BULK_DELETE: 'bulk_delete',
 
   // Special actions
-  EXPORT: "export",
-  IMPORT: "import",
-  APPROVE: "approve",
-  REJECT: "reject",
-  ASSIGN: "assign",
-  UNASSIGN: "unassign",
-  ACTIVATE: "activate",
-  DEACTIVATE: "deactivate",
+  EXPORT: 'export',
+  IMPORT: 'import',
+  APPROVE: 'approve',
+  REJECT: 'reject',
+  ASSIGN: 'assign',
+  UNASSIGN: 'unassign',
+  ACTIVATE: 'activate',
+  DEACTIVATE: 'deactivate',
 
   // System actions
-  SETTINGS_CHANGE: "settings_change",
-  PERMISSION_CHANGE: "permission_change",
-  ROLE_SWITCH: "role_switch",
+  SETTINGS_CHANGE: 'settings_change',
+  PERMISSION_CHANGE: 'permission_change',
+  ROLE_SWITCH: 'role_switch',
 } as const;
 
 // Resource types for consistent logging
 export const RESOURCE_TYPES = {
-  USER: "user",
-  DEPARTMENT: "department",
-  TEAM: "team",
-  SHIFT: "shift",
-  DOCUMENT: "document",
-  BLACKBOARD: "blackboard",
-  CALENDAR_EVENT: "calendar_event",
-  CHAT_MESSAGE: "chat_message",
-  KVP_SUGGESTION: "kvp_suggestion",
-  SURVEY: "survey",
-  MACHINE: "machine",
-  FEATURE: "feature",
-  PLAN: "plan",
-  SETTINGS: "settings",
+  USER: 'user',
+  DEPARTMENT: 'department',
+  TEAM: 'team',
+  SHIFT: 'shift',
+  DOCUMENT: 'document',
+  BLACKBOARD: 'blackboard',
+  CALENDAR_EVENT: 'calendar_event',
+  CHAT_MESSAGE: 'chat_message',
+  KVP_SUGGESTION: 'kvp_suggestion',
+  SURVEY: 'survey',
+  MACHINE: 'machine',
+  FEATURE: 'feature',
+  PLAN: 'plan',
+  SETTINGS: 'settings',
 } as const;

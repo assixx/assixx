@@ -2,22 +2,22 @@
  * API Tests for Calendar Endpoints
  * Tests event CRUD operations, recurring events, and multi-tenant isolation
  */
+import { Pool } from 'mysql2/promise';
+import request from 'supertest';
 
-import request from "supertest";
-import { Pool } from "mysql2/promise";
-import app from "../../app";
+import { asTestRows } from '../../__tests__/mocks/db-types';
+import app from '../../app';
 import {
-  createTestDatabase,
   cleanupTestData,
-  createTestTenant,
-  createTestUser,
+  createTestDatabase,
   createTestDepartment,
   createTestTeam,
+  createTestTenant,
+  createTestUser,
   getAuthToken,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+} from '../mocks/database';
 
-describe("Calendar API Endpoints", () => {
+describe('Calendar API Endpoints', () => {
   let testDb: Pool;
   let tenant1Id: number;
   let tenant2Id: number;
@@ -34,87 +34,66 @@ describe("Calendar API Endpoints", () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = "test-secret-key-for-calendar-tests";
+    process.env.JWT_SECRET = 'test-secret-key-for-calendar-tests';
 
     // Create test tenants
-    tenant1Id = await createTestTenant(
-      testDb,
-      "caltest1",
-      "Calendar Test Company 1",
-    );
-    tenant2Id = await createTestTenant(
-      testDb,
-      "caltest2",
-      "Calendar Test Company 2",
-    );
+    tenant1Id = await createTestTenant(testDb, 'caltest1', 'Calendar Test Company 1');
+    tenant2Id = await createTestTenant(testDb, 'caltest2', 'Calendar Test Company 2');
 
     // Create departments and teams
-    dept1Id = await createTestDepartment(testDb, tenant1Id, "Engineering");
-    dept2Id = await createTestDepartment(testDb, tenant1Id, "HR");
-    team1Id = await createTestTeam(
-      testDb,
-      tenant1Id,
-      dept1Id,
-      "Engineering Team A",
-    );
+    dept1Id = await createTestDepartment(testDb, tenant1Id, 'Engineering');
+    dept2Id = await createTestDepartment(testDb, tenant1Id, 'HR');
+    team1Id = await createTestTeam(testDb, tenant1Id, dept1Id, 'Engineering Team A');
 
     // Create test users
     adminUser1 = await createTestUser(testDb, {
-      username: "caladmin1",
-      email: "admin1@caltest1.de",
-      password: "AdminPass123!",
-      role: "admin",
+      username: 'caladmin1',
+      email: 'admin1@caltest1.de',
+      password: 'AdminPass123!',
+      role: 'admin',
       tenant_id: tenant1Id,
-      first_name: "Admin",
-      last_name: "One",
+      first_name: 'Admin',
+      last_name: 'One',
     });
 
     const adminUser2 = await createTestUser(testDb, {
-      username: "caladmin2",
-      email: "admin2@caltest2.de",
-      password: "AdminPass123!",
-      role: "admin",
+      username: 'caladmin2',
+      email: 'admin2@caltest2.de',
+      password: 'AdminPass123!',
+      role: 'admin',
       tenant_id: tenant2Id,
-      first_name: "Admin",
-      last_name: "Two",
+      first_name: 'Admin',
+      last_name: 'Two',
     });
 
     employeeUser1 = await createTestUser(testDb, {
-      username: "calemployee1",
-      email: "employee1@caltest1.de",
-      password: "EmpPass123!",
-      role: "employee",
+      username: 'calemployee1',
+      email: 'employee1@caltest1.de',
+      password: 'EmpPass123!',
+      role: 'employee',
       tenant_id: tenant1Id,
       // department_id: dept1Id,  // Removed to avoid FK issues
       // team_id: team1Id,        // Removed to avoid FK issues
-      first_name: "Employee",
-      last_name: "One",
+      first_name: 'Employee',
+      last_name: 'One',
     });
 
     employeeUser2 = await createTestUser(testDb, {
-      username: "calemployee2",
-      email: "employee2@caltest1.de",
-      password: "EmpPass123!",
-      role: "employee",
+      username: 'calemployee2',
+      email: 'employee2@caltest1.de',
+      password: 'EmpPass123!',
+      role: 'employee',
       tenant_id: tenant1Id,
       // department_id: dept2Id,  // Removed to avoid FK issues
-      first_name: "Employee",
-      last_name: "Two",
+      first_name: 'Employee',
+      last_name: 'Two',
     });
 
     // Get auth tokens - use actual usernames from created users
-    adminToken1 = await getAuthToken(app, adminUser1.username, "AdminPass123!");
-    adminToken2 = await getAuthToken(app, adminUser2.username, "AdminPass123!");
-    employeeToken1 = await getAuthToken(
-      app,
-      employeeUser1.username,
-      "EmpPass123!",
-    );
-    employeeToken2 = await getAuthToken(
-      app,
-      employeeUser2.username,
-      "EmpPass123!",
-    );
+    adminToken1 = await getAuthToken(app, adminUser1.username, 'AdminPass123!');
+    adminToken2 = await getAuthToken(app, adminUser2.username, 'AdminPass123!');
+    employeeToken1 = await getAuthToken(app, employeeUser1.username, 'EmpPass123!');
+    employeeToken2 = await getAuthToken(app, employeeUser2.username, 'EmpPass123!');
   });
 
   afterAll(async () => {
@@ -124,63 +103,58 @@ describe("Calendar API Endpoints", () => {
 
   beforeEach(async () => {
     // Clear calendar entries before each test
-    await testDb.execute("DELETE FROM calendar_events WHERE tenant_id > 1");
-    await testDb.execute(
-      "DELETE FROM calendar_event_participants WHERE tenant_id > 1",
-    );
-    await testDb.execute(
-      "DELETE FROM calendar_recurring_patterns WHERE tenant_id > 1",
-    );
+    await testDb.execute('DELETE FROM calendar_events WHERE tenant_id > 1');
+    await testDb.execute('DELETE FROM calendar_event_participants WHERE tenant_id > 1');
+    await testDb.execute('DELETE FROM calendar_recurring_patterns WHERE tenant_id > 1');
   });
 
-  describe("POST /api/calendar", () => {
+  describe('POST /api/calendar', () => {
     const validEventData = {
-      title: "Team Meeting",
-      description: "Weekly team sync meeting",
+      title: 'Team Meeting',
+      description: 'Weekly team sync meeting',
       start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       end_time: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
-      location: "Conference Room A",
-      org_level: "company",
+      location: 'Conference Room A',
+      org_level: 'company',
       // org_id removed - validation expects integer >= 1 or omit field
       all_day: false, // API expects all_day, not all_day
       reminder_time: 15, // API expects reminder_time, not reminder_time
-      color: "#2196F3",
+      color: '#2196F3',
     };
 
-    it("should create calendar event for admin", async () => {
+    it('should create calendar event for admin', async () => {
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(validEventData);
 
       // Force output for debugging
       if (response.status !== 201) {
-        console.error("\n\n=== CALENDAR API ERROR ===");
-        console.error("Status:", response.status);
-        console.error("Response:", JSON.stringify(response.body, null, 2));
-        console.error("Sent data:", JSON.stringify(validEventData, null, 2));
-        console.error("========================\n\n");
+        console.error('\n\n=== CALENDAR API ERROR ===');
+        console.error('Status:', response.status);
+        console.error('Response:', JSON.stringify(response.body, null, 2));
+        console.error('Sent data:', JSON.stringify(validEventData, null, 2));
+        console.error('========================\n\n');
       }
 
       // Debug: Show actual response
       if (response.status === 400) {
         expect(response.body).toEqual(
-          "Expected 201 but got 400 with: " + JSON.stringify(response.body),
+          'Expected 201 but got 400 with: ' + JSON.stringify(response.body),
         );
       }
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("erfolgreich erstellt"),
+        message: expect.stringContaining('erfolgreich erstellt'),
       });
       expect(response.body.data.id).toBeDefined();
 
       // Verify event was created
-      const [rows] = await testDb.execute(
-        "SELECT * FROM calendar_events WHERE id = ?",
-        [response.body.data.id],
-      );
+      const [rows] = await testDb.execute('SELECT * FROM calendar_events WHERE id = ?', [
+        response.body.data.id,
+      ]);
       const events = asTestRows<unknown>(rows);
       expect(events[0]).toMatchObject({
         title: validEventData.title,
@@ -191,82 +165,81 @@ describe("Calendar API Endpoints", () => {
       });
     });
 
-    it("should create all-day event", async () => {
+    it('should create all-day event', async () => {
       const allDayEvent = {
         ...validEventData,
         all_day: true,
-        start_time: new Date("2025-07-20").toISOString(),
-        end_time: new Date("2025-07-20").toISOString(),
+        start_time: new Date('2025-07-20').toISOString(),
+        end_time: new Date('2025-07-20').toISOString(),
       };
 
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(allDayEvent);
 
       expect(response.status).toBe(201);
 
-      const [rows] = await testDb.execute(
-        "SELECT all_day FROM calendar_events WHERE id = ?",
-        [response.body.data.id],
-      );
+      const [rows] = await testDb.execute('SELECT all_day FROM calendar_events WHERE id = ?', [
+        response.body.data.id,
+      ]);
       const events = asTestRows<unknown>(rows);
       expect(events[0].all_day).toBe(1);
     });
 
-    it("should create department-specific event", async () => {
+    it('should create department-specific event', async () => {
       const deptEvent = {
         ...validEventData,
-        org_level: "department",
+        org_level: 'department',
         org_id: dept1Id,
       };
 
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send(deptEvent);
 
       expect(response.status).toBe(201);
     });
 
-    it("should create team-specific event", async () => {
+    it('should create team-specific event', async () => {
       const teamEvent = {
         ...validEventData,
-        org_level: "team",
+        org_level: 'team',
         org_id: team1Id,
       };
 
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send(teamEvent);
 
       expect(response.status).toBe(201);
     });
 
-    it("should validate required fields", async () => {
+    it('should validate required fields', async () => {
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
-          title: "",
-          start_time: "invalid-date",
+          title: '',
+          start_time: 'invalid-date',
         });
 
       expect(response.status).toBe(400);
       expect(response.body.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ field: "title" }),
-          expect.objectContaining({ field: "start_time" }),
-          expect.objectContaining({ field: "end_time" }),
+          expect.objectContaining({ field: 'title' }),
+          expect.objectContaining({ field: 'start_time' }),
+          expect.objectContaining({ field: 'end_time' }),
         ]),
       );
     });
 
-    it("should validate date range", async () => {
+    it('should validate date range', async () => {
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validEventData,
           end_time: validEventData.start_time, // End before start
@@ -274,69 +247,67 @@ describe("Calendar API Endpoints", () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("Endzeit");
+      expect(response.body.message).toContain('Endzeit');
     });
 
-    it("should create recurring event", async () => {
+    it('should create recurring event', async () => {
       const recurringEvent = {
         ...validEventData,
         is_recurring: true,
         recurrence_pattern: {
-          frequency: "weekly",
+          frequency: 'weekly',
           interval: 1,
-          days_of_week: ["MO", "WE", "FR"],
-          end_time: new Date(
-            Date.now() + 90 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
+          days_of_week: ['MO', 'WE', 'FR'],
+          end_time: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         },
       };
 
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(recurringEvent);
 
       expect(response.status).toBe(201);
 
       // Verify recurring pattern was created
       const [rows] = await testDb.execute(
-        "SELECT * FROM calendar_recurring_patterns WHERE event_id = ?",
+        'SELECT * FROM calendar_recurring_patterns WHERE event_id = ?',
         [response.body.data.id],
       );
       const patterns = asTestRows<unknown>(rows);
       expect(patterns[0]).toMatchObject({
-        frequency: "weekly",
+        frequency: 'weekly',
         interval: 1,
-        days_of_week: "MO,WE,FR",
+        days_of_week: 'MO,WE,FR',
       });
     });
 
-    it("should add participants to event", async () => {
+    it('should add participants to event', async () => {
       const eventWithParticipants = {
         ...validEventData,
         participants: [employeeUser1.id, employeeUser2.id],
       };
 
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(eventWithParticipants);
 
       expect(response.status).toBe(201);
 
       // Verify participants were added
       const [rows] = await testDb.execute(
-        "SELECT * FROM calendar_event_participants WHERE event_id = ?",
+        'SELECT * FROM calendar_event_participants WHERE event_id = ?',
         [response.body.data.id],
       );
       const participants = asTestRows<unknown>(rows);
       expect(participants.length).toBe(2);
     });
 
-    it("should set tenant_id from token", async () => {
+    it('should set tenant_id from token', async () => {
       const response = await request(app)
-        .post("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validEventData,
           tenant_id: 999, // Should be ignored
@@ -344,16 +315,15 @@ describe("Calendar API Endpoints", () => {
 
       expect(response.status).toBe(201);
 
-      const [rows] = await testDb.execute(
-        "SELECT tenant_id FROM calendar_events WHERE id = ?",
-        [response.body.data.id],
-      );
+      const [rows] = await testDb.execute('SELECT tenant_id FROM calendar_events WHERE id = ?', [
+        response.body.data.id,
+      ]);
       const events = asTestRows<unknown>(rows);
       expect(events[0].tenant_id).toBe(tenant1Id);
     });
   });
 
-  describe("GET /api/calendar", () => {
+  describe('GET /api/calendar', () => {
     let companyEventId: number;
     let dept1EventId: number;
     let dept2EventId: number;
@@ -369,11 +339,11 @@ describe("Calendar API Endpoints", () => {
         (title, description, start_time, end_time, org_level, org_id, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Company Event",
-          "All hands meeting",
+          'Company Event',
+          'All hands meeting',
           tomorrow,
           dayAfter,
-          "company",
+          'company',
           null,
           adminUser1.id,
           tenant1Id,
@@ -386,15 +356,7 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, org_id, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Engineering Sprint",
-          tomorrow,
-          dayAfter,
-          "department",
-          dept1Id,
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Engineering Sprint', tomorrow, dayAfter, 'department', dept1Id, adminUser1.id, tenant1Id],
       );
       const result2 = asTestRows<unknown>(rowsDept1);
       dept1EventId = (result2 as any).insertId;
@@ -403,15 +365,7 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, org_id, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "HR Training",
-          tomorrow,
-          dayAfter,
-          "department",
-          dept2Id,
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['HR Training', tomorrow, dayAfter, 'department', dept2Id, adminUser1.id, tenant1Id],
       );
       const result3 = asTestRows<unknown>(rowsDept2);
       dept2EventId = (result3 as any).insertId;
@@ -420,33 +374,25 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, org_id, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Team Standup",
-          tomorrow,
-          dayAfter,
-          "team",
-          team1Id,
-          employeeUser1.id,
-          tenant1Id,
-        ],
+        ['Team Standup', tomorrow, dayAfter, 'team', team1Id, employeeUser1.id, tenant1Id],
       );
       const result4 = asTestRows<unknown>(rowsTeam);
       team1EventId = (result4 as any).insertId;
     });
 
-    it("should list events based on user visibility", async () => {
+    it('should list events based on user visibility', async () => {
       // Admin should see all events
       const adminResponse = await request(app)
-        .get("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(adminResponse.status).toBe(200);
       expect(adminResponse.body.data.events.length).toBe(4);
 
       // Employee1 (dept1, team1) should see company + dept1 + team1
       const emp1Response = await request(app)
-        .get("/api/calendar")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/calendar')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(emp1Response.status).toBe(200);
       expect(emp1Response.body.data.events.length).toBe(3);
@@ -458,8 +404,8 @@ describe("Calendar API Endpoints", () => {
 
       // Employee2 (dept2) should see company + dept2
       const emp2Response = await request(app)
-        .get("/api/calendar")
-        .set("Authorization", `Bearer ${employeeToken2}`);
+        .get('/api/calendar')
+        .set('Authorization', `Bearer ${employeeToken2}`);
 
       expect(emp2Response.status).toBe(200);
       expect(emp2Response.body.data.events.length).toBe(2);
@@ -468,82 +414,70 @@ describe("Calendar API Endpoints", () => {
       expect(emp2Ids).toContain(dept2EventId);
     });
 
-    it("should filter by date range", async () => {
+    it('should filter by date range', async () => {
       const startDate = new Date().toISOString();
-      const endDate = new Date(
-        Date.now() + 7 * 24 * 60 * 60 * 1000,
-      ).toISOString();
+      const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const response = await request(app)
         .get(`/api/calendar?start=${startDate}&end=${endDate}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.events.length).toBe(4);
     });
 
-    it("should filter by view type", async () => {
+    it('should filter by view type', async () => {
       // Month view
       const response = await request(app)
-        .get("/api/calendar?view=month")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/calendar?view=month')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.events).toBeDefined();
     });
 
-    it("should include participant info", async () => {
+    it('should include participant info', async () => {
       // Add participant
       await testDb.execute(
-        "INSERT INTO calendar_event_participants (event_id, user_id, status, tenant_id) VALUES (?, ?, ?, ?)",
-        [companyEventId, employeeUser1.id, "accepted", tenant1Id],
+        'INSERT INTO calendar_event_participants (event_id, user_id, status, tenant_id) VALUES (?, ?, ?, ?)',
+        [companyEventId, employeeUser1.id, 'accepted', tenant1Id],
       );
 
       const response = await request(app)
         .get(`/api/calendar?include=participants`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const companyEvent = response.body.data.events.find(
-        (e) => e.id === companyEventId,
-      );
+      const companyEvent = response.body.data.events.find((e) => e.id === companyEventId);
       expect(companyEvent.participants).toBeDefined();
       expect(companyEvent.participants.length).toBeGreaterThan(0);
     });
 
-    it("should enforce tenant isolation", async () => {
+    it('should enforce tenant isolation', async () => {
       // Create event in tenant2
       await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Tenant2 Event", new Date(), new Date(), "company", 1, tenant2Id],
+        ['Tenant2 Event', new Date(), new Date(), 'company', 1, tenant2Id],
       );
 
       const response = await request(app)
-        .get("/api/calendar")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/calendar')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const events = response.body.data.events;
       expect(events.every((e) => e.tenant_id === tenant1Id)).toBe(true);
     });
 
-    it("should handle recurring events", async () => {
+    it('should handle recurring events', async () => {
       // Create recurring event
       const [rows] = await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id, is_recurring) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Daily Standup",
-          new Date(),
-          new Date(),
-          "company",
-          adminUser1.id,
-          tenant1Id,
-          1,
-        ],
+        ['Daily Standup', new Date(), new Date(), 'company', adminUser1.id, tenant1Id, 1],
       );
       const result = asTestRows<unknown>(rows);
       const recurringId = (result as any).insertId;
@@ -552,19 +486,19 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_recurring_patterns 
         (event_id, frequency, interval, tenant_id) 
         VALUES (?, ?, ?, ?)`,
-        [recurringId, "daily", 1, tenant1Id],
+        [recurringId, 'daily', 1, tenant1Id],
       );
 
       const response = await request(app)
-        .get("/api/calendar?expand_recurring=true")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/calendar?expand_recurring=true')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       // Should include expanded recurring instances
     });
   });
 
-  describe("GET /api/calendar/:id", () => {
+  describe('GET /api/calendar/:id', () => {
     let eventId: number;
 
     beforeEach(async () => {
@@ -573,11 +507,11 @@ describe("Calendar API Endpoints", () => {
         (title, description, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Test Event",
-          "Test description",
+          'Test Event',
+          'Test description',
           new Date(),
           new Date(),
-          "company",
+          'company',
           adminUser1.id,
           tenant1Id,
         ],
@@ -586,76 +520,68 @@ describe("Calendar API Endpoints", () => {
       eventId = (result as any).insertId;
     });
 
-    it("should get event details", async () => {
+    it('should get event details', async () => {
       const response = await request(app)
         .get(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({
         id: eventId,
-        title: "Test Event",
-        description: "Test description",
-        org_level: "company",
+        title: 'Test Event',
+        description: 'Test description',
+        org_level: 'company',
         creator: expect.objectContaining({
           id: adminUser1.id,
-          first_name: "Admin",
-          last_name: "One",
+          first_name: 'Admin',
+          last_name: 'One',
         }),
       });
     });
 
-    it("should include participants if requested", async () => {
+    it('should include participants if requested', async () => {
       // Add participants
       await testDb.execute(
-        "INSERT INTO calendar_event_participants (event_id, user_id, status, tenant_id) VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
+        'INSERT INTO calendar_event_participants (event_id, user_id, status, tenant_id) VALUES (?, ?, ?, ?), (?, ?, ?, ?)',
         [
           eventId,
           employeeUser1.id,
-          "accepted",
+          'accepted',
           tenant1Id,
           eventId,
           employeeUser2.id,
-          "pending",
+          'pending',
           tenant1Id,
         ],
       );
 
       const response = await request(app)
         .get(`/api/calendar/${eventId}?include=participants`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.participants).toHaveLength(2);
       expect(response.body.data.participants[0]).toMatchObject({
         user_id: employeeUser1.id,
-        status: "accepted",
+        status: 'accepted',
       });
     });
 
-    it("should return 404 for non-existent event", async () => {
+    it('should return 404 for non-existent event', async () => {
       const response = await request(app)
-        .get("/api/calendar/99999")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/calendar/99999')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(404);
     });
 
-    it("should enforce visibility rules", async () => {
+    it('should enforce visibility rules', async () => {
       // Create department-specific event
       const [rows] = await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, org_id, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Dept2 Only",
-          new Date(),
-          new Date(),
-          "department",
-          dept2Id,
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Dept2 Only', new Date(), new Date(), 'department', dept2Id, adminUser1.id, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       const deptEventId = (result as any).insertId;
@@ -663,21 +589,21 @@ describe("Calendar API Endpoints", () => {
       // Employee1 (dept1) should not see dept2 event
       const response = await request(app)
         .get(`/api/calendar/${deptEventId}`)
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(404);
     });
 
-    it("should enforce tenant isolation", async () => {
+    it('should enforce tenant isolation', async () => {
       const response = await request(app)
         .get(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken2}`);
+        .set('Authorization', `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(404);
     });
   });
 
-  describe("PUT /api/calendar/:id", () => {
+  describe('PUT /api/calendar/:id', () => {
     let eventId: number;
 
     beforeEach(async () => {
@@ -687,11 +613,11 @@ describe("Calendar API Endpoints", () => {
         (title, description, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Original Event",
-          "Original description",
+          'Original Event',
+          'Original description',
           tomorrow,
           tomorrow,
-          "company",
+          'company',
           adminUser1.id,
           tenant1Id,
         ],
@@ -700,37 +626,37 @@ describe("Calendar API Endpoints", () => {
       eventId = (result as any).insertId;
     });
 
-    it("should update event for creator", async () => {
+    it('should update event for creator', async () => {
       const updateData = {
-        title: "Updated Event",
-        description: "Updated description",
-        location: "New Location",
+        title: 'Updated Event',
+        description: 'Updated description',
+        location: 'New Location',
       };
 
       const response = await request(app)
         .put(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(updateData);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("aktualisiert");
+      expect(response.body.message).toContain('aktualisiert');
 
       // Verify update
       const [rows] = await testDb.execute(
-        "SELECT title, description, location FROM calendar_events WHERE id = ?",
+        'SELECT title, description, location FROM calendar_events WHERE id = ?',
         [eventId],
       );
       const events = asTestRows<unknown>(rows);
       expect(events[0]).toMatchObject(updateData);
     });
 
-    it("should update event time", async () => {
+    it('should update event time', async () => {
       const newStart = new Date(Date.now() + 48 * 60 * 60 * 1000);
       const newEnd = new Date(Date.now() + 49 * 60 * 60 * 1000);
 
       const response = await request(app)
         .put(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           start_time: newStart.toISOString(),
           end_time: newEnd.toISOString(),
@@ -739,70 +665,55 @@ describe("Calendar API Endpoints", () => {
       expect(response.status).toBe(200);
     });
 
-    it("should prevent non-creator from updating", async () => {
+    it('should prevent non-creator from updating', async () => {
       const response = await request(app)
         .put(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${employeeToken1}`)
-        .send({ title: "Hacked" });
+        .set('Authorization', `Bearer ${employeeToken1}`)
+        .send({ title: 'Hacked' });
 
       expect(response.status).toBe(403);
-      expect(response.body.message).toContain("Nur der Ersteller");
+      expect(response.body.message).toContain('Nur der Ersteller');
     });
 
-    it("should allow admin to update any event", async () => {
+    it('should allow admin to update any event', async () => {
       // Create event by employee
       const [rows] = await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "Employee Event",
-          new Date(),
-          new Date(),
-          "company",
-          employeeUser1.id,
-          tenant1Id,
-        ],
+        ['Employee Event', new Date(), new Date(), 'company', employeeUser1.id, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       const empEventId = (result as any).insertId;
 
       const response = await request(app)
         .put(`/api/calendar/${empEventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
-        .send({ title: "Admin Updated" });
+        .set('Authorization', `Bearer ${adminToken1}`)
+        .send({ title: 'Admin Updated' });
 
       expect(response.status).toBe(200);
     });
 
-    it("should validate update data", async () => {
+    it('should validate update data', async () => {
       const response = await request(app)
         .put(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
-          title: "", // Empty title
-          start_time: "invalid-date",
+          title: '', // Empty title
+          start_time: 'invalid-date',
         });
 
       expect(response.status).toBe(400);
       expect(response.body.errors).toBeDefined();
     });
 
-    it("should update recurring pattern", async () => {
+    it('should update recurring pattern', async () => {
       // Create recurring event
       const [rows] = await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id, is_recurring) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Recurring Event",
-          new Date(),
-          new Date(),
-          "company",
-          adminUser1.id,
-          tenant1Id,
-          1,
-        ],
+        ['Recurring Event', new Date(), new Date(), 'company', adminUser1.id, tenant1Id, 1],
       );
       const result = asTestRows<unknown>(rows);
       const recurringId = (result as any).insertId;
@@ -811,15 +722,15 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_recurring_patterns 
         (event_id, frequency, interval, tenant_id) 
         VALUES (?, ?, ?, ?)`,
-        [recurringId, "weekly", 1, tenant1Id],
+        [recurringId, 'weekly', 1, tenant1Id],
       );
 
       const response = await request(app)
         .put(`/api/calendar/${recurringId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           recurrence_pattern: {
-            frequency: "daily",
+            frequency: 'daily',
             interval: 2,
           },
         });
@@ -827,17 +738,17 @@ describe("Calendar API Endpoints", () => {
       expect(response.status).toBe(200);
     });
 
-    it("should enforce tenant isolation on update", async () => {
+    it('should enforce tenant isolation on update', async () => {
       const response = await request(app)
         .put(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken2}`)
-        .send({ title: "Cross-tenant update" });
+        .set('Authorization', `Bearer ${adminToken2}`)
+        .send({ title: 'Cross-tenant update' });
 
       expect(response.status).toBe(404);
     });
   });
 
-  describe("DELETE /api/calendar/:id", () => {
+  describe('DELETE /api/calendar/:id', () => {
     let eventId: number;
 
     beforeEach(async () => {
@@ -845,71 +756,53 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "To Delete",
-          new Date(),
-          new Date(),
-          "company",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['To Delete', new Date(), new Date(), 'company', adminUser1.id, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       eventId = (result as any).insertId;
     });
 
-    it("should delete event for creator", async () => {
+    it('should delete event for creator', async () => {
       const response = await request(app)
         .delete(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("gelöscht");
+      expect(response.body.message).toContain('gelöscht');
 
       // Verify deletion
-      const [rows] = await testDb.execute(
-        "SELECT * FROM calendar_events WHERE id = ?",
-        [eventId],
-      );
+      const [rows] = await testDb.execute('SELECT * FROM calendar_events WHERE id = ?', [eventId]);
       const events = asTestRows<unknown>(rows);
       expect(events.length).toBe(0);
     });
 
-    it("should delete associated participants", async () => {
+    it('should delete associated participants', async () => {
       // Add participants
       await testDb.execute(
-        "INSERT INTO calendar_event_participants (event_id, user_id, tenant_id) VALUES (?, ?, ?)",
+        'INSERT INTO calendar_event_participants (event_id, user_id, tenant_id) VALUES (?, ?, ?)',
         [eventId, employeeUser1.id, tenant1Id],
       );
 
       await request(app)
         .delete(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       // Verify participants were deleted
       const [rows] = await testDb.execute(
-        "SELECT * FROM calendar_event_participants WHERE event_id = ?",
+        'SELECT * FROM calendar_event_participants WHERE event_id = ?',
         [eventId],
       );
       const participants = asTestRows<unknown>(rows);
       expect(participants.length).toBe(0);
     });
 
-    it("should delete recurring pattern", async () => {
+    it('should delete recurring pattern', async () => {
       // Create recurring event
       const [rows] = await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id, is_recurring) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Recurring",
-          new Date(),
-          new Date(),
-          "company",
-          adminUser1.id,
-          tenant1Id,
-          1,
-        ],
+        ['Recurring', new Date(), new Date(), 'company', adminUser1.id, tenant1Id, 1],
       );
       const result = asTestRows<unknown>(rows);
       const recurringId = (result as any).insertId;
@@ -918,65 +811,58 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_recurring_patterns 
         (event_id, frequency, interval, tenant_id) 
         VALUES (?, ?, ?, ?)`,
-        [recurringId, "daily", 1, tenant1Id],
+        [recurringId, 'daily', 1, tenant1Id],
       );
 
       await request(app)
         .delete(`/api/calendar/${recurringId}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       // Verify pattern was deleted
       const [rowsPatternCheck] = await testDb.execute(
-        "SELECT * FROM calendar_recurring_patterns WHERE event_id = ?",
+        'SELECT * FROM calendar_recurring_patterns WHERE event_id = ?',
         [recurringId],
       );
       const patterns = asTestRows<unknown>(rowsPatternCheck);
       expect(patterns.length).toBe(0);
     });
 
-    it("should prevent non-creator from deleting", async () => {
+    it('should prevent non-creator from deleting', async () => {
       const response = await request(app)
         .delete(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(403);
     });
 
-    it("should allow admin to delete any event", async () => {
+    it('should allow admin to delete any event', async () => {
       // Create event by employee
       const [rows] = await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "Employee Event",
-          new Date(),
-          new Date(),
-          "company",
-          employeeUser1.id,
-          tenant1Id,
-        ],
+        ['Employee Event', new Date(), new Date(), 'company', employeeUser1.id, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       const empEventId = (result as any).insertId;
 
       const response = await request(app)
         .delete(`/api/calendar/${empEventId}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
     });
 
-    it("should enforce tenant isolation on delete", async () => {
+    it('should enforce tenant isolation on delete', async () => {
       const response = await request(app)
         .delete(`/api/calendar/${eventId}`)
-        .set("Authorization", `Bearer ${adminToken2}`);
+        .set('Authorization', `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(404);
     });
   });
 
-  describe("Event Participation", () => {
+  describe('Event Participation', () => {
     let eventId: number;
 
     beforeEach(async () => {
@@ -984,110 +870,96 @@ describe("Calendar API Endpoints", () => {
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "Meeting",
-          new Date(),
-          new Date(),
-          "company",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Meeting', new Date(), new Date(), 'company', adminUser1.id, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       eventId = (result as any).insertId;
 
       // Add employees as participants
       await testDb.execute(
-        "INSERT INTO calendar_event_participants (event_id, user_id, status, tenant_id) VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
+        'INSERT INTO calendar_event_participants (event_id, user_id, status, tenant_id) VALUES (?, ?, ?, ?), (?, ?, ?, ?)',
         [
           eventId,
           employeeUser1.id,
-          "pending",
+          'pending',
           tenant1Id,
           eventId,
           employeeUser2.id,
-          "pending",
+          'pending',
           tenant1Id,
         ],
       );
     });
 
-    it("should update participation status", async () => {
+    it('should update participation status', async () => {
       const response = await request(app)
         .put(`/api/calendar/${eventId}/participation`)
-        .set("Authorization", `Bearer ${employeeToken1}`)
-        .send({ status: "accepted" });
+        .set('Authorization', `Bearer ${employeeToken1}`)
+        .send({ status: 'accepted' });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("aktualisiert");
+      expect(response.body.message).toContain('aktualisiert');
 
       // Verify status update
       const [rows] = await testDb.execute(
-        "SELECT status FROM calendar_event_participants WHERE event_id = ? AND user_id = ?",
+        'SELECT status FROM calendar_event_participants WHERE event_id = ? AND user_id = ?',
         [eventId, employeeUser1.id],
       );
       const participants = asTestRows<unknown>(rows);
-      expect(participants[0].status).toBe("accepted");
+      expect(participants[0].status).toBe('accepted');
     });
 
-    it("should handle decline with reason", async () => {
+    it('should handle decline with reason', async () => {
       const response = await request(app)
         .put(`/api/calendar/${eventId}/participation`)
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send({
-          status: "declined",
-          reason: "Conflict with another meeting",
+          status: 'declined',
+          reason: 'Conflict with another meeting',
         });
 
       expect(response.status).toBe(200);
     });
 
-    it("should only allow participants to update their own status", async () => {
+    it('should only allow participants to update their own status', async () => {
       // Admin not a participant
       const response = await request(app)
         .put(`/api/calendar/${eventId}/participation`)
-        .set("Authorization", `Bearer ${adminToken1}`)
-        .send({ status: "accepted" });
+        .set('Authorization', `Bearer ${adminToken1}`)
+        .send({ status: 'accepted' });
 
       expect(response.status).toBe(404);
-      expect(response.body.message).toContain("kein Teilnehmer");
+      expect(response.body.message).toContain('kein Teilnehmer');
     });
   });
 
-  describe("GET /api/calendar/availability", () => {
-    it("should check user availability", async () => {
+  describe('GET /api/calendar/availability', () => {
+    it('should check user availability', async () => {
       // Create existing events
       const busyTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "Existing Meeting",
-          busyTime,
-          busyTime,
-          "company",
-          employeeUser1.id,
-          tenant1Id,
-        ],
+        ['Existing Meeting', busyTime, busyTime, 'company', employeeUser1.id, tenant1Id],
       );
 
       const response = await request(app)
         .get(
           `/api/calendar/availability?users=${employeeUser1.id}&date=${String(busyTime.toISOString())}`,
         )
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.conflicts).toBeDefined();
     });
 
-    it("should find free slots", async () => {
+    it('should find free slots', async () => {
       const response = await request(app)
         .get(
           `/api/calendar/availability/free-slots?users=${employeeUser1.id},${employeeUser2.id}&duration=60`,
         )
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.freeSlots).toBeDefined();
@@ -1095,56 +967,41 @@ describe("Calendar API Endpoints", () => {
     });
   });
 
-  describe("Calendar Export", () => {
-    it("should export calendar in iCal format", async () => {
+  describe('Calendar Export', () => {
+    it('should export calendar in iCal format', async () => {
       // Create some events
       await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "Export Test",
-          new Date(),
-          new Date(),
-          "company",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Export Test', new Date(), new Date(), 'company', adminUser1.id, tenant1Id],
       );
 
       const response = await request(app)
-        .get("/api/calendar/export?format=ical")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/calendar/export?format=ical')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toContain("text/calendar");
-      expect(response.text).toContain("BEGIN:VCALENDAR");
-      expect(response.text).toContain("Export Test");
+      expect(response.headers['content-type']).toContain('text/calendar');
+      expect(response.text).toContain('BEGIN:VCALENDAR');
+      expect(response.text).toContain('Export Test');
     });
 
-    it("should respect visibility rules in export", async () => {
+    it('should respect visibility rules in export', async () => {
       // Create department-specific event
       await testDb.execute(
         `INSERT INTO calendar_events 
         (title, start_time, end_time, org_level, org_id, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Secret Meeting",
-          new Date(),
-          new Date(),
-          "department",
-          dept2Id,
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Secret Meeting', new Date(), new Date(), 'department', dept2Id, adminUser1.id, tenant1Id],
       );
 
       const response = await request(app)
-        .get("/api/calendar/export?format=ical")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/calendar/export?format=ical')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.text).not.toContain("Secret Meeting");
+      expect(response.text).not.toContain('Secret Meeting');
     });
   });
 });

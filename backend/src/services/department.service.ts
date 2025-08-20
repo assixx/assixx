@@ -2,14 +2,14 @@
  * Department Service
  * Handles department-related business logic
  */
-
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 import Department, {
-  DbDepartment as DepartmentData,
   DepartmentCreateData,
+  DbDepartment as DepartmentData,
   DepartmentUpdateData,
-} from "../models/department";
+} from '../models/department';
+
 /**
  * Department Service
  * Handles department-related business logic
@@ -46,7 +46,7 @@ class DepartmentService {
       // TODO: Add pagination support to Department model
       return await Department.findAll(tenantId);
     } catch (error: unknown) {
-      console.error("Error in DepartmentService.getAll:", error);
+      console.error('Error in DepartmentService.getAll:', error);
       throw error;
     }
   }
@@ -57,15 +57,11 @@ class DepartmentService {
    * @param id
    * @param tenantId
    */
-  async getById(
-    _tenantDb: Pool,
-    id: number,
-    tenantId: number,
-  ): Promise<DepartmentData | null> {
+  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<DepartmentData | null> {
     try {
       return await Department.findById(id, tenantId);
     } catch (error: unknown) {
-      console.error("Error in DepartmentService.getById:", error);
+      console.error('Error in DepartmentService.getById:', error);
       throw error;
     }
   }
@@ -75,19 +71,16 @@ class DepartmentService {
    * @param _tenantDb
    * @param data
    */
-  async create(
-    _tenantDb: Pool,
-    data: DepartmentCreateData,
-  ): Promise<DepartmentData> {
+  async create(_tenantDb: Pool, data: DepartmentCreateData): Promise<DepartmentData> {
     try {
       const id = await Department.create(data);
       const created = await Department.findById(id, data.tenant_id);
       if (!created) {
-        throw new Error("Failed to retrieve created department");
+        throw new Error('Failed to retrieve created department');
       }
       return created;
     } catch (error: unknown) {
-      console.error("Error in DepartmentService.create:", error);
+      console.error('Error in DepartmentService.create:', error);
       throw error;
     }
   }
@@ -112,7 +105,7 @@ class DepartmentService {
       }
       return null;
     } catch (error: unknown) {
-      console.error("Error in DepartmentService.update:", error);
+      console.error('Error in DepartmentService.update:', error);
       throw error;
     }
   }
@@ -126,7 +119,7 @@ class DepartmentService {
     try {
       return await Department.delete(id);
     } catch (error: unknown) {
-      console.error("Error in DepartmentService.delete:", error);
+      console.error('Error in DepartmentService.delete:', error);
       throw error;
     }
   }

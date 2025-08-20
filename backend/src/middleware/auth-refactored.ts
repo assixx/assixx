@@ -2,27 +2,21 @@
  * Refactored Authentication Middleware with proper TypeScript types
  * This replaces the authenticateToken function with a type-safe implementation
  */
+import { NextFunction, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { RowDataPacket } from 'mysql2/promise';
 
-import jwt from "jsonwebtoken";
-import { RowDataPacket } from "mysql2/promise";
-
-import { Response, NextFunction } from "express";
-
-import { executeQuery } from "../database";
-import { TokenPayload } from "../types/auth.types";
-import { AuthenticationMiddleware } from "../types/middleware.types";
-import {
-  AuthenticatedRequest,
-  PublicRequest,
-  AuthUser,
-} from "../types/request.types";
-import { errorResponse } from "../types/response.types";
+import { executeQuery } from '../database';
+import { TokenPayload } from '../types/auth.types';
+import { AuthenticationMiddleware } from '../types/middleware.types';
+import { AuthUser, AuthenticatedRequest, PublicRequest } from '../types/request.types';
+import { errorResponse } from '../types/response.types';
 
 // Get JWT secret with proper fallback
-const JWT_SECRET = process.env.JWT_SECRET ?? "";
+const JWT_SECRET = process.env.JWT_SECRET ?? '';
 
-if (!JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET must be set in production!");
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set in production!');
 }
 
 // Helper to extract token from request
@@ -34,11 +28,9 @@ function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
   const authHeader = req.headers.authorization;
   const bearerToken =
-    authHeader !== undefined &&
-    authHeader !== "" &&
-    authHeader.startsWith("Bearer ")
-      ? authHeader.substring(7)
-      : null;
+    authHeader !== undefined && authHeader !== '' && authHeader.startsWith('Bearer ') ?
+      authHeader.substring(7)
+    : null;
 
   // Check cookie as fallback
   const cookieToken = req.cookies.token as string | undefined;
@@ -54,7 +46,7 @@ function extractToken(req: PublicRequest): string | null {
 function verifyToken(token: string): TokenPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (typeof decoded === "string") {
+    if (typeof decoded === 'string') {
       return null;
     }
     return decoded as TokenPayload;
@@ -69,26 +61,19 @@ function verifyToken(token: string): TokenPayload | null {
  * @param userId
  * @param sessionId
  */
-async function validateSession(
-  userId: number,
-  sessionId?: string,
-): Promise<boolean> {
-  if (
-    sessionId == null ||
-    sessionId === "" ||
-    process.env.VALIDATE_SESSIONS !== "true"
-  ) {
+async function validateSession(userId: number, sessionId?: string): Promise<boolean> {
+  if (sessionId == null || sessionId === '' || process.env.VALIDATE_SESSIONS !== 'true') {
     return true;
   }
 
   try {
     const [sessions] = await executeQuery<RowDataPacket[]>(
-      "SELECT id FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
+      'SELECT id FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
       [userId, sessionId],
     );
     return sessions.length > 0;
   } catch (error: unknown) {
-    console.error("[AUTH] Session validation error:", error);
+    console.error('[AUTH] Session validation error:', error);
     // Allow access if database is down
     return true;
   }
@@ -99,9 +84,7 @@ async function validateSession(
  *
  * @param userId
  */
-async function getUserDetails(
-  userId: number,
-): Promise<Partial<AuthUser> | null> {
+async function getUserDetails(userId: number): Promise<Partial<AuthUser> | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
       `SELECT
@@ -143,7 +126,7 @@ async function getUserDetails(
       department_id: user.department_id,
     };
   } catch (error: unknown) {
-    console.error("[AUTH] User lookup error:", error);
+    console.error('[AUTH] User lookup error:', error);
     return null;
   }
 }
@@ -158,10 +141,8 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     // Extract token
     const token = extractToken(req);
 
-    if (token === null || token === "") {
-      res
-        .status(401)
-        .json(errorResponse("Authentication token required", 401, "NO_TOKEN"));
+    if (token === null || token === '') {
+      res.status(401).json(errorResponse('Authentication token required', 401, 'NO_TOKEN'));
       return;
     }
 
@@ -170,7 +151,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
     if (!decoded) {
       // Check if request accepts HTML (browser request) vs JSON (API request)
-      const acceptsHtml = req.headers.accept?.includes("text/html");
+      const acceptsHtml = req.headers.accept?.includes('text/html');
 
       if (acceptsHtml === true) {
         // Send HTML page that redirects to login with timeout parameter
@@ -365,11 +346,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
         `);
       } else {
         // API request - return JSON
-        res
-          .status(403)
-          .json(
-            errorResponse("Invalid or expired token", 403, "INVALID_TOKEN"),
-          );
+        res.status(403).json(errorResponse('Invalid or expired token', 403, 'INVALID_TOKEN'));
       }
       return;
     }
@@ -378,11 +355,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     const sessionValid = await validateSession(decoded.id, decoded.sessionId);
 
     if (!sessionValid) {
-      res
-        .status(403)
-        .json(
-          errorResponse("Session expired or not found", 403, "SESSION_EXPIRED"),
-        );
+      res.status(403).json(errorResponse('Session expired or not found', 403, 'SESSION_EXPIRED'));
       return;
     }
 
@@ -390,11 +363,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     const userDetails = await getUserDetails(decoded.id);
 
     if (!userDetails) {
-      res
-        .status(403)
-        .json(
-          errorResponse("User not found or inactive", 403, "USER_NOT_FOUND"),
-        );
+      res.status(403).json(errorResponse('User not found or inactive', 403, 'USER_NOT_FOUND'));
       return;
     }
 
@@ -402,9 +371,9 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     const authenticatedUser: AuthUser = {
       id: userDetails.id ?? 0,
       userId: userDetails.id ?? 0,
-      username: userDetails.username ?? "",
-      email: userDetails.email ?? "",
-      role: decoded.activeRole ?? userDetails.role ?? "", // Support role switching
+      username: userDetails.username ?? '',
+      email: userDetails.email ?? '',
+      role: decoded.activeRole ?? userDetails.role ?? '', // Support role switching
       tenant_id: userDetails.tenant_id ?? 0,
       tenantName: userDetails.tenantName,
       first_name: userDetails.first_name,
@@ -419,10 +388,8 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
     next();
   } catch (error: unknown) {
-    console.error("[AUTH] Unexpected error:", error);
-    res
-      .status(500)
-      .json(errorResponse("Authentication error", 500, "AUTH_ERROR"));
+    console.error('[AUTH] Unexpected error:', error);
+    res.status(500).json(errorResponse('Authentication error', 500, 'AUTH_ERROR'));
   }
 };
 
@@ -440,7 +407,7 @@ export async function optionalAuth(
 ): Promise<void> {
   const token = extractToken(req);
 
-  if (token === null || token === "") {
+  if (token === null || token === '') {
     // No token, but that's okay for optional auth
     next();
     return;
@@ -448,9 +415,9 @@ export async function optionalAuth(
 
   // If token is provided, validate it
   await authenticateToken(req, res, (err?: unknown) => {
-    if (err !== null && err !== undefined && err !== "") {
+    if (err !== null && err !== undefined && err !== '') {
       // Token is invalid, but continue anyway for optional auth
-      console.warn("[AUTH] Invalid token in optional auth:", err);
+      console.warn('[AUTH] Invalid token in optional auth:', err);
     }
     next();
   });
@@ -464,13 +431,9 @@ export async function optionalAuth(
 export function requireRole(allowedRoles: string | string[]) {
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
-  return (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): void => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     // Root has access to everything
-    if (req.user.role === "root") {
+    if (req.user.role === 'root') {
       next();
       return;
     }
@@ -482,14 +445,12 @@ export function requireRole(allowedRoles: string | string[]) {
     }
 
     // Admin can access admin and employee resources
-    if (req.user.role === "admin" && roles.includes("employee")) {
+    if (req.user.role === 'admin' && roles.includes('employee')) {
       next();
       return;
     }
 
-    res
-      .status(403)
-      .json(errorResponse("Insufficient permissions", 403, "FORBIDDEN"));
+    res.status(403).json(errorResponse('Insufficient permissions', 403, 'FORBIDDEN'));
   };
 }
 

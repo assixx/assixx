@@ -2,27 +2,22 @@
  * Reports/Analytics v2 Controller
  * Handles HTTP requests for reporting and analytics
  */
+import { Response } from 'express';
 
-import { Response } from "express";
-
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import * as reportsService from "./reports.service.js";
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import * as reportsService from './reports.service.js';
 
 /**
  * Get company overview report with high-level KPIs
  * @param req
  * @param res
  */
-export const getOverviewReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getOverviewReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo } = req.query;
 
@@ -32,17 +27,15 @@ export const getOverviewReport = async (
       dateTo: dateTo as string | undefined,
     });
 
-    res.json(successResponse(report, "Overview report retrieved successfully"));
+    res.json(successResponse(report, 'Overview report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -52,13 +45,10 @@ export const getOverviewReport = async (
  * @param req
  * @param res
  */
-export const getEmployeeReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getEmployeeReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo, departmentId, teamId } = req.query;
 
@@ -66,23 +56,19 @@ export const getEmployeeReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string | undefined,
       dateTo: dateTo as string | undefined,
-      departmentId: departmentId
-        ? Number.parseInt(departmentId as string)
-        : undefined,
+      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
       teamId: teamId ? Number.parseInt(teamId as string) : undefined,
     });
 
-    res.json(successResponse(report, "Employee report retrieved successfully"));
+    res.json(successResponse(report, 'Employee report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -92,13 +78,10 @@ export const getEmployeeReport = async (
  * @param req
  * @param res
  */
-export const getDepartmentReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getDepartmentReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo } = req.query;
 
@@ -108,19 +91,15 @@ export const getDepartmentReport = async (
       dateTo: dateTo as string | undefined,
     });
 
-    res.json(
-      successResponse(report, "Department report retrieved successfully"),
-    );
+    res.json(successResponse(report, 'Department report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -130,13 +109,10 @@ export const getDepartmentReport = async (
  * @param req
  * @param res
  */
-export const getShiftReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getShiftReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo, departmentId, teamId } = req.query;
 
@@ -144,23 +120,19 @@ export const getShiftReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string | undefined,
       dateTo: dateTo as string | undefined,
-      departmentId: departmentId
-        ? Number.parseInt(departmentId as string)
-        : undefined,
+      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
       teamId: teamId ? Number.parseInt(teamId as string) : undefined,
     });
 
-    res.json(successResponse(report, "Shift report retrieved successfully"));
+    res.json(successResponse(report, 'Shift report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -170,13 +142,10 @@ export const getShiftReport = async (
  * @param req
  * @param res
  */
-export const getKvpReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getKvpReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo, categoryId } = req.query;
 
@@ -184,22 +153,18 @@ export const getKvpReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string | undefined,
       dateTo: dateTo as string | undefined,
-      categoryId: categoryId
-        ? Number.parseInt(categoryId as string)
-        : undefined,
+      categoryId: categoryId ? Number.parseInt(categoryId as string) : undefined,
     });
 
-    res.json(successResponse(report, "KVP report retrieved successfully"));
+    res.json(successResponse(report, 'KVP report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -209,13 +174,10 @@ export const getKvpReport = async (
  * @param req
  * @param res
  */
-export const getAttendanceReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getAttendanceReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo, departmentId, teamId } = req.query;
 
@@ -223,25 +185,19 @@ export const getAttendanceReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string,
       dateTo: dateTo as string,
-      departmentId: departmentId
-        ? Number.parseInt(departmentId as string)
-        : undefined,
+      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
       teamId: teamId ? Number.parseInt(teamId as string) : undefined,
     });
 
-    res.json(
-      successResponse(report, "Attendance report retrieved successfully"),
-    );
+    res.json(successResponse(report, 'Attendance report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -251,13 +207,10 @@ export const getAttendanceReport = async (
  * @param req
  * @param res
  */
-export const getComplianceReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const getComplianceReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { dateFrom, dateTo, departmentId } = req.query;
 
@@ -265,24 +218,18 @@ export const getComplianceReport = async (
       tenantId: req.user.tenant_id,
       dateFrom: dateFrom as string,
       dateTo: dateTo as string,
-      departmentId: departmentId
-        ? Number.parseInt(departmentId as string)
-        : undefined,
+      departmentId: departmentId ? Number.parseInt(departmentId as string) : undefined,
     });
 
-    res.json(
-      successResponse(report, "Compliance report retrieved successfully"),
-    );
+    res.json(successResponse(report, 'Compliance report retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -303,13 +250,10 @@ interface CustomReportBody {
   groupBy?: string;
 }
 
-export const generateCustomReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const generateCustomReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { name, description, metrics, dateFrom, dateTo, filters, groupBy } =
       req.body as CustomReportBody;
@@ -325,19 +269,15 @@ export const generateCustomReport = async (
       groupBy,
     });
 
-    res
-      .status(201)
-      .json(successResponse(report, "Custom report generated successfully"));
+    res.status(201).json(successResponse(report, 'Custom report generated successfully'));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };
@@ -347,13 +287,10 @@ export const generateCustomReport = async (
  * @param req
  * @param res
  */
-export const exportReport = async (
-  req: AuthenticatedRequest,
-  res: Response,
-) => {
+export const exportReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      throw new ServiceError("UNAUTHORIZED", "User not authenticated");
+      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
     }
     const { type } = req.params;
     const { format, ...filters } = req.query;
@@ -361,55 +298,46 @@ export const exportReport = async (
     const exportData = await reportsService.exportReport({
       tenantId: req.user.tenant_id,
       reportType: type,
-      format: format as "pdf" | "excel" | "csv",
+      format: format as 'pdf' | 'excel' | 'csv',
       filters: {
         dateFrom: filters.dateFrom as string | undefined,
         dateTo: filters.dateTo as string | undefined,
-        departmentId: filters.departmentId
-          ? Number.parseInt(filters.departmentId as string)
-          : undefined,
-        teamId: filters.teamId
-          ? Number.parseInt(filters.teamId as string)
-          : undefined,
+        departmentId:
+          filters.departmentId ? Number.parseInt(filters.departmentId as string) : undefined,
+        teamId: filters.teamId ? Number.parseInt(filters.teamId as string) : undefined,
       },
     });
 
     // Set appropriate headers based on format
     const contentTypes = {
-      pdf: "application/pdf",
-      excel:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      csv: "text/csv",
+      pdf: 'application/pdf',
+      excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      csv: 'text/csv',
     };
 
     const extensions = {
-      pdf: "pdf",
-      excel: "xlsx",
-      csv: "csv",
+      pdf: 'pdf',
+      excel: 'xlsx',
+      csv: 'csv',
     };
 
+    res.setHeader('Content-Type', contentTypes[format as keyof typeof contentTypes]);
     res.setHeader(
-      "Content-Type",
-      contentTypes[format as keyof typeof contentTypes],
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="assixx-${type}-report-${String(new Date().toISOString().split("T")[0])}.${extensions[format as keyof typeof extensions]}"`,
+      'Content-Disposition',
+      `attachment; filename="assixx-${type}-report-${String(new Date().toISOString().split('T')[0])}.${extensions[format as keyof typeof extensions]}"`,
     );
 
     // For now, return mock data
     // In production, this would generate actual files
     res.send(exportData);
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode ?? 500)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
   }
 };

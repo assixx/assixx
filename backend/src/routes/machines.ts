@@ -2,14 +2,12 @@
  * Machines Routes
  * API endpoints for machine management
  */
+import express, { Request, Router } from 'express';
+import { RowDataPacket } from 'mysql2/promise';
 
-import { RowDataPacket } from "mysql2/promise";
-
-import express, { Router, Request } from "express";
-
-import { authenticateToken } from "../auth";
-import { execute } from "../database";
-import { getErrorMessage } from "../utils/errorHandler";
+import { authenticateToken } from '../auth';
+import { execute } from '../database';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();
 
@@ -42,7 +40,7 @@ interface Machine {
  * Get all machines
  * GET /api/machines
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
 
@@ -68,25 +66,22 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
     const params: (string | number)[] = [authReq.user.tenant_id];
 
     // Filter by department if specified
-    if (
-      req.query.department_id !== undefined &&
-      req.query.department_id !== ""
-    ) {
-      query += " AND m.department_id = ?";
+    if (req.query.department_id !== undefined && req.query.department_id !== '') {
+      query += ' AND m.department_id = ?';
       params.push(Number(req.query.department_id));
     }
 
-    query += " ORDER BY m.name ASC";
+    query += ' ORDER BY m.name ASC';
 
     const [machines] = await execute<RowDataPacket[]>(query, params);
 
     // Return raw array for frontend compatibility
     res.json(machines);
   } catch (error: unknown) {
-    console.error("[Machines] List error:", error);
+    console.error('[Machines] List error:', error);
     res.status(500).json({
       success: false,
-      message: "Error fetching machines",
+      message: 'Error fetching machines',
       error: getErrorMessage(error),
     });
   }
@@ -96,16 +91,13 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * Get teams assigned to a machine
  * GET /api/machines/:machineId/teams
  */
-router.get(
-  "/:machineId/teams",
-  authenticateToken,
-  async (req, res): Promise<void> => {
-    try {
-      const authReq = req as AuthenticatedRequest;
-      const machineId = Number(req.params.machineId);
+router.get('/:machineId/teams', authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const machineId = Number(req.params.machineId);
 
-      // Query teams via machine_teams junction table
-      const query = `
+    // Query teams via machine_teams junction table
+    const query = `
       SELECT
         t.id,
         t.name,
@@ -123,56 +115,50 @@ router.get(
       ORDER BY mt.is_primary DESC, t.name ASC
     `;
 
-      const [teams] = await execute<RowDataPacket[]>(query, [
-        machineId,
-        authReq.user.tenant_id,
-      ]);
+    const [teams] = await execute<RowDataPacket[]>(query, [machineId, authReq.user.tenant_id]);
 
-      // Return raw array for frontend compatibility
-      res.json(teams);
-    } catch (error: unknown) {
-      console.error("[Machines] Teams list error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching teams for machine",
-        error: getErrorMessage(error),
-      });
-    }
-  },
-);
+    // Return raw array for frontend compatibility
+    res.json(teams);
+  } catch (error: unknown) {
+    console.error('[Machines] Teams list error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching teams for machine',
+      error: getErrorMessage(error),
+    });
+  }
+});
 
 /**
  * Get all machines (MOCK DATA - OLD VERSION)
  * GET /api/machines/mock
  */
-router.get("/mock", authenticateToken, (req, res): void => {
+router.get('/mock', authenticateToken, (req, res): void => {
   try {
     // const authReq = req as AuthenticatedRequest;
     // For now, return dummy machine data
     // In production, this would query the machines table
     const machines: Machine[] = [
-      { id: 1, name: "Anlage 01", department_id: 1, status: "active" },
-      { id: 2, name: "Anlage 02", department_id: 1, status: "active" },
-      { id: 3, name: "Förderband A", department_id: 2, status: "active" },
-      { id: 4, name: "Förderband B", department_id: 2, status: "active" },
-      { id: 5, name: "Prüfstand 01", department_id: 3, status: "maintenance" },
-      { id: 6, name: "Prüfstand 02", department_id: 3, status: "active" },
+      { id: 1, name: 'Anlage 01', department_id: 1, status: 'active' },
+      { id: 2, name: 'Anlage 02', department_id: 1, status: 'active' },
+      { id: 3, name: 'Förderband A', department_id: 2, status: 'active' },
+      { id: 4, name: 'Förderband B', department_id: 2, status: 'active' },
+      { id: 5, name: 'Prüfstand 01', department_id: 3, status: 'maintenance' },
+      { id: 6, name: 'Prüfstand 02', department_id: 3, status: 'active' },
     ];
 
     // Filter by department if requested
     const departmentId = req.query.department_id;
     let filteredMachines = machines;
 
-    if (departmentId !== undefined && departmentId !== "") {
+    if (departmentId !== undefined && departmentId !== '') {
       filteredMachines = machines.filter(
         (machine) =>
           machine.department_id ==
           Number.parseInt(
-            typeof departmentId === "string"
-              ? departmentId
-              : typeof departmentId === "number"
-                ? String(departmentId)
-                : "0",
+            typeof departmentId === 'string' ? departmentId
+            : typeof departmentId === 'number' ? String(departmentId)
+            : '0',
           ),
       );
     }
@@ -182,10 +168,10 @@ router.get("/mock", authenticateToken, (req, res): void => {
       machines: filteredMachines,
     });
   } catch (error: unknown) {
-    console.error("Error fetching machines:", getErrorMessage(error));
+    console.error('Error fetching machines:', getErrorMessage(error));
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Maschinen",
+      message: 'Fehler beim Laden der Maschinen',
     });
   }
 });
@@ -194,7 +180,7 @@ router.get("/mock", authenticateToken, (req, res): void => {
  * Get machine by ID
  * GET /api/machines/:id
  */
-router.get("/:id", authenticateToken, (req, res): void => {
+router.get('/:id', authenticateToken, (req, res): void => {
   try {
     // const authReq = req as AuthenticatedRequest;
     const machineId = Number.parseInt(req.params.id);
@@ -204,10 +190,10 @@ router.get("/:id", authenticateToken, (req, res): void => {
       id: machineId,
       name: `Maschine ${String(machineId)}`,
       department_id: 1,
-      status: "active",
-      description: "Automatisch generierte Maschine",
-      location: "Halle A",
-      maintenance_schedule: "Wöchentlich",
+      status: 'active',
+      description: 'Automatisch generierte Maschine',
+      location: 'Halle A',
+      maintenance_schedule: 'Wöchentlich',
     };
 
     res.json({
@@ -215,10 +201,10 @@ router.get("/:id", authenticateToken, (req, res): void => {
       machine,
     });
   } catch (error: unknown) {
-    console.error("Error fetching machine:", getErrorMessage(error));
+    console.error('Error fetching machine:', getErrorMessage(error));
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Maschine",
+      message: 'Fehler beim Laden der Maschine',
     });
   }
 });
@@ -227,14 +213,14 @@ router.get("/:id", authenticateToken, (req, res): void => {
  * Create new machine (Admin only)
  * POST /api/machines
  */
-router.post("/", authenticateToken, (req, res): void => {
+router.post('/', authenticateToken, (req, res): void => {
   try {
     const authReq = req as AuthenticatedRequest;
     // Check admin permission
-    if (!["admin", "root", "manager"].includes(authReq.user.role)) {
+    if (!['admin', 'root', 'manager'].includes(authReq.user.role)) {
       res.status(403).json({
         success: false,
-        message: "Keine Berechtigung zum Erstellen von Maschinen",
+        message: 'Keine Berechtigung zum Erstellen von Maschinen',
       });
       return;
     }
@@ -246,15 +232,10 @@ router.post("/", authenticateToken, (req, res): void => {
       location?: string;
     };
 
-    if (
-      name == null ||
-      name === "" ||
-      department_id == null ||
-      department_id === 0
-    ) {
+    if (name == null || name === '' || department_id == null || department_id === 0) {
       res.status(400).json({
         success: false,
-        message: "Name und Abteilung sind erforderlich",
+        message: 'Name und Abteilung sind erforderlich',
       });
       return;
     }
@@ -266,20 +247,20 @@ router.post("/", authenticateToken, (req, res): void => {
       department_id: department_id,
       description: description ?? undefined,
       location: location ?? undefined,
-      status: "active",
+      status: 'active',
       created_at: new Date(),
     };
 
     res.status(201).json({
       success: true,
-      message: "Maschine erfolgreich erstellt",
+      message: 'Maschine erfolgreich erstellt',
       machine,
     });
   } catch (error: unknown) {
-    console.error("Error creating machine:", getErrorMessage(error));
+    console.error('Error creating machine:', getErrorMessage(error));
     res.status(500).json({
       success: false,
-      message: "Fehler beim Erstellen der Maschine",
+      message: 'Fehler beim Erstellen der Maschine',
     });
   }
 });

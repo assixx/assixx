@@ -1,15 +1,11 @@
-import { Response } from "express";
+import { Response } from 'express';
 
-import type { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../types/response.types";
-import { getErrorMessage } from "../../../utils/errorHandler";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { FeaturesService } from "./features.service";
-import type {
-  FeatureActivationRequest,
-  FeatureDeactivationRequest,
-} from "./types";
+import type { AuthenticatedRequest } from '../../../types/request.types';
+import { errorResponse, successResponse } from '../../../types/response.types';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { getErrorMessage } from '../../../utils/errorHandler';
+import { FeaturesService } from './features.service';
+import type { FeatureActivationRequest, FeatureDeactivationRequest } from './types';
 
 /**
  *
@@ -59,15 +55,12 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features
-  static async getAllFeatures(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getAllFeatures(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const includeInactive = req.query.includeInactive === "true";
+      const includeInactive = req.query.includeInactive === 'true';
       const features = await FeaturesService.getAllFeatures(includeInactive);
 
-      res.json(successResponse(features, "Features retrieved successfully"));
+      res.json(successResponse(features, 'Features retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
@@ -101,21 +94,12 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/categories
-  static async getFeaturesByCategory(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getFeaturesByCategory(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const includeInactive = req.query.includeInactive === "true";
-      const categories =
-        await FeaturesService.getFeaturesByCategory(includeInactive);
+      const includeInactive = req.query.includeInactive === 'true';
+      const categories = await FeaturesService.getFeaturesByCategory(includeInactive);
 
-      res.json(
-        successResponse(
-          categories,
-          "Features by category retrieved successfully",
-        ),
-      );
+      res.json(successResponse(categories, 'Features by category retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
@@ -154,20 +138,17 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/:code
-  static async getFeatureByCode(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getFeatureByCode(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { code } = req.params;
       const feature = await FeaturesService.getFeatureByCode(code);
 
       if (!feature) {
-        res.status(404).json(errorResponse("Feature not found", 404));
+        res.status(404).json(errorResponse('Feature not found', 404));
         return;
       }
 
-      res.json(successResponse(feature, "Feature retrieved successfully"));
+      res.json(successResponse(feature, 'Feature retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
@@ -206,29 +187,20 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/tenant/:tenantId
-  static async getTenantFeatures(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getTenantFeatures(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const tenantId = Number.parseInt(req.params.tenantId, 10);
       const userTenantId = req.user.tenant_id;
 
       // Only allow viewing own tenant unless root/admin
-      if (
-        tenantId !== userTenantId &&
-        req.user.role !== "root" &&
-        req.user.role !== "admin"
-      ) {
-        res.status(403).json(errorResponse("Access denied", 403));
+      if (tenantId !== userTenantId && req.user.role !== 'root' && req.user.role !== 'admin') {
+        res.status(403).json(errorResponse('Access denied', 403));
         return;
       }
 
       const features = await FeaturesService.getTenantFeatures(tenantId);
 
-      res.json(
-        successResponse(features, "Tenant features retrieved successfully"),
-      );
+      res.json(successResponse(features, 'Tenant features retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
@@ -257,16 +229,12 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/my-features
-  static async getMyFeatures(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getMyFeatures(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const tenantId = req.user.tenant_id;
-      const features =
-        await FeaturesService.getFeaturesWithTenantInfo(tenantId);
+      const features = await FeaturesService.getFeaturesWithTenantInfo(tenantId);
 
-      res.json(successResponse(features, "My features retrieved successfully"));
+      res.json(successResponse(features, 'My features retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
@@ -305,32 +273,20 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/tenant/:tenantId/summary
-  static async getTenantFeaturesSummary(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getTenantFeaturesSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const tenantId = Number.parseInt(req.params.tenantId, 10);
       const userTenantId = req.user.tenant_id;
 
       // Only allow viewing own tenant unless root/admin
-      if (
-        tenantId !== userTenantId &&
-        req.user.role !== "root" &&
-        req.user.role !== "admin"
-      ) {
-        res.status(403).json(errorResponse("Access denied", 403));
+      if (tenantId !== userTenantId && req.user.role !== 'root' && req.user.role !== 'admin') {
+        res.status(403).json(errorResponse('Access denied', 403));
         return;
       }
 
       const summary = await FeaturesService.getTenantFeaturesSummary(tenantId);
 
-      res.json(
-        successResponse(
-          summary,
-          "Tenant features summary retrieved successfully",
-        ),
-      );
+      res.json(successResponse(summary, 'Tenant features summary retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));
@@ -367,28 +323,23 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // POST /api/v2/features/activate
-  static async activateFeature(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async activateFeature(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const activationRequest = req.body as FeatureActivationRequest;
       const activatedBy = req.user.id;
 
       // Only root and admin can activate features
-      if (req.user.role !== "root" && req.user.role !== "admin") {
-        res.status(403).json(errorResponse("Access denied", 403));
+      if (req.user.role !== 'root' && req.user.role !== 'admin') {
+        res.status(403).json(errorResponse('Access denied', 403));
         return;
       }
 
       await FeaturesService.activateFeature(activationRequest, activatedBy);
 
-      res.json(successResponse(null, "Feature activated successfully"));
+      res.json(successResponse(null, 'Feature activated successfully'));
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.message, error.statusCode));
+        res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
       } else {
         const message = getErrorMessage(error);
         res.status(500).json(errorResponse(message, 500));
@@ -424,32 +375,23 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // POST /api/v2/features/deactivate
-  static async deactivateFeature(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async deactivateFeature(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { tenantId, featureCode } = req.body as FeatureDeactivationRequest;
       const deactivatedBy = req.user.id;
 
       // Only root and admin can deactivate features
-      if (req.user.role !== "root" && req.user.role !== "admin") {
-        res.status(403).json(errorResponse("Access denied", 403));
+      if (req.user.role !== 'root' && req.user.role !== 'admin') {
+        res.status(403).json(errorResponse('Access denied', 403));
         return;
       }
 
-      await FeaturesService.deactivateFeature(
-        tenantId,
-        featureCode,
-        deactivatedBy,
-      );
+      await FeaturesService.deactivateFeature(tenantId, featureCode, deactivatedBy);
 
-      res.json(successResponse(null, "Feature deactivated successfully"));
+      res.json(successResponse(null, 'Feature deactivated successfully'));
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.message, error.statusCode));
+        res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
       } else {
         const message = getErrorMessage(error);
         res.status(500).json(errorResponse(message, 500));
@@ -507,19 +449,14 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/usage/:featureCode
-  static async getUsageStats(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getUsageStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { featureCode } = req.params;
       const { startDate, endDate } = req.query;
       const tenantId = req.user.tenant_id;
 
       if (!startDate || !endDate) {
-        res
-          .status(400)
-          .json(errorResponse("Start date and end date are required", 400));
+        res.status(400).json(errorResponse('Start date and end date are required', 400));
         return;
       }
 
@@ -530,14 +467,10 @@ export class FeaturesController {
         endDate as string,
       );
 
-      res.json(
-        successResponse(stats, "Usage statistics retrieved successfully"),
-      );
+      res.json(successResponse(stats, 'Usage statistics retrieved successfully'));
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
-        res
-          .status(error.statusCode)
-          .json(errorResponse(error.message, error.statusCode));
+        res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
       } else {
         const message = getErrorMessage(error);
         res.status(500).json(errorResponse(message, 500));
@@ -577,27 +510,21 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/test/:featureCode
-  static async testFeatureAccess(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async testFeatureAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { featureCode } = req.params;
       const tenantId = req.user.tenant_id;
 
-      const hasAccess = await FeaturesService.checkTenantAccess(
-        tenantId,
-        featureCode,
-      );
+      const hasAccess = await FeaturesService.checkTenantAccess(tenantId, featureCode);
 
       if (!hasAccess) {
-        res.status(403).json(errorResponse("Feature access denied", 403));
+        res.status(403).json(errorResponse('Feature access denied', 403));
         return;
       }
 
       // Log usage for testing
       await FeaturesService.logUsage(tenantId, featureCode, req.user.id, {
-        action: "test_access",
+        action: 'test_access',
       });
 
       res.json(
@@ -637,25 +564,17 @@ export class FeaturesController {
    *         $ref: '#/components/responses/InternalServerError'
    */
   // GET /api/v2/features/all-tenants
-  static async getAllTenantsWithFeatures(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  static async getAllTenantsWithFeatures(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Root only
-      if (req.user.role !== "root") {
-        res.status(403).json(errorResponse("Access denied", 403));
+      if (req.user.role !== 'root') {
+        res.status(403).json(errorResponse('Access denied', 403));
         return;
       }
 
       const tenants = await FeaturesService.getAllTenantsWithFeatures();
 
-      res.json(
-        successResponse(
-          tenants,
-          "All tenants with features retrieved successfully",
-        ),
-      );
+      res.json(successResponse(tenants, 'All tenants with features retrieved successfully'));
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       res.status(500).json(errorResponse(message, 500));

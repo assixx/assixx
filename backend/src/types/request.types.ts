@@ -2,13 +2,11 @@
  * Central Request Type Definitions
  * These types extend Express Request with authentication and file upload support
  */
+import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
 
-import { ParamsDictionary } from "express-serve-static-core";
-import { ParsedQs } from "qs";
-
-import { Request } from "express";
-
-import { TenantInfo } from "./tenant.types";
+import { TenantInfo } from './tenant.types';
 
 // User object that gets attached to authenticated requests
 export interface AuthUser {
@@ -29,8 +27,7 @@ export interface AuthUser {
 }
 
 // Base authenticated request
-export interface AuthenticatedRequest
-  extends Request<ParamsDictionary, unknown, unknown> {
+export interface AuthenticatedRequest extends Request<ParamsDictionary, unknown, unknown> {
   user: AuthUser;
   tenant?: TenantInfo | null;
   tenant_id?: number | null;
@@ -54,7 +51,7 @@ export interface PaginatedRequest extends AuthenticatedRequest {
     limit?: string;
     offset?: string;
     sort?: string;
-    order?: "asc" | "desc";
+    order?: 'asc' | 'desc';
   };
   pagination?: {
     page: number;
@@ -75,8 +72,7 @@ export interface BodyRequest<T = unknown> extends AuthenticatedRequest {
 }
 
 // Request with typed query
-export interface QueryRequest<T extends ParsedQs = ParsedQs>
-  extends AuthenticatedRequest {
+export interface QueryRequest<T extends ParsedQs = ParsedQs> extends AuthenticatedRequest {
   query: T;
 }
 
@@ -106,15 +102,13 @@ export interface DocumentRequest extends AuthenticatedRequest {
 }
 
 // Public Request (no authentication required)
-export interface PublicRequest
-  extends Request<ParamsDictionary, unknown, unknown> {
+export interface PublicRequest extends Request<ParamsDictionary, unknown, unknown> {
   subdomain?: string;
   tenantId?: number | null;
 }
 
 // Optional Auth Request (authentication optional)
-export interface OptionalAuthRequest
-  extends Request<ParamsDictionary, unknown, unknown> {
+export interface OptionalAuthRequest extends Request<ParamsDictionary, unknown, unknown> {
   user?: AuthUser;
   tenant?: TenantInfo | null;
   tenantId?: number | null;
@@ -122,8 +116,7 @@ export interface OptionalAuthRequest
 }
 
 // API Key Request
-export interface ApiKeyRequest
-  extends Request<ParamsDictionary, unknown, unknown> {
+export interface ApiKeyRequest extends Request<ParamsDictionary, unknown, unknown> {
   apiKey?: string;
   apiKeyPermissions?: string[];
   tenantId?: number;

@@ -2,23 +2,17 @@
  * Calendar Model
  * Handles database operations for the calendar events and attendees
  */
-
-import {
-  query as executeQuery,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger";
-
-import User from "./user";
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger';
+import User from './user';
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
  */
 function formatDateForMysql(dateString: string | Date | null): string | null {
-  if (dateString == null || dateString === "") return null;
+  if (dateString == null || dateString === '') return null;
   const date = new Date(dateString);
-  return date.toISOString().slice(0, 19).replace("T", " ");
+  return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 // Database interfaces
@@ -27,13 +21,13 @@ interface DbCalendarEvent extends RowDataPacket {
   tenant_id: number;
   user_id: number;
   title: string;
-  description?: string | Buffer | { type: "Buffer"; data: number[] };
+  description?: string | Buffer | { type: 'Buffer'; data: number[] };
   location?: string;
   start_date: Date;
   end_date: Date;
   all_day: boolean | number;
-  type?: "meeting" | "training" | "vacation" | "sick_leave" | "other";
-  status?: "tentative" | "confirmed" | "cancelled";
+  type?: 'meeting' | 'training' | 'vacation' | 'sick_leave' | 'other';
+  status?: 'tentative' | 'confirmed' | 'cancelled';
   is_private?: boolean | number;
   reminder_minutes?: number | null;
   color?: string;
@@ -47,18 +41,18 @@ interface DbCalendarEvent extends RowDataPacket {
   // Aliases for API compatibility
   start_time?: Date;
   end_time?: Date;
-  org_level?: "company" | "department" | "team" | "personal";
+  org_level?: 'company' | 'department' | 'team' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
   created_by?: number;
-  created_by_role?: "admin" | "lead" | "user";
+  created_by_role?: 'admin' | 'lead' | 'user';
   allow_attendees?: boolean | number;
   reminder_time?: number | null;
 }
 
 interface DbEventAttendee extends RowDataPacket {
   user_id: number;
-  response_status: "pending" | "accepted" | "declined" | "tentative";
+  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
   responded_at?: Date;
   username?: string;
   first_name?: string;
@@ -68,15 +62,15 @@ interface DbEventAttendee extends RowDataPacket {
 }
 
 interface EventQueryOptions {
-  status?: "active" | "cancelled";
-  filter?: "all" | "company" | "department" | "team" | "personal";
+  status?: 'active' | 'cancelled';
+  filter?: 'all' | 'company' | 'department' | 'team' | 'personal';
   search?: string;
   start_date?: string;
   end_date?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortDir?: "ASC" | "DESC";
+  sortDir?: 'ASC' | 'DESC';
   userDepartmentId?: number | null;
   userTeamId?: number | null;
 }
@@ -89,7 +83,7 @@ interface EventCreateData {
   start_time: string | Date;
   end_time: string | Date;
   all_day?: boolean;
-  org_level: "company" | "department" | "team" | "personal";
+  org_level: 'company' | 'department' | 'team' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
   created_by: number;
@@ -109,10 +103,10 @@ interface EventUpdateData {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
-  org_level?: "company" | "department" | "team" | "personal";
+  org_level?: 'company' | 'department' | 'team' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
-  status?: "active" | "cancelled";
+  status?: 'active' | 'cancelled';
   reminder_time?: number | string | null;
   color?: string;
   created_by?: number;
@@ -149,21 +143,21 @@ export async function getAllEvents(
 ): Promise<EventsListResponse> {
   try {
     const {
-      status = "active",
-      filter = "all",
-      search = "",
+      status = 'active',
+      filter = 'all',
+      search = '',
       start_date,
       end_date,
       page = 1,
       limit = 50,
-      sortBy = "start_date",
-      sortDir = "ASC",
+      sortBy = 'start_date',
+      sortDir = 'ASC',
       userDepartmentId,
       userTeamId,
     } = options;
 
     // Map status from API to database
-    const dbStatus = status === "active" ? "confirmed" : status;
+    const dbStatus = status === 'active' ? 'confirmed' : status;
 
     // Determine user's role for access control
     const { role } = await User.getUserDepartmentAndTeam(userId);
@@ -182,20 +176,20 @@ export async function getAllEvents(
     const queryParams: unknown[] = [userId, tenant_id, dbStatus];
 
     // Apply org level filter based on new structure
-    if (filter !== "all") {
+    if (filter !== 'all') {
       switch (filter) {
-        case "company":
+        case 'company':
           query += " AND e.org_level = 'company'";
           break;
-        case "department":
+        case 'department':
           query += " AND e.org_level = 'department' AND e.department_id = ?";
           queryParams.push(userDepartmentId);
           break;
-        case "team":
+        case 'team':
           query += " AND e.org_level = 'team' AND e.team_id = ?";
           queryParams.push(userTeamId);
           break;
-        case "personal":
+        case 'personal':
           query +=
             " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
           queryParams.push(userId, userId);
@@ -205,7 +199,7 @@ export async function getAllEvents(
 
     // Apply access control for ALL users (including admins) for privacy
     // Admins should not see private events between other users
-    if (filter === "all") {
+    if (filter === 'all') {
       query += ` AND (
           e.org_level = 'company' OR
           (e.org_level = 'department' AND e.department_id = ?) OR
@@ -217,20 +211,19 @@ export async function getAllEvents(
     }
 
     // Apply date range filter
-    if (start_date !== undefined && start_date !== "") {
-      query += " AND e.end_date >= ?";
+    if (start_date !== undefined && start_date !== '') {
+      query += ' AND e.end_date >= ?';
       queryParams.push(start_date);
     }
 
-    if (end_date !== undefined && end_date !== "") {
-      query += " AND e.start_date <= ?";
+    if (end_date !== undefined && end_date !== '') {
+      query += ' AND e.start_date <= ?';
       queryParams.push(end_date);
     }
 
     // Apply search filter
-    if (search !== "") {
-      query +=
-        " AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
+    if (search !== '') {
+      query += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm);
     }
@@ -240,7 +233,7 @@ export async function getAllEvents(
 
     // Apply pagination
     const offset = (page - 1) * limit;
-    query += " LIMIT ? OFFSET ?";
+    query += ' LIMIT ? OFFSET ?';
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
@@ -259,16 +252,14 @@ export async function getAllEvents(
 
       // Convert Buffer description to String if needed
       if (event.description != null && Buffer.isBuffer(event.description)) {
-        event.description = event.description.toString("utf8");
+        event.description = event.description.toString('utf8');
       } else if (
         event.description != null &&
-        typeof event.description === "object" &&
-        "type" in event.description &&
+        typeof event.description === 'object' &&
+        'type' in event.description &&
         Array.isArray(event.description.data)
       ) {
-        event.description = Buffer.from(event.description.data).toString(
-          "utf8",
-        );
+        event.description = Buffer.from(event.description.data).toString('utf8');
       }
     });
 
@@ -282,21 +273,20 @@ export async function getAllEvents(
     const countParams: unknown[] = [tenant_id, dbStatus];
 
     // Apply org level filter for count
-    if (filter !== "all") {
+    if (filter !== 'all') {
       switch (filter) {
-        case "company":
+        case 'company':
           countQuery += " AND e.org_level = 'company'";
           break;
-        case "department":
-          countQuery +=
-            " AND e.org_level = 'department' AND e.department_id = ?";
+        case 'department':
+          countQuery += " AND e.org_level = 'department' AND e.department_id = ?";
           countParams.push(userDepartmentId);
           break;
-        case "team":
+        case 'team':
           countQuery += " AND e.org_level = 'team' AND e.team_id = ?";
           countParams.push(userTeamId);
           break;
-        case "personal":
+        case 'personal':
           countQuery +=
             " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
           countParams.push(userId, userId);
@@ -305,7 +295,7 @@ export async function getAllEvents(
     }
 
     // Apply access control for non-admin users for count
-    if (role !== "admin" && role !== "root") {
+    if (role !== 'admin' && role !== 'root') {
       countQuery += ` AND (
           e.type IN ('meeting', 'training') OR
           e.user_id = ? OR
@@ -315,28 +305,24 @@ export async function getAllEvents(
     }
 
     // Apply date range filter for count
-    if (start_date !== undefined && start_date !== "") {
-      countQuery += " AND e.end_date >= ?";
+    if (start_date !== undefined && start_date !== '') {
+      countQuery += ' AND e.end_date >= ?';
       countParams.push(start_date);
     }
 
-    if (end_date !== undefined && end_date !== "") {
-      countQuery += " AND e.start_date <= ?";
+    if (end_date !== undefined && end_date !== '') {
+      countQuery += ' AND e.start_date <= ?';
       countParams.push(end_date);
     }
 
     // Apply search filter for count
-    if (search !== "") {
-      countQuery +=
-        " AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
+    if (search !== '') {
+      countQuery += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm, searchTerm);
     }
 
-    const [countResult] = await executeQuery<CountResult[]>(
-      countQuery,
-      countParams,
-    );
+    const [countResult] = await executeQuery<CountResult[]>(countQuery, countParams);
     const totalEvents = countResult[0].total;
 
     return {
@@ -349,7 +335,7 @@ export async function getAllEvents(
       },
     };
   } catch (error: unknown) {
-    logger.error("Error in getAllEvents:", error);
+    logger.error('Error in getAllEvents:', error);
     throw error;
   }
 }
@@ -357,18 +343,15 @@ export async function getAllEvents(
 /**
  * Check if a calendar event exists (without permission check)
  */
-export async function checkEventExists(
-  id: number,
-  tenant_id: number,
-): Promise<boolean> {
+export async function checkEventExists(id: number, tenant_id: number): Promise<boolean> {
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(
-      "SELECT 1 FROM calendar_events WHERE id = ? AND tenant_id = ?",
+      'SELECT 1 FROM calendar_events WHERE id = ? AND tenant_id = ?',
       [id, tenant_id],
     );
     return rows.length > 0;
   } catch (error: unknown) {
-    logger.error("Error in checkEventExists:", error);
+    logger.error('Error in checkEventExists:', error);
     return false;
   }
 }
@@ -396,11 +379,7 @@ export async function getEventById(
         WHERE e.id = ? AND e.tenant_id = ?
       `;
 
-    const [events] = await executeQuery<DbCalendarEvent[]>(query, [
-      userId,
-      id,
-      tenant_id,
-    ]);
+    const [events] = await executeQuery<DbCalendarEvent[]>(query, [userId, id, tenant_id]);
 
     if (events.length === 0) {
       return null;
@@ -419,26 +398,26 @@ export async function getEventById(
 
     // Convert Buffer description to String if needed
     if (event.description != null && Buffer.isBuffer(event.description)) {
-      event.description = event.description.toString("utf8");
+      event.description = event.description.toString('utf8');
     } else if (
       event.description != null &&
-      typeof event.description === "object" &&
-      "type" in event.description &&
+      typeof event.description === 'object' &&
+      'type' in event.description &&
       Array.isArray(event.description.data)
     ) {
-      event.description = Buffer.from(event.description.data).toString("utf8");
+      event.description = Buffer.from(event.description.data).toString('utf8');
     }
 
     // Check access control for non-admin users
-    if (role !== "admin" && role !== "root") {
+    if (role !== 'admin' && role !== 'root') {
       // Company events are visible to all employees
-      if (event.org_level === "company") {
+      if (event.org_level === 'company') {
         // All users in the tenant can see company events
         return event;
       }
 
       // Department events are visible to department members
-      if (event.org_level === "department" && event.department_id != null) {
+      if (event.org_level === 'department' && event.department_id != null) {
         const userInfo = await User.getUserDepartmentAndTeam(userId);
         if (userInfo.departmentId === event.department_id) {
           return event;
@@ -446,7 +425,7 @@ export async function getEventById(
       }
 
       // Team events are visible to team members
-      if (event.org_level === "team" && event.team_id != null) {
+      if (event.org_level === 'team' && event.team_id != null) {
         const userInfo = await User.getUserDepartmentAndTeam(userId);
         if (userInfo.teamId === event.team_id) {
           return event;
@@ -455,15 +434,15 @@ export async function getEventById(
 
       // Personal events and other types - check if user is creator or attendee
       const [attendeeRows] = await executeQuery<RowDataPacket[]>(
-        "SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
+        'SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
         [id, userId],
       );
 
       const isAttendee = attendeeRows.length > 0;
 
       const hasAccess =
-        event.type === "meeting" ||
-        event.type === "training" ||
+        event.type === 'meeting' ||
+        event.type === 'training' ||
         event.user_id === userId ||
         isAttendee;
 
@@ -474,7 +453,7 @@ export async function getEventById(
 
     return event;
   } catch (error: unknown) {
-    logger.error("Error in getEventById:", error);
+    logger.error('Error in getEventById:', error);
     throw error;
   }
 }
@@ -482,9 +461,7 @@ export async function getEventById(
 /**
  * Create a new calendar event
  */
-export async function createEvent(
-  eventData: EventCreateData,
-): Promise<DbCalendarEvent | null> {
+export async function createEvent(eventData: EventCreateData): Promise<DbCalendarEvent | null> {
   try {
     const {
       tenant_id,
@@ -507,13 +484,13 @@ export async function createEvent(
     } = eventData;
 
     // Validate required fields
-    if (tenant_id === 0 || title === "" || created_by === 0) {
-      throw new Error("Missing required fields");
+    if (tenant_id === 0 || title === '' || created_by === 0) {
+      throw new Error('Missing required fields');
     }
 
     // Ensure dates are valid
     if (new Date(start_time) > new Date(end_time)) {
-      throw new Error("Start time must be before end time");
+      throw new Error('Start time must be before end time');
     }
 
     // Insert new event
@@ -537,42 +514,34 @@ export async function createEvent(
       org_level,
       department_id ?? null,
       team_id ?? null,
-      created_by_role ?? "user",
+      created_by_role ?? 'user',
       allow_attendees === true ? 1 : 0,
       eventData.requires_response === true ? 1 : 0, // requires_response
-      "other", // type
-      "confirmed", // status
+      'other', // type
+      'confirmed', // status
       0, // is_private
       reminder_time ?? null,
-      color ?? "#3498db",
+      color ?? '#3498db',
       recurrence_rule ?? null,
       parent_event_id ?? null,
     ]);
 
     // Get the created event
-    const createdEvent = await getEventById(
-      result.insertId,
-      tenant_id,
-      created_by,
-    );
+    const createdEvent = await getEventById(result.insertId, tenant_id, created_by);
 
     // Add the creator as an attendee with 'accepted' status
     if (createdEvent) {
-      await addEventAttendee(createdEvent.id, created_by, "accepted");
+      await addEventAttendee(createdEvent.id, created_by, 'accepted');
 
       // If this is a recurring event, generate future occurrences
-      if (
-        recurrence_rule != null &&
-        recurrence_rule !== "" &&
-        parent_event_id == null
-      ) {
+      if (recurrence_rule != null && recurrence_rule !== '' && parent_event_id == null) {
         await generateRecurringEvents(createdEvent, recurrence_rule);
       }
     }
 
     return createdEvent;
   } catch (error: unknown) {
-    logger.error("Error in createEvent:", error);
+    logger.error('Error in createEvent:', error);
     throw error;
   }
 }
@@ -602,76 +571,76 @@ export async function updateEvent(
     } = eventData;
 
     // Build query dynamically based on provided fields
-    let query = "UPDATE calendar_events SET updated_at = NOW()";
+    let query = 'UPDATE calendar_events SET updated_at = NOW()';
     const queryParams: unknown[] = [];
 
     if (title !== undefined) {
-      query += ", title = ?";
+      query += ', title = ?';
       queryParams.push(title);
     }
 
     if (description !== undefined) {
-      query += ", description = ?";
+      query += ', description = ?';
       queryParams.push(description);
     }
 
     if (location !== undefined) {
-      query += ", location = ?";
+      query += ', location = ?';
       queryParams.push(location);
     }
 
     if (start_time !== undefined) {
-      query += ", start_date = ?";
+      query += ', start_date = ?';
       queryParams.push(formatDateForMysql(start_time));
     }
 
     if (end_time !== undefined) {
-      query += ", end_date = ?";
+      query += ', end_date = ?';
       queryParams.push(formatDateForMysql(end_time));
     }
 
     if (all_day !== undefined) {
-      query += ", all_day = ?";
+      query += ', all_day = ?';
       queryParams.push(all_day ? 1 : 0);
     }
 
     if (org_level !== undefined) {
-      query += ", org_level = ?";
+      query += ', org_level = ?';
       queryParams.push(org_level);
     }
 
     if (department_id !== undefined) {
-      query += ", department_id = ?";
+      query += ', department_id = ?';
       queryParams.push(department_id);
     }
 
     if (team_id !== undefined) {
-      query += ", team_id = ?";
+      query += ', team_id = ?';
       queryParams.push(team_id);
     }
 
     if (status !== undefined) {
-      query += ", status = ?";
+      query += ', status = ?';
       queryParams.push(status);
     }
 
     if (reminder_time !== undefined) {
-      query += ", reminder_minutes = ?";
+      query += ', reminder_minutes = ?';
       // Convert empty string to null for integer field
       const reminderValue =
-        reminder_time === "" || reminder_time === null
-          ? null
-          : Number.parseInt(reminder_time.toString());
+        reminder_time === '' || reminder_time === null ?
+          null
+        : Number.parseInt(reminder_time.toString());
       queryParams.push(reminderValue);
     }
 
     if (color !== undefined) {
-      query += ", color = ?";
+      query += ', color = ?';
       queryParams.push(color);
     }
 
     // Finish query
-    query += " WHERE id = ? AND tenant_id = ?";
+    query += ' WHERE id = ? AND tenant_id = ?';
     queryParams.push(id, tenant_id);
 
     // Execute update
@@ -679,7 +648,7 @@ export async function updateEvent(
 
     // Get the updated event - we need to get the current user_id first
     const [eventRows] = await executeQuery<RowDataPacket[]>(
-      "SELECT user_id FROM calendar_events WHERE id = ? AND tenant_id = ?",
+      'SELECT user_id FROM calendar_events WHERE id = ? AND tenant_id = ?',
       [id, tenant_id],
     );
 
@@ -689,7 +658,7 @@ export async function updateEvent(
 
     return await getEventById(id, tenant_id, eventRows[0].user_id as number);
   } catch (error: unknown) {
-    logger.error("Error in updateEvent:", error);
+    logger.error('Error in updateEvent:', error);
     throw error;
   }
 }
@@ -697,21 +666,15 @@ export async function updateEvent(
 /**
  * Delete a calendar event
  */
-export async function deleteEvent(
-  id: number,
-  tenant_id: number,
-): Promise<boolean> {
+export async function deleteEvent(id: number, tenant_id: number): Promise<boolean> {
   try {
     // Delete event
-    const query = "DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?";
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      id,
-      tenant_id,
-    ]);
+    const query = 'DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?';
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
 
     return result.affectedRows > 0;
   } catch (error: unknown) {
-    logger.error("Error in deleteEvent:", error);
+    logger.error('Error in deleteEvent:', error);
     throw error;
   }
 }
@@ -722,20 +685,20 @@ export async function deleteEvent(
 export async function addEventAttendee(
   eventId: number,
   userId: number,
-  responseStatus: "pending" | "accepted" | "declined" | "tentative" = "pending",
+  responseStatus: 'pending' | 'accepted' | 'declined' | 'tentative' = 'pending',
   tenantIdParam?: number,
 ): Promise<boolean> {
   try {
     // Check if already an attendee
     const [attendees] = await executeQuery<RowDataPacket[]>(
-      "SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
+      'SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
       [eventId, userId],
     );
 
     if (attendees.length > 0) {
       // Update existing attendee status
       await executeQuery(
-        "UPDATE calendar_attendees SET response_status = ?, responded_at = NOW() WHERE event_id = ? AND user_id = ?",
+        'UPDATE calendar_attendees SET response_status = ?, responded_at = NOW() WHERE event_id = ? AND user_id = ?',
         [responseStatus, eventId, userId],
       );
     } else {
@@ -743,7 +706,7 @@ export async function addEventAttendee(
       let finalTenantId = tenantIdParam;
       if (finalTenantId == null || finalTenantId === 0) {
         const [event] = await executeQuery<DbCalendarEvent[]>(
-          "SELECT tenant_id FROM calendar_events WHERE id = ?",
+          'SELECT tenant_id FROM calendar_events WHERE id = ?',
           [eventId],
         );
         if (event.length > 0) {
@@ -753,14 +716,14 @@ export async function addEventAttendee(
 
       // Add new attendee with tenant_id
       await executeQuery(
-        "INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at, tenant_id) VALUES (?, ?, ?, NOW(), ?)",
+        'INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at, tenant_id) VALUES (?, ?, ?, NOW(), ?)',
         [eventId, userId, responseStatus, finalTenantId],
       );
     }
 
     return true;
   } catch (error: unknown) {
-    logger.error("Error in addEventAttendee:", error);
+    logger.error('Error in addEventAttendee:', error);
     throw error;
   }
 }
@@ -768,22 +731,15 @@ export async function addEventAttendee(
 /**
  * Remove an attendee from a calendar event
  */
-export async function removeEventAttendee(
-  eventId: number,
-  userId: number,
-): Promise<boolean> {
+export async function removeEventAttendee(eventId: number, userId: number): Promise<boolean> {
   try {
     // Remove attendee
-    const query =
-      "DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?";
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      eventId,
-      userId,
-    ]);
+    const query = 'DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?';
+    const [result] = await executeQuery<ResultSetHeader>(query, [eventId, userId]);
 
     return result.affectedRows > 0;
   } catch (error: unknown) {
-    logger.error("Error in removeEventAttendee:", error);
+    logger.error('Error in removeEventAttendee:', error);
     throw error;
   }
 }
@@ -798,19 +754,19 @@ export async function respondToEvent(
 ): Promise<boolean> {
   try {
     // Validate response
-    const validResponses = ["accepted", "declined", "tentative"];
+    const validResponses = ['accepted', 'declined', 'tentative'];
     if (!validResponses.includes(response)) {
-      throw new Error("Invalid response status");
+      throw new Error('Invalid response status');
     }
 
     // Update response
     return await addEventAttendee(
       eventId,
       userId,
-      response as "accepted" | "declined" | "tentative",
+      response as 'accepted' | 'declined' | 'tentative',
     );
   } catch (error: unknown) {
-    logger.error("Error in respondToEvent:", error);
+    logger.error('Error in respondToEvent:', error);
     throw error;
   }
 }
@@ -833,13 +789,10 @@ export async function getEventAttendees(
         ORDER BY u.first_name, u.last_name
       `;
 
-    const [attendees] = await executeQuery<DbEventAttendee[]>(query, [
-      eventId,
-      tenant_id,
-    ]);
+    const [attendees] = await executeQuery<DbEventAttendee[]>(query, [eventId, tenant_id]);
     return attendees;
   } catch (error: unknown) {
-    logger.error("Error in getEventAttendees:", error);
+    logger.error('Error in getEventAttendees:', error);
     throw error;
   }
 }
@@ -867,8 +820,8 @@ export async function getDashboardEvents(
     endDate.setDate(today.getDate() + days);
 
     // Format dates for MySQL
-    const todayStr = today.toISOString().split("T")[0];
-    const endDateStr = endDate.toISOString().split("T")[0];
+    const todayStr = today.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
 
     // Build query for dashboard events
     let query = `
@@ -885,7 +838,7 @@ export async function getDashboardEvents(
     const queryParams: unknown[] = [userId, tenant_id, todayStr, endDateStr];
 
     // Apply access control for non-admin users (dashboard shows all accessible events)
-    if (role !== "admin" && role !== "root") {
+    if (role !== 'admin' && role !== 'root') {
       query += ` AND (
           e.org_level = 'company' OR
           (e.org_level = 'department' AND e.department_id = ?) OR
@@ -918,22 +871,20 @@ export async function getDashboardEvents(
 
       // Convert Buffer description to String if needed
       if (event.description != null && Buffer.isBuffer(event.description)) {
-        event.description = event.description.toString("utf8");
+        event.description = event.description.toString('utf8');
       } else if (
         event.description != null &&
-        typeof event.description === "object" &&
-        "type" in event.description &&
+        typeof event.description === 'object' &&
+        'type' in event.description &&
         Array.isArray(event.description.data)
       ) {
-        event.description = Buffer.from(event.description.data).toString(
-          "utf8",
-        );
+        event.description = Buffer.from(event.description.data).toString('utf8');
       }
     });
 
     return events;
   } catch (error: unknown) {
-    logger.error("Error in getDashboardEvents:", error);
+    logger.error('Error in getDashboardEvents:', error);
     throw error;
   }
 }
@@ -949,7 +900,7 @@ export async function canManageEvent(
   try {
     // Get event details
     const [events] = await executeQuery<DbCalendarEvent[]>(
-      "SELECT * FROM calendar_events WHERE id = ?",
+      'SELECT * FROM calendar_events WHERE id = ?',
       [eventId],
     );
 
@@ -965,7 +916,7 @@ export async function canManageEvent(
     // Get user role
     let role: string | null;
 
-    if (userRole !== null && userRole !== "") {
+    if (userRole !== null && userRole !== '') {
       role = userRole;
     } else {
       // Otherwise get it from the database
@@ -974,7 +925,7 @@ export async function canManageEvent(
     }
 
     // Admins can manage all events
-    if (role === "admin" || role === "root") {
+    if (role === 'admin' || role === 'root') {
       return true;
     }
 
@@ -985,7 +936,7 @@ export async function canManageEvent(
 
     return false;
   } catch (error: unknown) {
-    logger.error("Error in canManageEvent:", error);
+    logger.error('Error in canManageEvent:', error);
     throw error;
   }
 }
@@ -999,15 +950,15 @@ export async function generateRecurringEvents(
 ): Promise<void> {
   try {
     // Parse recurrence rule
-    const [pattern, ...options] = recurrenceRule.split(";");
+    const [pattern, ...options] = recurrenceRule.split(';');
     let count = 52; // Default to 1 year of weekly events
     let until: Date | null = null;
 
     // Parse options
     for (const option of options) {
-      if (option.startsWith("COUNT=")) {
+      if (option.startsWith('COUNT=')) {
         count = Number.parseInt(option.substring(6), 10);
-      } else if (option.startsWith("UNTIL=")) {
+      } else if (option.startsWith('UNTIL=')) {
         until = new Date(option.substring(6));
       }
     }
@@ -1015,30 +966,28 @@ export async function generateRecurringEvents(
     // Calculate interval based on pattern
     let intervalDays = 1;
     switch (pattern) {
-      case "daily":
+      case 'daily':
         intervalDays = 1;
         break;
-      case "weekly":
+      case 'weekly':
         intervalDays = 7;
         break;
-      case "biweekly":
+      case 'biweekly':
         intervalDays = 14;
         break;
-      case "monthly":
+      case 'monthly':
         intervalDays = 30; // Approximate
         break;
-      case "yearly":
+      case 'yearly':
         intervalDays = 365;
         break;
-      case "weekdays":
+      case 'weekdays':
         intervalDays = 1; // Special handling needed
         break;
     }
 
     // Generate occurrences
-    const startDate = new Date(
-      parentEvent.start_time ?? parentEvent.start_date,
-    );
+    const startDate = new Date(parentEvent.start_time ?? parentEvent.start_date);
     const endDate = new Date(parentEvent.end_time ?? parentEvent.end_date);
     const duration = endDate.getTime() - startDate.getTime();
 
@@ -1049,7 +998,7 @@ export async function generateRecurringEvents(
       // Skip first occurrence (parent event)
       if (occurrences > 0) {
         // Skip weekends for weekdays pattern
-        if (pattern === "weekdays") {
+        if (pattern === 'weekdays') {
           while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
             currentDate.setDate(currentDate.getDate() + 1);
           }
@@ -1063,18 +1012,15 @@ export async function generateRecurringEvents(
           tenant_id: parentEvent.tenant_id,
           title: parentEvent.title,
           description:
-            typeof parentEvent.description === "string"
-              ? parentEvent.description
-              : parentEvent.description == null
-                ? ""
-                : Buffer.isBuffer(parentEvent.description)
-                  ? parentEvent.description.toString("utf8")
-                  : "",
+            typeof parentEvent.description === 'string' ? parentEvent.description
+            : parentEvent.description == null ? ''
+            : Buffer.isBuffer(parentEvent.description) ? parentEvent.description.toString('utf8')
+            : '',
           location: parentEvent.location,
           start_time: newStartDate.toISOString(),
           end_time: newEndDate.toISOString(),
           all_day: Boolean(parentEvent.all_day),
-          org_level: parentEvent.org_level ?? "personal",
+          org_level: parentEvent.org_level ?? 'personal',
           department_id: parentEvent.department_id ?? null,
           team_id: parentEvent.team_id ?? null,
           created_by: parentEvent.created_by ?? parentEvent.user_id,
@@ -1085,9 +1031,9 @@ export async function generateRecurringEvents(
       }
 
       // Move to next occurrence
-      if (pattern === "monthly") {
+      if (pattern === 'monthly') {
         currentDate.setMonth(currentDate.getMonth() + 1);
-      } else if (pattern === "yearly") {
+      } else if (pattern === 'yearly') {
         currentDate.setFullYear(currentDate.getFullYear() + 1);
       } else {
         currentDate.setDate(currentDate.getDate() + intervalDays);
@@ -1096,7 +1042,7 @@ export async function generateRecurringEvents(
       occurrences++;
     }
   } catch (error: unknown) {
-    logger.error("Error generating recurring events:", error);
+    logger.error('Error generating recurring events:', error);
     throw error;
   }
 }

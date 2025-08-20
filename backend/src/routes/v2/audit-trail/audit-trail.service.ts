@@ -2,23 +2,21 @@
  * Audit Trail Service Layer for v2 API
  * Handles all database operations for audit logging
  */
-
+import { ServiceError } from '../../../utils/ServiceError.js';
 import {
-  execute,
-  query,
-  getConnection,
   ResultSetHeader,
   RowDataPacket,
-} from "../../../utils/db.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
+  execute,
+  getConnection,
+  query,
+} from '../../../utils/db.js';
 import {
   AuditEntry,
   AuditFilter,
   AuditStats,
   ComplianceReport,
   CreateAuditEntryDto,
-} from "./types.js";
+} from './types.js';
 
 interface DbAuditEntry extends RowDataPacket {
   id: number;
@@ -33,7 +31,7 @@ interface DbAuditEntry extends RowDataPacket {
   changes?: string;
   ip_address?: string;
   user_agent?: string;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   error_message?: string;
   created_at: Date;
 }
@@ -68,7 +66,7 @@ export class AuditTrailService {
 
       const user = userRows[0];
       if (!user) {
-        throw new ServiceError("USER_NOT_FOUND", "User not found");
+        throw new ServiceError('USER_NOT_FOUND', 'User not found');
       }
 
       const [result] = await connection.execute<ResultSetHeader>(
@@ -104,9 +102,7 @@ export class AuditTrailService {
    * Get audit entries with filters
    * @param filter
    */
-  async getEntries(
-    filter: AuditFilter,
-  ): Promise<{ entries: AuditEntry[]; total: number }> {
+  async getEntries(filter: AuditFilter): Promise<{ entries: AuditEntry[]; total: number }> {
     const {
       tenantId,
       userId,
@@ -119,56 +115,50 @@ export class AuditTrailService {
       search,
       page = 1,
       limit = 50,
-      sortBy = "created_at",
-      sortOrder = "desc",
+      sortBy = 'created_at',
+      sortOrder = 'desc',
     } = filter;
 
     const offset = (page - 1) * limit;
-    const conditions: string[] = ["tenant_id = ?"];
+    const conditions: string[] = ['tenant_id = ?'];
     const params: (string | number | boolean)[] = [tenantId];
 
     // Build WHERE conditions
     if (userId) {
-      conditions.push("user_id = ?");
+      conditions.push('user_id = ?');
       params.push(userId);
     }
-    if (action !== null && action !== undefined && action !== "") {
-      conditions.push("action = ?");
+    if (action !== null && action !== undefined && action !== '') {
+      conditions.push('action = ?');
       params.push(action);
     }
-    if (
-      resourceType !== null &&
-      resourceType !== undefined &&
-      resourceType !== ""
-    ) {
-      conditions.push("resource_type = ?");
+    if (resourceType !== null && resourceType !== undefined && resourceType !== '') {
+      conditions.push('resource_type = ?');
       params.push(resourceType);
     }
     if (resourceId) {
-      conditions.push("resource_id = ?");
+      conditions.push('resource_id = ?');
       params.push(resourceId);
     }
     if (status) {
-      conditions.push("status = ?");
+      conditions.push('status = ?');
       params.push(status);
     }
-    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== "") {
-      conditions.push("created_at >= ?");
+    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== '') {
+      conditions.push('created_at >= ?');
       params.push(dateFrom);
     }
-    if (dateTo !== null && dateTo !== undefined && dateTo !== "") {
-      conditions.push("created_at <= ?");
+    if (dateTo !== null && dateTo !== undefined && dateTo !== '') {
+      conditions.push('created_at <= ?');
       params.push(dateTo);
     }
-    if (search !== null && search !== undefined && search !== "") {
-      conditions.push(
-        "(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)",
-      );
+    if (search !== null && search !== undefined && search !== '') {
+      conditions.push('(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)');
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
     }
 
-    const whereClause = conditions.join(" AND ");
+    const whereClause = conditions.join(' AND ');
 
     // Get total count
     const [countRows] = await execute<RowDataPacket[]>(
@@ -178,19 +168,13 @@ export class AuditTrailService {
     const total = countRows[0].total;
 
     // Get paginated entries
-    const validSortFields = [
-      "created_at",
-      "action",
-      "user_id",
-      "resource_type",
-    ];
-    const orderBy = validSortFields.includes(sortBy)
-      ? sortBy !== null && sortBy !== undefined
-      : "created_at";
-    const order = sortOrder === "asc" ? "ASC" : "DESC";
+    const validSortFields = ['created_at', 'action', 'user_id', 'resource_type'];
+    const orderBy =
+      validSortFields.includes(sortBy) ? sortBy !== null && sortBy !== undefined : 'created_at';
+    const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
     // Debug logging
-    console.info("[Audit Trail Service] Query params:", {
+    console.info('[Audit Trail Service] Query params:', {
       whereClause,
       params,
       limit,
@@ -223,7 +207,7 @@ export class AuditTrailService {
     );
 
     if (rows.length === 0) {
-      throw new ServiceError("NOT_FOUND", "Audit entry not found");
+      throw new ServiceError('NOT_FOUND', 'Audit entry not found');
     }
 
     return this.mapToAuditEntry(rows[0]);
@@ -236,19 +220,19 @@ export class AuditTrailService {
   async getStats(filter: AuditFilter): Promise<AuditStats> {
     const { tenantId, dateFrom, dateTo } = filter;
 
-    const conditions: string[] = ["tenant_id = ?"];
+    const conditions: string[] = ['tenant_id = ?'];
     const params: (string | number | Date)[] = [tenantId];
 
-    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== "") {
-      conditions.push("created_at >= ?");
+    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== '') {
+      conditions.push('created_at >= ?');
       params.push(dateFrom);
     }
-    if (dateTo !== null && dateTo !== undefined && dateTo !== "") {
-      conditions.push("created_at <= ?");
+    if (dateTo !== null && dateTo !== undefined && dateTo !== '') {
+      conditions.push('created_at <= ?');
       params.push(dateTo);
     }
 
-    const whereClause = conditions.join(" AND ");
+    const whereClause = conditions.join(' AND ');
 
     // Get total entries
     const [totalRows] = await execute<RowDataPacket[]>(
@@ -306,7 +290,7 @@ export class AuditTrailService {
 
     const byUser = userRows.map((row) => ({
       userId: row.user_id,
-      userName: row.user_name ?? "Unknown",
+      userName: row.user_name ?? 'Unknown',
       count: row.count,
     }));
 
@@ -315,9 +299,9 @@ export class AuditTrailService {
       failure: 0,
     };
     statusRows.forEach((row) => {
-      if (row.status === "success") {
+      if (row.status === 'success') {
         byStatus.success = row.count;
-      } else if (row.status === "failure") {
+      } else if (row.status === 'failure') {
         byStatus.failure = row.count;
       }
     });
@@ -329,8 +313,8 @@ export class AuditTrailService {
       byUser,
       byStatus,
       timeRange: {
-        from: dateFrom ?? "unlimited",
-        to: dateTo ?? "unlimited",
+        from: dateFrom ?? 'unlimited',
+        to: dateTo ?? 'unlimited',
       },
     };
   }
@@ -345,41 +329,37 @@ export class AuditTrailService {
    */
   async generateComplianceReport(
     tenantId: number,
-    reportType: "gdpr" | "data_access" | "data_changes" | "user_activity",
+    reportType: 'gdpr' | 'data_access' | 'data_changes' | 'user_activity',
     dateFrom: string,
     dateTo: string,
     generatedBy: number,
   ): Promise<ComplianceReport> {
-    const conditions: string[] = [
-      "tenant_id = ?",
-      "created_at >= ?",
-      "created_at <= ?",
-    ];
+    const conditions: string[] = ['tenant_id = ?', 'created_at >= ?', 'created_at <= ?'];
     const params: (string | number)[] = [tenantId, dateFrom, dateTo];
 
     // Add report-specific filters
     switch (reportType) {
-      case "gdpr":
+      case 'gdpr':
         // GDPR relevant actions: read, export, delete user data
         conditions.push(`(
           (action IN ('read', 'export', 'delete') AND resource_type = 'user') OR
           action IN ('export', 'delete')
         )`);
         break;
-      case "data_access":
+      case 'data_access':
         conditions.push(`action IN ('read', 'export')`);
         break;
-      case "data_changes":
+      case 'data_changes':
         conditions.push(
           `action IN ('create', 'update', 'delete', 'bulk_create', 'bulk_update', 'bulk_delete')`,
         );
         break;
-      case "user_activity":
+      case 'user_activity':
         // All actions
         break;
     }
 
-    const whereClause = conditions.join(" AND ");
+    const whereClause = conditions.join(' AND ');
 
     // Get entries
     const [rows] = await execute<DbAuditEntry[]>(
@@ -393,15 +373,11 @@ export class AuditTrailService {
 
     // Calculate summary
     const uniqueUsers = new Set(entries.map((e) => e.userId)).size;
-    const dataAccessCount = entries.filter((e) =>
-      ["read", "export"].includes(e.action),
-    ).length;
+    const dataAccessCount = entries.filter((e) => ['read', 'export'].includes(e.action)).length;
     const dataModificationCount = entries.filter((e) =>
-      ["create", "update"].includes(e.action),
+      ['create', 'update'].includes(e.action),
     ).length;
-    const dataDeletionCount = entries.filter(
-      (e) => e.action === "delete",
-    ).length;
+    const dataDeletionCount = entries.filter((e) => e.action === 'delete').length;
 
     return {
       tenantId,
@@ -450,19 +426,17 @@ export class AuditTrailService {
       resourceType: row.resource_type,
       resourceId: row.resource_id,
       resourceName: row.resource_name,
-      changes: row.changes
-        ? typeof row.changes === "string"
-          ? JSON.parse(row.changes)
+      changes:
+        row.changes ?
+          typeof row.changes === 'string' ?
+            JSON.parse(row.changes)
           : row.changes
         : undefined,
       ipAddress: row.ip_address,
       userAgent: row.user_agent,
       status: row.status,
       errorMessage: row.error_message,
-      createdAt:
-        row.created_at instanceof Date
-          ? row.created_at.toISOString()
-          : row.created_at,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     };
   }
 }

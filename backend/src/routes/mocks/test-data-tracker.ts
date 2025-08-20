@@ -74,22 +74,11 @@ export class TestDataTracker {
     const teamIds = this.getTeamIds();
 
     return {
-      tenants:
-        tenantIds.length > 0
-          ? `WHERE id IN (${String(tenantIds.join(","))})`
-          : "WHERE 1=0", // Never delete if no test tenants
-      users:
-        userIds.length > 0
-          ? `WHERE id IN (${String(userIds.join(","))})`
-          : "WHERE 1=0",
+      tenants: tenantIds.length > 0 ? `WHERE id IN (${String(tenantIds.join(','))})` : 'WHERE 1=0', // Never delete if no test tenants
+      users: userIds.length > 0 ? `WHERE id IN (${String(userIds.join(','))})` : 'WHERE 1=0',
       departments:
-        departmentIds.length > 0
-          ? `WHERE id IN (${String(departmentIds.join(","))})`
-          : "WHERE 1=0",
-      teams:
-        teamIds.length > 0
-          ? `WHERE id IN (${String(teamIds.join(","))})`
-          : "WHERE 1=0",
+        departmentIds.length > 0 ? `WHERE id IN (${String(departmentIds.join(','))})` : 'WHERE 1=0',
+      teams: teamIds.length > 0 ? `WHERE id IN (${String(teamIds.join(','))})` : 'WHERE 1=0',
     };
   }
 }

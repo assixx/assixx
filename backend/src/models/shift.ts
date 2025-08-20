@@ -2,45 +2,35 @@
  * Shift Model
  * Handles database operations for shift planning system
  */
-
-import {
-  query as executeQuery,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger";
-
-import User from "./user";
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger';
+import User from './user';
 
 // Error Messages
 const ERROR_MESSAGES = {
-  MISSING_REQUIRED_FIELDS: "Missing required fields",
+  MISSING_REQUIRED_FIELDS: 'Missing required fields',
 } as const;
 
 // SQL Query Fragments
 const SQL_FRAGMENTS = {
-  DEPARTMENT_FILTER: " AND sp.department_id = ?",
-  TEAM_FILTER: " AND sp.team_id = ?",
+  DEPARTMENT_FILTER: ' AND sp.department_id = ?',
+  TEAM_FILTER: ' AND sp.team_id = ?',
 } as const;
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
  */
-export function formatDateForMysql(
-  dateString: string | Date | null,
-): string | null {
-  if (dateString == null || dateString === "") return null;
+export function formatDateForMysql(dateString: string | Date | null): string | null {
+  if (dateString == null || dateString === '') return null;
   const date = new Date(dateString);
-  return date.toISOString().slice(0, 19).replace("T", " ");
+  return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 /**
  * Format date only for MySQL
  */
-export function formatDateOnlyForMysql(
-  dateString: string | Date | null,
-): string | null {
-  if (dateString == null || dateString === "") return null;
+export function formatDateOnlyForMysql(dateString: string | Date | null): string | null {
+  if (dateString == null || dateString === '') return null;
   const date = new Date(dateString);
   return date.toISOString().slice(0, 10);
 }
@@ -71,7 +61,7 @@ interface DbShiftPlan extends RowDataPacket {
   end_date: Date;
   department_id?: number | null;
   team_id?: number | null;
-  status: "draft" | "published" | "archived";
+  status: 'draft' | 'published' | 'archived';
   created_by: number;
   created_at: Date;
   updated_at: Date;
@@ -108,7 +98,7 @@ interface DbShiftAssignment extends RowDataPacket {
   tenant_id: number;
   shift_id: number;
   user_id: number;
-  status: "A" | "R";
+  status: 'A' | 'R';
   assigned_by: number;
   assigned_at: Date;
   // Extended fields from joins
@@ -122,7 +112,7 @@ interface DbEmployeeAvailability extends RowDataPacket {
   tenant_id: number;
   user_id: number;
   date: Date;
-  availability_type: "available" | "unavailable" | "partial";
+  availability_type: 'available' | 'unavailable' | 'partial';
   start_time?: string | null;
   end_time?: string | null;
   notes?: string | null;
@@ -151,10 +141,10 @@ interface DbShiftExchangeRequest extends RowDataPacket {
   shift_id: number;
   requester_id: number;
   target_user_id?: number | null;
-  exchange_type: "swap" | "giveaway";
+  exchange_type: 'swap' | 'giveaway';
   target_shift_id?: number | null;
   message?: string | null;
-  status: "pending" | "approved" | "rejected" | "cancelled";
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   created_at: Date;
   updated_at: Date;
   // Extended fields from joins
@@ -173,13 +163,13 @@ interface ShiftPlanFilters {
   team_id?: number;
   start_date?: string | Date;
   end_date?: string | Date;
-  status?: "draft" | "published" | "archived";
+  status?: 'draft' | 'published' | 'archived';
   page?: number;
   limit?: number;
 }
 
 interface ShiftExchangeFilters {
-  status?: "pending" | "approved" | "rejected" | "cancelled";
+  status?: 'pending' | 'approved' | 'rejected' | 'cancelled';
   limit?: number;
 }
 
@@ -228,7 +218,7 @@ interface EmployeeAvailabilityData {
   tenant_id: number;
   user_id: number;
   date: string | Date;
-  availability_type: "available" | "unavailable" | "partial";
+  availability_type: 'available' | 'unavailable' | 'partial';
   start_time?: string | null;
   end_time?: string | null;
   notes?: string | null;
@@ -239,7 +229,7 @@ interface ShiftExchangeRequestData {
   shift_id: number;
   requester_id: number;
   target_user_id?: number | null;
-  exchange_type: "swap" | "giveaway";
+  exchange_type: 'swap' | 'giveaway';
   target_shift_id?: number | null;
   message?: string | null;
 }
@@ -251,9 +241,7 @@ interface CountResult extends RowDataPacket {
 /**
  * Get all shift templates for a tenant
  */
-export async function getShiftTemplates(
-  tenantId: number,
-): Promise<DbShiftTemplate[]> {
+export async function getShiftTemplates(tenantId: number): Promise<DbShiftTemplate[]> {
   try {
     const query = `
       SELECT * FROM shift_templates
@@ -261,12 +249,10 @@ export async function getShiftTemplates(
       ORDER BY name ASC
     `;
 
-    const [templates] = await executeQuery<DbShiftTemplate[]>(query, [
-      tenantId,
-    ]);
+    const [templates] = await executeQuery<DbShiftTemplate[]>(query, [tenantId]);
     return templates;
   } catch (error: unknown) {
-    console.error("Error in getShiftTemplates:", error);
+    console.error('Error in getShiftTemplates:', error);
     throw error;
   }
 }
@@ -291,14 +277,7 @@ export async function createShiftTemplate(
     } = templateData;
 
     // Validate required fields
-    if (
-      !tenant_id ||
-      !name ||
-      !start_time ||
-      !end_time ||
-      !duration_hours ||
-      !created_by
-    ) {
+    if (!tenant_id || !name || !start_time || !end_time || !duration_hours || !created_by) {
       throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
@@ -317,19 +296,19 @@ export async function createShiftTemplate(
       end_time,
       duration_hours,
       break_minutes ?? 0,
-      color ?? "#3498db",
+      color ?? '#3498db',
       created_by,
     ]);
 
     // Get the created template
     const [created] = await executeQuery<DbShiftTemplate[]>(
-      "SELECT * FROM shift_templates WHERE id = ?",
+      'SELECT * FROM shift_templates WHERE id = ?',
       [result.insertId],
     );
 
     return created[0];
   } catch (error: unknown) {
-    console.error("Error in createShiftTemplate:", error);
+    console.error('Error in createShiftTemplate:', error);
     throw error;
   }
 }
@@ -356,14 +335,13 @@ export async function getShiftPlans(
       team_id,
       start_date,
       end_date,
-      status = "draft",
+      status = 'draft',
       page = 1,
       limit = 50,
     } = options;
 
     // Get user info for access control
-    const { role, departmentId, teamId } =
-      await User.getUserDepartmentAndTeam(userId);
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
     let query = `
       SELECT sp.*, u.username as created_by_name,
@@ -378,17 +356,16 @@ export async function getShiftPlans(
     const queryParams: unknown[] = [tenantId];
 
     // Apply access control for non-admin users
-    if (role !== "admin" && role !== "root") {
-      if (role === "manager") {
+    if (role !== 'admin' && role !== 'root') {
+      if (role === 'manager') {
         query += SQL_FRAGMENTS.DEPARTMENT_FILTER;
         queryParams.push(departmentId);
-      } else if (role === "team_lead") {
+      } else if (role === 'team_lead') {
         query += SQL_FRAGMENTS.TEAM_FILTER;
         queryParams.push(teamId);
       } else {
         // Regular employees can only see published plans for their department/team
-        query +=
-          ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
+        query += ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
         queryParams.push(departmentId ?? 0, teamId ?? 0);
       }
     }
@@ -404,22 +381,22 @@ export async function getShiftPlans(
       queryParams.push(team_id);
     }
 
-    if (start_date != null && start_date !== "") {
-      query += " AND sp.end_date >= ?";
+    if (start_date != null && start_date !== '') {
+      query += ' AND sp.end_date >= ?';
       queryParams.push(start_date);
     }
 
-    if (end_date != null && end_date !== "") {
-      query += " AND sp.start_date <= ?";
+    if (end_date != null && end_date !== '') {
+      query += ' AND sp.start_date <= ?';
       queryParams.push(end_date);
     }
 
-    query += " AND sp.status = ?";
+    query += ' AND sp.status = ?';
     queryParams.push(status);
 
     // Apply pagination
     const offset = (page - 1) * limit;
-    query += " ORDER BY sp.start_date DESC LIMIT ? OFFSET ?";
+    query += ' ORDER BY sp.start_date DESC LIMIT ? OFFSET ?';
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     const [plans] = await executeQuery<DbShiftPlan[]>(query, queryParams);
@@ -432,16 +409,15 @@ export async function getShiftPlans(
     const countParams: unknown[] = [tenantId];
 
     // Apply same access control for count
-    if (role !== "admin" && role !== "root") {
-      if (role === "manager") {
+    if (role !== 'admin' && role !== 'root') {
+      if (role === 'manager') {
         countQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
         countParams.push(departmentId);
-      } else if (role === "team_lead") {
+      } else if (role === 'team_lead') {
         countQuery += SQL_FRAGMENTS.TEAM_FILTER;
         countParams.push(teamId);
       } else {
-        countQuery +=
-          ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
+        countQuery += ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
         countParams.push(departmentId ?? 0, teamId ?? 0);
       }
     }
@@ -457,23 +433,20 @@ export async function getShiftPlans(
       countParams.push(team_id);
     }
 
-    if (start_date != null && start_date !== "") {
-      countQuery += " AND sp.end_date >= ?";
+    if (start_date != null && start_date !== '') {
+      countQuery += ' AND sp.end_date >= ?';
       countParams.push(start_date);
     }
 
-    if (end_date != null && end_date !== "") {
-      countQuery += " AND sp.start_date <= ?";
+    if (end_date != null && end_date !== '') {
+      countQuery += ' AND sp.start_date <= ?';
       countParams.push(end_date);
     }
 
-    countQuery += " AND sp.status = ?";
+    countQuery += ' AND sp.status = ?';
     countParams.push(status);
 
-    const [countResult] = await executeQuery<CountResult[]>(
-      countQuery,
-      countParams,
-    );
+    const [countResult] = await executeQuery<CountResult[]>(countQuery, countParams);
     const total = countResult[0].total;
 
     return {
@@ -486,7 +459,7 @@ export async function getShiftPlans(
       },
     };
   } catch (error: unknown) {
-    console.error("Error in getShiftPlans:", error);
+    console.error('Error in getShiftPlans:', error);
     throw error;
   }
 }
@@ -494,9 +467,7 @@ export async function getShiftPlans(
 /**
  * Create a new shift plan
  */
-export async function createShiftPlan(
-  planData: ShiftPlanData,
-): Promise<DbShiftPlan> {
+export async function createShiftPlan(planData: ShiftPlanData): Promise<DbShiftPlan> {
   try {
     const {
       tenant_id,
@@ -510,13 +481,13 @@ export async function createShiftPlan(
     } = planData;
 
     // Validate required fields
-    if (tenant_id === 0 || name === "" || created_by === 0) {
+    if (tenant_id === 0 || name === '' || created_by === 0) {
       throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
     // Validate date range
     if (new Date(start_date) > new Date(end_date)) {
-      throw new Error("Start date must be before end date");
+      throw new Error('Start date must be before end date');
     }
 
     const query = `
@@ -537,14 +508,13 @@ export async function createShiftPlan(
     ]);
 
     // Get the created plan
-    const [created] = await executeQuery<DbShiftPlan[]>(
-      "SELECT * FROM shift_plans WHERE id = ?",
-      [result.insertId],
-    );
+    const [created] = await executeQuery<DbShiftPlan[]>('SELECT * FROM shift_plans WHERE id = ?', [
+      result.insertId,
+    ]);
 
     return created[0];
   } catch (error: unknown) {
-    console.error("Error in createShiftPlan:", error);
+    console.error('Error in createShiftPlan:', error);
     throw error;
   }
 }
@@ -561,7 +531,7 @@ export async function getShiftsByPlan(
     // Check if user can access this plan
     const planAccess = await canAccessShiftPlan(planId, userId);
     if (!planAccess) {
-      throw new Error("Access denied to this shift plan");
+      throw new Error('Access denied to this shift plan');
     }
 
     const query = `
@@ -583,13 +553,11 @@ export async function getShiftsByPlan(
 
     // Parse assignments string into array
     shifts.forEach((shift) => {
-      if (shift.assignments != null && shift.assignments !== "") {
-        shift.assignedEmployees = shift.assignments
-          .split("; ")
-          .map((assignment) => {
-            const [name, status] = assignment.split(":");
-            return { name, status };
-          });
+      if (shift.assignments != null && shift.assignments !== '') {
+        shift.assignedEmployees = shift.assignments.split('; ').map((assignment) => {
+          const [name, status] = assignment.split(':');
+          return { name, status };
+        });
       } else {
         shift.assignedEmployees = [];
       }
@@ -598,7 +566,7 @@ export async function getShiftsByPlan(
 
     return shifts;
   } catch (error: unknown) {
-    console.error("Error in getShiftsByPlan:", error);
+    console.error('Error in getShiftsByPlan:', error);
     throw error;
   }
 }
@@ -623,8 +591,8 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
     if (
       tenant_id === 0 ||
       plan_id === 0 ||
-      start_time === "" ||
-      end_time === "" ||
+      start_time === '' ||
+      end_time === '' ||
       created_by === 0
     ) {
       throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
@@ -649,14 +617,13 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
     ]);
 
     // Get the created shift
-    const [created] = await executeQuery<DbShift[]>(
-      "SELECT * FROM shifts WHERE id = ?",
-      [result.insertId],
-    );
+    const [created] = await executeQuery<DbShift[]>('SELECT * FROM shifts WHERE id = ?', [
+      result.insertId,
+    ]);
 
     return created[0];
   } catch (error: unknown) {
-    console.error("Error in createShift:", error);
+    console.error('Error in createShift:', error);
     throw error;
   }
 }
@@ -677,19 +644,18 @@ export async function assignEmployeeToShift(
 
     // Check if already assigned to this specific shift
     const [existing] = await executeQuery<RowDataPacket[]>(
-      "SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?",
+      'SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?',
       [shift_id, user_id],
     );
 
     if (existing.length > 0) {
-      throw new Error("Employee already assigned to this shift");
+      throw new Error('Employee already assigned to this shift');
     }
 
     // Check if employee is already assigned to another shift on the same day
-    const [shiftInfo] = await executeQuery<DbShift[]>(
-      "SELECT date FROM shifts WHERE id = ?",
-      [shift_id],
-    );
+    const [shiftInfo] = await executeQuery<DbShift[]>('SELECT date FROM shifts WHERE id = ?', [
+      shift_id,
+    ]);
 
     if (shiftInfo.length > 0) {
       const shiftDate = shiftInfo[0].date;
@@ -705,9 +671,7 @@ export async function assignEmployeeToShift(
       );
 
       if (dayAssignments.length > 0) {
-        throw new Error(
-          "Employee is already assigned to another shift on this day",
-        );
+        throw new Error('Employee is already assigned to another shift on this day');
       }
     }
 
@@ -737,7 +701,7 @@ export async function assignEmployeeToShift(
 
     return created[0];
   } catch (error: unknown) {
-    console.error("Error in assignEmployeeToShift:", error);
+    console.error('Error in assignEmployeeToShift:', error);
     throw error;
   }
 }
@@ -768,7 +732,7 @@ export async function getEmployeeAvailability(
 
     return availability;
   } catch (error: unknown) {
-    console.error("Error in getEmployeeAvailability:", error);
+    console.error('Error in getEmployeeAvailability:', error);
     throw error;
   }
 }
@@ -780,15 +744,8 @@ export async function setEmployeeAvailability(
   availabilityData: EmployeeAvailabilityData,
 ): Promise<DbEmployeeAvailability> {
   try {
-    const {
-      tenant_id,
-      user_id,
-      date,
-      availability_type,
-      start_time,
-      end_time,
-      notes,
-    } = availabilityData;
+    const { tenant_id, user_id, date, availability_type, start_time, end_time, notes } =
+      availabilityData;
 
     // Validate required fields
     if (tenant_id === 0 || user_id === 0) {
@@ -797,7 +754,7 @@ export async function setEmployeeAvailability(
 
     // Check if availability already exists for this date
     const [existing] = await executeQuery<DbEmployeeAvailability[]>(
-      "SELECT * FROM employee_availability WHERE tenant_id = ? AND user_id = ? AND date = ?",
+      'SELECT * FROM employee_availability WHERE tenant_id = ? AND user_id = ? AND date = ?',
       [tenant_id, user_id, formatDateOnlyForMysql(date)],
     );
 
@@ -843,14 +800,14 @@ export async function setEmployeeAvailability(
       ]);
 
       const [created] = await executeQuery<DbEmployeeAvailability[]>(
-        "SELECT * FROM employee_availability WHERE id = ?",
+        'SELECT * FROM employee_availability WHERE id = ?',
         [result.insertId],
       );
 
       return created[0];
     }
   } catch (error: unknown) {
-    console.error("Error in setEmployeeAvailability:", error);
+    console.error('Error in setEmployeeAvailability:', error);
     throw error;
   }
 }
@@ -864,7 +821,7 @@ export async function getShiftExchangeRequests(
   options: ShiftExchangeFilters = {},
 ): Promise<DbShiftExchangeRequest[]> {
   try {
-    const { status = "pending", limit = 50 } = options;
+    const { status = 'pending', limit = 50 } = options;
 
     const query = `
       SELECT ser.*,
@@ -892,7 +849,7 @@ export async function getShiftExchangeRequests(
     ]);
     return requests;
   } catch (error: unknown) {
-    console.error("Error in getShiftExchangeRequests:", error);
+    console.error('Error in getShiftExchangeRequests:', error);
     throw error;
   }
 }
@@ -937,13 +894,13 @@ export async function createShiftExchangeRequest(
 
     // Get the created request
     const [created] = await executeQuery<DbShiftExchangeRequest[]>(
-      "SELECT * FROM shift_exchange_requests WHERE id = ?",
+      'SELECT * FROM shift_exchange_requests WHERE id = ?',
       [result.insertId],
     );
 
     return created[0];
   } catch (error: unknown) {
-    console.error("Error in createShiftExchangeRequest:", error);
+    console.error('Error in createShiftExchangeRequest:', error);
     throw error;
   }
 }
@@ -951,19 +908,14 @@ export async function createShiftExchangeRequest(
 /**
  * Check if user can access a shift plan
  */
-export async function canAccessShiftPlan(
-  planId: number,
-  userId: number,
-): Promise<boolean> {
+export async function canAccessShiftPlan(planId: number, userId: number): Promise<boolean> {
   try {
     // Get user info and plan info
-    const { role, departmentId, teamId } =
-      await User.getUserDepartmentAndTeam(userId);
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-    const [plans] = await executeQuery<DbShiftPlan[]>(
-      "SELECT * FROM shift_plans WHERE id = ?",
-      [planId],
-    );
+    const [plans] = await executeQuery<DbShiftPlan[]>('SELECT * FROM shift_plans WHERE id = ?', [
+      planId,
+    ]);
 
     if (plans.length === 0) {
       return false;
@@ -972,27 +924,27 @@ export async function canAccessShiftPlan(
     const plan = plans[0];
 
     // Admins can access all plans
-    if (role === "admin" || role === "root") {
+    if (role === 'admin' || role === 'root') {
       return true;
     }
 
     // Managers can access department plans
-    if (role === "manager" && plan.department_id === departmentId) {
+    if (role === 'manager' && plan.department_id === departmentId) {
       return true;
     }
 
     // Team leads can access team plans
-    if (role === "team_lead" && plan.team_id === teamId) {
+    if (role === 'team_lead' && plan.team_id === teamId) {
       return true;
     }
 
     // Employees can access published plans for their department/team
     return (
-      plan.status === "published" &&
+      plan.status === 'published' &&
       (plan.department_id === departmentId || plan.team_id === teamId)
     );
   } catch (error: unknown) {
-    console.error("Error in canAccessShiftPlan:", error);
+    console.error('Error in canAccessShiftPlan:', error);
     throw error;
   }
 }
@@ -1029,7 +981,7 @@ export async function getEmployeeShifts(
 
     return shifts;
   } catch (error: unknown) {
-    console.error("Error in getEmployeeShifts:", error);
+    console.error('Error in getEmployeeShifts:', error);
     throw error;
   }
 }
@@ -1060,14 +1012,10 @@ async function getShiftsForDateRange(
       ORDER BY s.date, s.start_time
     `;
 
-    const [rows] = await executeQuery<ShiftQueryResult[]>(query, [
-      tenantId,
-      startDate,
-      endDate,
-    ]);
+    const [rows] = await executeQuery<ShiftQueryResult[]>(query, [tenantId, startDate, endDate]);
     return rows;
   } catch (error: unknown) {
-    console.error("Error in getShiftsForDateRange:", error);
+    console.error('Error in getShiftsForDateRange:', error);
     throw error;
   }
 }
@@ -1089,11 +1037,7 @@ async function getWeekNotes(
       ORDER BY date
     `;
 
-    const [rows] = await executeQuery<ShiftNoteRow[]>(query, [
-      tenantId,
-      weekStart,
-      weekEnd,
-    ]);
+    const [rows] = await executeQuery<ShiftNoteRow[]>(query, [tenantId, weekStart, weekEnd]);
 
     // Convert to object keyed by date
     const notesByDate: Record<string, string> = {};
@@ -1103,7 +1047,7 @@ async function getWeekNotes(
 
     return notesByDate;
   } catch (error: unknown) {
-    console.error("Error in getWeekNotes:", error);
+    console.error('Error in getWeekNotes:', error);
     // Return empty object if table doesn't exist yet
     return {};
   }
@@ -1128,7 +1072,7 @@ interface V2ShiftFilters {
   page?: number;
   limit?: number;
   sort_by?: string;
-  sort_order?: "asc" | "desc";
+  sort_order?: 'asc' | 'desc';
   offset?: number;
 }
 
@@ -1242,68 +1186,68 @@ async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
 
     const queryParams: (string | number | null)[] = [filters.tenant_id];
 
-    if (filters.date != null && filters.date !== "") {
-      query += " AND s.date = ?";
+    if (filters.date != null && filters.date !== '') {
+      query += ' AND s.date = ?';
       queryParams.push(formatDateOnlyForMysql(filters.date));
     }
 
     if (
       filters.start_date != null &&
-      filters.start_date !== "" &&
+      filters.start_date !== '' &&
       filters.end_date != null &&
-      filters.end_date !== ""
+      filters.end_date !== ''
     ) {
-      query += " AND s.date BETWEEN ? AND ?";
+      query += ' AND s.date BETWEEN ? AND ?';
       queryParams.push(formatDateOnlyForMysql(filters.start_date));
       queryParams.push(formatDateOnlyForMysql(filters.end_date));
     }
 
     if (filters.user_id != null && filters.user_id !== 0) {
-      query += " AND s.user_id = ?";
+      query += ' AND s.user_id = ?';
       queryParams.push(filters.user_id);
     }
 
     if (filters.department_id != null && filters.department_id !== 0) {
-      query += " AND s.department_id = ?";
+      query += ' AND s.department_id = ?';
       queryParams.push(filters.department_id);
     }
 
     if (filters.team_id != null && filters.team_id !== 0) {
-      query += " AND s.team_id = ?";
+      query += ' AND s.team_id = ?';
       queryParams.push(filters.team_id);
     }
 
-    if (filters.status != null && filters.status !== "") {
-      query += " AND s.status = ?";
+    if (filters.status != null && filters.status !== '') {
+      query += ' AND s.status = ?';
       queryParams.push(filters.status);
     }
 
-    if (filters.type != null && filters.type !== "") {
-      query += " AND s.type = ?";
+    if (filters.type != null && filters.type !== '') {
+      query += ' AND s.type = ?';
       queryParams.push(filters.type);
     }
 
     if (filters.template_id != null && filters.template_id !== 0) {
-      query += " AND s.template_id = ?";
+      query += ' AND s.template_id = ?';
       queryParams.push(filters.template_id);
     }
 
     if (filters.plan_id != null && filters.plan_id !== 0) {
-      query += " AND s.plan_id = ?";
+      query += ' AND s.plan_id = ?';
       queryParams.push(filters.plan_id);
     }
 
     // Sorting
-    const sortBy = filters.sort_by ?? "date";
-    const sortOrder = filters.sort_order ?? "DESC";
+    const sortBy = filters.sort_by ?? 'date';
+    const sortOrder = filters.sort_order ?? 'DESC';
     query += ` ORDER BY s.${sortBy} ${sortOrder}`;
 
     // Pagination
     if (filters.limit != null && filters.limit !== 0) {
-      query += " LIMIT ?";
+      query += ' LIMIT ?';
       queryParams.push(filters.limit);
       if (filters.offset != null && filters.offset !== 0) {
-        query += " OFFSET ?";
+        query += ' OFFSET ?';
         queryParams.push(filters.offset);
       }
     }
@@ -1311,7 +1255,7 @@ async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
     const [shifts] = await executeQuery<V2ShiftData[]>(query, queryParams);
     return shifts;
   } catch (error: unknown) {
-    console.error("Error in findAll:", error);
+    console.error('Error in findAll:', error);
     throw error;
   }
 }
@@ -1319,10 +1263,7 @@ async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
 /**
  * Find shift by ID
  */
-async function findById(
-  id: number,
-  tenantId: number,
-): Promise<V2ShiftData | null> {
+async function findById(id: number, tenantId: number): Promise<V2ShiftData | null> {
   try {
     const query = `
       SELECT s.*,
@@ -1344,7 +1285,7 @@ async function findById(
     const [shifts] = await executeQuery<V2ShiftData[]>(query, [id, tenantId]);
     return shifts.length > 0 ? shifts[0] : null;
   } catch (error: unknown) {
-    console.error("Error in findById:", error);
+    console.error('Error in findById:', error);
     throw error;
   }
 }
@@ -1367,35 +1308,27 @@ async function create(data: Partial<V2ShiftData>): Promise<number> {
       data.user_id,
       data.plan_id ?? null,
       data.template_id ?? null,
-      data.date != null && data.date !== ""
-        ? formatDateOnlyForMysql(data.date)
-        : null,
-      data.date != null &&
-      data.date !== "" &&
-      data.start_time != null &&
-      data.start_time !== ""
-        ? formatDateForMysql(`${data.date} ${data.start_time}`)
-        : null,
-      data.date != null &&
-      data.date !== "" &&
-      data.end_time != null &&
-      data.end_time !== ""
-        ? formatDateForMysql(`${data.date} ${data.end_time}`)
-        : null,
+      data.date != null && data.date !== '' ? formatDateOnlyForMysql(data.date) : null,
+      data.date != null && data.date !== '' && data.start_time != null && data.start_time !== '' ?
+        formatDateForMysql(`${data.date} ${data.start_time}`)
+      : null,
+      data.date != null && data.date !== '' && data.end_time != null && data.end_time !== '' ?
+        formatDateForMysql(`${data.date} ${data.end_time}`)
+      : null,
       data.department_id,
       data.team_id ?? null,
       data.title ?? null,
       data.required_employees ?? 1,
       data.break_minutes ?? 0,
-      data.status ?? "planned",
-      data.type ?? "regular",
+      data.status ?? 'planned',
+      data.type ?? 'regular',
       data.notes ?? null,
       data.created_by,
     ]);
 
     return result.insertId;
   } catch (error: unknown) {
-    console.error("Error in create:", error);
+    console.error('Error in create:', error);
     throw error;
   }
 }
@@ -1403,27 +1336,21 @@ async function create(data: Partial<V2ShiftData>): Promise<number> {
 /**
  * Update shift
  */
-async function update(
-  id: number,
-  data: Partial<V2ShiftData>,
-  tenantId: number,
-): Promise<void> {
+async function update(id: number, data: Partial<V2ShiftData>, tenantId: number): Promise<void> {
   try {
     // Get current shift data if we need date for time conversion
     let currentDate: string | undefined;
     if (
-      ((data.start_time != null && data.start_time !== "") ||
-        (data.end_time != null && data.end_time !== "")) &&
-      (data.date == null || data.date === "")
+      ((data.start_time != null && data.start_time !== '') ||
+        (data.end_time != null && data.end_time !== '')) &&
+      (data.date == null || data.date === '')
     ) {
       const [currentShift] = await executeQuery<RowDataPacket[]>(
-        "SELECT date FROM shifts WHERE id = ? AND tenant_id = ?",
+        'SELECT date FROM shifts WHERE id = ? AND tenant_id = ?',
         [id, tenantId],
       );
       if (currentShift.length > 0) {
-        const formattedDate = formatDateOnlyForMysql(
-          currentShift[0].date as string | Date,
-        );
+        const formattedDate = formatDateOnlyForMysql(currentShift[0].date as string | Date);
         currentDate = formattedDate ?? undefined;
       }
     }
@@ -1433,59 +1360,59 @@ async function update(
 
     // Build dynamic update query
     const allowedFields = [
-      "user_id",
-      "plan_id",
-      "template_id",
-      "date",
-      "start_time",
-      "end_time",
-      "actual_start",
-      "actual_end",
-      "department_id",
-      "team_id",
-      "title",
-      "required_employees",
-      "break_minutes",
-      "status",
-      "type",
-      "notes",
+      'user_id',
+      'plan_id',
+      'template_id',
+      'date',
+      'start_time',
+      'end_time',
+      'actual_start',
+      'actual_end',
+      'department_id',
+      'team_id',
+      'title',
+      'required_employees',
+      'break_minutes',
+      'status',
+      'type',
+      'notes',
     ];
 
     for (const field of allowedFields) {
       // Get value safely using switch to avoid object injection
       const fieldValue = (() => {
         switch (field) {
-          case "user_id":
+          case 'user_id':
             return data.user_id;
-          case "plan_id":
+          case 'plan_id':
             return data.plan_id;
-          case "template_id":
+          case 'template_id':
             return data.template_id;
-          case "date":
+          case 'date':
             return data.date;
-          case "start_time":
+          case 'start_time':
             return data.start_time;
-          case "end_time":
+          case 'end_time':
             return data.end_time;
-          case "actual_start":
+          case 'actual_start':
             return data.actual_start;
-          case "actual_end":
+          case 'actual_end':
             return data.actual_end;
-          case "department_id":
+          case 'department_id':
             return data.department_id;
-          case "team_id":
+          case 'team_id':
             return data.team_id;
-          case "title":
+          case 'title':
             return data.title;
-          case "required_employees":
+          case 'required_employees':
             return data.required_employees;
-          case "break_minutes":
+          case 'break_minutes':
             return data.break_minutes;
-          case "status":
+          case 'status':
             return data.status;
-          case "type":
+          case 'type':
             return data.type;
-          case "notes":
+          case 'notes':
             return data.notes;
           default:
             return null;
@@ -1494,34 +1421,24 @@ async function update(
 
       if (fieldValue !== undefined) {
         updateFields.push(`${field} = ?`);
-        if (field === "date" && fieldValue != null) {
+        if (field === 'date' && fieldValue != null) {
           values.push(formatDateOnlyForMysql(fieldValue as string | Date));
         } else if (
-          (field === "start_time" || field === "end_time") &&
+          (field === 'start_time' || field === 'end_time') &&
           fieldValue != null &&
-          fieldValue !== ""
+          fieldValue !== ''
         ) {
           // Convert time to datetime by combining with date
           const dateToUse = data.date ?? currentDate;
-          if (dateToUse !== undefined && dateToUse !== "") {
-            values.push(
-              formatDateForMysql(`${dateToUse} ${String(fieldValue)}`),
-            );
+          if (dateToUse !== undefined && dateToUse !== '') {
+            values.push(formatDateForMysql(`${dateToUse} ${String(fieldValue)}`));
           } else {
             values.push(fieldValue); // Fallback
           }
-        } else if (
-          field === "actual_start" &&
-          fieldValue != null &&
-          fieldValue !== ""
-        ) {
+        } else if (field === 'actual_start' && fieldValue != null && fieldValue !== '') {
           // actual_start/end already includes date and time
           values.push(formatDateForMysql(fieldValue as string | Date));
-        } else if (
-          field === "actual_end" &&
-          fieldValue != null &&
-          fieldValue !== ""
-        ) {
+        } else if (field === 'actual_end' && fieldValue != null && fieldValue !== '') {
           values.push(formatDateForMysql(fieldValue as string | Date));
         } else {
           values.push(fieldValue as string | number | Date | null);
@@ -1530,19 +1447,19 @@ async function update(
     }
 
     if (updateFields.length === 0) {
-      throw new Error("No fields to update");
+      throw new Error('No fields to update');
     }
 
     const query = `
       UPDATE shifts
-      SET ${updateFields.join(", ")}, updated_at = NOW()
+      SET ${updateFields.join(', ')}, updated_at = NOW()
       WHERE id = ? AND tenant_id = ?
     `;
 
     values.push(id, tenantId);
     await executeQuery(query, values);
   } catch (error: unknown) {
-    console.error("Error in update:", error);
+    console.error('Error in update:', error);
     throw error;
   }
 }
@@ -1554,24 +1471,19 @@ async function deleteShift(id: number, tenantId: number): Promise<void> {
   try {
     // Check if shift has assignments
     const [assignments] = await executeQuery<RowDataPacket[]>(
-      "SELECT COUNT(*) as count FROM shift_assignments WHERE shift_id = ?",
+      'SELECT COUNT(*) as count FROM shift_assignments WHERE shift_id = ?',
       [id],
     );
 
     if (assignments[0].count > 0) {
       // Delete assignments first
-      await executeQuery("DELETE FROM shift_assignments WHERE shift_id = ?", [
-        id,
-      ]);
+      await executeQuery('DELETE FROM shift_assignments WHERE shift_id = ?', [id]);
     }
 
     // Delete the shift
-    await executeQuery("DELETE FROM shifts WHERE id = ? AND tenant_id = ?", [
-      id,
-      tenantId,
-    ]);
+    await executeQuery('DELETE FROM shifts WHERE id = ? AND tenant_id = ?', [id, tenantId]);
   } catch (error: unknown) {
-    console.error("Error in deleteShift:", error);
+    console.error('Error in deleteShift:', error);
     throw error;
   }
 }
@@ -1586,23 +1498,17 @@ async function getTemplates(tenantId: number): Promise<DbShiftTemplate[]> {
 /**
  * Get template by ID
  */
-async function getTemplateById(
-  id: number,
-  tenantId: number,
-): Promise<DbShiftTemplate | null> {
+async function getTemplateById(id: number, tenantId: number): Promise<DbShiftTemplate | null> {
   try {
     const query = `
       SELECT * FROM shift_templates
       WHERE id = ? AND tenant_id = ?
     `;
 
-    const [templates] = await executeQuery<DbShiftTemplate[]>(query, [
-      id,
-      tenantId,
-    ]);
+    const [templates] = await executeQuery<DbShiftTemplate[]>(query, [id, tenantId]);
     return templates.length > 0 ? templates[0] : null;
   } catch (error: unknown) {
-    console.error("Error in getTemplateById:", error);
+    console.error('Error in getTemplateById:', error);
     throw error;
   }
 }
@@ -1624,14 +1530,14 @@ async function createTemplate(data: V2TemplateData): Promise<number> {
       data.start_time,
       data.end_time,
       data.break_minutes ?? 0,
-      data.color ?? "#3498db",
+      data.color ?? '#3498db',
       data.is_night_shift ?? false,
       data.is_active ?? true,
     ]);
 
     return result.insertId;
   } catch (error: unknown) {
-    logger.error("Error creating shift template:", error);
+    logger.error('Error creating shift template:', error);
     throw error;
   }
 }
@@ -1649,14 +1555,14 @@ async function updateTemplate(
     const values: (string | number | null | Date)[] = [];
 
     const allowedFields = [
-      "name",
-      "description",
-      "start_time",
-      "end_time",
-      "break_minutes",
-      "color",
-      "is_night_shift",
-      "is_active",
+      'name',
+      'description',
+      'start_time',
+      'end_time',
+      'break_minutes',
+      'color',
+      'is_night_shift',
+      'is_active',
     ];
 
     for (const field of allowedFields) {
@@ -1668,40 +1574,39 @@ async function updateTemplate(
         const value = data[field as keyof V2TemplateData];
         // Convert boolean to number for MySQL
         values.push(
-          typeof value === "boolean"
-            ? value
-              ? 1
-              : 0
-            : (value as string | number | null),
+          typeof value === 'boolean' ?
+            value ? 1
+            : 0
+          : (value as string | number | null),
         );
       }
     }
 
     if (updateFields.length === 0) {
-      throw new Error("No fields to update");
+      throw new Error('No fields to update');
     }
 
     // Recalculate duration if times changed
     if (
       data.start_time != null &&
-      data.start_time !== "" &&
+      data.start_time !== '' &&
       data.end_time != null &&
-      data.end_time !== ""
+      data.end_time !== ''
     ) {
-      updateFields.push("duration_hours = ?");
+      updateFields.push('duration_hours = ?');
       values.push(calculateDurationHours(data.start_time, data.end_time));
     }
 
     const query = `
       UPDATE shift_templates
-      SET ${updateFields.join(", ")}, updated_at = NOW()
+      SET ${updateFields.join(', ')}, updated_at = NOW()
       WHERE id = ? AND tenant_id = ?
     `;
 
     values.push(id, tenantId);
     await executeQuery(query, values);
   } catch (error: unknown) {
-    console.error("Error in updateTemplate:", error);
+    console.error('Error in updateTemplate:', error);
     throw error;
   }
 }
@@ -1711,12 +1616,12 @@ async function updateTemplate(
  */
 async function deleteTemplate(id: number, tenantId: number): Promise<void> {
   try {
-    await executeQuery(
-      "DELETE FROM shift_templates WHERE id = ? AND tenant_id = ?",
-      [id, tenantId],
-    );
+    await executeQuery('DELETE FROM shift_templates WHERE id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
   } catch (error: unknown) {
-    console.error("Error in deleteTemplate:", error);
+    console.error('Error in deleteTemplate:', error);
     throw error;
   }
 }
@@ -1752,24 +1657,21 @@ async function getSwapRequests(
     const queryParams: (string | number)[] = [tenantId];
 
     if (filters.userId != null && filters.userId !== 0) {
-      query += " AND (ssr.requested_by = ? OR ssr.requested_with = ?)";
+      query += ' AND (ssr.requested_by = ? OR ssr.requested_with = ?)';
       queryParams.push(filters.userId, filters.userId);
     }
 
-    if (filters.status != null && filters.status !== "") {
-      query += " AND ssr.status = ?";
+    if (filters.status != null && filters.status !== '') {
+      query += ' AND ssr.status = ?';
       queryParams.push(filters.status);
     }
 
-    query += " ORDER BY ssr.created_at DESC";
+    query += ' ORDER BY ssr.created_at DESC';
 
-    const [requests] = await executeQuery<V2SwapRequestResult[]>(
-      query,
-      queryParams,
-    );
+    const [requests] = await executeQuery<V2SwapRequestResult[]>(query, queryParams);
     return requests;
   } catch (error: unknown) {
-    console.error("Error in getSwapRequests:", error);
+    console.error('Error in getSwapRequests:', error);
     throw error;
   }
 }
@@ -1781,12 +1683,12 @@ async function createSwapRequest(data: V2SwapRequestData): Promise<number> {
   try {
     // First, we need to find the assignment_id for this shift and user
     const [assignments] = await executeQuery<RowDataPacket[]>(
-      "SELECT id FROM shift_assignments WHERE shift_id = ? AND user_id = ? AND tenant_id = ?",
+      'SELECT id FROM shift_assignments WHERE shift_id = ? AND user_id = ? AND tenant_id = ?',
       [data.shift_id, data.requested_by, data.tenant_id],
     );
 
     if (assignments.length === 0) {
-      throw new Error("No assignment found for this shift and user");
+      throw new Error('No assignment found for this shift and user');
     }
 
     const assignmentId = assignments[0].id as number;
@@ -1808,7 +1710,7 @@ async function createSwapRequest(data: V2SwapRequestData): Promise<number> {
 
     return result.insertId;
   } catch (error: unknown) {
-    console.error("Error in createSwapRequest:", error);
+    console.error('Error in createSwapRequest:', error);
     throw error;
   }
 }
@@ -1826,13 +1728,10 @@ async function getSwapRequestById(
       WHERE id = ? AND tenant_id = ?
     `;
 
-    const [requests] = await executeQuery<V2SwapRequestResult[]>(query, [
-      id,
-      tenantId,
-    ]);
+    const [requests] = await executeQuery<V2SwapRequestResult[]>(query, [id, tenantId]);
     return requests.length > 0 ? requests[0] : null;
   } catch (error: unknown) {
-    console.error("Error in getSwapRequestById:", error);
+    console.error('Error in getSwapRequestById:', error);
     throw error;
   }
 }
@@ -1856,9 +1755,9 @@ async function updateSwapRequestStatus(
     await executeQuery(query, [status, approvedBy, id, tenantId]);
 
     // If approved, swap the shifts
-    if (status === "approved") {
+    if (status === 'approved') {
       const [request] = await executeQuery<V2SwapRequestResult[]>(
-        "SELECT * FROM shift_swap_requests WHERE id = ?",
+        'SELECT * FROM shift_swap_requests WHERE id = ?',
         [id],
       );
 
@@ -1868,14 +1767,14 @@ async function updateSwapRequestStatus(
         request[0].requested_with !== 0
       ) {
         // Update the shift assignment
-        await executeQuery("UPDATE shifts SET user_id = ? WHERE id = ?", [
+        await executeQuery('UPDATE shifts SET user_id = ? WHERE id = ?', [
           request[0].requested_with,
           request[0].shift_id,
         ]);
       }
     }
   } catch (error: unknown) {
-    console.error("Error in updateSwapRequestStatus:", error);
+    console.error('Error in updateSwapRequestStatus:', error);
     throw error;
   }
 }
@@ -1994,7 +1893,7 @@ async function getOvertimeByUser(
       shifts,
     };
   } catch (error: unknown) {
-    console.error("Error in getOvertimeByUser:", error);
+    console.error('Error in getOvertimeByUser:', error);
     throw error;
   }
 }

@@ -21,19 +21,8 @@ export interface MachineResponse {
   departmentName?: string;
   areaId?: number;
   location?: string;
-  machineType:
-    | "production"
-    | "packaging"
-    | "quality_control"
-    | "logistics"
-    | "utility"
-    | "other";
-  status:
-    | "operational"
-    | "maintenance"
-    | "repair"
-    | "standby"
-    | "decommissioned";
+  machineType: 'production' | 'packaging' | 'quality_control' | 'logistics' | 'utility' | 'other';
+  status: 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
   purchaseDate?: string;
   installationDate?: string;
   warrantyUntil?: string;
@@ -59,12 +48,12 @@ export interface MaintenanceHistoryResponse {
   tenantId: number;
   machineId: number;
   maintenanceType:
-    | "preventive"
-    | "corrective"
-    | "inspection"
-    | "calibration"
-    | "cleaning"
-    | "other";
+    | 'preventive'
+    | 'corrective'
+    | 'inspection'
+    | 'calibration'
+    | 'cleaning'
+    | 'other';
   performedDate: string;
   performedBy?: number;
   performedByName?: string;
@@ -73,7 +62,7 @@ export interface MaintenanceHistoryResponse {
   partsReplaced?: string;
   cost?: number;
   durationHours?: number;
-  statusAfter: "operational" | "needs_repair" | "decommissioned";
+  statusAfter: 'operational' | 'needs_repair' | 'decommissioned';
   nextMaintenanceDate?: string;
   reportUrl?: string;
   createdAt: string;
@@ -90,19 +79,8 @@ export interface MachineCreateRequest {
   departmentId?: number;
   areaId?: number;
   location?: string;
-  machineType?:
-    | "production"
-    | "packaging"
-    | "quality_control"
-    | "logistics"
-    | "utility"
-    | "other";
-  status?:
-    | "operational"
-    | "maintenance"
-    | "repair"
-    | "standby"
-    | "decommissioned";
+  machineType?: 'production' | 'packaging' | 'quality_control' | 'logistics' | 'utility' | 'other';
+  status?: 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
   purchaseDate?: string;
   installationDate?: string;
   warrantyUntil?: string;
@@ -123,12 +101,12 @@ export interface MachineUpdateRequest extends Partial<MachineCreateRequest> {
 export interface MaintenanceRecordRequest {
   machineId: number;
   maintenanceType:
-    | "preventive"
-    | "corrective"
-    | "inspection"
-    | "calibration"
-    | "cleaning"
-    | "other";
+    | 'preventive'
+    | 'corrective'
+    | 'inspection'
+    | 'calibration'
+    | 'cleaning'
+    | 'other';
   performedDate: string;
   performedBy?: number;
   externalCompany?: string;
@@ -136,7 +114,7 @@ export interface MaintenanceRecordRequest {
   partsReplaced?: string;
   cost?: number;
   durationHours?: number;
-  statusAfter?: "operational" | "needs_repair" | "decommissioned";
+  statusAfter?: 'operational' | 'needs_repair' | 'decommissioned';
   nextMaintenanceDate?: string;
   reportUrl?: string;
 }

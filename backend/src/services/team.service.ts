@@ -2,14 +2,14 @@
  * Team Service
  * Handles team-related business logic
  */
-
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 import Team, {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,
   TeamUpdateData as ModelTeamUpdateData,
-} from "../models/team";
+} from '../models/team';
+
 /**
  * Team Service
  * Handles team-related business logic
@@ -17,7 +17,7 @@ import Team, {
 
 // Import types from Team model
 // Service-specific interfaces
-interface TeamData extends Omit<DbTeam, "team_lead_id"> {
+interface TeamData extends Omit<DbTeam, 'team_lead_id'> {
   team_lead_id?: number | null;
   team_lead_name?: string | null;
   member_count?: number;
@@ -32,11 +32,11 @@ interface TeamFilters {
   offset?: number;
 }
 
-interface TeamCreateData extends Omit<ModelTeamCreateData, "team_lead_id"> {
+interface TeamCreateData extends Omit<ModelTeamCreateData, 'team_lead_id'> {
   team_lead_id?: number | null;
 }
 
-interface TeamUpdateData extends Omit<ModelTeamUpdateData, "team_lead_id"> {
+interface TeamUpdateData extends Omit<ModelTeamUpdateData, 'team_lead_id'> {
   team_lead_id?: number | null;
 }
 
@@ -49,10 +49,7 @@ class TeamService {
    * @param _tenantDb
    * @param _filters
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: TeamFilters = {},
-  ): Promise<TeamData[]> {
+  async getAll(_tenantDb: Pool, _filters: TeamFilters = {}): Promise<TeamData[]> {
     try {
       // Get tenant_id from filters or extract from tenantDb
       const teams = await Team.findAll();
@@ -63,7 +60,7 @@ class TeamService {
         member_count: 0,
       }));
     } catch (error: unknown) {
-      console.error("Error in TeamService.getAll:", error);
+      console.error('Error in TeamService.getAll:', error);
       throw error;
     }
   }
@@ -85,7 +82,7 @@ class TeamService {
         member_count: 0,
       };
     } catch (error: unknown) {
-      console.error("Error in TeamService.getById:", error);
+      console.error('Error in TeamService.getById:', error);
       throw error;
     }
   }
@@ -99,13 +96,12 @@ class TeamService {
     try {
       const modelData: ModelTeamCreateData = {
         ...data,
-        team_lead_id:
-          data.team_lead_id !== null ? data.team_lead_id : undefined,
+        team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
       };
       const id = await Team.create(modelData);
       const created = await Team.findById(id);
       if (!created) {
-        throw new Error("Failed to retrieve created team");
+        throw new Error('Failed to retrieve created team');
       }
       return {
         ...created,
@@ -114,7 +110,7 @@ class TeamService {
         member_count: 0,
       };
     } catch (error: unknown) {
-      console.error("Error in TeamService.create:", error);
+      console.error('Error in TeamService.create:', error);
       throw error;
     }
   }
@@ -125,16 +121,11 @@ class TeamService {
    * @param id
    * @param data
    */
-  async update(
-    tenantDb: Pool,
-    id: number,
-    data: TeamUpdateData,
-  ): Promise<TeamData | null> {
+  async update(tenantDb: Pool, id: number, data: TeamUpdateData): Promise<TeamData | null> {
     try {
       const modelData: ModelTeamUpdateData = {
         ...data,
-        team_lead_id:
-          data.team_lead_id !== null ? data.team_lead_id : undefined,
+        team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
       };
       const success = await Team.update(id, modelData);
       if (success) {
@@ -142,7 +133,7 @@ class TeamService {
       }
       return null;
     } catch (error: unknown) {
-      console.error("Error in TeamService.update:", error);
+      console.error('Error in TeamService.update:', error);
       throw error;
     }
   }
@@ -157,7 +148,7 @@ class TeamService {
       // TODO: Team.delete expects different parameters
       return await Team.delete(id);
     } catch (error: unknown) {
-      console.error("Error in TeamService.delete:", error);
+      console.error('Error in TeamService.delete:', error);
       throw error;
     }
   }

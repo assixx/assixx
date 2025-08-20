@@ -2,27 +2,26 @@
  * Calendar Service
  * Handles calendar business logic
  */
-
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 import {
-  getAllEvents,
-  getEventById,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  addEventAttendee,
-  removeEventAttendee,
-  respondToEvent,
-  getEventAttendees,
-  getDashboardEvents,
-  canManageEvent,
   type DbCalendarEvent,
   type EventQueryOptions,
+  type EventsListResponse,
   type EventCreateData as ModelEventCreateData,
   type EventUpdateData as ModelEventUpdateData,
-  type EventsListResponse,
-} from "../models/calendar";
+  addEventAttendee,
+  canManageEvent,
+  createEvent,
+  deleteEvent,
+  getAllEvents,
+  getDashboardEvents,
+  getEventAttendees,
+  getEventById,
+  removeEventAttendee,
+  respondToEvent,
+  updateEvent,
+} from '../models/calendar';
 
 // UserInfo is defined below
 
@@ -44,7 +43,7 @@ type EventsResponse = EventsListResponse;
 
 interface EventAttendee {
   user_id: number;
-  response_status: "pending" | "accepted" | "declined" | "tentative";
+  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
   responded_at?: Date;
   username?: string;
   first_name?: string;
@@ -75,11 +74,11 @@ class CalendarService {
       // Extract tenant_id from the connection pool config if possible
       // For now, we'll need to pass it as a parameter in the controller
       console.warn(
-        "CalendarService.getAll: This method requires refactoring to pass tenantId and userId",
+        'CalendarService.getAll: This method requires refactoring to pass tenantId and userId',
       );
-      throw new Error("Method needs refactoring - use getAllEvents directly");
+      throw new Error('Method needs refactoring - use getAllEvents directly');
     } catch (error: unknown) {
-      console.error("Error in CalendarService.getAll:", error);
+      console.error('Error in CalendarService.getAll:', error);
       throw error;
     }
   }
@@ -98,7 +97,7 @@ class CalendarService {
     try {
       return await getAllEvents(tenantId, userId, options);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.getAllEvents:", error);
+      console.error('Error in CalendarService.getAllEvents:', error);
       throw error;
     }
   }
@@ -112,11 +111,11 @@ class CalendarService {
   getById(_tenantDb: Pool, _id: number): CalendarEvent | null {
     try {
       console.warn(
-        "CalendarService.getById: This method requires refactoring to pass tenantId and userId",
+        'CalendarService.getById: This method requires refactoring to pass tenantId and userId',
       );
-      throw new Error("Method needs refactoring - use getEventById directly");
+      throw new Error('Method needs refactoring - use getEventById directly');
     } catch (error: unknown) {
-      console.error("Error in CalendarService.getById:", error);
+      console.error('Error in CalendarService.getById:', error);
       throw error;
     }
   }
@@ -127,15 +126,11 @@ class CalendarService {
    * @param tenantId
    * @param userId
    */
-  async getEventById(
-    id: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<CalendarEvent | null> {
+  async getEventById(id: number, tenantId: number, userId: number): Promise<CalendarEvent | null> {
     try {
       return await getEventById(id, tenantId, userId);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.getEventById:", error);
+      console.error('Error in CalendarService.getEventById:', error);
       throw error;
     }
   }
@@ -146,14 +141,11 @@ class CalendarService {
    * @param _tenantDb
    * @param data
    */
-  async create(
-    _tenantDb: Pool,
-    data: EventCreateData,
-  ): Promise<CalendarEvent | null> {
+  async create(_tenantDb: Pool, data: EventCreateData): Promise<CalendarEvent | null> {
     try {
       return await createEvent(data);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.create:", error);
+      console.error('Error in CalendarService.create:', error);
       throw error;
     }
   }
@@ -166,7 +158,7 @@ class CalendarService {
     try {
       return await createEvent(eventData);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.createEvent:", error);
+      console.error('Error in CalendarService.createEvent:', error);
       throw error;
     }
   }
@@ -178,18 +170,12 @@ class CalendarService {
    * @param _id
    * @param _data
    */
-  update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: EventUpdateData,
-  ): CalendarEvent | null {
+  update(_tenantDb: Pool, _id: number, _data: EventUpdateData): CalendarEvent | null {
     try {
-      console.warn(
-        "CalendarService.update: This method requires refactoring to pass tenantId",
-      );
-      throw new Error("Method needs refactoring - use updateEvent directly");
+      console.warn('CalendarService.update: This method requires refactoring to pass tenantId');
+      throw new Error('Method needs refactoring - use updateEvent directly');
     } catch (error: unknown) {
-      console.error("Error in CalendarService.update:", error);
+      console.error('Error in CalendarService.update:', error);
       throw error;
     }
   }
@@ -208,7 +194,7 @@ class CalendarService {
     try {
       return await updateEvent(id, eventData, tenantId);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.updateEvent:", error);
+      console.error('Error in CalendarService.updateEvent:', error);
       throw error;
     }
   }
@@ -221,12 +207,10 @@ class CalendarService {
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
-      console.warn(
-        "CalendarService.delete: This method requires refactoring to pass tenantId",
-      );
-      throw new Error("Method needs refactoring - use deleteEvent directly");
+      console.warn('CalendarService.delete: This method requires refactoring to pass tenantId');
+      throw new Error('Method needs refactoring - use deleteEvent directly');
     } catch (error: unknown) {
-      console.error("Error in CalendarService.delete:", error);
+      console.error('Error in CalendarService.delete:', error);
       throw error;
     }
   }
@@ -240,7 +224,7 @@ class CalendarService {
     try {
       return await deleteEvent(id, tenantId);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.deleteEvent:", error);
+      console.error('Error in CalendarService.deleteEvent:', error);
       throw error;
     }
   }
@@ -254,12 +238,12 @@ class CalendarService {
   async addEventAttendee(
     eventId: number,
     userId: number,
-    responseStatus?: "pending" | "accepted" | "declined" | "tentative",
+    responseStatus?: 'pending' | 'accepted' | 'declined' | 'tentative',
   ): Promise<boolean> {
     try {
       return await addEventAttendee(eventId, userId, responseStatus);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.addEventAttendee:", error);
+      console.error('Error in CalendarService.addEventAttendee:', error);
       throw error;
     }
   }
@@ -273,7 +257,7 @@ class CalendarService {
     try {
       return await removeEventAttendee(eventId, userId);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.removeEventAttendee:", error);
+      console.error('Error in CalendarService.removeEventAttendee:', error);
       throw error;
     }
   }
@@ -284,15 +268,11 @@ class CalendarService {
    * @param userId
    * @param response
    */
-  async respondToEvent(
-    eventId: number,
-    userId: number,
-    response: string,
-  ): Promise<boolean> {
+  async respondToEvent(eventId: number, userId: number, response: string): Promise<boolean> {
     try {
       return await respondToEvent(eventId, userId, response);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.respondToEvent:", error);
+      console.error('Error in CalendarService.respondToEvent:', error);
       throw error;
     }
   }
@@ -302,14 +282,11 @@ class CalendarService {
    * @param eventId
    * @param tenantId
    */
-  async getEventAttendees(
-    eventId: number,
-    tenantId: number,
-  ): Promise<EventAttendee[]> {
+  async getEventAttendees(eventId: number, tenantId: number): Promise<EventAttendee[]> {
     try {
       return await getEventAttendees(eventId, tenantId);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.getEventAttendees:", error);
+      console.error('Error in CalendarService.getEventAttendees:', error);
       throw error;
     }
   }
@@ -330,7 +307,7 @@ class CalendarService {
     try {
       return await getDashboardEvents(tenantId, userId, days, limit);
     } catch (error: unknown) {
-      console.error("Error in CalendarService.getDashboardEvents:", error);
+      console.error('Error in CalendarService.getDashboardEvents:', error);
       throw error;
     }
   }
@@ -341,11 +318,7 @@ class CalendarService {
    * @param userId
    * @param userInfo
    */
-  async canManageEvent(
-    eventId: number,
-    userId: number,
-    userInfo?: UserInfo,
-  ): Promise<boolean> {
+  async canManageEvent(eventId: number, userId: number, userInfo?: UserInfo): Promise<boolean> {
     try {
       return await canManageEvent(
         eventId,
@@ -357,7 +330,7 @@ class CalendarService {
         },
       );
     } catch (error: unknown) {
-      console.error("Error in CalendarService.canManageEvent:", error);
+      console.error('Error in CalendarService.canManageEvent:', error);
       throw error;
     }
   }

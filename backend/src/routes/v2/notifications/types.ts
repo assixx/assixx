@@ -19,10 +19,7 @@ export interface NotificationPreferences {
   email_notifications: boolean;
   push_notifications: boolean;
   sms_notifications: boolean;
-  notification_types?: Record<
-    string,
-    { email: boolean; push: boolean; sms: boolean }
-  >;
+  notification_types?: Record<string, { email: boolean; push: boolean; sms: boolean }>;
 }
 
 export interface NotificationFilters {

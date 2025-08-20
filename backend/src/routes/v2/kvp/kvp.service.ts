@@ -2,10 +2,9 @@
  * KVP API v2 Service Layer
  * Business logic for Continuous Improvement Process (Kontinuierlicher Verbesserungsprozess)
  */
-
-import KVPModel from "../../../models/kvp.js";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
+import KVPModel from '../../../models/kvp.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export interface KVPFilters {
   status?: string;
@@ -21,9 +20,9 @@ export interface KVPCreateData {
   title: string;
   description: string;
   categoryId: number;
-  orgLevel: "company" | "department" | "team";
+  orgLevel: 'company' | 'department' | 'team';
   orgId: number;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
   estimatedCost?: number;
 }
@@ -87,17 +86,11 @@ export interface KVPUpdateData {
   title?: string;
   description?: string;
   categoryId?: number;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
   estimatedCost?: number;
   actualSavings?: number;
-  status?:
-    | "new"
-    | "in_review"
-    | "approved"
-    | "implemented"
-    | "rejected"
-    | "archived";
+  status?: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assignedTo?: number;
 }
 
@@ -134,7 +127,7 @@ export class KVPService {
       const categories = await KVPModel.getCategories();
       return categories.map((category) => dbToApi(category));
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to get categories", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get categories', error);
     }
   }
 
@@ -162,21 +155,16 @@ export class KVPService {
     try {
       const offset = ((filters.page ?? 1) - 1) * (filters.limit ?? 20);
 
-      const suggestions = await KVPModel.getSuggestions(
-        tenantId,
-        userId,
-        userRole,
-        {
-          status: filters.status,
-          category_id: filters.categoryId,
-          priority: filters.priority,
-          org_level: filters.orgLevel,
-        },
-      );
+      const suggestions = await KVPModel.getSuggestions(tenantId, userId, userRole, {
+        status: filters.status,
+        category_id: filters.categoryId,
+        priority: filters.priority,
+        org_level: filters.orgLevel,
+      });
 
       // Apply search filter if provided
       let filteredSuggestions = suggestions;
-      if (filters.search !== undefined && filters.search !== "") {
+      if (filters.search !== undefined && filters.search !== '') {
         const searchLower = filters.search.toLowerCase();
         filteredSuggestions = suggestions.filter(
           (s) =>
@@ -192,24 +180,16 @@ export class KVPService {
       );
 
       return {
-        suggestions: paginatedSuggestions.map((suggestion) =>
-          dbToApi(suggestion),
-        ),
+        suggestions: paginatedSuggestions.map((suggestion) => dbToApi(suggestion)),
         pagination: {
           currentPage: filters.page ?? 1,
-          totalPages: Math.ceil(
-            filteredSuggestions.length / (filters.limit ?? 20),
-          ),
+          totalPages: Math.ceil(filteredSuggestions.length / (filters.limit ?? 20)),
           pageSize: filters.limit ?? 20,
           totalItems: filteredSuggestions.length,
         },
       };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to list suggestions",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to list suggestions', error);
     }
   }
 
@@ -226,15 +206,10 @@ export class KVPService {
     userId: number,
     userRole: string,
   ): Promise<KVPSuggestion> {
-    const suggestion = await KVPModel.getSuggestionById(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
+    const suggestion = await KVPModel.getSuggestionById(id, tenantId, userId, userRole);
 
     if (!suggestion) {
-      throw new ServiceError("NOT_FOUND", "Suggestion not found");
+      throw new ServiceError('NOT_FOUND', 'Suggestion not found');
     }
 
     return dbToApi(suggestion) as unknown as KVPSuggestion;
@@ -272,23 +247,16 @@ export class KVPService {
         result.id,
         tenantId,
         userId,
-        "admin", // Use admin role to ensure we can see the suggestion
+        'admin', // Use admin role to ensure we can see the suggestion
       );
 
       if (!suggestion) {
-        throw new ServiceError(
-          "SERVER_ERROR",
-          "Failed to retrieve created suggestion",
-        );
+        throw new ServiceError('SERVER_ERROR', 'Failed to retrieve created suggestion');
       }
 
       return dbToApi(suggestion) as unknown as KVPSuggestion;
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to create suggestion",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to create suggestion', error);
     }
   }
 
@@ -308,24 +276,16 @@ export class KVPService {
     userRole: string,
   ): Promise<KVPSuggestion> {
     // First, check if the suggestion exists and user has access
-    const existing = await this.getSuggestionById(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
+    const existing = await this.getSuggestionById(id, tenantId, userId, userRole);
 
     // Check permissions
-    if (userRole === "employee" && existing.submittedBy !== userId) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "You can only update your own suggestions",
-      );
+    if (userRole === 'employee' && existing.submittedBy !== userId) {
+      throw new ServiceError('FORBIDDEN', 'You can only update your own suggestions');
     }
 
     // Update status is admin-only operation
-    if (data.status && userRole !== "admin" && userRole !== "root") {
-      throw new ServiceError("FORBIDDEN", "Only admins can update status");
+    if (data.status && userRole !== 'admin' && userRole !== 'root') {
+      throw new ServiceError('FORBIDDEN', 'Only admins can update status');
     }
 
     try {
@@ -343,17 +303,12 @@ export class KVPService {
       // Update other fields
       const updateFields: Record<string, unknown> = {};
       if (data.title !== undefined) updateFields.title = data.title;
-      if (data.description !== undefined)
-        updateFields.description = data.description;
-      if (data.categoryId !== undefined)
-        updateFields.category_id = data.categoryId;
+      if (data.description !== undefined) updateFields.description = data.description;
+      if (data.categoryId !== undefined) updateFields.category_id = data.categoryId;
       if (data.priority !== undefined) updateFields.priority = data.priority;
-      if (data.expectedBenefit !== undefined)
-        updateFields.expected_benefit = data.expectedBenefit;
-      if (data.estimatedCost !== undefined)
-        updateFields.estimated_cost = data.estimatedCost;
-      if (data.actualSavings !== undefined)
-        updateFields.actual_savings = data.actualSavings;
+      if (data.expectedBenefit !== undefined) updateFields.expected_benefit = data.expectedBenefit;
+      if (data.estimatedCost !== undefined) updateFields.estimated_cost = data.estimatedCost;
+      if (data.actualSavings !== undefined) updateFields.actual_savings = data.actualSavings;
 
       if (Object.keys(updateFields).length > 0) {
         await KVPModel.updateSuggestion(id, tenantId, updateFields);
@@ -362,11 +317,7 @@ export class KVPService {
       // Return the updated suggestion
       return await this.getSuggestionById(id, tenantId, userId, userRole);
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to update suggestion",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to update suggestion', error);
     }
   }
 
@@ -384,33 +335,21 @@ export class KVPService {
     userRole: string,
   ): Promise<{ message: string }> {
     // Check if suggestion exists and user has access
-    const suggestion = await this.getSuggestionById(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
+    const suggestion = await this.getSuggestionById(id, tenantId, userId, userRole);
 
     // Only the owner can delete their suggestion
-    if (suggestion.submittedBy !== userId && userRole !== "root") {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "You can only delete your own suggestions",
-      );
+    if (suggestion.submittedBy !== userId && userRole !== 'root') {
+      throw new ServiceError('FORBIDDEN', 'You can only delete your own suggestions');
     }
 
     try {
       const result = await KVPModel.deleteSuggestion(id, tenantId, userId);
       if (!result) {
-        throw new ServiceError("SERVER_ERROR", "Failed to delete suggestion");
+        throw new ServiceError('SERVER_ERROR', 'Failed to delete suggestion');
       }
-      return { message: "Suggestion deleted successfully" };
+      return { message: 'Suggestion deleted successfully' };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to delete suggestion",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete suggestion', error);
     }
   }
 
@@ -434,7 +373,7 @@ export class KVPService {
       const comments = await KVPModel.getComments(suggestionId, userRole);
       return comments.map((comment) => dbToApi(comment));
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to get comments", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get comments', error);
     }
   }
 
@@ -472,7 +411,7 @@ export class KVPService {
         createdAt: new Date(),
       };
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to add comment", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to add comment', error);
     }
   }
 
@@ -496,11 +435,7 @@ export class KVPService {
       const attachments = await KVPModel.getAttachments(suggestionId);
       return attachments.map((attachment) => dbToApi(attachment));
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get attachments",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get attachments', error);
     }
   }
 
@@ -533,7 +468,7 @@ export class KVPService {
 
       return dbToApi(result as unknown as Record<string, unknown>);
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to add attachment", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to add attachment', error);
     }
   }
 
@@ -550,15 +485,10 @@ export class KVPService {
     userId: number,
     userRole: string,
   ): Promise<unknown> {
-    const attachment = await KVPModel.getAttachment(
-      attachmentId,
-      tenantId,
-      userId,
-      userRole,
-    );
+    const attachment = await KVPModel.getAttachment(attachmentId, tenantId, userId, userRole);
 
     if (!attachment) {
-      throw new ServiceError("NOT_FOUND", "Attachment not found");
+      throw new ServiceError('NOT_FOUND', 'Attachment not found');
     }
 
     return dbToApi(attachment) as unknown;
@@ -578,8 +508,8 @@ export class KVPService {
     userRole: string,
   ): Promise<unknown> {
     // Only admins can award points
-    if (userRole !== "admin" && userRole !== "root") {
-      throw new ServiceError("FORBIDDEN", "Only admins can award points");
+    if (userRole !== 'admin' && userRole !== 'root') {
+      throw new ServiceError('FORBIDDEN', 'Only admins can award points');
     }
 
     try {
@@ -602,7 +532,7 @@ export class KVPService {
         createdAt: new Date(),
       };
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to award points", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to award points', error);
     }
   }
 
@@ -616,11 +546,7 @@ export class KVPService {
       const points = await KVPModel.getUserPoints(tenantId, userId);
       return dbToApi(points) as unknown;
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get user points",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get user points', error);
     }
   }
 
@@ -633,11 +559,7 @@ export class KVPService {
       const stats = await KVPModel.getDashboardStats(tenantId);
       return dbToApi(stats) as unknown;
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get dashboard stats",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get dashboard stats', error);
     }
   }
 }

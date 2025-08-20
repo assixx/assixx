@@ -2,25 +2,20 @@
  * API v2 Authentication Middleware
  * Handles JWT validation for protected routes in API v2
  */
+import { NextFunction, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { RowDataPacket } from 'mysql2/promise';
 
-import jwt from "jsonwebtoken";
-import { RowDataPacket } from "mysql2/promise";
+import { executeQuery } from '../../database';
+import type { AuthenticatedRequest, PublicRequest } from '../../types/request.types';
+import { errorResponse } from '../../utils/apiResponse';
+import { dbToApi } from '../../utils/fieldMapping';
 
-import { Response, NextFunction } from "express";
+const JWT_SECRET = process.env.JWT_SECRET ?? '';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? '';
 
-import { executeQuery } from "../../database";
-import type {
-  AuthenticatedRequest,
-  PublicRequest,
-} from "../../types/request.types";
-import { errorResponse } from "../../utils/apiResponse";
-import { dbToApi } from "../../utils/fieldMapping";
-
-const JWT_SECRET = process.env.JWT_SECRET ?? "";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? "";
-
-if (!JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET must be set in production!");
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set in production!');
 }
 
 interface JWTPayload {
@@ -29,7 +24,7 @@ interface JWTPayload {
   role: string;
   tenantId?: number;
   tenant_id?: number; // Support both formats
-  type?: "access" | "refresh"; // v1 tokens don't have this
+  type?: 'access' | 'refresh'; // v1 tokens don't have this
   // Role switch fields
   activeRole?: string;
   isRoleSwitched?: boolean;
@@ -61,12 +56,12 @@ interface UserDetails {
 function extractBearerToken(req: PublicRequest): string | null {
   // First check Authorization header
   const authHeader = req.headers.authorization;
-  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
 
   // For SSE/EventSource, check query parameter (they can't send headers)
-  if (req.query.token && typeof req.query.token === "string") {
+  if (req.query.token && typeof req.query.token === 'string') {
     return req.query.token;
   }
 
@@ -81,7 +76,7 @@ function verifyAccessToken(token: string): JWTPayload | null {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
 
     // v1 tokens don't have type field, allow them
-    if (decoded.type && decoded.type !== "access") {
+    if (decoded.type && decoded.type !== 'access') {
       return null;
     }
 
@@ -93,9 +88,9 @@ function verifyAccessToken(token: string): JWTPayload | null {
     return decoded;
   } catch (error: unknown) {
     if (error instanceof jwt.TokenExpiredError) {
-      console.info("[AUTH v2] Token expired");
+      console.info('[AUTH v2] Token expired');
     } else if (error instanceof jwt.JsonWebTokenError) {
-      console.info("[AUTH v2] Invalid token");
+      console.info('[AUTH v2] Invalid token');
     }
     return null;
   }
@@ -104,10 +99,7 @@ function verifyAccessToken(token: string): JWTPayload | null {
 /**
  * Get user details from database with camelCase fields
  */
-async function getUserDetails(
-  userId: number,
-  tenantId: number,
-): Promise<UserDetails | null> {
+async function getUserDetails(userId: number, tenantId: number): Promise<UserDetails | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
       `SELECT
@@ -140,7 +132,7 @@ async function getUserDetails(
     // Convert to camelCase for API v2
     return dbToApi(users[0]) as unknown as UserDetails;
   } catch (error: unknown) {
-    console.error("[AUTH v2] User lookup error:", error);
+    console.error('[AUTH v2] User lookup error:', error);
     return null;
   }
 }
@@ -158,9 +150,7 @@ export async function authenticateV2(
     const token = extractBearerToken(req);
 
     if (!token) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication token required"));
+      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication token required'));
       return;
     }
 
@@ -168,9 +158,7 @@ export async function authenticateV2(
     const decoded = verifyAccessToken(token);
 
     if (!decoded) {
-      res
-        .status(401)
-        .json(errorResponse("INVALID_TOKEN", "Invalid or expired token"));
+      res.status(401).json(errorResponse('INVALID_TOKEN', 'Invalid or expired token'));
       return;
     }
 
@@ -178,11 +166,7 @@ export async function authenticateV2(
     const tenantId = decoded.tenantId ?? decoded.tenant_id;
 
     if (!tenantId) {
-      res
-        .status(401)
-        .json(
-          errorResponse("INVALID_TOKEN", "Token missing tenant information"),
-        );
+      res.status(401).json(errorResponse('INVALID_TOKEN', 'Token missing tenant information'));
       return;
     }
 
@@ -190,9 +174,7 @@ export async function authenticateV2(
     const userDetails = await getUserDetails(decoded.id, tenantId);
 
     if (!userDetails) {
-      res
-        .status(403)
-        .json(errorResponse("USER_NOT_FOUND", "User not found or inactive"));
+      res.status(403).json(errorResponse('USER_NOT_FOUND', 'User not found or inactive'));
       return;
     }
 
@@ -221,8 +203,8 @@ export async function authenticateV2(
 
     next();
   } catch (error: unknown) {
-    console.error("[AUTH v2] Unexpected error:", error);
-    res.status(500).json(errorResponse("SERVER_ERROR", "Authentication error"));
+    console.error('[AUTH v2] Unexpected error:', error);
+    res.status(500).json(errorResponse('SERVER_ERROR', 'Authentication error'));
   }
 }
 
@@ -259,15 +241,9 @@ export async function optionalAuthV2(
 export function requireRoleV2(allowedRoles: string | string[]) {
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
-  return (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): void => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
+      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
       return;
     }
 
@@ -275,7 +251,7 @@ export function requireRoleV2(allowedRoles: string | string[]) {
     const currentRole = req.user.activeRole ?? req.user.role;
 
     // Root has access to everything (check original role)
-    if (req.user.role === "root") {
+    if (req.user.role === 'root') {
       next();
       return;
     }
@@ -287,31 +263,24 @@ export function requireRoleV2(allowedRoles: string | string[]) {
     }
 
     // Admin can access admin and employee resources
-    if (req.user.role === "admin" && roles.includes("employee")) {
+    if (req.user.role === 'admin' && roles.includes('employee')) {
       next();
       return;
     }
 
-    res
-      .status(403)
-      .json(errorResponse("FORBIDDEN", "Insufficient permissions"));
+    res.status(403).json(errorResponse('FORBIDDEN', 'Insufficient permissions'));
   };
 }
 
 /**
  * Verify refresh token for token refresh endpoint
  */
-export async function verifyRefreshToken(
-  token: string,
-): Promise<JWTPayload | null> {
+export async function verifyRefreshToken(token: string): Promise<JWTPayload | null> {
   try {
-    const decoded = jwt.verify(
-      token,
-      JWT_REFRESH_SECRET || JWT_SECRET,
-    ) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET || JWT_SECRET) as JWTPayload;
 
     // Ensure it's a refresh token
-    if (decoded.type !== "refresh") {
+    if (decoded.type !== 'refresh') {
       return null;
     }
 

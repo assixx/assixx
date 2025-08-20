@@ -2,13 +2,13 @@
  * Admin Log Service
  * Handles admin log business logic
  */
-
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 import RootLog, {
   type DbRootLog,
   type RootLogCreateData as ModelRootLogCreateData,
-} from "../models/rootLog";
+} from '../models/rootLog';
+
 /**
  * Admin Log Service
  * Handles admin log business logic
@@ -16,7 +16,7 @@ import RootLog, {
 
 // Import types from AdminLog model
 // Service-specific interfaces
-interface AdminLogData extends Omit<DbRootLog, "tenant_id"> {
+interface AdminLogData extends Omit<DbRootLog, 'tenant_id'> {
   tenant_id: number;
   user_name?: string;
   user_role?: string;
@@ -33,7 +33,7 @@ interface AdminLogFilters {
   offset?: number;
 }
 
-interface AdminLogCreateData extends Omit<ModelRootLogCreateData, "tenant_id"> {
+interface AdminLogCreateData extends Omit<ModelRootLogCreateData, 'tenant_id'> {
   tenant_id: number;
   was_role_switched?: boolean;
 }
@@ -54,10 +54,7 @@ class AdminLogService {
    * @param _tenantDb
    * @param filters
    */
-  async getAll(
-    _tenantDb: Pool,
-    filters: AdminLogFilters = {},
-  ): Promise<AdminLogData[]> {
+  async getAll(_tenantDb: Pool, filters: AdminLogFilters = {}): Promise<AdminLogData[]> {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
       if (filters.user_id != null && filters.user_id !== 0) {
@@ -69,7 +66,7 @@ class AdminLogService {
       }
       return [];
     } catch (error: unknown) {
-      console.error("Error in AdminLogService.getAll:", error);
+      console.error('Error in AdminLogService.getAll:', error);
       throw error;
     }
   }
@@ -89,10 +86,7 @@ class AdminLogService {
    * @param _tenantDb
    * @param data
    */
-  async create(
-    _tenantDb: Pool,
-    data: AdminLogCreateData,
-  ): Promise<AdminLogData> {
+  async create(_tenantDb: Pool, data: AdminLogCreateData): Promise<AdminLogData> {
     try {
       const modelData: ModelRootLogCreateData = {
         user_id: data.user_id,
@@ -123,7 +117,7 @@ class AdminLogService {
         created_at: new Date(),
       } as AdminLogData;
     } catch (error: unknown) {
-      console.error("Error in AdminLogService.create:", error);
+      console.error('Error in AdminLogService.create:', error);
       throw error;
     }
   }

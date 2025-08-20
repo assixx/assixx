@@ -6,17 +6,12 @@
  *   name: Machines v2
  *   description: Industrial machine management API v2
  */
+import express, { RequestHandler, Router } from 'express';
 
-import express, { Router, RequestHandler } from "express";
-
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware";
-import { typed } from "../../../utils/routeHandlers";
-
-import { machinesController } from "./machines.controller";
-import { machineValidation } from "./validation";
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import { typed } from '../../../utils/routeHandlers';
+import { machinesController } from './machines.controller';
+import { machineValidation } from './validation';
 
 const router: Router = express.Router();
 
@@ -87,7 +82,7 @@ const router: Router = express.Router();
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/",
+  '/',
   authenticateV2 as RequestHandler,
   machineValidation.listMachines,
   typed.auth(machinesController.listMachines),
@@ -140,7 +135,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/statistics",
+  '/statistics',
   authenticateV2 as RequestHandler,
   typed.auth(machinesController.getStatistics),
 );
@@ -185,7 +180,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/categories",
+  '/categories',
   authenticateV2 as RequestHandler,
   typed.auth(machinesController.getCategories),
 );
@@ -229,7 +224,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/upcoming-maintenance",
+  '/upcoming-maintenance',
   authenticateV2 as RequestHandler,
   machineValidation.upcomingMaintenance,
   typed.auth(machinesController.getUpcomingMaintenance),
@@ -324,9 +319,9 @@ router.get(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.post(
-  "/maintenance",
+  '/maintenance',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.addMaintenanceRecord,
   typed.auth(machinesController.addMaintenanceRecord),
 );
@@ -365,7 +360,7 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
   machineValidation.machineId,
   typed.auth(machinesController.getMachine),
@@ -409,7 +404,7 @@ router.get(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id/maintenance",
+  '/:id/maintenance',
   authenticateV2 as RequestHandler,
   machineValidation.machineId,
   typed.auth(machinesController.getMaintenanceHistory),
@@ -548,9 +543,9 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post(
-  "/",
+  '/',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.createMachine,
   typed.auth(machinesController.createMachine),
 );
@@ -685,9 +680,9 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.updateMachine,
   typed.auth(machinesController.updateMachine),
 );
@@ -732,9 +727,9 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
   typed.auth(machinesController.deleteMachine),
 );
@@ -779,9 +774,9 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.put(
-  "/:id/deactivate",
+  '/:id/deactivate',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
   typed.auth(machinesController.deactivateMachine),
 );
@@ -826,9 +821,9 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.put(
-  "/:id/activate",
+  '/:id/activate',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
   typed.auth(machinesController.activateMachine),
 );

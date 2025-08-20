@@ -1,19 +1,18 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { adminPermissionsController } from "./controller.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { adminPermissionsController } from './controller.js';
 import {
-  getAdminPermissionsValidation,
-  getMyPermissionsValidation,
-  setPermissionsValidation,
-  removePermissionValidation,
-  removeGroupPermissionValidation,
   bulkPermissionsValidation,
   checkAccessValidation,
-} from "./validation.js";
+  getAdminPermissionsValidation,
+  getMyPermissionsValidation,
+  removeGroupPermissionValidation,
+  removePermissionValidation,
+  setPermissionsValidation,
+} from './validation.js';
 
 const router = Router();
 
@@ -89,7 +88,7 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/my",
+  '/my',
   validate(getMyPermissionsValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.getMyPermissions(req, res);
@@ -125,7 +124,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:adminId",
+  '/:adminId',
   validate(getAdminPermissionsValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.getAdminPermissions(req, res);
@@ -190,7 +189,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/",
+  '/',
   validate(setPermissionsValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.setPermissions(req, res);
@@ -234,7 +233,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:adminId/departments/:departmentId",
+  '/:adminId/departments/:departmentId',
   validate(removePermissionValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.removeDepartmentPermission(req, res);
@@ -278,7 +277,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:adminId/groups/:groupId",
+  '/:adminId/groups/:groupId',
   validate(removeGroupPermissionValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.removeGroupPermission(req, res);
@@ -366,7 +365,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/bulk",
+  '/bulk',
   validate(bulkPermissionsValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.bulkUpdatePermissions(req, res);
@@ -443,7 +442,7 @@ router.post(
  */
 // Route with permissionLevel
 router.get(
-  "/:adminId/check/:departmentId/:permissionLevel",
+  '/:adminId/check/:departmentId/:permissionLevel',
   validate(checkAccessValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.checkAccess(req, res);
@@ -452,7 +451,7 @@ router.get(
 
 // Route without permissionLevel (defaults to 'read')
 router.get(
-  "/:adminId/check/:departmentId",
+  '/:adminId/check/:departmentId',
   validate(checkAccessValidation),
   typed.auth(async (req, res) => {
     await adminPermissionsController.checkAccess(req, res);

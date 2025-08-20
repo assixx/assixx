@@ -1,6 +1,5 @@
 // TypeScript Utility Functions for Type Safety
-
-import { User, DatabaseUser } from "../types/models";
+import { DatabaseUser, User } from '../types/models';
 
 /**
  * Converts database user format to application user format
@@ -32,8 +31,8 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
 /**
  * Type guard to check if a value is a valid user role
  */
-export function isValidUserRole(role: string): role is User["role"] {
-  return ["admin", "employee", "root"].includes(role);
+export function isValidUserRole(role: string): role is User['role'] {
+  return ['admin', 'employee', 'root'].includes(role);
 }
 
 /**
@@ -63,7 +62,7 @@ export function createApiResponse<T>(
   return {
     success,
     ...(data !== undefined && { data }),
-    ...(error != null && error !== "" && { error, message: error }),
+    ...(error != null && error !== '' && { error, message: error }),
   };
 }
 
@@ -93,7 +92,7 @@ export function snakeToCamel(obj: unknown): unknown {
     return obj.map((item) => snakeToCamel(item));
   }
 
-  if (typeof obj !== "object" || obj instanceof Date) {
+  if (typeof obj !== 'object' || obj instanceof Date) {
     return obj;
   }
 
@@ -119,7 +118,7 @@ export function camelToSnake(obj: unknown): unknown {
     return obj.map((item) => camelToSnake(item));
   }
 
-  if (typeof obj !== "object" || obj instanceof Date) {
+  if (typeof obj !== 'object' || obj instanceof Date) {
     return obj;
   }
 
@@ -138,16 +137,16 @@ export function camelToSnake(obj: unknown): unknown {
  * MySQL returns 0/1 for boolean fields, this converts them properly
  */
 export function normalizeMySQLBoolean(value: unknown): boolean {
-  if (typeof value === "boolean") {
+  if (typeof value === 'boolean') {
     return value;
   }
 
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     return value === 1;
   }
 
-  if (typeof value === "string") {
-    return value === "1" || value.toLowerCase() === "true";
+  if (typeof value === 'string') {
+    return value === '1' || value.toLowerCase() === 'true';
   }
 
   return false;

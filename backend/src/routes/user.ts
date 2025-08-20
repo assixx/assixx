@@ -1,29 +1,27 @@
 /**
  * User Profile API Routes
  */
+import express, { Router } from 'express';
+import fs from 'fs';
+import multer from 'multer';
+import { RowDataPacket } from 'mysql2';
+import path from 'path';
 
-import fs from "fs";
-import path from "path";
-
-import multer from "multer";
-import { RowDataPacket } from "mysql2";
-
-import express, { Router } from "express";
+import { authenticateToken } from '../middleware/auth-refactored';
+import { rateLimiter } from '../middleware/rateLimiter';
+import User from '../models/user';
+import type { AuthenticatedRequest } from '../types/request.types';
+import { query as executeQuery } from '../utils/db';
+import { getErrorMessage } from '../utils/errorHandler';
+import {
+  getUploadDirectory,
+  safeDeleteFile,
+  sanitizeFilename,
+  validatePath,
+} from '../utils/pathSecurity';
 
 const router: Router = express.Router();
 
-import { authenticateToken } from "../middleware/auth-refactored";
-import { rateLimiter } from "../middleware/rateLimiter";
-import User from "../models/user";
-import type { AuthenticatedRequest } from "../types/request.types";
-import { query as executeQuery } from "../utils/db";
-import { getErrorMessage } from "../utils/errorHandler";
-import {
-  validatePath,
-  sanitizeFilename,
-  getUploadDirectory,
-  safeDeleteFile,
-} from "../utils/pathSecurity";
 /**
  * User Profile API Routes
  */
@@ -48,13 +46,13 @@ interface UserUpdateFields {
   hire_date?: Date;
   emergency_contact?: string;
   profile_picture?: string;
-  availability_status?: "available" | "unavailable" | "vacation" | "sick";
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
 }
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const uploadDir = getUploadDirectory("profile_pictures");
+    const uploadDir = getUploadDirectory('profile_pictures');
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -75,18 +73,12 @@ const fileFilter = (
   cb: multer.FileFilterCallback,
 ): void => {
   // Accept only specific image formats
-  const allowedMimeTypes = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-  ];
+  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Nur JPEG, PNG, GIF und WebP Formate sind erlaubt!"));
+    cb(new Error('Nur JPEG, PNG, GIF und WebP Formate sind erlaubt!'));
   }
 };
 
@@ -106,13 +98,13 @@ const upload = multer({
  * @desc Get user profile
  * @access Private
  */
-router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
+router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
 
     // Validate user ID exists
     if (!authReq.user.id || !authReq.user.tenant_id) {
-      res.status(401).json({ message: "Nicht autorisiert" });
+      res.status(401).json({ message: 'Nicht autorisiert' });
       return;
     }
 
@@ -121,14 +113,14 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
 
     // Check for valid IDs
     if (isNaN(userId) || isNaN(tenantId)) {
-      res.status(400).json({ message: "Ungültige Benutzer-ID" });
+      res.status(400).json({ message: 'Ungültige Benutzer-ID' });
       return;
     }
 
     const user = await User.findById(userId, tenantId);
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
@@ -137,7 +129,7 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
     if (user.department_id != null && user.department_id !== 0) {
       // Verwende db statt req.tenantDb
       const [departments] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM departments WHERE id = ?",
+        'SELECT * FROM departments WHERE id = ?',
         [user.department_id],
       );
 
@@ -150,10 +142,9 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
     let teamInfo = null;
     if (user.team_id != null && user.team_id !== 0) {
       // Verwende db statt req.tenantDb
-      const [teams] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM teams WHERE id = ?",
-        [user.team_id],
-      );
+      const [teams] = await executeQuery<RowDataPacket[]>('SELECT * FROM teams WHERE id = ?', [
+        user.team_id,
+      ]);
 
       if (teams.length > 0) {
         teamInfo = teams[0];
@@ -163,10 +154,9 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
     // Get tenant information
     let tenantInfo = null;
     if (user.tenant_id != null && user.tenant_id !== 0) {
-      const [tenants] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM tenants WHERE id = ?",
-        [user.tenant_id],
-      );
+      const [tenants] = await executeQuery<RowDataPacket[]>('SELECT * FROM tenants WHERE id = ?', [
+        user.tenant_id,
+      ]);
 
       if (tenants.length > 0) {
         tenantInfo = tenants[0];
@@ -186,8 +176,8 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
       subdomain: tenantInfo ? (tenantInfo.subdomain as string) : null,
     });
   } catch (error: unknown) {
-    console.error("Error fetching user profile:", getErrorMessage(error));
-    res.status(500).json({ message: "Server error" });
+    console.error('Error fetching user profile:', getErrorMessage(error));
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -196,39 +186,39 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
  * @desc Update user profile
  * @access Private
  */
-router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
+router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { id } = authReq.user;
     const updates = { ...(req.body as UserUpdateFields) };
 
     // Don't allow updating critical fields
-    if ("id" in updates) delete updates.id;
-    if ("username" in updates) delete updates.username;
-    if ("role" in updates) delete updates.role;
-    if ("password" in updates) delete updates.password;
-    if ("created_at" in updates) delete updates.created_at;
+    if ('id' in updates) delete updates.id;
+    if ('username' in updates) delete updates.username;
+    if ('role' in updates) delete updates.role;
+    if ('password' in updates) delete updates.password;
+    if ('created_at' in updates) delete updates.created_at;
 
     const result = await User.update(id, updates, authReq.user.tenant_id);
 
     if (result) {
       const updatedUser = await User.findById(id, authReq.user.tenant_id);
       if (!updatedUser) {
-        res.status(404).json({ message: "User not found after update" });
+        res.status(404).json({ message: 'User not found after update' });
         return;
       }
       const { password: _password, ...userWithoutPassword } = updatedUser;
 
       res.json({
-        message: "Profile updated successfully",
+        message: 'Profile updated successfully',
         user: userWithoutPassword,
       });
     } else {
-      res.status(400).json({ message: "Failed to update profile" });
+      res.status(400).json({ message: 'Failed to update profile' });
     }
   } catch (error: unknown) {
-    console.error("Error updating user profile:", getErrorMessage(error));
-    res.status(500).json({ message: "Server error" });
+    console.error('Error updating user profile:', getErrorMessage(error));
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -238,7 +228,7 @@ router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
  * @access Private
  */
 router.get(
-  "/profile-picture",
+  '/profile-picture',
   authenticateToken,
   rateLimiter.download,
   async (req, res): Promise<void> => {
@@ -246,37 +236,37 @@ router.get(
       const authReq = req as AuthenticatedRequest;
       const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
-      if (user?.profile_picture == null || user.profile_picture === "") {
-        res.status(404).json({ message: "Profile picture not found" });
+      if (user?.profile_picture == null || user.profile_picture === '') {
+        res.status(404).json({ message: 'Profile picture not found' });
         return;
       }
 
       // Validate and send the profile picture file
-      const baseDir = path.join(process.cwd(), "uploads");
-      const profilePicPath = user.profile_picture.startsWith("/")
-        ? user.profile_picture.substring(1)
+      const baseDir = path.join(process.cwd(), 'uploads');
+      const profilePicPath =
+        user.profile_picture.startsWith('/') ?
+          user.profile_picture.substring(1)
         : user.profile_picture;
 
       // Remove 'uploads/' prefix if present
-      const relativePath = profilePicPath.startsWith("uploads/")
-        ? profilePicPath.substring(8)
-        : profilePicPath;
+      const relativePath =
+        profilePicPath.startsWith('uploads/') ? profilePicPath.substring(8) : profilePicPath;
 
       const validatedPath = validatePath(relativePath, baseDir);
 
-      if (validatedPath == null || validatedPath === "") {
-        res.status(400).json({ message: "Invalid file path" });
+      if (validatedPath == null || validatedPath === '') {
+        res.status(400).json({ message: 'Invalid file path' });
         return;
       }
 
       if (fs.existsSync(validatedPath)) {
         res.sendFile(validatedPath);
       } else {
-        res.status(404).json({ message: "Profile picture file not found" });
+        res.status(404).json({ message: 'Profile picture file not found' });
       }
     } catch (error: unknown) {
-      console.error("Error fetching profile picture:", getErrorMessage(error));
-      res.status(500).json({ message: "Internal server error" });
+      console.error('Error fetching profile picture:', getErrorMessage(error));
+      res.status(500).json({ message: 'Internal server error' });
     }
   },
 );
@@ -287,15 +277,15 @@ router.get(
  * @access Private
  */
 router.post(
-  "/profile-picture",
+  '/profile-picture',
   authenticateToken,
-  upload.single("profilePicture"),
+  upload.single('profilePicture'),
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
 
       if (!authReq.file) {
-        res.status(400).json({ message: "Keine Datei hochgeladen" });
+        res.status(400).json({ message: 'Keine Datei hochgeladen' });
         return;
       }
 
@@ -307,24 +297,17 @@ router.post(
       const user = await User.findById(userId, authReq.user.tenant_id);
 
       // Delete old profile picture if it exists
-      if (
-        user?.profile_picture_url != null &&
-        user.profile_picture_url !== ""
-      ) {
+      if (user?.profile_picture_url != null && user.profile_picture_url !== '') {
         const oldFilePath = path.join(
           process.cwd(),
-          typeof user.profile_picture_url === "string" &&
-            user.profile_picture_url.startsWith("/")
-            ? user.profile_picture_url.substring(1)
-            : String(user.profile_picture_url),
+          typeof user.profile_picture_url === 'string' && user.profile_picture_url.startsWith('/') ?
+            user.profile_picture_url.substring(1)
+          : String(user.profile_picture_url),
         );
         try {
           await safeDeleteFile(oldFilePath);
         } catch (unlinkError: unknown) {
-          console.warn(
-            "Could not delete old profile picture:",
-            getErrorMessage(unlinkError),
-          );
+          console.warn('Could not delete old profile picture:', getErrorMessage(unlinkError));
         }
       }
 
@@ -339,32 +322,24 @@ router.post(
 
       if (success) {
         res.json({
-          message: "Profilbild erfolgreich hochgeladen",
+          message: 'Profilbild erfolgreich hochgeladen',
           profilePicture: profilePictureUrl,
         });
       } else {
         // Clean up uploaded file if database update failed
         await safeDeleteFile(authReq.file.path);
-        res
-          .status(500)
-          .json({ message: "Fehler beim Speichern des Profilbildes" });
+        res.status(500).json({ message: 'Fehler beim Speichern des Profilbildes' });
       }
     } catch (error: unknown) {
-      console.error("Error uploading profile picture:", getErrorMessage(error));
+      console.error('Error uploading profile picture:', getErrorMessage(error));
 
       // Clean up uploaded file on error
       const authenticatedReq = req as AuthenticatedRequest;
-      if (
-        authenticatedReq.file?.path != null &&
-        authenticatedReq.file.path !== ""
-      ) {
+      if (authenticatedReq.file?.path != null && authenticatedReq.file.path !== '') {
         try {
           await safeDeleteFile(authenticatedReq.file.path);
         } catch (unlinkError: unknown) {
-          console.error(
-            "Error deleting temporary file:",
-            getErrorMessage(unlinkError),
-          );
+          console.error('Error deleting temporary file:', getErrorMessage(unlinkError));
         }
       }
 
@@ -380,64 +355,54 @@ router.post(
  * @desc Delete user profile picture
  * @access Private
  */
-router.delete(
-  "/profile-picture",
-  authenticateToken,
-  async (req, res): Promise<void> => {
-    try {
-      const authReq = req as AuthenticatedRequest;
-      const userId = authReq.user.id;
+router.delete('/profile-picture', authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user.id;
 
-      // Get current user to find existing profile picture
-      const user = await User.findById(userId, authReq.user.tenant_id);
-      if (!user) {
-        res.status(404).json({ message: "Benutzer nicht gefunden" });
-        return;
-      }
-
-      // Delete profile picture file if it exists
-      if (user.profile_picture_url != null && user.profile_picture_url !== "") {
-        const filePath = path.join(
-          process.cwd(),
-          typeof user.profile_picture_url === "string" &&
-            user.profile_picture_url.startsWith("/")
-            ? user.profile_picture_url.substring(1)
-            : String(user.profile_picture_url),
-        );
-        try {
-          await safeDeleteFile(filePath);
-        } catch (unlinkError: unknown) {
-          console.warn(
-            "Could not delete profile picture file:",
-            getErrorMessage(unlinkError),
-          );
-        }
-      }
-
-      // Remove profile picture URL from database
-      const success = await User.update(
-        userId,
-        {
-          profile_picture: undefined,
-        },
-        authReq.user.tenant_id,
-      );
-
-      if (success) {
-        res.json({ message: "Profilbild erfolgreich gelöscht" });
-      } else {
-        res
-          .status(500)
-          .json({ message: "Fehler beim Löschen des Profilbildes" });
-      }
-    } catch (error: unknown) {
-      console.error("Error deleting profile picture:", getErrorMessage(error));
-      res.status(500).json({
-        message: "Fehler beim Löschen des Profilbildes",
-      });
+    // Get current user to find existing profile picture
+    const user = await User.findById(userId, authReq.user.tenant_id);
+    if (!user) {
+      res.status(404).json({ message: 'Benutzer nicht gefunden' });
+      return;
     }
-  },
-);
+
+    // Delete profile picture file if it exists
+    if (user.profile_picture_url != null && user.profile_picture_url !== '') {
+      const filePath = path.join(
+        process.cwd(),
+        typeof user.profile_picture_url === 'string' && user.profile_picture_url.startsWith('/') ?
+          user.profile_picture_url.substring(1)
+        : String(user.profile_picture_url),
+      );
+      try {
+        await safeDeleteFile(filePath);
+      } catch (unlinkError: unknown) {
+        console.warn('Could not delete profile picture file:', getErrorMessage(unlinkError));
+      }
+    }
+
+    // Remove profile picture URL from database
+    const success = await User.update(
+      userId,
+      {
+        profile_picture: undefined,
+      },
+      authReq.user.tenant_id,
+    );
+
+    if (success) {
+      res.json({ message: 'Profilbild erfolgreich gelöscht' });
+    } else {
+      res.status(500).json({ message: 'Fehler beim Löschen des Profilbildes' });
+    }
+  } catch (error: unknown) {
+    console.error('Error deleting profile picture:', getErrorMessage(error));
+    res.status(500).json({
+      message: 'Fehler beim Löschen des Profilbildes',
+    });
+  }
+});
 
 export default router;
 

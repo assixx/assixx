@@ -1,6 +1,6 @@
-import { EventEmitter } from "events";
+import { EventEmitter } from 'events';
 
-import { logger } from "./logger.js";
+import { logger } from './logger.js';
 
 interface SurveyEvent {
   tenantId: number;
@@ -36,7 +36,7 @@ class NotificationEventBus extends EventEmitter {
   private constructor() {
     super();
     this.setMaxListeners(100); // Support many SSE connections
-    logger.info("[EventBus] Initialized notification event bus");
+    logger.info('[EventBus] Initialized notification event bus');
   }
 
   static getInstance(): NotificationEventBus {
@@ -47,27 +47,24 @@ class NotificationEventBus extends EventEmitter {
   }
 
   // Type-safe event emitters
-  emitSurveyCreated(tenantId: number, survey: SurveyEvent["survey"]): void {
+  emitSurveyCreated(tenantId: number, survey: SurveyEvent['survey']): void {
     logger.info(`[EventBus] Emitting survey.created for tenant ${tenantId}`);
-    this.emit("survey.created", { tenantId, survey });
+    this.emit('survey.created', { tenantId, survey });
   }
 
-  emitSurveyUpdated(tenantId: number, survey: SurveyEvent["survey"]): void {
+  emitSurveyUpdated(tenantId: number, survey: SurveyEvent['survey']): void {
     logger.info(`[EventBus] Emitting survey.updated for tenant ${tenantId}`);
-    this.emit("survey.updated", { tenantId, survey });
+    this.emit('survey.updated', { tenantId, survey });
   }
 
-  emitDocumentUploaded(
-    tenantId: number,
-    document: DocumentEvent["document"],
-  ): void {
+  emitDocumentUploaded(tenantId: number, document: DocumentEvent['document']): void {
     logger.info(`[EventBus] Emitting document.uploaded for tenant ${tenantId}`);
-    this.emit("document.uploaded", { tenantId, document });
+    this.emit('document.uploaded', { tenantId, document });
   }
 
-  emitKvpSubmitted(tenantId: number, kvp: KvpEvent["kvp"]): void {
+  emitKvpSubmitted(tenantId: number, kvp: KvpEvent['kvp']): void {
     logger.info(`[EventBus] Emitting kvp.submitted for tenant ${tenantId}`);
-    this.emit("kvp.submitted", { tenantId, kvp });
+    this.emit('kvp.submitted', { tenantId, kvp });
   }
 
   // Get active listener count for monitoring

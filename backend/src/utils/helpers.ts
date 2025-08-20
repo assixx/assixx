@@ -2,10 +2,9 @@
  * Helper Functions
  * Common utility functions used across the application
  */
+import crypto from 'crypto';
 
-import crypto from "crypto";
-
-import { PAGINATION } from "./constants";
+import { PAGINATION } from './constants';
 
 // Interfaces
 interface QueryParams {
@@ -35,7 +34,7 @@ interface PaginationResponse {
  * @returns Random string
  */
 export function generateRandomString(length = 32): string {
-  return crypto.randomBytes(length).toString("hex");
+  return crypto.randomBytes(length).toString('hex');
 }
 
 /**
@@ -84,11 +83,11 @@ export function formatPaginationResponse(
  * @returns Sanitized input
  */
 export function sanitizeInput(input: unknown): unknown {
-  if (typeof input !== "string") return input;
+  if (typeof input !== 'string') return input;
 
   return input
     .trim()
-    .replace(/[<>]/g, "") // Remove potential HTML tags
+    .replace(/[<>]/g, '') // Remove potential HTML tags
     .slice(0, 1000); // Limit length
 }
 
@@ -101,9 +100,9 @@ export function generateSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\s\w-]/g, "") // Remove special characters
-    .replace(/[\s\-_]+/g, "-") // Replace spaces with -
-    .replace(/^-+|-+$/g, ""); // Remove leading/trailing -
+    .replace(/[^\s\w-]/g, '') // Remove special characters
+    .replace(/[\s\-_]+/g, '-') // Replace spaces with -
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing -
 }
 
 /**
@@ -112,13 +111,13 @@ export function generateSlug(text: string): string {
  * @returns Formatted date string
  */
 export function formatDate(date: Date | string | null | undefined): string {
-  if (date == null) return "";
+  if (date == null) return '';
 
   const d = new Date(date);
-  return d.toLocaleDateString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+  return d.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
 }
 
@@ -128,15 +127,15 @@ export function formatDate(date: Date | string | null | undefined): string {
  * @returns Formatted datetime string
  */
 export function formatDateTime(date: Date | string | null | undefined): string {
-  if (date == null) return "";
+  if (date == null) return '';
 
   const d = new Date(date);
-  return d.toLocaleDateString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+  return d.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 

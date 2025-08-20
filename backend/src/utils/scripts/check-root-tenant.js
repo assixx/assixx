@@ -1,4 +1,4 @@
-const db = require("./database");
+const db = require('./database');
 
 async function checkRootTenant() {
   try {
@@ -11,15 +11,15 @@ async function checkRootTenant() {
     `);
 
     if (users.length > 0) {
-      console.info("Root user tenant info:");
-      console.info("- Tenant ID:", users[0].tenant_id);
-      console.info("- Company:", users[0].company_name);
-      console.info("- Subdomain:", users[0].subdomain);
+      console.info('Root user tenant info:');
+      console.info('- Tenant ID:', users[0].tenant_id);
+      console.info('- Company:', users[0].company_name);
+      console.info('- Subdomain:', users[0].subdomain);
     } else {
-      console.info("Root user not found");
+      console.info('Root user not found');
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error('Error:', error);
   }
   process.exit();
 }

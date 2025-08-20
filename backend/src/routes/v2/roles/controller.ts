@@ -2,17 +2,14 @@
  * Roles Controller v2
  * HTTP request handlers for roles API
  */
+import { Response } from 'express';
+import { validationResult } from 'express-validator';
 
-import { validationResult } from "express-validator";
-
-import { Response } from "express";
-
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { rolesService } from "./service.js";
-import type { RoleCheckRequest, RoleName } from "./types.js";
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { logger } from '../../../utils/logger.js';
+import { rolesService } from './service.js';
+import type { RoleCheckRequest, RoleName } from './types.js';
 
 /**
  *
@@ -32,12 +29,12 @@ export class RolesController {
         data: roles,
       });
     } catch (error: unknown) {
-      logger.error("Error getting roles:", error);
+      logger.error('Error getting roles:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: "SERVER_ERROR",
-          message: "Failed to fetch roles",
+          code: 'SERVER_ERROR',
+          message: 'Failed to fetch roles',
         },
       });
     }
@@ -55,10 +52,10 @@ export class RolesController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -84,12 +81,12 @@ export class RolesController {
           },
         });
       } else {
-        logger.error("Error getting role by ID:", error);
+        logger.error('Error getting role by ID:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to fetch role",
+            code: 'SERVER_ERROR',
+            message: 'Failed to fetch role',
           },
         });
       }
@@ -101,10 +98,7 @@ export class RolesController {
    * @param _req
    * @param res
    */
-  async getRoleHierarchy(
-    _req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async getRoleHierarchy(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const hierarchy = await rolesService.getRoleHierarchy();
 
@@ -113,12 +107,12 @@ export class RolesController {
         data: hierarchy,
       });
     } catch (error: unknown) {
-      logger.error("Error getting role hierarchy:", error);
+      logger.error('Error getting role hierarchy:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: "SERVER_ERROR",
-          message: "Failed to fetch role hierarchy",
+          code: 'SERVER_ERROR',
+          message: 'Failed to fetch role hierarchy',
         },
       });
     }
@@ -129,26 +123,22 @@ export class RolesController {
    * @param req
    * @param res
    */
-  async getAssignableRoles(
-    req: AuthenticatedRequest,
-    res: Response,
-  ): Promise<void> {
+  async getAssignableRoles(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const currentUserRole = req.user.role as RoleName;
-      const assignableRoles =
-        await rolesService.getAssignableRoles(currentUserRole);
+      const assignableRoles = await rolesService.getAssignableRoles(currentUserRole);
 
       res.json({
         success: true,
         data: assignableRoles,
       });
     } catch (error: unknown) {
-      logger.error("Error getting assignable roles:", error);
+      logger.error('Error getting assignable roles:', error);
       res.status(500).json({
         success: false,
         error: {
-          code: "SERVER_ERROR",
-          message: "Failed to fetch assignable roles",
+          code: 'SERVER_ERROR',
+          message: 'Failed to fetch assignable roles',
         },
       });
     }
@@ -161,12 +151,12 @@ export class RolesController {
    */
   async checkUserRole(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is admin or root
-    if (req.user.role !== "admin" && req.user.role !== "root") {
+    if (req.user.role !== 'admin' && req.user.role !== 'root') {
       res.status(403).json({
         success: false,
         error: {
-          code: "FORBIDDEN",
-          message: "Only administrators can check user roles",
+          code: 'FORBIDDEN',
+          message: 'Only administrators can check user roles',
         },
       });
       return;
@@ -178,10 +168,10 @@ export class RolesController {
       res.status(400).json({
         success: false,
         error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid request data",
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request data',
           details: errors.array().map((error) => ({
-            field: error.type === "field" ? error.path : "general",
+            field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
           })),
         },
@@ -207,12 +197,12 @@ export class RolesController {
           },
         });
       } else {
-        logger.error("Error checking user role:", error);
+        logger.error('Error checking user role:', error);
         res.status(500).json({
           success: false,
           error: {
-            code: "SERVER_ERROR",
-            message: "Failed to check user role",
+            code: 'SERVER_ERROR',
+            message: 'Failed to check user role',
           },
         });
       }

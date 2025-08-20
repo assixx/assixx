@@ -95,6 +95,6 @@ export class ServiceError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = "ServiceError";
+    this.name = 'ServiceError';
   }
 }

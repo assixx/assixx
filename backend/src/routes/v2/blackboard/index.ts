@@ -5,25 +5,18 @@
  *   - name: Blackboard v2
  *     description: Company announcements and bulletin board API v2
  */
+import { Router } from 'express';
+import fs from 'fs/promises';
+import multer from 'multer';
+import path from 'path';
 
-import fs from "fs/promises";
-import path from "path";
-
-import multer from "multer";
-
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import { requireRoleV2 } from "../../../middleware/v2/roleCheck.middleware.js";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import {
-  sanitizeFilename,
-  getUploadDirectory,
-} from "../../../utils/pathSecurity.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import * as blackboardController from "./blackboard.controller.js";
-import { blackboardValidation } from "./blackboard.validation.js";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as blackboardController from './blackboard.controller.js';
+import { blackboardValidation } from './blackboard.validation.js';
 
 const router = Router();
 
@@ -32,7 +25,7 @@ const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id ?? 1;
-    const baseUploadDir = getUploadDirectory("blackboard");
+    const baseUploadDir = getUploadDirectory('blackboard');
     const uploadDir = path.join(baseUploadDir, tenantId.toString());
 
     fs.mkdir(uploadDir, { recursive: true })
@@ -41,13 +34,13 @@ const storage = multer.diskStorage({
       })
       .catch((error) => {
         // When there's an error, pass null as the second argument
-        cb(error as Error, "");
+        cb(error as Error, '');
       });
   },
   filename: (_req, file, cb) => {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + ext);
   },
 });
@@ -56,18 +49,12 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-    ];
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only PDF and images (JPEG, PNG, GIF) are allowed"));
+      cb(new Error('Only PDF and images (JPEG, PNG, GIF) are allowed'));
     }
   },
 });
@@ -143,7 +130,7 @@ const upload = multer({
  *               $ref: '#/components/schemas/BlackboardEntriesResponseV2'
  */
 router.get(
-  "/entries",
+  '/entries',
   authenticateV2,
   blackboardValidation.list,
   typed.auth(blackboardController.listEntries),
@@ -175,7 +162,7 @@ router.get(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.get(
-  "/entries/:id",
+  '/entries/:id',
   authenticateV2,
   blackboardValidation.getById,
   typed.auth(blackboardController.getEntryById),
@@ -206,9 +193,9 @@ router.get(
  *         $ref: '#/components/responses/BadRequestV2'
  */
 router.post(
-  "/entries",
+  '/entries',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.create,
   typed.auth(blackboardController.createEntry),
 );
@@ -245,9 +232,9 @@ router.post(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.put(
-  "/entries/:id",
+  '/entries/:id',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.update,
   typed.auth(blackboardController.updateEntry),
 );
@@ -278,9 +265,9 @@ router.put(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.delete(
-  "/entries/:id",
+  '/entries/:id',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.delete,
   typed.auth(blackboardController.deleteEntry),
 );
@@ -311,9 +298,9 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.post(
-  "/entries/:id/archive",
+  '/entries/:id/archive',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.archiveUnarchive,
   typed.auth(blackboardController.archiveEntry),
 );
@@ -344,9 +331,9 @@ router.post(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.post(
-  "/entries/:id/unarchive",
+  '/entries/:id/unarchive',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.archiveUnarchive,
   typed.auth(blackboardController.unarchiveEntry),
 );
@@ -377,7 +364,7 @@ router.post(
  *         $ref: '#/components/responses/BadRequestV2'
  */
 router.post(
-  "/entries/:id/confirm",
+  '/entries/:id/confirm',
   authenticateV2,
   blackboardValidation.confirm,
   typed.auth(blackboardController.confirmEntry),
@@ -407,9 +394,9 @@ router.post(
  *               $ref: '#/components/schemas/ConfirmationStatusResponseV2'
  */
 router.get(
-  "/entries/:id/confirmations",
+  '/entries/:id/confirmations',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.getById,
   typed.auth(blackboardController.getConfirmationStatus),
 );
@@ -439,7 +426,7 @@ router.get(
  *               $ref: '#/components/schemas/DashboardEntriesResponseV2'
  */
 router.get(
-  "/dashboard",
+  '/dashboard',
   authenticateV2,
   blackboardValidation.dashboard,
   typed.auth(blackboardController.getDashboardEntries),
@@ -461,11 +448,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/TagsResponseV2'
  */
-router.get(
-  "/tags",
-  authenticateV2,
-  typed.auth(blackboardController.getAllTags),
-);
+router.get('/tags', authenticateV2, typed.auth(blackboardController.getAllTags));
 
 /**
  * @swagger
@@ -504,10 +487,10 @@ router.get(
  *         $ref: '#/components/responses/BadRequestV2'
  */
 router.post(
-  "/entries/:id/attachments",
+  '/entries/:id/attachments',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
-  upload.single("attachment"),
+  requireRoleV2(['admin', 'root']),
+  upload.single('attachment'),
   blackboardValidation.uploadAttachment,
   typed.auth(blackboardController.uploadAttachment),
 );
@@ -536,7 +519,7 @@ router.post(
  *               $ref: '#/components/schemas/AttachmentsResponseV2'
  */
 router.get(
-  "/entries/:id/attachments",
+  '/entries/:id/attachments',
   authenticateV2,
   blackboardValidation.getAttachments,
   typed.auth(blackboardController.getAttachments),
@@ -569,7 +552,7 @@ router.get(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.get(
-  "/attachments/:attachmentId",
+  '/attachments/:attachmentId',
   authenticateV2,
   blackboardValidation.downloadAttachment,
   typed.auth(blackboardController.downloadAttachment),
@@ -601,9 +584,9 @@ router.get(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.delete(
-  "/attachments/:attachmentId",
+  '/attachments/:attachmentId',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   blackboardValidation.deleteAttachment,
   typed.auth(blackboardController.deleteAttachment),
 );

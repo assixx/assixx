@@ -6,21 +6,19 @@
  *   - name: Shifts v2
  *     description: Shift planning and management API v2
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
-import { requireRoleV2 } from "../../../middleware/v2/roleCheck.middleware";
-import { typed } from "../../../utils/routeHandlers";
-
-import * as shiftsController from "./shifts.controller";
-import { shiftsValidation } from "./shifts.validation";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
+import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware';
+import { typed } from '../../../utils/routeHandlers';
+import * as shiftsController from './shifts.controller';
+import { shiftsValidation } from './shifts.validation';
 
 const router = Router();
 
 // Route constants
 const ROUTES = {
-  TEMPLATE_BY_ID: "/templates/:id",
+  TEMPLATE_BY_ID: '/templates/:id',
 } as const;
 
 // ============= SHIFTS CRUD =============
@@ -95,7 +93,7 @@ const ROUTES = {
  *               $ref: '#/components/schemas/ShiftListResponseV2'
  */
 router.get(
-  "/",
+  '/',
   authenticateV2,
   shiftsValidation.listShifts,
   typed.auth(shiftsController.listShifts),
@@ -118,11 +116,7 @@ router.get(
  *             schema:
  *               $ref: '#/components/schemas/TemplateListResponseV2'
  */
-router.get(
-  "/templates",
-  authenticateV2,
-  typed.auth(shiftsController.listTemplates),
-);
+router.get('/templates', authenticateV2, typed.auth(shiftsController.listTemplates));
 
 /**
  * /api/v2/shifts/templates/{id}:
@@ -177,9 +171,9 @@ router.get(
  *               $ref: '#/components/schemas/TemplateResponseV2'
  */
 router.post(
-  "/templates",
+  '/templates',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.createTemplate,
   typed.auth(shiftsController.createTemplate),
 );
@@ -217,7 +211,7 @@ router.post(
 router.put(
   ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.updateTemplate,
   typed.auth(shiftsController.updateTemplate),
 );
@@ -245,7 +239,7 @@ router.put(
 router.delete(
   ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.deleteTemplate,
   typed.auth(shiftsController.deleteTemplate),
 );
@@ -280,7 +274,7 @@ router.delete(
  *               $ref: '#/components/schemas/SwapRequestListResponseV2'
  */
 router.get(
-  "/swap-requests",
+  '/swap-requests',
   authenticateV2,
   shiftsValidation.listSwapRequests,
   typed.auth(shiftsController.listSwapRequests),
@@ -312,7 +306,7 @@ router.get(
  *         description: Shift not found
  */
 router.post(
-  "/swap-requests",
+  '/swap-requests',
   authenticateV2,
   shiftsValidation.createSwapRequest,
   typed.auth(shiftsController.createSwapRequest),
@@ -351,9 +345,9 @@ router.post(
  *         description: Swap request not found
  */
 router.put(
-  "/swap-requests/:id/status",
+  '/swap-requests/:id/status',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.updateSwapRequestStatus,
   typed.auth(shiftsController.updateSwapRequestStatus),
 );
@@ -398,7 +392,7 @@ router.put(
  *         description: Invalid date range
  */
 router.get(
-  "/overtime",
+  '/overtime',
   authenticateV2,
   shiftsValidation.getOvertimeReport,
   typed.auth(shiftsController.getOvertimeReport),
@@ -461,9 +455,9 @@ router.get(
  *         description: Excel export not yet implemented
  */
 router.get(
-  "/export",
+  '/export',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.exportShifts,
   typed.auth(shiftsController.exportShifts),
 );
@@ -495,7 +489,7 @@ router.get(
  *         description: Shift not found
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2,
   shiftsValidation.getShiftById,
   typed.auth(shiftsController.getShiftById),
@@ -523,9 +517,9 @@ router.get(
  *               $ref: '#/components/schemas/ShiftResponseV2'
  */
 router.post(
-  "/",
+  '/',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.createShift,
   typed.auth(shiftsController.createShift),
 );
@@ -561,9 +555,9 @@ router.post(
  *         description: Shift not found
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.updateShift,
   typed.auth(shiftsController.updateShift),
 );
@@ -589,9 +583,9 @@ router.put(
  *         description: Shift not found
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   shiftsValidation.deleteShift,
   typed.auth(shiftsController.deleteShift),
 );

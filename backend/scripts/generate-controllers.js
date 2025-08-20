@@ -1,28 +1,25 @@
 #!/usr/bin/env node
 
-const fs = require("fs").promises;
-const path = require("path");
+const fs = require('fs').promises;
+const path = require('path');
 
 // Liste der zu generierenden Controller/Services
 const features = [
-  { name: "blackboard", model: "Blackboard" },
-  { name: "calendar", model: "Calendar" },
-  { name: "kvp", model: "Kvp" },
-  { name: "survey", model: "Survey" },
-  { name: "team", model: "Team" },
-  { name: "department", model: "Department" },
-  { name: "shift", model: "Shift" },
-  { name: "tenant", model: "Tenant" },
-  { name: "feature", model: "Feature" },
-  { name: "admin", model: "AdminLog" },
-  { name: "employee", model: "User" },
+  { name: 'blackboard', model: 'Blackboard' },
+  { name: 'calendar', model: 'Calendar' },
+  { name: 'kvp', model: 'Kvp' },
+  { name: 'survey', model: 'Survey' },
+  { name: 'team', model: 'Team' },
+  { name: 'department', model: 'Department' },
+  { name: 'shift', model: 'Shift' },
+  { name: 'tenant', model: 'Tenant' },
+  { name: 'feature', model: 'Feature' },
+  { name: 'admin', model: 'AdminLog' },
+  { name: 'employee', model: 'User' },
 ];
 
 // Service Template
-const serviceTemplate = (
-  name,
-  model,
-) => `const ${model} = require('../models/${name}');
+const serviceTemplate = (name, model) => `const ${model} = require('../models/${name}');
 const db = require('../database');
 
 class ${model}Service {
@@ -209,14 +206,11 @@ module.exports = new ${model}Controller();`;
 
 // Generiere alle Controller und Services
 async function generateAll() {
-  const controllersPath = path.join(__dirname, "../src/controllers");
-  const servicesPath = path.join(__dirname, "../src/services");
+  const controllersPath = path.join(__dirname, '../src/controllers');
+  const servicesPath = path.join(__dirname, '../src/services');
 
   for (const feature of features) {
-    const controllerFile = path.join(
-      controllersPath,
-      `${feature.name}.controller.js`,
-    );
+    const controllerFile = path.join(controllersPath, `${feature.name}.controller.js`);
     const serviceFile = path.join(servicesPath, `${feature.name}.service.js`);
 
     // Prüfe ob bereits existiert
@@ -225,10 +219,7 @@ async function generateAll() {
       console.info(`✓ ${feature.name}.controller.js bereits vorhanden`);
     } catch {
       // Erstelle Controller
-      await fs.writeFile(
-        controllerFile,
-        controllerTemplate(feature.name, feature.model),
-      );
+      await fs.writeFile(controllerFile, controllerTemplate(feature.name, feature.model));
       console.info(`✓ ${feature.name}.controller.js erstellt`);
     }
 
@@ -237,15 +228,12 @@ async function generateAll() {
       console.info(`✓ ${feature.name}.service.js bereits vorhanden`);
     } catch {
       // Erstelle Service
-      await fs.writeFile(
-        serviceFile,
-        serviceTemplate(feature.name, feature.model),
-      );
+      await fs.writeFile(serviceFile, serviceTemplate(feature.name, feature.model));
       console.info(`✓ ${feature.name}.service.js erstellt`);
     }
   }
 
-  console.info("\n✅ Alle Controller und Services generiert!");
+  console.info('\n✅ Alle Controller und Services generiert!');
 }
 
 // Führe Generation aus

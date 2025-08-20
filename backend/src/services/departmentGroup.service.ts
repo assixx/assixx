@@ -2,14 +2,8 @@
  * Department Group Service
  * Manages hierarchical department groups
  */
-
-import {
-  execute,
-  getConnection,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger.js";
+import { ResultSetHeader, RowDataPacket, execute, getConnection } from '../utils/db';
+import { logger } from '../utils/logger.js';
 
 interface DepartmentGroup {
   id: number;
@@ -48,13 +42,9 @@ class DepartmentGroupService {
     try {
       // Check for circular dependencies if parent group is specified
       if (parentGroupId != null && parentGroupId !== 0) {
-        const hasCircular = await this.checkCircularDependency(
-          parentGroupId,
-          0,
-          tenantId,
-        );
+        const hasCircular = await this.checkCircularDependency(parentGroupId, 0, tenantId);
         if (hasCircular) {
-          throw new Error("Circular dependency detected");
+          throw new Error('Circular dependency detected');
         }
       }
 
@@ -66,13 +56,11 @@ class DepartmentGroupService {
 
       return result.insertId;
     } catch (error: unknown) {
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
-        logger.error(
-          `Group name '${name}' already exists for tenant ${tenantId}`,
-        );
-        throw new Error("Group name already exists");
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+        logger.error(`Group name '${name}' already exists for tenant ${tenantId}`);
+        throw new Error('Group name already exists');
       }
-      logger.error("Error creating department group:", error);
+      logger.error('Error creating department group:', error);
       return null;
     }
   }
@@ -98,14 +86,9 @@ class DepartmentGroupService {
       await connection.beginTransaction();
 
       // Prepare bulk insert values
-      const values = departmentIds.map((deptId) => [
-        tenantId,
-        groupId,
-        deptId,
-        addedBy,
-      ]);
+      const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, addedBy]);
 
-      const placeholders = departmentIds.map(() => "(?, ?, ?, ?)").join(", ");
+      const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
       // Insert with ON DUPLICATE KEY UPDATE to handle existing assignments
       await connection.execute(
@@ -119,7 +102,7 @@ class DepartmentGroupService {
       return true;
     } catch (error: unknown) {
       await connection.rollback();
-      logger.error("Error adding departments to group:", error);
+      logger.error('Error adding departments to group:', error);
       return false;
     } finally {
       connection.release();
@@ -140,7 +123,7 @@ class DepartmentGroupService {
     if (departmentIds.length === 0) return true;
 
     try {
-      const placeholders = departmentIds.map(() => "?").join(", ");
+      const placeholders = departmentIds.map(() => '?').join(', ');
 
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM department_group_members 
@@ -150,7 +133,7 @@ class DepartmentGroupService {
 
       return result.affectedRows > 0;
     } catch (error: unknown) {
-      logger.error("Error removing departments from group:", error);
+      logger.error('Error removing departments from group:', error);
       return false;
     }
   }
@@ -188,10 +171,7 @@ class DepartmentGroupService {
 
       // Get departments from subgroups if requested
       if (includeSubgroups) {
-        const subgroupDepts = await this.getSubgroupDepartments(
-          groupId,
-          tenantId,
-        );
+        const subgroupDepts = await this.getSubgroupDepartments(groupId, tenantId);
         subgroupDepts.forEach((dept) => {
           departments.set(dept.id, dept);
         });
@@ -199,7 +179,7 @@ class DepartmentGroupService {
 
       return [...departments.values()];
     } catch (error: unknown) {
-      logger.error("Error getting group departments:", error);
+      logger.error('Error getting group departments:', error);
       return [];
     }
   }
@@ -308,7 +288,7 @@ class DepartmentGroupService {
 
       return rootGroups;
     } catch (error: unknown) {
-      logger.error("Error getting group hierarchy:", error);
+      logger.error('Error getting group hierarchy:', error);
       return [];
     }
   }
@@ -336,10 +316,10 @@ class DepartmentGroupService {
 
       return result.affectedRows > 0;
     } catch (error: unknown) {
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
-        throw new Error("Group name already exists");
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+        throw new Error('Group name already exists');
       }
-      logger.error("Error updating department group:", error);
+      logger.error('Error updating department group:', error);
       return false;
     }
   }
@@ -363,7 +343,7 @@ class DepartmentGroupService {
       );
 
       if ((permissions as RowDataPacket[])[0].count > 0) {
-        throw new Error("Cannot delete group with active admin permissions");
+        throw new Error('Cannot delete group with active admin permissions');
       }
 
       // Check if group has subgroups
@@ -374,7 +354,7 @@ class DepartmentGroupService {
       );
 
       if ((subgroups as RowDataPacket[])[0].count > 0) {
-        throw new Error("Cannot delete group with subgroups");
+        throw new Error('Cannot delete group with subgroups');
       }
 
       // Delete department assignments
@@ -395,7 +375,7 @@ class DepartmentGroupService {
       return (result as ResultSetHeader).affectedRows > 0;
     } catch (error: unknown) {
       await connection.rollback();
-      logger.error("Error deleting department group:", error);
+      logger.error('Error deleting department group:', error);
       throw error;
     } finally {
       connection.release();
@@ -425,11 +405,7 @@ class DepartmentGroupService {
       return false;
     }
 
-    return this.checkCircularDependency(
-      parents[0].parent_group_id as number,
-      targetId,
-      tenantId,
-    );
+    return this.checkCircularDependency(parents[0].parent_group_id as number, targetId, tenantId);
   }
 }
 

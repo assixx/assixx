@@ -2,31 +2,25 @@
  * Route Handler Type Utilities
  * Provides type-safe wrappers for Express route handlers with custom request types
  */
-
-import { ParamsDictionary } from "express-serve-static-core";
-import { ParsedQs } from "qs";
-
-import { Request, Response, NextFunction, RequestHandler } from "express";
+import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
 
 import {
   AuthenticatedRequest,
-  ParamsRequest,
   BodyRequest,
-  QueryRequest,
   FullRequest,
   OptionalAuthRequest,
+  ParamsRequest,
   PublicRequest,
-} from "../types/request.types";
+  QueryRequest,
+} from '../types/request.types';
 
 /**
  * Type-safe wrapper for authenticated route handlers
  */
 export function authHandler(
-  handler: (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: AuthenticatedRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
     return handler(req as AuthenticatedRequest, res, next);
@@ -37,11 +31,7 @@ export function authHandler(
  * Type-safe wrapper for route handlers with params
  */
 export function paramsHandler<P extends ParamsDictionary = ParamsDictionary>(
-  handler: (
-    req: ParamsRequest<P>,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: ParamsRequest<P>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<P> {
   return (async (req: Request<P>, res: Response, next: NextFunction) => {
     return handler(req as ParamsRequest<P>, res, next);
@@ -52,17 +42,9 @@ export function paramsHandler<P extends ParamsDictionary = ParamsDictionary>(
  * Type-safe wrapper for route handlers with body
  */
 export function bodyHandler<B = unknown>(
-  handler: (
-    req: BodyRequest<B>,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: BodyRequest<B>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<ParamsDictionary, unknown, B> {
-  return (async (
-    req: Request<ParamsDictionary, unknown, B>,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  return (async (req: Request<ParamsDictionary, unknown, B>, res: Response, next: NextFunction) => {
     return handler(req as BodyRequest<B>, res, next);
   }) as RequestHandler<ParamsDictionary, unknown, B>;
 }
@@ -71,11 +53,7 @@ export function bodyHandler<B = unknown>(
  * Type-safe wrapper for route handlers with query
  */
 export function queryHandler<Q extends ParsedQs = ParsedQs>(
-  handler: (
-    req: QueryRequest<Q>,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: QueryRequest<Q>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<ParamsDictionary, unknown, unknown, Q> {
   return (async (
     req: Request<ParamsDictionary, unknown, unknown, Q>,
@@ -89,21 +67,14 @@ export function queryHandler<Q extends ParsedQs = ParsedQs>(
 /**
  * Type-safe wrapper for route handlers with params and body
  */
-export function paramsBodyHandler<
-  P extends ParamsDictionary = ParamsDictionary,
-  B = unknown,
->(
+export function paramsBodyHandler<P extends ParamsDictionary = ParamsDictionary, B = unknown>(
   handler: (
     req: ParamsRequest<P> & BodyRequest<B>,
     res: Response,
     next: NextFunction,
   ) => void | Promise<void>,
 ): RequestHandler<P, unknown, B> {
-  return (async (
-    req: Request<P, unknown, B>,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  return (async (req: Request<P, unknown, B>, res: Response, next: NextFunction) => {
     return handler(req as ParamsRequest<P> & BodyRequest<B>, res, next);
   }) as RequestHandler<P, unknown, B>;
 }
@@ -116,17 +87,9 @@ export function fullHandler<
   Q extends ParsedQs = ParsedQs,
   P extends ParamsDictionary = ParamsDictionary,
 >(
-  handler: (
-    req: FullRequest<B, Q, P>,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: FullRequest<B, Q, P>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<P, unknown, B, Q> {
-  return (async (
-    req: Request<P, unknown, B, Q>,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  return (async (req: Request<P, unknown, B, Q>, res: Response, next: NextFunction) => {
     return handler(req as FullRequest<B, Q, P>, res, next);
   }) as RequestHandler<P, unknown, B, Q>;
 }
@@ -135,11 +98,7 @@ export function fullHandler<
  * Type-safe wrapper for public route handlers
  */
 export function publicHandler(
-  handler: (
-    req: PublicRequest,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: PublicRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
     return handler(req as PublicRequest, res, next);
@@ -150,11 +109,7 @@ export function publicHandler(
  * Type-safe wrapper for optional auth route handlers
  */
 export function optionalAuthHandler(
-  handler: (
-    req: OptionalAuthRequest,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  handler: (req: OptionalAuthRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
     return handler(req as OptionalAuthRequest, res, next);
@@ -256,15 +211,13 @@ export const typed = {
  * Type guard to check if request is authenticated
  */
 export function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return "user" in req && req.user != null;
+  return 'user' in req && req.user != null;
 }
 
 /**
  * Type guard to check if request has params
  */
-export function hasParams<P extends ParamsDictionary>(
-  req: Request,
-): req is ParamsRequest<P> {
+export function hasParams<P extends ParamsDictionary>(req: Request): req is ParamsRequest<P> {
   return Object.keys(req.params).length > 0;
 }
 
@@ -279,11 +232,7 @@ export function hasBody<B>(req: Request): req is BodyRequest<B> {
  * Middleware wrapper that ensures type compatibility
  */
 export function middlewareWrapper(
-  middleware: (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => void | Promise<void>,
+  middleware: (req: Request, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
     return middleware(req, res, next);

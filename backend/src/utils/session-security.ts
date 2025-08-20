@@ -2,16 +2,11 @@
  * Session Security Best Practices
  * Implementiert Security-Monitoring ohne User Experience zu beeinträchtigen
  */
-
-import { Request } from "express";
+import { Request } from 'express';
 
 interface SecurityEvent {
   userId: number;
-  eventType:
-    | "login"
-    | "fingerprint_change"
-    | "ip_change"
-    | "suspicious_activity";
+  eventType: 'login' | 'fingerprint_change' | 'ip_change' | 'suspicious_activity';
   details: Record<string, unknown>;
   timestamp: Date;
   ip?: string;
@@ -61,10 +56,10 @@ export const SessionSecurity = {
     // In Produktion: In Datenbank speichern
     // Für jetzt: Nur console.info
 
-    if (event.eventType === "suspicious_activity") {
-      console.warn("[SECURITY-ALERT]", event);
+    if (event.eventType === 'suspicious_activity') {
+      console.warn('[SECURITY-ALERT]', event);
     } else {
-      console.info("[SECURITY-LOG]", {
+      console.info('[SECURITY-LOG]', {
         userId: event.userId,
         type: event.eventType,
         time: event.timestamp,
@@ -81,21 +76,21 @@ export const SessionSecurity = {
     ipChanged: boolean;
     countryChanged: boolean;
     deviceChanged: boolean;
-  }): "allow" | "verify" | "block" {
+  }): 'allow' | 'verify' | 'block' {
     // Normal changes → Allow
     if (changes.fingerprintChanged && !changes.countryChanged) {
-      return "allow"; // Browser update, neue Extension, etc.
+      return 'allow'; // Browser update, neue Extension, etc.
     }
 
     // Suspicious → Verify (z.B. 2FA)
     if (changes.countryChanged && changes.deviceChanged) {
-      return "verify"; // Reise + neues Gerät
+      return 'verify'; // Reise + neues Gerät
     }
 
     // Highly suspicious → Block
     // Nur in extremen Fällen!
 
-    return "allow";
+    return 'allow';
   },
 } as const;
 

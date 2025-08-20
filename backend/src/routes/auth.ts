@@ -5,16 +5,15 @@
  *   name: Authentication
  *   description: User authentication and authorization endpoints
  */
+import express, { Request, Response, Router } from 'express';
 
-import express, { Router, Request, Response } from "express";
-
-import authController from "../controllers/auth.controller";
-import { security } from "../middleware/security";
-import { validationSchemas } from "../middleware/validation";
-import User from "../models/user";
-import { successResponse, errorResponse } from "../types/response.types";
-import { logger } from "../utils/logger";
-import { typed } from "../utils/routeHandlers";
+import authController from '../controllers/auth.controller';
+import { security } from '../middleware/security';
+import { validationSchemas } from '../middleware/validation';
+import User from '../models/user';
+import { errorResponse, successResponse } from '../types/response.types';
+import { logger } from '../utils/logger';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
 
@@ -65,7 +64,7 @@ const router: Router = express.Router();
  *         description: Server error
  */
 router.get(
-  "/validate",
+  '/validate',
   ...security.user(),
   typed.auth((req, res) => {
     try {
@@ -81,14 +80,12 @@ router.get(
               tenant_id: req.user.tenant_id,
             },
           },
-          "Token is valid",
+          'Token is valid',
         ),
       );
     } catch (error: unknown) {
-      logger.error("Token validation error:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler bei der Token-Validierung", 500));
+      logger.error('Token validation error:', error);
+      res.status(500).json(errorResponse('Fehler bei der Token-Validierung', 500));
     }
   }),
 );
@@ -99,14 +96,14 @@ router.get(
  * @access Private
  */
 router.get(
-  "/user",
+  '/user',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       const user = await User.findById(req.user.id, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json(errorResponse("User not found", 404));
+        res.status(404).json(errorResponse('User not found', 404));
         return;
       }
 
@@ -115,8 +112,8 @@ router.get(
 
       res.json(successResponse(userWithoutPassword));
     } catch (error: unknown) {
-      console.error("Error in get user profile:", error);
-      res.status(500).json(errorResponse("Server error", 500));
+      console.error('Error in get user profile:', error);
+      res.status(500).json(errorResponse('Server error', 500));
     }
   }),
 );
@@ -202,7 +199,7 @@ router.get(
  *         description: Server error
  */
 router.post(
-  "/login",
+  '/login',
   ...security.auth(validationSchemas.login),
   async (req: Request, res: Response) => authController.login(req, res),
 );
@@ -279,7 +276,7 @@ router.post(
  *         description: Server error
  */
 router.post(
-  "/register",
+  '/register',
   ...security.auth(validationSchemas.signup),
   async (req: Request, res: Response) => authController.register(req, res),
 );
@@ -311,7 +308,7 @@ router.post(
  *                   example: Logout successful
  */
 router.post(
-  "/logout",
+  '/logout',
   ...security.user(),
   typed.auth(async (req, res) => authController.logout(req, res)),
 );
@@ -322,7 +319,7 @@ router.post(
  * @access Private
  */
 router.get(
-  "/me",
+  '/me',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -330,7 +327,7 @@ router.get(
       const user = await User.findById(req.user.id, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json(errorResponse("User not found", 404));
+        res.status(404).json(errorResponse('User not found', 404));
         return;
       }
 
@@ -338,22 +335,20 @@ router.get(
       let tenantName = null;
       if (req.user.tenant_id) {
         try {
-          const { query } = await import("../utils/db");
-          const [tenantRows] = await query(
-            "SELECT company_name FROM tenants WHERE id = ?",
-            [req.user.tenant_id],
-          );
+          const { query } = await import('../utils/db');
+          const [tenantRows] = await query('SELECT company_name FROM tenants WHERE id = ?', [
+            req.user.tenant_id,
+          ]);
 
           if (Array.isArray(tenantRows) && tenantRows.length > 0) {
-            tenantName = (tenantRows[0] as { company_name: string })
-              .company_name;
+            tenantName = (tenantRows[0] as { company_name: string }).company_name;
             // Remove TEST_DATA_PREFIX if present for test compatibility
-            if (tenantName.startsWith("__AUTOTEST__")) {
-              tenantName = tenantName.substring("__AUTOTEST__".length);
+            if (tenantName.startsWith('__AUTOTEST__')) {
+              tenantName = tenantName.substring('__AUTOTEST__'.length);
             }
           }
         } catch (tenantError: unknown) {
-          logger.error("Error fetching tenant info:", tenantError);
+          logger.error('Error fetching tenant info:', tenantError);
           // Continue without tenant name
         }
       }
@@ -372,8 +367,8 @@ router.get(
         }),
       );
     } catch (error: unknown) {
-      logger.error("Error in /api/auth/me:", error);
-      res.status(500).json(errorResponse("Failed to fetch user info", 500));
+      logger.error('Error in /api/auth/me:', error);
+      res.status(500).json(errorResponse('Failed to fetch user info', 500));
     }
   }),
 );
@@ -384,10 +379,10 @@ router.get(
  * @access Public
  */
 router.get(
-  "/logout",
+  '/logout',
   ...security.public(),
   typed.public((_req, res) => {
-    res.json(successResponse(null, "Logout successful"));
+    res.json(successResponse(null, 'Logout successful'));
   }),
 );
 

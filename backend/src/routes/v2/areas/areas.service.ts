@@ -2,31 +2,18 @@
  * Areas Service v2
  * Business logic for area/location management
  */
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
-import { execute } from "../../../utils/db.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import {
-  Area,
-  CreateAreaRequest,
-  UpdateAreaRequest,
-  AreaFilters,
-} from "./types.js";
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute } from '../../../utils/db.js';
+import { Area, AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
 
 interface AreaRow extends RowDataPacket {
   id: number;
   tenant_id: number;
   name: string;
   description?: string;
-  type:
-    | "building"
-    | "warehouse"
-    | "office"
-    | "production"
-    | "outdoor"
-    | "other";
+  type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   parent_id?: number;
   address?: string;
@@ -43,10 +30,7 @@ interface AreaRow extends RowDataPacket {
  * @param tenantId
  * @param filters
  */
-export async function getAreas(
-  tenantId: number,
-  filters?: AreaFilters,
-): Promise<Area[]> {
+export async function getAreas(tenantId: number, filters?: AreaFilters): Promise<Area[]> {
   let query = `
     SELECT
       a.*,
@@ -60,31 +44,31 @@ export async function getAreas(
 
   const params: (string | number | boolean)[] = [tenantId];
 
-  if (filters?.type !== undefined && filters.type !== "") {
-    query += " AND a.type = ?";
+  if (filters?.type !== undefined && filters.type !== '') {
+    query += ' AND a.type = ?';
     params.push(filters.type);
   }
 
   if (filters?.isActive !== undefined) {
-    query += " AND a.is_active = ?";
+    query += ' AND a.is_active = ?';
     params.push(filters.isActive ? 1 : 0);
   }
 
   if (filters?.parentId !== undefined) {
     if (filters.parentId === null) {
-      query += " AND a.parent_id IS NULL";
+      query += ' AND a.parent_id IS NULL';
     } else {
-      query += " AND a.parent_id = ?";
+      query += ' AND a.parent_id = ?';
       params.push(filters.parentId);
     }
   }
 
-  if (filters?.search !== undefined && filters.search !== "") {
-    query += " AND (a.name LIKE ? OR a.description LIKE ?)";
+  if (filters?.search !== undefined && filters.search !== '') {
+    query += ' AND (a.name LIKE ? OR a.description LIKE ?)';
     params.push(`%${filters.search}%`, `%${filters.search}%`);
   }
 
-  query += " GROUP BY a.id ORDER BY a.name";
+  query += ' GROUP BY a.id ORDER BY a.name';
 
   const [rows] = await execute<AreaRow[]>(query, params);
 
@@ -112,10 +96,7 @@ export async function getAreas(
  * @param id
  * @param tenantId
  */
-export async function getAreaById(
-  id: number,
-  tenantId: number,
-): Promise<Area | null> {
+export async function getAreaById(id: number, tenantId: number): Promise<Area | null> {
   const query = `
     SELECT
       a.*,
@@ -222,7 +203,7 @@ export async function createArea(
   if (data.parentId !== undefined && data.parentId !== 0) {
     const parentExists = await getAreaById(data.parentId, tenantId);
     if (!parentExists) {
-      throw new ServiceError("PARENT_NOT_FOUND", "Parent area not found", 404);
+      throw new ServiceError('PARENT_NOT_FOUND', 'Parent area not found', 404);
     }
   }
 
@@ -237,7 +218,7 @@ export async function createArea(
     tenantId,
     data.name,
     data.description ?? null,
-    data.type ?? "other",
+    data.type ?? 'other',
     data.capacity ?? null,
     data.parentId ?? null,
     data.address ?? null,
@@ -247,7 +228,7 @@ export async function createArea(
 
   const newArea = await getAreaById(result.insertId, tenantId);
   if (!newArea) {
-    throw new ServiceError("CREATE_FAILED", "Failed to create area", 500);
+    throw new ServiceError('CREATE_FAILED', 'Failed to create area', 500);
   }
 
   return newArea;
@@ -267,21 +248,17 @@ export async function updateArea(
   // Check if area exists
   const existing = await getAreaById(id, tenantId);
   if (!existing) {
-    throw new ServiceError("NOT_FOUND", "Area not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Area not found', 404);
   }
 
   // Validate parent area if provided
   if (data.parentId !== undefined && data.parentId !== null) {
     if (data.parentId === id) {
-      throw new ServiceError(
-        "INVALID_PARENT",
-        "Area cannot be its own parent",
-        400,
-      );
+      throw new ServiceError('INVALID_PARENT', 'Area cannot be its own parent', 400);
     }
     const parentExists = await getAreaById(data.parentId, tenantId);
     if (!parentExists) {
-      throw new ServiceError("PARENT_NOT_FOUND", "Parent area not found", 404);
+      throw new ServiceError('PARENT_NOT_FOUND', 'Parent area not found', 404);
     }
   }
 
@@ -289,31 +266,31 @@ export async function updateArea(
   const values: (string | number | boolean | null)[] = [];
 
   if (data.name !== undefined) {
-    updates.push("name = ?");
+    updates.push('name = ?');
     values.push(data.name);
   }
   if (data.description !== undefined) {
-    updates.push("description = ?");
+    updates.push('description = ?');
     values.push(data.description);
   }
   if (data.type !== undefined) {
-    updates.push("type = ?");
+    updates.push('type = ?');
     values.push(data.type);
   }
   if (data.capacity !== undefined) {
-    updates.push("capacity = ?");
+    updates.push('capacity = ?');
     values.push(data.capacity);
   }
   if (data.parentId !== undefined) {
-    updates.push("parent_id = ?");
+    updates.push('parent_id = ?');
     values.push(data.parentId);
   }
   if (data.address !== undefined) {
-    updates.push("address = ?");
+    updates.push('address = ?');
     values.push(data.address);
   }
   if (data.isActive !== undefined) {
-    updates.push("is_active = ?");
+    updates.push('is_active = ?');
     values.push(data.isActive ? 1 : 0);
   }
 
@@ -324,7 +301,7 @@ export async function updateArea(
   values.push(id, tenantId);
   const query = `
     UPDATE areas
-    SET ${updates.join(", ")}, updated_at = CURRENT_TIMESTAMP
+    SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND tenant_id = ?
   `;
 
@@ -332,7 +309,7 @@ export async function updateArea(
 
   const updated = await getAreaById(id, tenantId);
   if (!updated) {
-    throw new ServiceError("UPDATE_FAILED", "Failed to update area", 500);
+    throw new ServiceError('UPDATE_FAILED', 'Failed to update area', 500);
   }
 
   return updated;
@@ -347,28 +324,21 @@ export async function deleteArea(id: number, tenantId: number): Promise<void> {
   // Check if area exists
   const existing = await getAreaById(id, tenantId);
   if (!existing) {
-    throw new ServiceError("NOT_FOUND", "Area not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Area not found', 404);
   }
 
   // Check if area has children
   const [children] = await execute<RowDataPacket[]>(
-    "SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ?",
+    'SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ?',
     [id, tenantId],
   );
 
   if (children.length > 0) {
-    throw new ServiceError(
-      "HAS_CHILDREN",
-      "Cannot delete area with child areas",
-      400,
-    );
+    throw new ServiceError('HAS_CHILDREN', 'Cannot delete area with child areas', 400);
   }
 
   // Hard delete - wirklich löschen
-  await execute("DELETE FROM areas WHERE id = ? AND tenant_id = ?", [
-    id,
-    tenantId,
-  ]);
+  await execute('DELETE FROM areas WHERE id = ? AND tenant_id = ?', [id, tenantId]);
 }
 
 /**

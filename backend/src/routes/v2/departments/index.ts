@@ -1,16 +1,15 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { departmentController } from "./departments.controller.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { departmentController } from './departments.controller.js';
 import {
   createDepartmentValidation,
-  updateDepartmentValidation,
   departmentIdValidation,
   getDepartmentsValidation,
-} from "./departments.validation.js";
+  updateDepartmentValidation,
+} from './departments.validation.js';
 
 const router = Router();
 
@@ -46,7 +45,7 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/",
+  '/',
   validate(getDepartmentsValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartments(req, res, next);
@@ -75,7 +74,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/stats",
+  '/stats',
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentStats(req, res, next);
   }),
@@ -114,7 +113,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   validate(departmentIdValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentById(req, res, next);
@@ -153,7 +152,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/",
+  '/',
   validate(createDepartmentValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.createDepartment(req, res, next);
@@ -201,7 +200,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.put(
-  "/:id",
+  '/:id',
   validate(updateDepartmentValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.updateDepartment(req, res, next);
@@ -243,7 +242,7 @@ router.put(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:id",
+  '/:id',
   validate(departmentIdValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.deleteDepartment(req, res, next);
@@ -283,7 +282,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id/members",
+  '/:id/members',
   validate(departmentIdValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentMembers(req, res, next);

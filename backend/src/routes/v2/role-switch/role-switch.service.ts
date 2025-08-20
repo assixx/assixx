@@ -2,14 +2,13 @@
  * Role Switch Service Layer
  * Handles business logic for role switching with strict security checks
  */
+import jwt from 'jsonwebtoken';
 
-import jwt from "jsonwebtoken";
-
-import RootLog from "../../../models/rootLog";
-import User, { DbUser } from "../../../models/user.js";
+import RootLog from '../../../models/rootLog';
+import User, { DbUser } from '../../../models/user.js';
 
 // Use same JWT_SECRET as auth middleware
-const JWT_SECRET = process.env.JWT_SECRET ?? "";
+const JWT_SECRET = process.env.JWT_SECRET ?? '';
 
 export interface RoleSwitchResult {
   token: string;
@@ -41,7 +40,7 @@ export class ServiceError extends Error {
     public code?: string,
   ) {
     super(message);
-    this.name = "ServiceError";
+    this.name = 'ServiceError';
   }
 }
 
@@ -55,17 +54,10 @@ export class RoleSwitchService {
    * @param userId
    * @param tenantId
    */
-  private static async verifyUserTenant(
-    userId: number,
-    tenantId: number,
-  ): Promise<DbUser> {
+  private static async verifyUserTenant(userId: number, tenantId: number): Promise<DbUser> {
     const user = await User.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError(
-        "User not found or tenant mismatch",
-        404,
-        "USER_NOT_FOUND",
-      );
+      throw new ServiceError('User not found or tenant mismatch', 404, 'USER_NOT_FOUND');
     }
 
     // DOUBLE CHECK: Ensure tenant_id matches
@@ -73,7 +65,7 @@ export class RoleSwitchService {
       console.error(
         `SECURITY VIOLATION: User ${userId} tried to access tenant ${tenantId} but belongs to ${user.tenant_id}`,
       );
-      throw new ServiceError("Unauthorized access", 403, "TENANT_MISMATCH");
+      throw new ServiceError('Unauthorized access', 403, 'TENANT_MISMATCH');
     }
 
     return user;
@@ -86,11 +78,7 @@ export class RoleSwitchService {
    * @param activeRole
    * @param isRoleSwitched
    */
-  private static generateToken(
-    user: DbUser,
-    activeRole: string,
-    isRoleSwitched: boolean,
-  ): string {
+  private static generateToken(user: DbUser, activeRole: string, isRoleSwitched: boolean): string {
     return jwt.sign(
       {
         // User identity - NEVER changes
@@ -106,10 +94,10 @@ export class RoleSwitchService {
         isRoleSwitched: Boolean(isRoleSwitched), // Ensure it's always a boolean
 
         // Token type for v2 auth middleware
-        type: "access" as const,
+        type: 'access' as const,
       },
       JWT_SECRET,
-      { expiresIn: "24h" },
+      { expiresIn: '24h' },
     );
   }
 
@@ -132,7 +120,7 @@ export class RoleSwitchService {
       tenant_id: tenantId,
       user_id: userId,
       action,
-      entity_type: "user",
+      entity_type: 'user',
       entity_id: userId,
       new_values: {
         from_role: fromRole,
@@ -149,19 +137,16 @@ export class RoleSwitchService {
    * @param userId
    * @param tenantId
    */
-  static async switchToEmployee(
-    userId: number,
-    tenantId: number,
-  ): Promise<RoleSwitchResult> {
+  static async switchToEmployee(userId: number, tenantId: number): Promise<RoleSwitchResult> {
     // SECURITY: Verify user and tenant
     const user = await this.verifyUserTenant(userId, tenantId);
 
     // PERMISSION: Only admin and root can switch
-    if (user.role !== "admin" && user.role !== "root") {
+    if (user.role !== 'admin' && user.role !== 'root') {
       throw new ServiceError(
-        "Only admins and root users can switch roles",
+        'Only admins and root users can switch roles',
         403,
-        "INSUFFICIENT_PERMISSIONS",
+        'INSUFFICIENT_PERMISSIONS',
       );
     }
 
@@ -169,21 +154,21 @@ export class RoleSwitchService {
     if (!user.position) {
       await User.update(
         user.id,
-        { position: "Mitarbeiter" },
+        { position: 'Mitarbeiter' },
         user.tenant_id as number, // CRITICAL: Use user's tenant_id (verified)
       );
     }
 
     // Generate token
-    const token = this.generateToken(user, "employee", true);
+    const token = this.generateToken(user, 'employee', true);
 
     // Log action
     await this.logRoleSwitch(
       user.tenant_id as number,
       user.id,
       user.role,
-      "employee",
-      "role_switch_to_employee",
+      'employee',
+      'role_switch_to_employee',
     );
 
     return {
@@ -193,11 +178,11 @@ export class RoleSwitchService {
         username: user.username,
         email: user.email,
         role: user.role, // Original role preserved
-        activeRole: "employee",
+        activeRole: 'employee',
         tenantId: user.tenant_id as number,
         isRoleSwitched: true,
       },
-      message: "Successfully switched to employee view",
+      message: 'Successfully switched to employee view',
     };
   }
 
@@ -206,19 +191,16 @@ export class RoleSwitchService {
    * @param userId
    * @param tenantId
    */
-  static async switchToOriginalRole(
-    userId: number,
-    tenantId: number,
-  ): Promise<RoleSwitchResult> {
+  static async switchToOriginalRole(userId: number, tenantId: number): Promise<RoleSwitchResult> {
     // SECURITY: Verify user and tenant
     const user = await this.verifyUserTenant(userId, tenantId);
 
     // PERMISSION: Only admin and root can use this
-    if (user.role !== "admin" && user.role !== "root") {
+    if (user.role !== 'admin' && user.role !== 'root') {
       throw new ServiceError(
-        "Only admins and root users can switch roles",
+        'Only admins and root users can switch roles',
         403,
-        "INSUFFICIENT_PERMISSIONS",
+        'INSUFFICIENT_PERMISSIONS',
       );
     }
 
@@ -229,7 +211,7 @@ export class RoleSwitchService {
     await this.logRoleSwitch(
       user.tenant_id as number,
       user.id,
-      "employee",
+      'employee',
       user.role,
       `role_switch_to_${user.role}`,
     );
@@ -254,32 +236,29 @@ export class RoleSwitchService {
    * @param userId
    * @param tenantId
    */
-  static async rootToAdmin(
-    userId: number,
-    tenantId: number,
-  ): Promise<RoleSwitchResult> {
+  static async rootToAdmin(userId: number, tenantId: number): Promise<RoleSwitchResult> {
     // SECURITY: Verify user and tenant
     const user = await this.verifyUserTenant(userId, tenantId);
 
     // PERMISSION: Only root can use this
-    if (user.role !== "root") {
+    if (user.role !== 'root') {
       throw new ServiceError(
-        "Only root users can switch to admin view",
+        'Only root users can switch to admin view',
         403,
-        "INSUFFICIENT_PERMISSIONS",
+        'INSUFFICIENT_PERMISSIONS',
       );
     }
 
     // Generate token
-    const token = this.generateToken(user, "admin", true);
+    const token = this.generateToken(user, 'admin', true);
 
     // Log action
     await this.logRoleSwitch(
       user.tenant_id as number,
       user.id,
-      "root",
-      "admin",
-      "role_switch_root_to_admin",
+      'root',
+      'admin',
+      'role_switch_root_to_admin',
     );
 
     return {
@@ -289,11 +268,11 @@ export class RoleSwitchService {
         username: user.username,
         email: user.email,
         role: user.role, // Still root
-        activeRole: "admin",
+        activeRole: 'admin',
         tenantId: user.tenant_id as number,
         isRoleSwitched: true,
       },
-      message: "Successfully switched to admin view",
+      message: 'Successfully switched to admin view',
     };
   }
 }

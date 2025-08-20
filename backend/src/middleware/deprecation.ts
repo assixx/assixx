@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from 'express';
 
 /**
  * Middleware to add deprecation headers for API v1
@@ -9,12 +9,12 @@ export function deprecationMiddleware(_version: string, sunset: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
     // Check if it's a v1 API endpoint (either /api/v1 or old /api paths without v2)
     if (
-      req.path.startsWith("/api/v1") ||
-      (req.path.startsWith("/api/") && !req.path.startsWith("/api/v2"))
+      req.path.startsWith('/api/v1') ||
+      (req.path.startsWith('/api/') && !req.path.startsWith('/api/v2'))
     ) {
-      res.setHeader("Deprecation", "true");
-      res.setHeader("Sunset", sunset);
-      res.setHeader("Link", '</api/v2>; rel="successor-version"');
+      res.setHeader('Deprecation', 'true');
+      res.setHeader('Sunset', sunset);
+      res.setHeader('Link', '</api/v2>; rel="successor-version"');
     }
     next();
   };

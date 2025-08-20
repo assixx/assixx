@@ -2,22 +2,20 @@
  * Root Controller v2
  * HTTP request handlers for root user operations
  */
+import { Request, Response } from 'express';
 
-import { Request, Response } from "express";
-
-import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { execute } from "../../../utils/db.js";
-import { logger } from "../../../utils/logger.js";
-
-import { rootService } from "./root.service.js";
+import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { execute } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
+import { rootService } from './root.service.js';
 import {
   CreateAdminRequest,
-  UpdateAdminRequest,
   CreateRootUserRequest,
-  UpdateRootUserRequest,
   TenantDeletionRequest,
-} from "./types.js";
+  UpdateAdminRequest,
+  UpdateRootUserRequest,
+} from './types.js';
 
 /**
  *
@@ -51,10 +49,10 @@ export class RootController {
       const admins = await rootService.getAdmins(req.user.tenant_id);
       res.json({ admins });
     } catch (error: unknown) {
-      logger.error("Error getting admins:", error);
+      logger.error('Error getting admins:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve admin users",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve admin users',
       });
     }
   }
@@ -90,18 +88,18 @@ export class RootController {
 
       if (!admin) {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Admin not found",
+          error: 'NOT_FOUND',
+          message: 'Admin not found',
         });
         return;
       }
 
       res.json({ admin });
     } catch (error: unknown) {
-      logger.error("Error getting admin:", error);
+      logger.error('Error getting admin:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve admin",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve admin',
       });
     }
   }
@@ -136,23 +134,23 @@ export class RootController {
       logger.info(`Admin user created: ${data.email} (ID: ${adminId})`);
 
       res.status(201).json({
-        message: "Admin user created successfully",
+        message: 'Admin user created successfully',
         adminId,
       });
     } catch (error: unknown) {
-      logger.error("Error creating admin:", error);
+      logger.error('Error creating admin:', error);
 
-      if ((error as { code: string }).code === "DUPLICATE_ENTRY") {
+      if ((error as { code: string }).code === 'DUPLICATE_ENTRY') {
         res.status(409).json({
-          error: "DUPLICATE_ENTRY",
-          message: "Username or email already exists",
+          error: 'DUPLICATE_ENTRY',
+          message: 'Username or email already exists',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to create admin",
+        error: 'SERVER_ERROR',
+        message: 'Failed to create admin',
       });
     }
   }
@@ -188,27 +186,23 @@ export class RootController {
   async updateAdmin(req: Request, res: Response): Promise<void> {
     try {
       const data: UpdateAdminRequest = req.body;
-      await rootService.updateAdmin(
-        Number.parseInt(req.params.id),
-        data,
-        req.user.tenant_id,
-      );
+      await rootService.updateAdmin(Number.parseInt(req.params.id), data, req.user.tenant_id);
 
-      res.json({ message: "Admin updated successfully" });
+      res.json({ message: 'Admin updated successfully' });
     } catch (error: unknown) {
-      logger.error("Error updating admin:", error);
+      logger.error('Error updating admin:', error);
 
-      if ((error as { code: string }).code === "NOT_FOUND") {
+      if ((error as { code: string }).code === 'NOT_FOUND') {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Admin not found",
+          error: 'NOT_FOUND',
+          message: 'Admin not found',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to update admin",
+        error: 'SERVER_ERROR',
+        message: 'Failed to update admin',
       });
     }
   }
@@ -237,27 +231,24 @@ export class RootController {
    */
   async deleteAdmin(req: Request, res: Response): Promise<void> {
     try {
-      await rootService.deleteAdmin(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-      );
+      await rootService.deleteAdmin(Number.parseInt(req.params.id), req.user.tenant_id);
 
       logger.info(`Admin deleted: ${req.params.id}`);
-      res.json({ message: "Admin deleted successfully" });
+      res.json({ message: 'Admin deleted successfully' });
     } catch (error: unknown) {
-      logger.error("Error deleting admin:", error);
+      logger.error('Error deleting admin:', error);
 
-      if ((error as { code: string }).code === "NOT_FOUND") {
+      if ((error as { code: string }).code === 'NOT_FOUND') {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Admin not found",
+          error: 'NOT_FOUND',
+          message: 'Admin not found',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to delete admin",
+        error: 'SERVER_ERROR',
+        message: 'Failed to delete admin',
       });
     }
   }
@@ -300,19 +291,19 @@ export class RootController {
 
       res.json({ logs });
     } catch (error: unknown) {
-      logger.error("Error getting admin logs:", error);
+      logger.error('Error getting admin logs:', error);
 
-      if ((error as { code: string }).code === "NOT_FOUND") {
+      if ((error as { code: string }).code === 'NOT_FOUND') {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Admin not found",
+          error: 'NOT_FOUND',
+          message: 'Admin not found',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve admin logs",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve admin logs',
       });
     }
   }
@@ -336,10 +327,10 @@ export class RootController {
       const tenants = await rootService.getTenants();
       res.json({ tenants });
     } catch (error: unknown) {
-      logger.error("Error getting tenants:", error);
+      logger.error('Error getting tenants:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve tenants",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve tenants',
       });
     }
   }
@@ -363,10 +354,10 @@ export class RootController {
       const users = await rootService.getRootUsers(req.user.tenant_id);
       res.json({ users });
     } catch (error: unknown) {
-      logger.error("Error getting root users:", error);
+      logger.error('Error getting root users:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve root users",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve root users',
       });
     }
   }
@@ -402,18 +393,18 @@ export class RootController {
 
       if (!user) {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Root user not found",
+          error: 'NOT_FOUND',
+          message: 'Root user not found',
         });
         return;
       }
 
       res.json({ user });
     } catch (error: unknown) {
-      logger.error("Error getting root user:", error);
+      logger.error('Error getting root user:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve root user",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve root user',
       });
     }
   }
@@ -452,8 +443,8 @@ export class RootController {
         [
           req.user.tenant_id,
           req.user.id,
-          "root_user_created",
-          "user",
+          'root_user_created',
+          'user',
           userId,
           JSON.stringify({
             email: data.email,
@@ -466,23 +457,23 @@ export class RootController {
       logger.warn(`Root user created: ${data.email} by ${req.user.email}`);
 
       res.status(201).json({
-        message: "Root user created successfully",
+        message: 'Root user created successfully',
         userId,
       });
     } catch (error: unknown) {
-      logger.error("Error creating root user:", error);
+      logger.error('Error creating root user:', error);
 
-      if ((error as { code: string }).code === "DUPLICATE_EMAIL") {
+      if ((error as { code: string }).code === 'DUPLICATE_EMAIL') {
         res.status(400).json({
-          error: "DUPLICATE_EMAIL",
-          message: "Email already in use",
+          error: 'DUPLICATE_EMAIL',
+          message: 'Email already in use',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to create root user",
+        error: 'SERVER_ERROR',
+        message: 'Failed to create root user',
       });
     }
   }
@@ -518,11 +509,7 @@ export class RootController {
   async updateRootUser(req: Request, res: Response): Promise<void> {
     try {
       const data: UpdateRootUserRequest = req.body;
-      await rootService.updateRootUser(
-        Number.parseInt(req.params.id),
-        data,
-        req.user.tenant_id,
-      );
+      await rootService.updateRootUser(Number.parseInt(req.params.id), data, req.user.tenant_id);
 
       // Log the action
       await execute(
@@ -531,8 +518,8 @@ export class RootController {
         [
           req.user.tenant_id,
           req.user.id,
-          "root_user_updated",
-          "user",
+          'root_user_updated',
+          'user',
           req.params.id,
           JSON.stringify({
             updated_by: req.user.email,
@@ -542,21 +529,21 @@ export class RootController {
         ],
       );
 
-      res.json({ message: "Root user updated successfully" });
+      res.json({ message: 'Root user updated successfully' });
     } catch (error: unknown) {
-      logger.error("Error updating root user:", error);
+      logger.error('Error updating root user:', error);
 
-      if ((error as { code: string }).code === "NOT_FOUND") {
+      if ((error as { code: string }).code === 'NOT_FOUND') {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Root user not found",
+          error: 'NOT_FOUND',
+          message: 'Root user not found',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to update root user",
+        error: 'SERVER_ERROR',
+        message: 'Failed to update root user',
       });
     }
   }
@@ -594,39 +581,39 @@ export class RootController {
       );
 
       logger.warn(`Root user ${req.params.id} deleted by ${req.user.email}`);
-      res.json({ message: "Root user deleted successfully" });
+      res.json({ message: 'Root user deleted successfully' });
     } catch (error: unknown) {
-      logger.error("Error deleting root user:", error);
+      logger.error('Error deleting root user:', error);
 
       const errorCode = (error as { code: string }).code;
 
-      if (errorCode === "NOT_FOUND") {
+      if (errorCode === 'NOT_FOUND') {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "Root user not found",
+          error: 'NOT_FOUND',
+          message: 'Root user not found',
         });
         return;
       }
 
-      if (errorCode === "SELF_DELETE") {
+      if (errorCode === 'SELF_DELETE') {
         res.status(400).json({
-          error: "SELF_DELETE",
-          message: "Cannot delete yourself",
+          error: 'SELF_DELETE',
+          message: 'Cannot delete yourself',
         });
         return;
       }
 
-      if (errorCode === "LAST_ROOT_USER") {
+      if (errorCode === 'LAST_ROOT_USER') {
         res.status(400).json({
-          error: "LAST_ROOT_USER",
-          message: "At least one root user must remain",
+          error: 'LAST_ROOT_USER',
+          message: 'At least one root user must remain',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to delete root user",
+        error: 'SERVER_ERROR',
+        message: 'Failed to delete root user',
       });
     }
   }
@@ -650,10 +637,10 @@ export class RootController {
       const stats = await rootService.getDashboardStats(req.user.tenant_id);
       res.json(stats);
     } catch (error: unknown) {
-      logger.error("Error getting dashboard stats:", error);
+      logger.error('Error getting dashboard stats:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve dashboard statistics",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve dashboard statistics',
       });
     }
   }
@@ -679,21 +666,14 @@ export class RootController {
       const storage = await rootService.getStorageInfo(req.user.tenant_id);
       res.json(successResponse(storage));
     } catch (error: unknown) {
-      logger.error("Error getting storage info:", error);
+      logger.error('Error getting storage info:', error);
 
-      if ((error as { code: string }).code === "NOT_FOUND") {
-        res.status(404).json(errorResponse("NOT_FOUND", "Tenant not found"));
+      if ((error as { code: string }).code === 'NOT_FOUND') {
+        res.status(404).json(errorResponse('NOT_FOUND', 'Tenant not found'));
         return;
       }
 
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            "SERVER_ERROR",
-            "Failed to retrieve storage information",
-          ),
-        );
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to retrieve storage information'));
     }
   }
 
@@ -731,31 +711,29 @@ export class RootController {
         req.ip,
       );
 
-      logger.warn(
-        `Tenant deletion requested: ${req.user.tenant_id} by ${req.user.email}`,
-      );
+      logger.warn(`Tenant deletion requested: ${req.user.tenant_id} by ${req.user.email}`);
 
       res.json({
         queueId,
         tenantId: req.user.tenant_id,
         scheduledDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        message: "Deletion requested - approval from second root user required",
+        message: 'Deletion requested - approval from second root user required',
         approvalRequired: true,
       });
     } catch (error: unknown) {
-      logger.error("Error requesting deletion:", error);
+      logger.error('Error requesting deletion:', error);
 
-      if ((error as { code: string }).code === "INSUFFICIENT_ROOT_USERS") {
+      if ((error as { code: string }).code === 'INSUFFICIENT_ROOT_USERS') {
         res.status(400).json({
-          error: "INSUFFICIENT_ROOT_USERS",
-          message: "At least 2 root users required before tenant deletion",
+          error: 'INSUFFICIENT_ROOT_USERS',
+          message: 'At least 2 root users required before tenant deletion',
         });
         return;
       }
 
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to request deletion",
+        error: 'SERVER_ERROR',
+        message: 'Failed to request deletion',
       });
     }
   }
@@ -782,18 +760,18 @@ export class RootController {
 
       if (!status) {
         res.status(404).json({
-          error: "NOT_FOUND",
-          message: "No active deletion found",
+          error: 'NOT_FOUND',
+          message: 'No active deletion found',
         });
         return;
       }
 
       res.json(status);
     } catch (error: unknown) {
-      logger.error("Error getting deletion status:", error);
+      logger.error('Error getting deletion status:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve deletion status",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve deletion status',
       });
     }
   }
@@ -816,17 +794,14 @@ export class RootController {
    */
   async cancelDeletion(req: Request, res: Response): Promise<void> {
     try {
-      await tenantDeletionService.cancelDeletion(
-        req.user.tenant_id,
-        req.user.id,
-      );
+      await tenantDeletionService.cancelDeletion(req.user.tenant_id, req.user.id);
 
-      res.json({ message: "Deletion cancelled successfully" });
+      res.json({ message: 'Deletion cancelled successfully' });
     } catch (error: unknown) {
-      logger.error("Error cancelling deletion:", error);
+      logger.error('Error cancelling deletion:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to cancel deletion",
+        error: 'SERVER_ERROR',
+        message: 'Failed to cancel deletion',
       });
     }
   }
@@ -850,10 +825,10 @@ export class RootController {
       const deletions = await rootService.getAllDeletionRequests();
       res.json({ deletions });
     } catch (error: unknown) {
-      logger.error("Error getting deletion requests:", error);
+      logger.error('Error getting deletion requests:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve deletion requests",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve deletion requests',
       });
     }
   }
@@ -877,10 +852,10 @@ export class RootController {
       const approvals = await rootService.getPendingApprovals(req.user.id);
       res.json({ approvals });
     } catch (error: unknown) {
-      logger.error("Error getting pending approvals:", error);
+      logger.error('Error getting pending approvals:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to retrieve pending approvals",
+        error: 'SERVER_ERROR',
+        message: 'Failed to retrieve pending approvals',
       });
     }
   }
@@ -918,18 +893,14 @@ export class RootController {
       const queueId = Number.parseInt(req.params.queueId);
       const { comment } = req.body;
 
-      await tenantDeletionService.approveDeletion(
-        queueId,
-        req.user.id,
-        comment,
-      );
+      await tenantDeletionService.approveDeletion(queueId, req.user.id, comment);
 
-      res.json({ message: "Deletion approved successfully" });
+      res.json({ message: 'Deletion approved successfully' });
     } catch (error: unknown) {
-      logger.error("Error approving deletion:", error);
+      logger.error('Error approving deletion:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to approve deletion",
+        error: 'SERVER_ERROR',
+        message: 'Failed to approve deletion',
       });
     }
   }
@@ -974,20 +945,20 @@ export class RootController {
 
       if (!reason) {
         res.status(400).json({
-          error: "REASON_REQUIRED",
-          message: "Reason for rejection is required",
+          error: 'REASON_REQUIRED',
+          message: 'Reason for rejection is required',
         });
         return;
       }
 
       await tenantDeletionService.rejectDeletion(queueId, req.user.id, reason);
 
-      res.json({ message: "Deletion rejected successfully" });
+      res.json({ message: 'Deletion rejected successfully' });
     } catch (error: unknown) {
-      logger.error("Error rejecting deletion:", error);
+      logger.error('Error rejecting deletion:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to reject deletion",
+        error: 'SERVER_ERROR',
+        message: 'Failed to reject deletion',
       });
     }
   }
@@ -1018,16 +989,14 @@ export class RootController {
 
       await tenantDeletionService.triggerEmergencyStop(queueId, req.user.id);
 
-      logger.error(
-        `EMERGENCY STOP: User ${req.user.email} stopped deletion ${queueId}`,
-      );
+      logger.error(`EMERGENCY STOP: User ${req.user.email} stopped deletion ${queueId}`);
 
-      res.json({ message: "Emergency stop activated" });
+      res.json({ message: 'Emergency stop activated' });
     } catch (error: unknown) {
-      logger.error("Error triggering emergency stop:", error);
+      logger.error('Error triggering emergency stop:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to trigger emergency stop",
+        error: 'SERVER_ERROR',
+        message: 'Failed to trigger emergency stop',
       });
     }
   }
@@ -1048,15 +1017,13 @@ export class RootController {
    */
   async deletionDryRun(req: Request, res: Response): Promise<void> {
     try {
-      const report = await rootService.performDeletionDryRun(
-        req.user.tenant_id,
-      );
+      const report = await rootService.performDeletionDryRun(req.user.tenant_id);
       res.json(report);
     } catch (error: unknown) {
-      logger.error("Error performing dry run:", error);
+      logger.error('Error performing dry run:', error);
       res.status(500).json({
-        error: "SERVER_ERROR",
-        message: "Failed to perform dry run",
+        error: 'SERVER_ERROR',
+        message: 'Failed to perform dry run',
       });
     }
   }

@@ -2,29 +2,26 @@
  * Auth Controller v2
  * Handles authentication logic with new API standards
  */
+import bcryptjs from 'bcryptjs';
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 
-import bcryptjs from "bcryptjs";
-import jwt from "jsonwebtoken";
+import RootLog from '../../../models/rootLog';
+import User from '../../../models/user';
+import type { AuthenticatedRequest } from '../../../types/request.types';
+import { errorResponse, successResponse } from '../../../utils/apiResponse';
+import { dbToApi } from '../../../utils/fieldMapping';
+import { logger } from '../../../utils/logger';
+import { createLog } from '../../logs';
 
-import { Request, Response } from "express";
-
-import RootLog from "../../../models/rootLog";
-import User from "../../../models/user";
-import type { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../utils/apiResponse";
-import { dbToApi } from "../../../utils/fieldMapping";
-import { logger } from "../../../utils/logger";
-import { createLog } from "../../logs";
 // Get secrets from environment variables
-const JWT_SECRET = process.env.JWT_SECRET ?? "default-jwt-secret";
+const JWT_SECRET = process.env.JWT_SECRET ?? 'default-jwt-secret';
 const JWT_REFRESH_SECRET =
-  process.env.JWT_REFRESH_SECRET ??
-  process.env.JWT_SECRET ??
-  "default-jwt-secret";
+  process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? 'default-jwt-secret';
 
 // Token expiration times
-const ACCESS_TOKEN_EXPIRES = "30m"; // 30 Minuten
-const REFRESH_TOKEN_EXPIRES = "7d";
+const ACCESS_TOKEN_EXPIRES = '30m'; // 30 Minuten
+const REFRESH_TOKEN_EXPIRES = '7d';
 
 /**
  * Generate JWT tokens
@@ -33,18 +30,13 @@ const REFRESH_TOKEN_EXPIRES = "7d";
  * @param role
  * @param email
  */
-function generateTokens(
-  userId: number,
-  tenantId: number,
-  role: string,
-  email: string,
-) {
+function generateTokens(userId: number, tenantId: number, role: string, email: string) {
   const payload = {
     id: userId,
     email,
     role,
     tenantId,
-    type: "access" as const,
+    type: 'access' as const,
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, {
@@ -56,7 +48,7 @@ function generateTokens(
     email,
     role,
     tenantId,
-    type: "refresh" as const,
+    type: 'refresh' as const,
   };
 
   const refreshToken = jwt.sign(refreshPayload, JWT_REFRESH_SECRET, {
@@ -77,49 +69,33 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // Validate required fields
     if (!email || !password) {
-      res
-        .status(400)
-        .json(
-          errorResponse("VALIDATION_ERROR", "Email and password are required"),
-        );
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Email and password are required'));
       return;
     }
 
     // Find user by email
     const user = await User.findByEmail(email);
     if (!user) {
-      res
-        .status(401)
-        .json(
-          errorResponse("INVALID_CREDENTIALS", "Invalid email or password"),
-        );
+      res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
       return;
     }
 
     // Check if user is active
-    if (user.status !== "active") {
-      res
-        .status(403)
-        .json(errorResponse("ACCOUNT_INACTIVE", "Your account is not active"));
+    if (user.status !== 'active') {
+      res.status(403).json(errorResponse('ACCOUNT_INACTIVE', 'Your account is not active'));
       return;
     }
 
     // Verify password
     const isValidPassword = await bcryptjs.compare(password, user.password);
     if (!isValidPassword) {
-      res
-        .status(401)
-        .json(
-          errorResponse("INVALID_CREDENTIALS", "Invalid email or password"),
-        );
+      res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
       return;
     }
 
     // Ensure tenant_id exists
     if (!user.tenant_id) {
-      res
-        .status(500)
-        .json(errorResponse("TENANT_ERROR", "User has no tenant association"));
+      res.status(500).json(errorResponse('TENANT_ERROR', 'User has no tenant association'));
       return;
     }
 
@@ -138,29 +114,29 @@ export async function login(req: Request, res: Response): Promise<void> {
     await createLog(
       user.id,
       user.tenant_id,
-      "login",
-      "user",
+      'login',
+      'user',
       user.id,
       `Angemeldet als ${user.role}`,
       req.ip ?? req.socket.remoteAddress,
-      req.get("user-agent"),
+      req.get('user-agent'),
     );
 
     // 2. Log to root_logs for detailed audit
     await RootLog.create({
       tenant_id: user.tenant_id,
       user_id: user.id,
-      action: "login",
-      entity_type: "auth",
+      action: 'login',
+      entity_type: 'auth',
       entity_id: user.id,
       details: `Angemeldet als ${user.role}`,
       new_values: {
         email: user.email,
         role: user.role,
-        login_method: "password",
+        login_method: 'password',
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
@@ -183,10 +159,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       }),
     );
   } catch (error: unknown) {
-    logger.error("Login error:", error);
-    res
-      .status(500)
-      .json(errorResponse("SERVER_ERROR", "An error occurred during login"));
+    logger.error('Login error:', error);
+    res.status(500).json(errorResponse('SERVER_ERROR', 'An error occurred during login'));
   }
 }
 
@@ -195,17 +169,14 @@ export async function login(req: Request, res: Response): Promise<void> {
  * @param req
  * @param res
  */
-export async function register(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function register(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const {
       email,
       password,
       firstName,
       lastName,
-      role = "employee",
+      role = 'employee',
     } = req.body as {
       email: string;
       password: string;
@@ -215,34 +186,21 @@ export async function register(
     };
     const user = req.user;
     if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
+      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
       return;
     }
     const { tenant_id: tenantId, role: currentUserRole } = user;
 
     // Only admins can create users
-    if (currentUserRole !== "admin" && currentUserRole !== "root") {
-      res
-        .status(403)
-        .json(
-          errorResponse("FORBIDDEN", "Only administrators can create users"),
-        );
+    if (currentUserRole !== 'admin' && currentUserRole !== 'root') {
+      res.status(403).json(errorResponse('FORBIDDEN', 'Only administrators can create users'));
       return;
     }
 
     // Check if email already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      res
-        .status(409)
-        .json(
-          errorResponse(
-            "EMAIL_EXISTS",
-            "A user with this email already exists",
-          ),
-        );
+      res.status(409).json(errorResponse('EMAIL_EXISTS', 'A user with this email already exists'));
       return;
     }
 
@@ -250,7 +208,7 @@ export async function register(
     const hashedPassword = await bcryptjs.hash(password, 10);
 
     // Create user - username is email without domain for backwards compatibility
-    const username = email.split("@")[0];
+    const username = email.split('@')[0];
     const userId = await User.create({
       tenant_id: tenantId,
       username,
@@ -259,13 +217,13 @@ export async function register(
       first_name: firstName,
       last_name: lastName,
       role,
-      status: "active",
+      status: 'active',
     });
 
     // Get created user
     const newUser = await User.findById(userId, tenantId);
     if (!newUser) {
-      throw new Error("Failed to retrieve created user");
+      throw new Error('Failed to retrieve created user');
     }
 
     // Log user creation to both log systems
@@ -273,20 +231,20 @@ export async function register(
     await createLog(
       user.id,
       tenantId,
-      "create_user",
-      "user",
+      'create_user',
+      'user',
       userId,
       `Neuer Benutzer erstellt: ${email} (${role})`,
       req.ip ?? req.socket.remoteAddress,
-      req.get("user-agent"),
+      req.get('user-agent'),
     );
 
     // 2. Log to root_logs for detailed audit
     await RootLog.create({
       tenant_id: tenantId,
       user_id: user.id, // Admin who created the user
-      action: "create",
-      entity_type: "user",
+      action: 'create',
+      entity_type: 'user',
       entity_id: userId,
       details: `Neuer Benutzer erstellt: ${email} (${role})`,
       new_values: {
@@ -298,7 +256,7 @@ export async function register(
         created_by: user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
@@ -310,12 +268,8 @@ export async function register(
 
     res.status(201).json(successResponse(userApi));
   } catch (error: unknown) {
-    logger.error("Register error:", error);
-    res
-      .status(500)
-      .json(
-        errorResponse("SERVER_ERROR", "An error occurred during registration"),
-      );
+    logger.error('Register error:', error);
+    res.status(500).json(errorResponse('SERVER_ERROR', 'An error occurred during registration'));
   }
 }
 
@@ -324,10 +278,7 @@ export async function register(
  * @param req
  * @param res
  */
-export async function logout(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function logout(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // In a real implementation, you might want to:
     // 1. Blacklist the token
@@ -340,42 +291,40 @@ export async function logout(
       await createLog(
         req.user.id,
         req.user.tenant_id,
-        "logout",
-        "user",
+        'logout',
+        'user',
         req.user.id,
-        "Abgemeldet",
+        'Abgemeldet',
         req.ip ?? req.socket.remoteAddress,
-        req.get("user-agent"),
+        req.get('user-agent'),
       );
 
       // 2. Log to root_logs for detailed audit
       await RootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
-        action: "logout",
-        entity_type: "auth",
+        action: 'logout',
+        entity_type: 'auth',
         entity_id: req.user.id,
-        details: "Abgemeldet",
+        details: 'Abgemeldet',
         new_values: {
           email: req.user.email,
           role: req.user.role,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get("user-agent"),
+        user_agent: req.get('user-agent'),
         was_role_switched: false,
       });
     }
 
     res.json(
       successResponse({
-        message: "Logged out successfully",
+        message: 'Logged out successfully',
       }),
     );
   } catch (error: unknown) {
-    logger.error("Logout error:", error);
-    res
-      .status(500)
-      .json(errorResponse("SERVER_ERROR", "An error occurred during logout"));
+    logger.error('Logout error:', error);
+    res.status(500).json(errorResponse('SERVER_ERROR', 'An error occurred during logout'));
   }
 }
 
@@ -389,23 +338,16 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      res
-        .status(400)
-        .json(errorResponse("MISSING_TOKEN", "Refresh token is required"));
+      res.status(400).json(errorResponse('MISSING_TOKEN', 'Refresh token is required'));
       return;
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(
-      refreshToken,
-      JWT_REFRESH_SECRET,
-    ) as jwt.JwtPayload;
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as jwt.JwtPayload;
 
     // Ensure it's a refresh token, not an access token
-    if (decoded.type !== "refresh") {
-      res
-        .status(401)
-        .json(errorResponse("INVALID_TOKEN", "Invalid refresh token"));
+    if (decoded.type !== 'refresh') {
+      res.status(401).json(errorResponse('INVALID_TOKEN', 'Invalid refresh token'));
       return;
     }
 
@@ -416,7 +358,7 @@ export async function refresh(req: Request, res: Response): Promise<void> {
         email: decoded.email,
         tenantId: decoded.tenantId,
         role: decoded.role,
-        type: "access",
+        type: 'access',
       },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRES },
@@ -429,20 +371,12 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     );
   } catch (error: unknown) {
     if (error instanceof jwt.JsonWebTokenError) {
-      res
-        .status(401)
-        .json(
-          errorResponse("INVALID_TOKEN", "Invalid or expired refresh token"),
-        );
+      res.status(401).json(errorResponse('INVALID_TOKEN', 'Invalid or expired refresh token'));
       return;
     }
 
-    logger.error("Refresh token error:", error);
-    res
-      .status(500)
-      .json(
-        errorResponse("SERVER_ERROR", "An error occurred during token refresh"),
-      );
+    logger.error('Refresh token error:', error);
+    res.status(500).json(errorResponse('SERVER_ERROR', 'An error occurred during token refresh'));
   }
 }
 
@@ -451,16 +385,11 @@ export async function refresh(req: Request, res: Response): Promise<void> {
  * @param req
  * @param res
  */
-export async function verify(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function verify(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const user = req.user;
     if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
+      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
       return;
     }
     res.json(
@@ -475,12 +404,8 @@ export async function verify(
       }),
     );
   } catch (error: unknown) {
-    logger.error("Verify error:", error);
-    res
-      .status(500)
-      .json(
-        errorResponse("SERVER_ERROR", "An error occurred during verification"),
-      );
+    logger.error('Verify error:', error);
+    res.status(500).json(errorResponse('SERVER_ERROR', 'An error occurred during verification'));
   }
 }
 
@@ -489,23 +414,18 @@ export async function verify(
  * @param req
  * @param res
  */
-export async function getCurrentUser(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const authUser = req.user;
     if (!authUser) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
+      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
       return;
     }
     const { userId, tenant_id: tenantId } = authUser;
 
     const user = await User.findById(userId, tenantId);
     if (!user) {
-      res.status(404).json(errorResponse("USER_NOT_FOUND", "User not found"));
+      res.status(404).json(errorResponse('USER_NOT_FOUND', 'User not found'));
       return;
     }
 
@@ -522,15 +442,10 @@ export async function getCurrentUser(
 
     res.json(successResponse(userApi));
   } catch (error: unknown) {
-    logger.error("Get current user error:", error);
+    logger.error('Get current user error:', error);
     res
       .status(500)
-      .json(
-        errorResponse(
-          "SERVER_ERROR",
-          "An error occurred while fetching user data",
-        ),
-      );
+      .json(errorResponse('SERVER_ERROR', 'An error occurred while fetching user data'));
   }
 }
 

@@ -2,16 +2,14 @@
  * Role Switch API Routes
  * Ermöglicht Admins als Employee zu agieren
  */
+import express, { Router } from 'express';
+import jwt from 'jsonwebtoken';
 
-import jwt from "jsonwebtoken";
-
-import express, { Router } from "express";
-
-import { authenticateToken } from "../middleware/auth.js";
-import { createRootLog } from "../models/rootLog.js";
-import User from "../models/user.js";
-import { getErrorMessage } from "../utils/errorHandler.js";
-import { typed } from "../utils/routeHandlers";
+import { authenticateToken } from '../middleware/auth.js';
+import { createRootLog } from '../models/rootLog.js';
+import User from '../models/user.js';
+import { getErrorMessage } from '../utils/errorHandler.js';
+import { typed } from '../utils/routeHandlers';
 
 const router: Router = express.Router();
 
@@ -21,27 +19,25 @@ const router: Router = express.Router();
  * @access Private (Admin only)
  */
 router.post(
-  "/to-employee",
+  '/to-employee',
   authenticateToken,
   typed.auth(async (req, res) => {
     try {
       // Nur Admins und Root dürfen switchen
-      if (req.user.role !== "admin" && req.user.role !== "root") {
-        res
-          .status(403)
-          .json({ message: "Nur Admins und Root können die Rolle wechseln" });
+      if (req.user.role !== 'admin' && req.user.role !== 'root') {
+        res.status(403).json({ message: 'Nur Admins und Root können die Rolle wechseln' });
         return;
       }
 
       // User-Daten holen
       const user = await User.findById(req.user.id, req.user.tenant_id);
       if (!user) {
-        res.status(404).json({ message: "User nicht gefunden" });
+        res.status(404).json({ message: 'User nicht gefunden' });
         return;
       }
 
       // Prüfen ob Employee-Daten vollständig sind (nur position - department_id ist optional)
-      const needsEmployeeData = user.position == null || user.position === "";
+      const needsEmployeeData = user.position == null || user.position === '';
 
       if (needsEmployeeData) {
         // Update nur fehlende Employee-Daten (keine neue employee_id!)
@@ -50,8 +46,8 @@ router.post(
         // WICHTIG: department_id NICHT setzen wenn keine Departments existieren
         // department_id kann NULL bleiben bis Departments angelegt werden
 
-        if (user.position == null || user.position === "") {
-          updateData.position = "Mitarbeiter"; // Default position
+        if (user.position == null || user.position === '') {
+          updateData.position = 'Mitarbeiter'; // Default position
         }
 
         // Update nur die fehlenden Daten (wenn überhaupt welche vorhanden sind)
@@ -67,24 +63,24 @@ router.post(
           username: user.username,
           email: user.email,
           role: user.role,
-          activeRole: "employee", // Aktive Rolle
+          activeRole: 'employee', // Aktive Rolle
           tenant_id: user.tenant_id,
           isRoleSwitched: true,
         },
-        process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" },
+        process.env.JWT_SECRET ?? 'your-secret-key',
+        { expiresIn: '24h' },
       );
 
       // Log the action
       await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
-        action: "role_switch_to_employee",
-        entity_type: "user",
+        action: 'role_switch_to_employee',
+        entity_type: 'user',
         entity_id: req.user.id,
         new_values: {
           from_role: user.role, // Kann admin oder root sein
-          to_role: "employee",
+          to_role: 'employee',
           timestamp: new Date(),
         },
         was_role_switched: true,
@@ -95,17 +91,18 @@ router.post(
         token: dualRoleToken,
         user: {
           ...user,
-          activeRole: "employee",
+          activeRole: 'employee',
           isRoleSwitched: true,
         },
-        message: needsEmployeeData
-          ? "Mitarbeiter-Profil erstellt und gewechselt"
-          : "Erfolgreich zu Mitarbeiter-Ansicht gewechselt",
+        message:
+          needsEmployeeData ?
+            'Mitarbeiter-Profil erstellt und gewechselt'
+          : 'Erfolgreich zu Mitarbeiter-Ansicht gewechselt',
       });
     } catch (error: unknown) {
-      console.error("Role switch error:", getErrorMessage(error));
+      console.error('Role switch error:', getErrorMessage(error));
       res.status(500).json({
-        message: "Fehler beim Rollenwechsel",
+        message: 'Fehler beim Rollenwechsel',
         error: getErrorMessage(error),
       });
     }
@@ -118,22 +115,20 @@ router.post(
  * @access Private
  */
 router.post(
-  "/to-admin",
+  '/to-admin',
   authenticateToken,
   typed.auth(async (req, res) => {
     try {
       // User-Daten holen
       const user = await User.findById(req.user.id, req.user.tenant_id);
       if (!user) {
-        res.status(404).json({ message: "User nicht gefunden" });
+        res.status(404).json({ message: 'User nicht gefunden' });
         return;
       }
 
       // Nur Admins und Root können zurück switchen
-      if (user.role !== "admin" && user.role !== "root") {
-        res
-          .status(403)
-          .json({ message: "Nur Admins und Root können die Rolle wechseln" });
+      if (user.role !== 'admin' && user.role !== 'root') {
+        res.status(403).json({ message: 'Nur Admins und Root können die Rolle wechseln' });
         return;
       }
 
@@ -148,20 +143,20 @@ router.post(
           tenant_id: user.tenant_id,
           isRoleSwitched: false,
         },
-        process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" },
+        process.env.JWT_SECRET ?? 'your-secret-key',
+        { expiresIn: '24h' },
       );
 
       // Log the action
       await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
-        action: "role_switch_to_admin",
-        entity_type: "user",
+        action: 'role_switch_to_admin',
+        entity_type: 'user',
         entity_id: req.user.id,
         new_values: {
-          from_role: "employee",
-          to_role: "admin",
+          from_role: 'employee',
+          to_role: 'admin',
           timestamp: new Date(),
         },
         was_role_switched: true,
@@ -175,12 +170,12 @@ router.post(
           activeRole: user.role, // Original-Rolle (admin oder root)
           isRoleSwitched: false,
         },
-        message: `Erfolgreich zu ${user.role === "root" ? "Root" : "Admin"}-Ansicht gewechselt`,
+        message: `Erfolgreich zu ${user.role === 'root' ? 'Root' : 'Admin'}-Ansicht gewechselt`,
       });
     } catch (error: unknown) {
-      console.error("Role switch back error:", getErrorMessage(error));
+      console.error('Role switch back error:', getErrorMessage(error));
       res.status(500).json({
-        message: "Fehler beim Rollenwechsel",
+        message: 'Fehler beim Rollenwechsel',
         error: getErrorMessage(error),
       });
     }
@@ -193,22 +188,20 @@ router.post(
  * @access Private (Root only)
  */
 router.post(
-  "/to-root",
+  '/to-root',
   authenticateToken,
   typed.auth(async (req, res) => {
     try {
       // User-Daten holen
       const user = await User.findById(req.user.id, req.user.tenant_id);
       if (!user) {
-        res.status(404).json({ message: "User nicht gefunden" });
+        res.status(404).json({ message: 'User nicht gefunden' });
         return;
       }
 
       // Nur Root kann zu Root zurück switchen
-      if (user.role !== "root") {
-        res
-          .status(403)
-          .json({ message: "Nur Root-User können zu Root wechseln" });
+      if (user.role !== 'root') {
+        res.status(403).json({ message: 'Nur Root-User können zu Root wechseln' });
         return;
       }
 
@@ -219,24 +212,24 @@ router.post(
           username: user.username,
           email: user.email,
           role: user.role,
-          activeRole: "root",
+          activeRole: 'root',
           tenant_id: user.tenant_id,
           isRoleSwitched: false,
         },
-        process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" },
+        process.env.JWT_SECRET ?? 'your-secret-key',
+        { expiresIn: '24h' },
       );
 
       // Log the action
       await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
-        action: "role_switch_to_root",
-        entity_type: "user",
+        action: 'role_switch_to_root',
+        entity_type: 'user',
         entity_id: req.user.id,
         new_values: {
           from_role: req.user.activeRole ?? req.user.role,
-          to_role: "root",
+          to_role: 'root',
           timestamp: new Date(),
         },
         was_role_switched: true,
@@ -247,15 +240,15 @@ router.post(
         token: rootToken,
         user: {
           ...user,
-          activeRole: "root",
+          activeRole: 'root',
           isRoleSwitched: false,
         },
-        message: "Erfolgreich zu Root-Ansicht gewechselt",
+        message: 'Erfolgreich zu Root-Ansicht gewechselt',
       });
     } catch (error: unknown) {
-      console.error("Role switch to root error:", getErrorMessage(error));
+      console.error('Role switch to root error:', getErrorMessage(error));
       res.status(500).json({
-        message: "Fehler beim Rollenwechsel",
+        message: 'Fehler beim Rollenwechsel',
         error: getErrorMessage(error),
       });
     }
@@ -268,20 +261,20 @@ router.post(
  * @access Private (Root only)
  */
 router.post(
-  "/root-to-admin",
+  '/root-to-admin',
   authenticateToken,
   typed.auth(async (req, res) => {
     try {
       // Nur Root darf diesen Endpoint nutzen
-      if (req.user.role !== "root") {
-        res.status(403).json({ message: "Nur Root kann zu Admin wechseln" });
+      if (req.user.role !== 'root') {
+        res.status(403).json({ message: 'Nur Root kann zu Admin wechseln' });
         return;
       }
 
       // User-Daten holen
       const user = await User.findById(req.user.id, req.user.tenant_id);
       if (!user) {
-        res.status(404).json({ message: "User nicht gefunden" });
+        res.status(404).json({ message: 'User nicht gefunden' });
         return;
       }
 
@@ -292,24 +285,24 @@ router.post(
           username: user.username,
           email: user.email,
           role: user.role, // Bleibt 'root'
-          activeRole: "admin", // Aktive Rolle ist 'admin'
+          activeRole: 'admin', // Aktive Rolle ist 'admin'
           tenant_id: user.tenant_id,
           isRoleSwitched: true,
         },
-        process.env.JWT_SECRET ?? "your-secret-key",
-        { expiresIn: "24h" },
+        process.env.JWT_SECRET ?? 'your-secret-key',
+        { expiresIn: '24h' },
       );
 
       // Log the action
       await createRootLog({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
-        action: "role_switch_root_to_admin",
-        entity_type: "user",
+        action: 'role_switch_root_to_admin',
+        entity_type: 'user',
         entity_id: req.user.id,
         new_values: {
-          from_role: "root",
-          to_role: "admin",
+          from_role: 'root',
+          to_role: 'admin',
           timestamp: new Date(),
         },
         was_role_switched: true,
@@ -320,15 +313,15 @@ router.post(
         token: adminViewToken,
         user: {
           ...user,
-          activeRole: "admin",
+          activeRole: 'admin',
           isRoleSwitched: true,
         },
-        message: "Erfolgreich zu Admin-Ansicht gewechselt",
+        message: 'Erfolgreich zu Admin-Ansicht gewechselt',
       });
     } catch (error: unknown) {
-      console.error("Role switch root to admin error:", getErrorMessage(error));
+      console.error('Role switch root to admin error:', getErrorMessage(error));
       res.status(500).json({
-        message: "Fehler beim Rollenwechsel",
+        message: 'Fehler beim Rollenwechsel',
         error: getErrorMessage(error),
       });
     }

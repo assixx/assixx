@@ -6,21 +6,16 @@
  *   name: Calendar v2
  *   description: Calendar event management (API v2)
  */
+import { NextFunction, Response } from 'express';
 
-import { Response, NextFunction } from "express";
-
-import type { CalendarEvent } from "../../../models/calendar.js";
-import CalendarModel from "../../../models/calendar.js";
-import RootLog from "../../../models/rootLog";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { ServiceError } from "../users/users.service.js";
-
-import { calendarService } from "./calendar.service.js";
-import type {
-  CalendarEventData,
-  CalendarEventUpdateData,
-} from "./calendar.service.js";
+import type { CalendarEvent } from '../../../models/calendar.js';
+import CalendarModel from '../../../models/calendar.js';
+import RootLog from '../../../models/rootLog';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { ServiceError } from '../users/users.service.js';
+import { calendarService } from './calendar.service.js';
+import type { CalendarEventData, CalendarEventUpdateData } from './calendar.service.js';
 
 /**
  * @param req
@@ -119,15 +114,10 @@ export async function listEvents(
     res.json(successResponse(result));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
     }
   }
 }
@@ -172,25 +162,15 @@ export async function getEvent(
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
 
-    const event = await calendarService.getEventById(
-      eventId,
-      tenantId,
-      userId,
-      userDepartmentId,
-    );
+    const event = await calendarService.getEventById(eventId, tenantId, userId, userDepartmentId);
 
     res.json(successResponse({ event }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
     }
   }
 }
@@ -280,8 +260,8 @@ export async function createEvent(
     await RootLog.create({
       tenant_id: tenantId,
       user_id: userId,
-      action: "create",
-      entity_type: "calendar_event",
+      action: 'create',
+      entity_type: 'calendar_event',
       entity_id: (event as unknown as CalendarEvent).id,
       details: `Erstellt: ${eventData.title}`,
       new_values: {
@@ -296,22 +276,17 @@ export async function createEvent(
         created_by: user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
     res.status(201).json(successResponse({ event }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
     }
   }
 }
@@ -418,8 +393,8 @@ export async function updateEvent(
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "update",
-        entity_type: "calendar_event",
+        action: 'update',
+        entity_type: 'calendar_event',
         entity_id: eventId,
         details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
         old_values: {
@@ -438,7 +413,7 @@ export async function updateEvent(
           updated_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get("user-agent"),
+        user_agent: req.get('user-agent'),
         was_role_switched: false,
       });
     } else {
@@ -446,8 +421,8 @@ export async function updateEvent(
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "update",
-        entity_type: "calendar_event",
+        action: 'update',
+        entity_type: 'calendar_event',
         entity_id: eventId,
         details: `Aktualisiert: Event ID ${eventId}`,
         new_values: {
@@ -459,7 +434,7 @@ export async function updateEvent(
           updated_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get("user-agent"),
+        user_agent: req.get('user-agent'),
         was_role_switched: false,
       });
     }
@@ -530,8 +505,8 @@ export async function deleteEvent(
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "delete",
-        entity_type: "calendar_event",
+        action: 'delete',
+        entity_type: 'calendar_event',
         entity_id: eventId,
         details: `Gelöscht: ${deletedEvent.title}`,
         old_values: {
@@ -544,7 +519,7 @@ export async function deleteEvent(
           deleted_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get("user-agent"),
+        user_agent: req.get('user-agent'),
         was_role_switched: false,
       });
     } else {
@@ -552,20 +527,20 @@ export async function deleteEvent(
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "delete",
-        entity_type: "calendar_event",
+        action: 'delete',
+        entity_type: 'calendar_event',
         entity_id: eventId,
         details: `Gelöscht: Event ID ${eventId}`,
         old_values: {
           deleted_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get("user-agent"),
+        user_agent: req.get('user-agent'),
         was_role_switched: false,
       });
     }
 
-    res.json(successResponse({ message: "Event deleted successfully" }));
+    res.json(successResponse({ message: 'Event deleted successfully' }));
   } catch (error: unknown) {
     next(error);
   }
@@ -618,22 +593,17 @@ export async function updateAttendeeResponse(
     const tenantId = user.tenant_id;
     const userId = user.id;
     const { response } = req.body as {
-      response: "accepted" | "declined" | "tentative";
+      response: 'accepted' | 'declined' | 'tentative';
     };
 
-    await calendarService.updateAttendeeResponse(
-      eventId,
-      userId,
-      response,
-      tenantId,
-    );
+    await calendarService.updateAttendeeResponse(eventId, userId, response, tenantId);
 
     // Log attendee response update
     await RootLog.create({
       tenant_id: tenantId,
       user_id: userId,
-      action: "update_attendee_response",
-      entity_type: "calendar_event",
+      action: 'update_attendee_response',
+      entity_type: 'calendar_event',
       entity_id: eventId,
       details: `Teilnehmer Antwort: ${response}`,
       new_values: {
@@ -641,22 +611,17 @@ export async function updateAttendeeResponse(
         responded_by: user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
-    res.json(successResponse({ message: "Response updated successfully" }));
+    res.json(successResponse({ message: 'Response updated successfully' }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
     }
   }
 }
@@ -701,32 +666,22 @@ export async function exportEvents(
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
-    const format = req.query.format as "ics" | "csv";
+    const format = req.query.format as 'ics' | 'csv';
 
-    const data = await calendarService.exportEvents(
-      tenantId,
-      userId,
-      userDepartmentId,
-      format,
-    );
+    const data = await calendarService.exportEvents(tenantId, userId, userDepartmentId, format);
 
-    const contentType = format === "ics" ? "text/calendar" : "text/csv";
-    const filename = format === "ics" ? "calendar.ics" : "calendar.csv";
+    const contentType = format === 'ics' ? 'text/calendar' : 'text/csv';
+    const filename = format === 'ics' ? 'calendar.ics' : 'calendar.csv';
 
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(data);
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
     }
   }
 }
@@ -784,15 +739,10 @@ export async function getDashboardEvents(
     const tenantId = user.tenant_id;
     const userId = user.id;
 
-    const days = Number.parseInt((req.query.days ?? "7") as string, 10);
-    const limit = Number.parseInt((req.query.limit ?? "5") as string, 10);
+    const days = Number.parseInt((req.query.days ?? '7') as string, 10);
+    const limit = Number.parseInt((req.query.limit ?? '5') as string, 10);
 
-    const events = await CalendarModel.getDashboardEvents(
-      tenantId,
-      userId,
-      days,
-      limit,
-    );
+    const events = await CalendarModel.getDashboardEvents(tenantId, userId, days, limit);
 
     res.json(successResponse(events));
   } catch (error: unknown) {

@@ -2,24 +2,23 @@
  * Blackboard API v2 Service Layer
  * Business logic for company announcements and bulletin board
  */
-
 import Blackboard, {
-  EntryQueryOptions,
-  EntryCreateData,
-  EntryUpdateData,
   DbBlackboardEntry,
-} from "../../../models/blackboard.js";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
+  EntryCreateData,
+  EntryQueryOptions,
+  EntryUpdateData,
+} from '../../../models/blackboard.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export interface BlackboardFilters {
-  status?: "active" | "archived";
-  filter?: "all" | "company" | "department" | "team";
+  status?: 'active' | 'archived';
+  filter?: 'all' | 'company' | 'department' | 'team';
   search?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortDir?: "ASC" | "DESC";
+  sortDir?: 'ASC' | 'DESC';
   priority?: string;
   requiresConfirmation?: boolean;
 }
@@ -51,10 +50,10 @@ export interface BlackboardListResult {
 export interface BlackboardCreateData {
   title: string;
   content: string;
-  orgLevel: "company" | "department" | "team";
+  orgLevel: 'company' | 'department' | 'team';
   orgId?: number | null;
   expiresAt?: Date | null;
-  priority?: "low" | "medium" | "high" | "urgent";
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
   tags?: string[];
   requiresConfirmation?: boolean;
@@ -63,12 +62,12 @@ export interface BlackboardCreateData {
 export interface BlackboardUpdateData {
   title?: string;
   content?: string;
-  orgLevel?: "company" | "department" | "team";
+  orgLevel?: 'company' | 'department' | 'team';
   orgId?: number | null;
   expiresAt?: Date | null;
-  priority?: "low" | "medium" | "high" | "urgent";
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
-  status?: "active" | "archived";
+  status?: 'active' | 'archived';
   requiresConfirmation?: boolean;
   tags?: string[];
 }
@@ -110,11 +109,7 @@ export class BlackboardService {
         requiresConfirmation: filters.requiresConfirmation,
       };
 
-      const result = (await Blackboard.getAllEntries(
-        tenantId,
-        userId,
-        options,
-      )) as {
+      const result = (await Blackboard.getAllEntries(tenantId, userId, options)) as {
         entries: unknown[];
         pagination: {
           total: number;
@@ -125,13 +120,11 @@ export class BlackboardService {
       };
 
       return {
-        entries: result.entries.map((entry) =>
-          this.transformEntry(entry as DbBlackboardEntry),
-        ),
+        entries: result.entries.map((entry) => this.transformEntry(entry as DbBlackboardEntry)),
         pagination: result.pagination,
       };
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to list entries", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to list entries', error);
     }
   }
 
@@ -144,7 +137,7 @@ export class BlackboardService {
   async getEntryById(id: number, tenantId: number, userId: number) {
     const entry = await Blackboard.getEntryById(id, tenantId, userId);
     if (!entry) {
-      throw new ServiceError("NOT_FOUND", "Entry not found");
+      throw new ServiceError('NOT_FOUND', 'Entry not found');
     }
     return this.transformEntry(entry);
   }
@@ -155,15 +148,11 @@ export class BlackboardService {
    * @param tenantId
    * @param authorId
    */
-  async createEntry(
-    data: BlackboardCreateData,
-    tenantId: number,
-    authorId: number,
-  ) {
+  async createEntry(data: BlackboardCreateData, tenantId: number, authorId: number) {
     // Validate org_id requirement
-    if (data.orgLevel !== "company" && !data.orgId) {
+    if (data.orgLevel !== 'company' && !data.orgId) {
       throw new ServiceError(
-        "VALIDATION_ERROR",
+        'VALIDATION_ERROR',
         `Organization ID is required for ${data.orgLevel} level entries`,
       );
     }
@@ -184,7 +173,7 @@ export class BlackboardService {
 
     const entry = await Blackboard.createEntry(entryData);
     if (!entry) {
-      throw new ServiceError("SERVER_ERROR", "Failed to create entry");
+      throw new ServiceError('SERVER_ERROR', 'Failed to create entry');
     }
 
     return this.transformEntry(entry);
@@ -197,16 +186,11 @@ export class BlackboardService {
    * @param tenantId
    * @param userId
    */
-  async updateEntry(
-    id: number,
-    data: BlackboardUpdateData,
-    tenantId: number,
-    userId: number,
-  ) {
+  async updateEntry(id: number, data: BlackboardUpdateData, tenantId: number, userId: number) {
     // Check if entry exists and user has access
     const existingEntry = await Blackboard.getEntryById(id, tenantId, userId);
     if (!existingEntry) {
-      throw new ServiceError("NOT_FOUND", "Entry not found");
+      throw new ServiceError('NOT_FOUND', 'Entry not found');
     }
 
     const updateData: EntryUpdateData = {
@@ -225,7 +209,7 @@ export class BlackboardService {
 
     const entry = await Blackboard.updateEntry(id, updateData, tenantId);
     if (!entry) {
-      throw new ServiceError("SERVER_ERROR", "Failed to update entry");
+      throw new ServiceError('SERVER_ERROR', 'Failed to update entry');
     }
 
     return this.transformEntry(entry);
@@ -241,15 +225,15 @@ export class BlackboardService {
     // Check if entry exists and user has access
     const entry = await Blackboard.getEntryById(id, tenantId, userId);
     if (!entry) {
-      throw new ServiceError("NOT_FOUND", "Entry not found");
+      throw new ServiceError('NOT_FOUND', 'Entry not found');
     }
 
     const success = await Blackboard.deleteEntry(id, tenantId);
     if (!success) {
-      throw new ServiceError("SERVER_ERROR", "Failed to delete entry");
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete entry');
     }
 
-    return { message: "Entry deleted successfully" };
+    return { message: 'Entry deleted successfully' };
   }
 
   /**
@@ -259,7 +243,7 @@ export class BlackboardService {
    * @param userId
    */
   async archiveEntry(id: number, tenantId: number, userId: number) {
-    return this.updateEntry(id, { status: "archived" }, tenantId, userId);
+    return this.updateEntry(id, { status: 'archived' }, tenantId, userId);
   }
 
   /**
@@ -269,7 +253,7 @@ export class BlackboardService {
    * @param userId
    */
   async unarchiveEntry(id: number, tenantId: number, userId: number) {
-    return this.updateEntry(id, { status: "active" }, tenantId, userId);
+    return this.updateEntry(id, { status: 'active' }, tenantId, userId);
   }
 
   /**
@@ -281,11 +265,11 @@ export class BlackboardService {
     const success = await Blackboard.confirmEntry(entryId, userId);
     if (!success) {
       throw new ServiceError(
-        "BAD_REQUEST",
-        "Entry does not require confirmation or already confirmed",
+        'BAD_REQUEST',
+        'Entry does not require confirmation or already confirmed',
       );
     }
-    return { message: "Entry confirmed successfully" };
+    return { message: 'Entry confirmed successfully' };
   }
 
   /**
@@ -305,11 +289,7 @@ export class BlackboardService {
    * @param limit
    */
   async getDashboardEntries(tenantId: number, userId: number, limit = 3) {
-    const entries = await Blackboard.getDashboardEntries(
-      tenantId,
-      userId,
-      limit,
-    );
+    const entries = await Blackboard.getDashboardEntries(tenantId, userId, limit);
     return entries.map((entry) => this.transformEntry(entry));
   }
 
@@ -347,7 +327,7 @@ export class BlackboardService {
       uploadedBy: attachment.uploadedBy,
     });
 
-    return { id: attachmentId, message: "Attachment added successfully" };
+    return { id: attachmentId, message: 'Attachment added successfully' };
   }
 
   /**
@@ -365,12 +345,9 @@ export class BlackboardService {
    * @param tenantId
    */
   async getAttachmentById(attachmentId: number, tenantId: number) {
-    const attachment = await Blackboard.getAttachmentById(
-      attachmentId,
-      tenantId,
-    );
+    const attachment = await Blackboard.getAttachmentById(attachmentId, tenantId);
     if (!attachment) {
-      throw new ServiceError("NOT_FOUND", "Attachment not found");
+      throw new ServiceError('NOT_FOUND', 'Attachment not found');
     }
     return dbToApi(attachment);
   }
@@ -383,9 +360,9 @@ export class BlackboardService {
   async deleteAttachment(attachmentId: number, tenantId: number) {
     const success = await Blackboard.deleteAttachment(attachmentId, tenantId);
     if (!success) {
-      throw new ServiceError("NOT_FOUND", "Attachment not found");
+      throw new ServiceError('NOT_FOUND', 'Attachment not found');
     }
-    return { message: "Attachment deleted successfully" };
+    return { message: 'Attachment deleted successfully' };
   }
 
   /**
@@ -413,9 +390,9 @@ export class BlackboardService {
     // Transform tags from objects to string array if present
     if (entry.tags && Array.isArray(entry.tags)) {
       transformed.tags = entry.tags.map((tag: unknown) =>
-        typeof tag === "string"
-          ? tag !== null && tag !== undefined
-          : (tag as { name: string }).name,
+        typeof tag === 'string' ?
+          tag !== null && tag !== undefined
+        : (tag as { name: string }).name,
       );
     }
 

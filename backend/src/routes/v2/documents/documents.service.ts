@@ -2,16 +2,12 @@
  * Documents v2 Service Layer
  * Handles all business logic for document management
  */
-
-import Department from "../../../models/department";
-import Document, {
-  DocumentUpdateData,
-  DbDocument,
-} from "../../../models/document";
-import Team from "../../../models/team";
-import User from "../../../models/user";
-import { dbToApi } from "../../../utils/fieldMapping";
-import { logger } from "../../../utils/logger";
+import Department from '../../../models/department';
+import Document, { DbDocument, DocumentUpdateData } from '../../../models/document';
+import Team from '../../../models/team';
+import User from '../../../models/user';
+import { dbToApi } from '../../../utils/fieldMapping';
+import { logger } from '../../../utils/logger';
 
 /**
  *
@@ -31,7 +27,7 @@ export class ServiceError extends Error {
     public details?: unknown,
   ) {
     super(message);
-    this.name = "ServiceError";
+    this.name = 'ServiceError';
   }
 }
 
@@ -87,11 +83,7 @@ export class DocumentsService {
    * @param tenantId
    * @param filters
    */
-  async listDocuments(
-    userId: number,
-    tenantId: number,
-    filters?: DocumentFilters,
-  ) {
+  async listDocuments(userId: number, tenantId: number, filters?: DocumentFilters) {
     try {
       const page = filters?.page ?? 1;
       const limit = filters?.limit ?? 20;
@@ -100,7 +92,7 @@ export class DocumentsService {
       // Get user for access control
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "User not found", 404);
+        throw new ServiceError('NOT_FOUND', 'User not found', 404);
       }
 
       // Build filter object for model
@@ -122,18 +114,14 @@ export class DocumentsService {
       let documents;
       let totalCount;
 
-      if (user.role === "admin" || user.role === "root") {
+      if (user.role === 'admin' || user.role === 'root') {
         // Admins can see all documents in their tenant
         const result = await Document.findWithFilters(tenantId, modelFilters);
         documents = result.documents;
         totalCount = result.total;
       } else {
         // Regular users only see documents they have access to
-        const result = await Document.findByEmployeeWithAccess(
-          userId,
-          tenantId,
-          modelFilters,
-        );
+        const result = await Document.findByEmployeeWithAccess(userId, tenantId, modelFilters);
         documents = result.documents;
         totalCount = result.total;
       }
@@ -150,7 +138,7 @@ export class DocumentsService {
           if (apiDoc.departmentId === null) apiDoc.departmentId = undefined;
 
           // Parse tags if stored as JSON string
-          if (typeof apiDoc.tags === "string") {
+          if (typeof apiDoc.tags === 'string') {
             try {
               apiDoc.tags = JSON.parse(apiDoc.tags);
             } catch {
@@ -180,10 +168,8 @@ export class DocumentsService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error listing documents: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError("SERVER_ERROR", "Failed to list documents", 500);
+      logger.error(`Error listing documents: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to list documents', 500);
     }
   }
 
@@ -198,27 +184,19 @@ export class DocumentsService {
       const document = await Document.findById(id);
 
       if (!document) {
-        throw new ServiceError("NOT_FOUND", "Document not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Document not found', 404);
       }
 
       // Check tenant isolation
       if (document.tenant_id !== tenantId) {
-        throw new ServiceError("NOT_FOUND", "Document not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Document not found', 404);
       }
 
       // Check access permissions
-      const hasAccess = await this.checkDocumentAccess(
-        document,
-        userId,
-        tenantId,
-      );
+      const hasAccess = await this.checkDocumentAccess(document, userId, tenantId);
 
       if (!hasAccess) {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "You don't have access to this document",
-          403,
-        );
+        throw new ServiceError('FORBIDDEN', "You don't have access to this document", 403);
       }
 
       // Mark as read
@@ -235,7 +213,7 @@ export class DocumentsService {
       if (apiDoc.departmentId === null) apiDoc.departmentId = undefined;
 
       // Parse tags
-      if (typeof apiDoc.tags === "string") {
+      if (typeof apiDoc.tags === 'string') {
         try {
           apiDoc.tags = JSON.parse(apiDoc.tags);
         } catch {
@@ -253,10 +231,8 @@ export class DocumentsService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error getting document ${id}: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError("SERVER_ERROR", "Failed to get document", 500);
+      logger.error(`Error getting document ${id}: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get document', 500);
     }
   }
 
@@ -266,11 +242,7 @@ export class DocumentsService {
    * @param createdBy
    * @param tenantId
    */
-  async createDocument(
-    data: DocumentCreateInput,
-    createdBy: number,
-    tenantId: number,
-  ) {
+  async createDocument(data: DocumentCreateInput, createdBy: number, tenantId: number) {
     try {
       // Validate recipient based on type
       await this.validateRecipient(data, tenantId);
@@ -278,8 +250,8 @@ export class DocumentsService {
       // Validate file type
       if (!this.isAllowedFileType(data.mimeType)) {
         throw new ServiceError(
-          "BAD_REQUEST",
-          "File type not allowed. Only PDF files are accepted",
+          'BAD_REQUEST',
+          'File type not allowed. Only PDF files are accepted',
           400,
         );
       }
@@ -290,11 +262,7 @@ export class DocumentsService {
         userId: data.userId ?? createdBy, // Always set userId - use createdBy if not specified
         teamId: data.teamId,
         departmentId: data.departmentId,
-        recipientType: data.recipientType as
-          | "user"
-          | "team"
-          | "department"
-          | "company",
+        recipientType: data.recipientType as 'user' | 'team' | 'department' | 'company',
         category: data.category,
         fileName: data.filename, // Model expects fileName
         fileContent: data.fileContent,
@@ -314,10 +282,8 @@ export class DocumentsService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error creating document: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError("SERVER_ERROR", "Failed to create document", 500);
+      logger.error(`Error creating document: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create document', 500);
     }
   }
 
@@ -328,34 +294,25 @@ export class DocumentsService {
    * @param userId
    * @param tenantId
    */
-  async updateDocument(
-    id: number,
-    data: DocumentUpdateInput,
-    userId: number,
-    tenantId: number,
-  ) {
+  async updateDocument(id: number, data: DocumentUpdateInput, userId: number, tenantId: number) {
     try {
       // Get existing document
       const document = await Document.findById(id);
 
       if (!document || document.tenant_id !== tenantId) {
-        throw new ServiceError("NOT_FOUND", "Document not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Document not found', 404);
       }
 
       // Check if user has permission to update
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "User not found", 404);
+        throw new ServiceError('NOT_FOUND', 'User not found', 404);
       }
 
       // Only admin or document creator can update
-      if (
-        user.role !== "admin" &&
-        user.role !== "root" &&
-        document.created_by !== userId
-      ) {
+      if (user.role !== 'admin' && user.role !== 'root' && document.created_by !== userId) {
         throw new ServiceError(
-          "FORBIDDEN",
+          'FORBIDDEN',
           "You don't have permission to update this document",
           403,
         );
@@ -366,8 +323,7 @@ export class DocumentsService {
 
       if (data.filename !== undefined) updateData.filename = data.filename;
       if (data.category !== undefined) updateData.category = data.category;
-      if (data.description !== undefined)
-        updateData.description = data.description;
+      if (data.description !== undefined) updateData.description = data.description;
       // Note: is_public and expires_at columns don't exist in current schema
       // if (data.isPublic !== undefined) updateData.is_public = data.isPublic;
       // if (data.expiresAt !== undefined) updateData.expires_at = data.expiresAt;
@@ -383,10 +339,8 @@ export class DocumentsService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error updating document ${id}: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError("SERVER_ERROR", "Failed to update document", 500);
+      logger.error(`Error updating document ${id}: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update document', 500);
     }
   }
 
@@ -402,35 +356,29 @@ export class DocumentsService {
       const document = await Document.findById(id);
 
       if (!document || document.tenant_id !== tenantId) {
-        throw new ServiceError("NOT_FOUND", "Document not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Document not found', 404);
       }
 
       // Check permissions
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "User not found", 404);
+        throw new ServiceError('NOT_FOUND', 'User not found', 404);
       }
 
       // Only admin can delete documents
-      if (user.role !== "admin" && user.role !== "root") {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "Only administrators can delete documents",
-          403,
-        );
+      if (user.role !== 'admin' && user.role !== 'root') {
+        throw new ServiceError('FORBIDDEN', 'Only administrators can delete documents', 403);
       }
 
       await Document.delete(id);
 
-      return { message: "Document deleted successfully" };
+      return { message: 'Document deleted successfully' };
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error deleting document ${id}: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError("SERVER_ERROR", "Failed to delete document", 500);
+      logger.error(`Error deleting document ${id}: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete document', 500);
     }
   }
 
@@ -441,33 +389,24 @@ export class DocumentsService {
    * @param userId
    * @param tenantId
    */
-  async archiveDocument(
-    id: number,
-    archive: boolean,
-    userId: number,
-    tenantId: number,
-  ) {
+  async archiveDocument(id: number, archive: boolean, userId: number, tenantId: number) {
     try {
       // Get document
       const document = await Document.findById(id);
 
       if (!document || document.tenant_id !== tenantId) {
-        throw new ServiceError("NOT_FOUND", "Document not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Document not found', 404);
       }
 
       // Check permissions
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "User not found", 404);
+        throw new ServiceError('NOT_FOUND', 'User not found', 404);
       }
 
       // Only admin can archive documents
-      if (user.role !== "admin" && user.role !== "root") {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "Only administrators can archive documents",
-          403,
-        );
+      if (user.role !== 'admin' && user.role !== 'root') {
+        throw new ServiceError('FORBIDDEN', 'Only administrators can archive documents', 403);
       }
 
       const updateData: DocumentUpdateData = {
@@ -477,18 +416,14 @@ export class DocumentsService {
       await Document.update(id, updateData);
 
       return {
-        message: archive
-          ? "Document archived successfully"
-          : "Document unarchived successfully",
+        message: archive ? 'Document archived successfully' : 'Document unarchived successfully',
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error archiving document ${id}: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError("SERVER_ERROR", "Failed to archive document", 500);
+      logger.error(`Error archiving document ${id}: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to archive document', 500);
     }
   }
 
@@ -503,22 +438,14 @@ export class DocumentsService {
       const document = await Document.findById(id);
 
       if (!document || document.tenant_id !== tenantId) {
-        throw new ServiceError("NOT_FOUND", "Document not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Document not found', 404);
       }
 
       // Check access
-      const hasAccess = await this.checkDocumentAccess(
-        document,
-        userId,
-        tenantId,
-      );
+      const hasAccess = await this.checkDocumentAccess(document, userId, tenantId);
 
       if (!hasAccess) {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "You don't have access to this document",
-          403,
-        );
+        throw new ServiceError('FORBIDDEN', "You don't have access to this document", 403);
       }
 
       // Increment download count
@@ -534,14 +461,8 @@ export class DocumentsService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(
-        `Error getting document content ${id}: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get document content",
-        500,
-      );
+      logger.error(`Error getting document content ${id}: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get document content', 500);
     }
   }
 
@@ -554,26 +475,20 @@ export class DocumentsService {
     try {
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "User not found", 404);
+        throw new ServiceError('NOT_FOUND', 'User not found', 404);
       }
 
       // Get unread count
-      const unreadCount = await Document.getUnreadCountForUser(
-        userId,
-        tenantId,
-      );
+      const unreadCount = await Document.getUnreadCountForUser(userId, tenantId);
 
       // Get total storage used (admin only)
       let storageUsed = 0;
-      if (user.role === "admin" || user.role === "root") {
+      if (user.role === 'admin' || user.role === 'root') {
         storageUsed = await Document.getTotalStorageUsed(tenantId);
       }
 
       // Get document counts by category
-      const categoryCounts = await Document.getCountsByCategory(
-        tenantId,
-        userId,
-      );
+      const categoryCounts = await Document.getCountsByCategory(tenantId, userId);
 
       return {
         unreadCount,
@@ -581,14 +496,8 @@ export class DocumentsService {
         categoryCounts,
       };
     } catch (error: unknown) {
-      logger.error(
-        `Error getting document stats: ${String((error as Error).message)}`,
-      );
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get document stats",
-        500,
-      );
+      logger.error(`Error getting document stats: ${String((error as Error).message)}`);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get document stats', 500);
     }
   }
 
@@ -607,25 +516,25 @@ export class DocumentsService {
     if (!user) return false;
 
     // Admins have access to all documents
-    if (user.role === "admin" || user.role === "root") {
+    if (user.role === 'admin' || user.role === 'root') {
       return true;
     }
 
     // Check based on recipient type
     switch (document.recipient_type) {
-      case "user":
+      case 'user':
         return document.user_id === userId;
 
-      case "team": {
+      case 'team': {
         if (!document.team_id) return false;
         const teamMembers = await Team.getTeamMembers(document.team_id);
         return teamMembers.some((member) => member.id === userId);
       }
 
-      case "department":
+      case 'department':
         return user.department_id === document.department_id;
 
-      case "company":
+      case 'company':
         return true; // All users in tenant can see company documents
 
       default:
@@ -640,57 +549,49 @@ export class DocumentsService {
    */
   private async validateRecipient(data: DocumentCreateInput, tenantId: number) {
     switch (data.recipientType) {
-      case "user": {
+      case 'user': {
         if (!data.userId) {
-          throw new ServiceError(
-            "BAD_REQUEST",
-            "User ID is required for user recipient type",
-            400,
-          );
+          throw new ServiceError('BAD_REQUEST', 'User ID is required for user recipient type', 400);
         }
         const user = await User.findById(data.userId, tenantId);
         if (!user) {
-          throw new ServiceError("BAD_REQUEST", "Invalid user ID", 400);
+          throw new ServiceError('BAD_REQUEST', 'Invalid user ID', 400);
         }
         break;
       }
 
-      case "team": {
+      case 'team': {
         if (!data.teamId) {
-          throw new ServiceError(
-            "BAD_REQUEST",
-            "Team ID is required for team recipient type",
-            400,
-          );
+          throw new ServiceError('BAD_REQUEST', 'Team ID is required for team recipient type', 400);
         }
         const team = await Team.findById(data.teamId);
         if (!team || team.tenant_id !== tenantId) {
-          throw new ServiceError("BAD_REQUEST", "Invalid team ID", 400);
+          throw new ServiceError('BAD_REQUEST', 'Invalid team ID', 400);
         }
         break;
       }
 
-      case "department": {
+      case 'department': {
         if (!data.departmentId) {
           throw new ServiceError(
-            "BAD_REQUEST",
-            "Department ID is required for department recipient type",
+            'BAD_REQUEST',
+            'Department ID is required for department recipient type',
             400,
           );
         }
         const dept = await Department.findById(data.departmentId, tenantId);
         if (!dept) {
-          throw new ServiceError("BAD_REQUEST", "Invalid department ID", 400);
+          throw new ServiceError('BAD_REQUEST', 'Invalid department ID', 400);
         }
         break;
       }
 
-      case "company":
+      case 'company':
         // No specific recipient needed
         break;
 
       default:
-        throw new ServiceError("BAD_REQUEST", "Invalid recipient type", 400);
+        throw new ServiceError('BAD_REQUEST', 'Invalid recipient type', 400);
     }
   }
 
@@ -699,7 +600,7 @@ export class DocumentsService {
    * @param mimeType
    */
   private isAllowedFileType(mimeType: string): boolean {
-    const allowedTypes = ["application/pdf"];
+    const allowedTypes = ['application/pdf'];
     return allowedTypes.includes(mimeType);
   }
 }

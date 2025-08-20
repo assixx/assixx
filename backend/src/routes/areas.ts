@@ -2,21 +2,19 @@
  * Areas Routes
  * API endpoints for area/location management
  */
+import express, { Router } from 'express';
+import { RowDataPacket } from 'mysql2/promise';
 
-import { RowDataPacket } from "mysql2/promise";
-
-import express, { Router } from "express";
-
-import { authenticateToken } from "../auth";
-import { execute } from "../database";
-import type { AuthenticatedRequest } from "../types/request.types";
-import { getErrorMessage } from "../utils/errorHandler";
+import { authenticateToken } from '../auth';
+import { execute } from '../database';
+import type { AuthenticatedRequest } from '../types/request.types';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();
 
 // Constants
 const ERROR_MESSAGES = {
-  TENANT_NOT_FOUND: "Tenant ID not found",
+  TENANT_NOT_FOUND: 'Tenant ID not found',
 } as const;
 
 // Request body interfaces
@@ -43,7 +41,7 @@ interface Area {
  * Get all areas for the authenticated tenant
  * GET /api/areas
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get('/', authenticateToken, async (req, res): Promise<void> => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
   try {
@@ -79,10 +77,10 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
     // Return raw array for frontend compatibility
     res.json(areas);
   } catch (error: unknown) {
-    console.error("[Areas] List error:", error);
+    console.error('[Areas] List error:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Abrufen der Bereiche",
+      message: 'Fehler beim Abrufen der Bereiche',
       error: getErrorMessage(error),
     });
   }
@@ -92,7 +90,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * Get area by ID
  * GET /api/areas/:id
  */
-router.get("/:id", authenticateToken, (req, res): void => {
+router.get('/:id', authenticateToken, (req, res): void => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
 
@@ -109,9 +107,9 @@ router.get("/:id", authenticateToken, (req, res): void => {
     // Mock implementation
     const area: Area = {
       id: areaId,
-      name: "Beispielbereich",
-      description: "Ein Beispielbereich",
-      type: "office",
+      name: 'Beispielbereich',
+      description: 'Ein Beispielbereich',
+      type: 'office',
       capacity: 50,
       tenant_id: authReq.tenantId,
       created_at: new Date(),
@@ -122,7 +120,7 @@ router.get("/:id", authenticateToken, (req, res): void => {
     if (area.tenant_id !== authReq.tenantId) {
       res.status(404).json({
         success: false,
-        message: "Bereich nicht gefunden",
+        message: 'Bereich nicht gefunden',
       });
       return;
     }
@@ -132,10 +130,10 @@ router.get("/:id", authenticateToken, (req, res): void => {
       data: area,
     });
   } catch (error: unknown) {
-    console.error("[Areas] Get by ID error:", error);
+    console.error('[Areas] Get by ID error:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Abrufen des Bereichs",
+      message: 'Fehler beim Abrufen des Bereichs',
       error: getErrorMessage(error),
     });
   }
@@ -145,16 +143,16 @@ router.get("/:id", authenticateToken, (req, res): void => {
  * Create new area (Admin only)
  * POST /api/areas
  */
-router.post("/", authenticateToken, (req, res): void => {
+router.post('/', authenticateToken, (req, res): void => {
   // Type assertion after authentication middleware
   const authReq = req as AuthenticatedRequest;
 
   try {
     // Check admin permission
-    if (!["admin", "root", "manager"].includes(authReq.user.role)) {
+    if (!['admin', 'root', 'manager'].includes(authReq.user.role)) {
       res.status(403).json({
         success: false,
-        message: "Keine Berechtigung zum Erstellen von Bereichen",
+        message: 'Keine Berechtigung zum Erstellen von Bereichen',
       });
       return;
     }
@@ -173,7 +171,7 @@ router.post("/", authenticateToken, (req, res): void => {
     if (!body.name) {
       res.status(400).json({
         success: false,
-        message: "Name ist erforderlich",
+        message: 'Name ist erforderlich',
       });
       return;
     }
@@ -183,7 +181,7 @@ router.post("/", authenticateToken, (req, res): void => {
       id: Math.floor(Math.random() * 1000),
       name: body.name,
       description: body.description,
-      type: body.type ?? "general",
+      type: body.type ?? 'general',
       capacity: body.capacity,
       tenant_id: authReq.tenantId,
       created_at: new Date(),
@@ -193,13 +191,13 @@ router.post("/", authenticateToken, (req, res): void => {
     res.status(201).json({
       success: true,
       data: newArea,
-      message: "Bereich erfolgreich erstellt",
+      message: 'Bereich erfolgreich erstellt',
     });
   } catch (error: unknown) {
-    console.error("[Areas] Create error:", error);
+    console.error('[Areas] Create error:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Erstellen des Bereichs",
+      message: 'Fehler beim Erstellen des Bereichs',
       error: getErrorMessage(error),
     });
   }

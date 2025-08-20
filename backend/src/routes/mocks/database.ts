@@ -2,27 +2,22 @@
  * Database Mock Utilities for Testing
  * Provides test database setup, cleanup, and helper functions
  */
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { Application } from 'express';
+import { Pool, PoolOptions, ResultSetHeader, createPool } from 'mysql2/promise';
+import request from 'supertest';
 
-import crypto from "crypto";
-
-import bcrypt from "bcryptjs";
-import { Pool, createPool, PoolOptions, ResultSetHeader } from "mysql2/promise";
-import request from "supertest";
-
-import { Application } from "express";
-
-import { TEST_DATA_PREFIX } from "./test-constants";
-import { testDataTracker } from "./test-data-tracker";
+import { TEST_DATA_PREFIX } from './test-constants';
+import { testDataTracker } from './test-data-tracker';
 
 // Test database configuration
 const TEST_DB_CONFIG: PoolOptions = {
-  host: process.env.DB_HOST ?? "localhost",
-  port: Number.parseInt(
-    process.env.DB_PORT ?? (process.env.CI ? "3306" : "3307"),
-  ),
-  user: process.env.DB_USER ?? "assixx_user",
-  password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
-  database: process.env.DB_NAME ?? "main",
+  host: process.env.DB_HOST ?? 'localhost',
+  port: Number.parseInt(process.env.DB_PORT ?? (process.env.CI ? '3306' : '3307')),
+  user: process.env.DB_USER ?? 'assixx_user',
+  password: process.env.DB_PASSWORD ?? 'AssixxP@ss2025!',
+  database: process.env.DB_NAME ?? 'main',
   waitForConnections: true,
   connectionLimit: 2, // Reduziert von 10 auf 2 für schnellere Tests
   queueLimit: 0,
@@ -38,7 +33,7 @@ let schemaInitialized = false;
  * @returns A random number between 0 (inclusive) and max (exclusive)
  */
 function getSecureRandomNumber(max: number): number {
-  if (max <= 0) throw new Error("max must be greater than 0");
+  if (max <= 0) throw new Error('max must be greater than 0');
 
   // Calculate the largest multiple of max that fits in the random source
   const maxValidValue = Math.floor(4294967296 / max) * max;
@@ -200,7 +195,7 @@ async function initializeSchema(db: Pool): Promise<void> {
     await createSurveyTables(db);
     await createDocumentTables(db);
   } catch (error: unknown) {
-    console.error("Error initializing test database schema:", error);
+    console.error('Error initializing test database schema:', error);
     throw error;
   }
 }
@@ -237,15 +232,11 @@ async function createAuthTables(db: Pool): Promise<void> {
 
   // Skip password_reset_tokens table creation if it doesn't exist in production
   // This table was removed due to foreign key issues
-  console.info(
-    "Skipping password_reset_tokens table creation (removed from production)",
-  );
+  console.info('Skipping password_reset_tokens table creation (removed from production)');
 
   // Skip oauth_tokens table creation if it doesn't exist in production
   // This table was removed due to foreign key issues
-  console.info(
-    "Skipping oauth_tokens table creation (removed from production)",
-  );
+  console.info('Skipping oauth_tokens table creation (removed from production)');
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS activity_logs (
@@ -844,7 +835,7 @@ async function createDocumentTables(db: Pool): Promise<void> {
  */
 export async function cleanupTestData(): Promise<void> {
   if (!testDb) {
-    console.info("WARNING: testDb is null, cannot cleanup test data");
+    console.info('WARNING: testDb is null, cannot cleanup test data');
     return;
   }
 
@@ -857,64 +848,32 @@ export async function cleanupTestData(): Promise<void> {
     const testTenantQuery = `(SELECT id FROM tenants WHERE subdomain LIKE '${TEST_DATA_PREFIX}%' OR company_name LIKE '${TEST_DATA_PREFIX}%')`;
 
     // Delete all data associated with test tenants
-    await testDb.execute(
-      `DELETE FROM survey_answers WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM survey_responses WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM survey_questions WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM surveys WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM survey_templates WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM survey_answers WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM survey_responses WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM survey_questions WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM surveys WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM survey_templates WHERE tenant_id IN ${testTenantQuery}`);
 
-    await testDb.execute(
-      `DELETE FROM chat_message_edits WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM chat_message_edits WHERE tenant_id IN ${testTenantQuery}`);
     await testDb.execute(
       `DELETE FROM chat_message_reactions WHERE tenant_id IN ${testTenantQuery}`,
     );
     await testDb.execute(
       `DELETE FROM chat_message_read_receipts WHERE tenant_id IN ${testTenantQuery}`,
     );
-    await testDb.execute(
-      `DELETE FROM chat_messages WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM chat_channel_members WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM chat_channels WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM chat_messages WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM chat_channel_members WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM chat_channels WHERE tenant_id IN ${testTenantQuery}`);
 
-    await testDb.execute(
-      `DELETE FROM shift_swap_requests WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM shift_assignments WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM shift_plans WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM shift_templates WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM shift_swap_requests WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM shift_assignments WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM shift_plans WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM shift_templates WHERE tenant_id IN ${testTenantQuery}`);
 
     // KVP tables - jetzt haben alle tenant_id dank Migration!
-    await testDb.execute(
-      `DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM kvp_suggestions WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM kvp_comments WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM kvp_votes WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM kvp_suggestions WHERE tenant_id IN ${testTenantQuery}`);
 
     await testDb.execute(
       `DELETE FROM calendar_recurring_patterns WHERE tenant_id IN ${testTenantQuery}`,
@@ -922,71 +881,47 @@ export async function cleanupTestData(): Promise<void> {
     await testDb.execute(
       `DELETE FROM calendar_attendees WHERE event_id IN (SELECT id FROM calendar_events WHERE tenant_id IN ${testTenantQuery})`,
     );
-    await testDb.execute(
-      `DELETE FROM calendar_events WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM calendar_events WHERE tenant_id IN ${testTenantQuery}`);
 
     await testDb.execute(
       `DELETE FROM blackboard_confirmations WHERE tenant_id IN ${testTenantQuery}`,
     );
-    await testDb.execute(
-      `DELETE FROM blackboard_entries WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM blackboard_entries WHERE tenant_id IN ${testTenantQuery}`);
 
-    await testDb.execute(
-      `DELETE FROM document_permissions WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM documents WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM document_permissions WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM documents WHERE tenant_id IN ${testTenantQuery}`);
 
-    await testDb.execute(
-      `DELETE FROM activity_logs WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM admin_logs WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM activity_logs WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM admin_logs WHERE tenant_id IN ${testTenantQuery}`);
 
     // Delete user-specific data with PREFIX
-    console.info("Deleting user sessions and oauth tokens...");
+    console.info('Deleting user sessions and oauth tokens...');
     await testDb.execute(
       `DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%')`,
     );
     await testDb.execute(
       `DELETE FROM oauth_tokens WHERE user_id IN (SELECT id FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%')`,
     );
-    await testDb.execute(
-      `DELETE FROM login_attempts WHERE username LIKE '${TEST_DATA_PREFIX}%'`,
-    );
+    await testDb.execute(`DELETE FROM login_attempts WHERE username LIKE '${TEST_DATA_PREFIX}%'`);
 
     // Delete core entities with PREFIX
     const userDeleteQuery = `DELETE FROM users WHERE username LIKE '${TEST_DATA_PREFIX}%' OR email LIKE '${TEST_DATA_PREFIX}%'`;
-    console.info("Executing user cleanup query:", userDeleteQuery);
+    console.info('Executing user cleanup query:', userDeleteQuery);
     const [userDeleteResult] = (await testDb.execute(userDeleteQuery)) as [
       { affectedRows: number },
       unknown,
     ];
     console.info(`Deleted ${userDeleteResult.affectedRows} test users`);
-    await testDb.execute(
-      `DELETE FROM teams WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM departments WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM teams WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM departments WHERE tenant_id IN ${testTenantQuery}`);
 
     // Delete machine-related data (must be before tenants due to foreign key)
-    await testDb.execute(
-      `DELETE FROM machine_metrics WHERE tenant_id IN ${testTenantQuery}`,
-    );
-    await testDb.execute(
-      `DELETE FROM machine_documents WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM machine_metrics WHERE tenant_id IN ${testTenantQuery}`);
+    await testDb.execute(`DELETE FROM machine_documents WHERE tenant_id IN ${testTenantQuery}`);
     await testDb.execute(
       `DELETE FROM machine_maintenance_history WHERE tenant_id IN ${testTenantQuery}`,
     );
-    await testDb.execute(
-      `DELETE FROM machines WHERE tenant_id IN ${testTenantQuery}`,
-    );
+    await testDb.execute(`DELETE FROM machines WHERE tenant_id IN ${testTenantQuery}`);
 
     await testDb.execute(
       `DELETE FROM tenants WHERE subdomain LIKE '${TEST_DATA_PREFIX}%' OR company_name LIKE '${TEST_DATA_PREFIX}%'`,
@@ -995,13 +930,13 @@ export async function cleanupTestData(): Promise<void> {
     // Clear tracker
     testDataTracker.clear();
 
-    console.info("Test data cleanup completed");
+    console.info('Test data cleanup completed');
 
     // WICHTIG: Verbindung NICHT schließen - Tests können sie weiterverwenden
     // await testDb.end();
     // testDb = null;
   } catch (error: unknown) {
-    console.error("Error cleaning up test data:", error);
+    console.error('Error cleaning up test data:', error);
   }
 }
 
@@ -1019,11 +954,7 @@ export async function closeTestDatabase(): Promise<void> {
 /**
  * Create a test tenant
  */
-export async function createTestTenant(
-  db: Pool,
-  subdomain: string,
-  name: string,
-): Promise<number> {
+export async function createTestTenant(db: Pool, subdomain: string, name: string): Promise<number> {
   const timestamp = Date.now();
   const randomSuffix = getSecureRandomNumber(1000);
   // Add TEST_DATA_PREFIX to ensure safe cleanup
@@ -1034,23 +965,16 @@ export async function createTestTenant(
   try {
     // First try with company_name (production schema)
     const [result] = await db.execute(
-      "INSERT INTO tenants (subdomain, company_name, email, status) VALUES (?, ?, ?, ?)",
-      [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, "active"],
+      'INSERT INTO tenants (subdomain, company_name, email, status) VALUES (?, ?, ?, ?)',
+      [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, 'active'],
     );
     const tenantId = (result as ResultSetHeader).insertId;
-    console.info(
-      `Created test tenant with ID: ${tenantId}, subdomain: ${uniqueSubdomain}`,
-    );
+    console.info(`Created test tenant with ID: ${tenantId}, subdomain: ${uniqueSubdomain}`);
 
     // Verify tenant was created
-    const [verifyResult] = await db.execute(
-      "SELECT id FROM tenants WHERE id = ?",
-      [tenantId],
-    );
+    const [verifyResult] = await db.execute('SELECT id FROM tenants WHERE id = ?', [tenantId]);
     if (!Array.isArray(verifyResult) || verifyResult.length === 0) {
-      throw new Error(
-        `Tenant with ID ${tenantId} was not found after creation`,
-      );
+      throw new Error(`Tenant with ID ${tenantId} was not found after creation`);
     }
 
     testDataTracker.trackTenant(tenantId); // Track created tenant
@@ -1063,8 +987,8 @@ export async function createTestTenant(
       error.message?.includes("Field 'name' doesn't have a default value")
     ) {
       const [result] = await db.execute(
-        "INSERT INTO tenants (subdomain, name, email, status) VALUES (?, ?, ?, ?)",
-        [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, "active"],
+        'INSERT INTO tenants (subdomain, name, email, status) VALUES (?, ?, ?, ?)',
+        [uniqueSubdomain, uniqueName, `${uniqueSubdomain}@test.com`, 'active'],
       );
       const tenantId = (result as ResultSetHeader).insertId;
       console.info(
@@ -1072,14 +996,9 @@ export async function createTestTenant(
       );
 
       // Verify tenant was created
-      const [verifyResult] = await db.execute(
-        "SELECT id FROM tenants WHERE id = ?",
-        [tenantId],
-      );
+      const [verifyResult] = await db.execute('SELECT id FROM tenants WHERE id = ?', [tenantId]);
       if (!Array.isArray(verifyResult) || verifyResult.length === 0) {
-        throw new Error(
-          `Tenant with ID ${tenantId} was not found after creation`,
-        );
+        throw new Error(`Tenant with ID ${tenantId} was not found after creation`);
       }
 
       testDataTracker.trackTenant(tenantId); // Track created tenant
@@ -1098,20 +1017,19 @@ export async function createTestUser(
     username: string;
     email: string;
     password: string;
-    role: "root" | "admin" | "employee";
+    role: 'root' | 'admin' | 'employee';
     tenant_id: number;
     department_id?: number;
     first_name?: string;
     last_name?: string;
-    status?: "active" | "inactive";
+    status?: 'active' | 'inactive';
   },
 ): Promise<{ id: number; username: string; email: string }> {
   const hashedPassword = await bcrypt.hash(userData.password, 10);
 
   // For auth tests, we need predictable emails
-  const isAuthTest = userData.email.includes("@authtest");
-  const isRootUser =
-    userData.role === "root" && userData.email === "root@system.de";
+  const isAuthTest = userData.email.includes('@authtest');
+  const isRootUser = userData.role === 'root' && userData.email === 'root@system.de';
   const timestamp = Date.now();
   const randomSuffix = getSecureRandomNumber(1000);
 
@@ -1121,8 +1039,8 @@ export async function createTestUser(
 
   if (
     isAuthTest &&
-    (userData.username === "testuser1@authtest1.de" ||
-      userData.username === "testuser2@authtest2.de")
+    (userData.username === 'testuser1@authtest1.de' ||
+      userData.username === 'testuser2@authtest2.de')
   ) {
     // Auth test users need predictable names but with prefix
     uniqueUsername = `${TEST_DATA_PREFIX}${userData.username}`;
@@ -1134,7 +1052,7 @@ export async function createTestUser(
   } else {
     // Other users get prefix AND suffix
     uniqueUsername = `${TEST_DATA_PREFIX}${userData.username}_${timestamp}_${randomSuffix}`;
-    uniqueEmail = `${TEST_DATA_PREFIX}${userData.email.replace("@", `_${timestamp}_${randomSuffix}@`)}`;
+    uniqueEmail = `${TEST_DATA_PREFIX}${userData.email.replace('@', `_${timestamp}_${randomSuffix}@`)}`;
   }
 
   // Generate unique employee number using cryptographically secure random without bias
@@ -1157,8 +1075,8 @@ export async function createTestUser(
         userData.tenant_id,
         userData.department_id ?? null,
         userData.first_name ?? userData.username,
-        userData.last_name ?? "User",
-        userData.status ?? "active",
+        userData.last_name ?? 'User',
+        userData.status ?? 'active',
         employeeNumber,
       ],
     );
@@ -1185,8 +1103,8 @@ export async function createTestUser(
           userData.tenant_id,
           userData.department_id ?? null,
           userData.first_name ?? userData.username,
-          userData.last_name ?? "User",
-          userData.status ?? "active",
+          userData.last_name ?? 'User',
+          userData.status ?? 'active',
         ],
       );
       const userId = (result as ResultSetHeader).insertId;
@@ -1212,7 +1130,7 @@ export async function createTestDepartment(
   managerId?: number,
 ): Promise<number> {
   const [result] = await db.execute(
-    "INSERT INTO departments (name, tenant_id, parent_id, manager_id) VALUES (?, ?, ?, ?)",
+    'INSERT INTO departments (name, tenant_id, parent_id, manager_id) VALUES (?, ?, ?, ?)',
     [name, tenantId, parentId ?? null, managerId ?? null],
   );
   const deptId = (result as ResultSetHeader).insertId;
@@ -1230,7 +1148,7 @@ export async function createTestTeam(
   name: string,
 ): Promise<number> {
   const [result] = await db.execute(
-    "INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)",
+    'INSERT INTO teams (name, department_id, tenant_id) VALUES (?, ?, ?)',
     [name, departmentId, tenantId],
   );
   const teamId = (result as ResultSetHeader).insertId;
@@ -1247,15 +1165,15 @@ export async function getAuthToken(
   password: string,
 ): Promise<string> {
   const response = await request(app)
-    .post("/api/auth/login")
+    .post('/api/auth/login')
     .send({
       username,
       password,
-      fingerprint: "test-fingerprint-" + username,
+      fingerprint: 'test-fingerprint-' + username,
     });
 
   if (response.status !== 200) {
-    console.error("Login failed:", {
+    console.error('Login failed:', {
       status: response.status,
       body: response.body,
       username,
@@ -1274,9 +1192,9 @@ export async function getAuthToken(
 export async function createTestFile(
   filename: string,
   content: string | Buffer,
-  mimeType = "text/plain",
+  mimeType = 'text/plain',
 ): Promise<{ buffer: Buffer; originalname: string; mimetype: string }> {
-  const buffer = typeof content === "string" ? Buffer.from(content) : content;
+  const buffer = typeof content === 'string' ? Buffer.from(content) : content;
 
   return {
     buffer,

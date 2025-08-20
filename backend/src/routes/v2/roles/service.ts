@@ -2,14 +2,12 @@
  * Roles Service v2
  * Business logic for role management
  */
+import { RowDataPacket } from 'mysql2/promise';
 
-import { RowDataPacket } from "mysql2/promise";
-
-import { execute } from "../../../utils/db.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { Role, RoleName, RoleCheckRequest } from "./types.js";
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
+import { Role, RoleCheckRequest, RoleName } from './types.js';
 
 /**
  *
@@ -20,47 +18,46 @@ export class RolesService {
    */
   private static readonly ROLES: Record<RoleName, Role> = {
     root: {
-      id: "root",
-      name: "Root Administrator",
+      id: 'root',
+      name: 'Root Administrator',
       description:
-        "Super administrator with full system access. Can manage all tenants and system settings.",
+        'Super administrator with full system access. Can manage all tenants and system settings.',
       level: 100,
       permissions: [
-        "system.manage",
-        "tenants.manage",
-        "users.manage.all",
-        "settings.manage.all",
-        "logs.view.all",
-        "api.access.all",
+        'system.manage',
+        'tenants.manage',
+        'users.manage.all',
+        'settings.manage.all',
+        'logs.view.all',
+        'api.access.all',
       ],
     },
     admin: {
-      id: "admin",
-      name: "Administrator",
-      description: "Tenant administrator with full access within their tenant.",
+      id: 'admin',
+      name: 'Administrator',
+      description: 'Tenant administrator with full access within their tenant.',
       level: 50,
       permissions: [
-        "users.manage",
-        "departments.manage",
-        "teams.manage",
-        "settings.manage",
-        "reports.view",
-        "employees.manage",
+        'users.manage',
+        'departments.manage',
+        'teams.manage',
+        'settings.manage',
+        'reports.view',
+        'employees.manage',
       ],
     },
     employee: {
-      id: "employee",
-      name: "Employee",
-      description:
-        "Regular employee with limited access to their own data and assigned features.",
+      id: 'employee',
+      name: 'Employee',
+      description: 'Regular employee with limited access to their own data and assigned features.',
       level: 10,
       permissions: [
-        "profile.view.own",
-        "profile.edit.own",
-        "shifts.view.own",
-        "documents.view.assigned",
-        "kvp.create",
-        "surveys.respond",
+        'profile.view.own',
+        'profile.edit.own',
+        'shifts.view.own',
+        'documents.view.assigned',
+        'kvp.create',
+        'surveys.respond',
       ],
     },
   };
@@ -79,7 +76,7 @@ export class RolesService {
   async getRoleById(roleId: RoleName): Promise<Role> {
     const role = RolesService.ROLES[roleId];
     if (!role) {
-      throw new ServiceError("NOT_FOUND", `Role ${roleId} not found`);
+      throw new ServiceError('NOT_FOUND', `Role ${roleId} not found`);
     }
     return role;
   }
@@ -96,13 +93,12 @@ export class RolesService {
   }> {
     try {
       // Get user's current role from database
-      const [rows] = await execute<RowDataPacket[]>(
-        "SELECT role FROM users WHERE id = ?",
-        [request.userId],
-      );
+      const [rows] = await execute<RowDataPacket[]>('SELECT role FROM users WHERE id = ?', [
+        request.userId,
+      ]);
 
       if (rows.length === 0) {
-        throw new ServiceError("NOT_FOUND", "User not found");
+        throw new ServiceError('NOT_FOUND', 'User not found');
       }
 
       const userRole = rows[0].role as RoleName;
@@ -117,8 +113,8 @@ export class RolesService {
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error checking user role:", error);
-      throw new ServiceError("SERVER_ERROR", "Failed to check user role");
+      logger.error('Error checking user role:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to check user role');
     }
   }
 
@@ -135,11 +131,11 @@ export class RolesService {
       hierarchy: [
         {
           role: RolesService.ROLES.root,
-          canManage: ["admin", "employee"],
+          canManage: ['admin', 'employee'],
         },
         {
           role: RolesService.ROLES.admin,
-          canManage: ["employee"],
+          canManage: ['employee'],
         },
         {
           role: RolesService.ROLES.employee,
@@ -155,17 +151,13 @@ export class RolesService {
    */
   async getAssignableRoles(currentUserRole: RoleName): Promise<Role[]> {
     switch (currentUserRole) {
-      case "root":
+      case 'root':
         // Root can assign all roles
-        return [
-          RolesService.ROLES.admin,
-          RolesService.ROLES.employee,
-          RolesService.ROLES.root,
-        ];
-      case "admin":
+        return [RolesService.ROLES.admin, RolesService.ROLES.employee, RolesService.ROLES.root];
+      case 'admin':
         // Admin can only assign employee role
         return [RolesService.ROLES.employee];
-      case "employee":
+      case 'employee':
         // Employees cannot assign roles
         return [];
       default:

@@ -2,33 +2,31 @@
  * Root Service v2
  * Business logic for root user operations and tenant management
  */
+import bcrypt from 'bcryptjs';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import bcrypt from "bcryptjs";
-import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
-import RootLog from "../../../models/rootLog";
-import TenantModel from "../../../models/tenant.js";
-import UserModel from "../../../models/user.js";
-import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
-import { execute } from "../../../utils/db.js";
-import { generateEmployeeId } from "../../../utils/employeeIdGenerator.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
+import RootLog from '../../../models/rootLog';
+import TenantModel from '../../../models/tenant.js';
+import UserModel from '../../../models/user.js';
+import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute } from '../../../utils/db.js';
+import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
 import {
+  AdminLog,
   AdminUser,
   CreateAdminRequest,
-  UpdateAdminRequest,
-  RootUser,
   CreateRootUserRequest,
-  UpdateRootUserRequest,
-  Tenant,
   DashboardStats,
-  StorageInfo,
-  AdminLog,
-  TenantDeletionStatus,
   DeletionApproval,
   DeletionDryRunReport,
-} from "./types.js";
+  RootUser,
+  StorageInfo,
+  Tenant,
+  TenantDeletionStatus,
+  UpdateAdminRequest,
+  UpdateRootUserRequest,
+} from './types.js';
 
 interface TenantRow extends RowDataPacket {
   id: number;
@@ -55,7 +53,7 @@ export class RootService {
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
     try {
       // Get admins with extended information
-      const admins = await UserModel.findByRole("admin", true, tenantId);
+      const admins = await UserModel.findByRole('admin', true, tenantId);
 
       // Add tenant information
       return await Promise.all(
@@ -70,8 +68,8 @@ export class RootService {
             id: admin.id,
             username: admin.username,
             email: admin.email,
-            firstName: admin.first_name ?? "",
-            lastName: admin.last_name ?? "",
+            firstName: admin.first_name ?? '',
+            lastName: admin.last_name ?? '',
             company: admin.company,
             notes: admin.notes,
             isActive: admin.is_active ?? false,
@@ -84,11 +82,7 @@ export class RootService {
         }),
       );
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve admin users",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin users', error);
     }
   }
 
@@ -101,7 +95,7 @@ export class RootService {
     try {
       const admin = await UserModel.findById(id, tenantId);
 
-      if (!admin || admin.role !== "admin") {
+      if (!admin || admin.role !== 'admin') {
         return null;
       }
 
@@ -119,8 +113,8 @@ export class RootService {
         id: admin.id,
         username: admin.username,
         email: admin.email,
-        firstName: admin.first_name ?? "",
-        lastName: admin.last_name ?? "",
+        firstName: admin.first_name ?? '',
+        lastName: admin.last_name ?? '',
         company: admin.company,
         notes: admin.notes,
         isActive: admin.is_active ?? false,
@@ -131,7 +125,7 @@ export class RootService {
         lastLogin: lastLogin?.created_at,
       };
     } catch (error: unknown) {
-      throw new ServiceError("SERVER_ERROR", "Failed to retrieve admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin', error);
     }
   }
 
@@ -140,18 +134,15 @@ export class RootService {
    * @param data
    * @param tenantId
    */
-  async createAdmin(
-    data: CreateAdminRequest,
-    tenantId: number,
-  ): Promise<number> {
+  async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
     try {
       const adminData = {
         username: data.username,
         email: data.email,
         password: data.password,
-        first_name: data.firstName ?? "",
-        last_name: data.lastName ?? "",
-        role: "admin" as const,
+        first_name: data.firstName ?? '',
+        last_name: data.lastName ?? '',
+        role: 'admin' as const,
         tenant_id: tenantId,
         is_active: true,
         company: data.company,
@@ -163,25 +154,21 @@ export class RootService {
       // Add admin to tenant_admins table
       try {
         await execute(
-          "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
+          'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
           [tenantId, adminId],
         );
       } catch (error: unknown) {
         // Log but don't fail - admin was created successfully
-        console.warn("Could not add admin to tenant_admins:", error);
+        console.warn('Could not add admin to tenant_admins:', error);
       }
 
       return adminId;
     } catch (error: unknown) {
       const dbError = error as { code?: string };
-      if (dbError.code === "ER_DUP_ENTRY") {
-        throw new ServiceError(
-          "DUPLICATE_ENTRY",
-          "Username or email already exists",
-          error,
-        );
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        throw new ServiceError('DUPLICATE_ENTRY', 'Username or email already exists', error);
       }
-      throw new ServiceError("SERVER_ERROR", "Failed to create admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create admin', error);
     }
   }
 
@@ -191,16 +178,12 @@ export class RootService {
    * @param data
    * @param tenantId
    */
-  async updateAdmin(
-    id: number,
-    data: UpdateAdminRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateAdmin(id: number, data: UpdateAdminRequest, tenantId: number): Promise<void> {
     try {
       // Check if admin exists
       const admin = await this.getAdminById(id, tenantId);
       if (!admin) {
-        throw new ServiceError("NOT_FOUND", "Admin not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
       const updateData: Record<string, unknown> = {};
@@ -220,11 +203,11 @@ export class RootService {
 
       const success = await UserModel.update(id, updateData, tenantId);
       if (!success) {
-        throw new ServiceError("UPDATE_FAILED", "Failed to update admin", 500);
+        throw new ServiceError('UPDATE_FAILED', 'Failed to update admin', 500);
       }
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError("SERVER_ERROR", "Failed to update admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update admin', error);
     }
   }
 
@@ -238,16 +221,16 @@ export class RootService {
       // Check if admin exists
       const admin = await this.getAdminById(id, tenantId);
       if (!admin) {
-        throw new ServiceError("NOT_FOUND", "Admin not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
       const success = await UserModel.delete(id);
       if (!success) {
-        throw new ServiceError("DELETE_FAILED", "Failed to delete admin", 500);
+        throw new ServiceError('DELETE_FAILED', 'Failed to delete admin', 500);
       }
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError("SERVER_ERROR", "Failed to delete admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete admin', error);
     }
   }
 
@@ -257,16 +240,12 @@ export class RootService {
    * @param tenantId
    * @param days
    */
-  async getAdminLogs(
-    adminId: number,
-    tenantId: number,
-    days?: number,
-  ): Promise<AdminLog[]> {
+  async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
     try {
       // Verify admin exists
       const admin = await this.getAdminById(adminId, tenantId);
       if (!admin) {
-        throw new ServiceError("NOT_FOUND", "Admin not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
       const logs = await RootLog.getByUserId(adminId, days ?? 0);
@@ -275,7 +254,7 @@ export class RootService {
         id: log.id,
         userId: log.user_id,
         action: log.action,
-        entityType: log.entity_type ?? "",
+        entityType: log.entity_type ?? '',
         entityId: log.entity_id,
         description: log.description,
         ipAddress: log.ip_address,
@@ -284,11 +263,7 @@ export class RootService {
       }));
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve admin logs",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin logs', error);
     }
   }
 
@@ -313,7 +288,7 @@ export class RootService {
           );
 
           const [storageUsed] = await execute<RowDataPacket[]>(
-            "SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?",
+            'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
             [tenant.id],
           );
 
@@ -322,7 +297,7 @@ export class RootService {
             companyName: tenant.company_name,
             subdomain: tenant.subdomain,
             currentPlan: tenant.current_plan ?? undefined,
-            status: tenant.status as Tenant["status"],
+            status: tenant.status as Tenant['status'],
             maxUsers: (tenant as TenantRow).max_users,
             maxAdmins: (tenant as TenantRow).max_admins,
             industry: (tenant as TenantRow).industry,
@@ -336,11 +311,7 @@ export class RootService {
         }),
       );
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve tenants",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve tenants', error);
     }
   }
 
@@ -374,11 +345,7 @@ export class RootService {
         updatedAt: user.updated_at,
       }));
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve root users",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root users', error);
     }
   }
 
@@ -387,10 +354,7 @@ export class RootService {
    * @param id
    * @param tenantId
    */
-  async getRootUserById(
-    id: number,
-    tenantId: number,
-  ): Promise<RootUser | null> {
+  async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     try {
       const [users] = await execute<RowDataPacket[]>(
         `SELECT 
@@ -420,11 +384,7 @@ export class RootService {
         updatedAt: user.updated_at,
       };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve root user",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root user', error);
     }
   }
 
@@ -433,28 +393,25 @@ export class RootService {
    * @param data
    * @param tenantId
    */
-  async createRootUser(
-    data: CreateRootUserRequest,
-    tenantId: number,
-  ): Promise<number> {
+  async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
     try {
       // Check if email already exists
       const [existing] = await execute<RowDataPacket[]>(
-        "SELECT id FROM users WHERE email = ? AND tenant_id = ?",
+        'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
         [data.email, tenantId],
       );
 
       if (existing.length > 0) {
-        throw new ServiceError("DUPLICATE_EMAIL", "Email already in use", 400);
+        throw new ServiceError('DUPLICATE_EMAIL', 'Email already in use', 400);
       }
 
       // Get tenant subdomain for employee_id
       const [tenantData] = await execute<TenantRow[]>(
-        "SELECT subdomain FROM tenants WHERE id = ?",
+        'SELECT subdomain FROM tenants WHERE id = ?',
         [tenantId],
       );
 
-      const subdomain = tenantData[0]?.subdomain ?? "DEFAULT";
+      const subdomain = tenantData[0]?.subdomain ?? 'DEFAULT';
 
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -479,21 +436,14 @@ export class RootService {
       );
 
       // Generate and update employee_id
-      const employeeId = generateEmployeeId(subdomain, "root", result.insertId);
+      const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
 
-      await execute("UPDATE users SET employee_id = ? WHERE id = ?", [
-        employeeId,
-        result.insertId,
-      ]);
+      await execute('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, result.insertId]);
 
       return result.insertId;
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to create root user",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to create root user', error);
     }
   }
 
@@ -503,43 +453,39 @@ export class RootService {
    * @param data
    * @param tenantId
    */
-  async updateRootUser(
-    id: number,
-    data: UpdateRootUserRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateRootUser(id: number, data: UpdateRootUserRequest, tenantId: number): Promise<void> {
     try {
       // Check if user exists
       const user = await this.getRootUserById(id, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "Root user not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Root user not found', 404);
       }
 
       const fields: string[] = [];
       const values: unknown[] = [];
 
       if (data.firstName !== undefined) {
-        fields.push("first_name = ?");
+        fields.push('first_name = ?');
         values.push(data.firstName);
       }
       if (data.lastName !== undefined) {
-        fields.push("last_name = ?");
+        fields.push('last_name = ?');
         values.push(data.lastName);
       }
       if (data.email !== undefined) {
-        fields.push("email = ?");
+        fields.push('email = ?');
         values.push(data.email);
       }
       if (data.position !== undefined) {
-        fields.push("position = ?");
+        fields.push('position = ?');
         values.push(data.position);
       }
       if (data.notes !== undefined) {
-        fields.push("notes = ?");
+        fields.push('notes = ?');
         values.push(data.notes);
       }
       if (data.isActive !== undefined) {
-        fields.push("is_active = ?");
+        fields.push('is_active = ?');
         values.push(data.isActive);
       }
 
@@ -547,20 +493,13 @@ export class RootService {
         return; // Nothing to update
       }
 
-      fields.push("updated_at = NOW()");
+      fields.push('updated_at = NOW()');
       values.push(id);
 
-      await execute(
-        `UPDATE users SET ${String(fields.join(", "))} WHERE id = ?`,
-        values,
-      );
+      await execute(`UPDATE users SET ${String(fields.join(', '))} WHERE id = ?`, values);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to update root user",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to update root user', error);
     }
   }
 
@@ -570,21 +509,17 @@ export class RootService {
    * @param tenantId
    * @param currentUserId
    */
-  async deleteRootUser(
-    id: number,
-    tenantId: number,
-    currentUserId: number,
-  ): Promise<void> {
+  async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
     try {
       // Prevent self-deletion
       if (id === currentUserId) {
-        throw new ServiceError("SELF_DELETE", "Cannot delete yourself", 400);
+        throw new ServiceError('SELF_DELETE', 'Cannot delete yourself', 400);
       }
 
       // Check if user exists
       const user = await this.getRootUserById(id, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "Root user not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Root user not found', 404);
       }
 
       // Check if at least one root user will remain
@@ -595,20 +530,16 @@ export class RootService {
 
       if (rootCount[0].count < 1) {
         throw new ServiceError(
-          "LAST_ROOT_USER",
-          "At least one root user must remain in the system",
+          'LAST_ROOT_USER',
+          'At least one root user must remain in the system',
           400,
         );
       }
 
-      await execute("DELETE FROM users WHERE id = ?", [id]);
+      await execute('DELETE FROM users WHERE id = ?', [id]);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to delete root user",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete root user', error);
     }
   }
 
@@ -619,8 +550,8 @@ export class RootService {
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
     try {
       // Get user counts
-      const admins = await UserModel.findByRole("admin", false, tenantId);
-      const employees = await UserModel.findByRole("employee", false, tenantId);
+      const admins = await UserModel.findByRole('admin', false, tenantId);
+      const employees = await UserModel.findByRole('employee', false, tenantId);
 
       // Get tenant count (for multi-tenant overview)
       const [tenantCount] = await execute<RowDataPacket[]>(
@@ -640,9 +571,9 @@ export class RootService {
 
       // Simple system health check
       const systemHealth = {
-        database: "healthy" as const,
-        storage: "healthy" as const,
-        services: "healthy" as const,
+        database: 'healthy' as const,
+        storage: 'healthy' as const,
+        services: 'healthy' as const,
       };
 
       return {
@@ -654,11 +585,7 @@ export class RootService {
         systemHealth,
       };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get dashboard stats",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get dashboard stats', error);
     }
   }
 
@@ -671,7 +598,7 @@ export class RootService {
       // Get tenant information
       const tenant = await TenantModel.findById(tenantId);
       if (!tenant) {
-        throw new ServiceError("NOT_FOUND", "Tenant not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Tenant not found', 404);
       }
 
       // Storage limits by plan
@@ -681,12 +608,11 @@ export class RootService {
         enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
       };
 
-      const totalStorage =
-        storageLimits[tenant.current_plan ?? "basic"] ?? storageLimits.basic;
+      const totalStorage = storageLimits[tenant.current_plan ?? 'basic'] ?? storageLimits.basic;
 
       // Get storage breakdown
       const [documents] = await execute<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?",
+        'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
         [tenantId],
       );
 
@@ -708,15 +634,14 @@ export class RootService {
       const logsSize = Number(logs[0].total);
       const backupsSize = 0; // Placeholder
 
-      const usedStorage =
-        documentsSize + attachmentsSize + logsSize + backupsSize;
+      const usedStorage = documentsSize + attachmentsSize + logsSize + backupsSize;
       const percentage = Math.round((usedStorage / totalStorage) * 100);
 
       return {
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100),
-        plan: tenant.current_plan ?? "basic",
+        plan: tenant.current_plan ?? 'basic',
         breakdown: {
           documents: documentsSize,
           attachments: attachmentsSize,
@@ -725,11 +650,7 @@ export class RootService {
         },
       };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get storage info",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get storage info', error);
     }
   }
 
@@ -748,11 +669,11 @@ export class RootService {
   ): Promise<number> {
     try {
       // Check if there are at least 2 root users
-      const rootUsers = await UserModel.findByRole("root", false, tenantId);
+      const rootUsers = await UserModel.findByRole('root', false, tenantId);
       if (rootUsers.length < 2) {
         throw new ServiceError(
-          "INSUFFICIENT_ROOT_USERS",
-          "At least 2 root users required before tenant deletion",
+          'INSUFFICIENT_ROOT_USERS',
+          'At least 2 root users required before tenant deletion',
           400,
         );
       }
@@ -760,16 +681,12 @@ export class RootService {
       return await tenantDeletionService.requestTenantDeletion(
         tenantId,
         requestedBy,
-        reason ?? "No reason provided",
+        reason ?? 'No reason provided',
         ipAddress,
       );
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to request deletion",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to request deletion', error);
     }
   }
 
@@ -777,9 +694,7 @@ export class RootService {
    * Get tenant deletion status
    * @param tenantId
    */
-  async getDeletionStatus(
-    tenantId: number,
-  ): Promise<TenantDeletionStatus | null> {
+  async getDeletionStatus(tenantId: number): Promise<TenantDeletionStatus | null> {
     try {
       const [deletions] = await execute<RowDataPacket[]>(
         `SELECT 
@@ -813,15 +728,11 @@ export class RootService {
         scheduledFor: deletion.scheduled_for,
         reason: deletion.reason,
         errorMessage: deletion.error_message,
-        canCancel: ["pending", "approved"].includes(deletion.status),
-        canApprove: deletion.status === "pending",
+        canCancel: ['pending', 'approved'].includes(deletion.status),
+        canApprove: deletion.status === 'pending',
       };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get deletion status",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get deletion status', error);
     }
   }
 
@@ -856,11 +767,7 @@ export class RootService {
         status: d.status,
       }));
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get deletion requests",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get deletion requests', error);
     }
   }
 
@@ -868,9 +775,7 @@ export class RootService {
    * Get pending approvals
    * @param currentUserId
    */
-  async getPendingApprovals(
-    currentUserId: number,
-  ): Promise<DeletionApproval[]> {
+  async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     try {
       const [approvals] = await execute<RowDataPacket[]>(
         `SELECT 
@@ -901,11 +806,7 @@ export class RootService {
         status: a.status,
       }));
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get pending approvals",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to get pending approvals', error);
     }
   }
 
@@ -919,7 +820,7 @@ export class RootService {
 
       // Get tenant name
       const tenant = await TenantModel.findById(tenantId);
-      const companyName = tenant?.company_name ?? "Unknown";
+      const companyName = tenant?.company_name ?? 'Unknown';
 
       // Transform to our API format
       return {
@@ -942,11 +843,7 @@ export class RootService {
         canProceed: report.blockers.length === 0,
       };
     } catch (error: unknown) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to perform dry run",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to perform dry run', error);
     }
   }
 }

@@ -15,25 +15,26 @@ The backend is built with 100% TypeScript, providing full type safety and Intell
 ### Quick Start
 
 ```typescript
-import { Router } from "express";
-import { security } from "./middleware/security";
-import { typed } from "./utils/routeHandlers";
-import { successResponse, errorResponse } from "./types/response.types";
+import { Router } from 'express';
+
+import { security } from './middleware/security';
+import { errorResponse, successResponse } from './types/response.types';
+import { typed } from './utils/routeHandlers';
 
 const router = Router();
 
 // Public endpoint
 router.get(
-  "/status",
+  '/status',
   ...security.public(),
   typed.handler(async (req, res) => {
-    res.json(successResponse({ status: "ok" }));
+    res.json(successResponse({ status: 'ok' }));
   }),
 );
 
 // Authenticated endpoint
 router.get(
-  "/profile",
+  '/profile',
   ...security.user(),
   typed.auth(async (req, res) => {
     // req.user is fully typed
@@ -44,7 +45,7 @@ router.get(
 
 // Admin endpoint with validation
 router.post(
-  "/users",
+  '/users',
   ...security.admin(createUserValidation),
   typed.body<CreateUserDto>(async (req, res) => {
     // req.body is typed as CreateUserDto

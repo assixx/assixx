@@ -1,14 +1,12 @@
 /**
  * Shared upload middleware for profile pictures
  */
-
-import fs from "fs";
-import path from "path";
-
-import multer from "multer";
+import fs from 'fs';
+import multer from 'multer';
+import path from 'path';
 
 // Ensure upload directory exists
-const uploadDir = "uploads/profile_pictures/";
+const uploadDir = 'uploads/profile_pictures/';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -26,11 +24,11 @@ const storage = multer.diskStorage({
 });
 
 // File filter to accept only images
-const fileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
-  if (file.mimetype.startsWith("image/")) {
+const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed"));
+    cb(new Error('Only image files are allowed'));
   }
 };
 

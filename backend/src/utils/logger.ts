@@ -2,13 +2,11 @@
  * Logger Configuration
  * Winston-based logging system with file rotation and console output
  */
-
-import path from "path";
-
-import winston from "winston";
+import path from 'path';
+import winston from 'winston';
 
 // Define log directory using process.cwd() for compatibility with both ESM and CommonJS
-const logDir = path.join(process.cwd(), "logs");
+const logDir = path.join(process.cwd(), 'logs');
 
 // Log levels interface - Unused
 // interface LogLevel {
@@ -29,12 +27,7 @@ type LogMetadata = Record<
 
 // Custom format for better readability
 const customFormat = winston.format.printf(
-  ({
-    level,
-    message,
-    timestamp,
-    ...metadata
-  }: winston.Logform.TransformableInfo) => {
+  ({ level, message, timestamp, ...metadata }: winston.Logform.TransformableInfo) => {
     let msg = `${String(timestamp)} [${level.toUpperCase()}]: ${String(message)}`;
     if (Object.keys(metadata).length > 0) {
       msg += ` ${JSON.stringify(metadata)}`;
@@ -53,25 +46,25 @@ interface LoggerConfig {
 
 // Create logger instance
 const logger: winston.Logger = winston.createLogger({
-  level: process.env.LOG_LEVEL ?? "info",
+  level: process.env.LOG_LEVEL ?? 'info',
   format: winston.format.combine(
-    winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
     customFormat,
   ),
-  defaultMeta: { service: "assixx-backend" } as LogMetadata,
+  defaultMeta: { service: 'assixx-backend' } as LogMetadata,
   transports: [
     // Error logs
     new winston.transports.File({
-      filename: path.join(logDir, "error.log"),
-      level: "error",
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
     // Combined logs
     new winston.transports.File({
-      filename: path.join(logDir, "combined.log"),
+      filename: path.join(logDir, 'combined.log'),
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
@@ -79,13 +72,10 @@ const logger: winston.Logger = winston.createLogger({
 } as LoggerConfig);
 
 // Console logging for development
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple(),
-      ),
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
     }),
   );
 }

@@ -2,35 +2,29 @@
  * KVP API v2 Controller
  * HTTP request handlers for Continuous Improvement Process
  */
+import { Response } from 'express';
 
-import { Response } from "express";
-
-import RootLog from "../../../models/rootLog";
-import type { AuthenticatedRequest } from "../../../types/request.types.js";
-import {
-  successResponse,
-  errorResponse,
-  paginatedResponse,
-} from "../../../utils/apiResponse.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { kvpService } from "./kvp.service.js";
+import RootLog from '../../../models/rootLog';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
+import { kvpService } from './kvp.service.js';
 import type {
-  KVPCreateData,
-  KVPUpdateData,
-  KVPSuggestion,
   CommentData,
+  KVPCreateData,
+  KVPSuggestion,
+  KVPUpdateData,
   PointsData,
-} from "./kvp.service.js";
+} from './kvp.service.js';
 
 // Request body interfaces
 interface CreateSuggestionBody {
   title: string;
   description: string;
   categoryId: number;
-  orgLevel: "company" | "department" | "team";
+  orgLevel: 'company' | 'department' | 'team';
   orgId: number;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
   estimatedCost?: number;
 }
@@ -39,17 +33,11 @@ interface UpdateSuggestionBody {
   title?: string;
   description?: string;
   categoryId?: number;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
   estimatedCost?: number;
   actualSavings?: number;
-  status?:
-    | "new"
-    | "in_review"
-    | "approved"
-    | "implemented"
-    | "rejected"
-    | "archived";
+  status?: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assignedTo?: number;
 }
 
@@ -70,23 +58,18 @@ interface AwardPointsBody {
  * @param req
  * @param res
  */
-export async function getCategories(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getCategories(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const categories = await kvpService.getCategories(req.user.tenant_id);
     res.json(successResponse(categories));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get categories"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get categories'));
     }
   }
 }
@@ -96,28 +79,19 @@ export async function getCategories(
  * @param req
  * @param res
  */
-export async function listSuggestions(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function listSuggestions(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const filters = {
       status: req.query.status as string,
       categoryId:
-        req.query.categoryId !== undefined
-          ? Number.parseInt(req.query.categoryId as string, 10)
-          : undefined,
+        req.query.categoryId !== undefined ?
+          Number.parseInt(req.query.categoryId as string, 10)
+        : undefined,
       priority: req.query.priority as string,
       orgLevel: req.query.orgLevel as string,
       search: req.query.search as string,
-      page:
-        req.query.page !== undefined
-          ? Number.parseInt(req.query.page as string, 10)
-          : 1,
-      limit:
-        req.query.limit !== undefined
-          ? Number.parseInt(req.query.limit as string, 10)
-          : 20,
+      page: req.query.page !== undefined ? Number.parseInt(req.query.page as string, 10) : 1,
+      limit: req.query.limit !== undefined ? Number.parseInt(req.query.limit as string, 10) : 20,
     };
 
     const result = await kvpService.listSuggestions(
@@ -136,15 +110,13 @@ export async function listSuggestions(
       }),
     );
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to list suggestions"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to list suggestions'));
     }
   }
 }
@@ -154,10 +126,7 @@ export async function listSuggestions(
  * @param req
  * @param res
  */
-export async function getSuggestionById(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getSuggestionById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
     const suggestion = await kvpService.getSuggestionById(
@@ -169,15 +138,13 @@ export async function getSuggestionById(
 
     res.json(successResponse(suggestion));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get suggestion"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get suggestion'));
     }
   }
 }
@@ -187,10 +154,7 @@ export async function getSuggestionById(
  * @param req
  * @param res
  */
-export async function createSuggestion(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function createSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const body = req.body as CreateSuggestionBody;
     const data: KVPCreateData = {
@@ -203,18 +167,14 @@ export async function createSuggestion(
       expectedBenefit: body.expectedBenefit,
       estimatedCost: body.estimatedCost,
     };
-    const suggestion = await kvpService.createSuggestion(
-      data,
-      req.user.tenant_id,
-      req.user.id,
-    );
+    const suggestion = await kvpService.createSuggestion(data, req.user.tenant_id, req.user.id);
 
     // Log KVP suggestion creation
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "create",
-      entity_type: "kvp_suggestion",
+      action: 'create',
+      entity_type: 'kvp_suggestion',
       entity_id: (suggestion as unknown as KVPSuggestion).id,
       details: `Erstellt: ${data.title}`,
       new_values: {
@@ -229,21 +189,19 @@ export async function createSuggestion(
         created_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
     res.status(201).json(successResponse(suggestion));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to create suggestion"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to create suggestion'));
     }
   }
 }
@@ -253,10 +211,7 @@ export async function createSuggestion(
  * @param req
  * @param res
  */
-export async function updateSuggestion(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function updateSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
     const body = req.body as UpdateSuggestionBody;
@@ -291,8 +246,8 @@ export async function updateSuggestion(
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "update",
-      entity_type: "kvp_suggestion",
+      action: 'update',
+      entity_type: 'kvp_suggestion',
       entity_id: suggestionId,
       details: `Aktualisiert: ${data.title}`,
       old_values: {
@@ -313,21 +268,19 @@ export async function updateSuggestion(
         updated_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
     res.json(successResponse(suggestion));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to update suggestion"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to update suggestion'));
     }
   }
 }
@@ -337,10 +290,7 @@ export async function updateSuggestion(
  * @param req
  * @param res
  */
-export async function deleteSuggestion(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function deleteSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
 
@@ -352,19 +302,14 @@ export async function deleteSuggestion(
       req.user.role,
     );
 
-    await kvpService.deleteSuggestion(
-      suggestionId,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
+    await kvpService.deleteSuggestion(suggestionId, req.user.tenant_id, req.user.id, req.user.role);
 
     // Log KVP suggestion deletion
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "delete",
-      entity_type: "kvp_suggestion",
+      action: 'delete',
+      entity_type: 'kvp_suggestion',
       entity_id: suggestionId,
       details: `Gelöscht: ${String((deletedSuggestion as KVPSuggestion | null)?.title)}`,
       old_values: {
@@ -375,21 +320,19 @@ export async function deleteSuggestion(
         deleted_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
-    res.json(successResponse({ message: "Suggestion deleted successfully" }));
+    res.json(successResponse({ message: 'Suggestion deleted successfully' }));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to delete suggestion"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to delete suggestion'));
     }
   }
 }
@@ -399,10 +342,7 @@ export async function deleteSuggestion(
  * @param req
  * @param res
  */
-export async function getComments(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getComments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
     const comments = await kvpService.getComments(
@@ -414,15 +354,13 @@ export async function getComments(
 
     res.json(successResponse(comments));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get comments"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get comments'));
     }
   }
 }
@@ -432,10 +370,7 @@ export async function getComments(
  * @param req
  * @param res
  */
-export async function addComment(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function addComment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
     const body = req.body as AddCommentBody;
@@ -455,8 +390,8 @@ export async function addComment(
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "add_comment",
-      entity_type: "kvp_suggestion",
+      action: 'add_comment',
+      entity_type: 'kvp_suggestion',
       entity_id: suggestionId,
       details: `Kommentar hinzugefügt`,
       new_values: {
@@ -465,21 +400,19 @@ export async function addComment(
         comment_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
     res.status(201).json(successResponse(comment));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to add comment"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to add comment'));
     }
   }
 }
@@ -489,10 +422,7 @@ export async function addComment(
  * @param req
  * @param res
  */
-export async function getAttachments(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
     const attachments = await kvpService.getAttachments(
@@ -504,15 +434,13 @@ export async function getAttachments(
 
     res.json(successResponse(attachments));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get attachments"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get attachments'));
     }
   }
 }
@@ -522,19 +450,14 @@ export async function getAttachments(
  * @param req
  * @param res
  */
-export async function uploadAttachments(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function uploadAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const suggestionId = Number.parseInt(req.params.id, 10);
     const files = req.files;
 
     // Type guard: Ensure files is an array with items
     if (!files || !Array.isArray(files) || files.length === 0) {
-      res
-        .status(400)
-        .json(errorResponse("VALIDATION_ERROR", "No files uploaded"));
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'No files uploaded'));
       return;
     }
 
@@ -560,32 +483,30 @@ export async function uploadAttachments(
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "upload_attachment",
-      entity_type: "kvp_suggestion",
+      action: 'upload_attachment',
+      entity_type: 'kvp_suggestion',
       entity_id: suggestionId,
-      details: `Anhänge hochgeladen: ${files.map((f) => f.filename).join(", ")}`,
+      details: `Anhänge hochgeladen: ${files.map((f) => f.filename).join(', ')}`,
       new_values: {
         files_count: files.length,
-        file_names: files.map((f) => f.filename).join(", "),
+        file_names: files.map((f) => f.filename).join(', '),
         total_size: files.reduce((sum, f) => sum + f.size, 0),
         uploaded_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
     res.status(201).json(successResponse(attachments));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to upload attachments"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to upload attachments'));
     }
   }
 }
@@ -595,10 +516,7 @@ export async function uploadAttachments(
  * @param req
  * @param res
  */
-export async function downloadAttachment(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function downloadAttachment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const attachmentId = Number.parseInt(req.params.attachmentId, 10);
     const attachment = await kvpService.getAttachment(
@@ -612,15 +530,13 @@ export async function downloadAttachment(
     const attachmentData = attachment as { filePath: string; fileName: string };
     res.download(attachmentData.filePath, attachmentData.fileName);
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to download attachment"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to download attachment'));
     }
   }
 }
@@ -630,10 +546,7 @@ export async function downloadAttachment(
  * @param req
  * @param res
  */
-export async function awardPoints(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function awardPoints(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const body = req.body as AwardPointsBody;
     const data: PointsData = {
@@ -653,8 +566,8 @@ export async function awardPoints(
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "award_points",
-      entity_type: "kvp_points",
+      action: 'award_points',
+      entity_type: 'kvp_points',
       entity_id: data.suggestionId,
       details: `Punkte vergeben: ${data.points} Punkte`,
       new_values: {
@@ -665,21 +578,19 @@ export async function awardPoints(
         awarded_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
     res.status(201).json(successResponse(points));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to award points"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to award points'));
     }
   }
 }
@@ -689,39 +600,26 @@ export async function awardPoints(
  * @param req
  * @param res
  */
-export async function getUserPoints(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getUserPoints(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const userId = req.params.userId
-      ? Number.parseInt(req.params.userId, 10)
-      : req.user.id;
+    const userId = req.params.userId ? Number.parseInt(req.params.userId, 10) : req.user.id;
 
     // Users can only see their own points, admins can see all
-    if (
-      userId !== req.user.id &&
-      req.user.role !== "admin" &&
-      req.user.role !== "root"
-    ) {
-      res
-        .status(403)
-        .json(errorResponse("FORBIDDEN", "You can only view your own points"));
+    if (userId !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'root') {
+      res.status(403).json(errorResponse('FORBIDDEN', 'You can only view your own points'));
       return;
     }
 
     const points = await kvpService.getUserPoints(req.user.tenant_id, userId);
     res.json(successResponse(points));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get user points"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get user points'));
     }
   }
 }
@@ -731,23 +629,18 @@ export async function getUserPoints(
  * @param req
  * @param res
  */
-export async function getDashboardStats(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
+export async function getDashboardStats(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const stats = await kvpService.getDashboardStats(req.user.tenant_id);
     res.json(successResponse(stats));
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error) {
+    if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
         .status(serviceError.statusCode)
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get dashboard stats"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get dashboard stats'));
     }
   }
 }

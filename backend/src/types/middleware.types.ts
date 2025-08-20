@@ -2,13 +2,11 @@
  * Middleware-specific Type Definitions
  * Types for Express middleware functions with proper typing
  */
+import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { ValidationChain } from 'express-validator';
 
-import { ValidationChain } from "express-validator";
-
-import { Request, Response, NextFunction, RequestHandler } from "express";
-
-import type { AuthenticatedRequest, AuthUser } from "./request.types";
-import { RateLimiterType, RateLimiterMiddleware } from "./security.types";
+import type { AuthUser, AuthenticatedRequest } from './request.types';
+import { RateLimiterMiddleware, RateLimiterType } from './security.types';
 
 // Generic middleware that adds properties to request
 export type MiddlewareWithRequest<T extends Request = Request> = (
@@ -19,11 +17,7 @@ export type MiddlewareWithRequest<T extends Request = Request> = (
 
 // Authentication middleware that ensures user is authenticated
 export type AuthenticationMiddleware = MiddlewareWithRequest &
-  ((
-    req: Request | AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ) => void);
+  ((req: Request | AuthenticatedRequest, res: Response, next: NextFunction) => void);
 
 // Role-based authorization middleware
 export type AuthorizationMiddleware = (
@@ -75,7 +69,7 @@ export interface MiddlewareFactories {
 
 // Type guard to check if request is authenticated
 export function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return "user" in req && req.user != null && typeof req.user === "object";
+  return 'user' in req && req.user != null && typeof req.user === 'object';
 }
 
 // Type guard to check if user has specific role
@@ -97,7 +91,7 @@ export function createAuthenticatedMiddleware(
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
     if (!isAuthenticated(req)) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
     return handler(req, res, next);
   }) as RequestHandler;
@@ -112,10 +106,7 @@ export const middlewareStacks = {
   authenticatedRoute: (
     rateLimiter: RateLimiterMiddleware,
     authenticate: AuthenticationMiddleware,
-  ): RequestHandler[] => [
-    rateLimiter.authenticated as RequestHandler,
-    authenticate,
-  ],
+  ): RequestHandler[] => [rateLimiter.authenticated as RequestHandler, authenticate],
 
   adminRoute: (
     rateLimiter: RateLimiterMiddleware,
@@ -124,7 +115,7 @@ export const middlewareStacks = {
   ): RequestHandler[] => [
     rateLimiter.admin as RequestHandler,
     authenticate,
-    authorize("admin") as RequestHandler,
+    authorize('admin') as RequestHandler,
   ],
 
   apiRoute: (
@@ -132,10 +123,7 @@ export const middlewareStacks = {
     authenticate: AuthenticationMiddleware,
     validate?: ValidationMiddleware,
   ): RequestHandler[] => {
-    const stack: RequestHandler[] = [
-      rateLimiter.api as RequestHandler,
-      authenticate,
-    ];
+    const stack: RequestHandler[] = [rateLimiter.api as RequestHandler, authenticate];
     if (validate) {
       stack.push(...validate);
     }

@@ -1,24 +1,23 @@
-import { executeQuery as query } from "../../../config/database";
-import PlanModel from "../../../models/plan";
-import RootLog from "../../../models/rootLog";
-
+import { executeQuery as query } from '../../../config/database';
+import PlanModel from '../../../models/plan';
+import RootLog from '../../../models/rootLog';
 import {
+  CostCalculation,
+  CurrentPlanResponse,
+  DbAddonResult,
+  DbPlan,
+  DbPlanFeature,
+  DbTenantAddon,
+  DbTenantPlan,
   Plan,
   PlanFeature,
   PlanWithFeatures,
-  TenantPlan,
   TenantAddon,
   TenantAddons,
   TenantCosts,
-  CurrentPlanResponse,
+  TenantPlan,
   UpdateAddonsRequest,
-  CostCalculation,
-  DbPlan,
-  DbPlanFeature,
-  DbTenantPlan,
-  DbTenantAddon,
-  DbAddonResult,
-} from "./types";
+} from './types';
 
 // Type helper to cast Model types to our types
 type ModelDbPlan = DbPlan & { description?: string };
@@ -74,11 +73,11 @@ export class PlansService {
       planId: dbPlan.plan_id,
       planCode: dbPlan.plan_code,
       planName: dbPlan.plan_name,
-      status: dbPlan.status as "active" | "cancelled" | "trial" | "expired",
+      status: dbPlan.status as 'active' | 'cancelled' | 'trial' | 'expired',
       startedAt: dbPlan.started_at.toISOString(),
       expiresAt: dbPlan.expires_at?.toISOString(),
       customPrice: dbPlan.custom_price ?? undefined,
-      billingCycle: dbPlan.billing_cycle as "monthly" | "yearly",
+      billingCycle: dbPlan.billing_cycle as 'monthly' | 'yearly',
     };
   }
 
@@ -90,11 +89,11 @@ export class PlansService {
     return {
       id: dbAddon.id,
       tenantId: dbAddon.tenant_id,
-      addonType: dbAddon.addon_type as "employees" | "admins" | "storage_gb",
+      addonType: dbAddon.addon_type as 'employees' | 'admins' | 'storage_gb',
       quantity: dbAddon.quantity,
       unitPrice: dbAddon.unit_price,
       totalPrice: dbAddon.total_price,
-      status: dbAddon.status as "active" | "cancelled",
+      status: dbAddon.status as 'active' | 'cancelled',
     };
   }
 
@@ -102,22 +101,16 @@ export class PlansService {
    * Get all available plans
    * @param includeInactive
    */
-  static async getAllPlans(
-    includeInactive = false,
-  ): Promise<PlanWithFeatures[]> {
+  static async getAllPlans(includeInactive = false): Promise<PlanWithFeatures[]> {
     // Get all plans based on includeInactive filter
     const dbPlans = await PlanModel.findAll();
-    const filteredPlans = includeInactive
-      ? dbPlans
-      : dbPlans.filter((p) => p.is_active);
+    const filteredPlans = includeInactive ? dbPlans : dbPlans.filter((p) => p.is_active);
 
     return await Promise.all(
       filteredPlans.map(async (dbPlan) => {
         const dbFeatures = await PlanModel.getPlanFeatures(dbPlan.id);
         const plan = this.dbToApiPlan(dbPlan as ModelDbPlan);
-        const features = dbFeatures
-          .filter((f) => f.is_included)
-          .map((f) => this.dbToApiFeature(f));
+        const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
 
         return {
           ...plan,
@@ -132,10 +125,7 @@ export class PlansService {
    * @param planId
    */
   static async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
-    const [dbPlans] = await query<DbPlan[]>(
-      "SELECT * FROM plans WHERE id = ?",
-      [planId],
-    );
+    const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = ?', [planId]);
 
     if (dbPlans.length === 0) {
       return null;
@@ -145,9 +135,7 @@ export class PlansService {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
 
     const plan = this.dbToApiPlan(dbPlan);
-    const features = dbFeatures
-      .filter((f) => f.is_included)
-      .map((f) => this.dbToApiFeature(f));
+    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
 
     return {
       ...plan,
@@ -159,9 +147,7 @@ export class PlansService {
    * Get current plan for tenant
    * @param tenantId
    */
-  static async getCurrentPlan(
-    tenantId: number,
-  ): Promise<CurrentPlanResponse | null> {
+  static async getCurrentPlan(tenantId: number): Promise<CurrentPlanResponse | null> {
     const dbTenantPlan = await PlanModel.getTenantPlan(tenantId);
 
     if (!dbTenantPlan) {
@@ -170,20 +156,16 @@ export class PlansService {
 
     const dbPlan = await PlanModel.findByCode(dbTenantPlan.plan_code);
     if (!dbPlan) {
-      throw new Error("Plan details not found");
+      throw new Error('Plan details not found');
     }
 
     const dbFeatures = await PlanModel.getPlanFeatures(dbTenantPlan.plan_id);
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
     const costs = await PlanModel.calculateTenantCost(tenantId);
 
-    const tenantPlan = this.dbToApiTenantPlan(
-      dbTenantPlan as ModelDbTenantPlan,
-    );
+    const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan as ModelDbTenantPlan);
     const planDetails = this.dbToApiPlan(dbPlan as ModelDbPlan);
-    const features = dbFeatures
-      .filter((f) => f.is_included)
-      .map((f) => this.dbToApiFeature(f));
+    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
     const addons = dbAddons.map((a) => this.dbToApiAddon(a));
 
     const apiCosts: TenantCosts = {
@@ -227,7 +209,7 @@ export class PlansService {
     // Get current plan
     const currentPlan = await PlanModel.getTenantPlan(tenantId);
     if (!currentPlan) {
-      throw new Error("No active plan found for tenant");
+      throw new Error('No active plan found for tenant');
     }
 
     // Change the plan
@@ -242,14 +224,13 @@ export class PlansService {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,
-        action: "plan_upgrade",
-        entity_type: "tenant_plans",
+        action: 'plan_upgrade',
+        entity_type: 'tenant_plans',
         entity_id: newPlan.id,
         old_values: { plan_id: currentPlan.plan_id },
         new_values: {
           plan_id: newPlan.id,
-          effective_date:
-            effectiveDate?.toISOString() ?? new Date().toISOString(),
+          effective_date: effectiveDate?.toISOString() ?? new Date().toISOString(),
         },
       });
     }
@@ -257,7 +238,7 @@ export class PlansService {
     // Return updated plan info
     const result = await this.getCurrentPlan(tenantId);
     if (!result) {
-      throw new Error("Failed to retrieve updated plan");
+      throw new Error('Failed to retrieve updated plan');
     }
 
     return result;
@@ -324,11 +305,9 @@ export class PlansService {
   ): Promise<TenantAddons> {
     // Map camelCase to snake_case for model
     const addonUpdate: Record<string, number> = {};
-    if (addons.employees !== undefined)
-      addonUpdate.employees = addons.employees;
+    if (addons.employees !== undefined) addonUpdate.employees = addons.employees;
     if (addons.admins !== undefined) addonUpdate.admins = addons.admins;
-    if (addons.storageGb !== undefined)
-      addonUpdate.storage_gb = addons.storageGb;
+    if (addons.storageGb !== undefined) addonUpdate.storage_gb = addons.storageGb;
 
     await PlanModel.updateTenantAddons({
       tenantId,
@@ -340,8 +319,8 @@ export class PlansService {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,
-        action: "addon_update",
-        entity_type: "tenant_addons",
+        action: 'addon_update',
+        entity_type: 'tenant_addons',
         entity_id: tenantId,
         new_values: addons as Record<string, unknown>,
       });
@@ -367,7 +346,7 @@ export class PlansService {
         storage: addons.storageGb * 0.1, // 0.10€ per GB
       },
       totalMonthlyCost: costs.totalCost,
-      currency: "EUR",
+      currency: 'EUR',
     };
   }
 }

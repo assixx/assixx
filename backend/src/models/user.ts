@@ -1,16 +1,9 @@
-import bcrypt from "bcryptjs";
+import bcrypt from 'bcryptjs';
 
-import {
-  query as executeQuery,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import {
-  generateEmployeeId,
-  generateTempEmployeeId,
-} from "../utils/employeeIdGenerator";
-import { logger } from "../utils/logger";
-import { normalizeMySQLBoolean } from "../utils/typeHelpers";
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { generateEmployeeId, generateTempEmployeeId } from '../utils/employeeIdGenerator';
+import { logger } from '../utils/logger';
+import { normalizeMySQLBoolean } from '../utils/typeHelpers';
 
 // Database User interface with snake_case to match DB schema
 export interface DbUser extends RowDataPacket {
@@ -47,7 +40,7 @@ export interface DbUser extends RowDataPacket {
   // Additional fields from joins
   company_name?: string;
   subdomain?: string;
-  availability_status?: "available" | "unavailable" | "vacation" | "sick";
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
 }
 
 interface UserCreateData {
@@ -86,7 +79,7 @@ interface UserFilter {
   status?: string;
   search?: string;
   sort_by?: string;
-  sort_dir?: "asc" | "desc";
+  sort_dir?: 'asc' | 'desc';
   limit?: number;
   page?: number;
 }
@@ -130,7 +123,7 @@ export async function createUser(userData: UserCreateData): Promise<number> {
     hire_date,
     emergency_contact,
     profile_picture,
-    status = "active",
+    status = 'active',
     is_archived = 0,
     is_active = 1,
   } = userData;
@@ -139,23 +132,23 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   const finalUsername = email;
 
   // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
-  const iban = userData.iban ?? "";
+  const iban = userData.iban ?? '';
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Generate employee_id if not provided
   let finalEmployeeId = employee_id;
 
-  if (employee_id == null || employee_id === "") {
+  if (employee_id == null || employee_id === '') {
     // Get subdomain from tenant
     const [tenantResult] = await executeQuery<RowDataPacket[]>(
-      "SELECT subdomain FROM tenants WHERE id = ?",
+      'SELECT subdomain FROM tenants WHERE id = ?',
       [userData.tenant_id],
     );
 
     if (tenantResult.length > 0) {
-      const subdomain = (tenantResult[0].subdomain as string) || "DEFAULT";
-      const { tempId } = generateTempEmployeeId(subdomain, role || "employee");
+      const subdomain = (tenantResult[0].subdomain as string) || 'DEFAULT';
+      const { tempId } = generateTempEmployeeId(subdomain, role || 'employee');
       finalEmployeeId = tempId;
     }
   }
@@ -202,24 +195,17 @@ export async function createUser(userData: UserCreateData): Promise<number> {
     logger.info(`User created successfully with ID: ${result.insertId}`);
 
     // Update employee_id with actual user ID if it was generated
-    if (
-      (employee_id == null || employee_id === "") &&
-      finalEmployeeId?.includes("TEMP") === true
-    ) {
+    if ((employee_id == null || employee_id === '') && finalEmployeeId?.includes('TEMP') === true) {
       const [tenantResult] = await executeQuery<RowDataPacket[]>(
-        "SELECT subdomain FROM tenants WHERE id = ?",
+        'SELECT subdomain FROM tenants WHERE id = ?',
         [userData.tenant_id],
       );
 
       if (tenantResult.length > 0) {
-        const subdomain = (tenantResult[0].subdomain as string) || "DEFAULT";
-        const newEmployeeId = generateEmployeeId(
-          subdomain,
-          role || "employee",
-          result.insertId,
-        );
+        const subdomain = (tenantResult[0].subdomain as string) || 'DEFAULT';
+        const newEmployeeId = generateEmployeeId(subdomain, role || 'employee', result.insertId);
 
-        await executeQuery("UPDATE users SET employee_id = ? WHERE id = ?", [
+        await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [
           newEmployeeId,
           result.insertId,
         ]);
@@ -233,17 +219,14 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   }
 }
 
-export async function findUserByUsername(
-  username: string,
-): Promise<DbUser | undefined> {
-  console.info("[DEBUG] findByUsername called for:", username);
+export async function findUserByUsername(username: string): Promise<DbUser | undefined> {
+  console.info('[DEBUG] findByUsername called for:', username);
   try {
-    console.info("[DEBUG] About to execute query");
-    const [rows] = await executeQuery<DbUser[]>(
-      "SELECT * FROM users WHERE username = ?",
-      [username],
-    );
-    console.info("[DEBUG] Query completed, rows found:", rows.length);
+    console.info('[DEBUG] About to execute query');
+    const [rows] = await executeQuery<DbUser[]>('SELECT * FROM users WHERE username = ?', [
+      username,
+    ]);
+    console.info('[DEBUG] Query completed, rows found:', rows.length);
 
     if (rows.length > 0) {
       // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
@@ -254,16 +237,13 @@ export async function findUserByUsername(
 
     return undefined;
   } catch (error) {
-    console.error("[DEBUG] findByUsername error:", error);
+    console.error('[DEBUG] findByUsername error:', error);
     logger.error(`Error finding user by username: ${(error as Error).message}`);
     throw error;
   }
 }
 
-export async function findUserById(
-  id: number,
-  tenant_id: number,
-): Promise<DbUser | undefined> {
+export async function findUserById(id: number, tenant_id: number): Promise<DbUser | undefined> {
   try {
     // Validate inputs with detailed logging
     console.info(
@@ -278,13 +258,13 @@ export async function findUserById(
     }
 
     const [rows] = await executeQuery<DbUser[]>(
-      process.env.NODE_ENV === "test"
-        ? `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain
+      process.env.NODE_ENV === 'test' ?
+        `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain
              FROM users u
              LEFT JOIN departments d ON u.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
              WHERE u.id = ? AND u.tenant_id = ?`
-        : `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
+      : `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
              u.availability_status, u.availability_start, u.availability_end, u.availability_notes
              FROM users u
              LEFT JOIN departments d ON u.department_id = d.id
@@ -350,11 +330,11 @@ export async function findUserByEmail(
   tenantId?: number,
 ): Promise<DbUser | undefined> {
   try {
-    let query = "SELECT * FROM users WHERE email = ? AND is_archived = 0";
+    let query = 'SELECT * FROM users WHERE email = ? AND is_archived = 0';
     const params: (string | number)[] = [email];
 
     if (tenantId !== undefined) {
-      query += " AND tenant_id = ?";
+      query += ' AND tenant_id = ?';
       params.push(tenantId);
     }
 
@@ -376,15 +356,10 @@ export async function findUserByEmail(
 
 export async function deleteUser(id: number): Promise<boolean> {
   try {
-    const [result] = await executeQuery<ResultSetHeader>(
-      "DELETE FROM users WHERE id = ?",
-      [id],
-    );
+    const [result] = await executeQuery<ResultSetHeader>('DELETE FROM users WHERE id = ?', [id]);
     return result.affectedRows > 0;
   } catch (error) {
-    logger.error(
-      `Error deleting user with ID ${id}: ${(error as Error).message}`,
-    );
+    logger.error(`Error deleting user with ID ${id}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -397,30 +372,30 @@ export async function updateUser(
   try {
     // Define allowed fields for update to prevent SQL injection
     const allowedFields: (keyof UserCreateData)[] = [
-      "username",
-      "email",
-      "password",
-      "role",
-      "company",
-      "notes",
-      "first_name",
-      "last_name",
-      "age",
-      "employee_id",
-      "iban",
-      "department_id",
-      "position",
-      "phone",
-      "landline",
-      "employee_number",
-      "address",
-      "birthday",
-      "hire_date",
-      "emergency_contact",
-      "profile_picture",
-      "status",
-      "is_archived",
-      "is_active",
+      'username',
+      'email',
+      'password',
+      'role',
+      'company',
+      'notes',
+      'first_name',
+      'last_name',
+      'age',
+      'employee_id',
+      'iban',
+      'department_id',
+      'position',
+      'phone',
+      'landline',
+      'employee_number',
+      'address',
+      'birthday',
+      'hire_date',
+      'emergency_contact',
+      'profile_picture',
+      'status',
+      'is_archived',
+      'is_active',
     ];
 
     // Dynamisch Query aufbauen basierend auf den zu aktualisierenden Feldern
@@ -432,7 +407,7 @@ export async function updateUser(
       // SECURITY FIX: Only allow whitelisted fields to prevent SQL injection
       if (allowedFields.includes(key as keyof UserCreateData)) {
         // Special handling for boolean fields
-        if (key === "is_active" || key === "is_archived") {
+        if (key === 'is_active' || key === 'is_archived') {
           logger.info(
             `Special handling for ${key} field - received value: ${String(value)}, type: ${typeof value}`,
           );
@@ -462,7 +437,7 @@ export async function updateUser(
     values.push(tenantId);
 
     // SECURITY: Always include tenant_id in WHERE clause
-    const query = `UPDATE users SET ${fields.join(", ")} WHERE id = ? AND tenant_id = ?`;
+    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ? AND tenant_id = ?`;
 
     logger.info(`Executing update query: ${query}`);
     logger.info(`With values: ${JSON.stringify(values)}`);
@@ -470,9 +445,7 @@ export async function updateUser(
     const [result] = await executeQuery<ResultSetHeader>(query, values);
     return result.affectedRows > 0;
   } catch (error) {
-    logger.error(
-      `Error updating user with ID ${id}: ${(error as Error).message}`,
-    );
+    logger.error(`Error updating user with ID ${id}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -504,7 +477,7 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
     }
 
     // Weitere Filter hinzufügen
-    if (filters.role != null && filters.role !== "") {
+    if (filters.role != null && filters.role !== '') {
       query += ` AND u.role = ?`;
       values.push(filters.role);
     }
@@ -514,12 +487,12 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
       values.push(filters.department_id);
     }
 
-    if (filters.status != null && filters.status !== "") {
+    if (filters.status != null && filters.status !== '') {
       query += ` AND u.status = ?`;
       values.push(filters.status);
     }
 
-    if (filters.search != null && filters.search !== "") {
+    if (filters.search != null && filters.search !== '') {
       query += ` AND (
           u.username LIKE ? OR
           u.email LIKE ? OR
@@ -532,20 +505,20 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
     }
 
     // Sortierung hinzufügen
-    if (filters.sort_by != null && filters.sort_by !== "") {
+    if (filters.sort_by != null && filters.sort_by !== '') {
       const validColumns = [
-        "username",
-        "email",
-        "first_name",
-        "last_name",
-        "created_at",
-        "employee_id",
-        "position",
-        "status",
+        'username',
+        'email',
+        'first_name',
+        'last_name',
+        'created_at',
+        'employee_id',
+        'position',
+        'status',
       ];
 
       if (validColumns.includes(filters.sort_by)) {
-        const direction = filters.sort_dir === "desc" ? "DESC" : "ASC";
+        const direction = filters.sort_dir === 'desc' ? 'DESC' : 'ASC';
         query += ` ORDER BY u.${filters.sort_by} ${direction}`;
       } else {
         query += ` ORDER BY u.username ASC`;
@@ -592,17 +565,13 @@ export async function updateUserProfilePicture(
     const [result] = await executeQuery<ResultSetHeader>(query, values);
     return result.affectedRows > 0;
   } catch (error) {
-    logger.error(
-      `Error updating profile picture for user ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error updating profile picture for user ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
 
 // Neue Methode: Anzahl der Benutzer zählen (für Pagination)
-export async function countUsersWithFilters(
-  filters: UserFilter,
-): Promise<number> {
+export async function countUsersWithFilters(filters: UserFilter): Promise<number> {
   try {
     let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = ?`;
     const values: unknown[] = [filters.tenant_id];
@@ -616,7 +585,7 @@ export async function countUsersWithFilters(
       query += ` AND u.is_archived = 0`;
     }
 
-    if (filters.role != null && filters.role !== "") {
+    if (filters.role != null && filters.role !== '') {
       query += ` AND u.role = ?`;
       values.push(filters.role);
     }
@@ -626,12 +595,12 @@ export async function countUsersWithFilters(
       values.push(filters.department_id);
     }
 
-    if (filters.status != null && filters.status !== "") {
+    if (filters.status != null && filters.status !== '') {
       query += ` AND u.status = ?`;
       values.push(filters.status);
     }
 
-    if (filters.search != null && filters.search !== "") {
+    if (filters.search != null && filters.search !== '') {
       query += ` AND (
           u.username LIKE ? OR
           u.email LIKE ? OR
@@ -687,7 +656,7 @@ export async function findArchivedUsers(
 
     const params: unknown[] = [tenantId];
 
-    if (role != null && role !== "") {
+    if (role != null && role !== '') {
       query += ` AND u.role = ?`;
       params.push(role);
     }
@@ -716,9 +685,7 @@ export async function userHasDocuments(userId: number): Promise<boolean> {
 
     return rows[0].document_count > 0;
   } catch (error) {
-    logger.error(
-      `Error checking if user ${userId} has documents: ${(error as Error).message}`,
-    );
+    logger.error(`Error checking if user ${userId} has documents: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -736,9 +703,7 @@ export async function getUserDocumentCount(userId: number): Promise<number> {
 
     return rows[0].document_count;
   } catch (error) {
-    logger.error(
-      `Error counting documents for user ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error counting documents for user ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -791,9 +756,7 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
       teamName: user.team_name,
     };
   } catch (error) {
-    logger.error(
-      `Error getting user department and team: ${(error as Error).message}`,
-    );
+    logger.error(`Error getting user department and team: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -812,38 +775,30 @@ export async function changeUserPassword(
     // Aktuellen Benutzer abrufen
     const user = await findUserById(userId, tenantId);
     if (!user) {
-      return { success: false, message: "Benutzer nicht gefunden" };
+      return { success: false, message: 'Benutzer nicht gefunden' };
     }
 
     // Aktuelles Passwort überprüfen
-    const isValidPassword = await bcrypt.compare(
-      currentPassword,
-      user.password || "",
-    );
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password || '');
     if (!isValidPassword) {
-      return { success: false, message: "Aktuelles Passwort ist incorrect" };
+      return { success: false, message: 'Aktuelles Passwort ist incorrect' };
     }
 
     // Neues Passwort hashen
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
     // Passwort in der Datenbank aktualisieren
-    const query = "UPDATE users SET password = ? WHERE id = ?";
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      hashedNewPassword,
-      userId,
-    ]);
+    const query = 'UPDATE users SET password = ? WHERE id = ?';
+    const [result] = await executeQuery<ResultSetHeader>(query, [hashedNewPassword, userId]);
 
     if (result.affectedRows > 0) {
       logger.info(`Password changed successfully for user ${userId}`);
-      return { success: true, message: "Passwort erfolgreich geändert" };
+      return { success: true, message: 'Passwort erfolgreich geändert' };
     } else {
-      return { success: false, message: "Fehler beim Ändern des Passworts" };
+      return { success: false, message: 'Fehler beim Ändern des Passworts' };
     }
   } catch (error) {
-    logger.error(
-      `Error changing password for user ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error changing password for user ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -861,31 +816,28 @@ export async function updateOwnProfile(
     const user = await findUserById(userId, tenantId);
 
     if (!user) {
-      return { success: false, message: "Benutzer nicht gefunden" };
+      return { success: false, message: 'Benutzer nicht gefunden' };
     }
 
     // Erlaubte Felder für Profil-Updates (erweitert)
     const allowedFields = [
-      "email",
-      "first_name",
-      "last_name",
-      "age",
-      "employee_id",
-      "iban",
-      "company",
-      "notes",
-      "phone",
-      "address",
-      "emergency_contact",
+      'email',
+      'first_name',
+      'last_name',
+      'age',
+      'employee_id',
+      'iban',
+      'company',
+      'notes',
+      'phone',
+      'address',
+      'emergency_contact',
     ];
 
     // Nur erlaubte Felder übernehmen
     const updates: Record<string, unknown> = {};
     Object.keys(userData).forEach((key) => {
-      if (
-        allowedFields.includes(key) &&
-        userData[key as keyof UserCreateData] !== undefined
-      ) {
+      if (allowedFields.includes(key) && userData[key as keyof UserCreateData] !== undefined) {
         updates[key] = userData[key as keyof UserCreateData];
       }
     });
@@ -893,7 +845,7 @@ export async function updateOwnProfile(
     if (Object.keys(updates).length === 0) {
       return {
         success: false,
-        message: "Keine gültigen Felder zum Aktualisieren",
+        message: 'Keine gültigen Felder zum Aktualisieren',
       };
     }
 
@@ -901,7 +853,7 @@ export async function updateOwnProfile(
     const fields = Object.keys(updates);
     const values = Object.values(updates);
     // SECURITY FIX: Escape column names with backticks to prevent SQL injection
-    const setClause = fields.map((field) => `\`${field}\` = ?`).join(", ");
+    const setClause = fields.map((field) => `\`${field}\` = ?`).join(', ');
 
     const query = `UPDATE users SET ${setClause} WHERE id = ?`;
     values.push(userId);
@@ -910,17 +862,15 @@ export async function updateOwnProfile(
 
     if (result.affectedRows > 0) {
       logger.info(`Profile updated successfully for user ${userId}`);
-      return { success: true, message: "Profil erfolgreich aktualisiert" };
+      return { success: true, message: 'Profil erfolgreich aktualisiert' };
     } else {
       return {
         success: false,
-        message: "Fehler beim Aktualisieren des Profils",
+        message: 'Fehler beim Aktualisieren des Profils',
       };
     }
   } catch (error) {
-    logger.error(
-      `Error updating profile for user ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error updating profile for user ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -934,8 +884,8 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
                    WHERE u.tenant_id = ?`;
     const params: unknown[] = [filters.tenant_id];
 
-    if (filters.role != null && filters.role !== "") {
-      query += " AND u.role = ?";
+    if (filters.role != null && filters.role !== '') {
+      query += ' AND u.role = ?';
       params.push(filters.role);
     }
 
@@ -954,9 +904,7 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
 }
 
 // Find all users by tenant
-export async function findAllUsersByTenant(
-  tenantId: number,
-): Promise<DbUser[]> {
+export async function findAllUsersByTenant(tenantId: number): Promise<DbUser[]> {
   try {
     const [rows] = await executeQuery<DbUser[]>(
       `SELECT u.*, d.name as department
@@ -981,11 +929,11 @@ export async function findAllUsersByTenant(
 // Count users with optional filters
 export async function countUsers(filters: UserFilter): Promise<number> {
   try {
-    let query = "SELECT COUNT(*) as count FROM users WHERE tenant_id = ?";
+    let query = 'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?';
     const params: unknown[] = [filters.tenant_id];
 
-    if (filters.role != null && filters.role !== "") {
-      query += " AND role = ?";
+    if (filters.role != null && filters.role !== '') {
+      query += ' AND role = ?';
       params.push(filters.role);
     }
 
@@ -1001,15 +949,13 @@ export async function countUsers(filters: UserFilter): Promise<number> {
 }
 
 // Count active users by tenant
-export async function countActiveUsersByTenant(
-  tenantId: number,
-): Promise<number> {
+export async function countActiveUsersByTenant(tenantId: number): Promise<number> {
   try {
     interface ActiveCountResult extends RowDataPacket {
       count: number;
     }
     const [rows] = await executeQuery<ActiveCountResult[]>(
-      "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND is_active = 1",
+      'SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND is_active = 1',
       [tenantId],
     );
     return rows[0]?.count ?? 0;

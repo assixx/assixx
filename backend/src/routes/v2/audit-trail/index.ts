@@ -6,17 +6,12 @@
  *   name: Audit Trail v2
  *   description: Audit logging and compliance API v2
  */
+import express, { RequestHandler, Router } from 'express';
 
-import express, { Router, RequestHandler } from "express";
-
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { auditTrailController } from "./audit-trail.controller.js";
-import { auditTrailValidation } from "./audit-trail.validation.js";
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { auditTrailController } from './audit-trail.controller.js';
+import { auditTrailValidation } from './audit-trail.validation.js';
 
 const router: Router = express.Router();
 
@@ -24,12 +19,9 @@ const router: Router = express.Router();
 const userAuth = [authenticateV2 as RequestHandler];
 const adminAuth = [
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
 ];
-const rootAuth = [
-  authenticateV2 as RequestHandler,
-  requireRoleV2(["root"]) as RequestHandler,
-];
+const rootAuth = [authenticateV2 as RequestHandler, requireRoleV2(['root']) as RequestHandler];
 
 /**
  * @swagger
@@ -138,7 +130,7 @@ const rootAuth = [
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  "/",
+  '/',
   ...userAuth,
   auditTrailValidation.getEntries,
   typed.auth(auditTrailController.getEntries),
@@ -184,7 +176,7 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  "/stats",
+  '/stats',
   ...adminAuth,
   auditTrailValidation.getStats,
   typed.auth(auditTrailController.getStats),
@@ -242,14 +234,12 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post(
-  "/reports",
+  '/reports',
   ...adminAuth,
   auditTrailValidation.generateReport,
-  typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(
-    async (req, res) => {
-      await auditTrailController.generateReport(req, res);
-    },
-  ),
+  typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(async (req, res) => {
+    await auditTrailController.generateReport(req, res);
+  }),
 );
 
 /**
@@ -297,7 +287,7 @@ router.post(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  "/export",
+  '/export',
   ...adminAuth,
   auditTrailValidation.exportEntries,
   typed.auth(auditTrailController.exportEntries),
@@ -355,14 +345,12 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.delete(
-  "/retention",
+  '/retention',
   ...rootAuth,
   auditTrailValidation.deleteOldEntries,
-  typed.body<{ olderThanDays: number; confirmPassword: string }>(
-    async (req, res) => {
-      await auditTrailController.deleteOldEntries(req, res);
-    },
-  ),
+  typed.body<{ olderThanDays: number; confirmPassword: string }>(async (req, res) => {
+    await auditTrailController.deleteOldEntries(req, res);
+  }),
 );
 
 /**
@@ -401,7 +389,7 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   ...userAuth,
   auditTrailValidation.getEntry,
   typed.auth(auditTrailController.getEntry),

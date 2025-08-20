@@ -2,21 +2,20 @@
  * Calendar v2 Service Layer
  * Handles all business logic for calendar events
  */
-
-import CalendarModel from "../../../models/calendar.js";
+import CalendarModel from '../../../models/calendar.js';
 import type {
   CalendarEvent,
   DbCalendarEvent,
+  EventAttendee,
   EventCreateData,
   EventUpdateData,
-  EventAttendee,
-} from "../../../models/calendar.js";
-import { dbToApiEvent } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../users/users.service.js";
+} from '../../../models/calendar.js';
+import { dbToApiEvent } from '../../../utils/fieldMapping.js';
+import { ServiceError } from '../users/users.service.js';
 
 export interface CalendarFilters {
-  status?: "active" | "cancelled";
-  filter?: "all" | "company" | "department" | "team" | "personal";
+  status?: 'active' | 'cancelled';
+  filter?: 'all' | 'company' | 'department' | 'team' | 'personal';
   search?: string;
   startDate?: string;
   endDate?: string;
@@ -33,7 +32,7 @@ export interface CalendarEventData {
   startTime: string;
   endTime: string;
   allDay?: boolean;
-  orgLevel: "company" | "department" | "team" | "personal";
+  orgLevel: 'company' | 'department' | 'team' | 'personal';
   departmentId?: number; // Explizit für department/team Events
   teamId?: number; // Explizit für team Events
   reminderMinutes?: number;
@@ -50,13 +49,13 @@ export interface CalendarEventUpdateData {
   startTime?: string;
   endTime?: string;
   allDay?: boolean;
-  orgLevel?: "company" | "department" | "team" | "personal";
+  orgLevel?: 'company' | 'department' | 'team' | 'personal';
   departmentId?: number;
   teamId?: number;
   reminderMinutes?: number | null;
   color?: string;
   recurrenceRule?: string | null;
-  status?: "tentative" | "confirmed" | "cancelled";
+  status?: 'tentative' | 'confirmed' | 'cancelled';
 }
 
 /**
@@ -78,25 +77,21 @@ export class CalendarService {
     userTeamId: number | null,
     filters: CalendarFilters,
   ) {
-    const page = Math.max(1, Number.parseInt(filters.page ?? "1", 10));
+    const page = Math.max(1, Number.parseInt(filters.page ?? '1', 10));
     // Performance-Limit: max 200 Events
-    const limit = Math.min(
-      200,
-      Math.max(1, Number.parseInt(filters.limit ?? "50", 10)),
-    );
+    const limit = Math.min(200, Math.max(1, Number.parseInt(filters.limit ?? '50', 10)));
     // offset is calculated in the model
 
     // Map API field names to DB field names
     const sortByMap: Record<string, string> = {
-      startDate: "start_date",
-      endDate: "end_date",
-      title: "title",
-      createdAt: "created_at",
+      startDate: 'start_date',
+      endDate: 'end_date',
+      title: 'title',
+      createdAt: 'created_at',
     };
 
-    const sortBy = sortByMap[filters.sortBy ?? "startDate"] ?? "start_date";
-    const sortDir: "ASC" | "DESC" =
-      filters.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+    const sortBy = sortByMap[filters.sortBy ?? 'startDate'] ?? 'start_date';
+    const sortDir: 'ASC' | 'DESC' = filters.sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
     const queryOptions = {
       status: filters.status,
@@ -123,9 +118,7 @@ export class CalendarService {
       };
 
       // Map events to API format
-      const events = result.events.map((event: CalendarEvent) =>
-        dbToApiEvent(event),
-      );
+      const events = result.events.map((event: CalendarEvent) => dbToApiEvent(event));
 
       const totalPages = Math.ceil(result.pagination.total / limit);
 
@@ -141,11 +134,7 @@ export class CalendarService {
         },
       };
     } catch {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve calendar events",
-        500,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve calendar events', 500);
     }
   }
 
@@ -165,14 +154,11 @@ export class CalendarService {
     try {
       const event = await CalendarModel.getEventById(eventId, tenantId, userId);
       if (!event) {
-        throw new ServiceError("NOT_FOUND", "Event not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Event not found', 404);
       }
 
       // Get attendees
-      const attendees = await CalendarModel.getEventAttendees(
-        eventId,
-        tenantId,
-      );
+      const attendees = await CalendarModel.getEventAttendees(eventId, tenantId);
 
       const apiEvent = dbToApiEvent(event);
       return {
@@ -192,7 +178,7 @@ export class CalendarService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new ServiceError("SERVER_ERROR", "Failed to retrieve event", 500);
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve event', 500);
     }
   }
 
@@ -215,30 +201,27 @@ export class CalendarService {
   ) {
     // Validate required fields
     if (!eventData.title) {
-      throw new ServiceError("BAD_REQUEST", "Title is required", 400, [
-        { field: "title", message: "Title is required" },
+      throw new ServiceError('BAD_REQUEST', 'Title is required', 400, [
+        { field: 'title', message: 'Title is required' },
       ]);
     }
 
     if (!eventData.startTime) {
-      throw new ServiceError("BAD_REQUEST", "Start time is required", 400, [
-        { field: "startTime", message: "Start time is required" },
+      throw new ServiceError('BAD_REQUEST', 'Start time is required', 400, [
+        { field: 'startTime', message: 'Start time is required' },
       ]);
     }
 
     if (!eventData.endTime) {
-      throw new ServiceError("BAD_REQUEST", "End time is required", 400, [
-        { field: "endTime", message: "End time is required" },
+      throw new ServiceError('BAD_REQUEST', 'End time is required', 400, [
+        { field: 'endTime', message: 'End time is required' },
       ]);
     }
 
     if (!eventData.orgLevel) {
-      throw new ServiceError(
-        "BAD_REQUEST",
-        "Organization level is required",
-        400,
-        [{ field: "orgLevel", message: "Organization level is required" }],
-      );
+      throw new ServiceError('BAD_REQUEST', 'Organization level is required', 400, [
+        { field: 'orgLevel', message: 'Organization level is required' },
+      ]);
     }
 
     // Validate dates
@@ -246,97 +229,76 @@ export class CalendarService {
     const endDate = new Date(eventData.endTime);
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      throw new ServiceError("BAD_REQUEST", "Invalid date format", 400, [
-        { field: "startTime/endTime", message: "Must be valid ISO 8601 date" },
+      throw new ServiceError('BAD_REQUEST', 'Invalid date format', 400, [
+        { field: 'startTime/endTime', message: 'Must be valid ISO 8601 date' },
       ]);
     }
 
     if (endDate <= startDate) {
-      throw new ServiceError(
-        "BAD_REQUEST",
-        "End time must be after start time",
-        400,
-        [{ field: "endTime", message: "Must be after start time" }],
-      );
+      throw new ServiceError('BAD_REQUEST', 'End time must be after start time', 400, [
+        { field: 'endTime', message: 'Must be after start time' },
+      ]);
     }
 
     // PERMISSION CHECKS basierend auf org_level
     switch (eventData.orgLevel) {
-      case "company":
-        if (userRole !== "admin") {
-          throw new ServiceError(
-            "FORBIDDEN",
-            "Only admins can create company events",
-            403,
-          );
+      case 'company':
+        if (userRole !== 'admin') {
+          throw new ServiceError('FORBIDDEN', 'Only admins can create company events', 403);
         }
         break;
 
-      case "department":
+      case 'department':
         if (!eventData.departmentId) {
           throw new ServiceError(
-            "BAD_REQUEST",
-            "departmentId is required for department events",
+            'BAD_REQUEST',
+            'departmentId is required for department events',
             400,
             [
               {
-                field: "departmentId",
-                message: "Required for department events",
+                field: 'departmentId',
+                message: 'Required for department events',
               },
             ],
           );
         }
-        if (userRole !== "admin" && userRole !== "lead") {
+        if (userRole !== 'admin' && userRole !== 'lead') {
           throw new ServiceError(
-            "FORBIDDEN",
-            "Only admins and leads can create department events",
+            'FORBIDDEN',
+            'Only admins and leads can create department events',
             403,
           );
         }
-        if (
-          userDepartmentId !== eventData.departmentId &&
-          userRole !== "admin"
-        ) {
-          throw new ServiceError(
-            "FORBIDDEN",
-            "Cannot create events for other departments",
-            403,
-          );
+        if (userDepartmentId !== eventData.departmentId && userRole !== 'admin') {
+          throw new ServiceError('FORBIDDEN', 'Cannot create events for other departments', 403);
         }
         break;
 
-      case "team":
+      case 'team':
         if (!eventData.teamId || !eventData.departmentId) {
           throw new ServiceError(
-            "BAD_REQUEST",
-            "Both teamId and departmentId are required for team events",
+            'BAD_REQUEST',
+            'Both teamId and departmentId are required for team events',
             400,
             [
-              { field: "teamId", message: "Required for team events" },
-              { field: "departmentId", message: "Required for team events" },
+              { field: 'teamId', message: 'Required for team events' },
+              { field: 'departmentId', message: 'Required for team events' },
             ],
           );
         }
-        if (userTeamId !== eventData.teamId && userRole !== "admin") {
-          throw new ServiceError(
-            "FORBIDDEN",
-            "Cannot create events for other teams",
-            403,
-          );
+        if (userTeamId !== eventData.teamId && userRole !== 'admin') {
+          throw new ServiceError('FORBIDDEN', 'Cannot create events for other teams', 403);
         }
         break;
 
-      case "personal":
+      case 'personal':
         // Jeder kann persönliche Events erstellen
         break;
 
       default:
-        throw new ServiceError(
-          "BAD_REQUEST",
-          "Invalid organization level",
-          400,
-          [{ field: "orgLevel", message: "Invalid organization level" }],
-        );
+        throw new ServiceError('BAD_REQUEST', 'Invalid organization level', 400, [
+          { field: 'orgLevel', message: 'Invalid organization level' },
+        ]);
     }
 
     const createData: EventCreateData = {
@@ -352,10 +314,7 @@ export class CalendarService {
       team_id: eventData.teamId ?? null,
       created_by: userId,
       created_by_role: userRole,
-      allow_attendees:
-        eventData.attendeeIds && eventData.attendeeIds.length > 0
-          ? true
-          : false,
+      allow_attendees: eventData.attendeeIds && eventData.attendeeIds.length > 0 ? true : false,
       reminder_time: eventData.reminderMinutes,
       color: eventData.color,
       recurrence_rule: eventData.recurrenceRule,
@@ -366,7 +325,7 @@ export class CalendarService {
       const createdEvent = await CalendarModel.createEvent(createData);
 
       if (!createdEvent) {
-        throw new ServiceError("SERVER_ERROR", "Failed to create event", 500);
+        throw new ServiceError('SERVER_ERROR', 'Failed to create event', 500);
       }
 
       // Add attendees if provided (für alle Event-Typen möglich)
@@ -375,7 +334,7 @@ export class CalendarService {
           await CalendarModel.addEventAttendee(
             createdEvent.id,
             attendeeId,
-            "pending",
+            'pending',
             tenantId, // Pass tenant_id for multi-tenant isolation
           );
         }
@@ -387,7 +346,7 @@ export class CalendarService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new ServiceError("SERVER_ERROR", "Failed to create event", 500);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create event', 500);
     }
   }
 
@@ -409,30 +368,18 @@ export class CalendarService {
     // First check if event exists
     const eventExists = await CalendarModel.checkEventExists(eventId, tenantId);
     if (!eventExists) {
-      throw new ServiceError("NOT_FOUND", "Event not found", 404);
+      throw new ServiceError('NOT_FOUND', 'Event not found', 404);
     }
 
     // Then check if user has permission to view
     const event = await CalendarModel.getEventById(eventId, tenantId, userId);
     if (!event) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "You don't have permission to access this event",
-        403,
-      );
+      throw new ServiceError('FORBIDDEN', "You don't have permission to access this event", 403);
     }
 
     // Check permissions
-    if (
-      event.created_by !== userId &&
-      userRole !== "admin" &&
-      userRole !== "manager"
-    ) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "You can only update your own events",
-        403,
-      );
+    if (event.created_by !== userId && userRole !== 'admin' && userRole !== 'manager') {
+      throw new ServiceError('FORBIDDEN', 'You can only update your own events', 403);
     }
 
     // Validate dates if provided
@@ -441,12 +388,9 @@ export class CalendarService {
       const endDate = new Date(updateData.endTime);
 
       if (endDate <= startDate) {
-        throw new ServiceError(
-          "BAD_REQUEST",
-          "End time must be after start time",
-          400,
-          [{ field: "endTime", message: "Must be after start time" }],
-        );
+        throw new ServiceError('BAD_REQUEST', 'End time must be after start time', 400, [
+          { field: 'endTime', message: 'Must be after start time' },
+        ]);
       }
     }
 
@@ -468,13 +412,9 @@ export class CalendarService {
     };
 
     try {
-      const success = await CalendarModel.updateEvent(
-        eventId,
-        dbUpdateData,
-        tenantId,
-      );
+      const success = await CalendarModel.updateEvent(eventId, dbUpdateData, tenantId);
       if (!success) {
-        throw new ServiceError("SERVER_ERROR", "Failed to update event", 500);
+        throw new ServiceError('SERVER_ERROR', 'Failed to update event', 500);
       }
 
       // Return updated event
@@ -483,7 +423,7 @@ export class CalendarService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new ServiceError("SERVER_ERROR", "Failed to update event", 500);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update event', 500);
     }
   }
 
@@ -494,45 +434,28 @@ export class CalendarService {
    * @param userId
    * @param userRole
    */
-  async deleteEvent(
-    eventId: number,
-    tenantId: number,
-    userId: number,
-    userRole: string,
-  ) {
+  async deleteEvent(eventId: number, tenantId: number, userId: number, userRole: string) {
     // First check if event exists
     const eventExists = await CalendarModel.checkEventExists(eventId, tenantId);
     if (!eventExists) {
-      throw new ServiceError("NOT_FOUND", "Event not found", 404);
+      throw new ServiceError('NOT_FOUND', 'Event not found', 404);
     }
 
     // Then check if user has permission to view
     const event = await CalendarModel.getEventById(eventId, tenantId, userId);
     if (!event) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "You don't have permission to access this event",
-        403,
-      );
+      throw new ServiceError('FORBIDDEN', "You don't have permission to access this event", 403);
     }
 
     // Check permissions
-    if (
-      event.created_by !== userId &&
-      userRole !== "admin" &&
-      userRole !== "manager"
-    ) {
-      throw new ServiceError(
-        "FORBIDDEN",
-        "You can only delete your own events",
-        403,
-      );
+    if (event.created_by !== userId && userRole !== 'admin' && userRole !== 'manager') {
+      throw new ServiceError('FORBIDDEN', 'You can only delete your own events', 403);
     }
 
     try {
       const success = await CalendarModel.deleteEvent(eventId, tenantId);
       if (!success) {
-        throw new ServiceError("SERVER_ERROR", "Failed to delete event", 500);
+        throw new ServiceError('SERVER_ERROR', 'Failed to delete event', 500);
       }
       return true;
     } catch (error: unknown) {
@@ -540,7 +463,7 @@ export class CalendarService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new ServiceError("SERVER_ERROR", "Failed to delete event", 500);
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete event', 500);
     }
   }
 
@@ -554,23 +477,19 @@ export class CalendarService {
   async updateAttendeeResponse(
     eventId: number,
     userId: number,
-    response: "accepted" | "declined" | "tentative",
+    response: 'accepted' | 'declined' | 'tentative',
     tenantId: number,
   ) {
     try {
       // Check if event exists
       const event = await CalendarModel.getEventById(eventId, tenantId, userId);
       if (!event) {
-        throw new ServiceError("NOT_FOUND", "Event not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Event not found', 404);
       }
 
-      const success = await CalendarModel.respondToEvent(
-        eventId,
-        userId,
-        response,
-      );
+      const success = await CalendarModel.respondToEvent(eventId, userId, response);
       if (!success) {
-        throw new ServiceError("BAD_REQUEST", "Failed to update response", 400);
+        throw new ServiceError('BAD_REQUEST', 'Failed to update response', 400);
       }
 
       return { success: true };
@@ -578,11 +497,7 @@ export class CalendarService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to update attendee response",
-        500,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to update attendee response', 500);
     }
   }
 
@@ -597,7 +512,7 @@ export class CalendarService {
     tenantId: number,
     userId: number,
     _userDepartmentId: number | null,
-    format: "ics" | "csv",
+    format: 'ics' | 'csv',
   ) {
     try {
       const result = (await CalendarModel.getAllEvents(
@@ -608,13 +523,13 @@ export class CalendarService {
         events: DbCalendarEvent[];
       };
 
-      if (format === "csv") {
+      if (format === 'csv') {
         return this.generateCSV(result.events);
       } else {
         return this.generateICS(result.events);
       }
     } catch {
-      throw new ServiceError("SERVER_ERROR", "Failed to export events", 500);
+      throw new ServiceError('SERVER_ERROR', 'Failed to export events', 500);
     }
   }
 
@@ -623,29 +538,20 @@ export class CalendarService {
    * @param events
    */
   private generateCSV(events: CalendarEvent[]): string {
-    const headers = [
-      "Title",
-      "Description",
-      "Location",
-      "Start",
-      "End",
-      "All Day",
-      "Status",
-    ];
+    const headers = ['Title', 'Description', 'Location', 'Start', 'End', 'All Day', 'Status'];
     const rows = events.map((event) => [
       event.title,
-      event.description ?? "",
-      event.location ?? "",
+      event.description ?? '',
+      event.location ?? '',
       event.start_date.toISOString(),
       event.end_date.toISOString(),
-      event.all_day ? "Yes" : "No",
-      event.status ?? "confirmed",
+      event.all_day ? 'Yes' : 'No',
+      event.status ?? 'confirmed',
     ]);
 
-    return [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-    ].join("\n");
+    return [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
+      '\n',
+    );
   }
 
   /**
@@ -677,13 +583,11 @@ export class CalendarService {
       `;
 
       // Import the query function
-      const { query: executeQuery } = await import("../../../utils/db.js");
+      const { query: executeQuery } = await import('../../../utils/db.js');
       const [result] = await executeQuery(query, [tenantId, userId]);
 
       // Type guard to ensure result is an array
-      const events: CalendarEvent[] = Array.isArray(result)
-        ? (result as CalendarEvent[])
-        : [];
+      const events: CalendarEvent[] = Array.isArray(result) ? (result as CalendarEvent[]) : [];
 
       // Count total unread events
       const totalUnread = events.length;
@@ -698,7 +602,7 @@ export class CalendarService {
         })),
       };
     } catch (error: unknown) {
-      console.error("Error getting unread events:", error);
+      console.error('Error getting unread events:', error);
       return {
         totalUnread: 0,
         eventsRequiringResponse: [],
@@ -716,28 +620,28 @@ export class CalendarService {
         const uid = `${event.id}@assixx.com`;
         const dtstart = event.start_date
           .toISOString()
-          .replace(/[-:]/g, "")
-          .replace(/\.\d{3}/, "");
+          .replace(/[-:]/g, '')
+          .replace(/\.\d{3}/, '');
         const dtend = event.end_date
           .toISOString()
-          .replace(/[-:]/g, "")
-          .replace(/\.\d{3}/, "");
+          .replace(/[-:]/g, '')
+          .replace(/\.\d{3}/, '');
 
         return `BEGIN:VEVENT
 UID:${uid}
 DTSTAMP:${new Date()
           .toISOString()
-          .replace(/[-:]/g, "")
-          .replace(/\.\d{3}/, "")}Z
+          .replace(/[-:]/g, '')
+          .replace(/\.\d{3}/, '')}Z
 DTSTART:${dtstart}Z
 DTEND:${dtend}Z
 SUMMARY:${event.title}
-DESCRIPTION:${event.description ?? ""}
-LOCATION:${event.location ?? ""}
-STATUS:${String((event.status ?? "CONFIRMED").toUpperCase())}
+DESCRIPTION:${event.description ?? ''}
+LOCATION:${event.location ?? ''}
+STATUS:${String((event.status ?? 'CONFIRMED').toUpperCase())}
 END:VEVENT`;
       })
-      .join("\n");
+      .join('\n');
 
     return `BEGIN:VCALENDAR
 VERSION:2.0

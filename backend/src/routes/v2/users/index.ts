@@ -2,18 +2,13 @@
  * Users API v2 Routes
  * Implements standardized user management endpoints with camelCase responses
  */
+import express, { RequestHandler, Router } from 'express';
 
-import express, { Router, RequestHandler } from "express";
-
-import { rateLimiter } from "../../../middleware/rateLimiter";
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware";
-import { typed } from "../../../utils/routeHandlers";
-
-import { usersController } from "./users.controller";
-import { usersValidation } from "./users.validation";
+import { rateLimiter } from '../../../middleware/rateLimiter';
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import { typed } from '../../../utils/routeHandlers';
+import { usersController } from './users.controller';
+import { usersValidation } from './users.validation';
 
 const router: Router = express.Router();
 
@@ -84,9 +79,9 @@ router.use(rateLimiter.api);
  */
 // List all users (admin only)
 router.get(
-  "/",
+  '/',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidation.list,
   typed.auth(usersController.listUsers),
 );
@@ -116,11 +111,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Get current user
-router.get(
-  "/me",
-  authenticateV2 as RequestHandler,
-  typed.auth(usersController.getCurrentUser),
-);
+router.get('/me', authenticateV2 as RequestHandler, typed.auth(usersController.getCurrentUser));
 
 /**
  * @swagger
@@ -159,9 +150,9 @@ router.get(
  */
 // Get user by ID (admin only)
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidation.getById,
   typed.auth(usersController.getUserById),
 );
@@ -269,9 +260,9 @@ router.get(
  */
 // Create new user (admin only)
 router.post(
-  "/",
+  '/',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   rateLimiter.auth, // Stricter rate limiting for user creation
   usersValidation.create,
   typed.auth(usersController.createUser),
@@ -349,9 +340,9 @@ router.post(
  */
 // Update user (admin only)
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidation.update,
   typed.auth(usersController.updateUser),
 );
@@ -411,7 +402,7 @@ router.put(
  */
 // Update current user profile
 router.put(
-  "/me/profile",
+  '/me/profile',
   authenticateV2 as RequestHandler,
   usersValidation.updateProfile,
   typed.auth(usersController.updateCurrentUserProfile),
@@ -471,7 +462,7 @@ router.put(
  */
 // Change password
 router.put(
-  "/me/password",
+  '/me/password',
   authenticateV2 as RequestHandler,
   rateLimiter.auth, // Very strict for password changes
   usersValidation.changePassword,
@@ -524,9 +515,9 @@ router.put(
  */
 // Delete user (admin only)
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidation.getById,
   typed.auth(usersController.deleteUser),
 );
@@ -571,9 +562,9 @@ router.delete(
  */
 // Archive user (admin only)
 router.post(
-  "/:id/archive",
+  '/:id/archive',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   typed.auth(usersController.archiveUser),
 );
 
@@ -617,9 +608,9 @@ router.post(
  */
 // Unarchive user (admin only)
 router.post(
-  "/:id/unarchive",
+  '/:id/unarchive',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   typed.auth(usersController.unarchiveUser),
 );
 
@@ -655,7 +646,7 @@ router.post(
  */
 // Profile picture endpoints
 router.get(
-  "/me/profile-picture",
+  '/me/profile-picture',
   authenticateV2 as RequestHandler,
   typed.auth(usersController.getProfilePicture),
 );
@@ -704,7 +695,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post(
-  "/me/profile-picture",
+  '/me/profile-picture',
   authenticateV2 as RequestHandler,
   rateLimiter.upload, // Limit uploads
   typed.auth(usersController.uploadProfilePicture),
@@ -744,7 +735,7 @@ router.post(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.delete(
-  "/me/profile-picture",
+  '/me/profile-picture',
   authenticateV2 as RequestHandler,
   typed.auth(usersController.deleteProfilePicture),
 );
@@ -817,9 +808,9 @@ router.delete(
  */
 // Update availability (admin only)
 router.put(
-  "/:id/availability",
+  '/:id/availability',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidation.updateAvailability,
   typed.auth(usersController.updateAvailability),
 );

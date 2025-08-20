@@ -3,13 +3,11 @@
  * Business logic for real-time messaging, conversations, and file attachments
  * Complete v2 implementation without v1 dependencies
  */
+import { log, error as logError } from 'console';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { log, error as logError } from "console";
-
-import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
-
-import { execute } from "../../../utils/db.js";
-import { ServiceError } from "../users/users.service.js";
+import { execute } from '../../../utils/db.js';
+import { ServiceError } from '../users/users.service.js';
 
 // Re-export types
 export interface PaginationMeta {
@@ -189,12 +187,12 @@ export class ChatService {
     try {
       // Get current user's role and department
       const [userRows] = await execute<RowDataPacket[]>(
-        "SELECT role, department_id FROM users WHERE id = ? AND tenant_id = ?",
+        'SELECT role, department_id FROM users WHERE id = ? AND tenant_id = ?',
         [currentUserId, tenantId],
       );
 
       if (!userRows.length) {
-        throw new ServiceError("USER_NOT_FOUND", "Current user not found", 404);
+        throw new ServiceError('USER_NOT_FOUND', 'Current user not found', 404);
       }
 
       const currentUser = userRows[0];
@@ -202,7 +200,7 @@ export class ChatService {
       let params: unknown[];
 
       // Admins and roots can see all users in tenant
-      if (currentUser.role === "admin" || currentUser.role === "root") {
+      if (currentUser.role === 'admin' || currentUser.role === 'root') {
         query = `
           SELECT 
             u.id,
@@ -245,11 +243,10 @@ export class ChatService {
 
       // Apply search filter if provided
       let filteredUsers = users;
-      if (search !== null && search !== undefined && search !== "") {
+      if (search !== null && search !== undefined && search !== '') {
         const searchLower = search.toLowerCase();
         filteredUsers = users.filter((user) => {
-          const fullName =
-            `${user.first_name ?? ""} ${user.last_name ?? ""}`.toLowerCase();
+          const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
           return (
             user.username.toLowerCase().includes(searchLower) ||
             user.email.toLowerCase().includes(searchLower) ||
@@ -263,21 +260,17 @@ export class ChatService {
         id: user.id,
         username: user.username,
         email: user.email,
-        first_name: user.first_name ?? "",
-        last_name: user.last_name ?? "",
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
         profile_picture: user.profile_picture,
         department_id: user.department_id,
         department: user.department_name,
         role: user.role, // Include role for frontend filtering
-        status: "offline", // TODO: Implement online status
+        status: 'offline', // TODO: Implement online status
         last_seen: null, // TODO: Implement last seen
       }));
     } catch {
-      throw new ServiceError(
-        "CHAT_USERS_ERROR",
-        "Failed to fetch chat users",
-        500,
-      );
+      throw new ServiceError('CHAT_USERS_ERROR', 'Failed to fetch chat users', 500);
     }
   }
 
@@ -293,15 +286,12 @@ export class ChatService {
     filters: ConversationFilters = {},
   ): Promise<{ data: Conversation[]; pagination: PaginationMeta }> {
     try {
-      log("[Chat Service] getConversations called with:", {
+      log('[Chat Service] getConversations called with:', {
         tenantId,
         userId,
         filters,
       });
-      const page = Math.max(
-        1,
-        Number.isNaN(filters.page) ? 1 : (filters.page ?? 1),
-      );
+      const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
       const limit = Math.min(
         100,
         Math.max(1, Number.isNaN(filters.limit) ? 20 : (filters.limit ?? 20)),
@@ -364,7 +354,7 @@ export class ChatService {
       `;
 
       // No parameters needed - using string interpolation
-      log("[Chat Service] Full query:", query);
+      log('[Chat Service] Full query:', query);
 
       const [conversations] = await execute<ConversationRow[]>(query);
 
@@ -386,7 +376,7 @@ export class ChatService {
             u.profile_picture
           FROM conversation_participants cp
           INNER JOIN users u ON cp.user_id = u.id
-          WHERE cp.conversation_id IN (${String(conversationIds.map(() => "?").join(","))})
+          WHERE cp.conversation_id IN (${String(conversationIds.map(() => '?').join(','))})
         `;
 
         const [participantRows] = await execute<RowDataPacket[]>(
@@ -404,16 +394,13 @@ export class ChatService {
           LEFT JOIN conversation_participants cp 
             ON cp.conversation_id = m.conversation_id 
             AND cp.user_id = ${userId}
-          WHERE m.conversation_id IN (${String(conversationIds.map(() => "?").join(","))})
+          WHERE m.conversation_id IN (${String(conversationIds.map(() => '?').join(','))})
             AND m.sender_id != ${userId}
             AND m.id > COALESCE(cp.last_read_message_id, 0)
           GROUP BY m.conversation_id
         `;
 
-        const [unreadRows] = await execute<RowDataPacket[]>(
-          unreadQuery,
-          conversationIds,
-        );
+        const [unreadRows] = await execute<RowDataPacket[]>(unreadQuery, conversationIds);
 
         // Map unread counts
         for (const row of unreadRows) {
@@ -425,49 +412,47 @@ export class ChatService {
       const totalPages = Math.ceil(totalItems / limit);
 
       // Transform to v2 format
-      const transformedConversations: Conversation[] = conversations.map(
-        (conv) => {
-          const convParticipants = participants
-            .filter((p) => p.conversation_id === conv.id)
-            .map((p) => ({
-              id: p.user_id, // Add id field for frontend
-              userId: p.user_id,
-              username: p.username,
-              first_name: p.first_name ?? "", // Use snake_case to match frontend
-              last_name: p.last_name ?? "", // Use snake_case to match frontend
-              profile_picture_url: p.profile_picture, // Use snake_case to match frontend
-              joinedAt: new Date(p.joined_at),
-              isActive: true,
-            }));
+      const transformedConversations: Conversation[] = conversations.map((conv) => {
+        const convParticipants = participants
+          .filter((p) => p.conversation_id === conv.id)
+          .map((p) => ({
+            id: p.user_id, // Add id field for frontend
+            userId: p.user_id,
+            username: p.username,
+            first_name: p.first_name ?? '', // Use snake_case to match frontend
+            last_name: p.last_name ?? '', // Use snake_case to match frontend
+            profile_picture_url: p.profile_picture, // Use snake_case to match frontend
+            joinedAt: new Date(p.joined_at),
+            isActive: true,
+          }));
 
-          // Build last message object if available
-          let lastMessage = null;
-          if (conv.last_message_content) {
-            lastMessage = {
-              content: conv.last_message_content,
-              created_at: conv.last_message_time, // Use snake_case for frontend
-            };
-          }
-
-          // Get the unread count for this conversation
-          const unreadCount = unreadCounts.get(conv.id) ?? 0;
-
-          return {
-            id: conv.id,
-            name: conv.name,
-            isGroup: conv.is_group === 1,
-            createdAt: new Date(conv.created_at),
-            updatedAt: new Date(conv.updated_at),
-            lastMessage, // Now includes actual last message
-            unreadCount, // Real unread count from database
-            participants: convParticipants,
-            // Also add snake_case versions for frontend compatibility
-            last_message: lastMessage,
-            is_group: conv.is_group === 1,
-            unread_count: unreadCount, // Real unread count from database
+        // Build last message object if available
+        let lastMessage = null;
+        if (conv.last_message_content) {
+          lastMessage = {
+            content: conv.last_message_content,
+            created_at: conv.last_message_time, // Use snake_case for frontend
           };
-        },
-      );
+        }
+
+        // Get the unread count for this conversation
+        const unreadCount = unreadCounts.get(conv.id) ?? 0;
+
+        return {
+          id: conv.id,
+          name: conv.name,
+          isGroup: conv.is_group === 1,
+          createdAt: new Date(conv.created_at),
+          updatedAt: new Date(conv.updated_at),
+          lastMessage, // Now includes actual last message
+          unreadCount, // Real unread count from database
+          participants: convParticipants,
+          // Also add snake_case versions for frontend compatibility
+          last_message: lastMessage,
+          is_group: conv.is_group === 1,
+          unread_count: unreadCount, // Real unread count from database
+        };
+      });
 
       return {
         data: transformedConversations,
@@ -481,12 +466,8 @@ export class ChatService {
         },
       };
     } catch (error: unknown) {
-      logError("[Chat Service] getConversations error:", error);
-      throw new ServiceError(
-        "CONVERSATIONS_ERROR",
-        "Failed to fetch conversations",
-        500,
-      );
+      logError('[Chat Service] getConversations error:', error);
+      throw new ServiceError('CONVERSATIONS_ERROR', 'Failed to fetch conversations', 500);
     }
   }
 
@@ -502,17 +483,14 @@ export class ChatService {
     data: CreateConversationData,
   ): Promise<{ conversation: Conversation }> {
     try {
-      log("[Chat Service] createConversation called with:", {
+      log('[Chat Service] createConversation called with:', {
         tenantId,
         creatorId,
         data,
       });
 
       // Critical debug: Log actual tenant_id being used
-      logError(
-        "[CRITICAL DEBUG] Creating conversation with tenantId:",
-        tenantId,
-      );
+      logError('[CRITICAL DEBUG] Creating conversation with tenantId:', tenantId);
 
       // Check if it's a 1:1 conversation and if it already exists
       const isGroup = data.isGroup ?? data.participantIds.length > 1;
@@ -541,20 +519,14 @@ export class ChatService {
 
         if (existing.length > 0) {
           // Return existing conversation
-          const conversations = await this.getConversations(
-            tenantId,
-            creatorId,
-            {
-              limit: 100,
-            },
-          );
-          const conversation = conversations.data.find(
-            (c) => c.id === existing[0].id,
-          );
+          const conversations = await this.getConversations(tenantId, creatorId, {
+            limit: 100,
+          });
+          const conversation = conversations.data.find((c) => c.id === existing[0].id);
           if (!conversation) {
             throw new ServiceError(
-              "CONVERSATION_NOT_FOUND",
-              "Failed to retrieve existing conversation",
+              'CONVERSATION_NOT_FOUND',
+              'Failed to retrieve existing conversation',
               404,
             );
           }
@@ -563,7 +535,7 @@ export class ChatService {
       }
 
       // Create new conversation
-      log("[Chat Service] Creating new conversation with isGroup:", isGroup);
+      log('[Chat Service] Creating new conversation with isGroup:', isGroup);
       const [conversationResult] = await execute<ResultSetHeader>(
         `INSERT INTO conversations (tenant_id, name, is_group, created_at, updated_at)
          VALUES (?, ?, ?, NOW(), NOW())`,
@@ -571,7 +543,7 @@ export class ChatService {
       );
 
       const conversationId = conversationResult.insertId;
-      log("[Chat Service] Created conversation with ID:", conversationId);
+      log('[Chat Service] Created conversation with ID:', conversationId);
 
       // Add creator as participant
       await execute(
@@ -593,28 +565,22 @@ export class ChatService {
       const conversations = await this.getConversations(tenantId, creatorId, {
         limit: 100,
       });
-      const conversation = conversations.data.find(
-        (c) => c.id === conversationId,
-      );
+      const conversation = conversations.data.find((c) => c.id === conversationId);
 
       if (!conversation) {
         throw new ServiceError(
-          "CREATE_CONVERSATION_ERROR",
-          "Failed to retrieve created conversation",
+          'CREATE_CONVERSATION_ERROR',
+          'Failed to retrieve created conversation',
           500,
         );
       }
 
       return { conversation };
     } catch (error: unknown) {
-      logError("[Chat Service] createConversation error:", error);
-      throw error instanceof ServiceError
-        ? error
-        : new ServiceError(
-            "CREATE_CONVERSATION_ERROR",
-            "Failed to create conversation",
-            500,
-          );
+      logError('[Chat Service] createConversation error:', error);
+      throw error instanceof ServiceError ? error : (
+          new ServiceError('CREATE_CONVERSATION_ERROR', 'Failed to create conversation', 500)
+        );
     }
   }
 
@@ -632,10 +598,7 @@ export class ChatService {
     filters: MessageFilters = {},
   ): Promise<{ data: Message[]; pagination: PaginationMeta }> {
     try {
-      const page = Math.max(
-        1,
-        Number.isNaN(filters.page) ? 1 : (filters.page ?? 1),
-      );
+      const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
       const limit = Math.min(
         100,
         Math.max(1, Number.isNaN(filters.limit) ? 50 : (filters.limit ?? 50)),
@@ -651,33 +614,33 @@ export class ChatService {
 
       if (!participant.length) {
         throw new ServiceError(
-          "CONVERSATION_ACCESS_DENIED",
-          "You are not a participant of this conversation",
+          'CONVERSATION_ACCESS_DENIED',
+          'You are not a participant of this conversation',
           403,
         );
       }
 
       // Build query with filters
-      let whereClause = "WHERE m.conversation_id = ? AND m.tenant_id = ?";
+      let whereClause = 'WHERE m.conversation_id = ? AND m.tenant_id = ?';
       const params: unknown[] = [conversationId, tenantId];
 
       if (filters.search) {
-        whereClause += " AND m.content LIKE ?";
+        whereClause += ' AND m.content LIKE ?';
         params.push(`%${filters.search}%`);
       }
 
       if (filters.startDate) {
-        whereClause += " AND m.created_at >= ?";
+        whereClause += ' AND m.created_at >= ?';
         params.push(filters.startDate);
       }
 
       if (filters.endDate) {
-        whereClause += " AND m.created_at <= ?";
+        whereClause += ' AND m.created_at <= ?';
         params.push(filters.endDate);
       }
 
       if (filters.hasAttachment) {
-        whereClause += " AND m.attachment_path IS NOT NULL";
+        whereClause += ' AND m.attachment_path IS NOT NULL';
       }
 
       // Get total count
@@ -733,16 +696,16 @@ export class ChatService {
         conversationId: msg.conversation_id,
         senderId: msg.sender_id,
         senderName:
-          `${msg.sender_first_name ?? ""} ${msg.sender_last_name ?? ""}`.trim() ??
-          "Unknown",
-        senderUsername: msg.sender_username ?? "unknown",
+          `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim() ?? 'Unknown',
+        senderUsername: msg.sender_username ?? 'unknown',
         senderProfilePicture: msg.sender_profile_picture,
         content: msg.content,
-        attachment: msg.attachment_path
-          ? {
+        attachment:
+          msg.attachment_path ?
+            {
               url: msg.attachment_path,
-              filename: msg.attachment_name ?? "attachment",
-              mimeType: msg.attachment_type ?? "application/octet-stream",
+              filename: msg.attachment_name ?? 'attachment',
+              mimeType: msg.attachment_type ?? 'application/octet-stream',
               size: 0, // TODO: Add file size to DB
             }
           : null,
@@ -764,13 +727,9 @@ export class ChatService {
         },
       };
     } catch (error: unknown) {
-      throw error instanceof ServiceError
-        ? error
-        : new ServiceError(
-            "GET_MESSAGES_ERROR",
-            "Failed to fetch messages",
-            500,
-          );
+      throw error instanceof ServiceError ? error : (
+          new ServiceError('GET_MESSAGES_ERROR', 'Failed to fetch messages', 500)
+        );
     }
   }
 
@@ -797,8 +756,8 @@ export class ChatService {
 
       if (!participant.length) {
         throw new ServiceError(
-          "CONVERSATION_ACCESS_DENIED",
-          "You are not a participant of this conversation",
+          'CONVERSATION_ACCESS_DENIED',
+          'You are not a participant of this conversation',
           403,
         );
       }
@@ -822,10 +781,7 @@ export class ChatService {
       const messageId = messageResult.insertId;
 
       // Update conversation's updated_at
-      await execute(
-        `UPDATE conversations SET updated_at = NOW() WHERE id = ?`,
-        [conversationId],
-      );
+      await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = ?`, [conversationId]);
 
       // Get sender info
       const [senderRows] = await execute<RowDataPacket[]>(
@@ -841,14 +797,13 @@ export class ChatService {
         id: messageId,
         conversationId,
         senderId,
-        senderName:
-          `${sender.first_name ?? ""} ${sender.last_name ?? ""}`.trim() ??
-          "Unknown",
+        senderName: `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim() ?? 'Unknown',
         senderUsername: sender.username,
         senderProfilePicture: sender.profile_picture,
         content: data.content,
-        attachment: data.attachment
-          ? {
+        attachment:
+          data.attachment ?
+            {
               url: data.attachment.path,
               filename: data.attachment.filename,
               mimeType: data.attachment.mimeType,
@@ -863,9 +818,9 @@ export class ChatService {
 
       return { message };
     } catch (error: unknown) {
-      throw error instanceof ServiceError
-        ? error
-        : new ServiceError("SEND_MESSAGE_ERROR", "Failed to send message", 500);
+      throw error instanceof ServiceError ? error : (
+          new ServiceError('SEND_MESSAGE_ERROR', 'Failed to send message', 500)
+        );
     }
   }
 
@@ -874,10 +829,7 @@ export class ChatService {
    * @param tenantId
    * @param userId
    */
-  async getUnreadCount(
-    tenantId: number,
-    userId: number,
-  ): Promise<UnreadCountSummary> {
+  async getUnreadCount(tenantId: number, userId: number): Promise<UnreadCountSummary> {
     try {
       // Get unread messages grouped by conversation
       // Using conversation_participants.last_read_message_id instead of message_read_receipts
@@ -911,22 +863,15 @@ export class ChatService {
         lastMessageTime: new Date(row.lastMessageTime),
       }));
 
-      const totalUnread = conversations.reduce(
-        (sum, conv) => sum + conv.unreadCount,
-        0,
-      );
+      const totalUnread = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
 
       return {
         totalUnread,
         conversations,
       };
     } catch (error: unknown) {
-      logError("[Chat Service] getUnreadCount error:", error);
-      throw new ServiceError(
-        "UNREAD_COUNT_ERROR",
-        "Failed to get unread count",
-        500,
-      );
+      logError('[Chat Service] getUnreadCount error:', error);
+      throw new ServiceError('UNREAD_COUNT_ERROR', 'Failed to get unread count', 500);
     }
   }
 
@@ -940,7 +885,7 @@ export class ChatService {
     userId: number,
   ): Promise<{ markedCount: number }> {
     try {
-      log("[Chat Service] markConversationAsRead:", { conversationId, userId });
+      log('[Chat Service] markConversationAsRead:', { conversationId, userId });
 
       // First check if user is participant - using string interpolation
       const [participant] = await execute<RowDataPacket[]>(
@@ -950,13 +895,13 @@ export class ChatService {
 
       if (!participant.length) {
         throw new ServiceError(
-          "CONVERSATION_ACCESS_DENIED",
-          "You are not a participant of this conversation",
+          'CONVERSATION_ACCESS_DENIED',
+          'You are not a participant of this conversation',
           403,
         );
       }
 
-      log("[Chat Service] User is participant, updating last read message");
+      log('[Chat Service] User is participant, updating last read message');
 
       // Get the latest message id in the conversation
       const [latestMessage] = await execute<RowDataPacket[]>(
@@ -988,14 +933,10 @@ export class ChatService {
 
       return { markedCount: unreadCount[0]?.count ?? 0 };
     } catch (error: unknown) {
-      logError("[Chat Service] markConversationAsRead error:", error);
-      throw error instanceof ServiceError
-        ? error
-        : new ServiceError(
-            "MARK_READ_ERROR",
-            "Failed to mark messages as read",
-            500,
-          );
+      logError('[Chat Service] markConversationAsRead error:', error);
+      throw error instanceof ServiceError ? error : (
+          new ServiceError('MARK_READ_ERROR', 'Failed to mark messages as read', 500)
+        );
     }
   }
 
@@ -1020,8 +961,8 @@ export class ChatService {
 
       if (!participant.length) {
         throw new ServiceError(
-          "CONVERSATION_ACCESS_DENIED",
-          "You are not a participant of this conversation",
+          'CONVERSATION_ACCESS_DENIED',
+          'You are not a participant of this conversation',
           403,
         );
       }
@@ -1034,38 +975,31 @@ export class ChatService {
       );
 
       const canDelete =
-        userRole === "root" ||
-        userRole === "admin" ||
+        userRole === 'root' ||
+        userRole === 'admin' ||
         participant[0].is_admin === 1 ||
         participantCount[0].count === 1;
 
       if (!canDelete) {
         throw new ServiceError(
-          "DELETE_CONVERSATION_FORBIDDEN",
+          'DELETE_CONVERSATION_FORBIDDEN',
           "You don't have permission to delete this conversation",
           403,
         );
       }
 
       // Delete in correct order to avoid FK constraints
-      await execute(`DELETE FROM messages WHERE conversation_id = ?`, [
+      await execute(`DELETE FROM messages WHERE conversation_id = ?`, [conversationId]);
+
+      await execute(`DELETE FROM conversation_participants WHERE conversation_id = ?`, [
         conversationId,
       ]);
 
-      await execute(
-        `DELETE FROM conversation_participants WHERE conversation_id = ?`,
-        [conversationId],
-      );
-
       await execute(`DELETE FROM conversations WHERE id = ?`, [conversationId]);
     } catch (error: unknown) {
-      throw error instanceof ServiceError
-        ? error
-        : new ServiceError(
-            "DELETE_CONVERSATION_ERROR",
-            "Failed to delete conversation",
-            500,
-          );
+      throw error instanceof ServiceError ? error : (
+          new ServiceError('DELETE_CONVERSATION_ERROR', 'Failed to delete conversation', 500)
+        );
     }
   }
 
@@ -1128,8 +1062,8 @@ export class ChatService {
         id: p.user_id, // Add id field for frontend
         userId: p.user_id,
         username: p.username,
-        first_name: p.first_name ?? "", // Use snake_case to match frontend
-        last_name: p.last_name ?? "", // Use snake_case to match frontend
+        first_name: p.first_name ?? '', // Use snake_case to match frontend
+        last_name: p.last_name ?? '', // Use snake_case to match frontend
         profile_picture_url: p.profile_picture, // Use snake_case to match frontend
         joinedAt: new Date(p.joined_at),
         isActive: true,
@@ -1146,12 +1080,8 @@ export class ChatService {
         participants: convParticipants,
       };
     } catch (error: unknown) {
-      logError("[Chat Service] getConversation error:", error);
-      throw new ServiceError(
-        "CONVERSATION_ERROR",
-        "Failed to get conversation",
-        500,
-      );
+      logError('[Chat Service] getConversation error:', error);
+      throw new ServiceError('CONVERSATION_ERROR', 'Failed to get conversation', 500);
     }
   }
 }

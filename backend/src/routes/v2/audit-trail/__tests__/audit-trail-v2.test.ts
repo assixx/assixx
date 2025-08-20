@@ -2,29 +2,21 @@
  * Tests for Audit Trail API v2
  * Tests comprehensive audit logging and compliance features
  */
+import { afterAll, beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { error as logError } from 'console';
+import { Pool, ResultSetHeader } from 'mysql2/promise';
+import request from 'supertest';
 
+import app from '../../../../app.js';
 import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  jest,
-} from "@jest/globals";
-import request from "supertest";
-import app from "../../../../app.js";
-import { Pool, ResultSetHeader } from "mysql2/promise";
-import {
-  createTestDatabase,
   cleanupTestData,
   closeTestDatabase,
+  createTestDatabase,
   createTestTenant,
   createTestUser,
-} from "../../../mocks/database.js";
-import { error as logError } from "console";
+} from '../../../mocks/database.js';
 
-describe("Audit Trail API v2", () => {
+describe('Audit Trail API v2', () => {
   jest.setTimeout(30000);
 
   let testDb: Pool;
@@ -42,62 +34,58 @@ describe("Audit Trail API v2", () => {
     await cleanupTestData();
 
     // Create test tenant
-    tenantId = await createTestTenant(
-      testDb,
-      "audit-test",
-      "Test Audit Tenant",
-    );
+    tenantId = await createTestTenant(testDb, 'audit-test', 'Test Audit Tenant');
 
     // Create admin user
     const adminUser = await createTestUser(testDb, {
-      username: "audit_admin_v2",
-      email: "admin@auditv2.test",
-      password: "Admin123!",
-      first_name: "Admin",
-      last_name: "User",
-      role: "admin",
+      username: 'audit_admin_v2',
+      email: 'admin@auditv2.test',
+      password: 'Admin123!',
+      first_name: 'Admin',
+      last_name: 'User',
+      role: 'admin',
       tenant_id: tenantId,
     });
     adminUserId = adminUser.id;
 
     // Create regular user
     const regularUser = await createTestUser(testDb, {
-      username: "audit_user_v2",
-      email: "user@auditv2.test",
-      password: "User123!",
-      first_name: "Regular",
-      last_name: "User",
-      role: "employee",
+      username: 'audit_user_v2',
+      email: 'user@auditv2.test',
+      password: 'User123!',
+      first_name: 'Regular',
+      last_name: 'User',
+      role: 'employee',
       tenant_id: tenantId,
     });
     userId = regularUser.id;
 
     // Create root user
     const rootUser = await createTestUser(testDb, {
-      username: "audit_root_v2",
-      email: "root@auditv2.test",
-      password: "Root123!",
-      first_name: "Root",
-      last_name: "User",
-      role: "root",
+      username: 'audit_root_v2',
+      email: 'root@auditv2.test',
+      password: 'Root123!',
+      first_name: 'Root',
+      last_name: 'User',
+      role: 'root',
       tenant_id: tenantId,
     });
     rootUserId = rootUser.id;
 
     // Login to get tokens
     const adminLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ email: adminUser.email, password: "Admin123!" });
+      .post('/api/v2/auth/login')
+      .send({ email: adminUser.email, password: 'Admin123!' });
     adminToken = adminLogin.body.data.accessToken;
 
     const userLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ email: regularUser.email, password: "User123!" });
+      .post('/api/v2/auth/login')
+      .send({ email: regularUser.email, password: 'User123!' });
     userToken = userLogin.body.data.accessToken;
 
     const rootLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ email: rootUser.email, password: "Root123!" });
+      .post('/api/v2/auth/login')
+      .send({ email: rootUser.email, password: 'Root123!' });
     rootToken = rootLogin.body.data.accessToken;
 
     // Create the audit_trail table
@@ -141,30 +129,19 @@ describe("Audit Trail API v2", () => {
         (?, ?, 'Regular User', 'employee', 'read', 'document', 200, 'Report.pdf', NULL, '192.168.1.2', 'Test Agent', 'success'),
         (?, ?, 'Admin User', 'admin', 'update', 'settings', NULL, 'System Settings', '{"theme": "dark"}', '192.168.1.1', 'Test Agent', 'success'),
         (?, ?, 'Regular User', 'employee', 'delete', 'chat_message', 300, 'Message #300', NULL, '192.168.1.2', 'Test Agent', 'failure')`,
-        [
-          tenantId,
-          adminUserId,
-          tenantId,
-          userId,
-          tenantId,
-          adminUserId,
-          tenantId,
-          userId,
-        ],
+        [tenantId, adminUserId, tenantId, userId, tenantId, adminUserId, tenantId, userId],
       );
       testEntryId = result.insertId;
       logError(`Created ${result.affectedRows} test audit entries`);
     } catch (error: unknown) {
-      logError("Failed to create test audit entries:", error);
+      logError('Failed to create test audit entries:', error);
       throw error;
     }
   });
 
   afterAll(async () => {
     if (testDb && tenantId) {
-      await testDb.execute("DELETE FROM audit_trail WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await testDb.execute('DELETE FROM audit_trail WHERE tenant_id = ?', [tenantId]);
     }
     // Don't call cleanupTestData() here - it deletes ALL test tenants!
     // This is handled by global cleanup in jest.globalTeardown.js
@@ -175,27 +152,25 @@ describe("Audit Trail API v2", () => {
     // Clean specific test data if needed
   });
 
-  describe("GET /api/v2/audit-trail", () => {
-    it("should require authentication", async () => {
-      const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .expect(401);
+  describe('GET /api/v2/audit-trail', () => {
+    it('should require authentication', async () => {
+      const response = await request(app).get('/api/v2/audit-trail').expect(401);
 
       expect(response.body).toMatchObject({
         success: false,
         error: expect.objectContaining({
-          code: "UNAUTHORIZED",
+          code: 'UNAUTHORIZED',
         }),
       });
     });
 
     it("should return user's own audit entries", async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .set("Authorization", `Bearer ${userToken}`);
+        .get('/api/v2/audit-trail')
+        .set('Authorization', `Bearer ${userToken}`);
 
       if (response.status !== 200) {
-        logError("Error response:", response.body);
+        logError('Error response:', response.body);
       }
 
       expect(response.status).toBe(200);
@@ -218,125 +193,121 @@ describe("Audit Trail API v2", () => {
       });
 
       // Should only see their own entries
-      const otherUserEntries = response.body.data.entries.filter(
-        (e: any) => e.userId !== userId,
-      );
+      const otherUserEntries = response.body.data.entries.filter((e: any) => e.userId !== userId);
       expect(otherUserEntries).toHaveLength(0);
     });
 
-    it("should support pagination", async () => {
+    it('should support pagination', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
+        .get('/api/v2/audit-trail')
         .query({ page: 1, limit: 2 })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body.data.entries).toHaveLength(2);
       expect(response.body.data.pagination.pageSize).toBe(2);
     });
 
-    it("should support filtering by action", async () => {
+    it('should support filtering by action', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .query({ action: "create" })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail')
+        .query({ action: 'create' })
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       const entries = response.body.data.entries;
-      expect(entries.every((e: any) => e.action === "create")).toBe(true);
+      expect(entries.every((e: any) => e.action === 'create')).toBe(true);
     });
 
-    it("should support filtering by resource type", async () => {
+    it('should support filtering by resource type', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .query({ resourceType: "user" })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail')
+        .query({ resourceType: 'user' })
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       const entries = response.body.data.entries;
-      expect(entries.every((e: any) => e.resourceType === "user")).toBe(true);
+      expect(entries.every((e: any) => e.resourceType === 'user')).toBe(true);
     });
 
-    it("should support filtering by status", async () => {
+    it('should support filtering by status', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .query({ status: "failure" })
-        .set("Authorization", `Bearer ${userToken}`)
+        .get('/api/v2/audit-trail')
+        .query({ status: 'failure' })
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
       const entries = response.body.data.entries;
-      expect(entries.every((e: any) => e.status === "failure")).toBe(true);
+      expect(entries.every((e: any) => e.status === 'failure')).toBe(true);
     });
 
-    it("should support date range filtering", async () => {
+    it('should support date range filtering', async () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const response = await request(app)
-        .get("/api/v2/audit-trail")
+        .get('/api/v2/audit-trail')
         .query({
           dateFrom: yesterday.toISOString(),
           dateTo: tomorrow.toISOString(),
         })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body.data.entries.length).toBeGreaterThan(0);
     });
 
-    it("should support search", async () => {
+    it('should support search', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .query({ search: "Admin" })
-        .set("Authorization", `Bearer ${rootToken}`)
+        .get('/api/v2/audit-trail')
+        .query({ search: 'Admin' })
+        .set('Authorization', `Bearer ${rootToken}`)
         .expect(200);
 
       expect(response.body.data.entries.length).toBeGreaterThan(0);
     });
 
-    it("should allow root to see all entries", async () => {
+    it('should allow root to see all entries', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .set("Authorization", `Bearer ${rootToken}`)
+        .get('/api/v2/audit-trail')
+        .set('Authorization', `Bearer ${rootToken}`)
         .expect(200);
 
       // Should see entries from multiple users
-      const userIds = new Set(
-        response.body.data.entries.map((e: any) => e.userId),
-      );
+      const userIds = new Set(response.body.data.entries.map((e: any) => e.userId));
       expect(userIds.size).toBeGreaterThan(1);
     });
 
-    it("should validate query parameters", async () => {
+    it('should validate query parameters', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
+        .get('/api/v2/audit-trail')
         .query({
-          page: "invalid",
+          page: 'invalid',
           limit: 200, // exceeds max
-          status: "invalid_status",
+          status: 'invalid_status',
         })
-        .set("Authorization", `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(400);
 
       expect(response.body.success).toBe(false);
     });
   });
 
-  describe("GET /api/v2/audit-trail/:id", () => {
-    it("should return specific audit entry", async () => {
+  describe('GET /api/v2/audit-trail/:id', () => {
+    it('should return specific audit entry', async () => {
       const response = await request(app)
         .get(`/api/v2/audit-trail/${testEntryId}`)
-        .set("Authorization", `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
         success: true,
         data: expect.objectContaining({
           id: testEntryId,
-          action: "create",
-          resourceType: "user",
+          action: 'create',
+          resourceType: 'user',
         }),
       });
     });
@@ -344,36 +315,36 @@ describe("Audit Trail API v2", () => {
     it("should prevent users from viewing others' entries", async () => {
       const response = await request(app)
         .get(`/api/v2/audit-trail/${testEntryId}`)
-        .set("Authorization", `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
 
-      expect(response.body.error.code).toBe("FORBIDDEN");
+      expect(response.body.error.code).toBe('FORBIDDEN');
     });
 
-    it("should return 404 for non-existent entry", async () => {
+    it('should return 404 for non-existent entry', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail/99999")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail/99999')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
-      expect(response.body.error.code).toBe("NOT_FOUND");
+      expect(response.body.error.code).toBe('NOT_FOUND');
     });
   });
 
-  describe("GET /api/v2/audit-trail/stats", () => {
-    it("should require admin or root role", async () => {
+  describe('GET /api/v2/audit-trail/stats', () => {
+    it('should require admin or root role', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail/stats")
-        .set("Authorization", `Bearer ${userToken}`)
+        .get('/api/v2/audit-trail/stats')
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
 
-      expect(response.body.error.code).toBe("FORBIDDEN");
+      expect(response.body.error.code).toBe('FORBIDDEN');
     });
 
-    it("should return audit statistics", async () => {
+    it('should return audit statistics', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail/stats")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail/stats')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -392,47 +363,45 @@ describe("Audit Trail API v2", () => {
       });
     });
 
-    it("should support date filtering for stats", async () => {
+    it('should support date filtering for stats', async () => {
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
 
       const response = await request(app)
-        .get("/api/v2/audit-trail/stats")
+        .get('/api/v2/audit-trail/stats')
         .query({
           dateFrom: lastWeek.toISOString(),
           dateTo: new Date().toISOString(),
         })
-        .set("Authorization", `Bearer ${rootToken}`)
+        .set('Authorization', `Bearer ${rootToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
     });
   });
 
-  describe("POST /api/v2/audit-trail/reports", () => {
-    it("should require admin or root role", async () => {
+  describe('POST /api/v2/audit-trail/reports', () => {
+    it('should require admin or root role', async () => {
       const response = await request(app)
-        .post("/api/v2/audit-trail/reports")
-        .set("Authorization", `Bearer ${userToken}`)
+        .post('/api/v2/audit-trail/reports')
+        .set('Authorization', `Bearer ${userToken}`)
         .send({
-          reportType: "gdpr",
-          dateFrom: "2025-01-01",
-          dateTo: "2025-12-31",
+          reportType: 'gdpr',
+          dateFrom: '2025-01-01',
+          dateTo: '2025-12-31',
         })
         .expect(403);
 
-      expect(response.body.error.code).toBe("FORBIDDEN");
+      expect(response.body.error.code).toBe('FORBIDDEN');
     });
 
-    it("should generate GDPR compliance report", async () => {
+    it('should generate GDPR compliance report', async () => {
       const response = await request(app)
-        .post("/api/v2/audit-trail/reports")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .post('/api/v2/audit-trail/reports')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          reportType: "gdpr",
-          dateFrom: new Date(
-            Date.now() - 30 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
+          reportType: 'gdpr',
+          dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
           dateTo: new Date().toISOString(),
         })
         .expect(200);
@@ -440,7 +409,7 @@ describe("Audit Trail API v2", () => {
       expect(response.body).toMatchObject({
         success: true,
         data: expect.objectContaining({
-          reportType: "gdpr",
+          reportType: 'gdpr',
           entries: expect.any(Array),
           summary: expect.objectContaining({
             totalActions: expect.any(Number),
@@ -455,28 +424,28 @@ describe("Audit Trail API v2", () => {
       });
     });
 
-    it("should validate date range", async () => {
+    it('should validate date range', async () => {
       const response = await request(app)
-        .post("/api/v2/audit-trail/reports")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .post('/api/v2/audit-trail/reports')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          reportType: "user_activity",
-          dateFrom: "2025-12-31",
-          dateTo: "2025-01-01", // Invalid: end before start
+          reportType: 'user_activity',
+          dateFrom: '2025-12-31',
+          dateTo: '2025-01-01', // Invalid: end before start
         })
         .expect(400);
 
       expect(response.body.success).toBe(false);
     });
 
-    it("should enforce maximum date range", async () => {
+    it('should enforce maximum date range', async () => {
       const response = await request(app)
-        .post("/api/v2/audit-trail/reports")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .post('/api/v2/audit-trail/reports')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          reportType: "data_access",
-          dateFrom: "2024-01-01",
-          dateTo: "2025-12-31", // More than 1 year
+          reportType: 'data_access',
+          dateFrom: '2024-01-01',
+          dateTo: '2025-12-31', // More than 1 year
         })
         .expect(400);
 
@@ -484,12 +453,12 @@ describe("Audit Trail API v2", () => {
     });
   });
 
-  describe("GET /api/v2/audit-trail/export", () => {
-    it("should export entries as JSON", async () => {
+  describe('GET /api/v2/audit-trail/export', () => {
+    it('should export entries as JSON', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail/export")
-        .query({ format: "json" })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail/export')
+        .query({ format: 'json' })
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -498,38 +467,36 @@ describe("Audit Trail API v2", () => {
       });
     });
 
-    it("should export entries as CSV", async () => {
+    it('should export entries as CSV', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail/export")
-        .query({ format: "csv" })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail/export')
+        .query({ format: 'csv' })
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.headers["content-type"]).toContain("text/csv");
-      expect(response.headers["content-disposition"]).toContain(
-        "audit-trail-export.csv",
-      );
-      expect(response.text).toContain("ID,Date/Time,User,Role,Action");
+      expect(response.headers['content-type']).toContain('text/csv');
+      expect(response.headers['content-disposition']).toContain('audit-trail-export.csv');
+      expect(response.text).toContain('ID,Date/Time,User,Role,Action');
     });
 
-    it("should log the export action", async () => {
+    it('should log the export action', async () => {
       await request(app)
-        .get("/api/v2/audit-trail/export")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail/export')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       // Check if export was logged
       const checkResponse = await request(app)
-        .get("/api/v2/audit-trail")
-        .query({ action: "export", resourceType: "audit_trail" })
-        .set("Authorization", `Bearer ${adminToken}`)
+        .get('/api/v2/audit-trail')
+        .query({ action: 'export', resourceType: 'audit_trail' })
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(checkResponse.body.data.entries).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            action: "export",
-            resourceType: "audit_trail",
+            action: 'export',
+            resourceType: 'audit_trail',
             userId: adminUserId,
           }),
         ]),
@@ -537,34 +504,34 @@ describe("Audit Trail API v2", () => {
     });
   });
 
-  describe("DELETE /api/v2/audit-trail/retention", () => {
-    it("should require root role", async () => {
+  describe('DELETE /api/v2/audit-trail/retention', () => {
+    it('should require root role', async () => {
       const response = await request(app)
-        .delete("/api/v2/audit-trail/retention")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .delete('/api/v2/audit-trail/retention')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           olderThanDays: 90,
-          confirmPassword: "Admin123!",
+          confirmPassword: 'Admin123!',
         })
         .expect(403);
 
-      expect(response.body.error.message).toBe("Insufficient permissions");
+      expect(response.body.error.message).toBe('Insufficient permissions');
     });
 
-    it("should require minimum 90 days", async () => {
+    it('should require minimum 90 days', async () => {
       const response = await request(app)
-        .delete("/api/v2/audit-trail/retention")
-        .set("Authorization", `Bearer ${rootToken}`)
+        .delete('/api/v2/audit-trail/retention')
+        .set('Authorization', `Bearer ${rootToken}`)
         .send({
           olderThanDays: 30, // Too recent
-          confirmPassword: "Root123!",
+          confirmPassword: 'Root123!',
         })
         .expect(400);
 
       expect(response.body.success).toBe(false);
     });
 
-    it("should delete old entries with valid password", async () => {
+    it('should delete old entries with valid password', async () => {
       // Create an old entry
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 100);
@@ -578,11 +545,11 @@ describe("Audit Trail API v2", () => {
       );
 
       const response = await request(app)
-        .delete("/api/v2/audit-trail/retention")
-        .set("Authorization", `Bearer ${rootToken}`)
+        .delete('/api/v2/audit-trail/retention')
+        .set('Authorization', `Bearer ${rootToken}`)
         .send({
           olderThanDays: 90,
-          confirmPassword: "Root123!",
+          confirmPassword: 'Root123!',
         })
         .expect(200);
 
@@ -595,28 +562,28 @@ describe("Audit Trail API v2", () => {
       });
     });
 
-    it("should log the deletion action", async () => {
+    it('should log the deletion action', async () => {
       await request(app)
-        .delete("/api/v2/audit-trail/retention")
-        .set("Authorization", `Bearer ${rootToken}`)
+        .delete('/api/v2/audit-trail/retention')
+        .set('Authorization', `Bearer ${rootToken}`)
         .send({
           olderThanDays: 365,
-          confirmPassword: "Root123!",
+          confirmPassword: 'Root123!',
         })
         .expect(200);
 
       // Check if deletion was logged
       const checkResponse = await request(app)
-        .get("/api/v2/audit-trail")
-        .query({ action: "delete", resourceType: "audit_trail" })
-        .set("Authorization", `Bearer ${rootToken}`)
+        .get('/api/v2/audit-trail')
+        .query({ action: 'delete', resourceType: 'audit_trail' })
+        .set('Authorization', `Bearer ${rootToken}`)
         .expect(200);
 
       expect(checkResponse.body.data.entries).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            action: "delete",
-            resourceType: "audit_trail",
+            action: 'delete',
+            resourceType: 'audit_trail',
             userId: rootUserId,
           }),
         ]),
@@ -624,31 +591,27 @@ describe("Audit Trail API v2", () => {
     });
   });
 
-  describe("Multi-tenant isolation", () => {
+  describe('Multi-tenant isolation', () => {
     let otherTenantId: number;
     let otherTenantToken: string;
 
     beforeAll(async () => {
       // Create another tenant
-      otherTenantId = await createTestTenant(
-        testDb,
-        "audit-other",
-        "Other Audit Tenant",
-      );
+      otherTenantId = await createTestTenant(testDb, 'audit-other', 'Other Audit Tenant');
 
       const otherUser = await createTestUser(testDb, {
-        username: "other_audit_admin",
-        email: "admin@otheraudit.test",
-        password: "Other123!",
-        first_name: "Other",
-        last_name: "Admin",
-        role: "admin",
+        username: 'other_audit_admin',
+        email: 'admin@otheraudit.test',
+        password: 'Other123!',
+        first_name: 'Other',
+        last_name: 'Admin',
+        role: 'admin',
         tenant_id: otherTenantId,
       });
 
       const otherLogin = await request(app)
-        .post("/api/v2/auth/login")
-        .send({ email: otherUser.email, password: "Other123!" });
+        .post('/api/v2/auth/login')
+        .send({ email: otherUser.email, password: 'Other123!' });
       otherTenantToken = otherLogin.body.data.accessToken;
 
       // Create audit entry for other tenant
@@ -660,10 +623,10 @@ describe("Audit Trail API v2", () => {
       );
     });
 
-    it("should not leak audit entries between tenants", async () => {
+    it('should not leak audit entries between tenants', async () => {
       const response = await request(app)
-        .get("/api/v2/audit-trail")
-        .set("Authorization", `Bearer ${otherTenantToken}`)
+        .get('/api/v2/audit-trail')
+        .set('Authorization', `Bearer ${otherTenantToken}`)
         .expect(200);
 
       // Should not see entries from the main test tenant
@@ -673,47 +636,47 @@ describe("Audit Trail API v2", () => {
       expect(mainTenantEntries).toHaveLength(0);
     });
 
-    it("should not allow cross-tenant audit entry access", async () => {
+    it('should not allow cross-tenant audit entry access', async () => {
       // Get an entry ID from the other tenant
       const [rows] = await testDb.execute<any[]>(
-        "SELECT id FROM audit_trail WHERE tenant_id = ? LIMIT 1",
+        'SELECT id FROM audit_trail WHERE tenant_id = ? LIMIT 1',
         [otherTenantId],
       );
 
       const response = await request(app)
         .get(`/api/v2/audit-trail/${rows[0].id}`)
-        .set("Authorization", `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
-      expect(response.body.error.code).toBe("NOT_FOUND");
+      expect(response.body.error.code).toBe('NOT_FOUND');
     });
   });
 
-  describe("Integration with other services", () => {
-    it("should be called when creating resources", async () => {
+  describe('Integration with other services', () => {
+    it('should be called when creating resources', async () => {
       // This would normally be done by the service itself
       // Here we're simulating what would happen
-      const { auditTrailService } = await import("../audit-trail.service.js");
+      const { auditTrailService } = await import('../audit-trail.service.js');
 
       const entry = await auditTrailService.createEntry(
         tenantId,
         adminUserId,
         {
-          action: "create",
-          resourceType: "test_resource",
+          action: 'create',
+          resourceType: 'test_resource',
           resourceId: 123,
-          resourceName: "Test Resource",
-          changes: { field: "value" },
-          status: "success",
+          resourceName: 'Test Resource',
+          changes: { field: 'value' },
+          status: 'success',
         },
-        "127.0.0.1",
-        "Test User Agent",
+        '127.0.0.1',
+        'Test User Agent',
       );
 
       expect(entry).toMatchObject({
         id: expect.any(Number),
-        action: "create",
-        resourceType: "test_resource",
+        action: 'create',
+        resourceType: 'test_resource',
         resourceId: 123,
       });
     });

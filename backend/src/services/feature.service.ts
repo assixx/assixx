@@ -2,9 +2,8 @@
  * Feature Service
  * Handles feature-related business logic
  */
-
 // import Feature from '../models/feature';
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 // Interfaces
 interface FeatureData {
@@ -49,10 +48,10 @@ class FeatureService {
   getAll(_tenantDb: Pool, _filters: FeatureFilters = {}): FeatureData[] {
     try {
       // TODO: Feature.getAll doesn't exist in the model
-      console.warn("Feature.getAll is not implemented");
+      console.warn('Feature.getAll is not implemented');
       return [];
     } catch (error: unknown) {
-      console.error("Error in FeatureService.getAll:", error);
+      console.error('Error in FeatureService.getAll:', error);
       throw error;
     }
   }
@@ -65,10 +64,10 @@ class FeatureService {
   getById(_tenantDb: Pool, _id: number): FeatureData | null {
     try {
       // TODO: Feature.getById doesn't exist in the model
-      console.warn("Feature.getById is not implemented");
+      console.warn('Feature.getById is not implemented');
       return null;
     } catch (error: unknown) {
-      console.error("Error in FeatureService.getById:", error);
+      console.error('Error in FeatureService.getById:', error);
       throw error;
     }
   }
@@ -81,10 +80,10 @@ class FeatureService {
   create(_tenantDb: Pool, data: FeatureCreateData): FeatureData {
     try {
       // TODO: Feature.create doesn't exist in the model
-      console.warn("Feature.create is not implemented");
+      console.warn('Feature.create is not implemented');
       return { ...data, id: 0 } as FeatureData;
     } catch (error: unknown) {
-      console.error("Error in FeatureService.create:", error);
+      console.error('Error in FeatureService.create:', error);
       throw error;
     }
   }
@@ -95,17 +94,13 @@ class FeatureService {
    * @param _id
    * @param _data
    */
-  update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: FeatureUpdateData,
-  ): FeatureData | null {
+  update(_tenantDb: Pool, _id: number, _data: FeatureUpdateData): FeatureData | null {
     try {
       // TODO: Feature.update doesn't exist in the model
-      console.warn("Feature.update is not implemented");
+      console.warn('Feature.update is not implemented');
       return null;
     } catch (error: unknown) {
-      console.error("Error in FeatureService.update:", error);
+      console.error('Error in FeatureService.update:', error);
       throw error;
     }
   }
@@ -118,10 +113,10 @@ class FeatureService {
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
       // TODO: Feature.delete doesn't exist in the model
-      console.warn("Feature.delete is not implemented");
+      console.warn('Feature.delete is not implemented');
       return false;
     } catch (error: unknown) {
-      console.error("Error in FeatureService.delete:", error);
+      console.error('Error in FeatureService.delete:', error);
       throw error;
     }
   }

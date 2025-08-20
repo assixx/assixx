@@ -6,17 +6,14 @@
  *   name: Documents v2
  *   description: Document management API v2
  */
+import { Response } from 'express';
+import multer from 'multer';
 
-import multer from "multer";
-
-import { Response } from "express";
-
-import RootLog from "../../../models/rootLog";
-import type { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../utils/apiResponse";
-import { logger } from "../../../utils/logger";
-
-import { documentsService, ServiceError } from "./documents.service";
+import RootLog from '../../../models/rootLog';
+import type { AuthenticatedRequest } from '../../../types/request.types';
+import { errorResponse, successResponse } from '../../../utils/apiResponse';
+import { logger } from '../../../utils/logger';
+import { ServiceError, documentsService } from './documents.service';
 
 interface Document {
   id: number;
@@ -37,15 +34,15 @@ const upload = multer({
   },
   fileFilter: (_req, file, cb) => {
     // Only allow PDF files
-    if (file.mimetype === "application/pdf") {
+    if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error("Only PDF files are allowed"));
+      cb(new Error('Only PDF files are allowed'));
     }
   },
 });
 
-export const uploadMiddleware = upload.single("document");
+export const uploadMiddleware = upload.single('document');
 
 /**
  * @param req
@@ -135,51 +132,34 @@ export const uploadMiddleware = upload.single("document");
  */
 export async function listDocuments(req: AuthenticatedRequest, res: Response) {
   try {
-    logger.info("Documents v2: listDocuments called", {
+    logger.info('Documents v2: listDocuments called', {
       userId: req.user?.id,
       tenantId: req.user?.tenant_id,
     });
     const filters = {
       category: req.query.category as string,
       recipientType: req.query.recipientType as string,
-      userId: req.query.userId
-        ? Number.parseInt(req.query.userId as string)
-        : undefined,
-      teamId: req.query.teamId
-        ? Number.parseInt(req.query.teamId as string)
-        : undefined,
-      departmentId: req.query.departmentId
-        ? Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      year: req.query.year
-        ? Number.parseInt(req.query.year as string)
-        : undefined,
-      month: req.query.month
-        ? Number.parseInt(req.query.month as string)
-        : undefined,
-      isArchived: req.query.isArchived === "true",
+      userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
+      teamId: req.query.teamId ? Number.parseInt(req.query.teamId as string) : undefined,
+      departmentId:
+        req.query.departmentId ? Number.parseInt(req.query.departmentId as string) : undefined,
+      year: req.query.year ? Number.parseInt(req.query.year as string) : undefined,
+      month: req.query.month ? Number.parseInt(req.query.month as string) : undefined,
+      isArchived: req.query.isArchived === 'true',
       search: req.query.search as string,
       page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
       limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
     };
 
-    const result = await documentsService.listDocuments(
-      req.user.id,
-      req.user.tenant_id,
-      filters,
-    );
+    const result = await documentsService.listDocuments(req.user.id, req.user.tenant_id, filters);
 
     res.json(successResponse(result));
   } catch (error: unknown) {
     logger.error(`List documents error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to list documents"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to list documents'));
     }
   }
 }
@@ -217,10 +197,7 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
  *       500:
  *         description: Server error
  */
-export async function getDocumentById(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function getDocumentById(req: AuthenticatedRequest, res: Response) {
   try {
     const documentId = Number.parseInt(req.params.id);
 
@@ -234,13 +211,9 @@ export async function getDocumentById(
   } catch (error: unknown) {
     logger.error(`Get document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get document'));
     }
   }
 }
@@ -318,7 +291,7 @@ export async function getDocumentById(
 export async function createDocument(req: AuthenticatedRequest, res: Response) {
   try {
     if (!req.file) {
-      res.status(400).json(errorResponse("BAD_REQUEST", "No file uploaded"));
+      res.status(400).json(errorResponse('BAD_REQUEST', 'No file uploaded'));
       return;
     }
 
@@ -335,14 +308,12 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
       recipientType: body.recipientType,
       userId: body.userId ? Number.parseInt(body.userId) : undefined,
       teamId: body.teamId ? Number.parseInt(body.teamId) : undefined,
-      departmentId: body.departmentId
-        ? Number.parseInt(body.departmentId)
-        : undefined,
+      departmentId: body.departmentId ? Number.parseInt(body.departmentId) : undefined,
       description: body.description,
       year: body.year ? Number.parseInt(body.year) : undefined,
       month: body.month ? Number.parseInt(body.month) : undefined,
       tags: body.tags ? JSON.parse(body.tags) : undefined,
-      isPublic: body.isPublic === "true",
+      isPublic: body.isPublic === 'true',
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
     };
 
@@ -356,13 +327,12 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "upload",
-      entity_type: "document",
+      action: 'upload',
+      entity_type: 'document',
       entity_id: (document as unknown as Document).id,
       details: `Hochgeladen: ${String((document as unknown as Document).filename ?? documentData.filename)}`,
       new_values: {
-        filename:
-          (document as unknown as Document).filename ?? documentData.filename,
+        filename: (document as unknown as Document).filename ?? documentData.filename,
         category: documentData.category,
         file_size: documentData.fileSize,
         mime_type: documentData.mimeType,
@@ -370,7 +340,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
         uploaded_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
@@ -378,13 +348,9 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
   } catch (error: unknown) {
     logger.error(`Create document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to create document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to create document'));
     }
   }
 }
@@ -482,13 +448,9 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
   } catch (error: unknown) {
     logger.error(`Update document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to update document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to update document'));
     }
   }
 }
@@ -555,24 +517,20 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
     await RootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
-      action: "delete",
-      entity_type: "document",
+      action: 'delete',
+      entity_type: 'document',
       entity_id: documentId,
-      details: `Gelöscht: ${String((document as unknown as Document | null)?.filename ?? "unknown")}`,
+      details: `Gelöscht: ${String((document as unknown as Document | null)?.filename ?? 'unknown')}`,
       old_values: {
-        filename:
-          (document as unknown as Document | null)?.filename ?? "unknown",
-        category:
-          (document as unknown as Document | null)?.category ?? "unknown",
+        filename: (document as unknown as Document | null)?.filename ?? 'unknown',
+        category: (document as unknown as Document | null)?.category ?? 'unknown',
         file_size: (document as unknown as Document | null)?.fileSize ?? 0,
-        mime_type:
-          (document as unknown as Document | null)?.mimeType ?? "unknown",
-        recipient_type:
-          (document as unknown as Document | null)?.recipientType ?? "unknown",
+        mime_type: (document as unknown as Document | null)?.mimeType ?? 'unknown',
+        recipient_type: (document as unknown as Document | null)?.recipientType ?? 'unknown',
         deleted_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get("user-agent"),
+      user_agent: req.get('user-agent'),
       was_role_switched: false,
     });
 
@@ -580,13 +538,9 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
   } catch (error: unknown) {
     logger.error(`Delete document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to delete document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to delete document'));
     }
   }
 }
@@ -632,10 +586,7 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
  *       500:
  *         description: Server error
  */
-export async function archiveDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function archiveDocument(req: AuthenticatedRequest, res: Response) {
   try {
     const documentId = Number.parseInt(req.params.id);
     logger.info(`Archiving document ${documentId} for user ${req.user.id}`);
@@ -651,13 +602,9 @@ export async function archiveDocument(
   } catch (error: unknown) {
     logger.error(`Archive document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to archive document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to archive document'));
     }
   }
 }
@@ -703,10 +650,7 @@ export async function archiveDocument(
  *       500:
  *         description: Server error
  */
-export async function unarchiveDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function unarchiveDocument(req: AuthenticatedRequest, res: Response) {
   try {
     const documentId = Number.parseInt(req.params.id);
 
@@ -719,17 +663,11 @@ export async function unarchiveDocument(
 
     res.json(successResponse(result));
   } catch (error: unknown) {
-    logger.error(
-      `Unarchive document error: ${String((error as Error).message)}`,
-    );
+    logger.error(`Unarchive document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to unarchive document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to unarchive document'));
     }
   }
 }
@@ -768,10 +706,7 @@ export async function unarchiveDocument(
  *       500:
  *         description: Server error
  */
-export async function downloadDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function downloadDocument(req: AuthenticatedRequest, res: Response) {
   try {
     const documentId = Number.parseInt(req.params.id);
 
@@ -782,27 +717,18 @@ export async function downloadDocument(
     );
 
     // Set headers for download
-    res.setHeader("Content-Type", documentContent.mimeType);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${documentContent.filename}"`,
-    );
-    res.setHeader("Content-Length", documentContent.size.toString());
+    res.setHeader('Content-Type', documentContent.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${documentContent.filename}"`);
+    res.setHeader('Content-Length', documentContent.size.toString());
 
     // Send file content
     res.send(documentContent.content);
   } catch (error: unknown) {
-    logger.error(
-      `Download document error: ${String((error as Error).message)}`,
-    );
+    logger.error(`Download document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to download document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to download document'));
     }
   }
 }
@@ -841,10 +767,7 @@ export async function downloadDocument(
  *       500:
  *         description: Server error
  */
-export async function previewDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function previewDocument(req: AuthenticatedRequest, res: Response) {
   try {
     const documentId = Number.parseInt(req.params.id);
 
@@ -855,25 +778,18 @@ export async function previewDocument(
     );
 
     // Set headers for inline viewing
-    res.setHeader("Content-Type", documentContent.mimeType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${documentContent.filename}"`,
-    );
-    res.setHeader("Content-Length", documentContent.size.toString());
+    res.setHeader('Content-Type', documentContent.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${documentContent.filename}"`);
+    res.setHeader('Content-Length', documentContent.size.toString());
 
     // Send file content
     res.send(documentContent.content);
   } catch (error: unknown) {
     logger.error(`Preview document error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to preview document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to preview document'));
     }
   }
 }
@@ -920,29 +836,17 @@ export async function previewDocument(
  *       500:
  *         description: Server error
  */
-export async function getDocumentStats(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function getDocumentStats(req: AuthenticatedRequest, res: Response) {
   try {
-    const stats = await documentsService.getDocumentStats(
-      req.user.id,
-      req.user.tenant_id,
-    );
+    const stats = await documentsService.getDocumentStats(req.user.id, req.user.tenant_id);
 
     res.json(successResponse(stats));
   } catch (error: unknown) {
-    logger.error(
-      `Get document stats error: ${String((error as Error).message)}`,
-    );
+    logger.error(`Get document stats error: ${String((error as Error).message)}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get document stats"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get document stats'));
     }
   }
 }

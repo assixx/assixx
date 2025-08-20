@@ -2,14 +2,12 @@
  * API v2 Security Middleware Stacks
  * Provides easy-to-use security stacks for v2 endpoints
  */
+import { RequestHandler } from 'express';
 
-import { RequestHandler } from "express";
-
-import { ValidationMiddleware } from "../../types/middleware.types";
-import { rateLimiter } from "../rateLimiter";
-import { validateTenantIsolation } from "../tenantIsolation";
-
-import { authenticateV2, requireRoleV2 } from "./auth.middleware";
+import { ValidationMiddleware } from '../../types/middleware.types';
+import { rateLimiter } from '../rateLimiter';
+import { validateTenantIsolation } from '../tenantIsolation';
+import { authenticateV2, requireRoleV2 } from './auth.middleware';
 
 // Security middleware stacks for v2 endpoints
 export const securityV2 = {
@@ -64,7 +62,7 @@ export const securityV2 = {
       rateLimiter.admin,
       authenticateV2 as RequestHandler,
       validateTenantIsolation as RequestHandler,
-      requireRoleV2("admin") as RequestHandler,
+      requireRoleV2('admin') as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -81,7 +79,7 @@ export const securityV2 = {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
       authenticateV2 as RequestHandler,
-      requireRoleV2("root") as RequestHandler,
+      requireRoleV2('root') as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -111,10 +109,7 @@ export const securityV2 = {
    * USES V2 AUTH MIDDLEWARE
    */
   upload: (validation?: ValidationMiddleware): RequestHandler[] => {
-    const stack: RequestHandler[] = [
-      rateLimiter.upload,
-      authenticateV2 as RequestHandler,
-    ];
+    const stack: RequestHandler[] = [rateLimiter.upload, authenticateV2 as RequestHandler];
     if (validation) {
       stack.push(...validation);
     }

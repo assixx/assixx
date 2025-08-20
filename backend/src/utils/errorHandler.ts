@@ -11,13 +11,13 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === "string") {
+  if (typeof error === 'string') {
     return error;
   }
-  if (error != null && typeof error === "object" && "message" in error) {
+  if (error != null && typeof error === 'object' && 'message' in error) {
     return String(error.message);
   }
-  return "An unknown error occurred";
+  return 'An unknown error occurred';
 }
 
 /**
@@ -26,7 +26,7 @@ export function getErrorMessage(error: unknown): string {
  * @returns Stack trace or undefined
  */
 export function getErrorStack(error: unknown): string | undefined {
-  if (error instanceof Error && error.stack != null && error.stack !== "") {
+  if (error instanceof Error && error.stack != null && error.stack !== '') {
     return error.stack;
   }
   return undefined;
@@ -39,12 +39,7 @@ export function getErrorStack(error: unknown): string | undefined {
  * @returns True if error has the specified code
  */
 export function isErrorWithCode(error: unknown, code: string): boolean {
-  return (
-    error !== null &&
-    typeof error === "object" &&
-    "code" in error &&
-    error.code === code
-  );
+  return error !== null && typeof error === 'object' && 'code' in error && error.code === code;
 }
 
 /**
@@ -55,8 +50,8 @@ export function isDatabaseError(
 ): error is { code: string; errno?: number; sqlMessage?: string } {
   return (
     error !== null &&
-    typeof error === "object" &&
-    "code" in error &&
-    typeof (error as Record<string, unknown>).code === "string"
+    typeof error === 'object' &&
+    'code' in error &&
+    typeof (error as Record<string, unknown>).code === 'string'
   );
 }

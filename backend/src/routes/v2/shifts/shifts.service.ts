@@ -2,14 +2,13 @@
  * Shifts API v2 Service Layer
  * Business logic for shift planning and management
  */
+import { RowDataPacket } from 'mysql2';
 
-import { RowDataPacket } from "mysql2";
-
-import RootLog from "../../../models/rootLog";
-import Shift from "../../../models/shift";
-import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
-import { logger } from "../../../utils/logger";
-import { ServiceError } from "../../../utils/ServiceError";
+import RootLog from '../../../models/rootLog';
+import Shift from '../../../models/shift';
+import { ServiceError } from '../../../utils/ServiceError';
+import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
+import { logger } from '../../../utils/logger';
 
 interface ShiftFilters {
   date?: string;
@@ -27,7 +26,7 @@ interface ShiftFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface ShiftCreateData {
@@ -165,12 +164,12 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
       const startTime = new Date(dbShift.start_time);
       if (!Number.isNaN(startTime.getTime())) {
         // Get hours and minutes in local timezone
-        const hours = startTime.getHours().toString().padStart(2, "0");
-        const minutes = startTime.getMinutes().toString().padStart(2, "0");
+        const hours = startTime.getHours().toString().padStart(2, '0');
+        const minutes = startTime.getMinutes().toString().padStart(2, '0');
         apiShift.startTime = `${hours}:${minutes}`;
       }
     } catch (error: unknown) {
-      logger.error("Error parsing start_time:", error);
+      logger.error('Error parsing start_time:', error);
     }
   }
 
@@ -179,12 +178,12 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
       const endTime = new Date(dbShift.end_time);
       if (!Number.isNaN(endTime.getTime())) {
         // Get hours and minutes in local timezone
-        const hours = endTime.getHours().toString().padStart(2, "0");
-        const minutes = endTime.getMinutes().toString().padStart(2, "0");
+        const hours = endTime.getHours().toString().padStart(2, '0');
+        const minutes = endTime.getMinutes().toString().padStart(2, '0');
         apiShift.endTime = `${hours}:${minutes}`;
       }
     } catch (error: unknown) {
-      logger.error("Error parsing end_time:", error);
+      logger.error('Error parsing end_time:', error);
     }
   }
 
@@ -193,10 +192,10 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
     try {
       const date = new Date(dbShift.date);
       if (!Number.isNaN(date.getTime())) {
-        apiShift.date = date.toISOString().split("T")[0]; // YYYY-MM-DD format
+        apiShift.date = date.toISOString().split('T')[0]; // YYYY-MM-DD format
       }
     } catch (error: unknown) {
-      logger.error("Error parsing date:", error);
+      logger.error('Error parsing date:', error);
     }
   }
 
@@ -215,14 +214,9 @@ export class ShiftsService {
    * @param filters
    * @returns Promise resolving to array of shifts
    */
-  async listShifts(
-    tenantId: number,
-    filters: ShiftFilters,
-  ): Promise<ShiftApiResponse[]> {
+  async listShifts(tenantId: number, filters: ShiftFilters): Promise<ShiftApiResponse[]> {
     try {
-      const convertedFilters = apiToDb(
-        filters as unknown as Record<string, unknown>,
-      );
+      const convertedFilters = apiToDb(filters as unknown as Record<string, unknown>);
       const dbFilters = {
         ...convertedFilters,
         tenant_id: tenantId,
@@ -231,8 +225,8 @@ export class ShiftsService {
       const shifts = await Shift.findAll(dbFilters);
       return shifts.map((shift) => dbShiftToApi(shift));
     } catch (error: unknown) {
-      logger.error("Error listing shifts:", error);
-      throw new ServiceError("LIST_SHIFTS_ERROR", "Failed to list shifts");
+      logger.error('Error listing shifts:', error);
+      throw new ServiceError('LIST_SHIFTS_ERROR', 'Failed to list shifts');
     }
   }
 
@@ -246,13 +240,13 @@ export class ShiftsService {
     try {
       const shift = await Shift.findById(id, tenantId);
       if (!shift) {
-        throw new ServiceError("SHIFT_NOT_FOUND", "Shift not found");
+        throw new ServiceError('SHIFT_NOT_FOUND', 'Shift not found');
       }
       return dbShiftToApi(shift);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error getting shift:", error);
-      throw new ServiceError("GET_SHIFT_ERROR", "Failed to get shift");
+      logger.error('Error getting shift:', error);
+      throw new ServiceError('GET_SHIFT_ERROR', 'Failed to get shift');
     }
   }
 
@@ -286,8 +280,8 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "create",
-        entity_type: "shift",
+        action: 'create',
+        entity_type: 'shift',
         entity_id: shiftId,
         new_values: data as unknown as Record<string, unknown>,
         ip_address: ipAddress,
@@ -296,8 +290,8 @@ export class ShiftsService {
 
       return await this.getShiftById(shiftId, tenantId);
     } catch (error: unknown) {
-      logger.error("Error creating shift:", error);
-      throw new ServiceError("CREATE_SHIFT_ERROR", "Failed to create shift");
+      logger.error('Error creating shift:', error);
+      throw new ServiceError('CREATE_SHIFT_ERROR', 'Failed to create shift');
     }
   }
 
@@ -330,8 +324,8 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "update",
-        entity_type: "shift",
+        action: 'update',
+        entity_type: 'shift',
         entity_id: id,
         old_values: oldShift as unknown as Record<string, unknown>,
         new_values: data as unknown as Record<string, unknown>,
@@ -342,8 +336,8 @@ export class ShiftsService {
       return await this.getShiftById(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error updating shift:", error);
-      throw new ServiceError("UPDATE_SHIFT_ERROR", "Failed to update shift");
+      logger.error('Error updating shift:', error);
+      throw new ServiceError('UPDATE_SHIFT_ERROR', 'Failed to update shift');
     }
   }
 
@@ -372,19 +366,19 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "delete",
-        entity_type: "shift",
+        action: 'delete',
+        entity_type: 'shift',
         entity_id: id,
         old_values: shift as unknown as Record<string, unknown>,
         ip_address: ipAddress,
         user_agent: userAgent,
       });
 
-      return { message: "Shift deleted successfully" };
+      return { message: 'Shift deleted successfully' };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error deleting shift:", error);
-      throw new ServiceError("DELETE_SHIFT_ERROR", "Failed to delete shift");
+      logger.error('Error deleting shift:', error);
+      throw new ServiceError('DELETE_SHIFT_ERROR', 'Failed to delete shift');
     }
   }
 
@@ -400,11 +394,8 @@ export class ShiftsService {
       const templates = await Shift.getTemplates(tenantId);
       return templates.map((template) => dbToApi(template));
     } catch (error: unknown) {
-      logger.error("Error listing templates:", error);
-      throw new ServiceError(
-        "LIST_TEMPLATES_ERROR",
-        "Failed to list templates",
-      );
+      logger.error('Error listing templates:', error);
+      throw new ServiceError('LIST_TEMPLATES_ERROR', 'Failed to list templates');
     }
   }
 
@@ -418,12 +409,12 @@ export class ShiftsService {
     try {
       const template = await Shift.getTemplateById(id, tenantId);
       if (!template) {
-        throw new ServiceError("TEMPLATE_NOT_FOUND", "Template not found");
+        throw new ServiceError('TEMPLATE_NOT_FOUND', 'Template not found');
       }
       return dbToApi(template);
     } catch (error: unknown) {
-      logger.error("Error getting template:", error);
-      throw new ServiceError("GET_TEMPLATE_ERROR", "Failed to get template");
+      logger.error('Error getting template:', error);
+      throw new ServiceError('GET_TEMPLATE_ERROR', 'Failed to get template');
     }
   }
 
@@ -468,8 +459,8 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "create",
-        entity_type: "shift_template",
+        action: 'create',
+        entity_type: 'shift_template',
         entity_id: templateId,
         new_values: data as unknown as Record<string, unknown>,
         ip_address: ipAddress,
@@ -478,11 +469,8 @@ export class ShiftsService {
 
       return await this.getTemplateById(templateId, tenantId);
     } catch (error: unknown) {
-      logger.error("Error creating template:", error);
-      throw new ServiceError(
-        "CREATE_TEMPLATE_ERROR",
-        "Failed to create template",
-      );
+      logger.error('Error creating template:', error);
+      throw new ServiceError('CREATE_TEMPLATE_ERROR', 'Failed to create template');
     }
   }
 
@@ -526,8 +514,8 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "update",
-        entity_type: "shift_template",
+        action: 'update',
+        entity_type: 'shift_template',
         entity_id: id,
         old_values: oldTemplate as Record<string, unknown>,
         new_values: data as unknown as Record<string, unknown>,
@@ -538,11 +526,8 @@ export class ShiftsService {
       return await this.getTemplateById(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error updating template:", error);
-      throw new ServiceError(
-        "UPDATE_TEMPLATE_ERROR",
-        "Failed to update template",
-      );
+      logger.error('Error updating template:', error);
+      throw new ServiceError('UPDATE_TEMPLATE_ERROR', 'Failed to update template');
     }
   }
 
@@ -571,22 +556,19 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "delete",
-        entity_type: "shift_template",
+        action: 'delete',
+        entity_type: 'shift_template',
         entity_id: id,
         old_values: template as Record<string, unknown>,
         ip_address: ipAddress,
         user_agent: userAgent,
       });
 
-      return { message: "Template deleted successfully" };
+      return { message: 'Template deleted successfully' };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error deleting template:", error);
-      throw new ServiceError(
-        "DELETE_TEMPLATE_ERROR",
-        "Failed to delete template",
-      );
+      logger.error('Error deleting template:', error);
+      throw new ServiceError('DELETE_TEMPLATE_ERROR', 'Failed to delete template');
     }
   }
 
@@ -608,11 +590,8 @@ export class ShiftsService {
       const requests = await Shift.getSwapRequests(tenantId, filters);
       return requests.map((request) => dbToApi(request));
     } catch (error: unknown) {
-      logger.error("Error listing swap requests:", error);
-      throw new ServiceError(
-        "LIST_SWAP_REQUESTS_ERROR",
-        "Failed to list swap requests",
-      );
+      logger.error('Error listing swap requests:', error);
+      throw new ServiceError('LIST_SWAP_REQUESTS_ERROR', 'Failed to list swap requests');
     }
   }
 
@@ -636,10 +615,7 @@ export class ShiftsService {
       // Verify shift exists and belongs to user
       const shift = await this.getShiftById(data.shiftId, tenantId);
       if (shift.userId !== userId) {
-        throw new ServiceError(
-          "FORBIDDEN",
-          "You can only request swaps for your own shifts",
-        );
+        throw new ServiceError('FORBIDDEN', 'You can only request swaps for your own shifts');
       }
 
       const dbData = {
@@ -648,7 +624,7 @@ export class ShiftsService {
         requested_with: data.requestedWithUserId,
         reason: data.reason,
         tenant_id: tenantId,
-        status: "pending",
+        status: 'pending',
       };
 
       const requestId = await Shift.createSwapRequest(dbData);
@@ -657,29 +633,24 @@ export class ShiftsService {
       await RootLog.create({
         tenant_id: tenantId,
         user_id: userId,
-        action: "create_swap_request",
-        entity_type: "shift",
+        action: 'create_swap_request',
+        entity_type: 'shift',
         entity_id: data.shiftId,
         new_values: data as unknown as Record<string, unknown>,
         ip_address: ipAddress,
         user_agent: userAgent,
       });
 
-      const convertedResult = dbToApi(
-        dbData as unknown as Record<string, unknown>,
-      );
+      const convertedResult = dbToApi(dbData as unknown as Record<string, unknown>);
       return {
         id: requestId,
         ...convertedResult,
-        message: "Swap request created successfully",
+        message: 'Swap request created successfully',
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error creating swap request:", error);
-      throw new ServiceError(
-        "CREATE_SWAP_REQUEST_ERROR",
-        "Failed to create swap request",
-      );
+      logger.error('Error creating swap request:', error);
+      throw new ServiceError('CREATE_SWAP_REQUEST_ERROR', 'Failed to create swap request');
     }
   }
 
@@ -704,10 +675,7 @@ export class ShiftsService {
     try {
       const request = await Shift.getSwapRequestById(id, tenantId);
       if (!request) {
-        throw new ServiceError(
-          "SWAP_REQUEST_NOT_FOUND",
-          "Swap request not found",
-        );
+        throw new ServiceError('SWAP_REQUEST_NOT_FOUND', 'Swap request not found');
       }
 
       await Shift.updateSwapRequestStatus(id, status, userId, tenantId);
@@ -717,7 +685,7 @@ export class ShiftsService {
         tenant_id: tenantId,
         user_id: userId,
         action: `${status}_swap_request`,
-        entity_type: "shift_swap_request",
+        entity_type: 'shift_swap_request',
         entity_id: id,
         old_values: { status: request.status },
         new_values: { status },
@@ -728,11 +696,8 @@ export class ShiftsService {
       return { message: `Swap request ${status} successfully` };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error updating swap request:", error);
-      throw new ServiceError(
-        "UPDATE_SWAP_REQUEST_ERROR",
-        "Failed to update swap request",
-      );
+      logger.error('Error updating swap request:', error);
+      throw new ServiceError('UPDATE_SWAP_REQUEST_ERROR', 'Failed to update swap request');
     }
   }
 
@@ -744,10 +709,7 @@ export class ShiftsService {
    * @param data
    * @param tenantId
    */
-  async getOvertimeReport(
-    data: OverTimeData,
-    tenantId: number,
-  ): Promise<unknown> {
+  async getOvertimeReport(data: OverTimeData, tenantId: number): Promise<unknown> {
     try {
       const overtime = await Shift.getOvertimeByUser(
         data.userId,
@@ -757,11 +719,8 @@ export class ShiftsService {
       );
       return dbToApi(overtime);
     } catch (error: unknown) {
-      logger.error("Error getting overtime report:", error);
-      throw new ServiceError(
-        "GET_OVERTIME_ERROR",
-        "Failed to get overtime report",
-      );
+      logger.error('Error getting overtime report:', error);
+      throw new ServiceError('GET_OVERTIME_ERROR', 'Failed to get overtime report');
     }
   }
 
@@ -777,7 +736,7 @@ export class ShiftsService {
   async exportShifts(
     filters: ShiftFilters,
     tenantId: number,
-    format: "csv" | "excel" = "csv",
+    format: 'csv' | 'excel' = 'csv',
   ): Promise<string> {
     try {
       const shifts = await this.listShifts(tenantId, {
@@ -785,19 +744,16 @@ export class ShiftsService {
         limit: 10000,
       });
 
-      if (format === "csv") {
+      if (format === 'csv') {
         return this.generateCSV(shifts);
       } else {
         // TODO: Implement Excel export
-        throw new ServiceError(
-          "NOT_IMPLEMENTED",
-          "Excel export not yet implemented",
-        );
+        throw new ServiceError('NOT_IMPLEMENTED', 'Excel export not yet implemented');
       }
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error exporting shifts:", error);
-      throw new ServiceError("EXPORT_ERROR", "Failed to export shifts");
+      logger.error('Error exporting shifts:', error);
+      throw new ServiceError('EXPORT_ERROR', 'Failed to export shifts');
     }
   }
 
@@ -808,16 +764,16 @@ export class ShiftsService {
    */
   private generateCSV(shifts: ShiftApiResponse[]): string {
     const headers = [
-      "Date",
-      "Employee",
-      "Start Time",
-      "End Time",
-      "Break (min)",
-      "Total Hours",
-      "Type",
-      "Status",
-      "Department",
-      "Notes",
+      'Date',
+      'Employee',
+      'Start Time',
+      'End Time',
+      'Break (min)',
+      'Total Hours',
+      'Type',
+      'Status',
+      'Department',
+      'Notes',
     ];
 
     const rows = shifts.map((shift) => [
@@ -830,13 +786,13 @@ export class ShiftsService {
       shift.type,
       shift.status,
       shift.departmentName ?? shift.departmentId,
-      shift.notes ?? "",
+      shift.notes ?? '',
     ]);
 
     return [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell)}"`).join(",")),
-    ].join("\n");
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${String(cell)}"`).join(',')),
+    ].join('\n');
   }
 
   /**
@@ -846,11 +802,7 @@ export class ShiftsService {
    * @param endTime
    * @param breakMinutes
    */
-  private calculateHours(
-    startTime: string,
-    endTime: string,
-    breakMinutes = 0,
-  ): number {
+  private calculateHours(startTime: string, endTime: string, breakMinutes = 0): number {
     const start = new Date(`2000-01-01T${startTime}`);
     const end = new Date(`2000-01-01T${endTime}`);
     const diffMs = end.getTime() - start.getTime();

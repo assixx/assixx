@@ -7,10 +7,9 @@
  * createSuggestion, getSuggestions, etc. This should be refactored
  * to expose the full KVP functionality.
  */
+import { Pool } from 'mysql2/promise';
 
-import { Pool } from "mysql2/promise";
-
-import KVPModel from "../models/kvp";
+import KVPModel from '../models/kvp';
 
 // Import the actual KVP model methods
 // Destructured methods are unused - commented out to fix TypeScript errors
@@ -38,17 +37,11 @@ interface KvpEntry {
   title: string;
   description: string;
   category_id: number;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   submitted_by: number;
-  priority: "low" | "normal" | "high" | "urgent";
-  status:
-    | "new"
-    | "in_review"
-    | "approved"
-    | "implemented"
-    | "rejected"
-    | "archived";
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   created_at: Date;
   updated_at: Date;
 }
@@ -62,7 +55,7 @@ interface KvpFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortDir?: "ASC" | "DESC";
+  sortDir?: 'ASC' | 'DESC';
 }
 
 interface KvpCreateData {
@@ -70,10 +63,10 @@ interface KvpCreateData {
   title: string;
   description: string;
   category_id: number;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   submitted_by: number;
-  priority?: "low" | "normal" | "high" | "urgent";
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
   estimated_cost?: number;
 }
@@ -82,14 +75,8 @@ interface KvpUpdateData {
   title?: string;
   description?: string;
   category_id?: number;
-  priority?: "low" | "normal" | "high" | "urgent";
-  status?:
-    | "new"
-    | "in_review"
-    | "approved"
-    | "implemented"
-    | "rejected"
-    | "archived";
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  status?: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assigned_to?: number;
   actual_savings?: number;
 }
@@ -110,19 +97,13 @@ interface Suggestion {
   title: string;
   description: string;
   category_id: number;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   submitted_by: number;
-  priority: "low" | "normal" | "high" | "urgent";
+  priority: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
   estimated_cost?: number;
-  status:
-    | "new"
-    | "in_review"
-    | "approved"
-    | "implemented"
-    | "rejected"
-    | "archived";
+  status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assigned_to?: number;
   actual_savings?: number;
   created_at: Date;
@@ -143,12 +124,10 @@ class KvpService {
     try {
       // The actual KVP model doesn't have a generic getAll method
       // This should probably call getSuggestions instead
-      console.warn(
-        "KvpService.getAll: This method should use getSuggestions from the KVP model",
-      );
-      throw new Error("Method needs refactoring - use getSuggestions instead");
+      console.warn('KvpService.getAll: This method should use getSuggestions from the KVP model');
+      throw new Error('Method needs refactoring - use getSuggestions instead');
     } catch (error: unknown) {
-      console.error("Error in KvpService.getAll:", error);
+      console.error('Error in KvpService.getAll:', error);
       throw error;
     }
   }
@@ -162,13 +141,11 @@ class KvpService {
   getById(_tenantDb: Pool, _id: number): KvpEntry | null {
     try {
       console.warn(
-        "KvpService.getById: This method should use getSuggestionById from the KVP model",
+        'KvpService.getById: This method should use getSuggestionById from the KVP model',
       );
-      throw new Error(
-        "Method needs refactoring - use getSuggestionById instead",
-      );
+      throw new Error('Method needs refactoring - use getSuggestionById instead');
     } catch (error: unknown) {
-      console.error("Error in KvpService.getById:", error);
+      console.error('Error in KvpService.getById:', error);
       throw error;
     }
   }
@@ -181,14 +158,10 @@ class KvpService {
    */
   create(_tenantDb: Pool, _data: KvpCreateData): KvpEntry {
     try {
-      console.warn(
-        "KvpService.create: This method should use createSuggestion from the KVP model",
-      );
-      throw new Error(
-        "Method needs refactoring - use createSuggestion instead",
-      );
+      console.warn('KvpService.create: This method should use createSuggestion from the KVP model');
+      throw new Error('Method needs refactoring - use createSuggestion instead');
     } catch (error: unknown) {
-      console.error("Error in KvpService.create:", error);
+      console.error('Error in KvpService.create:', error);
       throw error;
     }
   }
@@ -203,13 +176,11 @@ class KvpService {
   update(_tenantDb: Pool, _id: number, _data: KvpUpdateData): KvpEntry | null {
     try {
       console.warn(
-        "KvpService.update: This method should use updateSuggestionStatus from the KVP model",
+        'KvpService.update: This method should use updateSuggestionStatus from the KVP model',
       );
-      throw new Error(
-        "Method needs refactoring - use updateSuggestionStatus instead",
-      );
+      throw new Error('Method needs refactoring - use updateSuggestionStatus instead');
     } catch (error: unknown) {
-      console.error("Error in KvpService.update:", error);
+      console.error('Error in KvpService.update:', error);
       throw error;
     }
   }
@@ -222,14 +193,10 @@ class KvpService {
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
-      console.warn(
-        "KvpService.delete: This method should use deleteSuggestion from the KVP model",
-      );
-      throw new Error(
-        "Method needs refactoring - use deleteSuggestion instead",
-      );
+      console.warn('KvpService.delete: This method should use deleteSuggestion from the KVP model');
+      throw new Error('Method needs refactoring - use deleteSuggestion instead');
     } catch (error: unknown) {
-      console.error("Error in KvpService.delete:", error);
+      console.error('Error in KvpService.delete:', error);
       throw error;
     }
   }
@@ -248,7 +215,7 @@ class KvpService {
       // Add tenant_id to match the Category interface expectation
       return categories.map((cat) => ({ ...cat, tenant_id: tenantId }));
     } catch (error: unknown) {
-      console.error("Error in KvpService.getCategories:", error);
+      console.error('Error in KvpService.getCategories:', error);
       throw error;
     }
   }
@@ -269,7 +236,7 @@ class KvpService {
     try {
       return await KVPModel.getSuggestions(tenantId, userId, userRole, filters);
     } catch (error: unknown) {
-      console.error("Error in KvpService.getSuggestions:", error);
+      console.error('Error in KvpService.getSuggestions:', error);
       throw error;
     }
   }
@@ -286,14 +253,14 @@ class KvpService {
         created.id,
         data.tenant_id,
         data.submitted_by, // Using submitted_by as userId
-        "employee", // Default role, should be passed from controller
+        'employee', // Default role, should be passed from controller
       );
       if (!suggestion) {
-        throw new Error("Failed to retrieve created suggestion");
+        throw new Error('Failed to retrieve created suggestion');
       }
       return suggestion as Suggestion;
     } catch (error: unknown) {
-      console.error("Error in KvpService.createSuggestion:", error);
+      console.error('Error in KvpService.createSuggestion:', error);
       throw error;
     }
   }
@@ -332,7 +299,7 @@ class KvpService {
         topContributors: [], // TODO: Implement top contributors
       };
     } catch (error: unknown) {
-      console.error("Error in KvpService.getDashboardStats:", error);
+      console.error('Error in KvpService.getDashboardStats:', error);
       throw error;
     }
   }

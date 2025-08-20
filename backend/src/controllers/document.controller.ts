@@ -2,15 +2,14 @@
  * Document Controller
  * Handles document-related requests
  */
+import { Request, Response } from 'express';
 
-import { Request, Response } from "express";
-
-import Team from "../models/team";
-import documentService from "../services/document.service";
-import type { AuthenticatedRequest } from "../types/request.types";
-import { HTTP_STATUS } from "../utils/constants";
-import { parsePagination } from "../utils/helpers";
-import { logger } from "../utils/logger";
+import Team from '../models/team';
+import documentService from '../services/document.service';
+import type { AuthenticatedRequest } from '../types/request.types';
+import { HTTP_STATUS } from '../utils/constants';
+import { parsePagination } from '../utils/helpers';
+import { logger } from '../utils/logger';
 
 // Extended request interface for file upload
 interface DocumentUploadRequest extends AuthenticatedRequest {
@@ -36,10 +35,7 @@ interface DocumentUpdateRequest extends AuthenticatedRequest {
  */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
-    "user" in req &&
-    req.user != null &&
-    typeof req.user === "object" &&
-    "tenant_id" in req.user
+    'user' in req && req.user != null && typeof req.user === 'object' && 'tenant_id' in req.user
   );
 }
 
@@ -57,7 +53,7 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -88,10 +84,7 @@ class DocumentController {
       const result = await documentService.getDocuments({
         tenant_id: req.user.tenant_id,
         category,
-        userId:
-          userId != null && userId !== ""
-            ? Number.parseInt(userId, 10)
-            : req.user.id,
+        userId: userId != null && userId !== '' ? Number.parseInt(userId, 10) : req.user.id,
         departmentId: req.user.department_id ?? undefined,
         teamId: userTeamId,
         limit,
@@ -104,10 +97,10 @@ class DocumentController {
         pagination: result.pagination,
       });
     } catch (error: unknown) {
-      logger.error("Error getting documents:", error);
+      logger.error('Error getting documents:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error retrieving documents",
+        message: 'Error retrieving documents',
       });
     }
   }
@@ -122,7 +115,7 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -137,7 +130,7 @@ class DocumentController {
       if (document === null) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
@@ -147,10 +140,10 @@ class DocumentController {
         data: document,
       });
     } catch (error: unknown) {
-      logger.error("Error getting document:", error);
+      logger.error('Error getting document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error retrieving document",
+        message: 'Error retrieving document',
       });
     }
   }
@@ -168,7 +161,7 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -176,7 +169,7 @@ class DocumentController {
       if (req.file === undefined) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          message: "No file uploaded",
+          message: 'No file uploaded',
         });
         return;
       }
@@ -187,13 +180,11 @@ class DocumentController {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        category:
-          (req.body as DocumentUploadRequest["body"]).category ?? "general", // Provide default if undefined
-        description:
-          (req.body as DocumentUploadRequest["body"]).description ?? null,
+        category: (req.body as DocumentUploadRequest['body']).category ?? 'general', // Provide default if undefined
+        description: (req.body as DocumentUploadRequest['body']).description ?? null,
         userId: (() => {
-          const bodyUserId = (req.body as DocumentUploadRequest["body"]).userId;
-          if (bodyUserId != null && bodyUserId !== "") {
+          const bodyUserId = (req.body as DocumentUploadRequest['body']).userId;
+          if (bodyUserId != null && bodyUserId !== '') {
             return Number.parseInt(bodyUserId, 10);
           }
           return null; // Company documents don't have a specific user
@@ -206,14 +197,14 @@ class DocumentController {
 
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
-        message: "Document uploaded successfully",
+        message: 'Document uploaded successfully',
         data: result,
       });
     } catch (error: unknown) {
-      logger.error("Error uploading document:", error);
+      logger.error('Error uploading document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error uploading document",
+        message: 'Error uploading document',
       });
     }
   }
@@ -231,15 +222,15 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
 
       const id = req.params.id;
       const updateData = {
-        category: (req.body as DocumentUpdateRequest["body"]).category,
-        description: (req.body as DocumentUpdateRequest["body"]).description,
+        category: (req.body as DocumentUpdateRequest['body']).category,
+        description: (req.body as DocumentUpdateRequest['body']).description,
       };
 
       const result = await documentService.updateDocument(
@@ -251,20 +242,20 @@ class DocumentController {
       if (!result) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Document updated successfully",
+        message: 'Document updated successfully',
       });
     } catch (error: unknown) {
-      logger.error("Error updating document:", error);
+      logger.error('Error updating document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error updating document",
+        message: 'Error updating document',
       });
     }
   }
@@ -279,7 +270,7 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -294,20 +285,20 @@ class DocumentController {
       if (!result) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Document deleted successfully",
+        message: 'Document deleted successfully',
       });
     } catch (error: unknown) {
-      logger.error("Error deleting document:", error);
+      logger.error('Error deleting document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error deleting document",
+        message: 'Error deleting document',
       });
     }
   }
@@ -322,7 +313,7 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -337,7 +328,7 @@ class DocumentController {
       if (document === null) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
@@ -346,15 +337,13 @@ class DocumentController {
       const filePath = await documentService.getDocumentPath(document.filename);
       res.download(
         filePath,
-        document.name && document.name.trim() !== ""
-          ? document.name
-          : document.filename,
+        document.name && document.name.trim() !== '' ? document.name : document.filename,
       );
     } catch (error: unknown) {
-      logger.error("Error downloading document:", error);
+      logger.error('Error downloading document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error downloading document",
+        message: 'Error downloading document',
       });
     }
   }
@@ -369,7 +358,7 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -385,20 +374,20 @@ class DocumentController {
       if (!success) {
         res.status(HTTP_STATUS.SERVER_ERROR).json({
           success: false,
-          message: "Failed to mark document as read",
+          message: 'Failed to mark document as read',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Document marked as read",
+        message: 'Document marked as read',
       });
     } catch (error: unknown) {
-      logger.error("Error marking document as read:", error);
+      logger.error('Error marking document as read:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error marking document as read",
+        message: 'Error marking document as read',
       });
     }
   }

@@ -8,13 +8,7 @@ export interface Area {
   tenant_id: number;
   name: string;
   description?: string;
-  type:
-    | "building"
-    | "warehouse"
-    | "office"
-    | "production"
-    | "outdoor"
-    | "other";
+  type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   parent_id?: number;
   address?: string;
@@ -31,13 +25,7 @@ export interface Area {
 export interface CreateAreaRequest {
   name: string;
   description?: string;
-  type?:
-    | "building"
-    | "warehouse"
-    | "office"
-    | "production"
-    | "outdoor"
-    | "other";
+  type?: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   parentId?: number;
   address?: string;
@@ -46,13 +34,7 @@ export interface CreateAreaRequest {
 export interface UpdateAreaRequest {
   name?: string;
   description?: string;
-  type?:
-    | "building"
-    | "warehouse"
-    | "office"
-    | "production"
-    | "outdoor"
-    | "other";
+  type?: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
   parentId?: number | null;
   address?: string;

@@ -1,5 +1,5 @@
-import pool from "../src/database.js";
-import { logger } from "../src/utils/logger.js";
+import pool from '../src/database.js';
+import { logger } from '../src/utils/logger.js';
 
 /**
  * Fix tenant_admins table by adding all admin users
@@ -22,16 +22,12 @@ async function fixTenantAdmins() {
       )
     `);
 
-    logger.info(
-      `Found ${missingAdmins.length} admin users not in tenant_admins table`,
-    );
+    logger.info(`Found ${missingAdmins.length} admin users not in tenant_admins table`);
 
     if (missingAdmins.length > 0) {
-      console.info("\nMissing admins:");
+      console.info('\nMissing admins:');
       missingAdmins.forEach((admin) => {
-        console.info(
-          `- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`,
-        );
+        console.info(`- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`);
       });
 
       // 2. Insert missing admins into tenant_admins
@@ -44,11 +40,9 @@ async function fixTenantAdmins() {
         logger.info(`Added admin ${admin.username} to tenant_admins`);
       }
 
-      console.info(
-        `\n✅ Added ${missingAdmins.length} admins to tenant_admins table`,
-      );
+      console.info(`\n✅ Added ${missingAdmins.length} admins to tenant_admins table`);
     } else {
-      console.info("\n✅ All admins are already in tenant_admins table");
+      console.info('\n✅ All admins are already in tenant_admins table');
     }
 
     // 3. Show current state
@@ -60,21 +54,21 @@ async function fixTenantAdmins() {
       ORDER BY ta.tenant_id, ta.is_primary DESC
     `);
 
-    console.info("\nCurrent tenant_admins state:");
+    console.info('\nCurrent tenant_admins state:');
     console.table(
       allTenantAdmins.map((ta) => ({
         tenant: ta.subdomain,
         user: ta.username,
         email: ta.email,
         role: ta.role,
-        is_primary: ta.is_primary ? "YES" : "NO",
+        is_primary: ta.is_primary ? 'YES' : 'NO',
       })),
     );
 
     await connection.commit();
   } catch (error) {
     await connection.rollback();
-    logger.error("Error fixing tenant_admins:", error);
+    logger.error('Error fixing tenant_admins:', error);
     throw error;
   } finally {
     connection.release();
@@ -84,6 +78,6 @@ async function fixTenantAdmins() {
 
 // Run the fix
 fixTenantAdmins().catch((error) => {
-  console.error("Failed to fix tenant_admins:", error);
+  console.error('Failed to fix tenant_admins:', error);
   process.exit(1);
 });

@@ -2,12 +2,10 @@
  * Team Controller
  * Handles team-related operations
  */
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
 
-import { Pool } from "mysql2/promise";
-
-import { Request, Response } from "express";
-
-import teamService from "../services/team.service";
+import teamService from '../services/team.service';
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -64,7 +62,7 @@ interface TeamQueryRequest extends TenantRequest {
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
@@ -81,42 +79,40 @@ class TeamController {
   async getAll(req: TeamQueryRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const filters = {
         ...req.query,
         department_id:
-          req.query.department_id != null && req.query.department_id !== ""
-            ? Number.parseInt(req.query.department_id, 10)
-            : undefined,
+          req.query.department_id != null && req.query.department_id !== '' ?
+            Number.parseInt(req.query.department_id, 10)
+          : undefined,
         team_lead_id:
-          req.query.team_lead_id != null && req.query.team_lead_id !== ""
-            ? Number.parseInt(req.query.team_lead_id, 10)
-            : undefined,
+          req.query.team_lead_id != null && req.query.team_lead_id !== '' ?
+            Number.parseInt(req.query.team_lead_id, 10)
+          : undefined,
         is_active:
-          req.query.is_active === "true"
-            ? true
-            : req.query.is_active === "false"
-              ? false
-              : undefined,
+          req.query.is_active === 'true' ? true
+          : req.query.is_active === 'false' ? false
+          : undefined,
         page:
-          req.query.page != null && req.query.page !== ""
-            ? Number.parseInt(req.query.page, 10)
-            : undefined,
+          req.query.page != null && req.query.page !== '' ?
+            Number.parseInt(req.query.page, 10)
+          : undefined,
         limit:
-          req.query.limit != null && req.query.limit !== ""
-            ? Number.parseInt(req.query.limit, 10)
-            : undefined,
+          req.query.limit != null && req.query.limit !== '' ?
+            Number.parseInt(req.query.limit, 10)
+          : undefined,
       };
       const result = await teamService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in TeamController.getAll:", error);
+      console.error('Error in TeamController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -130,27 +126,27 @@ class TeamController {
   async getById(req: TeamGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const result = await teamService.getById(req.tenantDb, id);
       if (!result) {
-        res.status(404).json({ error: "Nicht gefunden" });
+        res.status(404).json({ error: 'Nicht gefunden' });
         return;
       }
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in TeamController.getById:", error);
+      console.error('Error in TeamController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -164,17 +160,17 @@ class TeamController {
   async create(req: TeamCreateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const result = await teamService.create(req.tenantDb, req.body);
       res.status(201).json(result);
     } catch (error: unknown) {
-      console.error("Error in TeamController.create:", error);
+      console.error('Error in TeamController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -188,23 +184,23 @@ class TeamController {
   async update(req: TeamUpdateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const result = await teamService.update(req.tenantDb, id, req.body);
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in TeamController.update:", error);
+      console.error('Error in TeamController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -218,23 +214,23 @@ class TeamController {
   async delete(req: TeamGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       await teamService.delete(req.tenantDb, id);
       res.status(204).send();
     } catch (error: unknown) {
-      console.error("Error in TeamController.delete:", error);
+      console.error('Error in TeamController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

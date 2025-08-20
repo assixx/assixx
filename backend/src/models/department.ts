@@ -1,9 +1,5 @@
-import {
-  query as executeQuery,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger";
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger';
 
 // Database interfaces
 interface DbDepartment extends RowDataPacket {
@@ -64,28 +60,24 @@ interface DepartmentUpdateData {
   visibility?: string;
 }
 
-export async function createDepartment(
-  departmentData: DepartmentCreateData,
-): Promise<number> {
+export async function createDepartment(departmentData: DepartmentCreateData): Promise<number> {
   const {
     name,
     description,
     manager_id,
     parent_id,
     area_id,
-    status = "active",
-    visibility = "public",
+    status = 'active',
+    visibility = 'public',
     tenant_id,
   } = departmentData;
   logger.info(`Creating new department: ${name}`);
 
   // Check if columns exist, fallback to basic query if not
   try {
-    const [columns] = await executeQuery<DbColumn[]>("DESCRIBE departments");
-    const hasStatus = columns.some((col: DbColumn) => col.Field === "status");
-    const hasVisibility = columns.some(
-      (col: DbColumn) => col.Field === "visibility",
-    );
+    const [columns] = await executeQuery<DbColumn[]>('DESCRIBE departments');
+    const hasStatus = columns.some((col: DbColumn) => col.Field === 'status');
+    const hasVisibility = columns.some((col: DbColumn) => col.Field === 'visibility');
 
     let query: string;
     let params: unknown[];
@@ -95,18 +87,9 @@ export async function createDepartment(
           INSERT INTO departments (name, description, manager_id, parent_id, area_id, status, visibility, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
-      params = [
-        name,
-        description,
-        manager_id,
-        parent_id,
-        area_id,
-        status,
-        visibility,
-        tenant_id,
-      ];
+      params = [name, description, manager_id, parent_id, area_id, status, visibility, tenant_id];
     } else {
-      logger.warn("Status/visibility columns not found, using basic query");
+      logger.warn('Status/visibility columns not found, using basic query');
       query = `
           INSERT INTO departments (name, description, manager_id, parent_id, area_id, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?)
@@ -151,8 +134,7 @@ export async function findAllDepartments(
     );
 
     // Fallback to simple query
-    const simpleQuery =
-      "SELECT * FROM departments WHERE tenant_id = ? ORDER BY name";
+    const simpleQuery = 'SELECT * FROM departments WHERE tenant_id = ? ORDER BY name';
     const [rows] = await executeQuery<DbDepartment[]>(simpleQuery, [tenant_id]);
     logger.info(`Retrieved ${rows.length} departments with simple query`);
 
@@ -165,7 +147,7 @@ export async function findDepartmentById(
   tenant_id: number,
 ): Promise<DbDepartment | null> {
   logger.info(`Fetching department with ID ${id} for tenant ${tenant_id}`);
-  const query = "SELECT * FROM departments WHERE id = ? AND tenant_id = ?";
+  const query = 'SELECT * FROM departments WHERE id = ? AND tenant_id = ?';
 
   try {
     const [rows] = await executeQuery<DbDepartment[]>(query, [id, tenant_id]);
@@ -177,9 +159,7 @@ export async function findDepartmentById(
 
     return rows[0];
   } catch (error: unknown) {
-    logger.error(
-      `Error fetching department ${id}: ${(error as Error).message}`,
-    );
+    logger.error(`Error fetching department ${id}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -194,31 +174,31 @@ export async function updateDepartment(
 
   // Only update provided fields
   if (departmentData.name !== undefined) {
-    fields.push("name = ?");
+    fields.push('name = ?');
     values.push(departmentData.name);
   }
   if (departmentData.description !== undefined) {
-    fields.push("description = ?");
+    fields.push('description = ?');
     values.push(departmentData.description);
   }
   if (departmentData.manager_id !== undefined) {
-    fields.push("manager_id = ?");
+    fields.push('manager_id = ?');
     values.push(departmentData.manager_id);
   }
   if (departmentData.parent_id !== undefined) {
-    fields.push("parent_id = ?");
+    fields.push('parent_id = ?');
     values.push(departmentData.parent_id);
   }
   if (departmentData.area_id !== undefined) {
-    fields.push("area_id = ?");
+    fields.push('area_id = ?');
     values.push(departmentData.area_id);
   }
   if (departmentData.status !== undefined) {
-    fields.push("status = ?");
+    fields.push('status = ?');
     values.push(departmentData.status);
   }
   if (departmentData.visibility !== undefined) {
-    fields.push("visibility = ?");
+    fields.push('visibility = ?');
     values.push(departmentData.visibility);
   }
 
@@ -227,7 +207,7 @@ export async function updateDepartment(
   }
 
   values.push(id);
-  const query = `UPDATE departments SET ${fields.join(", ")} WHERE id = ?`;
+  const query = `UPDATE departments SET ${fields.join(', ')} WHERE id = ?`;
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, values);
@@ -238,16 +218,14 @@ export async function updateDepartment(
     logger.info(`Department ${id} updated successfully`);
     return true;
   } catch (error: unknown) {
-    logger.error(
-      `Error updating department ${id}: ${(error as Error).message}`,
-    );
+    logger.error(`Error updating department ${id}: ${(error as Error).message}`);
     throw error;
   }
 }
 
 export async function deleteDepartment(id: number): Promise<boolean> {
   logger.info(`Deleting department ${id}`);
-  const query = "DELETE FROM departments WHERE id = ?";
+  const query = 'DELETE FROM departments WHERE id = ?';
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [id]);
@@ -258,16 +236,12 @@ export async function deleteDepartment(id: number): Promise<boolean> {
     logger.info(`Department ${id} deleted successfully`);
     return true;
   } catch (error: unknown) {
-    logger.error(
-      `Error deleting department ${id}: ${(error as Error).message}`,
-    );
+    logger.error(`Error deleting department ${id}: ${(error as Error).message}`);
     throw error;
   }
 }
 
-export async function getUsersByDepartment(
-  departmentId: number,
-): Promise<DbUser[]> {
+export async function getUsersByDepartment(departmentId: number): Promise<DbUser[]> {
   logger.info(`Fetching users for department ${departmentId}`);
   const query = `
       SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id 
@@ -277,9 +251,7 @@ export async function getUsersByDepartment(
 
   try {
     const [rows] = await executeQuery<DbUser[]>(query, [departmentId]);
-    logger.info(
-      `Retrieved ${rows.length} users for department ${departmentId}`,
-    );
+    logger.info(`Retrieved ${rows.length} users for department ${departmentId}`);
     return rows;
   } catch (error: unknown) {
     logger.error(
@@ -290,22 +262,18 @@ export async function getUsersByDepartment(
 }
 
 // Count departments by tenant
-export async function countDepartmentsByTenant(
-  tenant_id: number,
-): Promise<number> {
+export async function countDepartmentsByTenant(tenant_id: number): Promise<number> {
   try {
     interface CountResult extends RowDataPacket {
       count: number;
     }
     const [rows] = await executeQuery<CountResult[]>(
-      "SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?",
+      'SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?',
       [tenant_id],
     );
     return rows[0]?.count ?? 0;
   } catch (error: unknown) {
-    logger.error(
-      `Error counting departments by tenant: ${(error as Error).message}`,
-    );
+    logger.error(`Error counting departments by tenant: ${(error as Error).message}`);
     return 0;
   }
 }
@@ -317,7 +285,7 @@ export async function countTeamsByTenant(tenant_id: number): Promise<number> {
       count: number;
     }
     const [rows] = await executeQuery<CountResult[]>(
-      "SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?",
+      'SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?',
       [tenant_id],
     );
     return rows[0]?.count ?? 0;

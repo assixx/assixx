@@ -6,16 +6,15 @@
  *   name: Departments
  *   description: Department management and organization structure
  */
+import express, { NextFunction, Request, Response, Router } from 'express';
 
-import express, { Router, Request, Response, NextFunction } from "express";
-
-import { authenticateToken } from "../auth";
-import Department from "../models/department";
-import User from "../models/user";
-import type { AuthenticatedRequest } from "../types/request.types";
-import { getErrorMessage } from "../utils/errorHandler";
-import { logger } from "../utils/logger";
-import { typed } from "../utils/routeHandlers";
+import { authenticateToken } from '../auth';
+import Department from '../models/department';
+import User from '../models/user';
+import type { AuthenticatedRequest } from '../types/request.types';
+import { getErrorMessage } from '../utils/errorHandler';
+import { logger } from '../utils/logger';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
 
@@ -32,13 +31,13 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   );
 
   // Allow GET requests for all authenticated users
-  if (req.method === "GET") {
+  if (req.method === 'GET') {
     next();
-  } else if (authReq.user.role === "admin" || authReq.user.role === "root") {
+  } else if (authReq.user.role === 'admin' || authReq.user.role === 'root') {
     // Only admins and root can create, update, delete
     next();
   } else {
-    res.status(403).json({ message: "Zugriff verweigert" });
+    res.status(403).json({ message: 'Zugriff verweigert' });
   }
 });
 
@@ -139,14 +138,14 @@ interface CreateDepartmentBody {
 }
 
 router.post(
-  "/",
+  '/',
   typed.body<CreateDepartmentBody>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
       const { name, manager_id, parent_id } = req.body;
 
       if (!name) {
-        res.status(400).json({ message: "Abteilungsname ist erforderlich" });
+        res.status(400).json({ message: 'Abteilungsname ist erforderlich' });
         return;
       }
 
@@ -154,22 +153,17 @@ router.post(
       if (manager_id != null && manager_id !== 0) {
         const manager = await User.findById(manager_id, authReq.user.tenant_id);
         if (!manager) {
-          res
-            .status(400)
-            .json({ message: "Der angegebene Manager existiert nicht" });
+          res.status(400).json({ message: 'Der angegebene Manager existiert nicht' });
           return;
         }
       }
 
       // If a parent department is specified, check if it exists
       if (parent_id != null && parent_id !== 0) {
-        const parentDept = await Department.findById(
-          parent_id,
-          authReq.user.tenant_id,
-        );
+        const parentDept = await Department.findById(parent_id, authReq.user.tenant_id);
         if (!parentDept) {
           res.status(400).json({
-            message: "Die angegebene übergeordnete Abteilung existiert nicht",
+            message: 'Die angegebene übergeordnete Abteilung existiert nicht',
           });
           return;
         }
@@ -182,18 +176,16 @@ router.post(
         tenant_id: authReq.user.tenant_id,
       });
 
-      logger.info(
-        `Department created with ID ${departmentId} by user ${authReq.user.username}`,
-      );
+      logger.info(`Department created with ID ${departmentId} by user ${authReq.user.username}`);
 
       res.status(201).json({
-        message: "Abteilung erfolgreich erstellt",
+        message: 'Abteilung erfolgreich erstellt',
         departmentId,
       });
     } catch (error: unknown) {
       logger.error(`Error creating department: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Erstellen der Abteilung",
+        message: 'Fehler beim Erstellen der Abteilung',
         error: getErrorMessage(error),
       });
     }
@@ -233,7 +225,7 @@ router.post(
  */
 // Get all departments
 router.get(
-  "/",
+  '/',
   typed.auth(async (req, res) => {
     try {
       const authReq = req;
@@ -245,7 +237,7 @@ router.get(
     } catch (error: unknown) {
       logger.error(`Error fetching departments: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Abrufen der Abteilungen",
+        message: 'Fehler beim Abrufen der Abteilungen',
         error: getErrorMessage(error),
       });
     }
@@ -300,7 +292,7 @@ router.get(
  */
 // Get single department
 router.get(
-  "/:id",
+  '/:id',
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
@@ -310,17 +302,15 @@ router.get(
       );
 
       if (!department) {
-        res.status(404).json({ message: "Abteilung nicht gefunden" });
+        res.status(404).json({ message: 'Abteilung nicht gefunden' });
         return;
       }
 
       res.json(department);
     } catch (error: unknown) {
-      logger.error(
-        `Error fetching department ${req.params.id}: ${getErrorMessage(error)}`,
-      );
+      logger.error(`Error fetching department ${req.params.id}: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Abrufen der Abteilung",
+        message: 'Fehler beim Abrufen der Abteilung',
         error: getErrorMessage(error),
       });
     }
@@ -431,7 +421,7 @@ interface UpdateDepartmentBody {
 }
 
 router.put(
-  "/:id",
+  '/:id',
   typed.paramsBody<{ id: string }, UpdateDepartmentBody>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
@@ -439,18 +429,15 @@ router.put(
       const departmentId = Number.parseInt(req.params.id, 10);
 
       // Check if department exists
-      const department = await Department.findById(
-        departmentId,
-        authReq.user.tenant_id,
-      );
+      const department = await Department.findById(departmentId, authReq.user.tenant_id);
 
       if (!department) {
-        res.status(404).json({ message: "Abteilung nicht gefunden" });
+        res.status(404).json({ message: 'Abteilung nicht gefunden' });
         return;
       }
 
       if (name !== undefined && !name) {
-        res.status(400).json({ message: "Abteilungsname ist erforderlich" });
+        res.status(400).json({ message: 'Abteilungsname ist erforderlich' });
         return;
       }
 
@@ -458,9 +445,7 @@ router.put(
       if (manager_id != null && manager_id !== 0) {
         const manager = await User.findById(manager_id, authReq.user.tenant_id);
         if (!manager) {
-          res
-            .status(400)
-            .json({ message: "Der angegebene Manager existiert nicht" });
+          res.status(400).json({ message: 'Der angegebene Manager existiert nicht' });
           return;
         }
       }
@@ -470,19 +455,15 @@ router.put(
         // Prevent circular reference
         if (parent_id === departmentId) {
           res.status(400).json({
-            message:
-              "Eine Abteilung kann nicht sich selbst als Übergeordnete haben",
+            message: 'Eine Abteilung kann nicht sich selbst als Übergeordnete haben',
           });
           return;
         }
 
-        const parentDept = await Department.findById(
-          parent_id,
-          authReq.user.tenant_id,
-        );
+        const parentDept = await Department.findById(parent_id, authReq.user.tenant_id);
         if (!parentDept) {
           res.status(400).json({
-            message: "Die angegebene übergeordnete Abteilung existiert nicht",
+            message: 'Die angegebene übergeordnete Abteilung existiert nicht',
           });
           return;
         }
@@ -495,22 +476,16 @@ router.put(
       });
 
       if (success) {
-        logger.info(
-          `Department ${departmentId} updated by user ${authReq.user.username}`,
-        );
-        res.json({ message: "Abteilung erfolgreich aktualisiert" });
+        logger.info(`Department ${departmentId} updated by user ${authReq.user.username}`);
+        res.json({ message: 'Abteilung erfolgreich aktualisiert' });
       } else {
         logger.warn(`Failed to update department ${departmentId}`);
-        res
-          .status(500)
-          .json({ message: "Fehler beim Aktualisieren der Abteilung" });
+        res.status(500).json({ message: 'Fehler beim Aktualisieren der Abteilung' });
       }
     } catch (error: unknown) {
-      logger.error(
-        `Error updating department ${req.params.id}: ${getErrorMessage(error)}`,
-      );
+      logger.error(`Error updating department ${req.params.id}: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Aktualisieren der Abteilung",
+        message: 'Fehler beim Aktualisieren der Abteilung',
         error: getErrorMessage(error),
       });
     }
@@ -593,20 +568,17 @@ router.put(
  */
 // Delete department
 router.delete(
-  "/:id",
+  '/:id',
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
       const departmentId = Number.parseInt(req.params.id, 10);
 
       // Check if department exists
-      const department = await Department.findById(
-        departmentId,
-        authReq.user.tenant_id,
-      );
+      const department = await Department.findById(departmentId, authReq.user.tenant_id);
 
       if (!department) {
-        res.status(404).json({ message: "Abteilung nicht gefunden" });
+        res.status(404).json({ message: 'Abteilung nicht gefunden' });
         return;
       }
 
@@ -616,7 +588,7 @@ router.delete(
       if (users.length > 0) {
         res.status(400).json({
           message:
-            "Diese Abteilung kann nicht gelöscht werden, da ihr noch Benutzer zugeordnet sind",
+            'Diese Abteilung kann nicht gelöscht werden, da ihr noch Benutzer zugeordnet sind',
           users,
         });
         return;
@@ -625,20 +597,16 @@ router.delete(
       const success = await Department.delete(departmentId);
 
       if (success) {
-        logger.info(
-          `Department ${departmentId} deleted by user ${authReq.user.username}`,
-        );
-        res.json({ message: "Abteilung erfolgreich gelöscht" });
+        logger.info(`Department ${departmentId} deleted by user ${authReq.user.username}`);
+        res.json({ message: 'Abteilung erfolgreich gelöscht' });
       } else {
         logger.warn(`Failed to delete department ${departmentId}`);
-        res.status(500).json({ message: "Fehler beim Löschen der Abteilung" });
+        res.status(500).json({ message: 'Fehler beim Löschen der Abteilung' });
       }
     } catch (error: unknown) {
-      logger.error(
-        `Error deleting department ${req.params.id}: ${getErrorMessage(error)}`,
-      );
+      logger.error(`Error deleting department ${req.params.id}: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Löschen der Abteilung",
+        message: 'Fehler beim Löschen der Abteilung',
         error: getErrorMessage(error),
       });
     }
@@ -713,20 +681,17 @@ router.delete(
  */
 // Get department members
 router.get(
-  "/:id/members",
+  '/:id/members',
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const authReq = req as AuthenticatedRequest;
       const departmentId = Number.parseInt(req.params.id, 10);
 
       // Check if department exists
-      const department = await Department.findById(
-        departmentId,
-        authReq.user.tenant_id,
-      );
+      const department = await Department.findById(departmentId, authReq.user.tenant_id);
 
       if (!department) {
-        res.status(404).json({ message: "Abteilung nicht gefunden" });
+        res.status(404).json({ message: 'Abteilung nicht gefunden' });
         return;
       }
 
@@ -737,7 +702,7 @@ router.get(
         `Error fetching members for department ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
-        message: "Fehler beim Abrufen der Abteilungsmitglieder",
+        message: 'Fehler beim Abrufen der Abteilungsmitglieder',
         error: getErrorMessage(error),
       });
     }

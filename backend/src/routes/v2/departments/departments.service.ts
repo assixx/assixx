@@ -1,5 +1,5 @@
-import Department, { DbDepartment } from "../../../models/department.js";
-import { logger } from "../../../utils/logger.js";
+import Department, { DbDepartment } from '../../../models/department.js';
+import { logger } from '../../../utils/logger.js';
 
 // API v2 Types
 export interface DepartmentV2 {
@@ -69,7 +69,7 @@ export class ServiceError extends Error {
     public details?: unknown,
   ) {
     super(message);
-    this.name = "ServiceError";
+    this.name = 'ServiceError';
   }
 }
 
@@ -82,10 +82,7 @@ export class DepartmentService {
    * @param tenantId
    * @param includeExtended
    */
-  async getDepartments(
-    tenantId: number,
-    includeExtended = true,
-  ): Promise<DepartmentV2[]> {
+  async getDepartments(tenantId: number, includeExtended = true): Promise<DepartmentV2[]> {
     try {
       const departments = await Department.findAll(tenantId);
 
@@ -109,8 +106,8 @@ export class DepartmentService {
         }),
       }));
     } catch (error: unknown) {
-      logger.error("Error getting departments:", error);
-      throw new ServiceError(500, "Failed to retrieve departments", error);
+      logger.error('Error getting departments:', error);
+      throw new ServiceError(500, 'Failed to retrieve departments', error);
     }
   }
 
@@ -126,7 +123,7 @@ export class DepartmentService {
       const department = departments.find((d) => d.id === id);
 
       if (!department) {
-        throw new ServiceError(404, "Department not found");
+        throw new ServiceError(404, 'Department not found');
       }
 
       return {
@@ -148,8 +145,8 @@ export class DepartmentService {
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error getting department:", error);
-      throw new ServiceError(500, "Failed to retrieve department", error);
+      logger.error('Error getting department:', error);
+      throw new ServiceError(500, 'Failed to retrieve department', error);
     }
   }
 
@@ -158,21 +155,18 @@ export class DepartmentService {
    * @param data
    * @param tenantId
    */
-  async createDepartment(
-    data: CreateDepartmentData,
-    tenantId: number,
-  ): Promise<DepartmentV2> {
+  async createDepartment(data: CreateDepartmentData, tenantId: number): Promise<DepartmentV2> {
     try {
       // Validate required fields
-      if (!data.name || data.name.trim() === "") {
-        throw new ServiceError(400, "Department name is required");
+      if (!data.name || data.name.trim() === '') {
+        throw new ServiceError(400, 'Department name is required');
       }
 
       // Validate parent department if specified
       if (data.parentId !== undefined) {
         const parent = await Department.findById(data.parentId, tenantId);
         if (!parent) {
-          throw new ServiceError(400, "Parent department not found");
+          throw new ServiceError(400, 'Parent department not found');
         }
       }
 
@@ -182,8 +176,8 @@ export class DepartmentService {
         manager_id: data.managerId,
         parent_id: data.parentId,
         area_id: data.areaId, // Add area_id field (snake_case for DB) - undefined is OK
-        status: data.status ?? "active",
-        visibility: data.visibility ?? "public",
+        status: data.status ?? 'active',
+        visibility: data.visibility ?? 'public',
         tenant_id: tenantId,
       });
 
@@ -192,16 +186,13 @@ export class DepartmentService {
       if (error instanceof ServiceError) throw error;
 
       // Check for duplicate key error
-      const errorMessage = (error as Error).message || "";
-      if (
-        errorMessage.includes("Duplicate entry") ||
-        errorMessage.includes("unique_name_tenant")
-      ) {
-        throw new ServiceError(400, "Department name already exists");
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.includes('Duplicate entry') || errorMessage.includes('unique_name_tenant')) {
+        throw new ServiceError(400, 'Department name already exists');
       }
 
-      logger.error("Error creating department:", error);
-      throw new ServiceError(500, "Failed to create department", error);
+      logger.error('Error creating department:', error);
+      throw new ServiceError(500, 'Failed to create department', error);
     }
   }
 
@@ -220,27 +211,27 @@ export class DepartmentService {
       // Check if department exists
       const existing = await Department.findById(id, tenantId);
       if (!existing) {
-        throw new ServiceError(404, "Department not found");
+        throw new ServiceError(404, 'Department not found');
       }
 
       // Validate parent department if specified
       if (data.parentId !== undefined) {
         if (data.parentId === id) {
-          throw new ServiceError(400, "Department cannot be its own parent");
+          throw new ServiceError(400, 'Department cannot be its own parent');
         }
 
         const parent = await Department.findById(data.parentId, tenantId);
         if (!parent) {
-          throw new ServiceError(400, "Parent department not found");
+          throw new ServiceError(400, 'Parent department not found');
         }
       }
 
       // Validate manager if specified
       if (data.managerId !== undefined) {
-        const User = (await import("../../../models/user.js")).default;
+        const User = (await import('../../../models/user.js')).default;
         const manager = await User.findById(data.managerId, tenantId);
         if (!manager) {
-          throw new ServiceError(400, "Manager not found");
+          throw new ServiceError(400, 'Manager not found');
         }
       }
 
@@ -254,26 +245,24 @@ export class DepartmentService {
         visibility: string;
       }> = {};
       if (data.name !== undefined) updateData.name = data.name;
-      if (data.description !== undefined)
-        updateData.description = data.description;
+      if (data.description !== undefined) updateData.description = data.description;
       if (data.managerId !== undefined) updateData.manager_id = data.managerId;
       if (data.parentId !== undefined) updateData.parent_id = data.parentId;
       if (data.areaId !== undefined) updateData.area_id = data.areaId; // Add area_id mapping
       if (data.status !== undefined) updateData.status = data.status;
-      if (data.visibility !== undefined)
-        updateData.visibility = data.visibility;
+      if (data.visibility !== undefined) updateData.visibility = data.visibility;
 
       const success = await Department.update(id, updateData);
 
       if (!success) {
-        throw new ServiceError(500, "Failed to update department");
+        throw new ServiceError(500, 'Failed to update department');
       }
 
       return await this.getDepartmentById(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error updating department:", error);
-      throw new ServiceError(500, "Failed to update department", error);
+      logger.error('Error updating department:', error);
+      throw new ServiceError(500, 'Failed to update department', error);
     }
   }
 
@@ -287,28 +276,26 @@ export class DepartmentService {
       // Check if department exists
       const existing = await Department.findById(id, tenantId);
       if (!existing) {
-        throw new ServiceError(404, "Department not found");
+        throw new ServiceError(404, 'Department not found');
       }
 
       // Check if department has members
       const members = await Department.getUsersByDepartment(id);
       if (members.length > 0) {
-        throw new ServiceError(
-          400,
-          "Cannot delete department with assigned users",
-          { userCount: members.length },
-        );
+        throw new ServiceError(400, 'Cannot delete department with assigned users', {
+          userCount: members.length,
+        });
       }
 
       const success = await Department.delete(id);
 
       if (!success) {
-        throw new ServiceError(500, "Failed to delete department");
+        throw new ServiceError(500, 'Failed to delete department');
       }
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error deleting department:", error);
-      throw new ServiceError(500, "Failed to delete department", error);
+      logger.error('Error deleting department:', error);
+      throw new ServiceError(500, 'Failed to delete department', error);
     }
   }
 
@@ -317,15 +304,12 @@ export class DepartmentService {
    * @param id
    * @param tenantId
    */
-  async getDepartmentMembers(
-    id: number,
-    tenantId: number,
-  ): Promise<DepartmentMember[]> {
+  async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
     try {
       // Check if department exists
       const existing = await Department.findById(id, tenantId);
       if (!existing) {
-        throw new ServiceError(404, "Department not found");
+        throw new ServiceError(404, 'Department not found');
       }
 
       const users = await Department.getUsersByDepartment(id);
@@ -345,22 +329,18 @@ export class DepartmentService {
           id: user.id,
           username: user.username,
           email: user.email,
-          firstName: user.first_name ?? "",
-          lastName: user.last_name ?? "",
+          firstName: user.first_name ?? '',
+          lastName: user.last_name ?? '',
           position: user.position,
           employeeId: user.employee_id,
-          role: user.role ?? "employee",
-          isActive: user.status === "active",
+          role: user.role ?? 'employee',
+          isActive: user.status === 'active',
         }),
       );
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error("Error getting department members:", error);
-      throw new ServiceError(
-        500,
-        "Failed to retrieve department members",
-        error,
-      );
+      logger.error('Error getting department members:', error);
+      throw new ServiceError(500, 'Failed to retrieve department members', error);
     }
   }
 
@@ -381,12 +361,8 @@ export class DepartmentService {
         totalTeams: teamCount,
       };
     } catch (error: unknown) {
-      logger.error("Error getting department stats:", error);
-      throw new ServiceError(
-        500,
-        "Failed to retrieve department statistics",
-        error,
-      );
+      logger.error('Error getting department stats:', error);
+      throw new ServiceError(500, 'Failed to retrieve department statistics', error);
     }
   }
 }

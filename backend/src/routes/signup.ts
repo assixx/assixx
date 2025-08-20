@@ -2,18 +2,16 @@
  * Signup/Registration Routes
  * API endpoints for tenant registration and subdomain validation
  */
+import express, { Router } from 'express';
+import { body, param } from 'express-validator';
 
-import { body, param } from "express-validator";
-
-import express, { Router } from "express";
-
-import { security } from "../middleware/security";
-import { authLimiter, apiLimiter } from "../middleware/security-enhanced";
-import { createValidation } from "../middleware/validation";
-import Tenant from "../models/tenant";
-import { successResponse, errorResponse } from "../types/response.types";
-import { logger } from "../utils/logger";
-import { typed } from "../utils/routeHandlers";
+import { security } from '../middleware/security';
+import { apiLimiter, authLimiter } from '../middleware/security-enhanced';
+import { createValidation } from '../middleware/validation';
+import Tenant from '../models/tenant';
+import { errorResponse, successResponse } from '../types/response.types';
+import { logger } from '../utils/logger';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (keeping require pattern for compatibility)
 
@@ -52,62 +50,50 @@ interface SubdomainAvailabilityResponse {
 
 // Validation schemas
 const signupValidation = createValidation([
-  body("company_name")
-    .notEmpty()
-    .trim()
-    .withMessage("Firmenname ist erforderlich"),
-  body("subdomain")
+  body('company_name').notEmpty().trim().withMessage('Firmenname ist erforderlich'),
+  body('subdomain')
     .notEmpty()
     .matches(/^[-0-9a-z]+$/)
-    .withMessage(
-      "Subdomain darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten",
-    ),
-  body("email")
-    .isEmail()
-    .normalizeEmail()
-    .withMessage("Ungültige E-Mail-Adresse"),
-  body("admin_email")
-    .isEmail()
-    .normalizeEmail()
-    .withMessage("Ungültige Admin E-Mail-Adresse"),
-  body("admin_password")
+    .withMessage('Subdomain darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten'),
+  body('email').isEmail().normalizeEmail().withMessage('Ungültige E-Mail-Adresse'),
+  body('admin_email').isEmail().normalizeEmail().withMessage('Ungültige Admin E-Mail-Adresse'),
+  body('admin_password')
     .isLength({ min: 8 })
-    .withMessage("Passwort muss mindestens 8 Zeichen lang sein"),
-  body("admin_first_name").optional().trim(),
-  body("admin_last_name").optional().trim(),
-  body("phone")
+    .withMessage('Passwort muss mindestens 8 Zeichen lang sein'),
+  body('admin_first_name').optional().trim(),
+  body('admin_last_name').optional().trim(),
+  body('phone')
     .notEmpty()
     .trim()
     .matches(/^\+\d{7,29}$/)
     .withMessage(
-      "Telefonnummer muss mit + beginnen und 7-29 Ziffern enthalten (z.B. +491234567890)",
+      'Telefonnummer muss mit + beginnen und 7-29 Ziffern enthalten (z.B. +491234567890)',
     ),
 ]);
 
 const checkSubdomainValidation = createValidation([
-  param("subdomain")
+  param('subdomain')
     .notEmpty()
     .matches(/^[-0-9a-z]+$/)
-    .withMessage("Ungültige Subdomain"),
+    .withMessage('Ungültige Subdomain'),
 ]);
 
 // Öffentliche Signup-Route
 router.post(
-  "/signup",
+  '/signup',
   authLimiter,
   ...security.auth(signupValidation),
   typed.body<SignupBody>(async (req, res) => {
-    console.info("[SIGNUP DEBUG] Request received!");
+    console.info('[SIGNUP DEBUG] Request received!');
     try {
-      logger.info(
-        "[DEBUG] Signup request received at " + new Date().toISOString(),
-        { body: req.body },
-      );
+      logger.info('[DEBUG] Signup request received at ' + new Date().toISOString(), {
+        body: req.body,
+      });
 
       // Debug DB connection (removed in production)
-      if (process.env.NODE_ENV === "development") {
-        const pool = (await import("../database")).default;
-        logger.info("[DEBUG] Pool type:", typeof pool);
+      if (process.env.NODE_ENV === 'development') {
+        const pool = (await import('../database')).default;
+        logger.info('[DEBUG] Pool type:', typeof pool);
       }
 
       const {
@@ -125,26 +111,18 @@ router.post(
       // Validation is now handled by middleware
 
       // Subdomain validieren
-      const subdomainValidation: SubdomainValidation =
-        Tenant.validateSubdomain(subdomain);
+      const subdomainValidation: SubdomainValidation = Tenant.validateSubdomain(subdomain);
       if (!subdomainValidation.valid) {
         res
           .status(400)
-          .json(
-            errorResponse(
-              subdomainValidation.error ?? "Ungültige Subdomain",
-              400,
-            ),
-          );
+          .json(errorResponse(subdomainValidation.error ?? 'Ungültige Subdomain', 400));
         return;
       }
 
       // Prüfe ob Subdomain verfügbar
       const isAvailable: boolean = await Tenant.isSubdomainAvailable(subdomain);
       if (!isAvailable) {
-        res
-          .status(400)
-          .json(errorResponse("Diese Subdomain ist bereits vergeben", 400));
+        res.status(400).json(errorResponse('Diese Subdomain ist bereits vergeben', 400));
         return;
       }
 
@@ -169,28 +147,27 @@ router.post(
         success: true,
         subdomain,
         trialEndsAt: result.trialEndsAt,
-        message: "Registrierung erfolgreich! Sie können sich jetzt anmelden.",
+        message: 'Registrierung erfolgreich! Sie können sich jetzt anmelden.',
       };
 
-      res.json(successResponse(response, "Registrierung erfolgreich"));
+      res.json(successResponse(response, 'Registrierung erfolgreich'));
     } catch (error: unknown) {
-      logger.error("Signup-Fehler:", error);
-      res.status(500).json(errorResponse("Fehler bei der Registrierung", 500));
+      logger.error('Signup-Fehler:', error);
+      res.status(500).json(errorResponse('Fehler bei der Registrierung', 500));
     }
   }),
 );
 
 // Subdomain-Verfügbarkeit prüfen
 router.get(
-  "/check-subdomain/:subdomain",
+  '/check-subdomain/:subdomain',
   apiLimiter,
   ...security.public(checkSubdomainValidation),
   typed.params<{ subdomain: string }>(async (req, res) => {
     try {
       const { subdomain } = req.params;
 
-      const validation: SubdomainValidation =
-        Tenant.validateSubdomain(subdomain);
+      const validation: SubdomainValidation = Tenant.validateSubdomain(subdomain);
       if (!validation.valid) {
         const response: SubdomainAvailabilityResponse = {
           available: false,
@@ -204,8 +181,8 @@ router.get(
       const response: SubdomainAvailabilityResponse = { available };
       res.json(successResponse(response));
     } catch (error: unknown) {
-      logger.error("Subdomain-Check-Fehler:", error);
-      res.status(500).json(errorResponse("Fehler bei der Überprüfung", 500));
+      logger.error('Subdomain-Check-Fehler:', error);
+      res.status(500).json(errorResponse('Fehler bei der Überprüfung', 500));
     }
   }),
 );

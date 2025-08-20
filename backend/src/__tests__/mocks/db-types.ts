@@ -2,8 +2,7 @@
  * Database Type Helpers for Tests
  * Provides type compatibility between mysql2 RowDataPacket and test objects
  */
-
-import { RowDataPacket } from "mysql2";
+import { RowDataPacket } from 'mysql2';
 
 /**
  * Helper type that extends RowDataPacket while allowing custom properties

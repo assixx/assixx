@@ -2,27 +2,25 @@
  * Authentication Routes
  * Uses controller pattern for cleaner code
  */
+import express, { Router } from 'express';
+import { body } from 'express-validator';
 
-import { body } from "express-validator";
-
-import express, { Router } from "express";
-
-import authController from "../controllers/auth.controller";
-import { security } from "../middleware/security";
+import authController from '../controllers/auth.controller';
+import { security } from '../middleware/security';
 import {
-  generateCSRFTokenMiddleware,
   attachCSRFToken,
+  generateCSRFTokenMiddleware,
   strictAuthLimiter,
-} from "../middleware/security-enhanced";
-import { createValidation } from "../middleware/validation";
-import { validateSignup } from "../middleware/validators";
-import { successResponse } from "../types/response.types";
-import { typed } from "../utils/routeHandlers";
+} from '../middleware/security-enhanced';
+import { createValidation } from '../middleware/validation';
+import { validateSignup } from '../middleware/validators';
+import { successResponse } from '../types/response.types';
+import { typed } from '../utils/routeHandlers';
 
 const router: Router = express.Router();
 
 // Debug logging
-console.info("[DEBUG] Auth routes loading...");
+console.info('[DEBUG] Auth routes loading...');
 
 // Request body interfaces
 interface LoginBody {
@@ -46,30 +44,27 @@ interface ValidateFingerprintBody {
 
 // Validation schemas
 const loginValidation = createValidation([
-  body("password").notEmpty().withMessage("Passwort ist erforderlich"),
-  body("username").optional().trim(),
-  body("email").optional().isEmail().normalizeEmail(),
+  body('password').notEmpty().withMessage('Passwort ist erforderlich'),
+  body('username').optional().trim(),
+  body('email').optional().isEmail().normalizeEmail(),
 ]);
 
 const validateFingerprintValidation = createValidation([
-  body("fingerprint")
-    .notEmpty()
-    .trim()
-    .withMessage("Fingerprint ist erforderlich"),
+  body('fingerprint').notEmpty().trim().withMessage('Fingerprint ist erforderlich'),
 ]);
 
 // Public routes with enhanced rate limiting and validation
 router.post(
-  "/login",
+  '/login',
   strictAuthLimiter,
   ...security.auth(loginValidation),
   typed.body<LoginBody>(async (req, res) => {
-    console.info("[DEBUG] /api/auth/login endpoint hit");
+    console.info('[DEBUG] /api/auth/login endpoint hit');
     await authController.login(req, res);
   }),
 );
 router.post(
-  "/register",
+  '/register',
   strictAuthLimiter,
   ...validateSignup,
   typed.body<RegisterBody>(async (req, res) => {
@@ -77,14 +72,14 @@ router.post(
   }),
 );
 router.get(
-  "/logout",
+  '/logout',
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.logout(req, res);
   }),
 );
 router.post(
-  "/logout",
+  '/logout',
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.logout(req, res);
@@ -93,7 +88,7 @@ router.post(
 
 // CSRF Token endpoint
 router.get(
-  "/csrf-token",
+  '/csrf-token',
   generateCSRFTokenMiddleware,
   attachCSRFToken,
   typed.public((_req, res) => {
@@ -102,7 +97,7 @@ router.get(
         {
           csrfToken: res.locals.csrfToken as string,
         },
-        "CSRF token generated successfully",
+        'CSRF token generated successfully',
       ),
     );
   }),
@@ -110,21 +105,21 @@ router.get(
 
 // Protected routes
 router.get(
-  "/check",
+  '/check',
   ...security.user(),
   typed.auth((req, res) => {
     authController.checkAuth(req, res);
   }),
 );
 router.get(
-  "/user",
+  '/user',
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.getUserProfile(req, res);
   }),
 );
 router.get(
-  "/me",
+  '/me',
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.getUserProfile(req, res);
@@ -133,14 +128,14 @@ router.get(
 
 // Session validation endpoints
 router.get(
-  "/validate",
+  '/validate',
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.validateToken(req, res);
   }),
 );
 router.post(
-  "/validate-fingerprint",
+  '/validate-fingerprint',
   ...security.user(validateFingerprintValidation),
   typed.body<ValidateFingerprintBody>(async (req, res) => {
     await authController.validateFingerprint(req, res);
@@ -149,12 +144,8 @@ router.post(
 
 // Token refresh endpoint
 router.post(
-  "/refresh",
-  createValidation([
-    body("refreshToken")
-      .notEmpty()
-      .withMessage("Refresh token ist erforderlich"),
-  ]),
+  '/refresh',
+  createValidation([body('refreshToken').notEmpty().withMessage('Refresh token ist erforderlich')]),
   typed.body<{ refreshToken: string }>(async (req, res) => {
     await authController.refreshToken(req, res);
   }),
@@ -162,13 +153,10 @@ router.post(
 
 // Password reset routes
 router.post(
-  "/forgot-password",
+  '/forgot-password',
   strictAuthLimiter,
   createValidation([
-    body("email")
-      .isEmail()
-      .normalizeEmail()
-      .withMessage("Gültige E-Mail-Adresse erforderlich"),
+    body('email').isEmail().normalizeEmail().withMessage('Gültige E-Mail-Adresse erforderlich'),
   ]),
   typed.body<{ email: string }>((req, res) => {
     authController.forgotPassword(req, res);
@@ -176,13 +164,13 @@ router.post(
 );
 
 router.post(
-  "/reset-password",
+  '/reset-password',
   strictAuthLimiter,
   createValidation([
-    body("token").notEmpty().withMessage("Token ist erforderlich"),
-    body("newPassword")
+    body('token').notEmpty().withMessage('Token ist erforderlich'),
+    body('newPassword')
       .isLength({ min: 8 })
-      .withMessage("Passwort muss mindestens 8 Zeichen lang sein"),
+      .withMessage('Passwort muss mindestens 8 Zeichen lang sein'),
   ]),
   typed.body<{ token: string; newPassword: string }>((req, res) => {
     authController.resetPassword(req, res);

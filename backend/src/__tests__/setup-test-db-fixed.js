@@ -2,40 +2,37 @@
  * Fixed Setup Test Database for GitHub Actions
  * This script creates the necessary tables for running tests
  */
-
-import mysql from "mysql2/promise";
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import mysql from 'mysql2/promise';
+import path from 'path';
 
 // Handle both ESM and CommonJS environments
-const projectRoot = process.cwd().endsWith("backend")
-  ? path.dirname(process.cwd())
-  : process.cwd();
+const projectRoot = process.cwd().endsWith('backend') ? path.dirname(process.cwd()) : process.cwd();
 
 async function setupTestDatabase() {
-  console.info("Setting up test database...");
-  console.info("DB Config:", {
-    host: process.env.DB_HOST || "localhost",
-    port: process.env.DB_PORT || "3306",
-    user: process.env.DB_USER || "assixx_user",
-    database: process.env.DB_NAME || "main",
+  console.info('Setting up test database...');
+  console.info('DB Config:', {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || '3306',
+    user: process.env.DB_USER || 'assixx_user',
+    database: process.env.DB_NAME || 'main',
   });
 
   const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "3306"),
-    user: process.env.DB_USER || "assixx_user",
-    password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
-    database: process.env.DB_NAME || "main",
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'assixx_user',
+    password: process.env.DB_PASSWORD || 'AssixxP@ss2025!',
+    database: process.env.DB_NAME || 'main',
     multipleStatements: true,
   });
 
   try {
-    console.info("Connected to MySQL successfully");
+    console.info('Connected to MySQL successfully');
 
     // Disable foreign key checks
-    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-    console.info("Foreign key checks disabled");
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+    console.info('Foreign key checks disabled');
 
     // Drop all existing tables to start fresh
     const [tables] = await connection.query(`
@@ -49,7 +46,7 @@ async function setupTestDatabase() {
       console.info(`Dropping table: ${table.TABLE_NAME}`);
       await connection.query(`DROP TABLE IF EXISTS \`${table.TABLE_NAME}\``);
     }
-    console.info("All tables dropped");
+    console.info('All tables dropped');
 
     // Create minimal schema for tests
     const createTablesSQL = `
@@ -283,9 +280,9 @@ async function setupTestDatabase() {
     `;
 
     // Execute table creation
-    console.info("Creating test tables...");
+    console.info('Creating test tables...');
     await connection.query(createTablesSQL);
-    console.info("All tables created successfully");
+    console.info('All tables created successfully');
 
     // Create additional tables that might be needed
     const additionalTablesSQL = `
@@ -419,7 +416,7 @@ async function setupTestDatabase() {
     );
     `;
 
-    console.info("Creating additional tables...");
+    console.info('Creating additional tables...');
     await connection.query(additionalTablesSQL);
 
     // Create trigger to sync name and company_name
@@ -438,30 +435,26 @@ async function setupTestDatabase() {
     `;
 
     try {
-      console.info("Creating sync trigger for tenant names...");
-      await connection.query("DROP TRIGGER IF EXISTS sync_tenant_names");
+      console.info('Creating sync trigger for tenant names...');
+      await connection.query('DROP TRIGGER IF EXISTS sync_tenant_names');
       await connection.query(createTriggerSQL);
     } catch (err) {
-      console.info(
-        "Trigger creation skipped (might not be supported in test env)",
-      );
+      console.info('Trigger creation skipped (might not be supported in test env)');
     }
 
     // Re-enable foreign key checks
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-    console.info("Foreign key checks re-enabled");
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+    console.info('Foreign key checks re-enabled');
 
     // Verify tables were created
     const [createdTables] = await connection.query(`
       SELECT COUNT(*) as count FROM information_schema.tables
       WHERE table_schema = DATABASE()
     `);
-    console.info(
-      `Test database setup completed! Created ${createdTables[0].count} tables`,
-    );
+    console.info(`Test database setup completed! Created ${createdTables[0].count} tables`);
   } catch (error) {
-    console.error("Error setting up test database:", error);
-    console.error("SQL Error Details:", error.sqlMessage || error.message);
+    console.error('Error setting up test database:', error);
+    console.error('SQL Error Details:', error.sqlMessage || error.message);
     process.exit(1);
   } finally {
     await connection.end();
@@ -469,7 +462,7 @@ async function setupTestDatabase() {
 }
 
 // Run if called directly
-if (process.argv[1] && process.argv[1].endsWith("setup-test-db-fixed.js")) {
+if (process.argv[1] && process.argv[1].endsWith('setup-test-db-fixed.js')) {
   setupTestDatabase();
 }
 

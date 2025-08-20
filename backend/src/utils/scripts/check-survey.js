@@ -1,4 +1,4 @@
-const db = require("../../database");
+const db = require('../../database');
 
 async function checkSurvey() {
   try {
@@ -6,7 +6,7 @@ async function checkSurvey() {
     const [surveys] = await db.query(
       "SELECT * FROM features WHERE code LIKE '%survey%' OR name LIKE '%Umfrage%'",
     );
-    console.info("Survey features found:", surveys.length);
+    console.info('Survey features found:', surveys.length);
     surveys.forEach((s) => {
       console.info(`- ID ${s.id}: ${s.code} - ${s.name} (${s.category})`);
     });
@@ -24,16 +24,16 @@ async function checkSurvey() {
         [surveyId],
       );
 
-      console.info("\nTenant 3 survey status:");
+      console.info('\nTenant 3 survey status:');
       if (tenantSurvey.length > 0) {
-        console.info("- Status:", tenantSurvey[0].status);
-        console.info("- Valid until:", tenantSurvey[0].valid_until);
+        console.info('- Status:', tenantSurvey[0].status);
+        console.info('- Valid until:', tenantSurvey[0].valid_until);
       } else {
-        console.info("- NOT ACTIVE");
+        console.info('- NOT ACTIVE');
       }
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error('Error:', error);
   }
   process.exit();
 }

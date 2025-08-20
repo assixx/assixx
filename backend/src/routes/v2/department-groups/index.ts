@@ -2,23 +2,21 @@
  * Department Groups Routes v2
  * Handles hierarchical department group management
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { departmentGroupsController } from "./controller.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { departmentGroupsController } from './controller.js';
 import {
-  createGroupValidation,
-  updateGroupValidation,
-  getGroupValidation,
-  deleteGroupValidation,
   addDepartmentsValidation,
-  removeDepartmentValidation,
+  createGroupValidation,
+  deleteGroupValidation,
   getGroupDepartmentsValidation,
-} from "./validation.js";
+  getGroupValidation,
+  removeDepartmentValidation,
+  updateGroupValidation,
+} from './validation.js';
 
 const router = Router();
 
@@ -89,7 +87,7 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/",
+  '/',
   typed.auth(async (req, res) => {
     await departmentGroupsController.getGroups(req, res);
   }),
@@ -131,7 +129,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   validate(getGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.getGroupById(req, res);
@@ -201,7 +199,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/",
+  '/',
   validate(createGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.createGroup(req, res);
@@ -267,7 +265,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.put(
-  "/:id",
+  '/:id',
   validate(updateGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.updateGroup(req, res);
@@ -314,7 +312,7 @@ router.put(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:id",
+  '/:id',
   validate(deleteGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.deleteGroup(req, res);
@@ -376,7 +374,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/:id/departments",
+  '/:id/departments',
   validate(addDepartmentsValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.addDepartments(req, res);
@@ -427,7 +425,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:id/departments/:departmentId",
+  '/:id/departments/:departmentId',
   validate(removeDepartmentValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.removeDepartment(req, res);
@@ -483,7 +481,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id/departments",
+  '/:id/departments',
   validate(getGroupDepartmentsValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.getGroupDepartments(req, res);

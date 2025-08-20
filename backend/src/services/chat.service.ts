@@ -2,24 +2,22 @@
  * Chat Service
  * Handles chat-related business logic
  */
-
-import * as path from "path";
-
-import * as dotenv from "dotenv";
-import * as mysql from "mysql2";
-import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import * as dotenv from 'dotenv';
+import * as mysql from 'mysql2';
+import { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import * as path from 'path';
 
 // Handle both ESM and CommonJS environments
 const currentDir = process.cwd();
 
-dotenv.config({ path: path.join(currentDir, ".env") });
+dotenv.config({ path: path.join(currentDir, '.env') });
 
 // Create database connection pool
 const db = mysql.createPool({
-  host: process.env.DB_HOST ?? "localhost",
-  user: process.env.DB_USER ?? "root",
-  password: process.env.DB_PASSWORD ?? "",
-  database: process.env.DB_NAME ?? "main",
+  host: process.env.DB_HOST ?? 'localhost',
+  user: process.env.DB_USER ?? 'root',
+  password: process.env.DB_PASSWORD ?? '',
+  database: process.env.DB_NAME ?? 'main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -135,33 +133,18 @@ class ChatService {
    * @param tenantId
    * @param userId
    */
-  async getUsers(
-    tenantId: string | number,
-    userId: string | number,
-  ): Promise<ChatUser[]> {
+  async getUsers(tenantId: string | number, userId: string | number): Promise<ChatUser[]> {
     try {
       // Log input parameters
-      console.info(
-        "ChatService.getUsers - tenantId:",
-        tenantId,
-        "type:",
-        typeof tenantId,
-      );
-      console.info(
-        "ChatService.getUsers - userId:",
-        userId,
-        "type:",
-        typeof userId,
-      );
+      console.info('ChatService.getUsers - tenantId:', tenantId, 'type:', typeof tenantId);
+      console.info('ChatService.getUsers - userId:', userId, 'type:', typeof userId);
 
       // Ensure parameters are numbers
       const numericTenantId = Number.parseInt(tenantId.toString());
       const numericUserId = Number.parseInt(userId.toString());
 
       if (isNaN(numericTenantId) || isNaN(numericUserId)) {
-        throw new Error(
-          `Invalid parameters: tenantId=${tenantId}, userId=${userId}`,
-        );
+        throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
       }
 
       // Hole die Rolle und Department des aktuellen Users
@@ -172,18 +155,16 @@ class ChatService {
         >(`SELECT role, department_id FROM users WHERE id = ? AND tenant_id = ?`, [numericUserId, numericTenantId]);
 
       if (currentUserInfo.length === 0) {
-        throw new Error("Current user not found");
+        throw new Error('Current user not found');
       }
 
       const userRole = currentUserInfo[0].role as string;
-      const userDepartmentId = currentUserInfo[0].department_id as
-        | number
-        | null;
+      const userDepartmentId = currentUserInfo[0].department_id as number | null;
 
       let query: string;
       let params: number[] = [];
 
-      if (userRole === "root" || userRole === "admin") {
+      if (userRole === 'root' || userRole === 'admin') {
         // Root und Admins können alle User sehen
         query = `
           SELECT
@@ -270,17 +251,14 @@ class ChatService {
         }
       }
 
-      console.info(
-        "ChatService.getUsers - Executing query with params:",
-        params,
-      );
+      console.info('ChatService.getUsers - Executing query with params:', params);
 
       const [users] = await db.promise().query<ChatUser[]>(query, params);
 
-      console.info("ChatService.getUsers - Found users:", users.length);
+      console.info('ChatService.getUsers - Found users:', users.length);
       return users;
     } catch (error: unknown) {
-      console.error("ChatService.getUsers - Error:", error);
+      console.error('ChatService.getUsers - Error:', error);
       throw error;
     }
   }
@@ -295,20 +273,18 @@ class ChatService {
     userId: string | number,
   ): Promise<Conversation[]> {
     try {
-      console.info("ChatService.getConversations called with:", {
+      console.info('ChatService.getConversations called with:', {
         tenantId,
         userId,
       });
-      console.info("DB pool status:", "exists");
+      console.info('DB pool status:', 'exists');
 
       // Ensure parameters are numbers
       const numericTenantId = Number.parseInt(tenantId.toString());
       const numericUserId = Number.parseInt(userId.toString());
 
       if (isNaN(numericTenantId) || isNaN(numericUserId)) {
-        throw new Error(
-          `Invalid parameters: tenantId=${tenantId}, userId=${userId}`,
-        );
+        throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
       }
 
       const query = `
@@ -370,33 +346,28 @@ class ChatService {
       // Transform the results to match the expected format
       return await Promise.all(
         conversations.map(async (conv) => {
-          const participants = await this.getConversationParticipants(
-            conv.id,
-            numericTenantId,
-          );
+          const participants = await this.getConversationParticipants(conv.id, numericTenantId);
 
           // Transform last_message fields into proper object
           const lastMessage =
-            conv.last_message_id != null
-              ? {
-                  id: conv.last_message_id as number,
-                  content: conv.last_message_content as string,
-                  created_at: conv.last_message_created_at as Date,
-                  sender_id: conv.last_message_sender_id as number,
-                  conversation_id: conv.id,
-                  is_read: false,
-                  sender: {
-                    id: conv.last_message_sender_id as number,
-                    username: conv.last_message_sender_username as string,
-                  },
-                }
-              : null;
+            conv.last_message_id != null ?
+              {
+                id: conv.last_message_id as number,
+                content: conv.last_message_content as string,
+                created_at: conv.last_message_created_at as Date,
+                sender_id: conv.last_message_sender_id as number,
+                conversation_id: conv.id,
+                is_read: false,
+                sender: {
+                  id: conv.last_message_sender_id as number,
+                  username: conv.last_message_sender_username as string,
+                },
+              }
+            : null;
 
           // Create new conversation object that extends RowDataPacket
           const transformedConv: Conversation = Object.assign(
-            Object.create(
-              Object.getPrototypeOf(conv) as object,
-            ) as Conversation,
+            Object.create(Object.getPrototypeOf(conv) as object) as Conversation,
             {
               id: conv.id,
               name: conv.name,
@@ -414,9 +385,9 @@ class ChatService {
         }),
       );
     } catch (error: unknown) {
-      console.error("Error in ChatService.getConversations:", error);
+      console.error('Error in ChatService.getConversations:', error);
       if (error instanceof Error) {
-        console.error("Query error details:", error.message);
+        console.error('Query error details:', error.message);
       }
       throw error;
     }
@@ -450,13 +421,13 @@ class ChatService {
       );
 
       if (currentUserInfo.length === 0) {
-        throw new Error("Current user not found");
+        throw new Error('Current user not found');
       }
 
       const userRole = currentUserInfo[0].role as string;
 
       // Prüfe Berechtigung für Employees
-      if (userRole === "employee" && !isGroup) {
+      if (userRole === 'employee' && !isGroup) {
         // Employee darf nur antworten, nicht initiieren
         // Prüfe ob bereits eine Konversation mit einem Admin existiert
         const [targetUserInfo] = await connection.query<RowDataPacket[]>(
@@ -464,14 +435,9 @@ class ChatService {
           [participantIds[0], tenantId],
         );
 
-        if (
-          targetUserInfo.length > 0 &&
-          targetUserInfo[0].role === "employee"
-        ) {
+        if (targetUserInfo.length > 0 && targetUserInfo[0].role === 'employee') {
           await connection.rollback();
-          throw new Error(
-            "Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren",
-          );
+          throw new Error('Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren');
         }
       }
 
@@ -503,7 +469,7 @@ class ChatService {
 
       // Erstelle neue Konversation
       const [result] = await connection.query<ResultSetHeader>(
-        "INSERT INTO conversations (tenant_id, is_group, name) VALUES (?, ?, ?)",
+        'INSERT INTO conversations (tenant_id, is_group, name) VALUES (?, ?, ?)',
         [tenantId, isGroup, name],
       );
 
@@ -511,14 +477,14 @@ class ChatService {
 
       // Füge Ersteller als Teilnehmer hinzu
       await connection.query(
-        "INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)",
+        'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
         [conversationId, userId],
       );
 
       // Füge andere Teilnehmer hinzu
       for (const participantId of participantIds) {
         await connection.query(
-          "INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)",
+          'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
           [conversationId, participantId],
         );
       }
@@ -553,10 +519,10 @@ class ChatService {
       .promise()
       .query<
         RowDataPacket[]
-      >("SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?", [conversationId, userId]);
+      >('SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, userId]);
 
     if (participant.length === 0) {
-      throw new Error("Nicht autorisiert");
+      throw new Error('Nicht autorisiert');
     }
 
     // Hole Konversationsdetails
@@ -633,10 +599,10 @@ class ChatService {
       .promise()
       .query<
         RowDataPacket[]
-      >("SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?", [conversationId, senderId]);
+      >('SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, senderId]);
 
     if (participant.length === 0) {
-      throw new Error("Nicht autorisiert");
+      throw new Error('Nicht autorisiert');
     }
 
     // Hole Sender-Rolle und prüfe Permissions
@@ -647,13 +613,13 @@ class ChatService {
       >(`SELECT role FROM users WHERE id = ? AND tenant_id = ?`, [senderId, tenantId]);
 
     if (senderInfo.length === 0) {
-      throw new Error("Sender not found");
+      throw new Error('Sender not found');
     }
 
     const senderRole = senderInfo[0].role as string;
 
     // Für Employees: Prüfe ob sie überhaupt in dieser Konversation schreiben dürfen
-    if (senderRole === "employee") {
+    if (senderRole === 'employee') {
       // Prüfe ob bereits Nachrichten von einem Admin in dieser Konversation existieren
       const [adminMessages] = await db.promise().query<RowDataPacket[]>(
         `SELECT COUNT(*) as count
@@ -666,9 +632,7 @@ class ChatService {
       );
 
       if (adminMessages[0].count === 0) {
-        throw new Error(
-          "Mitarbeiter können nur antworten, wenn ein Admin bereits geschrieben hat",
-        );
+        throw new Error('Mitarbeiter können nur antworten, wenn ein Admin bereits geschrieben hat');
       }
     }
 
@@ -690,10 +654,9 @@ class ChatService {
     // Update conversation updated_at timestamp
     await db
       .promise()
-      .query(
-        "UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [conversationId],
-      );
+      .query('UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
+        conversationId,
+      ]);
 
     // Hole die erstellte Nachricht mit Benutzerdetails
     const [message] = await db.promise().query<Message[]>(
@@ -730,7 +693,7 @@ class ChatService {
     const [result] = await db
       .promise()
       .query<ResultSetHeader>(
-        "UPDATE messages SET deleted_at = NOW() WHERE id = ? AND sender_id = ?",
+        'UPDATE messages SET deleted_at = NOW() WHERE id = ? AND sender_id = ?',
         [messageId, userId],
       );
 
@@ -765,7 +728,7 @@ class ChatService {
 
       return result[0].count;
     } catch (error: unknown) {
-      console.error("Error in getUnreadCount:", error);
+      console.error('Error in getUnreadCount:', error);
       return 0;
     }
   }
@@ -775,10 +738,7 @@ class ChatService {
    * @param conversationId
    * @param userId
    */
-  async markConversationAsRead(
-    conversationId: number,
-    userId: number,
-  ): Promise<void> {
+  async markConversationAsRead(conversationId: number, userId: number): Promise<void> {
     try {
       // First, get all unread messages in this conversation for this user
       const [messages] = await db.promise().query<RowDataPacket[]>(
@@ -801,7 +761,7 @@ class ChatService {
         );
       }
     } catch (error: unknown) {
-      console.error("Error marking conversation as read:", error);
+      console.error('Error marking conversation as read:', error);
       throw error;
     }
   }
@@ -827,10 +787,7 @@ class ChatService {
    * @param conversationId
    * @param userId
    */
-  async deleteConversation(
-    conversationId: number,
-    userId: number,
-  ): Promise<boolean> {
+  async deleteConversation(conversationId: number, userId: number): Promise<boolean> {
     const connection = await db.promise().getConnection();
 
     try {
@@ -851,7 +808,7 @@ class ChatService {
       );
 
       if (conversation.length === 0) {
-        throw new Error("Conversation not found or access denied");
+        throw new Error('Conversation not found or access denied');
       }
 
       const isGroup = conversation[0].is_group as boolean;
@@ -862,30 +819,24 @@ class ChatService {
 
         // Delete message status entries
         await connection.query(
-          "DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE conversation_id = ?)",
+          'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE conversation_id = ?)',
           [conversationId],
         );
 
         // Delete messages
-        await connection.query(
-          "DELETE FROM messages WHERE conversation_id = ?",
-          [conversationId],
-        );
+        await connection.query('DELETE FROM messages WHERE conversation_id = ?', [conversationId]);
 
         // Delete participants
-        await connection.query(
-          "DELETE FROM conversation_participants WHERE conversation_id = ?",
-          [conversationId],
-        );
-
-        // Delete conversation
-        await connection.query("DELETE FROM conversations WHERE id = ?", [
+        await connection.query('DELETE FROM conversation_participants WHERE conversation_id = ?', [
           conversationId,
         ]);
+
+        // Delete conversation
+        await connection.query('DELETE FROM conversations WHERE id = ?', [conversationId]);
       } else {
         // For groups with more than 2 participants, just remove the user
         await connection.query(
-          "DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?",
+          'DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
           [conversationId, userId],
         );
 
@@ -954,32 +905,30 @@ class ChatService {
       .promise()
       .execute<
         RowDataPacket[]
-      >("SELECT id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?", [conversationId, userId]);
+      >('SELECT id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, userId]);
 
     if (existing.length > 0) {
-      throw new Error("User is already a participant");
+      throw new Error('User is already a participant');
     }
 
     // Add participant
     await db
       .promise()
       .execute(
-        "INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW())",
+        'INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW())',
         [conversationId, userId],
       );
 
     // Add system message about new participant
     const [userInfo] = await db
       .promise()
-      .execute<
-        RowDataPacket[]
-      >("SELECT username FROM users WHERE id = ?", [userId]);
+      .execute<RowDataPacket[]>('SELECT username FROM users WHERE id = ?', [userId]);
 
     if (userInfo.length > 0) {
       await db
         .promise()
         .execute(
-          "INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())",
+          'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
           [
             conversationId,
             addedBy,
@@ -1008,32 +957,30 @@ class ChatService {
       .promise()
       .execute<
         RowDataPacket[]
-      >("SELECT id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?", [conversationId, userId]);
+      >('SELECT id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, userId]);
 
     if (existing.length === 0) {
-      throw new Error("User is not a participant");
+      throw new Error('User is not a participant');
     }
 
     // Remove participant
     await db
       .promise()
-      .execute(
-        "DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?",
-        [conversationId, userId],
-      );
+      .execute('DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [
+        conversationId,
+        userId,
+      ]);
 
     // Add system message about removed participant
     const [userInfo] = await db
       .promise()
-      .execute<
-        RowDataPacket[]
-      >("SELECT username FROM users WHERE id = ?", [userId]);
+      .execute<RowDataPacket[]>('SELECT username FROM users WHERE id = ?', [userId]);
 
     if (userInfo.length > 0) {
       await db
         .promise()
         .execute(
-          "INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())",
+          'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
           [
             conversationId,
             removedBy,
@@ -1060,16 +1007,13 @@ class ChatService {
     // Update name
     await db
       .promise()
-      .execute("UPDATE conversations SET name = ? WHERE id = ?", [
-        name,
-        conversationId,
-      ]);
+      .execute('UPDATE conversations SET name = ? WHERE id = ?', [name, conversationId]);
 
     // Add system message about name change
     await db
       .promise()
       .execute(
-        "INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())",
+        'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
         [conversationId, updatedBy, `Gruppenname geändert zu "${name}"`],
       );
   }

@@ -2,22 +2,22 @@
  * API Tests for Shift Planning Endpoints
  * Tests shift templates, planning, assignments, and multi-tenant isolation
  */
+import { Pool } from 'mysql2/promise';
+import request from 'supertest';
 
-import request from "supertest";
-import { Pool } from "mysql2/promise";
-import app from "../../app";
+import { asTestRows } from '../../__tests__/mocks/db-types';
+import app from '../../app';
 import {
-  createTestDatabase,
   cleanupTestData,
-  createTestTenant,
-  createTestUser,
+  createTestDatabase,
   createTestDepartment,
   createTestTeam,
+  createTestTenant,
+  createTestUser,
   getAuthToken,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+} from '../mocks/database';
 
-describe("Shift Planning API Endpoints", () => {
+describe('Shift Planning API Endpoints', () => {
   let testDb: Pool;
   let tenant1Id: number;
   let tenant2Id: number;
@@ -36,104 +36,79 @@ describe("Shift Planning API Endpoints", () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = "test-secret-key-for-shift-tests";
+    process.env.JWT_SECRET = 'test-secret-key-for-shift-tests';
 
     // Create test tenants
-    tenant1Id = await createTestTenant(
-      testDb,
-      "shifttest1",
-      "Shift Test Company 1",
-    );
-    tenant2Id = await createTestTenant(
-      testDb,
-      "shifttest2",
-      "Shift Test Company 2",
-    );
+    tenant1Id = await createTestTenant(testDb, 'shifttest1', 'Shift Test Company 1');
+    tenant2Id = await createTestTenant(testDb, 'shifttest2', 'Shift Test Company 2');
 
     // Create departments and teams
-    dept1Id = await createTestDepartment(testDb, tenant1Id, "Production");
-    dept2Id = await createTestDepartment(testDb, tenant1Id, "Logistics");
-    team1Id = await createTestTeam(
-      testDb,
-      tenant1Id,
-      dept1Id,
-      "Production Line A",
-    );
+    dept1Id = await createTestDepartment(testDb, tenant1Id, 'Production');
+    dept2Id = await createTestDepartment(testDb, tenant1Id, 'Logistics');
+    team1Id = await createTestTeam(testDb, tenant1Id, dept1Id, 'Production Line A');
 
     // Create test users
     adminUser1 = await createTestUser(testDb, {
-      username: "shiftadmin1",
-      email: "admin1@shifttest1.de",
-      password: "AdminPass123!",
-      role: "admin",
+      username: 'shiftadmin1',
+      email: 'admin1@shifttest1.de',
+      password: 'AdminPass123!',
+      role: 'admin',
       tenant_id: tenant1Id,
-      first_name: "Admin",
-      last_name: "One",
+      first_name: 'Admin',
+      last_name: 'One',
     });
 
     const adminUser2 = await createTestUser(testDb, {
-      username: "shiftadmin2",
-      email: "admin2@shifttest2.de",
-      password: "AdminPass123!",
-      role: "admin",
+      username: 'shiftadmin2',
+      email: 'admin2@shifttest2.de',
+      password: 'AdminPass123!',
+      role: 'admin',
       tenant_id: tenant2Id,
-      first_name: "Admin",
-      last_name: "Two",
+      first_name: 'Admin',
+      last_name: 'Two',
     });
 
     employeeUser1 = await createTestUser(testDb, {
-      username: "shiftemployee1",
-      email: "employee1@shifttest1.de",
-      password: "EmpPass123!",
-      role: "employee",
+      username: 'shiftemployee1',
+      email: 'employee1@shifttest1.de',
+      password: 'EmpPass123!',
+      role: 'employee',
       tenant_id: tenant1Id,
       // department_id: dept1Id,  // Removed to avoid FK issues
       // team_id: team1Id,        // Removed to avoid FK issues
-      first_name: "Employee",
-      last_name: "One",
+      first_name: 'Employee',
+      last_name: 'One',
     });
 
     employeeUser2 = await createTestUser(testDb, {
-      username: "shiftemployee2",
-      email: "employee2@shifttest1.de",
-      password: "EmpPass123!",
-      role: "employee",
+      username: 'shiftemployee2',
+      email: 'employee2@shifttest1.de',
+      password: 'EmpPass123!',
+      role: 'employee',
       tenant_id: tenant1Id,
       // department_id: dept1Id,  // Removed to avoid FK issues
       // team_id: team1Id,        // Removed to avoid FK issues
-      first_name: "Employee",
-      last_name: "Two",
+      first_name: 'Employee',
+      last_name: 'Two',
     });
 
     employeeUser3 = await createTestUser(testDb, {
-      username: "shiftemployee3",
-      email: "employee3@shifttest1.de",
-      password: "EmpPass123!",
-      role: "employee",
+      username: 'shiftemployee3',
+      email: 'employee3@shifttest1.de',
+      password: 'EmpPass123!',
+      role: 'employee',
       tenant_id: tenant1Id,
       // department_id: dept2Id,  // Removed to avoid FK issues
-      first_name: "Employee",
-      last_name: "Three",
+      first_name: 'Employee',
+      last_name: 'Three',
     });
 
     // Get auth tokens - use actual usernames from created users
-    adminToken1 = await getAuthToken(app, adminUser1.username, "AdminPass123!");
-    adminToken2 = await getAuthToken(app, adminUser2.username, "AdminPass123!");
-    employeeToken1 = await getAuthToken(
-      app,
-      employeeUser1.username,
-      "EmpPass123!",
-    );
-    employeeToken2 = await getAuthToken(
-      app,
-      employeeUser2.username,
-      "EmpPass123!",
-    );
-    employeeToken3 = await getAuthToken(
-      app,
-      employeeUser3.username,
-      "EmpPass123!",
-    );
+    adminToken1 = await getAuthToken(app, adminUser1.username, 'AdminPass123!');
+    adminToken2 = await getAuthToken(app, adminUser2.username, 'AdminPass123!');
+    employeeToken1 = await getAuthToken(app, employeeUser1.username, 'EmpPass123!');
+    employeeToken2 = await getAuthToken(app, employeeUser2.username, 'EmpPass123!');
+    employeeToken3 = await getAuthToken(app, employeeUser3.username, 'EmpPass123!');
   });
 
   afterAll(async () => {
@@ -143,43 +118,42 @@ describe("Shift Planning API Endpoints", () => {
 
   beforeEach(async () => {
     // Clear shift tables before each test
-    await testDb.execute("DELETE FROM shift_assignments WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM shift_swap_requests WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM shift_plans WHERE tenant_id > 1");
-    await testDb.execute("DELETE FROM shift_templates WHERE tenant_id > 1");
+    await testDb.execute('DELETE FROM shift_assignments WHERE tenant_id > 1');
+    await testDb.execute('DELETE FROM shift_swap_requests WHERE tenant_id > 1');
+    await testDb.execute('DELETE FROM shift_plans WHERE tenant_id > 1');
+    await testDb.execute('DELETE FROM shift_templates WHERE tenant_id > 1');
   });
 
-  describe("POST /api/shifts/templates", () => {
+  describe('POST /api/shifts/templates', () => {
     const validTemplateData = {
-      name: "Frühschicht",
-      short_name: "F",
-      start_time: "06:00",
-      end_time: "14:00",
+      name: 'Frühschicht',
+      short_name: 'F',
+      start_time: '06:00',
+      end_time: '14:00',
       break_duration: 30,
-      color: "#2196F3",
+      color: '#2196F3',
       department_id: null,
-      description: "Reguläre Frühschicht",
+      description: 'Reguläre Frühschicht',
       is_active: true,
     };
 
-    it("should create shift template for admin", async () => {
+    it('should create shift template for admin', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(validTemplateData);
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("erfolgreich erstellt"),
+        message: expect.stringContaining('erfolgreich erstellt'),
       });
       expect(response.body.data.templateId).toBeDefined();
 
       // Verify template was created
-      const [rows] = await testDb.execute(
-        "SELECT * FROM shift_templates WHERE id = ?",
-        [response.body.data.templateId],
-      );
+      const [rows] = await testDb.execute('SELECT * FROM shift_templates WHERE id = ?', [
+        response.body.data.templateId,
+      ]);
       const templates = asTestRows<unknown>(rows);
       expect(templates[0]).toMatchObject({
         name: validTemplateData.name,
@@ -191,57 +165,57 @@ describe("Shift Planning API Endpoints", () => {
       });
     });
 
-    it("should create department-specific template", async () => {
+    it('should create department-specific template', async () => {
       const deptTemplate = {
         ...validTemplateData,
-        name: "Produktion Spätschicht",
-        short_name: "PS",
+        name: 'Produktion Spätschicht',
+        short_name: 'PS',
         department_id: dept1Id,
-        start_time: "14:00",
-        end_time: "22:00",
+        start_time: '14:00',
+        end_time: '22:00',
       };
 
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(deptTemplate);
 
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute(
-        "SELECT department_id FROM shift_templates WHERE id = ?",
+        'SELECT department_id FROM shift_templates WHERE id = ?',
         [response.body.data.templateId],
       );
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].department_id).toBe(dept1Id);
     });
 
-    it("should validate time format", async () => {
+    it('should validate time format', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validTemplateData,
-          start_time: "25:00", // Invalid time
-          end_time: "14:60", // Invalid minutes
+          start_time: '25:00', // Invalid time
+          end_time: '14:60', // Invalid minutes
         });
 
       expect(response.status).toBe(400);
       expect(response.body.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ path: "start_time" }),
-          expect.objectContaining({ path: "end_time" }),
+          expect.objectContaining({ path: 'start_time' }),
+          expect.objectContaining({ path: 'end_time' }),
         ]),
       );
     });
 
-    it("should validate required fields", async () => {
+    it('should validate required fields', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
-          name: "",
-          short_name: "toolong", // Max 3 chars
+          name: '',
+          short_name: 'toolong', // Max 3 chars
           break_duration: -30, // Negative duration
         });
 
@@ -249,79 +223,78 @@ describe("Shift Planning API Endpoints", () => {
       expect(response.body.errors).toBeDefined();
     });
 
-    it("should prevent duplicate template names", async () => {
+    it('should prevent duplicate template names', async () => {
       // Create first template
       await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(validTemplateData);
 
       // Try to create duplicate
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(validTemplateData);
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("bereits vorhanden");
+      expect(response.body.message).toContain('bereits vorhanden');
     });
 
-    it("should calculate shift duration", async () => {
+    it('should calculate shift duration', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validTemplateData,
-          start_time: "08:00",
-          end_time: "16:30",
+          start_time: '08:00',
+          end_time: '16:30',
           break_duration: 45,
         });
 
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute(
-        "SELECT duration_minutes FROM shift_templates WHERE id = ?",
+        'SELECT duration_minutes FROM shift_templates WHERE id = ?',
         [response.body.data.templateId],
       );
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].duration_minutes).toBe(510); // 8.5 hours * 60
     });
 
-    it("should handle overnight shifts", async () => {
+    it('should handle overnight shifts', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validTemplateData,
-          name: "Nachtschicht",
-          short_name: "N",
-          start_time: "22:00",
-          end_time: "06:00",
+          name: 'Nachtschicht',
+          short_name: 'N',
+          start_time: '22:00',
+          end_time: '06:00',
         });
 
       expect(response.status).toBe(201);
 
-      const [rows] = await testDb.execute(
-        "SELECT is_overnight FROM shift_templates WHERE id = ?",
-        [response.body.data.templateId],
-      );
+      const [rows] = await testDb.execute('SELECT is_overnight FROM shift_templates WHERE id = ?', [
+        response.body.data.templateId,
+      ]);
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].is_overnight).toBe(1);
     });
 
-    it("should deny template creation for non-admin", async () => {
+    it('should deny template creation for non-admin', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send(validTemplateData);
 
       expect(response.status).toBe(403);
     });
 
-    it("should set tenant_id from token", async () => {
+    it('should set tenant_id from token', async () => {
       const response = await request(app)
-        .post("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validTemplateData,
           tenant_id: 999, // Should be ignored
@@ -329,16 +302,15 @@ describe("Shift Planning API Endpoints", () => {
 
       expect(response.status).toBe(201);
 
-      const [rows] = await testDb.execute(
-        "SELECT tenant_id FROM shift_templates WHERE id = ?",
-        [response.body.data.templateId],
-      );
+      const [rows] = await testDb.execute('SELECT tenant_id FROM shift_templates WHERE id = ?', [
+        response.body.data.templateId,
+      ]);
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].tenant_id).toBe(tenant1Id);
     });
   });
 
-  describe("GET /api/shifts/templates", () => {
+  describe('GET /api/shifts/templates', () => {
     let template1Id: number;
     let template2Id: number;
     let template3Id: number;
@@ -349,7 +321,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, department_id, tenant_id, is_active) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        ["Frühschicht", "F", "06:00", "14:00", 30, null, tenant1Id, 1],
+        ['Frühschicht', 'F', '06:00', '14:00', 30, null, tenant1Id, 1],
       );
       const result1 = asTestRows<unknown>(rows);
       template1Id = (result1 as any).insertId;
@@ -358,7 +330,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, department_id, tenant_id, is_active) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        ["Spätschicht", "S", "14:00", "22:00", 30, null, tenant1Id, 1],
+        ['Spätschicht', 'S', '14:00', '22:00', 30, null, tenant1Id, 1],
       );
       const result2 = asTestRows<unknown>(rowsTemplate2);
       template2Id = (result2 as any).insertId;
@@ -367,25 +339,25 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, department_id, tenant_id, is_active) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        ["Produktion Nacht", "PN", "22:00", "06:00", 45, dept1Id, tenant1Id, 0],
+        ['Produktion Nacht', 'PN', '22:00', '06:00', 45, dept1Id, tenant1Id, 0],
       );
       const result3 = asTestRows<unknown>(rowsTemplate3);
       template3Id = (result3 as any).insertId;
     });
 
-    it("should list all templates for admin", async () => {
+    it('should list all templates for admin', async () => {
       const response = await request(app)
-        .get("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.templates.length).toBe(3);
     });
 
-    it("should filter by department", async () => {
+    it('should filter by department', async () => {
       const response = await request(app)
         .get(`/api/shifts/templates?department_id=${dept1Id}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const templates = response.body.data.templates;
@@ -393,10 +365,10 @@ describe("Shift Planning API Endpoints", () => {
       expect(templates.some((t) => t.department_id === null)).toBe(true); // Global templates included
     });
 
-    it("should filter by active status", async () => {
+    it('should filter by active status', async () => {
       const response = await request(app)
-        .get("/api/shifts/templates?is_active=true")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/templates?is_active=true')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const templates = response.body.data.templates;
@@ -404,26 +376,26 @@ describe("Shift Planning API Endpoints", () => {
       expect(templates.every((t) => t.is_active)).toBe(true);
     });
 
-    it("should allow employees to view templates", async () => {
+    it('should allow employees to view templates', async () => {
       const response = await request(app)
-        .get("/api/shifts/templates")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/templates')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
     });
 
-    it("should enforce tenant isolation", async () => {
+    it('should enforce tenant isolation', async () => {
       // Create template in tenant2
       await testDb.execute(
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Tenant2 Template", "T2", "08:00", "16:00", 30, tenant2Id],
+        ['Tenant2 Template', 'T2', '08:00', '16:00', 30, tenant2Id],
       );
 
       const response = await request(app)
-        .get("/api/shifts/templates")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/templates')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const templates = response.body.data.templates;
@@ -431,7 +403,7 @@ describe("Shift Planning API Endpoints", () => {
     });
   });
 
-  describe("PUT /api/shifts/templates/:id", () => {
+  describe('PUT /api/shifts/templates/:id', () => {
     let templateId: number;
 
     beforeEach(async () => {
@@ -439,51 +411,44 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Original", "O", "08:00", "16:00", 30, tenant1Id],
+        ['Original', 'O', '08:00', '16:00', 30, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       templateId = (result as any).insertId;
     });
 
-    it("should update template for admin", async () => {
+    it('should update template for admin', async () => {
       const updateData = {
-        name: "Updated Template",
-        short_name: "U",
+        name: 'Updated Template',
+        short_name: 'U',
         break_duration: 45,
-        color: "#FF5722",
+        color: '#FF5722',
       };
 
       const response = await request(app)
         .put(`/api/shifts/templates/${templateId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(updateData);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("aktualisiert");
+      expect(response.body.message).toContain('aktualisiert');
 
       // Verify update
       const [rows] = await testDb.execute(
-        "SELECT name, short_name, break_duration, color FROM shift_templates WHERE id = ?",
+        'SELECT name, short_name, break_duration, color FROM shift_templates WHERE id = ?',
         [templateId],
       );
       const templates = asTestRows<unknown>(rows);
       expect(templates[0]).toMatchObject(updateData);
     });
 
-    it("should prevent updating templates in use", async () => {
+    it('should prevent updating templates in use', async () => {
       // Create shift plan using template
       const [rows] = await testDb.execute(
         `INSERT INTO shift_plans 
         (department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          dept1Id,
-          new Date(),
-          new Date(),
-          "published",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        [dept1Id, new Date(), new Date(), 'published', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rows);
       const planId = (planResult as any).insertId;
@@ -498,42 +463,42 @@ describe("Shift Planning API Endpoints", () => {
 
       const response = await request(app)
         .put(`/api/shifts/templates/${templateId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
-        .send({ start_time: "07:00" }); // Try to change time
+        .set('Authorization', `Bearer ${adminToken1}`)
+        .send({ start_time: '07:00' }); // Try to change time
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("verwendet wird");
+      expect(response.body.message).toContain('verwendet wird');
     });
 
-    it("should allow deactivating templates in use", async () => {
+    it('should allow deactivating templates in use', async () => {
       const response = await request(app)
         .put(`/api/shifts/templates/${templateId}`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({ is_active: false });
 
       expect(response.status).toBe(200);
     });
 
-    it("should deny update for non-admin", async () => {
+    it('should deny update for non-admin', async () => {
       const response = await request(app)
         .put(`/api/shifts/templates/${templateId}`)
-        .set("Authorization", `Bearer ${employeeToken1}`)
-        .send({ name: "Hacked" });
+        .set('Authorization', `Bearer ${employeeToken1}`)
+        .send({ name: 'Hacked' });
 
       expect(response.status).toBe(403);
     });
 
-    it("should enforce tenant isolation on update", async () => {
+    it('should enforce tenant isolation on update', async () => {
       const response = await request(app)
         .put(`/api/shifts/templates/${templateId}`)
-        .set("Authorization", `Bearer ${adminToken2}`)
-        .send({ name: "Cross-tenant update" });
+        .set('Authorization', `Bearer ${adminToken2}`)
+        .send({ name: 'Cross-tenant update' });
 
       expect(response.status).toBe(404);
     });
   });
 
-  describe("POST /api/shifts/plans", () => {
+  describe('POST /api/shifts/plans', () => {
     let templateId: number;
 
     beforeEach(async () => {
@@ -542,7 +507,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Frühschicht", "F", "06:00", "14:00", 30, tenant1Id],
+        ['Frühschicht', 'F', '06:00', '14:00', 30, tenant1Id],
       );
       const result = asTestRows<unknown>(rows);
       templateId = (result as any).insertId;
@@ -550,57 +515,52 @@ describe("Shift Planning API Endpoints", () => {
 
     const validPlanData = {
       department_id: null,
-      start_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      name: "KW 28 Schichtplan",
-      description: "Schichtplan für Kalenderwoche 28",
+      start_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      name: 'KW 28 Schichtplan',
+      description: 'Schichtplan für Kalenderwoche 28',
       required_staff: {
         F: 3, // 3 employees needed for Frühschicht
         S: 2, // 2 employees needed for Spätschicht
       },
     };
 
-    it("should create shift plan for admin", async () => {
+    it('should create shift plan for admin', async () => {
       const planData = {
         ...validPlanData,
         department_id: dept1Id,
       };
 
       const response = await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(planData);
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("erfolgreich erstellt"),
+        message: expect.stringContaining('erfolgreich erstellt'),
       });
       expect(response.body.data.planId).toBeDefined();
 
       // Verify plan was created
-      const [rows] = await testDb.execute(
-        "SELECT * FROM shift_plans WHERE id = ?",
-        [response.body.data.planId],
-      );
+      const [rows] = await testDb.execute('SELECT * FROM shift_plans WHERE id = ?', [
+        response.body.data.planId,
+      ]);
       const plans = asTestRows<unknown>(rows);
       expect(plans[0]).toMatchObject({
         name: planData.name,
         department_id: dept1Id,
-        status: "draft",
+        status: 'draft',
         tenant_id: tenant1Id,
         created_by: adminUser1.id,
       });
     });
 
-    it("should validate date range", async () => {
+    it('should validate date range', async () => {
       const response = await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validPlanData,
           end_date: validPlanData.start_date,
@@ -608,14 +568,14 @@ describe("Shift Planning API Endpoints", () => {
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("Enddatum");
+      expect(response.body.message).toContain('Enddatum');
     });
 
-    it("should prevent overlapping plans for same department", async () => {
+    it('should prevent overlapping plans for same department', async () => {
       // Create first plan
       await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validPlanData,
           department_id: dept1Id,
@@ -623,23 +583,23 @@ describe("Shift Planning API Endpoints", () => {
 
       // Try to create overlapping plan
       const response = await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validPlanData,
           department_id: dept1Id,
-          name: "Overlapping Plan",
+          name: 'Overlapping Plan',
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("überschneidet");
+      expect(response.body.message).toContain('überschneidet');
     });
 
-    it("should allow plans for different departments in same period", async () => {
+    it('should allow plans for different departments in same period', async () => {
       // Create plan for dept1
       await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validPlanData,
           department_id: dept1Id,
@@ -647,32 +607,24 @@ describe("Shift Planning API Endpoints", () => {
 
       // Create plan for dept2
       const response = await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validPlanData,
           department_id: dept2Id,
-          name: "Logistics Plan",
+          name: 'Logistics Plan',
         });
 
       expect(response.status).toBe(201);
     });
 
-    it("should copy from template plan", async () => {
+    it('should copy from template plan', async () => {
       // Create template plan
       const [rows] = await testDb.execute(
         `INSERT INTO shift_plans 
         (department_id, start_date, end_date, status, is_template, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          dept1Id,
-          "2025-01-01",
-          "2025-01-07",
-          "template",
-          1,
-          adminUser1.id,
-          tenant1Id,
-        ],
+        [dept1Id, '2025-01-01', '2025-01-07', 'template', 1, adminUser1.id, tenant1Id],
       );
       const templatePlanResult = asTestRows<unknown>(rows);
       const templatePlanId = (templatePlanResult as any).insertId;
@@ -682,12 +634,12 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, tenant_id) 
         VALUES (?, ?, ?, ?, ?)`,
-        [templatePlanId, templateId, employeeUser1.id, "2025-01-01", tenant1Id],
+        [templatePlanId, templateId, employeeUser1.id, '2025-01-01', tenant1Id],
       );
 
       const response = await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           ...validPlanData,
           department_id: dept1Id,
@@ -698,17 +650,17 @@ describe("Shift Planning API Endpoints", () => {
       expect(response.body.data.copiedAssignments).toBeGreaterThan(0);
     });
 
-    it("should deny plan creation for non-admin", async () => {
+    it('should deny plan creation for non-admin', async () => {
       const response = await request(app)
-        .post("/api/shifts/plans")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/plans')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send(validPlanData);
 
       expect(response.status).toBe(403);
     });
   });
 
-  describe("GET /api/shifts/plans", () => {
+  describe('GET /api/shifts/plans', () => {
     let plan1Id: number;
     let plan2Id: number;
 
@@ -721,15 +673,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Production Week Plan",
-          dept1Id,
-          nextWeek,
-          weekAfter,
-          "draft",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Production Week Plan', dept1Id, nextWeek, weekAfter, 'draft', adminUser1.id, tenant1Id],
       );
       const result1 = asTestRows<unknown>(rows);
       plan1Id = (result1 as any).insertId;
@@ -739,11 +683,11 @@ describe("Shift Planning API Endpoints", () => {
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          "Logistics Week Plan",
+          'Logistics Week Plan',
           dept2Id,
           nextWeek,
           weekAfter,
-          "published",
+          'published',
           adminUser1.id,
           tenant1Id,
         ],
@@ -752,19 +696,19 @@ describe("Shift Planning API Endpoints", () => {
       plan2Id = (result2 as any).insertId;
     });
 
-    it("should list plans for admin", async () => {
+    it('should list plans for admin', async () => {
       const response = await request(app)
-        .get("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.plans.length).toBe(2);
     });
 
-    it("should filter by department", async () => {
+    it('should filter by department', async () => {
       const response = await request(app)
         .get(`/api/shifts/plans?department_id=${dept1Id}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const plans = response.body.data.plans;
@@ -772,44 +716,42 @@ describe("Shift Planning API Endpoints", () => {
       expect(plans[0].department_id).toBe(dept1Id);
     });
 
-    it("should filter by status", async () => {
+    it('should filter by status', async () => {
       const response = await request(app)
-        .get("/api/shifts/plans?status=published")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/plans?status=published')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const plans = response.body.data.plans;
-      expect(plans.every((p) => p.status === "published")).toBe(true);
+      expect(plans.every((p) => p.status === 'published')).toBe(true);
     });
 
-    it("should filter by date range", async () => {
+    it('should filter by date range', async () => {
       const startDate = new Date().toISOString();
-      const endDate = new Date(
-        Date.now() + 30 * 24 * 60 * 60 * 1000,
-      ).toISOString();
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const response = await request(app)
         .get(`/api/shifts/plans?start_date=${startDate}&end_date=${endDate}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.plans.length).toBe(2);
     });
 
-    it("should show only published plans to employees", async () => {
+    it('should show only published plans to employees', async () => {
       const response = await request(app)
-        .get("/api/shifts/plans")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/plans')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       const plans = response.body.data.plans;
-      expect(plans.every((p) => p.status === "published")).toBe(true);
+      expect(plans.every((p) => p.status === 'published')).toBe(true);
     });
 
-    it("should enforce department visibility for employees", async () => {
+    it('should enforce department visibility for employees', async () => {
       const response = await request(app)
-        .get("/api/shifts/plans")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/plans')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       const plans = response.body.data.plans;
@@ -817,26 +759,18 @@ describe("Shift Planning API Endpoints", () => {
       expect(plans.length).toBe(0); // No published plans for dept1
     });
 
-    it("should enforce tenant isolation", async () => {
+    it('should enforce tenant isolation', async () => {
       // Create plan in tenant2
       await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Tenant2 Plan",
-          null,
-          new Date(),
-          new Date(),
-          "published",
-          1,
-          tenant2Id,
-        ],
+        ['Tenant2 Plan', null, new Date(), new Date(), 'published', 1, tenant2Id],
       );
 
       const response = await request(app)
-        .get("/api/shifts/plans")
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/plans')
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       const plans = response.body.data.plans;
@@ -844,7 +778,7 @@ describe("Shift Planning API Endpoints", () => {
     });
   });
 
-  describe("POST /api/shifts/assignments", () => {
+  describe('POST /api/shifts/assignments', () => {
     let planId: number;
     let templateId: number;
 
@@ -854,7 +788,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Frühschicht", "F", "06:00", "14:00", 30, tenant1Id],
+        ['Frühschicht', 'F', '06:00', '14:00', 30, tenant1Id],
       );
       const templateResult = asTestRows<unknown>(rows);
       templateId = (templateResult as any).insertId;
@@ -865,133 +799,112 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Test Plan",
-          dept1Id,
-          nextWeek,
-          nextWeek,
-          "draft",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Test Plan', dept1Id, nextWeek, nextWeek, 'draft', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rowsPlan);
       planId = (planResult as any).insertId;
     });
 
-    it("should assign shift to employee", async () => {
+    it('should assign shift to employee', async () => {
       const assignmentData = {
         plan_id: planId,
         template_id: templateId,
         user_id: employeeUser1.id,
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       };
 
       const response = await request(app)
-        .post("/api/shifts/assignments")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(assignmentData);
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("zugewiesen"),
+        message: expect.stringContaining('zugewiesen'),
       });
       expect(response.body.data.assignmentId).toBeDefined();
 
       // Verify assignment was created
-      const [rows] = await testDb.execute(
-        "SELECT * FROM shift_assignments WHERE id = ?",
-        [response.body.data.assignmentId],
-      );
+      const [rows] = await testDb.execute('SELECT * FROM shift_assignments WHERE id = ?', [
+        response.body.data.assignmentId,
+      ]);
       const assignments = asTestRows<unknown>(rows);
       expect(assignments[0]).toMatchObject({
         plan_id: planId,
         template_id: templateId,
         user_id: employeeUser1.id,
-        status: "assigned",
+        status: 'assigned',
       });
     });
 
-    it("should bulk assign shifts", async () => {
+    it('should bulk assign shifts', async () => {
       const bulkData = {
         plan_id: planId,
         assignments: [
           {
             template_id: templateId,
             user_id: employeeUser1.id,
-            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0],
+            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           },
           {
             template_id: templateId,
             user_id: employeeUser2.id,
-            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0],
+            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           },
         ],
       };
 
       const response = await request(app)
-        .post("/api/shifts/assignments/bulk")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments/bulk')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send(bulkData);
 
       expect(response.status).toBe(201);
       expect(response.body.data.created).toBe(2);
     });
 
-    it("should prevent double booking", async () => {
+    it('should prevent double booking', async () => {
       // Create first assignment
       await request(app)
-        .post("/api/shifts/assignments")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           plan_id: planId,
           template_id: templateId,
           user_id: employeeUser1.id,
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
 
       // Try to assign same user to overlapping shift
       const response = await request(app)
-        .post("/api/shifts/assignments")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           plan_id: planId,
           template_id: templateId,
           user_id: employeeUser1.id,
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("bereits zugewiesen");
+      expect(response.body.message).toContain('bereits zugewiesen');
     });
 
-    it("should check overtime limits", async () => {
+    it('should check overtime limits', async () => {
       // Create multiple assignments to exceed daily/weekly limits
       const assignments = [];
       for (let i = 0; i < 7; i++) {
         assignments.push({
           template_id: templateId,
           user_id: employeeUser1.id,
-          date: new Date(Date.now() + (7 + i) * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
+          date: new Date(Date.now() + (7 + i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
       }
 
       const response = await request(app)
-        .post("/api/shifts/assignments/bulk")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments/bulk')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           plan_id: planId,
           assignments,
@@ -1000,71 +913,60 @@ describe("Shift Planning API Endpoints", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.warnings).toBeDefined();
-      expect(response.body.warnings.some((w) => w.type === "overtime")).toBe(
-        true,
-      );
+      expect(response.body.warnings.some((w) => w.type === 'overtime')).toBe(true);
     });
 
-    it("should allow forced overtime with admin permission", async () => {
+    it('should allow forced overtime with admin permission', async () => {
       const response = await request(app)
-        .post("/api/shifts/assignments")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           plan_id: planId,
           template_id: templateId,
           user_id: employeeUser1.id,
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           force: true,
-          overtime_reason: "Urgent production deadline",
+          overtime_reason: 'Urgent production deadline',
         });
 
       expect(response.status).toBe(201);
     });
 
-    it("should validate employee department", async () => {
+    it('should validate employee department', async () => {
       // Try to assign employee from different department
       const response = await request(app)
-        .post("/api/shifts/assignments")
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .post('/api/shifts/assignments')
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
           plan_id: planId, // Plan is for dept1
           template_id: templateId,
           user_id: employeeUser3.id, // Employee is in dept2
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("anderen Abteilung");
+      expect(response.body.message).toContain('anderen Abteilung');
     });
 
-    it("should deny assignment to published plans for non-admin", async () => {
+    it('should deny assignment to published plans for non-admin', async () => {
       // Update plan status to published
-      await testDb.execute(
-        "UPDATE shift_plans SET status = 'published' WHERE id = ?",
-        [planId],
-      );
+      await testDb.execute("UPDATE shift_plans SET status = 'published' WHERE id = ?", [planId]);
 
       const response = await request(app)
-        .post("/api/shifts/assignments")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/assignments')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send({
           plan_id: planId,
           template_id: templateId,
           user_id: employeeUser1.id,
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0],
+          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         });
 
       expect(response.status).toBe(403);
     });
   });
 
-  describe("PUT /api/shifts/plans/:id/publish", () => {
+  describe('PUT /api/shifts/plans/:id/publish', () => {
     let planId: number;
     let templateId: number;
 
@@ -1074,7 +976,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Test Template", "T", "08:00", "16:00", 30, tenant1Id],
+        ['Test Template', 'T', '08:00', '16:00', 30, tenant1Id],
       );
       const templateResult = asTestRows<unknown>(rows);
       templateId = (templateResult as any).insertId;
@@ -1084,15 +986,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Test Plan",
-          dept1Id,
-          new Date(),
-          new Date(),
-          "draft",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Test Plan', dept1Id, new Date(), new Date(), 'draft', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rowsPlan);
       planId = (planResult as any).insertId;
@@ -1106,27 +1000,24 @@ describe("Shift Planning API Endpoints", () => {
       );
     });
 
-    it("should publish shift plan", async () => {
+    it('should publish shift plan', async () => {
       const response = await request(app)
         .put(`/api/shifts/plans/${planId}/publish`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("veröffentlicht");
+      expect(response.body.message).toContain('veröffentlicht');
 
       // Verify status change
-      const [rows] = await testDb.execute(
-        "SELECT status FROM shift_plans WHERE id = ?",
-        [planId],
-      );
+      const [rows] = await testDb.execute('SELECT status FROM shift_plans WHERE id = ?', [planId]);
       const plans = asTestRows<unknown>(rows);
-      expect(plans[0].status).toBe("published");
+      expect(plans[0].status).toBe('published');
     });
 
-    it("should notify affected employees", async () => {
+    it('should notify affected employees', async () => {
       const response = await request(app)
         .put(`/api/shifts/plans/${planId}/publish`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({ notify: true });
 
       expect(response.status).toBe(200);
@@ -1140,48 +1031,48 @@ describe("Shift Planning API Endpoints", () => {
       expect(notifications.length).toBeGreaterThan(0);
     });
 
-    it("should validate minimum coverage before publishing", async () => {
+    it('should validate minimum coverage before publishing', async () => {
       // Set required staff
-      await testDb.execute(
-        "UPDATE shift_plans SET required_staff = ? WHERE id = ?",
-        [JSON.stringify({ T: 3 }), planId],
-      );
+      await testDb.execute('UPDATE shift_plans SET required_staff = ? WHERE id = ?', [
+        JSON.stringify({ T: 3 }),
+        planId,
+      ]);
 
       // Only 1 assignment exists, need 3
       const response = await request(app)
         .put(`/api/shifts/plans/${planId}/publish`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("Mindestbesetzung");
+      expect(response.body.message).toContain('Mindestbesetzung');
     });
 
-    it("should allow force publish with warning", async () => {
+    it('should allow force publish with warning', async () => {
       // Set required staff
-      await testDb.execute(
-        "UPDATE shift_plans SET required_staff = ? WHERE id = ?",
-        [JSON.stringify({ T: 3 }), planId],
-      );
+      await testDb.execute('UPDATE shift_plans SET required_staff = ? WHERE id = ?', [
+        JSON.stringify({ T: 3 }),
+        planId,
+      ]);
 
       const response = await request(app)
         .put(`/api/shifts/plans/${planId}/publish`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({ force: true });
 
       expect(response.status).toBe(200);
       expect(response.body.warnings).toBeDefined();
     });
 
-    it("should deny publish for non-admin", async () => {
+    it('should deny publish for non-admin', async () => {
       const response = await request(app)
         .put(`/api/shifts/plans/${planId}/publish`)
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(403);
     });
   });
 
-  describe("POST /api/shifts/swap-requests", () => {
+  describe('POST /api/shifts/swap-requests', () => {
     let planId: number;
     let templateId: number;
     let assignment1Id: number;
@@ -1193,7 +1084,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Morning", "M", "06:00", "14:00", 30, tenant1Id],
+        ['Morning', 'M', '06:00', '14:00', 30, tenant1Id],
       );
       const templateResult = asTestRows<unknown>(rows);
       templateId = (templateResult as any).insertId;
@@ -1204,15 +1095,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Published Plan",
-          dept1Id,
-          shiftDate,
-          shiftDate,
-          "published",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Published Plan', dept1Id, shiftDate, shiftDate, 'published', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rowsPlan);
       planId = (planResult as any).insertId;
@@ -1222,14 +1105,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, status, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          planId,
-          templateId,
-          employeeUser1.id,
-          shiftDate,
-          "assigned",
-          tenant1Id,
-        ],
+        [planId, templateId, employeeUser1.id, shiftDate, 'assigned', tenant1Id],
       );
       const assign1Result = asTestRows<unknown>(rowsAssign1);
       assignment1Id = (assign1Result as any).insertId;
@@ -1238,73 +1114,65 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_assignments 
         (plan_id, template_id, user_id, date, status, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          planId,
-          templateId,
-          employeeUser2.id,
-          shiftDate,
-          "assigned",
-          tenant1Id,
-        ],
+        [planId, templateId, employeeUser2.id, shiftDate, 'assigned', tenant1Id],
       );
       const assign2Result = asTestRows<unknown>(rowsAssign2);
       assignment2Id = (assign2Result as any).insertId;
     });
 
-    it("should create swap request", async () => {
+    it('should create swap request', async () => {
       const swapData = {
         from_assignment_id: assignment1Id,
         to_user_id: employeeUser2.id,
-        reason: "Arzttermin",
+        reason: 'Arzttermin',
       };
 
       const response = await request(app)
-        .post("/api/shifts/swap-requests")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/swap-requests')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send(swapData);
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("Tauschantrag erstellt"),
+        message: expect.stringContaining('Tauschantrag erstellt'),
       });
       expect(response.body.data.requestId).toBeDefined();
 
       // Verify request was created
-      const [rowsRequest] = await testDb.execute(
-        "SELECT * FROM shift_swap_requests WHERE id = ?",
-        [response.body.data.requestId],
-      );
+      const [rowsRequest] = await testDb.execute('SELECT * FROM shift_swap_requests WHERE id = ?', [
+        response.body.data.requestId,
+      ]);
       const requests = asTestRows<unknown>(rowsRequest);
       expect(requests[0]).toMatchObject({
         from_assignment_id: assignment1Id,
         to_assignment_id: assignment2Id,
-        status: "pending",
+        status: 'pending',
         requested_by: employeeUser1.id,
       });
     });
 
-    it("should only allow swapping own shifts", async () => {
+    it('should only allow swapping own shifts', async () => {
       const response = await request(app)
-        .post("/api/shifts/swap-requests")
-        .set("Authorization", `Bearer ${employeeToken2}`)
+        .post('/api/shifts/swap-requests')
+        .set('Authorization', `Bearer ${employeeToken2}`)
         .send({
           from_assignment_id: assignment1Id, // Not employee2's shift
           to_user_id: employeeUser2.id,
-          reason: "Unauthorized",
+          reason: 'Unauthorized',
         });
 
       expect(response.status).toBe(403);
-      expect(response.body.message).toContain("nicht Ihre Schicht");
+      expect(response.body.message).toContain('nicht Ihre Schicht');
     });
 
-    it("should validate swap compatibility", async () => {
+    it('should validate swap compatibility', async () => {
       // Create different shift template
       const [rows] = await testDb.execute(
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Night", "N", "22:00", "06:00", 45, tenant1Id],
+        ['Night', 'N', '22:00', '06:00', 45, tenant1Id],
       );
       const template2Result = asTestRows<unknown>(rows);
       const template2Id = (template2Result as any).insertId;
@@ -1319,52 +1187,52 @@ describe("Shift Planning API Endpoints", () => {
           template2Id,
           employeeUser2.id,
           new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
-          "assigned",
+          'assigned',
           tenant1Id,
         ],
       );
       const assign3Result = asTestRows<unknown>(rowsAssign3);
 
       const response = await request(app)
-        .post("/api/shifts/swap-requests")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/swap-requests')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send({
           from_assignment_id: assignment1Id,
           to_assignment_id: (assign3Result as any).insertId,
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("unterschiedliche Schichttypen");
+      expect(response.body.message).toContain('unterschiedliche Schichttypen');
     });
 
-    it("should check qualifications", async () => {
+    it('should check qualifications', async () => {
       // Add qualification requirement to template
-      await testDb.execute(
-        "UPDATE shift_templates SET required_qualifications = ? WHERE id = ?",
-        [JSON.stringify(["forklift_license"]), templateId],
-      );
+      await testDb.execute('UPDATE shift_templates SET required_qualifications = ? WHERE id = ?', [
+        JSON.stringify(['forklift_license']),
+        templateId,
+      ]);
 
       const response = await request(app)
-        .post("/api/shifts/swap-requests")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/swap-requests')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send({
           from_assignment_id: assignment1Id,
           to_user_id: employeeUser2.id,
-          reason: "Need swap",
+          reason: 'Need swap',
         });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("Qualifikationen");
+      expect(response.body.message).toContain('Qualifikationen');
     });
 
-    it("should notify target employee", async () => {
+    it('should notify target employee', async () => {
       const response = await request(app)
-        .post("/api/shifts/swap-requests")
-        .set("Authorization", `Bearer ${employeeToken1}`)
+        .post('/api/shifts/swap-requests')
+        .set('Authorization', `Bearer ${employeeToken1}`)
         .send({
           from_assignment_id: assignment1Id,
           to_user_id: employeeUser2.id,
-          reason: "Family emergency",
+          reason: 'Family emergency',
         });
 
       expect(response.status).toBe(201);
@@ -1379,7 +1247,7 @@ describe("Shift Planning API Endpoints", () => {
     });
   });
 
-  describe("PUT /api/shifts/swap-requests/:id/respond", () => {
+  describe('PUT /api/shifts/swap-requests/:id/respond', () => {
     let swapRequestId: number;
 
     beforeEach(async () => {
@@ -1391,15 +1259,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Plan",
-          dept1Id,
-          shiftDate,
-          shiftDate,
-          "published",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Plan', dept1Id, shiftDate, shiftDate, 'published', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rows);
       const planId = (planResult as any).insertId;
@@ -1408,7 +1268,7 @@ describe("Shift Planning API Endpoints", () => {
         `INSERT INTO shift_templates 
         (name, short_name, start_time, end_time, break_duration, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-        ["Shift", "S", "08:00", "16:00", 30, tenant1Id],
+        ['Shift', 'S', '08:00', '16:00', 30, tenant1Id],
       );
       const templateResult = asTestRows<unknown>(rowsTemplate);
       const templateId = (templateResult as any).insertId;
@@ -1438,8 +1298,8 @@ describe("Shift Planning API Endpoints", () => {
           (assign1 as any).insertId,
           (assign2 as any).insertId,
           employeeUser1.id,
-          "pending",
-          "Test",
+          'pending',
+          'Test',
           tenant1Id,
         ],
       );
@@ -1447,88 +1307,88 @@ describe("Shift Planning API Endpoints", () => {
       swapRequestId = (requestResult as any).insertId;
     });
 
-    it("should accept swap request", async () => {
+    it('should accept swap request', async () => {
       const response = await request(app)
         .put(`/api/shifts/swap-requests/${swapRequestId}/respond`)
-        .set("Authorization", `Bearer ${employeeToken2}`)
+        .set('Authorization', `Bearer ${employeeToken2}`)
         .send({
-          action: "accept",
-          comment: "Kein Problem, ich übernehme die Schicht",
+          action: 'accept',
+          comment: 'Kein Problem, ich übernehme die Schicht',
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("akzeptiert");
+      expect(response.body.message).toContain('akzeptiert');
 
       // Verify assignments were swapped
       const [rowsSwapCheck] = await testDb.execute(
-        "SELECT status, approved_by FROM shift_swap_requests WHERE id = ?",
+        'SELECT status, approved_by FROM shift_swap_requests WHERE id = ?',
         [swapRequestId],
       );
       const requests = asTestRows<unknown>(rowsSwapCheck);
-      expect(requests[0].status).toBe("approved");
+      expect(requests[0].status).toBe('approved');
       expect(requests[0].approved_by).toBe(employeeUser2.id);
     });
 
-    it("should reject swap request", async () => {
+    it('should reject swap request', async () => {
       const response = await request(app)
         .put(`/api/shifts/swap-requests/${swapRequestId}/respond`)
-        .set("Authorization", `Bearer ${employeeToken2}`)
+        .set('Authorization', `Bearer ${employeeToken2}`)
         .send({
-          action: "reject",
-          comment: "Leider nicht möglich",
+          action: 'reject',
+          comment: 'Leider nicht möglich',
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.message).toContain("abgelehnt");
+      expect(response.body.message).toContain('abgelehnt');
 
       // Verify status
       const [rowsStatus] = await testDb.execute(
-        "SELECT status FROM shift_swap_requests WHERE id = ?",
+        'SELECT status FROM shift_swap_requests WHERE id = ?',
         [swapRequestId],
       );
       const requests = asTestRows<unknown>(rowsStatus);
-      expect(requests[0].status).toBe("rejected");
+      expect(requests[0].status).toBe('rejected');
     });
 
-    it("should only allow target employee to respond", async () => {
+    it('should only allow target employee to respond', async () => {
       const response = await request(app)
         .put(`/api/shifts/swap-requests/${swapRequestId}/respond`)
-        .set("Authorization", `Bearer ${employeeToken3}`)
-        .send({ action: "accept" });
+        .set('Authorization', `Bearer ${employeeToken3}`)
+        .send({ action: 'accept' });
 
       expect(response.status).toBe(403);
     });
 
-    it("should allow admin to force approve", async () => {
+    it('should allow admin to force approve', async () => {
       const response = await request(app)
         .put(`/api/shifts/swap-requests/${swapRequestId}/approve`)
-        .set("Authorization", `Bearer ${adminToken1}`)
+        .set('Authorization', `Bearer ${adminToken1}`)
         .send({
-          comment: "Approved by management",
+          comment: 'Approved by management',
         });
 
       expect(response.status).toBe(200);
     });
 
-    it("should prevent responding to already processed requests", async () => {
+    it('should prevent responding to already processed requests', async () => {
       // First accept
       await request(app)
         .put(`/api/shifts/swap-requests/${swapRequestId}/respond`)
-        .set("Authorization", `Bearer ${employeeToken2}`)
-        .send({ action: "accept" });
+        .set('Authorization', `Bearer ${employeeToken2}`)
+        .send({ action: 'accept' });
 
       // Try to respond again
       const response = await request(app)
         .put(`/api/shifts/swap-requests/${swapRequestId}/respond`)
-        .set("Authorization", `Bearer ${employeeToken2}`)
-        .send({ action: "reject" });
+        .set('Authorization', `Bearer ${employeeToken2}`)
+        .send({ action: 'reject' });
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain("bereits bearbeitet");
+      expect(response.body.message).toContain('bereits bearbeitet');
     });
   });
 
-  describe("GET /api/shifts/my-shifts", () => {
+  describe('GET /api/shifts/my-shifts', () => {
     beforeEach(async () => {
       // Create various shifts for employee1
       const dates = [
@@ -1542,7 +1402,7 @@ describe("Shift Planning API Endpoints", () => {
           `INSERT INTO shift_plans 
           (name, department_id, start_date, end_date, status, created_by, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          ["Plan", dept1Id, date, date, "published", adminUser1.id, tenant1Id],
+          ['Plan', dept1Id, date, date, 'published', adminUser1.id, tenant1Id],
         );
         const planResult = asTestRows<unknown>(rows);
         const planId = (planResult as any).insertId;
@@ -1551,7 +1411,7 @@ describe("Shift Planning API Endpoints", () => {
           `INSERT INTO shift_templates 
           (name, short_name, start_time, end_time, break_duration, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?)`,
-          ["Shift", "S", "08:00", "16:00", 30, tenant1Id],
+          ['Shift', 'S', '08:00', '16:00', 30, tenant1Id],
         );
         const templateResult = asTestRows<unknown>(rowsTemplate);
         const templateId = (templateResult as any).insertId;
@@ -1560,43 +1420,37 @@ describe("Shift Planning API Endpoints", () => {
           `INSERT INTO shift_assignments 
           (plan_id, template_id, user_id, date, status, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?)`,
-          [planId, templateId, employeeUser1.id, date, "assigned", tenant1Id],
+          [planId, templateId, employeeUser1.id, date, 'assigned', tenant1Id],
         );
       }
     });
 
     it("should get employee's own shifts", async () => {
       const response = await request(app)
-        .get("/api/shifts/my-shifts")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/my-shifts')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.shifts.length).toBeGreaterThan(0);
-      expect(
-        response.body.data.shifts.every((s) => s.user_id === employeeUser1.id),
-      ).toBe(true);
+      expect(response.body.data.shifts.every((s) => s.user_id === employeeUser1.id)).toBe(true);
     });
 
-    it("should filter by date range", async () => {
+    it('should filter by date range', async () => {
       const startDate = new Date().toISOString();
-      const endDate = new Date(
-        Date.now() + 14 * 24 * 60 * 60 * 1000,
-      ).toISOString();
+      const endDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
       const response = await request(app)
-        .get(
-          `/api/shifts/my-shifts?start_date=${startDate}&end_date=${endDate}`,
-        )
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get(`/api/shifts/my-shifts?start_date=${startDate}&end_date=${endDate}`)
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.shifts.length).toBe(2); // Today and next week
     });
 
-    it("should include shift details", async () => {
+    it('should include shift details', async () => {
       const response = await request(app)
-        .get("/api/shifts/my-shifts?include=template,plan")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/my-shifts?include=template,plan')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       const shift = response.body.data.shifts[0];
@@ -1604,10 +1458,10 @@ describe("Shift Planning API Endpoints", () => {
       expect(shift.plan).toBeDefined();
     });
 
-    it("should show upcoming shifts by default", async () => {
+    it('should show upcoming shifts by default', async () => {
       const response = await request(app)
-        .get("/api/shifts/my-shifts")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/my-shifts')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       // Should not include past shifts by default
@@ -1616,31 +1470,23 @@ describe("Shift Planning API Endpoints", () => {
     });
   });
 
-  describe("GET /api/shifts/statistics", () => {
+  describe('GET /api/shifts/statistics', () => {
     beforeEach(async () => {
       // Create various shift data for statistics
       const [rows] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Stats Plan",
-          dept1Id,
-          new Date(),
-          new Date(),
-          "published",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Stats Plan', dept1Id, new Date(), new Date(), 'published', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rows);
       const planId = (planResult as any).insertId;
 
       // Create multiple shift templates
       const shifts = [
-        { name: "Früh", short: "F", start: "06:00", end: "14:00" },
-        { name: "Spät", short: "S", start: "14:00", end: "22:00" },
-        { name: "Nacht", short: "N", start: "22:00", end: "06:00" },
+        { name: 'Früh', short: 'F', start: '06:00', end: '14:00' },
+        { name: 'Spät', short: 'S', start: '14:00', end: '22:00' },
+        { name: 'Nacht', short: 'N', start: '22:00', end: '06:00' },
       ];
 
       for (const shift of shifts) {
@@ -1657,21 +1503,15 @@ describe("Shift Planning API Endpoints", () => {
           `INSERT INTO shift_assignments 
           (plan_id, template_id, user_id, date, tenant_id) 
           VALUES (?, ?, ?, ?, ?)`,
-          [
-            planId,
-            (templateResult as any).insertId,
-            employeeUser1.id,
-            new Date(),
-            tenant1Id,
-          ],
+          [planId, (templateResult as any).insertId, employeeUser1.id, new Date(), tenant1Id],
         );
       }
     });
 
-    it("should get department statistics for admin", async () => {
+    it('should get department statistics for admin', async () => {
       const response = await request(app)
         .get(`/api/shifts/statistics?department_id=${dept1Id}`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({
@@ -1682,10 +1522,10 @@ describe("Shift Planning API Endpoints", () => {
       });
     });
 
-    it("should get personal statistics for employee", async () => {
+    it('should get personal statistics for employee', async () => {
       const response = await request(app)
-        .get("/api/shifts/statistics/me")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/statistics/me')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({
@@ -1696,95 +1536,77 @@ describe("Shift Planning API Endpoints", () => {
       });
     });
 
-    it("should calculate coverage percentages", async () => {
+    it('should calculate coverage percentages', async () => {
       const response = await request(app)
-        .get("/api/shifts/coverage?start_date=" + new Date().toISOString())
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .get('/api/shifts/coverage?start_date=' + new Date().toISOString())
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.coverage).toBeDefined();
     });
 
-    it("should enforce department access for employees", async () => {
+    it('should enforce department access for employees', async () => {
       const response = await request(app)
         .get(`/api/shifts/statistics?department_id=${dept2Id}`)
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(403);
     });
   });
 
-  describe("Export functionality", () => {
-    it("should export shift plan as PDF", async () => {
+  describe('Export functionality', () => {
+    it('should export shift plan as PDF', async () => {
       // Create a plan with assignments
       const [rows] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Export Plan",
-          dept1Id,
-          new Date(),
-          new Date(),
-          "published",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Export Plan', dept1Id, new Date(), new Date(), 'published', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rows);
       const planId = (planResult as any).insertId;
 
       const response = await request(app)
         .get(`/api/shifts/plans/${planId}/export?format=pdf`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toContain("application/pdf");
-      expect(response.headers["content-disposition"]).toContain("attachment");
+      expect(response.headers['content-type']).toContain('application/pdf');
+      expect(response.headers['content-disposition']).toContain('attachment');
     });
 
-    it("should export shift plan as Excel", async () => {
+    it('should export shift plan as Excel', async () => {
       const [rows] = await testDb.execute(
         `INSERT INTO shift_plans 
         (name, department_id, start_date, end_date, status, created_by, tenant_id) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "Excel Plan",
-          dept1Id,
-          new Date(),
-          new Date(),
-          "published",
-          adminUser1.id,
-          tenant1Id,
-        ],
+        ['Excel Plan', dept1Id, new Date(), new Date(), 'published', adminUser1.id, tenant1Id],
       );
       const planResult = asTestRows<unknown>(rows);
       const planId = (planResult as any).insertId;
 
       const response = await request(app)
         .get(`/api/shifts/plans/${planId}/export?format=excel`)
-        .set("Authorization", `Bearer ${adminToken1}`);
+        .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toContain(
-        "application/vnd.openxmlformats",
-      );
+      expect(response.headers['content-type']).toContain('application/vnd.openxmlformats');
     });
 
-    it("should export personal shifts as iCal", async () => {
+    it('should export personal shifts as iCal', async () => {
       const response = await request(app)
-        .get("/api/shifts/my-shifts/export?format=ical")
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .get('/api/shifts/my-shifts/export?format=ical')
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toContain("text/calendar");
-      expect(response.text).toContain("BEGIN:VCALENDAR");
+      expect(response.headers['content-type']).toContain('text/calendar');
+      expect(response.text).toContain('BEGIN:VCALENDAR');
     });
 
-    it("should respect visibility in exports", async () => {
+    it('should respect visibility in exports', async () => {
       const response = await request(app)
         .get(`/api/shifts/plans/999/export?format=pdf`)
-        .set("Authorization", `Bearer ${employeeToken1}`);
+        .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(404);
     });

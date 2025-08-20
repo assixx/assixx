@@ -2,12 +2,10 @@
  * Tenant Controller
  * Handles tenant-related operations
  */
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
 
-import { Pool } from "mysql2/promise";
-
-import { Request, Response } from "express";
-
-import tenantService from "../services/tenant.service";
+import tenantService from '../services/tenant.service';
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -26,8 +24,8 @@ interface TenantCreateRequest extends TenantRequest {
     company_phone?: string;
     address?: string;
     country?: string;
-    status?: "active" | "inactive" | "suspended";
-    plan_type?: "free" | "basic" | "premium" | "enterprise";
+    status?: 'active' | 'inactive' | 'suspended';
+    plan_type?: 'free' | 'basic' | 'premium' | 'enterprise';
     trial_ends_at?: string | Date | null;
     subscription_plan?: string | null;
     subscription_ends_at?: string | Date | null;
@@ -46,7 +44,7 @@ interface TenantUpdateRequest extends TenantRequest {
     contact_email?: string;
     contact_phone?: string;
     address?: string;
-    plan_type?: "free" | "basic" | "premium" | "enterprise";
+    plan_type?: 'free' | 'basic' | 'premium' | 'enterprise';
     max_users?: number;
     is_active?: boolean;
     settings?: Record<string, unknown>;
@@ -67,12 +65,12 @@ interface TenantGetRequest extends TenantRequest {
 interface TenantQueryRequest extends TenantRequest {
   query: {
     search?: string;
-    plan_type?: "free" | "basic" | "premium" | "enterprise";
+    plan_type?: 'free' | 'basic' | 'premium' | 'enterprise';
     is_active?: string;
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
@@ -89,34 +87,32 @@ class TenantController {
   getAll(req: TenantQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const filters = {
         ...req.query,
         is_active:
-          req.query.is_active === "true"
-            ? true
-            : req.query.is_active === "false"
-              ? false
-              : undefined,
+          req.query.is_active === 'true' ? true
+          : req.query.is_active === 'false' ? false
+          : undefined,
         page:
-          req.query.page != null && req.query.page !== ""
-            ? Number.parseInt(req.query.page, 10)
-            : undefined,
+          req.query.page != null && req.query.page !== '' ?
+            Number.parseInt(req.query.page, 10)
+          : undefined,
         limit:
-          req.query.limit != null && req.query.limit !== ""
-            ? Number.parseInt(req.query.limit, 10)
-            : undefined,
+          req.query.limit != null && req.query.limit !== '' ?
+            Number.parseInt(req.query.limit, 10)
+          : undefined,
       };
       const result = tenantService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in TenantController.getAll:", error);
+      console.error('Error in TenantController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -130,27 +126,27 @@ class TenantController {
   getById(req: TenantGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const result = tenantService.getById(req.tenantDb, id);
       if (!result) {
-        res.status(404).json({ error: "Nicht gefunden" });
+        res.status(404).json({ error: 'Nicht gefunden' });
         return;
       }
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in TenantController.getById:", error);
+      console.error('Error in TenantController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -164,7 +160,7 @@ class TenantController {
   create(req: TenantCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
@@ -175,9 +171,9 @@ class TenantController {
       // 2. Or require admin user details in the request body
       // For now, returning not implemented
       res.status(501).json({
-        error: "Not implemented",
+        error: 'Not implemented',
         message:
-          "Tenant creation requires admin user details which are not provided in this endpoint",
+          'Tenant creation requires admin user details which are not provided in this endpoint',
       });
       return;
 
@@ -198,10 +194,10 @@ class TenantController {
       res.status(201).json(result);
       */
     } catch (error: unknown) {
-      console.error("Error in TenantController.create:", error);
+      console.error('Error in TenantController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -215,23 +211,23 @@ class TenantController {
   update(req: TenantUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const result = tenantService.update(req.tenantDb, id, req.body);
       res.json(result);
     } catch (error: unknown) {
-      console.error("Error in TenantController.update:", error);
+      console.error('Error in TenantController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -245,23 +241,23 @@ class TenantController {
   delete(req: TenantGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = Number.parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       tenantService.delete(req.tenantDb, id);
       res.status(204).send();
     } catch (error: unknown) {
-      console.error("Error in TenantController.delete:", error);
+      console.error('Error in TenantController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

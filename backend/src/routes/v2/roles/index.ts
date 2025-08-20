@@ -2,15 +2,13 @@
  * Roles Routes v2
  * Handles role management and information
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { rolesController } from "./controller.js";
-import { getRoleValidation, checkRoleValidation } from "./validation.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { rolesController } from './controller.js';
+import { checkRoleValidation, getRoleValidation } from './validation.js';
 
 const router = Router();
 
@@ -65,7 +63,7 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/",
+  '/',
   typed.auth(async (req, res) => {
     await rolesController.getAllRoles(req, res);
   }),
@@ -111,7 +109,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/hierarchy",
+  '/hierarchy',
   typed.auth(async (req, res) => {
     await rolesController.getRoleHierarchy(req, res);
   }),
@@ -146,7 +144,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/assignable",
+  '/assignable',
   typed.auth(async (req, res) => {
     await rolesController.getAssignableRoles(req, res);
   }),
@@ -191,7 +189,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   validate(getRoleValidation),
   typed.auth(async (req, res) => {
     await rolesController.getRoleById(req, res);
@@ -263,7 +261,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/check",
+  '/check',
   validate(checkRoleValidation),
   typed.auth(async (req, res) => {
     await rolesController.checkUserRole(req, res);

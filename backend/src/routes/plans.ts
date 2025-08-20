@@ -1,14 +1,13 @@
-import { body, param } from "express-validator";
-import { RowDataPacket } from "mysql2";
+import express, { Router } from 'express';
+import { body, param } from 'express-validator';
+import { RowDataPacket } from 'mysql2';
 
-import express, { Router } from "express";
-
-import { security } from "../middleware/security";
-import { createValidation } from "../middleware/validation";
-import Plan from "../models/plan";
-import { successResponse, errorResponse } from "../types/response.types";
-import { logger } from "../utils/logger";
-import { typed } from "../utils/routeHandlers";
+import { security } from '../middleware/security';
+import { createValidation } from '../middleware/validation';
+import Plan from '../models/plan';
+import { errorResponse, successResponse } from '../types/response.types';
+import { logger } from '../utils/logger';
+import { typed } from '../utils/routeHandlers';
 
 const router: Router = express.Router();
 
@@ -30,122 +29,116 @@ interface UpdateAddonsBody {
 
 // Validation schemas
 const changePlanValidation = createValidation([
-  body("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
-  body("newPlanCode")
-    .notEmpty()
-    .trim()
-    .withMessage("Plan-Code ist erforderlich"),
-  body("effectiveDate").optional().isISO8601(),
+  body('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID'),
+  body('newPlanCode').notEmpty().trim().withMessage('Plan-Code ist erforderlich'),
+  body('effectiveDate').optional().isISO8601(),
 ]);
 
 const updateAddonsValidation = createValidation([
-  body("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
-  body("addons").isObject().withMessage("Add-ons müssen ein Objekt sein"),
-  body("addons.employees")
+  body('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID'),
+  body('addons').isObject().withMessage('Add-ons müssen ein Objekt sein'),
+  body('addons.employees')
     .optional()
     .isInt({ min: 0 })
-    .withMessage("Mitarbeiter-Anzahl muss positiv sein"),
-  body("addons.admins")
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage("Admin-Anzahl muss positiv sein"),
-  body("addons.storage_gb")
+    .withMessage('Mitarbeiter-Anzahl muss positiv sein'),
+  body('addons.admins').optional().isInt({ min: 0 }).withMessage('Admin-Anzahl muss positiv sein'),
+  body('addons.storage_gb')
     .optional()
     .isNumeric({ no_symbols: true })
-    .withMessage("Speicher muss positiv sein"),
+    .withMessage('Speicher muss positiv sein'),
 ]);
 
 // Test route
 router.get(
-  "/test",
+  '/test',
   typed.public((_req, res) => {
-    res.json(successResponse({ message: "Plans API is working!" }));
+    res.json(successResponse({ message: 'Plans API is working!' }));
   }),
 );
 
 // Simple available route
 router.get(
-  "/simple",
+  '/simple',
   typed.public((_req, res) => {
     try {
       res.json(
         successResponse([
           {
             id: 1,
-            code: "basic",
-            name: "Basic",
-            description: "Perfekt für kleine Teams und Startups",
+            code: 'basic',
+            name: 'Basic',
+            description: 'Perfekt für kleine Teams und Startups',
             base_price: 49.0,
             max_employees: 10,
             max_admins: 1,
             features: [
               {
-                feature_code: "basic_employees",
-                feature_name: "Mitarbeiterverwaltung",
+                feature_code: 'basic_employees',
+                feature_name: 'Mitarbeiterverwaltung',
               },
               {
-                feature_code: "document_upload",
-                feature_name: "Dokumentenverwaltung",
+                feature_code: 'document_upload',
+                feature_name: 'Dokumentenverwaltung',
               },
             ],
           },
           {
             id: 2,
-            code: "professional",
-            name: "Professional",
-            description: "Für wachsende Unternehmen",
+            code: 'professional',
+            name: 'Professional',
+            description: 'Für wachsende Unternehmen',
             base_price: 149.0,
             max_employees: 50,
             max_admins: 3,
             features: [
               {
-                feature_code: "basic_employees",
-                feature_name: "Mitarbeiterverwaltung",
+                feature_code: 'basic_employees',
+                feature_name: 'Mitarbeiterverwaltung',
               },
               {
-                feature_code: "document_upload",
-                feature_name: "Dokumentenverwaltung",
+                feature_code: 'document_upload',
+                feature_name: 'Dokumentenverwaltung',
               },
-              { feature_code: "blackboard", feature_name: "Schwarzes Brett" },
-              { feature_code: "chat", feature_name: "Chat System" },
-              { feature_code: "calendar", feature_name: "Firmenkalender" },
+              { feature_code: 'blackboard', feature_name: 'Schwarzes Brett' },
+              { feature_code: 'chat', feature_name: 'Chat System' },
+              { feature_code: 'calendar', feature_name: 'Firmenkalender' },
             ],
           },
           {
             id: 3,
-            code: "enterprise",
-            name: "Enterprise",
-            description: "Für große Organisationen",
+            code: 'enterprise',
+            name: 'Enterprise',
+            description: 'Für große Organisationen',
             base_price: 299.0,
             max_employees: null,
             max_admins: null,
-            features: [{ feature_code: "all", feature_name: "Alle Features" }],
+            features: [{ feature_code: 'all', feature_name: 'Alle Features' }],
           },
         ]),
       );
     } catch (error: unknown) {
-      console.error("Simple route error:", error);
-      res.status(500).json(errorResponse("Fehler beim Abrufen der Pläne", 500));
+      console.error('Simple route error:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Pläne', 500));
     }
   }),
 );
 
 // Get all available plans (public)
 router.get(
-  "/available",
+  '/available',
   typed.public(async (_req, res) => {
     try {
-      console.info("[DEBUG] Plans route - starting");
+      console.info('[DEBUG] Plans route - starting');
 
       // Direct database query to bypass the issue
-      const { execute } = await import("../database");
+      const { execute } = await import('../database');
       const query = `
       SELECT * FROM plans
       WHERE is_active = true
       ORDER BY sort_order ASC
     `;
       const [plans] = await execute<RowDataPacket[]>(query);
-      console.info("[DEBUG] Plans fetched directly:", plans);
+      console.info('[DEBUG] Plans fetched directly:', plans);
 
       // Add feature information to each plan
       const plansWithFeatures = await Promise.all(
@@ -161,14 +154,14 @@ router.get(
       res.json(successResponse(plansWithFeatures));
     } catch (error: unknown) {
       logger.error(`Error fetching plans: ${(error as Error).message}`);
-      res.status(500).json(errorResponse("Fehler beim Abrufen der Pläne", 500));
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Pläne', 500));
     }
   }),
 );
 
 // Get current plan for authenticated tenant
 router.get(
-  "/current",
+  '/current',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -176,7 +169,7 @@ router.get(
 
       const currentPlan = await Plan.getTenantPlan(tenantId);
       if (!currentPlan) {
-        res.status(404).json(errorResponse("Kein aktiver Plan gefunden", 404));
+        res.status(404).json(errorResponse('Kein aktiver Plan gefunden', 404));
         return;
       }
 
@@ -199,20 +192,16 @@ router.get(
       );
     } catch (error: unknown) {
       logger.error(`Error fetching current plan: ${(error as Error).message}`);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen des aktuellen Plans", 500));
+      res.status(500).json(errorResponse('Fehler beim Abrufen des aktuellen Plans', 500));
     }
   }),
 );
 
 // Get plan for specific tenant (root only)
 router.get(
-  "/tenant/:tenantId",
+  '/tenant/:tenantId',
   ...security.root(
-    createValidation([
-      param("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
-    ]),
+    createValidation([param('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID')]),
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
@@ -220,7 +209,7 @@ router.get(
 
       const currentPlan = await Plan.getTenantPlan(tenantId);
       if (!currentPlan) {
-        res.status(404).json(errorResponse("Kein aktiver Plan gefunden", 404));
+        res.status(404).json(errorResponse('Kein aktiver Plan gefunden', 404));
         return;
       }
 
@@ -242,16 +231,14 @@ router.get(
       );
     } catch (error: unknown) {
       logger.error(`Error fetching tenant plan: ${(error as Error).message}`);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen des Tenant-Plans", 500));
+      res.status(500).json(errorResponse('Fehler beim Abrufen des Tenant-Plans', 500));
     }
   }),
 );
 
 // Change plan (root and admin only)
 router.post(
-  "/change",
+  '/change',
   ...security.admin(changePlanValidation),
   typed.body<ChangePlanBody>(async (req, res) => {
     try {
@@ -261,15 +248,10 @@ router.post(
 
       // For admin, can only change own tenant's plan
       const userTenantId = req.user.tenant_id;
-      if (req.user.role === "admin" && tenantId !== userTenantId) {
+      if (req.user.role === 'admin' && tenantId !== userTenantId) {
         res
           .status(403)
-          .json(
-            errorResponse(
-              "Admins können nur den Plan ihrer eigenen Organisation ändern",
-              403,
-            ),
-          );
+          .json(errorResponse('Admins können nur den Plan ihrer eigenen Organisation ändern', 403));
         return;
       }
 
@@ -277,9 +259,7 @@ router.post(
         tenantId,
         newPlanCode,
         effectiveDate:
-          effectiveDate != null && effectiveDate !== ""
-            ? new Date(effectiveDate)
-            : undefined,
+          effectiveDate != null && effectiveDate !== '' ? new Date(effectiveDate) : undefined,
       });
 
       // Get updated plan info
@@ -292,19 +272,19 @@ router.post(
             plan: updatedPlan,
             costs,
           },
-          "Plan erfolgreich geändert",
+          'Plan erfolgreich geändert',
         ),
       );
     } catch (error: unknown) {
       logger.error(`Error changing plan: ${(error as Error).message}`);
-      res.status(500).json(errorResponse("Fehler beim Ändern des Plans", 500));
+      res.status(500).json(errorResponse('Fehler beim Ändern des Plans', 500));
     }
   }),
 );
 
 // Get addons for authenticated tenant
 router.get(
-  "/addons",
+  '/addons',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -314,16 +294,14 @@ router.get(
       res.json(successResponse(addons));
     } catch (error: unknown) {
       logger.error(`Error fetching addons: ${(error as Error).message}`);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Add-ons", 500));
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Add-ons', 500));
     }
   }),
 );
 
 // Update addons (root and admin only)
 router.post(
-  "/addons",
+  '/addons',
   ...security.admin(updateAddonsValidation),
   typed.body<UpdateAddonsBody>(async (req, res) => {
     try {
@@ -333,15 +311,10 @@ router.post(
 
       // For admin, can only update own tenant's addons
       const userTenantId = req.user.tenant_id;
-      if (req.user.role === "admin" && tenantId !== userTenantId) {
+      if (req.user.role === 'admin' && tenantId !== userTenantId) {
         res
           .status(403)
-          .json(
-            errorResponse(
-              "Admins können nur Add-ons ihrer eigenen Organisation ändern",
-              403,
-            ),
-          );
+          .json(errorResponse('Admins können nur Add-ons ihrer eigenen Organisation ändern', 403));
         return;
       }
 
@@ -362,25 +335,21 @@ router.post(
             addons: updatedAddons,
             costs,
           },
-          "Add-ons erfolgreich aktualisiert",
+          'Add-ons erfolgreich aktualisiert',
         ),
       );
     } catch (error: unknown) {
       logger.error(`Error updating addons: ${(error as Error).message}`);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Aktualisieren der Add-ons", 500));
+      res.status(500).json(errorResponse('Fehler beim Aktualisieren der Add-ons', 500));
     }
   }),
 );
 
 // Calculate costs for a tenant
 router.get(
-  "/costs/:tenantId",
+  '/costs/:tenantId',
   ...security.user(
-    createValidation([
-      param("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
-    ]),
+    createValidation([param('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID')]),
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
@@ -388,8 +357,8 @@ router.get(
 
       // Only root can view other tenants' costs, others can only see their own
       const userTenantId = req.user.tenant_id;
-      if (req.user.role !== "root" && tenantId !== userTenantId) {
-        res.status(403).json(errorResponse("Keine Berechtigung", 403));
+      if (req.user.role !== 'root' && tenantId !== userTenantId) {
+        res.status(403).json(errorResponse('Keine Berechtigung', 403));
         return;
       }
 
@@ -397,9 +366,7 @@ router.get(
       res.json(successResponse(costs));
     } catch (error: unknown) {
       logger.error(`Error calculating costs: ${(error as Error).message}`);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Berechnen der Kosten", 500));
+      res.status(500).json(errorResponse('Fehler beim Berechnen der Kosten', 500));
     }
   }),
 );

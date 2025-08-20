@@ -82,7 +82,7 @@ export interface Tenant {
   companyName: string;
   subdomain: string;
   currentPlan?: string;
-  status: "active" | "inactive" | "suspended" | "deleted";
+  status: 'active' | 'inactive' | 'suspended' | 'deleted';
   maxUsers?: number;
   maxAdmins?: number;
   industry?: string;
@@ -101,14 +101,7 @@ export interface TenantDeletionRequest {
 export interface TenantDeletionStatus {
   queueId: number;
   tenantId: number;
-  status:
-    | "pending"
-    | "approved"
-    | "executing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "stopped";
+  status: 'pending' | 'approved' | 'executing' | 'completed' | 'failed' | 'cancelled' | 'stopped';
   requestedBy: number;
   requestedByName?: string;
   requestedAt: Date;
@@ -142,9 +135,9 @@ export interface DashboardStats {
   tenantCount?: number;
   activeFeatures?: string[];
   systemHealth?: {
-    database: "healthy" | "degraded" | "down";
-    storage: "healthy" | "degraded" | "down";
-    services: "healthy" | "degraded" | "down";
+    database: 'healthy' | 'degraded' | 'down';
+    storage: 'healthy' | 'degraded' | 'down';
+    services: 'healthy' | 'degraded' | 'down';
   };
 }
 

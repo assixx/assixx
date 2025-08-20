@@ -6,23 +6,20 @@
  *   name: KVP
  *   description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess)
  */
+import express, { Request, Response, Router } from 'express';
+import multer from 'multer';
+import path from 'path';
 
-import path from "path";
-
-import multer from "multer";
-
-import express, { Router, Request, Response } from "express";
-
-import { authenticateToken } from "../auth.js";
-import kvpController from "../controllers/kvp.controller.js";
-import { sanitizeFilename, getUploadDirectory } from "../utils/pathSecurity";
+import { authenticateToken } from '../auth.js';
+import kvpController from '../controllers/kvp.controller.js';
+import { getUploadDirectory, sanitizeFilename } from '../utils/pathSecurity';
 
 const router: Router = express.Router();
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    const uploadDir = getUploadDirectory("kvp");
+    const uploadDir = getUploadDirectory('kvp');
     cb(null, uploadDir);
   },
   filename(_req, file, cb) {
@@ -37,11 +34,11 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Nur JPG, JPEG und PNG Dateien sind erlaubt!"));
+      cb(new Error('Nur JPG, JPEG und PNG Dateien sind erlaubt!'));
     }
   },
 });
@@ -132,7 +129,7 @@ router.use(authenticateToken);
  *               $ref: '#/components/schemas/Error'
  */
 // KVP Routes
-router.get("/", async (req, res) => kvpController.getAll(req, res));
+router.get('/', async (req, res) => kvpController.getAll(req, res));
 
 /**
  * @swagger
@@ -160,9 +157,7 @@ router.get("/", async (req, res) => kvpController.getAll(req, res));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/categories", async (req, res) =>
-  kvpController.getCategories(req, res),
-);
+router.get('/categories', async (req, res) => kvpController.getCategories(req, res));
 
 /**
  * @swagger
@@ -209,7 +204,7 @@ router.get("/categories", async (req, res) =>
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/stats", async (req, res) => kvpController.getStatistics(req, res));
+router.get('/stats', async (req, res) => kvpController.getStatistics(req, res));
 
 /**
  * @swagger
@@ -251,7 +246,7 @@ router.get("/stats", async (req, res) => kvpController.getStatistics(req, res));
  *                   type: string
  *                   example: Vorschlag nicht gefunden
  */
-router.get("/:id", async (req, res) => kvpController.getById(req, res));
+router.get('/:id', async (req, res) => kvpController.getById(req, res));
 
 /**
  * @swagger
@@ -323,18 +318,14 @@ router.get("/:id", async (req, res) => kvpController.getById(req, res));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/", async (req, res) => kvpController.create(req, res));
+router.post('/', async (req, res) => kvpController.create(req, res));
 
-router.put("/:id", async (req, res) => kvpController.update(req, res));
-router.delete("/:id", async (req, res) => kvpController.delete(req, res));
+router.put('/:id', async (req, res) => kvpController.update(req, res));
+router.delete('/:id', async (req, res) => kvpController.delete(req, res));
 
 // Share/unshare routes
-router.post("/:id/share", async (req, res) =>
-  kvpController.shareSuggestion(req, res),
-);
-router.post("/:id/unshare", async (req, res) =>
-  kvpController.unshareSuggestion(req, res),
-);
+router.post('/:id/share', async (req, res) => kvpController.shareSuggestion(req, res));
+router.post('/:id/unshare', async (req, res) => kvpController.unshareSuggestion(req, res));
 
 /**
  * @swagger
@@ -457,20 +448,14 @@ router.post("/:id/unshare", async (req, res) =>
  *         description: Suggestion not found
  */
 // Comments
-router.get("/:id/comments", async (req, res) =>
-  kvpController.getComments(req, res),
-);
-router.post("/:id/comments", async (req, res) =>
-  kvpController.addComment(req, res),
-);
+router.get('/:id/comments', async (req, res) => kvpController.getComments(req, res));
+router.post('/:id/comments', async (req, res) => kvpController.addComment(req, res));
 
 // Attachments
-router.get("/:id/attachments", async (req, res) =>
-  kvpController.getAttachments(req, res),
-);
+router.get('/:id/attachments', async (req, res) => kvpController.getAttachments(req, res));
 router.post(
-  "/:id/attachments",
-  upload.array("photos", 5),
+  '/:id/attachments',
+  upload.array('photos', 5),
   async (req: Request, res: Response) =>
     kvpController.uploadAttachment(
       req as Request & {
@@ -480,7 +465,7 @@ router.post(
       res,
     ), // Multer adds files to request
 ); // Max 5 photos
-router.get("/attachments/:attachmentId/download", async (req, res) =>
+router.get('/attachments/:attachmentId/download', async (req, res) =>
   kvpController.downloadAttachment(req, res),
 );
 

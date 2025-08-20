@@ -94,7 +94,7 @@ export interface BatchOperationResponse {
 
 // Health Check Response
 export interface HealthCheckResponse {
-  status: "healthy" | "unhealthy" | "degraded";
+  status: 'healthy' | 'unhealthy' | 'degraded';
   timestamp: string;
   uptime: number;
   version: string;
@@ -146,11 +146,7 @@ export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
   };
 }
 
-export function errorResponse(
-  error: string,
-  statusCode = 500,
-  code?: string,
-): ErrorResponse {
+export function errorResponse(error: string, statusCode = 500, code?: string): ErrorResponse {
   return {
     success: false,
     error,

@@ -7,17 +7,12 @@
  *   name: Teams v2
  *   description: Team management API v2
  */
+import { RequestHandler, Router } from 'express';
 
-import { Router, RequestHandler } from "express";
-
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { teamsController } from "./teams.controller.js";
-import { teamsValidation } from "./teams.validation.js";
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { teamsController } from './teams.controller.js';
+import { teamsValidation } from './teams.validation.js';
 
 const router = Router();
 
@@ -56,7 +51,7 @@ const router = Router();
  *         $ref: '#/components/responses/UnauthorizedV2'
  */
 router.get(
-  "/",
+  '/',
   authenticateV2,
   teamsValidation.list,
   typed.auth(async (req, res) => teamsController.listTeams(req, res)),
@@ -88,7 +83,7 @@ router.get(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2,
   teamsValidation.getById,
   typed.auth(async (req, res) => teamsController.getTeamById(req, res)),
@@ -121,9 +116,9 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.post(
-  "/",
+  '/',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.create,
   typed.auth(async (req, res) => teamsController.createTeam(req, res)),
 );
@@ -162,9 +157,9 @@ router.post(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.update,
   typed.auth(async (req, res) => teamsController.updateTeam(req, res)),
 );
@@ -199,9 +194,9 @@ router.put(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.delete,
   typed.auth(async (req, res) => teamsController.deleteTeam(req, res)),
 );
@@ -232,7 +227,7 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.get(
-  "/:id/members",
+  '/:id/members',
   authenticateV2,
   teamsValidation.getMembers,
   typed.auth(async (req, res) => teamsController.getTeamMembers(req, res)),
@@ -280,9 +275,9 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.post(
-  "/:id/members",
+  '/:id/members',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.addMember,
   typed.auth(async (req, res) => teamsController.addTeamMember(req, res)),
 );
@@ -323,9 +318,9 @@ router.post(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.delete(
-  "/:id/members/:userId",
+  '/:id/members/:userId',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.removeMember,
   typed.auth(async (req, res) => teamsController.removeTeamMember(req, res)),
 );
@@ -372,9 +367,9 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundV2'
  */
 router.get(
-  "/:id/machines",
+  '/:id/machines',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.getMembers,
   typed.auth(async (req, res) => teamsController.getTeamMachines(req, res)),
 );
@@ -421,9 +416,9 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.post(
-  "/:id/machines",
+  '/:id/machines',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.addMachine,
   typed.auth(async (req, res) => teamsController.addTeamMachine(req, res)),
 );
@@ -462,9 +457,9 @@ router.post(
  *         $ref: '#/components/responses/ForbiddenV2'
  */
 router.delete(
-  "/:id/machines/:machineId",
+  '/:id/machines/:machineId',
   authenticateV2,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidation.removeMember,
   typed.auth(async (req, res) => teamsController.removeTeamMachine(req, res)),
 );

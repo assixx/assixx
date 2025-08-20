@@ -6,33 +6,31 @@
  *   name: Blackboard
  *   description: Company announcements and bulletin board (Schwarzes Brett)
  */
+import express, { NextFunction, Request, Response, Router } from 'express';
+import { param } from 'express-validator';
+import fs from 'fs/promises';
+import multer from 'multer';
+import path from 'path';
 
-import fs from "fs/promises";
-import path from "path";
-
-import { param } from "express-validator";
-import multer from "multer";
-
-import express, { Router, Request, Response, NextFunction } from "express";
+import { authenticateToken } from '../middleware/auth';
+import { rateLimiter } from '../middleware/rateLimiter';
+import { security } from '../middleware/security';
+import { createValidation } from '../middleware/validation';
+import blackboardModel, {
+  DbBlackboardEntry,
+  EntryCreateData,
+  EntryQueryOptions,
+  EntryUpdateData,
+} from '../models/blackboard';
+import type { AuthenticatedRequest } from '../types/request.types';
+import { errorResponse, successResponse } from '../types/response.types';
+import { getErrorMessage, getErrorStack } from '../utils/errorHandler';
+import { logger } from '../utils/logger';
+import { getUploadDirectory, sanitizeFilename } from '../utils/pathSecurity';
+import { typed } from '../utils/routeHandlers';
 
 const router: Router = express.Router();
 
-import { authenticateToken } from "../middleware/auth";
-import { rateLimiter } from "../middleware/rateLimiter";
-import { security } from "../middleware/security";
-import { createValidation } from "../middleware/validation";
-import blackboardModel, {
-  DbBlackboardEntry,
-  EntryQueryOptions,
-  EntryCreateData,
-  EntryUpdateData,
-} from "../models/blackboard";
-import type { AuthenticatedRequest } from "../types/request.types";
-import { successResponse, errorResponse } from "../types/response.types";
-import { getErrorMessage, getErrorStack } from "../utils/errorHandler";
-import { logger } from "../utils/logger";
-import { sanitizeFilename, getUploadDirectory } from "../utils/pathSecurity";
-import { typed } from "../utils/routeHandlers";
 /**
  * Blackboard API Routes
  * Handles all operations related to the blackboard system
@@ -49,7 +47,7 @@ const storage = multer.diskStorage({
     void (async () => {
       const authReq = req as AuthenticatedRequest;
       const tenantId = authReq.user.tenant_id;
-      const baseUploadDir = getUploadDirectory("blackboard");
+      const baseUploadDir = getUploadDirectory('blackboard');
       const uploadDir = path.join(baseUploadDir, tenantId.toString());
 
       // Ensure directory exists
@@ -73,18 +71,12 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-    ];
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Nur PDF und Bilder (JPEG, PNG, GIF) sind erlaubt!"));
+      cb(new Error('Nur PDF und Bilder (JPEG, PNG, GIF) sind erlaubt!'));
     }
   },
 });
@@ -115,16 +107,12 @@ const getEntriesValidation = createValidation([]);
 const updateEntryValidation = createValidation([]);
 
 // Helper function to get tenant ID from user object
-function getTenantId(user: AuthenticatedRequest["user"]): number {
+function getTenantId(user: AuthenticatedRequest['user']): number {
   return user.tenant_id;
 }
 
 // Helper function to check if user can manage the entry
-async function canManageEntry(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+async function canManageEntry(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const entryId = req.params.id;
     const authReq = req as BlackboardRequest;
@@ -137,13 +125,12 @@ async function canManageEntry(
     );
 
     if (!entry) {
-      res.status(404).json({ message: "Entry not found" });
+      res.status(404).json({ message: 'Entry not found' });
       return;
     }
 
     // Check if user is admin or the author of the entry
-    const isAdmin =
-      authReq.user.role === "admin" || authReq.user.role === "root";
+    const isAdmin = authReq.user.role === 'admin' || authReq.user.role === 'root';
     const isAuthor = entry.author_id === authReq.user.id;
 
     // Admins have permission always
@@ -161,21 +148,15 @@ async function canManageEntry(
     }
 
     // Neither admin nor author
-    res
-      .status(403)
-      .json({ message: "You do not have permission to manage this entry" });
+    res.status(403).json({ message: 'You do not have permission to manage this entry' });
   } catch (error: unknown) {
-    console.error("Error in canManageEntry middleware:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error in canManageEntry middleware:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 // Helper function to check if user can create entry for specified org level
-function canCreateForOrgLevel(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+function canCreateForOrgLevel(req: Request, res: Response, next: NextFunction): void {
   try {
     const authReq = req as AuthenticatedRequest;
     const { org_level, org_id } = req.body as {
@@ -188,35 +169,32 @@ function canCreateForOrgLevel(
     const teamId = authReq.user.team_id; // Get team_id from user
 
     // Admins can create entries for any org level
-    if (role === "admin" || role === "root") {
+    if (role === 'admin' || role === 'root') {
       next();
       return;
     }
 
     // Check permissions based on org level
-    if (org_level === "company") {
-      res
-        .status(403)
-        .json({ message: "Only admins can create company-wide entries" });
+    if (org_level === 'company') {
+      res.status(403).json({ message: 'Only admins can create company-wide entries' });
       return;
     }
 
-    if (org_level === "department") {
+    if (org_level === 'department') {
       // Check if user is department head
-      if (role !== "department_head" || departmentId !== org_id) {
+      if (role !== 'department_head' || departmentId !== org_id) {
         res.status(403).json({
-          message:
-            "You can only create department entries for your own department",
+          message: 'You can only create department entries for your own department',
         });
         return;
       }
     }
 
-    if (org_level === "team") {
+    if (org_level === 'team') {
       // Check if user is team leader
-      if (role !== "team_leader" || teamId == null || teamId !== org_id) {
+      if (role !== 'team_leader' || teamId == null || teamId !== org_id) {
         res.status(403).json({
-          message: "You can only create team entries for your own team",
+          message: 'You can only create team entries for your own team',
         });
         return;
       }
@@ -224,8 +202,8 @@ function canCreateForOrgLevel(
 
     next();
   } catch (error: unknown) {
-    console.error("Error in canCreateForOrgLevel middleware:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error in canCreateForOrgLevel middleware:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
@@ -332,42 +310,32 @@ function canCreateForOrgLevel(
  * @desc Get all blackboard entries visible to the user
  */
 router.get(
-  "/",
+  '/',
   ...security.user(getEntriesValidation),
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
 
       const options: EntryQueryOptions = {
-        status: ((req.query.status as string) || "active") as
-          | "active"
-          | "archived",
-        filter: ((req.query.filter as string) || "all") as
-          | "all"
-          | "company"
-          | "department"
-          | "team",
-        search: (req.query.search as string) || "",
-        page: Number.parseInt((req.query.page as string) || "1", 10),
-        limit: Number.parseInt((req.query.limit as string) || "18", 10),
-        sortBy: (req.query.sortBy as string) || "created_at",
-        sortDir: ((req.query.sortDir as string) || "DESC") as "ASC" | "DESC",
+        status: ((req.query.status as string) || 'active') as 'active' | 'archived',
+        filter: ((req.query.filter as string) || 'all') as
+          | 'all'
+          | 'company'
+          | 'department'
+          | 'team',
+        search: (req.query.search as string) || '',
+        page: Number.parseInt((req.query.page as string) || '1', 10),
+        limit: Number.parseInt((req.query.limit as string) || '18', 10),
+        sortBy: (req.query.sortBy as string) || 'created_at',
+        sortDir: ((req.query.sortDir as string) || 'DESC') as 'ASC' | 'DESC',
       };
 
-      const result = await blackboardModel.getAllEntries(
-        tenantId,
-        req.user.id,
-        options,
-      );
+      const result = await blackboardModel.getAllEntries(tenantId, req.user.id, options);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("Fehler beim Abrufen der Blackboard-Einträge", 500),
-        );
+      console.error('Error in GET /api/blackboard:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Blackboard-Einträge', 500));
     }
   }),
 );
@@ -377,26 +345,19 @@ router.get(
  * @desc Get blackboard entries for dashboard widget
  */
 router.get(
-  "/dashboard",
+  '/dashboard',
   authenticateToken,
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
       const limitParam = req.query.limit;
-      const limit = Number.parseInt(
-        typeof limitParam === "string" ? limitParam : "3",
-        10,
-      );
+      const limit = Number.parseInt(typeof limitParam === 'string' ? limitParam : '3', 10);
 
-      const entries = await blackboardModel.getDashboardEntries(
-        tenantId,
-        req.user.id,
-        limit,
-      );
+      const entries = await blackboardModel.getDashboardEntries(tenantId, req.user.id, limit);
       res.json(entries);
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard/dashboard:", error);
-      res.status(500).json({ message: "Error retrieving dashboard entries" });
+      console.error('Error in GET /api/blackboard/dashboard:', error);
+      res.status(500).json({ message: 'Error retrieving dashboard entries' });
     }
   }),
 );
@@ -406,43 +367,34 @@ router.get(
  * @desc Alias for GET /api/blackboard - for backwards compatibility
  */
 router.get(
-  "/entries",
+  '/entries',
   ...security.user(getEntriesValidation),
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
 
       const options: EntryQueryOptions = {
-        status: ((req.query.status as string) || "active") as
-          | "active"
-          | "archived",
-        filter: ((req.query.filter as string) || "all") as
-          | "all"
-          | "company"
-          | "department"
-          | "team",
-        search: (req.query.search as string) || "",
-        page: Number.parseInt((req.query.page as string) || "1", 10),
-        limit: Number.parseInt((req.query.limit as string) || "18", 10),
-        sortBy: (req.query.sortBy as string) || "created_at",
-        sortDir: (((req.query.sortOrder ?? req.query.sortDir) as string) ||
-          "DESC") as "ASC" | "DESC",
+        status: ((req.query.status as string) || 'active') as 'active' | 'archived',
+        filter: ((req.query.filter as string) || 'all') as
+          | 'all'
+          | 'company'
+          | 'department'
+          | 'team',
+        search: (req.query.search as string) || '',
+        page: Number.parseInt((req.query.page as string) || '1', 10),
+        limit: Number.parseInt((req.query.limit as string) || '18', 10),
+        sortBy: (req.query.sortBy as string) || 'created_at',
+        sortDir: (((req.query.sortOrder ?? req.query.sortDir) as string) || 'DESC') as
+          | 'ASC'
+          | 'DESC',
       };
 
-      const result = await blackboardModel.getAllEntries(
-        tenantId,
-        req.user.id,
-        options,
-      );
+      const result = await blackboardModel.getAllEntries(tenantId, req.user.id, options);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard/entries:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("Fehler beim Abrufen der Blackboard-Einträge", 500),
-        );
+      console.error('Error in GET /api/blackboard/entries:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Blackboard-Einträge', 500));
     }
   }),
 );
@@ -452,7 +404,7 @@ router.get(
  * @desc Get a specific blackboard entry
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateToken,
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -465,14 +417,14 @@ router.get(
       );
 
       if (!entry) {
-        res.status(404).json({ message: "Entry not found" });
+        res.status(404).json({ message: 'Entry not found' });
         return;
       }
 
       res.json(entry);
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard/:id:", error);
-      res.status(500).json({ message: "Error retrieving blackboard entry" });
+      console.error('Error in GET /api/blackboard/:id:', error);
+      res.status(500).json({ message: 'Error retrieving blackboard entry' });
     }
   }),
 );
@@ -595,9 +547,9 @@ router.get(
  * @desc Create a new blackboard entry (with optional direct attachment)
  */
 router.post(
-  "/",
+  '/',
   authenticateToken,
-  upload.single("attachment"), // Handle single file upload
+  upload.single('attachment'), // Handle single file upload
   canCreateForOrgLevel,
   typed.body<BlackboardEntryBody>(async (req, res) => {
     try {
@@ -605,28 +557,28 @@ router.post(
 
       // Convert org_id to number if it's a string, or set to null for company level
       let org_id: number | null = req.body.org_id ?? null;
-      if (req.body.org_level === "company") {
+      if (req.body.org_level === 'company') {
         org_id = null;
-      } else if (typeof org_id === "string") {
+      } else if (typeof org_id === 'string') {
         org_id = Number.parseInt(org_id, 10);
       }
 
       // Handle priority_level vs priority field name
-      const priority = req.body.priority ?? req.body.priority_level ?? "medium";
+      const priority = req.body.priority ?? req.body.priority_level ?? 'medium';
 
       const entryData: EntryCreateData = {
         tenant_id: tenantId,
         title: req.body.title,
         content: req.body.content,
-        org_level: req.body.org_level as "company" | "department" | "team",
+        org_level: req.body.org_level as 'company' | 'department' | 'team',
         org_id: org_id ?? null,
         author_id: req.user.id,
         expires_at:
-          req.body.expires_at != null && req.body.expires_at !== ""
-            ? new Date(req.body.expires_at)
-            : null,
-        priority: priority as "low" | "medium" | "high" | "urgent",
-        color: req.body.color ?? "blue",
+          req.body.expires_at != null && req.body.expires_at !== '' ?
+            new Date(req.body.expires_at)
+          : null,
+        priority: priority as 'low' | 'medium' | 'high' | 'urgent',
+        color: req.body.color ?? 'blue',
         tags: req.body.tags ?? [],
         requires_confirmation: req.body.requires_confirmation ?? false,
       };
@@ -636,7 +588,7 @@ router.post(
 
       if (!entry) {
         res.status(500).json({
-          message: "Failed to create blackboard entry",
+          message: 'Failed to create blackboard entry',
         });
         return;
       }
@@ -661,30 +613,19 @@ router.post(
           );
         } catch (attachError: unknown) {
           // If attachment fails, still return the created entry
-          logger.error(
-            `Failed to add attachment to entry ${entry.id}:`,
-            attachError,
-          );
+          logger.error(`Failed to add attachment to entry ${entry.id}:`, attachError);
         }
       }
 
-      res
-        .status(201)
-        .json(
-          successResponse(entry, "Blackboard-Eintrag erfolgreich erstellt"),
-        );
+      res.status(201).json(successResponse(entry, 'Blackboard-Eintrag erfolgreich erstellt'));
     } catch (error: unknown) {
-      console.error("Error in POST /api/blackboard:", error);
-      console.error("Error details:", getErrorMessage(error));
+      console.error('Error in POST /api/blackboard:', error);
+      console.error('Error details:', getErrorMessage(error));
       const stack = getErrorStack(error);
-      if (stack != null && stack !== "") {
-        console.error("Error stack:", stack);
+      if (stack != null && stack !== '') {
+        console.error('Error stack:', stack);
       }
-      res
-        .status(500)
-        .json(
-          errorResponse("Fehler beim Erstellen des Blackboard-Eintrags", 500),
-        );
+      res.status(500).json(errorResponse('Fehler beim Erstellen des Blackboard-Eintrags', 500));
     }
   }),
 );
@@ -694,7 +635,7 @@ router.post(
  * @desc Update a blackboard entry
  */
 router.put(
-  "/:id",
+  '/:id',
   ...security.user(updateEntryValidation),
   canManageEntry,
   typed.paramsBody<{ id: string }, BlackboardEntryBody>(async (req, res) => {
@@ -702,26 +643,17 @@ router.put(
       const entryData: Partial<EntryUpdateData> = {
         title: req.body.title,
         content: req.body.content,
-        org_level: req.body.org_level as
-          | "company"
-          | "department"
-          | "team"
-          | undefined,
+        org_level: req.body.org_level as 'company' | 'department' | 'team' | undefined,
         org_id: req.body.org_id,
-        priority: req.body.priority as
-          | "low"
-          | "medium"
-          | "high"
-          | "urgent"
-          | undefined,
+        priority: req.body.priority as 'low' | 'medium' | 'high' | 'urgent' | undefined,
         color: req.body.color,
         tags: req.body.tags,
         expires_at:
-          req.body.expires_at != null && req.body.expires_at !== ""
-            ? new Date(req.body.expires_at)
-            : undefined,
+          req.body.expires_at != null && req.body.expires_at !== '' ?
+            new Date(req.body.expires_at)
+          : undefined,
         requires_confirmation: req.body.requires_confirmation,
-        status: req.body.status as "active" | "archived" | undefined,
+        status: req.body.status as 'active' | 'archived' | undefined,
       };
 
       const tenantId = getTenantId(req.user);
@@ -731,22 +663,10 @@ router.put(
         tenantId,
       );
 
-      res.json(
-        successResponse(
-          updatedEntry,
-          "Blackboard-Eintrag erfolgreich aktualisiert",
-        ),
-      );
+      res.json(successResponse(updatedEntry, 'Blackboard-Eintrag erfolgreich aktualisiert'));
     } catch (error: unknown) {
-      console.error("Error in PUT /api/blackboard/:id:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            "Fehler beim Aktualisieren des Blackboard-Eintrags",
-            500,
-          ),
-        );
+      console.error('Error in PUT /api/blackboard/:id:', error);
+      res.status(500).json(errorResponse('Fehler beim Aktualisieren des Blackboard-Eintrags', 500));
     }
   }),
 );
@@ -756,11 +676,9 @@ router.put(
  * @desc Delete a blackboard entry
  */
 router.delete(
-  "/:id",
+  '/:id',
   ...security.user(
-    createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Entry-ID"),
-    ]),
+    createValidation([param('id').isInt({ min: 1 }).withMessage('Ungültige Entry-ID')]),
   ),
   canManageEntry,
   typed.params<{ id: string }>(async (req, res) => {
@@ -772,18 +690,14 @@ router.delete(
       );
 
       if (!success) {
-        res.status(404).json(errorResponse("Eintrag nicht gefunden", 404));
+        res.status(404).json(errorResponse('Eintrag nicht gefunden', 404));
         return;
       }
 
-      res.json(successResponse(null, "Eintrag erfolgreich gelöscht"));
+      res.json(successResponse(null, 'Eintrag erfolgreich gelöscht'));
     } catch (error: unknown) {
-      console.error("Error in DELETE /api/blackboard/:id:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("Fehler beim Löschen des Blackboard-Eintrags", 500),
-        );
+      console.error('Error in DELETE /api/blackboard/:id:', error);
+      res.status(500).json(errorResponse('Fehler beim Löschen des Blackboard-Eintrags', 500));
     }
   }),
 );
@@ -793,11 +707,9 @@ router.delete(
  * @desc Mark a blackboard entry as read
  */
 router.post(
-  "/:id/confirm",
+  '/:id/confirm',
   ...security.user(
-    createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Entry-ID"),
-    ]),
+    createValidation([param('id').isInt({ min: 1 }).withMessage('Ungültige Entry-ID')]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -809,23 +721,14 @@ router.post(
       if (!success) {
         res
           .status(400)
-          .json(
-            errorResponse(
-              "Eintrag existiert nicht oder erfordert keine Bestätigung",
-              400,
-            ),
-          );
+          .json(errorResponse('Eintrag existiert nicht oder erfordert keine Bestätigung', 400));
         return;
       }
 
-      res.json(successResponse(null, "Eintrag erfolgreich bestätigt"));
+      res.json(successResponse(null, 'Eintrag erfolgreich bestätigt'));
     } catch (error: unknown) {
-      console.error("Error in POST /api/blackboard/:id/confirm:", error);
-      res
-        .status(500)
-        .json(
-          errorResponse("Fehler beim Bestätigen des Blackboard-Eintrags", 500),
-        );
+      console.error('Error in POST /api/blackboard/:id/confirm:', error);
+      res.status(500).json(errorResponse('Fehler beim Bestätigen des Blackboard-Eintrags', 500));
     }
   }),
 );
@@ -835,11 +738,9 @@ router.post(
  * @desc Get confirmation status for an entry
  */
 router.get(
-  "/:id/confirmations",
+  '/:id/confirmations',
   ...security.admin(
-    createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Entry-ID"),
-    ]),
+    createValidation([param('id').isInt({ min: 1 }).withMessage('Ungültige Entry-ID')]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -851,10 +752,8 @@ router.get(
 
       res.json(successResponse(confirmations));
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard/:id/confirmations:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen des Bestätigungsstatus", 500));
+      console.error('Error in GET /api/blackboard/:id/confirmations:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen des Bestätigungsstatus', 500));
     }
   }),
 );
@@ -864,21 +763,19 @@ router.get(
  * @desc Upload attachments to a blackboard entry
  */
 router.post(
-  "/:id/attachments",
+  '/:id/attachments',
   ...security.user(
-    createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Entry-ID"),
-    ]),
+    createValidation([param('id').isInt({ min: 1 }).withMessage('Ungültige Entry-ID')]),
   ),
   canManageEntry,
-  upload.array("attachments", 5), // Max 5 files at once
+  upload.array('attachments', 5), // Max 5 files at once
   typed.params<{ id: string }>(async (req, res) => {
     try {
       const entryId = Number.parseInt(req.params.id, 10);
       const files = req.files as Express.Multer.File[];
 
       if (files.length === 0) {
-        res.status(400).json(errorResponse("Keine Dateien hochgeladen", 400));
+        res.status(400).json(errorResponse('Keine Dateien hochgeladen', 400));
         return;
       }
 
@@ -912,14 +809,12 @@ router.post(
           {
             attachments,
           },
-          "Anhänge erfolgreich hochgeladen",
+          'Anhänge erfolgreich hochgeladen',
         ),
       );
     } catch (error: unknown) {
-      console.error("Error in POST /api/blackboard/:id/attachments:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Hochladen der Anhänge", 500));
+      console.error('Error in POST /api/blackboard/:id/attachments:', error);
+      res.status(500).json(errorResponse('Fehler beim Hochladen der Anhänge', 500));
     }
   }),
 );
@@ -929,11 +824,9 @@ router.post(
  * @desc Get all attachments for a blackboard entry
  */
 router.get(
-  "/:id/attachments",
+  '/:id/attachments',
   ...security.user(
-    createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Entry-ID"),
-    ]),
+    createValidation([param('id').isInt({ min: 1 }).withMessage('Ungültige Entry-ID')]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -941,10 +834,8 @@ router.get(
       const attachments = await blackboardModel.getEntryAttachments(entryId);
       res.json(successResponse(attachments));
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard/:id/attachments:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Anhänge", 500));
+      console.error('Error in GET /api/blackboard/:id/attachments:', error);
+      res.status(500).json(errorResponse('Fehler beim Abrufen der Anhänge', 500));
     }
   }),
 );
@@ -954,12 +845,10 @@ router.get(
  * @desc Download a specific attachment
  */
 router.get(
-  "/attachments/:attachmentId",
+  '/attachments/:attachmentId',
   ...security.user(
     createValidation([
-      param("attachmentId")
-        .isInt({ min: 1 })
-        .withMessage("Ungültige Attachment-ID"),
+      param('attachmentId').isInt({ min: 1 }).withMessage('Ungültige Attachment-ID'),
     ]),
   ),
   rateLimiter.download,
@@ -968,13 +857,10 @@ router.get(
       const tenantId = getTenantId(req.user);
       const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
-      const attachment = await blackboardModel.getAttachmentById(
-        attachmentId,
-        tenantId,
-      );
+      const attachment = await blackboardModel.getAttachmentById(attachmentId, tenantId);
 
       if (!attachment) {
-        res.status(404).json(errorResponse("Anhang nicht gefunden", 404));
+        res.status(404).json(errorResponse('Anhang nicht gefunden', 404));
         return;
       }
 
@@ -982,22 +868,21 @@ router.get(
       try {
         await fs.access(attachment.file_path);
       } catch {
-        res.status(404).json(errorResponse("Datei nicht gefunden", 404));
+        res.status(404).json(errorResponse('Datei nicht gefunden', 404));
         return;
       }
 
       // Set appropriate headers
       // Use 'inline' for preview, 'attachment' only if download is requested
-      const disposition =
-        req.query.download === "true" ? "attachment" : "inline";
+      const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
       res.setHeader(
-        "Content-Disposition",
+        'Content-Disposition',
         `${disposition}; filename="${attachment.original_name}"`,
       );
-      res.setHeader("Content-Type", attachment.mime_type);
+      res.setHeader('Content-Type', attachment.mime_type);
 
       // Override X-Frame-Options to allow embedding
-      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
       // Validate and send file
       // If the file_path is already absolute, use it directly
@@ -1005,28 +890,24 @@ router.get(
 
       // If it's a relative path, resolve it relative to uploads directory
       if (!path.isAbsolute(filePath)) {
-        const baseDir = path.resolve(process.cwd(), "uploads");
+        const baseDir = path.resolve(process.cwd(), 'uploads');
         filePath = path.join(baseDir, filePath);
       }
 
       // Ensure the file is within the uploads directory
-      const uploadsBase = path.resolve(process.cwd(), "uploads");
+      const uploadsBase = path.resolve(process.cwd(), 'uploads');
       const resolvedPath = path.resolve(filePath);
 
       if (!resolvedPath.startsWith(uploadsBase)) {
-        logger.warn(
-          `Path traversal attempt for attachment ${attachmentId}: ${filePath}`,
-        );
-        res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
+        logger.warn(`Path traversal attempt for attachment ${attachmentId}: ${filePath}`);
+        res.status(400).json(errorResponse('Ungültiger Dateipfad', 400));
         return;
       }
 
       res.sendFile(resolvedPath);
     } catch (error: unknown) {
-      console.error("Error in GET /api/blackboard/attachments/:id:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Herunterladen der Datei", 500));
+      console.error('Error in GET /api/blackboard/attachments/:id:', error);
+      res.status(500).json(errorResponse('Fehler beim Herunterladen der Datei', 500));
     }
   }),
 );
@@ -1036,12 +917,10 @@ router.get(
  * @desc Get a preview of an attachment (optimized for inline display)
  */
 router.get(
-  "/attachments/:attachmentId/preview",
+  '/attachments/:attachmentId/preview',
   ...security.user(
     createValidation([
-      param("attachmentId")
-        .isInt({ min: 1 })
-        .withMessage("Ungültige Attachment-ID"),
+      param('attachmentId').isInt({ min: 1 }).withMessage('Ungültige Attachment-ID'),
     ]),
   ),
   rateLimiter.download,
@@ -1050,13 +929,10 @@ router.get(
       const tenantId = getTenantId(req.user);
       const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
-      const attachment = await blackboardModel.getAttachmentById(
-        attachmentId,
-        tenantId,
-      );
+      const attachment = await blackboardModel.getAttachmentById(attachmentId, tenantId);
 
       if (!attachment) {
-        res.status(404).json(errorResponse("Anhang nicht gefunden", 404));
+        res.status(404).json(errorResponse('Anhang nicht gefunden', 404));
         return;
       }
 
@@ -1064,22 +940,19 @@ router.get(
       try {
         await fs.access(attachment.file_path);
       } catch {
-        res.status(404).json(errorResponse("Datei nicht gefunden", 404));
+        res.status(404).json(errorResponse('Datei nicht gefunden', 404));
         return;
       }
 
       // Set appropriate headers for preview
-      res.setHeader("Content-Type", attachment.mime_type);
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${attachment.original_name}"`,
-      );
+      res.setHeader('Content-Type', attachment.mime_type);
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.original_name}"`);
 
       // Add cache headers for better performance
-      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader('Cache-Control', 'public, max-age=3600');
 
       // Override X-Frame-Options to allow embedding
-      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
       // Validate and send file
       // If the file_path is already absolute, use it directly
@@ -1087,31 +960,24 @@ router.get(
 
       // If it's a relative path, resolve it relative to uploads directory
       if (!path.isAbsolute(filePath)) {
-        const baseDir = path.resolve(process.cwd(), "uploads");
+        const baseDir = path.resolve(process.cwd(), 'uploads');
         filePath = path.join(baseDir, filePath);
       }
 
       // Ensure the file is within the uploads directory
-      const uploadsBase = path.resolve(process.cwd(), "uploads");
+      const uploadsBase = path.resolve(process.cwd(), 'uploads');
       const resolvedPath = path.resolve(filePath);
 
       if (!resolvedPath.startsWith(uploadsBase)) {
-        logger.warn(
-          `Path traversal attempt for attachment preview ${attachmentId}: ${filePath}`,
-        );
-        res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
+        logger.warn(`Path traversal attempt for attachment preview ${attachmentId}: ${filePath}`);
+        res.status(400).json(errorResponse('Ungültiger Dateipfad', 400));
         return;
       }
 
       res.sendFile(resolvedPath);
     } catch (error: unknown) {
-      console.error(
-        "Error in GET /api/blackboard/attachments/:id/preview:",
-        error,
-      );
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Laden der Vorschau", 500));
+      console.error('Error in GET /api/blackboard/attachments/:id/preview:', error);
+      res.status(500).json(errorResponse('Fehler beim Laden der Vorschau', 500));
     }
   }),
 );
@@ -1121,12 +987,10 @@ router.get(
  * @desc Delete an attachment
  */
 router.delete(
-  "/attachments/:attachmentId",
+  '/attachments/:attachmentId',
   ...security.user(
     createValidation([
-      param("attachmentId")
-        .isInt({ min: 1 })
-        .withMessage("Ungültige Attachment-ID"),
+      param('attachmentId').isInt({ min: 1 }).withMessage('Ungültige Attachment-ID'),
     ]),
   ),
   typed.params<{ attachmentId: string }>(async (req, res) => {
@@ -1135,35 +999,25 @@ router.delete(
       const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
       // Get attachment details before deletion
-      const attachment = await blackboardModel.getAttachmentById(
-        attachmentId,
-        tenantId,
-      );
+      const attachment = await blackboardModel.getAttachmentById(attachmentId, tenantId);
 
       if (!attachment) {
-        res.status(404).json(errorResponse("Anhang nicht gefunden", 404));
+        res.status(404).json(errorResponse('Anhang nicht gefunden', 404));
         return;
       }
 
       // Check if user can delete (must be uploader or admin)
       if (
-        req.user.role !== "admin" &&
-        req.user.role !== "root" &&
+        req.user.role !== 'admin' &&
+        req.user.role !== 'root' &&
         attachment.uploaded_by !== req.user.id
       ) {
-        res
-          .status(403)
-          .json(
-            errorResponse("Keine Berechtigung zum Löschen dieses Anhangs", 403),
-          );
+        res.status(403).json(errorResponse('Keine Berechtigung zum Löschen dieses Anhangs', 403));
         return;
       }
 
       // Delete from database
-      const deleted = await blackboardModel.deleteAttachment(
-        attachmentId,
-        tenantId,
-      );
+      const deleted = await blackboardModel.deleteAttachment(attachmentId, tenantId);
 
       if (deleted) {
         // Try to delete physical file
@@ -1175,17 +1029,13 @@ router.delete(
 
         logger.info(`User ${req.user.id} deleted attachment ${attachmentId}`);
 
-        res.json(successResponse(null, "Anhang erfolgreich gelöscht"));
+        res.json(successResponse(null, 'Anhang erfolgreich gelöscht'));
       } else {
-        res
-          .status(500)
-          .json(errorResponse("Fehler beim Löschen des Anhangs", 500));
+        res.status(500).json(errorResponse('Fehler beim Löschen des Anhangs', 500));
       }
     } catch (error: unknown) {
-      console.error("Error in DELETE /api/blackboard/attachments/:id:", error);
-      res
-        .status(500)
-        .json(errorResponse("Fehler beim Löschen des Anhangs", 500));
+      console.error('Error in DELETE /api/blackboard/attachments/:id:', error);
+      res.status(500).json(errorResponse('Fehler beim Löschen des Anhangs', 500));
     }
   }),
 );

@@ -9,7 +9,7 @@ export interface CreateUserBody {
   firstName: string;
   lastName: string;
   password: string;
-  role?: "employee" | "admin";
+  role?: 'employee' | 'admin';
   departmentId?: number;
   position?: string;
   phone?: string;
@@ -21,7 +21,7 @@ export interface UpdateUserBody {
   email?: string;
   firstName?: string;
   lastName?: string;
-  role?: "employee" | "admin";
+  role?: 'employee' | 'admin';
   departmentId?: number;
   position?: string;
   phone?: string;
@@ -46,7 +46,7 @@ export interface ChangePasswordBody {
 }
 
 export interface UpdateAvailabilityBody {
-  availabilityStatus: "available" | "vacation" | "sick" | "training" | "other";
+  availabilityStatus: 'available' | 'vacation' | 'sick' | 'training' | 'other';
   availabilityStart?: string | null; // ISO date
   availabilityEnd?: string | null; // ISO date
   availabilityNotes?: string | null;
@@ -61,7 +61,7 @@ export interface ListUsersQuery {
   isActive?: string;
   isArchived?: string;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
 }
 
 // Database field mapping types
