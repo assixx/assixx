@@ -4,7 +4,7 @@
  */
 import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger';
-import User from './user';
+import user from './user';
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
@@ -137,7 +137,7 @@ export interface EventsListResponse {
  * Get all calendar events visible to the user
  */
 export async function getAllEvents(
-  tenant_id: number,
+  tenantId: number,
   userId: number,
   options: EventQueryOptions = {},
 ): Promise<EventsListResponse> {
@@ -146,8 +146,8 @@ export async function getAllEvents(
       status = 'active',
       filter = 'all',
       search = '',
-      start_date,
-      end_date,
+      start_date: startDate,
+      end_date: endDate,
       page = 1,
       limit = 50,
       sortBy = 'start_date',
@@ -160,7 +160,7 @@ export async function getAllEvents(
     const dbStatus = status === 'active' ? 'confirmed' : status;
 
     // Determine user's role for access control
-    const { role } = await User.getUserDepartmentAndTeam(userId);
+    const { role } = await user.getUserDepartmentAndTeam(userId);
 
     // Build base query
     let query = `
@@ -173,7 +173,7 @@ export async function getAllEvents(
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-    const queryParams: unknown[] = [userId, tenant_id, dbStatus];
+    const queryParams: unknown[] = [userId, tenantId, dbStatus];
 
     // Apply org level filter based on new structure
     if (filter !== 'all') {
@@ -211,14 +211,14 @@ export async function getAllEvents(
     }
 
     // Apply date range filter
-    if (start_date !== undefined && start_date !== '') {
+    if (startDate !== undefined && startDate !== '') {
       query += ' AND e.end_date >= ?';
-      queryParams.push(start_date);
+      queryParams.push(startDate);
     }
 
-    if (end_date !== undefined && end_date !== '') {
+    if (endDate !== undefined && endDate !== '') {
       query += ' AND e.start_date <= ?';
-      queryParams.push(end_date);
+      queryParams.push(endDate);
     }
 
     // Apply search filter
@@ -270,7 +270,7 @@ export async function getAllEvents(
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-    const countParams: unknown[] = [tenant_id, dbStatus];
+    const countParams: unknown[] = [tenantId, dbStatus];
 
     // Apply org level filter for count
     if (filter !== 'all') {
@@ -305,14 +305,14 @@ export async function getAllEvents(
     }
 
     // Apply date range filter for count
-    if (start_date !== undefined && start_date !== '') {
+    if (startDate !== undefined && startDate !== '') {
       countQuery += ' AND e.end_date >= ?';
-      countParams.push(start_date);
+      countParams.push(startDate);
     }
 
-    if (end_date !== undefined && end_date !== '') {
+    if (endDate !== undefined && endDate !== '') {
       countQuery += ' AND e.start_date <= ?';
-      countParams.push(end_date);
+      countParams.push(endDate);
     }
 
     // Apply search filter for count
@@ -343,11 +343,11 @@ export async function getAllEvents(
 /**
  * Check if a calendar event exists (without permission check)
  */
-export async function checkEventExists(id: number, tenant_id: number): Promise<boolean> {
+export async function checkEventExists(id: number, tenantId: number): Promise<boolean> {
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(
       'SELECT 1 FROM calendar_events WHERE id = ? AND tenant_id = ?',
-      [id, tenant_id],
+      [id, tenantId],
     );
     return rows.length > 0;
   } catch (error: unknown) {
@@ -361,12 +361,12 @@ export async function checkEventExists(id: number, tenant_id: number): Promise<b
  */
 export async function getEventById(
   id: number,
-  tenant_id: number,
+  tenantId: number,
   userId: number,
 ): Promise<DbCalendarEvent | null> {
   try {
     // Determine user's role for access control
-    const { role } = await User.getUserDepartmentAndTeam(userId);
+    const { role } = await user.getUserDepartmentAndTeam(userId);
 
     // Query the event with user response status
     const query = `
@@ -379,7 +379,7 @@ export async function getEventById(
         WHERE e.id = ? AND e.tenant_id = ?
       `;
 
-    const [events] = await executeQuery<DbCalendarEvent[]>(query, [userId, id, tenant_id]);
+    const [events] = await executeQuery<DbCalendarEvent[]>(query, [userId, id, tenantId]);
 
     if (events.length === 0) {
       return null;
@@ -418,7 +418,7 @@ export async function getEventById(
 
       // Department events are visible to department members
       if (event.org_level === 'department' && event.department_id != null) {
-        const userInfo = await User.getUserDepartmentAndTeam(userId);
+        const userInfo = await user.getUserDepartmentAndTeam(userId);
         if (userInfo.departmentId === event.department_id) {
           return event;
         }
@@ -426,7 +426,7 @@ export async function getEventById(
 
       // Team events are visible to team members
       if (event.org_level === 'team' && event.team_id != null) {
-        const userInfo = await User.getUserDepartmentAndTeam(userId);
+        const userInfo = await user.getUserDepartmentAndTeam(userId);
         if (userInfo.teamId === event.team_id) {
           return event;
         }
@@ -447,7 +447,7 @@ export async function getEventById(
         isAttendee;
 
       if (!hasAccess) {
-        return null; // User doesn't have access to this event
+        return null; // user doesn't have access to this event
       }
     }
 
@@ -464,32 +464,32 @@ export async function getEventById(
 export async function createEvent(eventData: EventCreateData): Promise<DbCalendarEvent | null> {
   try {
     const {
-      tenant_id,
+      tenant_id: tenantId,
       title,
       description,
       location,
-      start_time,
-      end_time,
-      all_day,
-      org_level,
-      department_id,
-      team_id,
-      created_by,
-      created_by_role,
-      allow_attendees,
-      reminder_time,
+      start_time: startTime,
+      end_time: endTime,
+      all_day: allDay,
+      org_level: orgLevel,
+      department_id: departmentId,
+      team_id: teamId,
+      created_by: createdBy,
+      created_by_role: createdByRole,
+      allow_attendees: allowAttendees,
+      reminder_time: reminderTime,
       color,
-      recurrence_rule,
-      parent_event_id,
+      recurrence_rule: recurrenceRule,
+      parent_event_id: parentEventId,
     } = eventData;
 
     // Validate required fields
-    if (tenant_id === 0 || title === '' || created_by === 0) {
+    if (tenantId === 0 || title === '' || createdBy === 0) {
       throw new Error('Missing required fields');
     }
 
     // Ensure dates are valid
-    if (new Date(start_time) > new Date(end_time)) {
+    if (new Date(startTime) > new Date(endTime)) {
       throw new Error('Start time must be before end time');
     }
 
@@ -503,39 +503,39 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
       `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
-      tenant_id,
-      created_by, // user_id
+      tenantId,
+      createdBy, // user_id
       title,
       description ?? null,
       location ?? null,
-      formatDateForMysql(start_time),
-      formatDateForMysql(end_time),
-      all_day === true ? 1 : 0,
-      org_level,
-      department_id ?? null,
-      team_id ?? null,
-      created_by_role ?? 'user',
-      allow_attendees === true ? 1 : 0,
+      formatDateForMysql(startTime),
+      formatDateForMysql(endTime),
+      allDay === true ? 1 : 0,
+      orgLevel,
+      departmentId ?? null,
+      teamId ?? null,
+      createdByRole ?? 'user',
+      allowAttendees === true ? 1 : 0,
       eventData.requires_response === true ? 1 : 0, // requires_response
       'other', // type
       'confirmed', // status
       0, // is_private
-      reminder_time ?? null,
+      reminderTime ?? null,
       color ?? '#3498db',
-      recurrence_rule ?? null,
-      parent_event_id ?? null,
+      recurrenceRule ?? null,
+      parentEventId ?? null,
     ]);
 
     // Get the created event
-    const createdEvent = await getEventById(result.insertId, tenant_id, created_by);
+    const createdEvent = await getEventById(result.insertId, tenantId, createdBy);
 
     // Add the creator as an attendee with 'accepted' status
     if (createdEvent) {
-      await addEventAttendee(createdEvent.id, created_by, 'accepted');
+      await addEventAttendee(createdEvent.id, createdBy, 'accepted');
 
       // If this is a recurring event, generate future occurrences
-      if (recurrence_rule != null && recurrence_rule !== '' && parent_event_id == null) {
-        await generateRecurringEvents(createdEvent, recurrence_rule);
+      if (recurrenceRule != null && recurrenceRule !== '' && parentEventId == null) {
+        await generateRecurringEvents(createdEvent, recurrenceRule);
       }
     }
 
@@ -552,21 +552,21 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
 export async function updateEvent(
   id: number,
   eventData: EventUpdateData,
-  tenant_id: number,
+  tenantId: number,
 ): Promise<DbCalendarEvent | null> {
   try {
     const {
       title,
       description,
       location,
-      start_time,
-      end_time,
-      all_day,
-      org_level,
-      department_id,
-      team_id,
+      start_time: startTime,
+      end_time: endTime,
+      all_day: allDay,
+      org_level: orgLevel,
+      department_id: departmentId,
+      team_id: teamId,
       status,
-      reminder_time,
+      reminder_time: reminderTime,
       color,
     } = eventData;
 
@@ -589,34 +589,34 @@ export async function updateEvent(
       queryParams.push(location);
     }
 
-    if (start_time !== undefined) {
+    if (startTime !== undefined) {
       query += ', start_date = ?';
-      queryParams.push(formatDateForMysql(start_time));
+      queryParams.push(formatDateForMysql(startTime));
     }
 
-    if (end_time !== undefined) {
+    if (endTime !== undefined) {
       query += ', end_date = ?';
-      queryParams.push(formatDateForMysql(end_time));
+      queryParams.push(formatDateForMysql(endTime));
     }
 
-    if (all_day !== undefined) {
+    if (allDay !== undefined) {
       query += ', all_day = ?';
-      queryParams.push(all_day ? 1 : 0);
+      queryParams.push(allDay ? 1 : 0);
     }
 
-    if (org_level !== undefined) {
+    if (orgLevel !== undefined) {
       query += ', org_level = ?';
-      queryParams.push(org_level);
+      queryParams.push(orgLevel);
     }
 
-    if (department_id !== undefined) {
+    if (departmentId !== undefined) {
       query += ', department_id = ?';
-      queryParams.push(department_id);
+      queryParams.push(departmentId);
     }
 
-    if (team_id !== undefined) {
+    if (teamId !== undefined) {
       query += ', team_id = ?';
-      queryParams.push(team_id);
+      queryParams.push(teamId);
     }
 
     if (status !== undefined) {
@@ -624,13 +624,13 @@ export async function updateEvent(
       queryParams.push(status);
     }
 
-    if (reminder_time !== undefined) {
+    if (reminderTime !== undefined) {
       query += ', reminder_minutes = ?';
       // Convert empty string to null for integer field
       const reminderValue =
-        reminder_time === '' || reminder_time === null ?
+        reminderTime === '' || reminderTime === null ?
           null
-        : Number.parseInt(reminder_time.toString());
+        : Number.parseInt(reminderTime.toString());
       queryParams.push(reminderValue);
     }
 
@@ -641,7 +641,7 @@ export async function updateEvent(
 
     // Finish query
     query += ' WHERE id = ? AND tenant_id = ?';
-    queryParams.push(id, tenant_id);
+    queryParams.push(id, tenantId);
 
     // Execute update
     await executeQuery(query, queryParams);
@@ -649,14 +649,14 @@ export async function updateEvent(
     // Get the updated event - we need to get the current user_id first
     const [eventRows] = await executeQuery<RowDataPacket[]>(
       'SELECT user_id FROM calendar_events WHERE id = ? AND tenant_id = ?',
-      [id, tenant_id],
+      [id, tenantId],
     );
 
     if (eventRows.length === 0) {
       return null;
     }
 
-    return await getEventById(id, tenant_id, eventRows[0].user_id as number);
+    return await getEventById(id, tenantId, eventRows[0].user_id as number);
   } catch (error: unknown) {
     logger.error('Error in updateEvent:', error);
     throw error;
@@ -666,11 +666,11 @@ export async function updateEvent(
 /**
  * Delete a calendar event
  */
-export async function deleteEvent(id: number, tenant_id: number): Promise<boolean> {
+export async function deleteEvent(id: number, tenantId: number): Promise<boolean> {
   try {
     // Delete event
     const query = 'DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?';
-    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
 
     return result.affectedRows > 0;
   } catch (error: unknown) {
@@ -745,7 +745,7 @@ export async function removeEventAttendee(eventId: number, userId: number): Prom
 }
 
 /**
- * User responds to a calendar event
+ * user responds to a calendar event
  */
 export async function respondToEvent(
   eventId: number,
@@ -776,7 +776,7 @@ export async function respondToEvent(
  */
 export async function getEventAttendees(
   eventId: number,
-  tenant_id: number,
+  tenantId: number,
 ): Promise<DbEventAttendee[]> {
   try {
     const query = `
@@ -789,7 +789,7 @@ export async function getEventAttendees(
         ORDER BY u.first_name, u.last_name
       `;
 
-    const [attendees] = await executeQuery<DbEventAttendee[]>(query, [eventId, tenant_id]);
+    const [attendees] = await executeQuery<DbEventAttendee[]>(query, [eventId, tenantId]);
     return attendees;
   } catch (error: unknown) {
     logger.error('Error in getEventAttendees:', error);
@@ -801,7 +801,7 @@ export async function getEventAttendees(
  * Get upcoming events for a user's dashboard
  */
 export async function getDashboardEvents(
-  tenant_id: number,
+  tenantId: number,
   userId: number,
   days = 7,
   limit = 5,
@@ -812,7 +812,7 @@ export async function getDashboardEvents(
       role,
       departmentId: userDepartmentId,
       teamId: userTeamId,
-    } = await User.getUserDepartmentAndTeam(userId);
+    } = await user.getUserDepartmentAndTeam(userId);
 
     // Calculate date range
     const today = new Date();
@@ -835,7 +835,7 @@ export async function getDashboardEvents(
         AND e.start_date >= ? AND e.start_date <= ?
       `;
 
-    const queryParams: unknown[] = [userId, tenant_id, todayStr, endDateStr];
+    const queryParams: unknown[] = [userId, tenantId, todayStr, endDateStr];
 
     // Apply access control for non-admin users (dashboard shows all accessible events)
     if (role !== 'admin' && role !== 'root') {
@@ -920,21 +920,12 @@ export async function canManageEvent(
       role = userRole;
     } else {
       // Otherwise get it from the database
-      const userDetails = await User.getUserDepartmentAndTeam(userId);
+      const userDetails = await user.getUserDepartmentAndTeam(userId);
       role = userDetails.role;
     }
 
-    // Admins can manage all events
-    if (role === 'admin' || role === 'root') {
-      return true;
-    }
-
-    // Event creator can manage their events
-    if (event.user_id === userId) {
-      return true;
-    }
-
-    return false;
+    // Admins can manage all events or event creator can manage their events
+    return role === 'admin' || role === 'root' || event.user_id === userId;
   } catch (error: unknown) {
     logger.error('Error in canManageEvent:', error);
     throw error;

@@ -89,9 +89,10 @@ export function createMiddleware<T extends Request = Request>(
 export function createAuthenticatedMiddleware(
   handler: MiddlewareWithRequest<AuthenticatedRequest>,
 ): RequestHandler {
-  return (async (req: Request, res: Response, next: NextFunction) => {
+  return (async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!isAuthenticated(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
     await handler(req, res, next);
   }) as RequestHandler;

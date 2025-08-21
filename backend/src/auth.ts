@@ -9,11 +9,11 @@ import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import UserModel from './models/user';
+import userModel from './models/user';
 import type { DbUser } from './models/user';
 import { DatabaseUser } from './types';
 import { TokenPayload, TokenValidationResult } from './types/auth.types';
-import { AuthUser } from './types/request.types';
+import { AuthUser, AuthenticatedRequest } from './types/request.types';
 import { RowDataPacket, query as executeQuery } from './utils/db';
 import { normalizeMySQLBoolean } from './utils/typeHelpers';
 
@@ -76,12 +76,12 @@ export async function authenticateUser(
   try {
     // Try to find user by username first
     console.info('[DEBUG] Looking up user by username...');
-    let user = await UserModel.findByUsername(usernameOrEmail);
+    let user = await userModel.findByUsername(usernameOrEmail);
 
     // If not found by username, try by email
     if (!user) {
       console.info('[DEBUG] Not found by username, trying email...');
-      user = await UserModel.findByEmail(usernameOrEmail);
+      user = await userModel.findByEmail(usernameOrEmail);
       if (user) {
         console.info('[DEBUG] User found by email:', user.email);
       }
@@ -216,7 +216,7 @@ export async function authenticateToken(
     };
 
     // Best Practice Session Security (wie Google, Facebook, etc.)
-    if (user.sessionId !== undefined && user.sessionId !== null && user.sessionId !== '') {
+    if (user.sessionId !== undefined && user.sessionId !== '') {
       try {
         // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
         const requestFingerprint = req.headers['x-browser-fingerprint'] as string;
@@ -287,9 +287,11 @@ export async function authenticateToken(
       position: null,
     };
 
-    req.user = authenticatedUser;
+    // Use local reference to avoid race condition
+    const currentReq = req;
+    currentReq.user = authenticatedUser;
     // Set tenant_id directly on req for backwards compatibility
-    (req as Request & { tenant_id: number }).tenant_id = authenticatedUser.tenant_id;
+    (currentReq as Request & { tenant_id: number }).tenant_id = authenticatedUser.tenant_id;
     next();
   } catch (error) {
     // Check if client expects HTML (browser page request) or JSON (API request)
@@ -313,7 +315,8 @@ export async function authenticateToken(
  */
 export function authorizeRole(role: 'admin' | 'employee' | 'root') {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user) {
+    // Check if user exists on request (might not be authenticated yet)
+    if (!('user' in req) || !req.user) {
       // Check if client expects HTML (browser page request) or JSON (API request)
       const acceptHeader = req.headers.accept ?? '';
       if (acceptHeader.includes('text/html')) {
@@ -326,20 +329,24 @@ export function authorizeRole(role: 'admin' | 'employee' | 'root') {
       return;
     }
 
+    // Now we know user exists, cast to AuthenticatedRequest
+    const authReq = req as AuthenticatedRequest;
+    const userRole: string = authReq.user.role;
+
     // Root hat Zugriff auf alles
-    if (req.user.role === 'root') {
+    if (userRole === 'root') {
       next();
       return;
     }
 
     // Admin hat Zugriff auf Admin- und Employee-Ressourcen
-    if (req.user.role === 'admin' && (role === 'admin' || role === 'employee')) {
+    if (userRole === 'admin' && (role === 'admin' || role === 'employee')) {
       next();
       return;
     }
 
     // Genauer Rollen-Match
-    if (req.user.role === role) {
+    if (userRole === role) {
       next();
       return;
     }
@@ -353,7 +360,15 @@ export function authorizeRole(role: 'admin' | 'employee' | 'root') {
         admin: '/admin-dashboard',
         root: '/root-dashboard',
       };
-      const redirectPath = dashboardMap[req.user.role] ?? '/login';
+      // Validate userRole is a valid key to prevent object injection
+      let redirectPath = '/login';
+      if (userRole === 'employee') {
+        redirectPath = dashboardMap.employee;
+      } else if (userRole === 'admin') {
+        redirectPath = dashboardMap.admin;
+      } else if (userRole === 'root') {
+        redirectPath = dashboardMap.root;
+      }
       res.redirect(`${redirectPath}?error=unauthorized`);
     } else {
       // API request - return JSON error

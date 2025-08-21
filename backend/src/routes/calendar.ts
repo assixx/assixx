@@ -1,10 +1,6 @@
 /**
  * Calendar API Routes
  * Handles all operations related to the company calendar system
- * @swagger
- * tags:
- *   name: Calendar
- *   description: Event and calendar management
  */
 import express, { Router } from 'express';
 import { body, param, query } from 'express-validator';
@@ -19,15 +15,6 @@ import { getErrorMessage } from '../utils/errorHandler';
 import { typed } from '../utils/routeHandlers';
 
 const router: Router = express.Router();
-
-/**
- * Calendar API Routes
- * Handles all operations related to the company calendar system
- * @swagger
- * tags:
- *   name: Calendar
- *   description: Event and calendar management
- */
 
 // Import calendar model (keeping require pattern for compatibility)
 // Request body interfaces
@@ -177,7 +164,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
 });
 
 /**
- * @swagger
+ * Swagger API Documentation
  * /calendar:
  *   get:
  *     summary: Get all calendar events
@@ -287,8 +274,8 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
  *               $ref: '#/components/schemas/Error'
  */
 /**
- * @route GET /api/calendar
- * @desc Get all calendar events visible to the user
+ * Get all calendar events visible to the user
+ * Route: GET /api/calendar
  */
 router.get(
   '/',
@@ -325,8 +312,8 @@ router.get(
 );
 
 /**
- * @route GET /api/calendar/dashboard
- * @desc Get upcoming events for dashboard widget
+ * Get upcoming events for dashboard widget
+ * Route: GET /api/calendar/dashboard
  */
 router.get(
   '/dashboard',
@@ -355,8 +342,8 @@ router.get(
 );
 
 /**
- * @route GET /api/calendar/:id
- * @desc Get a specific calendar event
+ * Get a specific calendar event
+ * Route: GET /api/calendar/:id
  */
 router.get(
   '/:id',
@@ -388,8 +375,8 @@ router.get(
 );
 
 /**
- * @route POST /api/calendar
- * @desc Create a new calendar event
+ * Create a new calendar event
+ * Route: POST /api/calendar
  */
 router.post(
   '/',
@@ -400,9 +387,9 @@ router.post(
       const tenantId = getTenantId(req.user);
 
       // Convert org_id to number if it's a string
-      let org_id = req.body.org_id;
-      if (typeof org_id === 'string') {
-        org_id = Number.parseInt(org_id, 10);
+      let orgId = req.body.org_id;
+      if (typeof orgId === 'string') {
+        orgId = Number.parseInt(orgId, 10);
       }
 
       const eventData = {
@@ -414,7 +401,7 @@ router.post(
         end_time: req.body.end_time,
         all_day: req.body.all_day,
         org_level: req.body.org_level as 'company' | 'team' | 'department' | 'personal',
-        org_id,
+        org_id: orgId,
         created_by: req.user.id,
         reminder_time: req.body.reminder_time,
         color: req.body.color,
@@ -431,8 +418,8 @@ router.post(
 );
 
 /**
- * @route PUT /api/calendar/:id
- * @desc Update a calendar event
+ * Update a calendar event
+ * Route: PUT /api/calendar/:id
  */
 router.put(
   '/:id',
@@ -479,8 +466,8 @@ router.put(
 );
 
 /**
- * @route DELETE /api/calendar/:id
- * @desc Delete a calendar event
+ * Delete a calendar event
+ * Route: DELETE /api/calendar/:id
  */
 router.delete(
   '/:id',

@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+import { $$, $all, $$id, setHTML } from '../utils/dom-utils';
 import { featureFlags } from '../utils/feature-flags';
 import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
@@ -265,8 +266,8 @@ let calendarView = 'dayGridMonth'; // Default view
  * Helper function to set selected organization ID
  */
 function selectOrgId(id: number, name: string): void {
-  const selectedOrgIdElement = document.querySelector('#selectedOrgId');
-  const eventOrgIdElement = document.querySelector('#eventOrgId');
+  const selectedOrgIdElement = $$('#selectedOrgId');
+  const eventOrgIdElement = $$<HTMLInputElement>('#eventOrgId');
 
   if (selectedOrgIdElement) {
     selectedOrgIdElement.textContent = name;
@@ -277,7 +278,7 @@ function selectOrgId(id: number, name: string): void {
 }
 
 // Initialize when document is ready
-function initializeApp() {
+async function initializeApp() {
   console.info('Calendar: Starting initialization...');
 
   // Register modal templates
@@ -287,49 +288,48 @@ function initializeApp() {
   try {
     checkLoggedIn();
     // Load user data
-    fetchUserData()
-      .then((userData: UserData) => {
-        currentUserId = userData.id;
-        isAdmin = userData.role === 'admin' || userData.role === 'root';
+    try {
+      const userData = await fetchUserData();
+      currentUserId = userData.id;
+      isAdmin = userData.role === 'admin' || userData.role === 'root';
 
-        // Show/hide "New Event" button based on permissions
-        const newEventBtn = document.querySelector('#newEventBtn');
-        console.info('Calendar: newEventBtn found:', newEventBtn !== null);
-        if (newEventBtn !== null) {
-          newEventBtn.style.display = isAdmin ? 'block' : 'none';
-        }
+      // Show/hide "New Event" button based on permissions
+      const newEventBtn = $$('#newEventBtn');
+      console.info('Calendar: newEventBtn found:', newEventBtn !== null);
+      if (newEventBtn !== null) {
+        newEventBtn.style.display = isAdmin ? 'block' : 'none';
+      }
 
-        // Load departments and teams for form dropdowns
-        void loadDepartmentsAndTeams();
+      // Load departments and teams for form dropdowns
+      void loadDepartmentsAndTeams();
 
-        // Initialize calendar - wrapped to prevent redirect on calendar errors
-        try {
-          initializeCalendar();
-          // Setup fullscreen controls
-          setupFullscreenControls();
-        } catch (calendarError) {
-          console.error('Calendar initialization error:', calendarError);
-          showError('Kalender konnte nicht geladen werden.');
-        }
+      // Initialize calendar - wrapped to prevent redirect on calendar errors
+      try {
+        initializeCalendar();
+        // Setup fullscreen controls
+        setupFullscreenControls();
+      } catch (calendarError) {
+        console.error('Calendar initialization error:', calendarError);
+        showError('Kalender konnte nicht geladen werden.');
+      }
 
-        // Load upcoming events
-        void loadUpcomingEvents();
+      // Load upcoming events
+      void loadUpcomingEvents();
 
-        // Setup event listeners
-        console.info('Calendar: Setting up event listeners...');
-        setupEventListeners();
+      // Setup event listeners
+      console.info('Calendar: Setting up event listeners...');
+      setupEventListeners();
 
-        // Color picker removed - color is auto-determined by org_level
+      // Color picker removed - color is auto-determined by org_level
 
-        // Check for unread events and show modal if necessary
-        void checkUnreadEvents();
+      // Check for unread events and show modal if necessary
+      void checkUnreadEvents();
 
-        console.info('Calendar: Initialization complete');
-      })
-      .catch((error: unknown) => {
-        console.error('Error loading user data:', error);
-        window.location.href = '/login';
-      });
+      console.info('Calendar: Initialization complete');
+    } catch (error: unknown) {
+      console.error('Error loading user data:', error);
+      window.location.href = '/login';
+    }
   } catch (error: unknown) {
     console.error('Error checking login:', error);
     window.location.href = '/login';
@@ -338,10 +338,14 @@ function initializeApp() {
 
 // Wait for both DOM and scripts to be ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp);
+  document.addEventListener('DOMContentLoaded', () => {
+    void initializeApp();
+  });
 } else {
   // DOM is already loaded, run directly
-  setTimeout(initializeApp, 100); // Small delay to ensure all scripts are loaded
+  setTimeout(() => {
+    void initializeApp();
+  }, 100); // Small delay to ensure all scripts are loaded
 }
 
 /**
@@ -432,7 +436,7 @@ async function checkUnreadEvents(): Promise<void> {
     // If there are unread events, show the modal
     if (totalUnread > 0) {
       // Check if badge was clicked or if we should auto-show
-      const badge = document.querySelector('#calendar-unread-badge');
+      const badge = $$('#calendar-unread-badge');
       if (badge && badge.style.display !== 'none') {
         // Auto-show modal when page loads with unread events
         setTimeout(() => {
@@ -442,7 +446,9 @@ async function checkUnreadEvents(): Promise<void> {
     }
 
     // Update badge in navigation
-    void window.unifiedNav.updateUnreadCalendarEvents();
+    if (window.unifiedNav) {
+      void window.unifiedNav.updateUnreadCalendarEvents();
+    }
   } catch (error: unknown) {
     console.error('Error checking unread events:', error);
   }
@@ -493,42 +499,88 @@ async function showUnreadEventsModal(): Promise<void> {
     if (!modal) return;
 
     // Populate events list
-    const listContainer = document.querySelector('#unreadEventsList');
+    const listContainer = $$('#unreadEventsList');
     if (!listContainer) return;
 
+    // Clear container
+    while (listContainer.firstChild) {
+      listContainer.firstChild.remove();
+    }
+
     if (events.length === 0) {
-      listContainer.innerHTML = `
-        <div class="text-center p-4">
-          <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
-          <p class="mt-3">Keine Termine mit ausstehender Statusanfrage</p>
-        </div>
-      `;
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'text-center p-4';
+
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-check-circle text-success';
+      icon.style.fontSize = '3rem';
+      emptyDiv.append(icon);
+
+      const text = document.createElement('p');
+      text.className = 'mt-3';
+      text.textContent = 'Keine Termine mit ausstehender Statusanfrage';
+      emptyDiv.append(text);
+
+      listContainer.append(emptyDiv);
     } else {
-      listContainer.innerHTML = events
-        .map(
-          (event) => `
-        <div class="unread-event-item" data-event-id="${event.id}">
-          <div class="event-info">
-            <h4>${escapeHtml(event.title)}</h4>
-            <p class="text-muted">
-              <i class="fas fa-clock"></i> ${new Date(event.startTime).toLocaleString('de-DE')}
-            </p>
-          </div>
-          <div class="event-actions">
-            <button class="btn btn-success btn-sm" onclick="window.respondToEvent(${event.id}, 'accepted')">
-              <i class="fas fa-check"></i> Zusagen
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="window.respondToEvent(${event.id}, 'declined')">
-              <i class="fas fa-times"></i> Absagen
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="window.showEventDetails(${event.id})">
-              <i class="fas fa-info-circle"></i> Details
-            </button>
-          </div>
-        </div>
-      `,
-        )
-        .join('');
+      events.forEach((event) => {
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'unread-event-item';
+        eventDiv.dataset.eventId = event.id.toString();
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'event-info';
+
+        const title = document.createElement('h4');
+        title.textContent = event.title;
+        infoDiv.append(title);
+
+        const dateP = document.createElement('p');
+        dateP.className = 'text-muted';
+        const clockIcon = document.createElement('i');
+        clockIcon.className = 'fas fa-clock';
+        dateP.append(clockIcon);
+        dateP.append(document.createTextNode(' ' + new Date(event.startTime).toLocaleString('de-DE')));
+        infoDiv.append(dateP);
+
+        eventDiv.append(infoDiv);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'event-actions';
+
+        // Accept button
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'btn btn-success btn-sm';
+        acceptBtn.onclick = () => window.respondToEvent(event.id, 'accepted');
+        const acceptIcon = document.createElement('i');
+        acceptIcon.className = 'fas fa-check';
+        acceptBtn.append(acceptIcon);
+        acceptBtn.append(document.createTextNode(' Zusagen'));
+        actionsDiv.append(acceptBtn);
+
+        // Decline button
+        const declineBtn = document.createElement('button');
+        declineBtn.className = 'btn btn-danger btn-sm';
+        declineBtn.onclick = () => window.respondToEvent(event.id, 'declined');
+        const declineIcon = document.createElement('i');
+        declineIcon.className = 'fas fa-times';
+        declineBtn.append(declineIcon);
+        declineBtn.append(document.createTextNode(' Absagen'));
+        actionsDiv.append(declineBtn);
+
+        // Details button
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'btn btn-secondary btn-sm';
+        detailsBtn.onclick = () => window.showEventDetails(event.id);
+        const detailsIcon = document.createElement('i');
+        detailsIcon.className = 'fas fa-info-circle';
+        detailsBtn.append(detailsIcon);
+        detailsBtn.append(document.createTextNode(' Details'));
+        actionsDiv.append(detailsBtn);
+
+        eventDiv.append(actionsDiv);
+        listContainer.append(eventDiv);
+      });
     }
   } catch (error: unknown) {
     console.error('Error loading unread events:', error);
@@ -548,7 +600,7 @@ function initializeCalendar(): void {
 
   console.info('Calendar: Initializing FullCalendar...');
 
-  const calendarEl = document.querySelector('#calendar');
+  const calendarEl = $$('#calendar');
   console.info('Calendar: Calendar element found:', !!calendarEl);
 
   if (!calendarEl) {
@@ -626,7 +678,7 @@ function initializeCalendar(): void {
         successCallback: (events: FullCalendarEventInput[]) => void,
         failureCallback: (error: Error) => void,
       ) {
-        loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
+        void loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
       },
       eventClick(info: FullCalendarEventClickInfo) {
         void viewEvent(Number.parseInt(info.event.id, 10));
@@ -637,11 +689,32 @@ function initializeCalendar(): void {
         tooltip.className = 'event-tooltip';
         const description = (info.event.extendedProps?.description as string | undefined) ?? '';
         const location = info.event.extendedProps?.location as string | undefined;
-        tooltip.innerHTML = `
-        <strong>${info.event.title}</strong><br>
-        ${description}
-        ${location !== undefined && location !== '' ? `<br><i class="fas fa-map-marker-alt"></i> ${location}` : ''}
-      `;
+        // Clear tooltip
+        while (tooltip.firstChild) {
+          tooltip.firstChild.remove();
+        }
+
+        // Add title
+        const strong = document.createElement('strong');
+        strong.textContent = info.event.title;
+        tooltip.append(strong);
+
+        // Add line break
+        tooltip.append(document.createElement('br'));
+
+        // Add description
+        if (description !== '') {
+          tooltip.append(document.createTextNode(description));
+        }
+
+        // Add location if present
+        if (location !== undefined && location !== '') {
+          tooltip.append(document.createElement('br'));
+          const locationIcon = document.createElement('i');
+          locationIcon.className = 'fas fa-map-marker-alt';
+          tooltip.append(locationIcon);
+          tooltip.append(document.createTextNode(' ' + location));
+        }
         document.body.append(tooltip);
 
         const rect = info.el.getBoundingClientRect();
@@ -673,7 +746,7 @@ function initializeCalendar(): void {
  */
 function setupEventListeners(): void {
   // Filter by level using tab buttons (Gesamt/Firma/Abteilung/Team/Meine)
-  const levelFilterButtons = document.querySelectorAll<HTMLButtonElement>('#levelFilter button.tab-btn');
+  const levelFilterButtons = $all<HTMLButtonElement>('#levelFilter button.tab-btn');
   levelFilterButtons.forEach((button) => {
     // Set initial active state based on saved filter
     if (button.dataset.value === currentFilter) {
@@ -699,10 +772,10 @@ function setupEventListeners(): void {
   });
 
   // Legacy: Filter by level using pill buttons (if any exist)
-  document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
+  $all('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all pills
-      document.querySelectorAll('.filter-pill').forEach((pill) => {
+      $all('.filter-pill').forEach((pill) => {
         pill.classList.remove('active');
       });
       // Add active class to clicked pill
@@ -724,7 +797,7 @@ function setupEventListeners(): void {
   ];
 
   viewButtons.forEach(({ id, view }) => {
-    const button = document.getElementById(id);
+    const button = $$id(id);
     if (button) {
       button.addEventListener('click', () => {
         console.info('[CALENDAR] Changing view to:', view);
@@ -732,7 +805,7 @@ function setupEventListeners(): void {
         calendar.changeView(view);
 
         // Update active state
-        document.querySelectorAll('.view-selector button').forEach((btn) => {
+        $all('.view-selector button').forEach((btn) => {
           btn.classList.remove('active');
           btn.classList.remove('btn-primary');
           btn.classList.add('btn-outline-primary');
@@ -745,7 +818,7 @@ function setupEventListeners(): void {
   });
 
   // Also support legacy view-btn class approach
-  document.querySelectorAll<HTMLElement>('.view-btn').forEach((button) => {
+  $all('.view-btn').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       const view = this.dataset.view;
       if (view !== undefined && view !== '') {
@@ -753,7 +826,7 @@ function setupEventListeners(): void {
         calendar.changeView(view);
 
         // Update active state
-        document.querySelectorAll('.view-btn').forEach((btn) => {
+        $all('.view-btn').forEach((btn) => {
           btn.classList.remove('active');
         });
         this.classList.add('active');
@@ -762,8 +835,8 @@ function setupEventListeners(): void {
   });
 
   // Search button
-  const searchButton = document.querySelector('#searchButton');
-  const searchInput = document.querySelector('#searchInput');
+  const searchButton = $$('#searchButton');
+  const searchInput = $$<HTMLInputElement>('#searchInput');
 
   if (searchButton !== null && searchInput !== null) {
     searchButton.addEventListener('click', () => {
@@ -780,7 +853,7 @@ function setupEventListeners(): void {
   }
 
   // New event button (in filter bar) - only for admins and root
-  const newEventBtn = document.querySelector('#newEventBtn');
+  const newEventBtn = $$('#newEventBtn');
   console.info('Calendar: Looking for newEventBtn:', newEventBtn);
 
   // Get user role
@@ -818,7 +891,7 @@ function setupEventListeners(): void {
   }
 
   // New event button in calendar card header - only for admins and root
-  const newCalendarEventBtn = document.querySelector('#newCalendarEventBtn');
+  const newCalendarEventBtn = $$('#newCalendarEventBtn');
   console.info('Calendar: Looking for newCalendarEventBtn:', newCalendarEventBtn);
 
   // Check user role
@@ -854,7 +927,7 @@ function setupEventListeners(): void {
   }
 
   // Save event button
-  const saveEventBtn = document.querySelector('#saveEventBtn');
+  const saveEventBtn = $$('#saveEventBtn');
   if (saveEventBtn !== null) {
     saveEventBtn.addEventListener('click', () => {
       void saveEvent();
@@ -862,7 +935,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const eventOrgLevel = document.querySelector('#eventOrgLevel');
+  const eventOrgLevel = $$<HTMLSelectElement>('#eventOrgLevel');
   if (eventOrgLevel !== null) {
     eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -872,10 +945,10 @@ function setupEventListeners(): void {
   // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
-  const allDayCheckbox = document.querySelector('#eventAllDay');
+  const allDayCheckbox = $$<HTMLInputElement>('#eventAllDay');
   if (allDayCheckbox !== null) {
     allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
         if (this.checked) {
@@ -886,11 +959,11 @@ function setupEventListeners(): void {
   }
 
   // Add attendee button
-  const addAttendeeBtn = document.querySelector('#addAttendeeBtn');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
       // Only open modal if button is visible (for personal events)
-      const orgLevelInput = document.querySelector('#orgLevelInput');
+      const orgLevelInput = $$<HTMLInputElement>('#orgLevelInput');
       if (orgLevelInput !== null && orgLevelInput.value === 'personal') {
         modalManager.show('attendeesModal');
         void loadEmployeesForAttendees();
@@ -1014,7 +1087,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
         currentFilter = 'personal';
         localStorage.setItem('calendarFilter', currentFilter);
         // Update UI to reflect filter change
-        const filterButtons = document.querySelectorAll<HTMLButtonElement>('#levelFilter button.tab-btn');
+        const filterButtons = $all<HTMLButtonElement>('#levelFilter button.tab-btn');
         filterButtons.forEach((btn) => {
           if (btn.dataset.value === 'personal') {
             btn.classList.add('active');
@@ -1205,7 +1278,7 @@ async function loadUpcomingEvents(): Promise<void> {
     displayUpcomingEvents(events);
   } catch (error: unknown) {
     console.error('Error loading upcoming events:', error);
-    const upcomingEvents = document.querySelector('#upcomingEvents');
+    const upcomingEvents = $$('#upcomingEvents');
     if (upcomingEvents) {
       upcomingEvents.innerHTML = '<p class="text-center">Fehler beim Laden der Termine.</p>';
     }
@@ -1216,7 +1289,7 @@ async function loadUpcomingEvents(): Promise<void> {
  * Display upcoming events in the sidebar
  */
 function displayUpcomingEvents(events: CalendarEvent[]): void {
-  const container = document.querySelector('#upcomingEvents');
+  const container = $$('#upcomingEvents');
 
   if (!container) {
     console.error('Upcoming events container not found');
@@ -1264,19 +1337,61 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
     eventItem.className = 'event-item';
     eventItem.dataset.id = event.id.toString();
 
-    eventItem.innerHTML = `
-      <div class="event-date">
-        <span class="event-day">${day}</span>
-        <span class="event-month">${month}</span>
-        <span class="event-time">${timeStr}</span>
-      </div>
-      <div class="event-details">
-        <div class="event-title">${escapeHtml(event.title)}</div>
-        ${event.location !== undefined && event.location !== '' ? `<div class="event-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location)}</div>` : ''}
-        <span class="event-level ${levelClass}">${levelText}</span>
-        ${event.user_response !== undefined ? `<span class="status-${event.user_response} event-response">Ihr Status: ${getResponseText(event.user_response)}</span>` : ''}
-      </div>
-    `;
+    // Create event date section
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'event-date';
+
+    const daySpan = document.createElement('span');
+    daySpan.className = 'event-day';
+    daySpan.textContent = day.toString();
+    dateDiv.append(daySpan);
+
+    const monthSpan = document.createElement('span');
+    monthSpan.className = 'event-month';
+    monthSpan.textContent = month;
+    dateDiv.append(monthSpan);
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'event-time';
+    timeSpan.textContent = timeStr;
+    dateDiv.append(timeSpan);
+
+    eventItem.append(dateDiv);
+
+    // Create event details section
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'event-details';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'event-title';
+    titleDiv.textContent = event.title;
+    detailsDiv.append(titleDiv);
+
+    // Add location if present
+    if (event.location !== undefined && event.location !== '') {
+      const locationDiv = document.createElement('div');
+      locationDiv.className = 'event-location';
+      const locationIcon = document.createElement('i');
+      locationIcon.className = 'fas fa-map-marker-alt';
+      locationDiv.append(locationIcon);
+      locationDiv.append(document.createTextNode(' ' + event.location));
+      detailsDiv.append(locationDiv);
+    }
+
+    const levelSpan = document.createElement('span');
+    levelSpan.className = 'event-level ' + levelClass;
+    levelSpan.textContent = levelText;
+    detailsDiv.append(levelSpan);
+
+    // Add response status if present
+    if (event.user_response !== undefined) {
+      const responseSpan = document.createElement('span');
+      responseSpan.className = 'status-' + event.user_response + ' event-response';
+      responseSpan.textContent = 'Ihr Status: ' + getResponseText(event.user_response);
+      detailsDiv.append(responseSpan);
+    }
+
+    eventItem.append(detailsDiv);
 
     // Add click event
     eventItem.addEventListener('click', () => {
@@ -1583,9 +1698,15 @@ async function viewEvent(eventId: number): Promise<void> {
       content: modalContent,
       onOpen: () => {
         // Content is already in the modal template
-        const modalBody = document.querySelector('#eventDetailContent');
+        const modalBody = $$('#eventDetailContent');
         if (modalBody) {
-          modalBody.innerHTML = modalContent;
+          // Clear existing content
+          while (modalBody.firstChild) {
+            modalBody.firstChild.remove();
+          }
+          // Use setHTML from dom-utils for safe HTML setting
+          // modalContent is already escaped via escapeHtml() function
+          setHTML(modalBody, modalContent);
         }
       },
     });
@@ -1646,7 +1767,9 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
       void checkUnreadEvents();
 
       // Update badge in navigation
-      void window.unifiedNav.updateUnreadCalendarEvents();
+      if (window.unifiedNav) {
+        void window.unifiedNav.updateUnreadCalendarEvents();
+      }
 
       // Reload the page to refresh everything
       setTimeout(() => {
@@ -1695,8 +1818,10 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   }
 
   // Reset form
-  const form = document.querySelector('#eventForm');
-  form?.reset();
+  const form = $$<HTMLFormElement>('#eventForm');
+  if (form) {
+    form.reset();
+  }
 
   // No color selection needed anymore - color is determined by org_level
 
@@ -1707,8 +1832,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   selectedAttendees = [];
 
   // Set default org level and show info message
-  const orgLevelInput = document.querySelector('#eventOrgLevel');
-  const selectedOrgLevelSpan = document.querySelector('#selectedOrgLevel');
+  const orgLevelInput = $$<HTMLSelectElement>('#eventOrgLevel');
+  const selectedOrgLevelSpan = $$('#selectedOrgLevel');
 
   if (eventId === undefined || eventId === null) {
     // For new events, set default to company and show appropriate UI
@@ -1718,9 +1843,9 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     // Use setTimeout to ensure DOM is fully rendered before updating
     setTimeout(() => {
       // Show attendees section with company info by default
-      const attendeesGroup = document.querySelector('#attendeesGroup');
-      const attendeesContainer = document.querySelector('#attendeesContainer');
-      const addAttendeeBtn = document.querySelector('#addAttendeeBtn');
+      const attendeesGroup = $$('#attendeesGroup');
+      const attendeesContainer = $$('#attendeesContainer');
+      const addAttendeeBtn = $$('#addAttendeeBtn');
 
       if (attendeesGroup) attendeesGroup.style.display = 'block';
       if (addAttendeeBtn) addAttendeeBtn.style.display = 'none'; // Hide for company events
@@ -1730,8 +1855,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
 
       // Also update the department/team groups visibility for company events
-      const departmentGroup = document.querySelector('#departmentGroup');
-      const teamGroup = document.querySelector('#teamGroup');
+      const departmentGroup = $$('#departmentGroup');
+      const teamGroup = $$('#teamGroup');
       if (departmentGroup) departmentGroup.style.display = 'none';
       if (teamGroup) teamGroup.style.display = 'none';
     }, 50);
@@ -1758,8 +1883,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
     // New event
     if (startDate) {
-      const startInput = document.querySelector('#eventStartDate');
-      const startTimeInput = document.querySelector('#eventStartTime');
+      const startInput = $$<HTMLInputElement>('#eventStartDate');
+      const startTimeInput = $$<HTMLInputElement>('#eventStartTime');
 
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
@@ -1771,8 +1896,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
 
     if (endDate) {
-      const endInput = document.querySelector('#eventEndDate');
-      const endTimeInput = document.querySelector('#eventEndTime');
+      const endInput = $$<HTMLInputElement>('#eventEndDate');
+      const endTimeInput = $$<HTMLInputElement>('#eventEndTime');
 
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
@@ -1783,10 +1908,10 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
     }
 
-    const allDayCheckbox = document.querySelector('#eventAllDay');
+    const allDayCheckbox = $$<HTMLInputElement>('#eventAllDay');
     if (allDayCheckbox && allDay !== undefined) {
       allDayCheckbox.checked = allDay;
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = allDay;
       });
@@ -1822,17 +1947,17 @@ function formatTimeForInput(date: Date): string {
  */
 function updateOrgIdDropdown(level: string): void {
   // Handle department dropdown
-  const departmentGroup = document.querySelector('#departmentGroup');
-  const departmentDropdown = document.querySelector('#departmentDropdown');
+  const departmentGroup = $$('#departmentGroup');
+  const departmentDropdown = $$<HTMLSelectElement>('#departmentDropdown');
 
   // Handle team dropdown
-  const teamGroup = document.querySelector('#teamGroup');
-  const teamDropdown = document.querySelector('#teamDropdown');
+  const teamGroup = $$('#teamGroup');
+  const teamDropdown = $$<HTMLSelectElement>('#teamDropdown');
 
   // Handle attendees section
-  const attendeesGroup = document.querySelector('#attendeesGroup');
-  const addAttendeeBtn = document.querySelector('#addAttendeeBtn')!;
-  const attendeesContainer = document.querySelector('#attendeesContainer');
+  const attendeesGroup = $$('#attendeesGroup');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
+  const attendeesContainer = $$('#attendeesContainer');
 
   // Clear dropdowns
   if (departmentDropdown) departmentDropdown.innerHTML = '';
@@ -1847,35 +1972,48 @@ function updateOrgIdDropdown(level: string): void {
     if (level === 'personal') {
       // Show attendees section for personal events
       attendeesGroup.style.display = 'block';
-      addAttendeeBtn.style.display = 'inline-flex';
-      if (attendeesContainer) {
-        if (selectedAttendees.length === 0) {
-          attendeesContainer.innerHTML = '<p class="text-muted">Keine Teilnehmer ausgewählt</p>';
+      if (addAttendeeBtn) addAttendeeBtn.style.display = 'inline-flex';
+      if (attendeesContainer && selectedAttendees.length === 0) {
+        // Clear existing content
+        while (attendeesContainer.firstChild) {
+          attendeesContainer.firstChild.remove();
         }
+        const noPara = document.createElement('p');
+        noPara.className = 'text-muted';
+        noPara.textContent = 'Keine Teilnehmer ausgewählt';
+        attendeesContainer.append(noPara);
       }
     } else {
       // Hide attendees section for other event types
       attendeesGroup.style.display = 'block'; // Keep container visible for info text
-      addAttendeeBtn.style.display = 'none';
+      if (addAttendeeBtn) addAttendeeBtn.style.display = 'none';
 
       // Show info text about automatic attendees
       if (attendeesContainer) {
-        let infoText = '';
+        // Clear existing content
+        while (attendeesContainer.firstChild) {
+          attendeesContainer.firstChild.remove();
+        }
+        // Create info paragraph
+        const infoPara = document.createElement('p');
+        infoPara.className = 'text-info';
+        const infoIcon = document.createElement('i');
+        infoIcon.className = 'fas fa-info-circle';
+        infoPara.append(infoIcon);
+        let infoMessage = '';
         switch (level) {
           case 'company':
-            infoText =
-              '<p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>';
+            infoMessage = ' Alle Mitarbeiter der Firma werden automatisch eingeladen';
             break;
           case 'department':
-            infoText =
-              '<p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der ausgewählten Abteilung werden automatisch eingeladen</p>';
+            infoMessage = ' Alle Mitarbeiter der ausgewählten Abteilung werden automatisch eingeladen';
             break;
           case 'team':
-            infoText =
-              '<p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitglieder des ausgewählten Teams werden automatisch eingeladen</p>';
+            infoMessage = ' Alle Mitglieder des ausgewählten Teams werden automatisch eingeladen';
             break;
         }
-        attendeesContainer.innerHTML = infoText;
+        infoPara.append(document.createTextNode(infoMessage));
+        attendeesContainer.append(infoPara);
       }
 
       // Clear selected attendees for non-personal events
@@ -1904,28 +2042,26 @@ function updateOrgIdDropdown(level: string): void {
         departmentDropdown?.append(option);
       });
     }
-  } else if (level === 'team') {
+  } else if (level === 'team' && departmentGroup && teamGroup) {
     // Show both department and team selection
-    if (departmentGroup && teamGroup) {
-      departmentGroup.style.display = 'block';
-      teamGroup.style.display = 'block';
+    departmentGroup.style.display = 'block';
+    teamGroup.style.display = 'block';
 
-      // Populate department dropdown
-      departments.forEach((dept) => {
-        const option = document.createElement('div');
-        option.className = 'dropdown-option';
-        option.dataset.value = dept.id.toString();
-        option.textContent = dept.name;
-        option.onclick = (e) => {
-          e.preventDefault();
-          selectDepartment(dept.id, dept.name);
-          // Load teams for this department
-          loadTeamsForDepartment(dept.id);
-          closeAllDropdowns();
-        };
-        departmentDropdown?.append(option);
-      });
-    }
+    // Populate department dropdown
+    departments.forEach((dept) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.dataset.value = dept.id.toString();
+      option.textContent = dept.name;
+      option.onclick = (e) => {
+        e.preventDefault();
+        selectDepartment(dept.id, dept.name);
+        // Load teams for this department
+        loadTeamsForDepartment(dept.id);
+        closeAllDropdowns();
+      };
+      departmentDropdown?.append(option);
+    });
   }
 }
 
@@ -1933,8 +2069,8 @@ function updateOrgIdDropdown(level: string): void {
  * Select department
  */
 function selectDepartment(departmentId: number, departmentName: string): void {
-  const selectedElement = document.querySelector('#selectedDepartment');
-  const inputElement = document.querySelector('#eventDepartmentId');
+  const selectedElement = $$('#selectedDepartment');
+  const inputElement = $$<HTMLInputElement>('#eventDepartmentId');
 
   if (selectedElement) selectedElement.textContent = departmentName;
   if (inputElement) inputElement.value = departmentId.toString();
@@ -1944,8 +2080,8 @@ function selectDepartment(departmentId: number, departmentName: string): void {
  * Select team
  */
 function selectTeam(teamId: number, teamName: string): void {
-  const selectedElement = document.querySelector('#selectedTeam');
-  const inputElement = document.querySelector('#eventTeamId');
+  const selectedElement = $$('#selectedTeam');
+  const inputElement = $$<HTMLInputElement>('#eventTeamId');
 
   if (selectedElement) selectedElement.textContent = teamName;
   if (inputElement) inputElement.value = teamId.toString();
@@ -1955,7 +2091,7 @@ function selectTeam(teamId: number, teamName: string): void {
  * Load teams for selected department
  */
 function loadTeamsForDepartment(departmentId: number): void {
-  const teamDropdown = document.querySelector('#teamDropdown');
+  const teamDropdown = $$('#teamDropdown');
   if (!teamDropdown) return;
 
   teamDropdown.innerHTML = '';
@@ -1981,9 +2117,9 @@ function loadTeamsForDepartment(departmentId: number): void {
   });
 
   // Reset team selection
-  const selectedTeam = document.querySelector('#selectedTeam');
+  const selectedTeam = $$('#selectedTeam');
   if (selectedTeam) selectedTeam.textContent = '-- Team wählen --';
-  const teamInput = document.querySelector('#eventTeamId');
+  const teamInput = $$<HTMLInputElement>('#eventTeamId');
   if (teamInput) teamInput.value = '';
 }
 
@@ -1993,7 +2129,7 @@ function loadTeamsForDepartment(departmentId: number): void {
 async function saveEvent(): Promise<void> {
   console.info('saveEvent called');
 
-  const form = document.querySelector('#eventForm');
+  const form = $$<HTMLFormElement>('#eventForm');
   if (form === null) {
     console.error('Form not found');
     return;
@@ -2006,19 +2142,19 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get form values directly from elements
-  const titleInput = document.querySelector('#eventTitle');
-  const descriptionInput = document.querySelector('#eventDescription');
-  const startDateInput = document.querySelector('#eventStartDate');
-  const startTimeInput = document.querySelector('#eventStartTime');
-  const endDateInput = document.querySelector('#eventEndDate');
-  const endTimeInput = document.querySelector('#eventEndTime');
-  const allDayInput = document.querySelector('#eventAllDay');
-  const locationInput = document.querySelector('#eventLocation');
-  const orgLevelInput = document.querySelector('#eventOrgLevel');
-  const departmentIdInput = document.querySelector('#eventDepartmentId');
-  const teamIdInput = document.querySelector('#eventTeamId');
-  const reminderTimeInput = document.querySelector('#eventReminderTime');
-  const eventIdInput = document.querySelector('#eventId');
+  const titleInput = $$<HTMLInputElement>('#eventTitle');
+  const descriptionInput = $$<HTMLTextAreaElement>('#eventDescription');
+  const startDateInput = $$<HTMLInputElement>('#eventStartDate');
+  const startTimeInput = $$<HTMLInputElement>('#eventStartTime');
+  const endDateInput = $$<HTMLInputElement>('#eventEndDate');
+  const endTimeInput = $$<HTMLInputElement>('#eventEndTime');
+  const allDayInput = $$<HTMLInputElement>('#eventAllDay');
+  const locationInput = $$<HTMLInputElement>('#eventLocation');
+  const orgLevelInput = $$<HTMLSelectElement>('#eventOrgLevel');
+  const departmentIdInput = $$<HTMLInputElement>('#eventDepartmentId');
+  const teamIdInput = $$<HTMLInputElement>('#eventTeamId');
+  const reminderTimeInput = $$<HTMLSelectElement>('#eventReminderTime');
+  const eventIdInput = $$<HTMLInputElement>('#eventId');
 
   // Validate required fields
   if (titleInput?.value === undefined || titleInput.value === '') {
@@ -2090,14 +2226,17 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get recurrence data
-  const recurrenceType = document.querySelector('#eventRecurrence')?.value;
+  const recurrenceTypeElement = $$<HTMLSelectElement>('#eventRecurrence');
+  const recurrenceType = recurrenceTypeElement?.value;
   let recurrenceRule = '';
 
   if (recurrenceType !== undefined && recurrenceType !== '') {
     // Build recurrence rule based on selection
-    const recurrenceEnd = document.querySelector('#selectedRecurrenceEnd')?.textContent;
-    const recurrenceCount = document.querySelector('#recurrenceCount')?.value;
-    const recurrenceEndDate = document.querySelector('#recurrenceEndDate')?.value;
+    const recurrenceEnd = $$('#selectedRecurrenceEnd')?.textContent;
+    const recurrenceCountElement = $$<HTMLInputElement>('#recurrenceCount');
+    const recurrenceCount = recurrenceCountElement?.value;
+    const recurrenceEndDateElement = $$<HTMLInputElement>('#recurrenceEndDate');
+    const recurrenceEndDate = recurrenceEndDateElement?.value;
 
     // Build simplified recurrence rule
     recurrenceRule = recurrenceType;
@@ -2130,13 +2269,13 @@ async function saveEvent(): Promise<void> {
   let reminderTime = undefined;
   if (reminderTimeInput?.value !== undefined && reminderTimeInput.value !== '') {
     const parsed = Number.parseInt(reminderTimeInput.value, 10);
-    if (!isNaN(parsed) && parsed >= 0) {
+    if (!Number.isNaN(parsed) && parsed >= 0) {
       reminderTime = parsed;
     }
   }
 
   // Get requires response checkbox
-  const requiresResponseInput = document.querySelector('#eventRequiresResponse');
+  const requiresResponseInput = $$<HTMLInputElement>('#eventRequiresResponse');
   const requiresResponse = requiresResponseInput?.checked ?? false;
 
   const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
@@ -2320,7 +2459,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Fill form with event data
-      const form = document.querySelector('#eventForm');
+      const form = $$<HTMLFormElement>('#eventForm');
       if (form === null) return;
 
       // Set event ID
@@ -2342,7 +2481,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       locationInput.value = event.location ?? '';
 
       // Set org level using custom dropdown
-      const selectedOrgLevelSpan = document.querySelector('#selectedOrgLevel');
+      const selectedOrgLevelSpan = $$('#selectedOrgLevel');
       if (selectedOrgLevelSpan) {
         const orgLevelText =
           event.org_level === 'company'
@@ -2381,7 +2520,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Update time inputs disabled state
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = Boolean(event.all_day);
       });
@@ -2396,13 +2535,13 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
-      const reminderSelect = document.querySelector('#eventReminderTime');
+      const reminderSelect = $$<HTMLSelectElement>('#eventReminderTime');
       if (reminderSelect !== null && event.reminder_time !== undefined) {
         reminderSelect.value = event.reminder_time.toString();
       }
 
       // Set requires response checkbox
-      const requiresResponseInput = document.querySelector('#eventRequiresResponse');
+      const requiresResponseInput = $$<HTMLInputElement>('#eventRequiresResponse');
       if (requiresResponseInput !== null) {
         // Check both camelCase and snake_case fields
         const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
@@ -2444,7 +2583,7 @@ function deleteEvent(eventId: number): void {
       console.info('[CALENDAR] Confirmation modal opened, eventToDelete:', eventToDelete);
 
       // Add click handler to the delete button when modal opens
-      const confirmBtn = document.querySelector('#confirmDeleteBtn');
+      const confirmBtn = $$('#confirmDeleteBtn');
       if (confirmBtn) {
         confirmBtn.onclick = () => {
           console.info('[CALENDAR] Confirm delete button clicked, eventToDelete:', eventToDelete);
@@ -2467,7 +2606,11 @@ async function confirmDeleteEvent(): Promise<void> {
     return;
   }
 
+  // Store the ID locally to avoid race conditions
   const eventId = eventToDelete;
+  // Clear the global variable immediately to prevent race conditions
+  eventToDelete = null;
+
   const token = getAuthToken();
   if (token === null || token === '') return;
 
@@ -2489,7 +2632,6 @@ async function confirmDeleteEvent(): Promise<void> {
       showSuccess('Termin erfolgreich gelöscht!');
       modalManager.hide('confirmationModal');
       modalManager.hide('eventDetailModal');
-      eventToDelete = null; // Reset the stored ID
 
       // Refresh calendar
       calendar.refetchEvents();
@@ -2508,7 +2650,7 @@ async function confirmDeleteEvent(): Promise<void> {
  * Search attendees
  */
 function searchAttendees(query: string): void {
-  const searchResults = document.querySelector('#attendeeSearchResults');
+  const searchResults = $$('#attendeeSearchResults');
   if (!searchResults) return;
 
   if (query === '' || query.length < 2) {
@@ -2547,12 +2689,24 @@ function searchAttendees(query: string): void {
         : emp.username !== ''
           ? emp.username
           : emp.email;
-    item.innerHTML = `
-      <span>${escapeHtml(name)}</span>
-      <button class="btn btn-sm btn-primary" onclick="addAttendee(${emp.id}, '${escapeHtml(name)}')">
-        <i class="fas fa-plus"></i>
-      </button>
-    `;
+    // Clear existing content
+    while (item.firstChild) {
+      item.firstChild.remove();
+    }
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = name;
+    item.append(nameSpan);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-sm btn-primary';
+    addBtn.onclick = () => {
+      addAttendee(emp.id, name);
+    };
+    const plusIcon = document.createElement('i');
+    plusIcon.className = 'fas fa-plus';
+    addBtn.append(plusIcon);
+    item.append(addBtn);
     searchResults.append(item);
   });
 }
@@ -2566,8 +2720,8 @@ function addAttendee(userId: number, _name: string): void {
     updateSelectedAttendees();
 
     // Clear search
-    const searchInput = document.querySelector('#attendeeSearch');
-    const searchResults = document.querySelector('#attendeeSearchResults');
+    const searchInput = $$<HTMLInputElement>('#attendeeSearch');
+    const searchResults = $$('#attendeeSearchResults');
     if (searchInput !== null) searchInput.value = '';
     if (searchResults !== null) searchResults.innerHTML = '';
   }
@@ -2638,7 +2792,24 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
     if (deptResponse.ok) {
       const deptData = (await deptResponse.json()) as ApiV2Response<Department> | Department[];
-      departments = useV2Departments && 'data' in deptData ? deptData.data.data : (deptData as Department[]);
+
+      // Safely extract departments array from response
+      if (useV2Departments && 'data' in deptData) {
+        // v2 API response structure
+        if (Array.isArray(deptData.data.data)) {
+          departments = deptData.data.data;
+        } else if (Array.isArray(deptData.data)) {
+          // Sometimes v2 API returns data directly under data
+          departments = deptData.data as unknown as Department[];
+        } else {
+          departments = [];
+        }
+      } else if (Array.isArray(deptData)) {
+        // v1 API response or direct array
+        departments = deptData;
+      } else {
+        departments = [];
+      }
     }
 
     // Load teams
@@ -2652,7 +2823,24 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
     if (teamResponse.ok) {
       const teamData = (await teamResponse.json()) as ApiV2Response<Team> | Team[];
-      teams = useV2Teams && 'data' in teamData ? teamData.data.data : (teamData as Team[]);
+
+      // Safely extract teams array from response
+      if (useV2Teams && 'data' in teamData) {
+        // v2 API response structure
+        if (Array.isArray(teamData.data.data)) {
+          teams = teamData.data.data;
+        } else if (Array.isArray(teamData.data)) {
+          // Sometimes v2 API returns data directly under data
+          teams = teamData.data as unknown as Team[];
+        } else {
+          teams = [];
+        }
+      } else if (Array.isArray(teamData)) {
+        // v1 API response or direct array
+        teams = teamData;
+      } else {
+        teams = [];
+      }
     }
 
     // Load employees for attendees
@@ -2666,7 +2854,22 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 
     if (empResponse.ok) {
       const empData = (await empResponse.json()) as ApiV2Response<User> | User[];
-      const allEmployees: User[] = useV2Users && 'data' in empData ? empData.data.data : (empData as User[]);
+      let allEmployees: User[] = [];
+
+      // Safely extract employees array from response
+      if (useV2Users && 'data' in empData) {
+        // v2 API response structure
+        if (Array.isArray(empData.data.data)) {
+          allEmployees = empData.data.data;
+        } else if (Array.isArray(empData.data)) {
+          // Sometimes v2 API returns data directly under data
+          allEmployees = empData.data as unknown as User[];
+        }
+      } else if (Array.isArray(empData)) {
+        // v1 API response or direct array
+        allEmployees = empData;
+      }
+
       // Get current user ID to exclude from employees list
       const userStr = localStorage.getItem('user');
       let currentUserIdLocal = 0;
@@ -2678,6 +2881,8 @@ async function loadDepartmentsAndTeams(): Promise<void> {
           console.error('Error parsing user from localStorage:', error);
         }
       }
+
+      // Only filter if we have a valid array
       employees = allEmployees.filter((emp: User) => emp.id !== currentUserIdLocal);
     }
   } catch (error: unknown) {
@@ -2691,14 +2896,23 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 function escapeHtml(text: string | null | undefined): string {
   if (text === null || text === undefined || text === '') return '';
   const str = text;
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return str.replace(/["&'<>]/g, (m) => map[m]);
+  return str.replace(/["&'<>]/g, (m) => {
+    // Use switch to avoid object injection issues
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#039;';
+      default:
+        return m;
+    }
+  });
 }
 
 // Extend window for calendar functions
@@ -2734,7 +2948,7 @@ declare global {
  */
 function setupModalEventListeners(): void {
   // Save event button
-  const saveEventBtn = document.querySelector('#saveEventBtn');
+  const saveEventBtn = $$('#saveEventBtn');
   if (saveEventBtn !== null) {
     // Remove existing listeners by cloning
     const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
@@ -2749,7 +2963,7 @@ function setupModalEventListeners(): void {
   }
 
   // Add attendee button
-  const addAttendeeBtn = document.querySelector('#addAttendeeBtn');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
   if (addAttendeeBtn) {
     const newButton = addAttendeeBtn.cloneNode(true) as HTMLButtonElement;
     addAttendeeBtn.parentNode?.replaceChild(newButton, addAttendeeBtn);
@@ -2763,13 +2977,13 @@ function setupModalEventListeners(): void {
   }
 
   // All day checkbox
-  const allDayCheckbox = document.querySelector('#eventAllDay');
+  const allDayCheckbox = $$<HTMLInputElement>('#eventAllDay');
   if (allDayCheckbox !== null) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
 
     newCheckbox.addEventListener('change', function (this: HTMLInputElement) {
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
         if (this.checked) {
@@ -2785,7 +2999,7 @@ function setupModalEventListeners(): void {
 
 // Custom dropdown functions
 function toggleOrgLevelDropdown(): void {
-  const dropdown = document.querySelector('#orgLevelDropdown');
+  const dropdown = $$('#orgLevelDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2801,11 +3015,11 @@ function toggleOrgLevelDropdown(): void {
 }
 
 function selectOrgLevel(value: string, text: string): void {
-  const selectedElement = document.querySelector('#selectedOrgLevel');
-  const inputElement = document.querySelector('#eventOrgLevel')!;
+  const selectedElement = $$('#selectedOrgLevel');
+  const inputElement = $$<HTMLInputElement>('#eventOrgLevel');
 
   if (selectedElement !== null) selectedElement.textContent = text;
-  inputElement.value = value;
+  if (inputElement !== null) inputElement.value = value;
 
   // Update org ID dropdown based on selection
   updateOrgIdDropdown(value);
@@ -2813,10 +3027,10 @@ function selectOrgLevel(value: string, text: string): void {
 }
 
 function toggleOrgIdDropdown(): void {
-  const display = document.querySelector('#orgIdDisplay');
+  const display = $$('#orgIdDisplay');
   if (display?.classList.contains('disabled') === true) return;
 
-  const dropdown = document.querySelector('#orgIdDropdown');
+  const dropdown = $$('#orgIdDropdown');
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -2830,7 +3044,7 @@ function toggleOrgIdDropdown(): void {
 }
 
 function toggleReminderDropdown(): void {
-  const dropdown = document.querySelector('#reminderDropdown');
+  const dropdown = $$('#reminderDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2846,16 +3060,16 @@ function toggleReminderDropdown(): void {
 }
 
 function selectReminder(value: string, text: string): void {
-  const selectedElement = document.querySelector('#selectedReminder');
-  const inputElement = document.querySelector('#eventReminderTime')!;
+  const selectedElement = $$('#selectedReminder');
+  const inputElement = $$<HTMLSelectElement>('#eventReminderTime');
 
   if (selectedElement !== null) selectedElement.textContent = text;
-  inputElement.value = value;
+  if (inputElement !== null) inputElement.value = value;
   closeAllDropdowns();
 }
 
 function toggleRecurrenceDropdown(): void {
-  const dropdown = document.querySelector('#recurrenceDropdown');
+  const dropdown = $$('#recurrenceDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2871,7 +3085,7 @@ function toggleRecurrenceDropdown(): void {
 }
 
 function toggleDepartmentDropdown(): void {
-  const dropdown = document.querySelector('#departmentDropdown');
+  const dropdown = $$('#departmentDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2887,7 +3101,7 @@ function toggleDepartmentDropdown(): void {
 }
 
 function toggleTeamDropdown(): void {
-  const dropdown = document.querySelector('#teamDropdown');
+  const dropdown = $$('#teamDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2903,14 +3117,14 @@ function toggleTeamDropdown(): void {
 }
 
 function selectRecurrence(value: string, text: string): void {
-  const selectedElement = document.querySelector('#selectedRecurrence');
-  const inputElement = document.querySelector('#eventRecurrence')!;
+  const selectedElement = $$('#selectedRecurrence');
+  const inputElement = $$<HTMLInputElement>('#eventRecurrence');
 
   if (selectedElement !== null) selectedElement.textContent = text;
-  inputElement.value = value;
+  if (inputElement !== null) inputElement.value = value;
 
   // Show/hide recurrence end options
-  const endWrapper = document.querySelector('#recurrenceEndWrapper');
+  const endWrapper = $$('#recurrenceEndWrapper');
   if (endWrapper) {
     endWrapper.style.display = value !== '' ? 'block' : 'none';
   }
@@ -2919,7 +3133,7 @@ function selectRecurrence(value: string, text: string): void {
 }
 
 function toggleRecurrenceEndDropdown(): void {
-  const dropdown = document.querySelector('#recurrenceEndDropdown');
+  const dropdown = $$('#recurrenceEndDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2935,11 +3149,11 @@ function toggleRecurrenceEndDropdown(): void {
 }
 
 function selectRecurrenceEnd(value: string, text: string): void {
-  const selectedElement = document.querySelector('#selectedRecurrenceEnd');
+  const selectedElement = $$('#selectedRecurrenceEnd');
   if (selectedElement) selectedElement.textContent = text;
 
-  const countWrapper = document.querySelector('#recurrenceCountWrapper');
-  const dateWrapper = document.querySelector('#recurrenceEndDateWrapper');
+  const countWrapper = $$('#recurrenceCountWrapper');
+  const dateWrapper = $$('#recurrenceEndDateWrapper');
 
   if (countWrapper && dateWrapper) {
     if (value === 'after') {
@@ -2958,13 +3172,13 @@ function selectRecurrenceEnd(value: string, text: string): void {
 }
 
 function closeAllDropdowns(): void {
-  document.querySelectorAll('.custom-dropdown').forEach((dropdown) => {
+  $all('.custom-dropdown').forEach((dropdown) => {
     dropdown.classList.remove('active');
   });
-  document.querySelectorAll('.dropdown-display').forEach((display) => {
+  $all('.dropdown-display').forEach((display) => {
     display.classList.remove('active');
   });
-  document.querySelectorAll('.dropdown-options').forEach((options) => {
+  $all('.dropdown-options').forEach((options) => {
     options.classList.remove('active');
   });
 }
@@ -2979,7 +3193,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
     // For employees, show a simple input field instead of user list
     if (userRole === 'employee') {
-      const attendeesList = document.querySelector('#attendeesList');
+      const attendeesList = $$('#attendeesList');
       if (attendeesList) {
         attendeesList.innerHTML = `
           <div class="form-group">
@@ -2993,7 +3207,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
         `;
       }
       // Register event handler for add button
-      const addSelectedAttendeesBtn = document.querySelector('#addSelectedAttendeesBtn');
+      const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
       if (addSelectedAttendeesBtn) {
         addSelectedAttendeesBtn.style.display = 'none'; // Hide for employees
       }
@@ -3013,7 +3227,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
     if (response.ok) {
       const data = (await response.json()) as ApiV2Response<User> | User[];
       const users: User[] = useV2Users && 'data' in data ? data.data.data : (data as User[]);
-      const attendeesList = document.querySelector('#attendeesList');
+      const attendeesList = $$('#attendeesList');
 
       // Get current user ID to exclude from list
       const userStr = localStorage.getItem('user');
@@ -3031,33 +3245,42 @@ async function loadEmployeesForAttendees(): Promise<void> {
       employees = users.filter((user: User) => user.id !== currentUserIdLocal);
 
       if (attendeesList) {
-        attendeesList.innerHTML = employees
-          .map((user: User) => {
-            // Handle both snake_case (v1) and camelCase (v2) field names
-            const firstName = user.first_name ?? '';
-            const lastName = user.last_name ?? '';
-            const displayName =
-              `${firstName} ${lastName}`.trim() !== ''
-                ? `${firstName} ${lastName}`.trim()
-                : user.username !== ''
-                  ? user.username
-                  : user.email;
+        // Clear existing content
+        while (attendeesList.firstChild) {
+          attendeesList.firstChild.remove();
+        }
 
-            return `
-          <div class="attendee-option">
-            <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
-            <label for="attendee-${user.id}">
-              ${escapeHtml(displayName)}
-              (${escapeHtml(user.email)})
-            </label>
-          </div>
-        `;
-          })
-          .join('');
+        employees.forEach((user: User) => {
+          // Handle both snake_case (v1) and camelCase (v2) field names
+          const firstName = user.first_name ?? '';
+          const lastName = user.last_name ?? '';
+          const displayName =
+            `${firstName} ${lastName}`.trim() !== ''
+              ? `${firstName} ${lastName}`.trim()
+              : user.username !== ''
+                ? user.username
+                : user.email;
+
+          const optionDiv = document.createElement('div');
+          optionDiv.className = 'attendee-option';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `attendee-${user.id}`;
+          checkbox.value = user.id.toString();
+          optionDiv.append(checkbox);
+
+          const label = document.createElement('label');
+          label.htmlFor = `attendee-${user.id}`;
+          label.textContent = `${displayName} (${user.email})`;
+          optionDiv.append(label);
+
+          attendeesList.append(optionDiv);
+        });
       }
 
       // Re-attach event listener for the "Add Selected" button after modal content is loaded
-      const addSelectedAttendeesBtn = document.querySelector('#addSelectedAttendeesBtn');
+      const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
       if (addSelectedAttendeesBtn) {
         // Remove any existing listeners by cloning
         const newButton = addSelectedAttendeesBtn.cloneNode(true) as HTMLButtonElement;
@@ -3065,9 +3288,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
         newButton.addEventListener('click', () => {
           console.info('Add selected attendees button clicked');
-          const checkboxes = document.querySelectorAll<HTMLInputElement>(
-            '#attendeesList input[type="checkbox"]:checked',
-          );
+          const checkboxes = $all<HTMLInputElement>('#attendeesList input[type="checkbox"]:checked');
           console.info('Found checked boxes:', checkboxes.length);
 
           checkboxes.forEach((checkbox) => {
@@ -3084,7 +3305,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
       }
 
       // Also re-attach the search functionality
-      const attendeeSearch = document.querySelector('#attendeeSearch');
+      const attendeeSearch = $$<HTMLInputElement>('#attendeeSearch');
       if (attendeeSearch !== null) {
         const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
         attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);
@@ -3101,7 +3322,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
 // Update selected attendees display
 function updateSelectedAttendees(): void {
-  const container = document.querySelector('#attendeesContainer');
+  const container = $$('#attendeesContainer');
   if (!container) return;
 
   if (selectedAttendees.length === 0) {
@@ -3140,7 +3361,8 @@ function updateSelectedAttendees(): void {
     .filter((html) => html !== '')
     .join('');
 
-  container.innerHTML = attendeeHTML;
+  // Use setHTML from dom-utils for safe HTML setting
+  setHTML(container, attendeeHTML);
 }
 
 // Export functions to window for backwards compatibility
@@ -3396,10 +3618,10 @@ function getEventFormModalTemplate(): string {
                 <i class="fas fa-question-circle"></i> Statusanfrage
               </label>
               <div class="form-check form-switch">
-                <input 
-                  type="checkbox" 
-                  class="form-check-input" 
-                  id="eventRequiresResponse" 
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="eventRequiresResponse"
                   name="requires_response"
                 />
                 <label class="form-check-label" for="eventRequiresResponse">
@@ -3649,8 +3871,8 @@ function getConfirmationModalTemplate(): string {
  * Setup fullscreen controls for the calendar
  */
 function setupFullscreenControls(): void {
-  const fullscreenBtn = document.querySelector('#fullscreenBtn');
-  const calendarContainer = document.querySelector('#calendarContainer');
+  const fullscreenBtn = $$<HTMLButtonElement>('#fullscreenBtn');
+  const calendarContainer = $$('#calendarContainer');
 
   if (!fullscreenBtn || !calendarContainer) {
     console.warn('Calendar: Fullscreen elements not found');
