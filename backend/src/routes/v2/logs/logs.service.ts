@@ -1,8 +1,6 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-
 import { query as executeQuery } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
-
 import type { LogsResponse, LogsListResponse, LogsFilterParams, LogsStatsResponse } from "./types.js";
 
 interface DbLogRow extends RowDataPacket {

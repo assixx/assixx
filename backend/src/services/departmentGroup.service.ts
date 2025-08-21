@@ -405,7 +405,11 @@ class DepartmentGroupService {
       return false;
     }
 
-    return this.checkCircularDependency(parents[0].parent_group_id as number, targetId, tenantId);
+    return await this.checkCircularDependency(
+      parents[0].parent_group_id as number,
+      targetId,
+      tenantId,
+    );
   }
 }
 

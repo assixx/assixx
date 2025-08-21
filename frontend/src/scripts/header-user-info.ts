@@ -5,7 +5,6 @@
 
 import type { User } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
-
 import { getAuthToken, parseJwt } from './auth';
 
 /**

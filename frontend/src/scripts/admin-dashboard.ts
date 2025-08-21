@@ -138,7 +138,7 @@ class DashboardService {
 
     // If any v2 API is enabled, load individually
     if (useV2Users || useV2Documents || useV2Departments || useV2Teams) {
-      return this.loadStatsIndividually();
+      return await this.loadStatsIndividually();
     }
 
     // Try v1 admin stats endpoint
@@ -156,7 +156,7 @@ class DashboardService {
     }
 
     // Fallback to individual loading
-    return this.loadStatsIndividually();
+    return await this.loadStatsIndividually();
   }
 
   private async loadStatsIndividually(): Promise<DashboardStats> {

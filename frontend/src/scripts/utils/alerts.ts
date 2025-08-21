@@ -22,7 +22,7 @@ export function showAlert(message: string): void {
  */
 export async function showConfirm(message: string): Promise<boolean> {
   // Create a promise that resolves based on user action
-  return new Promise((resolve) => {
+  return await new Promise((resolve) => {
     // Add inline styles for the confirmation dialog
     const style = document.createElement('style');
     style.textContent = `

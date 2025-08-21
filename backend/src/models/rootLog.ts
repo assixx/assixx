@@ -45,7 +45,7 @@ export async function logRootAction(
     action,
     new_values: typeof details === 'string' ? { details } : details,
   };
-  return createRootLog(logData);
+  return await createRootLog(logData);
 }
 
 export async function createRootLog(logData: RootLogCreateData): Promise<number> {

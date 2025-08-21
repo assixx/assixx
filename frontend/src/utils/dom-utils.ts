@@ -114,7 +114,7 @@ export async function waitForElement<T extends HTMLElement = HTMLElement>(
   selector: string,
   timeout = 5000,
 ): Promise<T> {
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     const element = $$<T>(selector);
     if (element) {
       resolve(element);

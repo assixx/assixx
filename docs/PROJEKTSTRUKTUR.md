@@ -57,8 +57,6 @@ Das Assixx Multi-Tenant SaaS System ist ein Enterprise-Level Projekt mit klarer 
 
 config order wurde wieder in root verschoben
 
-```
-
 ### 📁 backend/ (TypeScript Express API)
 
 ```
@@ -418,13 +416,11 @@ backend/
 │
 ├── 📁 dist/ # Build Output (git-ignoriert)
 └── 📁 logs/ # Application Logs (git-ignoriert)
-
 ```
 
 ### 📁 frontend/ (Vite TypeScript Frontend)
 
 ```
-
 frontend/
 ├── 📄 package.json # Frontend Dependencies
 ├── 📄 tsconfig.json # TypeScript Config
@@ -648,13 +644,11 @@ frontend/
 │ └── [Font Awesome Fonts] # FA Icons
 │
 └── 📁 dist/ # Build Output (git-ignoriert)
-
 ```
 
 ### 📁 database/ (Schema & Migrationen)
 
 ```
-
 database/
 ├── 📄 README.md # Database Dokumentation
 ├── 📄 SCHEMA-SYNC-REPORT-20250616.md # Schema Sync Report
@@ -688,13 +682,11 @@ database/
 │ └── [Module-specific Updates]
 │
 └── 📁 test-data/ # Test-Daten für Development
-
 ```
 
 ### 📁 docker/ (Container-Orchestrierung)
 
 ```
-
 docker/
 ├── 📄 docker-compose.yml # 🔴 PRODUKTION (Standard)
 ├── 📄 docker-compose.dev.yml # 🟡 DEVELOPMENT (mit HMR)
@@ -711,13 +703,11 @@ docker/
 ├── 📄 test-mysql-startup.sh # MySQL Startup Test
 ├── 📁 scripts/ # Docker Utility Scripts
 └── 📁 uploads/ # Mounted Upload Directory
-
 ```
 
 ### 📁 scripts/ (Build & Deployment Tools)
 
 ```
-
 scripts/
 ├── 📁 [Database Scripts] # DB Management
 ├── 📄 backup-database.sh # Automatisches Backup
@@ -746,13 +736,11 @@ scripts/
 ├── 📄 migrate-inline-styles.sh # CSS Migration
 ├── 📄 add-layout-shift-fix.sh # Layout Shift Fix
 └── 📄 update-font-awesome.sh # Font Awesome Update
-
 ```
 
 ### 📁 backups/ (Automatische DB-Backups)
 
 ```
-
 backups/
 ├── 📄 latest*backup.sql.gz # Symlink zum neuesten Backup
 ├── 📄 cron.log # Backup Cron Log
@@ -771,13 +759,11 @@ backups/
 │
 └── 📁 tenant-specific/ # Tenant-spezifische Backups
 └── tenant_[ID]_final_[TIMESTAMP].sql.gz
-
 ```
 
 ### 📁 docs/ (Umfangreiche Dokumentation)
 
 ```
-
 docs/
 ├── 📁 [Kern-Dokumentation] # Wichtigste Dokumente
 ├── 📄 PROJEKTSTRUKTUR.md # Diese Datei
@@ -798,7 +784,6 @@ docs/
 │ └── [Bug-Fix Dokumentationen]
 │
 └── 📁 [Weitere Dokumentationen] # Testing, Security, etc.
-
 ```
 
 ## 📋 Wichtige Hinweise
@@ -842,6 +827,5 @@ docs/
 
 ---
 
-_Diese Datei wird bei Strukturänderungen aktualisiert. Letzte Aktualisierung: 18.08.2025_
+_Diese Datei wird bei Strukturänderungen aktualisiert. Letzte Aktualisierung: 21.08.2025_
 _Branch: feature/api-v2-frontend-migration_
-```

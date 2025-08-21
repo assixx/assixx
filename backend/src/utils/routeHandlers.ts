@@ -23,7 +23,7 @@ export function authHandler(
   handler: (req: AuthenticatedRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
-    return handler(req as AuthenticatedRequest, res, next);
+    await handler(req as AuthenticatedRequest, res, next);
   }) as RequestHandler;
 }
 
@@ -34,7 +34,7 @@ export function paramsHandler<P extends ParamsDictionary = ParamsDictionary>(
   handler: (req: ParamsRequest<P>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<P> {
   return (async (req: Request<P>, res: Response, next: NextFunction) => {
-    return handler(req as ParamsRequest<P>, res, next);
+    await handler(req as ParamsRequest<P>, res, next);
   }) as RequestHandler<P>;
 }
 
@@ -45,7 +45,7 @@ export function bodyHandler<B = unknown>(
   handler: (req: BodyRequest<B>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<ParamsDictionary, unknown, B> {
   return (async (req: Request<ParamsDictionary, unknown, B>, res: Response, next: NextFunction) => {
-    return handler(req as BodyRequest<B>, res, next);
+    await handler(req as BodyRequest<B>, res, next);
   }) as RequestHandler<ParamsDictionary, unknown, B>;
 }
 
@@ -60,7 +60,7 @@ export function queryHandler<Q extends ParsedQs = ParsedQs>(
     res: Response,
     next: NextFunction,
   ) => {
-    return handler(req as QueryRequest<Q>, res, next);
+    await handler(req as QueryRequest<Q>, res, next);
   }) as RequestHandler<ParamsDictionary, unknown, unknown, Q>;
 }
 
@@ -75,7 +75,7 @@ export function paramsBodyHandler<P extends ParamsDictionary = ParamsDictionary,
   ) => void | Promise<void>,
 ): RequestHandler<P, unknown, B> {
   return (async (req: Request<P, unknown, B>, res: Response, next: NextFunction) => {
-    return handler(req as ParamsRequest<P> & BodyRequest<B>, res, next);
+    await handler(req as ParamsRequest<P> & BodyRequest<B>, res, next);
   }) as RequestHandler<P, unknown, B>;
 }
 
@@ -90,7 +90,7 @@ export function fullHandler<
   handler: (req: FullRequest<B, Q, P>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<P, unknown, B, Q> {
   return (async (req: Request<P, unknown, B, Q>, res: Response, next: NextFunction) => {
-    return handler(req as FullRequest<B, Q, P>, res, next);
+    await handler(req as FullRequest<B, Q, P>, res, next);
   }) as RequestHandler<P, unknown, B, Q>;
 }
 
@@ -101,7 +101,7 @@ export function publicHandler(
   handler: (req: PublicRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
-    return handler(req as PublicRequest, res, next);
+    await handler(req as PublicRequest, res, next);
   }) as RequestHandler;
 }
 
@@ -112,7 +112,7 @@ export function optionalAuthHandler(
   handler: (req: OptionalAuthRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
-    return handler(req as OptionalAuthRequest, res, next);
+    await handler(req as OptionalAuthRequest, res, next);
   }) as RequestHandler;
 }
 
@@ -163,7 +163,7 @@ export function controllerAuth<T extends object>(
   ) => void | Promise<void>,
 ): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
-    return method.call(controller, req as AuthenticatedRequest, res, next);
+    await method.call(controller, req as AuthenticatedRequest, res, next);
   };
 }
 
@@ -180,7 +180,7 @@ export function controllerParams<P extends ParamsDictionary, T extends object>(
   ) => void | Promise<void>,
 ): RequestHandler<P> {
   return async (req: Request<P>, res: Response, next: NextFunction) => {
-    return method.call(controller, req as ParamsRequest<P>, res, next);
+    await method.call(controller, req as ParamsRequest<P>, res, next);
   };
 }
 
@@ -239,6 +239,6 @@ export function middlewareWrapper(
   middleware: (req: Request, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
-    return middleware(req, res, next);
+    await middleware(req, res, next);
   };
 }

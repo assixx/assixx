@@ -4,7 +4,6 @@
  */
 
 import { apiClient } from '../utils/api-client';
-
 import { getAuthToken, showError } from './auth';
 
 interface UserProfile {

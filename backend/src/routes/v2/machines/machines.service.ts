@@ -113,7 +113,7 @@ export class MachinesService {
       user_agent: userAgent,
     });
 
-    return this.getMachineById(machineId, tenantId);
+    return await this.getMachineById(machineId, tenantId);
   }
 
   // Update machine
@@ -202,7 +202,7 @@ export class MachinesService {
       user_agent: userAgent,
     });
 
-    return this.getMachineById(id, tenantId);
+    return await this.getMachineById(id, tenantId);
   }
 
   // Delete machine (hard delete)

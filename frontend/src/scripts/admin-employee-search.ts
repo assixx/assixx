@@ -3,7 +3,6 @@
  */
 
 import type { User } from '../types/api.types';
-
 import { getAuthToken, showError } from './auth';
 
 interface Department {

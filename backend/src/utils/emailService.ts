@@ -421,7 +421,7 @@ async function processQueue(): Promise<void> {
 
       // E-Mails parallel senden, aber mit Limit
       const results: EmailResult[] = await Promise.all(
-        batch.map(async (emailOptions: EmailOptions) => sendEmail(emailOptions)),
+        batch.map(async (emailOptions: EmailOptions) => await sendEmail(emailOptions)),
       );
 
       const successful = results.filter((r: EmailResult) => r.success).length;

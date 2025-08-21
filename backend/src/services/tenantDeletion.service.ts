@@ -1321,7 +1321,7 @@ export class TenantDeletionService {
           // Tenant ist bereits gelöscht, wir nutzen nur die ID
           // Subdomain-Release sollte eigentlich vorher in einem separaten Schritt passieren
           logger.info(`Tenant ${tenantId} deletion completed - subdomain can be reused`);
-          return Promise.resolve(0);
+          return await Promise.resolve(0);
         },
       },
       {

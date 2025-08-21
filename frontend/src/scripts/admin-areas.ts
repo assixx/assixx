@@ -5,7 +5,6 @@
 
 import { ApiClient } from '../utils/api-client';
 import { setHTML } from '../utils/dom-utils';
-
 import { showSuccess, showError } from './auth';
 
 interface Area {

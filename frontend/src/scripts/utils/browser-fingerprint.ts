@@ -70,7 +70,7 @@ export class BrowserFingerprint {
 
     // Create hash from fingerprint
     const fingerprintString = JSON.stringify(fingerprint);
-    return this.hashString(fingerprintString);
+    return await this.hashString(fingerprintString);
   }
 
   /**

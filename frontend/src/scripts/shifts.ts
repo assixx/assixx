@@ -7,7 +7,6 @@ import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
 import { $$id, createElement } from '../utils/dom-utils';
-
 import { getAuthToken, showInfo } from './auth';
 import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 import { openModal } from './utils/modal-manager';

@@ -1492,7 +1492,7 @@ async function deleteShift(id: number, tenantId: number): Promise<void> {
  * Get templates (alias for getShiftTemplates)
  */
 async function getTemplates(tenantId: number): Promise<DbShiftTemplate[]> {
-  return getShiftTemplates(tenantId);
+  return await getShiftTemplates(tenantId);
 }
 
 /**

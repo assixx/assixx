@@ -399,7 +399,7 @@
   ): Promise<void> {
     // For now, just open edit modal
     (window as unknown as ManageDeptGroupsWindow).editGroup(groupId);
-    return Promise.resolve();
+    await Promise.resolve();
   };
 
   // Helper functions
@@ -433,7 +433,7 @@
     // TODO: Implement custom confirmation dialog
     // For now, return true as placeholder
     console.warn('Confirmation dialog not implemented:', message);
-    return Promise.resolve(true);
+    return await Promise.resolve(true);
   }
 
   // Initialize

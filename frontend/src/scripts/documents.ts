@@ -4,7 +4,6 @@
  */
 
 import type { Document } from '../types/api.types';
-
 import { fetchWithAuth, showError, showSuccess } from './auth';
 
 // Document scope type
@@ -425,7 +424,7 @@ function showDocumentModal(doc: Document): void {
     fetchWithAuth(previewUrl)
       .then(async (response) => {
         if (!response.ok) throw new Error('Preview failed');
-        return response.blob();
+        return await response.blob();
       })
       .then((blob) => {
         // Create object URL from blob

@@ -4,7 +4,6 @@
 
 import type { User, JWTPayload } from '../types/api.types';
 import { apiClient, ApiError } from '../utils/api-client';
-
 import { BrowserFingerprint } from './utils/browser-fingerprint';
 import SessionManager from './utils/session-manager';
 

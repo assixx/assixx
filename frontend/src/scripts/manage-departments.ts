@@ -5,7 +5,6 @@
 
 import { ApiClient } from '../utils/api-client';
 import { mapDepartment, type DepartmentAPIResponse } from '../utils/api-mappers';
-
 import { showSuccess, showError } from './auth';
 
 interface Department {
@@ -117,7 +116,7 @@ class DepartmentsManager {
     // TODO: Implement custom confirmation modal
     // For now, show error and block action for safety
     showError(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
-    return Promise.resolve(false); // Block action until proper modal is implemented
+    return await Promise.resolve(false); // Block action until proper modal is implemented
   }
 
   private initializeEventListeners() {

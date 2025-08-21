@@ -5,20 +5,28 @@
 
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
-
+import { setHTML } from '../utils/dom-utils';
+import { showSuccessAlert, showErrorAlert, showAlert } from './utils/alerts';
 import { getAuthToken } from './auth';
 
-// Notification helper
+// API Endpoints
+const API_ENDPOINTS = {
+  ROOT_ADMINS: '/root/admins',
+  ROOT_DASHBOARD: '/root/dashboard',
+  USERS: '/users',
+  USERS_ME: '/users/me',
+  LOGS: '/logs',
+} as const;
+
+// Helper function for notifications (using modern alerts)
 function showNotification(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {
-  console.info(`[${type}] ${message}`);
-  // TODO: Implement toast notification UI
-  const notification = document.createElement('div');
-  notification.className = `notification ${type}`;
-  notification.textContent = message;
-  document.body.append(notification);
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
+  if (type === 'success') {
+    showSuccessAlert(message);
+  } else if (type === 'error') {
+    showErrorAlert(message);
+  } else {
+    showAlert(message);
+  }
 }
 
 interface AdminUser extends User {
@@ -68,9 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Elemente aus dem DOM holen
-  const createAdminForm = document.querySelector('#create-admin-form');
+  const createAdminForm = document.querySelector<CreateAdminForm>('#create-admin-form');
   // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
-  const dashboardContent = document.querySelector('#dashboard-data');
+  const dashboardContent = document.querySelector<HTMLElement>('#dashboard-data');
 
   // Event-Listener hinzufügen
   if (createAdminForm !== null) {
@@ -114,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         employee_number?: string;
       }
 
-      const user = await apiClient.request<UserWithEmployeeNumber>('/users/me');
+      const user = await apiClient.request<UserWithEmployeeNumber>(API_ENDPOINTS.USERS_ME);
 
       // Check if user has temporary employee number
       const employeeNumber = user.employeeNumber ?? user.employee_number ?? '';
@@ -128,9 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show employee number modal
   function showEmployeeNumberModal(): void {
-    const modal = document.querySelector('#employeeNumberModal');
-    const form = document.querySelector('#employeeNumberForm');
-    const input = document.querySelector('#employeeNumberInput');
+    const modal = document.querySelector<HTMLElement>('#employeeNumberModal');
+    const form = document.querySelector<HTMLFormElement>('#employeeNumberForm');
+    const input = document.querySelector<HTMLInputElement>('#employeeNumberInput');
 
     if (modal === null || form === null || input === null) return;
 
@@ -156,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-          await apiClient.request('/users/me', {
+          await apiClient.request(API_ENDPOINTS.USERS_ME, {
             method: 'PATCH',
             body: JSON.stringify({ employee_number: employeeNumber }),
           });
@@ -207,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      await apiClient.request('/root/admins', {
+      await apiClient.request(API_ENDPOINTS.ROOT_ADMINS, {
         method: 'POST',
         body: JSON.stringify(adminData),
       });
@@ -229,9 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dashboardContent) return;
 
     try {
-      const data: DashboardData = await apiClient.request('/root/dashboard');
+      const data: DashboardData = await apiClient.request(API_ENDPOINTS.ROOT_DASHBOARD);
       console.info('Dashboard data:', data);
-      dashboardContent.innerHTML = ``;
+      setHTML(dashboardContent, '');
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
@@ -241,17 +249,27 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadDashboardStats(): Promise<void> {
     try {
       const [adminsResponse, usersResponse] = await Promise.all([
-        apiClient.request<{ admins: AdminUser[] }>('/root/admins'),
-        apiClient.request<{ data: User[] }>('/users'),
+        apiClient.request<AdminUser[] | { admins: AdminUser[] }>(API_ENDPOINTS.ROOT_ADMINS),
+        apiClient.request<User[] | { data: User[] }>(API_ENDPOINTS.USERS),
       ]);
 
-      const admins = adminsResponse.admins;
-      const users = usersResponse.data;
+      // Handle both array and object responses
+      const admins = Array.isArray(adminsResponse)
+        ? adminsResponse
+        : 'admins' in adminsResponse && Array.isArray(adminsResponse.admins)
+          ? adminsResponse.admins
+          : [];
+
+      const users = Array.isArray(usersResponse)
+        ? usersResponse
+        : 'data' in usersResponse && Array.isArray(usersResponse.data)
+          ? usersResponse.data
+          : [];
 
       // Update counters
-      const adminCount = document.querySelector('#admin-count');
-      const userCount = document.querySelector('#user-count');
-      const tenantCount = document.querySelector('#tenant-count');
+      const adminCount = document.querySelector<HTMLElement>('#admin-count');
+      const userCount = document.querySelector<HTMLElement>('#user-count');
+      const tenantCount = document.querySelector<HTMLElement>('#tenant-count');
 
       if (adminCount !== null) {
         adminCount.textContent = admins.length.toString();
@@ -269,13 +287,20 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadAdmins(): Promise<void> {
     try {
       console.info('Loading admins...');
-      const response = await apiClient.request<{ admins: AdminUser[] }>('/root/admins');
-      const admins = response.admins;
+      const response = await apiClient.request<AdminUser[] | { admins: AdminUser[] }>(API_ENDPOINTS.ROOT_ADMINS);
+
+      // Handle both array and object responses
+      const admins = Array.isArray(response)
+        ? response
+        : 'admins' in response && Array.isArray(response.admins)
+          ? response.admins
+          : [];
+
       console.info('Loaded admins:', admins);
       displayAdmins(admins);
 
       // Update admin count
-      const adminCount = document.querySelector('#admin-count');
+      const adminCount = document.querySelector<HTMLElement>('#admin-count');
       if (adminCount && Array.isArray(admins)) {
         adminCount.textContent = admins.length.toString();
       }
@@ -311,8 +336,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadHeaderUserInfo(): Promise<void> {
     try {
       const authToken = getAuthToken();
-      const userNameElement = document.querySelector('#user-name');
-      const userAvatar = document.querySelector('#user-avatar');
+      const userNameElement = document.querySelector<HTMLElement>('#user-name');
+      const userAvatar = document.querySelector<HTMLImageElement>('#user-avatar');
 
       if (authToken === null || authToken === '' || userNameElement === null) return;
 
@@ -326,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Try to fetch full user profile for more details
       try {
-        const user = await apiClient.request<User>('/users/me');
+        const user = await apiClient.request<User>(API_ENDPOINTS.USERS_ME);
 
         // Update username with full name if available
         if (
@@ -354,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Fallback to local storage
       const userStr = localStorage.getItem('user');
       const userData = userStr !== null && userStr !== '' ? (JSON.parse(userStr) as { userName?: string }) : {};
-      const userName = document.querySelector('#user-name');
+      const userName = document.querySelector<HTMLElement>('#user-name');
       if (userName !== null) {
         userName.textContent = userData.userName ?? 'Root';
       }
@@ -380,20 +405,22 @@ document.addEventListener('DOMContentLoaded', () => {
           logs: LogEntry[];
           pagination?: { limit: number; offset: number; total: number; hasMore: boolean };
         };
-      }>('/logs?limit=20');
-      const logsContainer = document.querySelector('#activity-logs');
+      }>(`${API_ENDPOINTS.LOGS}?limit=20`);
+      const logsContainer = document.querySelector<HTMLElement>('#activity-logs');
 
       if (logsContainer !== null) {
         // Handle both response formats (direct logs array or nested in data)
         const logs = result.logs ?? result.data?.logs ?? [];
 
         if (logs.length === 0) {
-          logsContainer.innerHTML =
-            '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>';
+          setHTML(
+            logsContainer,
+            '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>',
+          );
           return;
         }
 
-        logsContainer.innerHTML = logs
+        const logsHTML = logs
           .map((log: { createdAt: string; action: string; userName: string; userRole: string; details?: string }) => {
             const date = new Date(log.createdAt);
             const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -418,6 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           })
           .join('');
+
+        setHTML(logsContainer, logsHTML);
       }
     } catch (error) {
       console.error('Error loading activity logs:', error);
@@ -426,28 +455,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to get readable action labels
   function getActionLabel(action: string): string {
-    const actionLabels: Record<string, string> = {
-      login: 'Anmeldung',
-      logout: 'Abmeldung',
-      create: 'Erstellt',
-      update: 'Aktualisiert',
-      delete: 'Gelöscht',
-      upload: 'Hochgeladen',
-      download: 'Heruntergeladen',
-      view: 'Angesehen',
-      assign: 'Zugewiesen',
-      unassign: 'Entfernt',
-    };
-    return actionLabels[action] ?? action;
+    const actionLabels = new Map<string, string>([
+      ['login', 'Anmeldung'],
+      ['logout', 'Abmeldung'],
+      ['create', 'Erstellt'],
+      ['update', 'Aktualisiert'],
+      ['delete', 'Gelöscht'],
+      ['upload', 'Hochgeladen'],
+      ['download', 'Heruntergeladen'],
+      ['view', 'Angesehen'],
+      ['assign', 'Zugewiesen'],
+      ['unassign', 'Entfernt'],
+    ]);
+    return actionLabels.get(action) ?? action;
   }
 
   // Helper function to get readable userRole labels
   function getuserRoleLabel(userRole: string): string {
-    const userRoleLabels: Record<string, string> = {
-      root: 'Root',
-      admin: 'Admin',
-      employee: 'Mitarbeiter',
-    };
-    return userRoleLabels[userRole] ?? userRole;
+    const userRoleLabels = new Map<string, string>([
+      ['root', 'Root'],
+      ['admin', 'Admin'],
+      ['employee', 'Mitarbeiter'],
+    ]);
+    return userRoleLabels.get(userRole) ?? userRole;
   }
 });

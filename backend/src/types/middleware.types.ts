@@ -93,7 +93,7 @@ export function createAuthenticatedMiddleware(
     if (!isAuthenticated(req)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    return handler(req, res, next);
+    await handler(req, res, next);
   }) as RequestHandler;
 }
 

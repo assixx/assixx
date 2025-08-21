@@ -129,7 +129,9 @@ router.use(authenticateToken);
  *               $ref: '#/components/schemas/Error'
  */
 // KVP Routes
-router.get('/', async (req, res) => kvpController.getAll(req, res));
+router.get('/', async (req, res) => {
+  await kvpController.getAll(req, res);
+});
 
 /**
  * @swagger
@@ -157,7 +159,9 @@ router.get('/', async (req, res) => kvpController.getAll(req, res));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/categories', async (req, res) => kvpController.getCategories(req, res));
+router.get('/categories', async (req, res) => {
+  await kvpController.getCategories(req, res);
+});
 
 /**
  * @swagger
@@ -204,7 +208,9 @@ router.get('/categories', async (req, res) => kvpController.getCategories(req, r
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/stats', async (req, res) => kvpController.getStatistics(req, res));
+router.get('/stats', async (req, res) => {
+  await kvpController.getStatistics(req, res);
+});
 
 /**
  * @swagger
@@ -246,7 +252,9 @@ router.get('/stats', async (req, res) => kvpController.getStatistics(req, res));
  *                   type: string
  *                   example: Vorschlag nicht gefunden
  */
-router.get('/:id', async (req, res) => kvpController.getById(req, res));
+router.get('/:id', async (req, res) => {
+  await kvpController.getById(req, res);
+});
 
 /**
  * @swagger
@@ -318,14 +326,24 @@ router.get('/:id', async (req, res) => kvpController.getById(req, res));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', async (req, res) => kvpController.create(req, res));
+router.post('/', async (req, res) => {
+  await kvpController.create(req, res);
+});
 
-router.put('/:id', async (req, res) => kvpController.update(req, res));
-router.delete('/:id', async (req, res) => kvpController.delete(req, res));
+router.put('/:id', async (req, res) => {
+  await kvpController.update(req, res);
+});
+router.delete('/:id', async (req, res) => {
+  await kvpController.delete(req, res);
+});
 
 // Share/unshare routes
-router.post('/:id/share', async (req, res) => kvpController.shareSuggestion(req, res));
-router.post('/:id/unshare', async (req, res) => kvpController.unshareSuggestion(req, res));
+router.post('/:id/share', async (req, res) => {
+  await kvpController.shareSuggestion(req, res);
+});
+router.post('/:id/unshare', async (req, res) => {
+  await kvpController.unshareSuggestion(req, res);
+});
 
 /**
  * @swagger
@@ -448,25 +466,32 @@ router.post('/:id/unshare', async (req, res) => kvpController.unshareSuggestion(
  *         description: Suggestion not found
  */
 // Comments
-router.get('/:id/comments', async (req, res) => kvpController.getComments(req, res));
-router.post('/:id/comments', async (req, res) => kvpController.addComment(req, res));
+router.get('/:id/comments', async (req, res) => {
+  await kvpController.getComments(req, res);
+});
+router.post('/:id/comments', async (req, res) => {
+  await kvpController.addComment(req, res);
+});
 
 // Attachments
-router.get('/:id/attachments', async (req, res) => kvpController.getAttachments(req, res));
+router.get('/:id/attachments', async (req, res) => {
+  await kvpController.getAttachments(req, res);
+});
 router.post(
   '/:id/attachments',
   upload.array('photos', 5),
-  async (req: Request, res: Response) =>
-    kvpController.uploadAttachment(
+  async (req: Request, res: Response) => {
+    await kvpController.uploadAttachment(
       req as Request & {
         params: { id: string };
         files?: Express.Multer.File[];
       },
       res,
-    ), // Multer adds files to request
+    );
+  }, // Multer adds files to request
 ); // Max 5 photos
-router.get('/attachments/:attachmentId/download', async (req, res) =>
-  kvpController.downloadAttachment(req, res),
-);
+router.get('/attachments/:attachmentId/download', async (req, res) => {
+  await kvpController.downloadAttachment(req, res);
+});
 
 export default router;

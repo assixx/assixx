@@ -165,7 +165,7 @@ if (USE_MOCK_DB) {
       sql: string,
       params?: unknown[],
     ): Promise<[T, FieldPacket[]]> {
-      return this.query<T>(sql, params);
+      return await this.query<T>(sql, params);
     },
     async getConnection() {
       // Mock connection object
@@ -175,14 +175,14 @@ if (USE_MOCK_DB) {
           params?: unknown[],
         ): Promise<[T, FieldPacket[]]> {
           // Use the same mock query function
-          return mockDb.query<T>(sql, params);
+          return await mockDb.query<T>(sql, params);
         },
         async execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
           sql: string,
           params?: unknown[],
         ): Promise<[T, FieldPacket[]]> {
           // Use the same mock query function
-          return mockDb.execute<T>(sql, params);
+          return await mockDb.execute<T>(sql, params);
         },
         async beginTransaction() {
           // Mock transaction - do nothing

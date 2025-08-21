@@ -15,9 +15,13 @@ import { DatabaseUser } from './types';
 import { TokenPayload, TokenValidationResult } from './types/auth.types';
 import { AuthUser } from './types/request.types';
 import { RowDataPacket, query as executeQuery } from './utils/db';
+import { normalizeMySQLBoolean } from './utils/typeHelpers';
 
 // Konstante für das JWT-Secret aus der Umgebungsvariable
 const JWT_SECRET: string = process.env.JWT_SECRET ?? '';
+
+// Konstante für Session-Expired Redirect
+const SESSION_EXPIRED_REDIRECT = '/login?session=expired';
 
 // In Produktion MUSS ein JWT_SECRET gesetzt sein
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
@@ -36,18 +40,14 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
     id: dbUser.id,
     username: dbUser.username,
     email: dbUser.email,
-    password_hash: dbUser.password ?? '',
+    password_hash: dbUser.password,
     first_name: dbUser.first_name,
     last_name: dbUser.last_name,
     role: dbUser.role as 'admin' | 'employee' | 'root',
     tenant_id: dbUser.tenant_id ?? null,
     department_id: dbUser.department_id ?? null,
-    is_active:
-      typeof dbUser.is_active === 'number' ? dbUser.is_active === 1
-      : typeof dbUser.is_active === 'string' ? dbUser.is_active === '1'
-      : typeof dbUser.is_active === 'boolean' ? dbUser.is_active
-      : true,
-    is_archived: dbUser.is_archived ?? false,
+    is_active: normalizeMySQLBoolean(dbUser.is_active),
+    is_archived: normalizeMySQLBoolean(dbUser.is_archived),
     profile_picture: dbUser.profile_picture ?? null,
     phone_number: dbUser.phone ?? null,
     landline: dbUser.landline ?? null,
@@ -131,10 +131,13 @@ export function generateToken(
       id: Number.parseInt(user.id.toString(), 10), // Ensure ID is a number
       username: user.username,
       role: user.role,
-      tenant_id: user.tenant_id ? Number.parseInt(user.tenant_id.toString(), 10) : null,
+      tenant_id:
+        user.tenant_id !== null && user.tenant_id !== 0 ?
+          Number.parseInt(user.tenant_id.toString(), 10)
+        : null,
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
-        sessionId ?? `sess_${String(Date.now())}_${String(crypto.randomBytes(16).toString('hex'))}`, // Cryptographically secure session ID
+        sessionId ?? `sess_${Date.now().toString()}_${crypto.randomBytes(16).toString('hex')}`, // Cryptographically secure session ID
     };
 
     // 30 Minuten
@@ -166,7 +169,12 @@ export async function authenticateToken(
   // 2. Cookies sind httpOnly (kein JS-Zugriff möglich)
   // 3. Primär für direkte Seitenzugriffe gedacht (nicht API-Calls)
   // Siehe README.md für vollständige Sicherheitsdokumentation
-  if (!token && req.cookies?.token) {
+  if (
+    (token === undefined || token === '') &&
+    'token' in req.cookies &&
+    typeof req.cookies.token === 'string' &&
+    req.cookies.token !== ''
+  ) {
     token = req.cookies.token;
   }
 
@@ -174,14 +182,14 @@ export async function authenticateToken(
   console.info('Auth check - Path:', req.path);
   console.info('Auth check - Headers:', req.headers);
   console.info('Auth check - Cookies:', req.cookies);
-  console.info('Auth check - Token found:', !!token);
+  console.info('Auth check - Token found:', token !== undefined && token !== '');
 
-  if (!token) {
+  if (token === undefined || token === '') {
     // Check if client expects HTML (browser page request) or JSON (API request)
     const acceptHeader = req.headers.accept ?? '';
     if (acceptHeader.includes('text/html')) {
       // Browser request - redirect to login
-      res.redirect('/login?session=expired');
+      res.redirect(SESSION_EXPIRED_REDIRECT);
     } else {
       // API request - return JSON error
       res.status(401).json({ error: 'Authentication token required' });
@@ -189,107 +197,115 @@ export async function authenticateToken(
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    void (async () => {
-      if (err || !decoded || typeof decoded === 'string') {
-        // Check if client expects HTML (browser page request) or JSON (API request)
-        const acceptHeader = req.headers.accept ?? '';
-        if (acceptHeader.includes('text/html')) {
-          // Browser request - redirect to login with expired session message
-          res.redirect('/login?session=expired');
+  try {
+    const decoded = await new Promise<jwt.JwtPayload>((resolve, reject) => {
+      jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err !== null) {
+          reject(err);
+        } else if (decoded === undefined || typeof decoded === 'string') {
+          reject(new Error('Invalid token payload'));
         } else {
-          // API request - return JSON error
-          res.status(403).json({
-            error: 'Invalid or expired token',
-            details: err?.message,
-          });
+          resolve(decoded);
         }
-        return;
-      }
+      });
+    });
 
-      const user = decoded as TokenPayload & {
-        activeRole?: string;
-        isRoleSwitched?: boolean;
-      };
+    const user = decoded as TokenPayload & {
+      activeRole?: string;
+      isRoleSwitched?: boolean;
+    };
 
-      // Best Practice Session Security (wie Google, Facebook, etc.)
-      if (user.sessionId) {
-        try {
-          // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
-          const requestFingerprint = req.headers['x-browser-fingerprint'] as string;
-          // const requestIP = req.ip  ?? req.connection.remoteAddress;
-          // const userAgent = req.headers['user-agent'];
+    // Best Practice Session Security (wie Google, Facebook, etc.)
+    if (user.sessionId !== undefined && user.sessionId !== null && user.sessionId !== '') {
+      try {
+        // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
+        const requestFingerprint = req.headers['x-browser-fingerprint'] as string;
+        // const requestIP = req.ip  ?? req.connection.remoteAddress;
+        // const userAgent = req.headers['user-agent'];
 
-          // Log Security-relevante Änderungen für Monitoring
-          if (user.fingerprint && requestFingerprint && requestFingerprint !== user.fingerprint) {
-            console.info(
-              `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
-            );
+        // Log Security-relevante Änderungen für Monitoring
+        if (user.fingerprint && requestFingerprint && requestFingerprint !== user.fingerprint) {
+          console.info(
+            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
+          );
 
-            // Nur bei verdächtigen Mustern warnen/blockieren:
-            // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
-            // - Rapid fingerprint changes (> 10 pro Stunde)
-            // - Known malicious patterns
+          // Nur bei verdächtigen Mustern warnen/blockieren:
+          // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
+          // - Rapid fingerprint changes (> 10 pro Stunde)
+          // - Known malicious patterns
 
-            // Für jetzt: Nur loggen, nicht blockieren
-          }
+          // Für jetzt: Nur loggen, nicht blockieren
+        }
 
-          // Optionally validate session in database
-          if (process.env.VALIDATE_SESSIONS === 'true') {
-            const [sessions] = await executeQuery<RowDataPacket[]>(
-              'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
-              [user.id, user.sessionId],
-            );
+        // Optionally validate session in database
+        if (process.env.VALIDATE_SESSIONS === 'true') {
+          const [sessions] = await executeQuery<RowDataPacket[]>(
+            'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
+            [user.id, user.sessionId],
+          );
 
-            if (sessions.length === 0) {
-              // Check if client expects HTML (browser page request) or JSON (API request)
-              const acceptHeader = req.headers.accept ?? '';
-              if (acceptHeader.includes('text/html')) {
-                // Browser request - redirect to login with session expired message
-                res.redirect('/login?session=expired');
-              } else {
-                // API request - return JSON error
-                res.status(403).json({
-                  error: 'Session expired or not found',
-                });
-              }
-              return;
+          if (sessions.length === 0) {
+            // Check if client expects HTML (browser page request) or JSON (API request)
+            const acceptHeader = req.headers.accept ?? '';
+            if (acceptHeader.includes('text/html')) {
+              // Browser request - redirect to login with session expired message
+              res.redirect(SESSION_EXPIRED_REDIRECT);
+            } else {
+              // API request - return JSON error
+              res.status(403).json({
+                error: 'Session expired or not found',
+              });
             }
+            return;
           }
-        } catch (error: unknown) {
-          console.error('[AUTH] Session validation error:', error);
-          // Continue anyway in case of database issues
         }
+      } catch (error: unknown) {
+        console.error('[AUTH] Session validation error:', error);
+        // Continue anyway in case of database issues
       }
+    }
 
-      // Normalize user object for consistency and ensure IDs are numbers
-      const authenticatedUser: AuthUser & {
-        activeRole?: string;
-        isRoleSwitched?: boolean;
-      } = {
-        id: Number.parseInt(user.id.toString(), 10),
-        userId: Number.parseInt(user.id.toString(), 10),
-        username: user.username,
-        email: '', // Will be filled from database if needed
-        first_name: '',
-        last_name: '',
-        role: user.role,
-        activeRole: user.activeRole ?? user.role, // Support für Dual-Role
-        isRoleSwitched: user.isRoleSwitched ?? false,
-        tenant_id:
-          user.tenant_id ? Number.parseInt(user.tenant_id.toString(), 10)
-          : user.tenantId ? Number.parseInt(user.tenantId.toString(), 10)
-          : 0,
-        department_id: null,
-        position: null,
-      };
+    // Normalize user object for consistency and ensure IDs are numbers
+    const authenticatedUser: AuthUser & {
+      activeRole?: string;
+      isRoleSwitched?: boolean;
+    } = {
+      id: Number.parseInt(user.id.toString(), 10),
+      userId: Number.parseInt(user.id.toString(), 10),
+      username: user.username,
+      email: '', // Will be filled from database if needed
+      first_name: '',
+      last_name: '',
+      role: user.role,
+      activeRole: user.activeRole ?? user.role, // Support für Dual-Role
+      isRoleSwitched: user.isRoleSwitched ?? false,
+      tenant_id:
+        user.tenant_id ? Number.parseInt(user.tenant_id.toString(), 10)
+        : user.tenantId ? Number.parseInt(user.tenantId.toString(), 10)
+        : 0,
+      department_id: null,
+      position: null,
+    };
 
-      req.user = authenticatedUser;
-      // Set tenant_id directly on req for backwards compatibility
-      (req as Request & { tenant_id: number }).tenant_id = authenticatedUser.tenant_id;
-      next();
-    })();
-  });
+    req.user = authenticatedUser;
+    // Set tenant_id directly on req for backwards compatibility
+    (req as Request & { tenant_id: number }).tenant_id = authenticatedUser.tenant_id;
+    next();
+  } catch (error) {
+    // Check if client expects HTML (browser page request) or JSON (API request)
+    const acceptHeader = req.headers.accept ?? '';
+    if (acceptHeader.includes('text/html')) {
+      // Browser request - redirect to login with expired session message
+      res.redirect(SESSION_EXPIRED_REDIRECT);
+    } else {
+      // API request - return JSON error
+      res.status(403).json({
+        error: 'Invalid or expired token',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+    return;
+  }
 }
 
 /**

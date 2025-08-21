@@ -614,7 +614,7 @@ export async function getAdminUserSettings(
     throw new ServiceError('NOT_FOUND', 'User not found', 404);
   }
 
-  return getUserSettings(targetUserId, {});
+  return await getUserSettings(targetUserId, {});
 }
 
 /**

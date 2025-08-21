@@ -6,7 +6,6 @@
 import type { User, JWTPayload } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { $$, $all, show, hide } from '../utils/dom-utils';
-
 import { getAuthToken } from './auth';
 
 // Extended window interface for chat-specific properties
@@ -3045,7 +3044,7 @@ class ChatClient {
 
   // Utility methods
   async showConfirmDialog(message: string): Promise<boolean> {
-    return new Promise((resolve) => {
+    return await new Promise((resolve) => {
       const modal = document.createElement('div');
       modal.className = 'modal-overlay';
       modal.style.cssText =

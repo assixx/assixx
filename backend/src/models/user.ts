@@ -626,7 +626,7 @@ export async function archiveUser(
   tenantId: number, // SECURITY FIX: Made tenantId mandatory
 ): Promise<boolean> {
   logger.info(`Archiving user ${userId}`);
-  return updateUser(userId, { is_archived: true }, tenantId);
+  return await updateUser(userId, { is_archived: true }, tenantId);
 }
 
 // Neue Methode: Benutzer aus dem Archiv wiederherstellen
@@ -635,7 +635,7 @@ export async function unarchiveUser(
   tenantId: number, // SECURITY FIX: Made tenantId mandatory
 ): Promise<boolean> {
   logger.info(`Unarchiving user ${userId}`);
-  return updateUser(userId, { is_archived: false }, tenantId);
+  return await updateUser(userId, { is_archived: false }, tenantId);
 }
 
 // Neue Methode: Alle archivierten Benutzer auflisten

@@ -29,15 +29,15 @@ export class ConnectionWrapper {
   }
 
   async beginTransaction(): Promise<void> {
-    return this.conn.beginTransaction();
+    await this.conn.beginTransaction();
   }
 
   async commit(): Promise<void> {
-    return this.conn.commit();
+    await this.conn.commit();
   }
 
   async rollback(): Promise<void> {
-    return this.conn.rollback();
+    await this.conn.rollback();
   }
 
   release(): void {

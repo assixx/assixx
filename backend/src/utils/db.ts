@@ -56,7 +56,7 @@ export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
   }
 
   // Fallback to query for MockDatabase
-  return query<T>(sql, params);
+  return await query<T>(sql, params);
 }
 
 /**

@@ -553,7 +553,7 @@ export class DepartmentGroupsService {
       return false;
     }
 
-    return this.checkCircularDependency(parents[0].parent_group_id, targetId, tenantId);
+    return await this.checkCircularDependency(parents[0].parent_group_id, targetId, tenantId);
   }
 }
 

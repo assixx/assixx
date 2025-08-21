@@ -4,7 +4,6 @@
 
 import type { User } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
-
 import { getAuthToken, removeAuthToken } from './auth';
 // import { formatDate as formatDateUtil } from './common';
 

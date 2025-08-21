@@ -219,7 +219,7 @@ export class ApiService {
    * @param params
    */
   async get<T = unknown>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
-    return this.request<T>('GET', endpoint, null, { params });
+    return await this.request<T>('GET', endpoint, null, { params });
   }
 
   /**
@@ -228,7 +228,7 @@ export class ApiService {
    * @param data
    */
   async post<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>('POST', endpoint, data);
+    return await this.request<T>('POST', endpoint, data);
   }
 
   /**
@@ -237,7 +237,7 @@ export class ApiService {
    * @param data
    */
   async put<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>('PUT', endpoint, data);
+    return await this.request<T>('PUT', endpoint, data);
   }
 
   /**
@@ -246,7 +246,7 @@ export class ApiService {
    * @param data
    */
   async patch<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>('PATCH', endpoint, data);
+    return await this.request<T>('PATCH', endpoint, data);
   }
 
   /**
@@ -254,7 +254,7 @@ export class ApiService {
    * @param endpoint
    */
   async delete<T = unknown>(endpoint: string): Promise<T> {
-    return this.request<T>('DELETE', endpoint);
+    return await this.request<T>('DELETE', endpoint);
   }
 
   // Auth endpoints
@@ -347,7 +347,7 @@ export class ApiService {
         };
       }
     } else {
-      return this.get('/auth/check');
+      return await this.get('/auth/check');
     }
   }
 
@@ -363,7 +363,7 @@ export class ApiService {
       // Convert v2 response (camelCase) to v1 format (snake_case)
       return ResponseAdapter.adaptUserResponse(response) as User;
     } else {
-      return this.get<User>('/user/profile');
+      return await this.get<User>('/user/profile');
     }
   }
 
@@ -393,7 +393,7 @@ export class ApiService {
         };
       }
     } else {
-      return this.patch('/user/profile', data);
+      return await this.patch('/user/profile', data);
     }
   }
 
@@ -405,7 +405,7 @@ export class ApiService {
     const formData = new FormData();
     formData.append('profilePicture', file);
 
-    return this.post('/user/profile-picture', formData);
+    return await this.post('/user/profile-picture', formData);
   }
 
   // Document endpoints
@@ -415,7 +415,7 @@ export class ApiService {
    */
   async getDocuments(params?: PaginationParams & { category?: string }): Promise<PaginatedResponse<Document>> {
     const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
-    return this.get('/documents', queryParams);
+    return await this.get('/documents', queryParams);
   }
 
   /**
@@ -423,7 +423,7 @@ export class ApiService {
    * @param id
    */
   async getDocument(id: number): Promise<Document> {
-    return this.get(`/documents/${id}`);
+    return await this.get(`/documents/${id}`);
   }
 
   /**
@@ -431,7 +431,7 @@ export class ApiService {
    * @param formData
    */
   async uploadDocument(formData: FormData): Promise<ApiResponse<Document>> {
-    return this.post('/documents', formData);
+    return await this.post('/documents', formData);
   }
 
   /**
@@ -439,7 +439,7 @@ export class ApiService {
    * @param id
    */
   async deleteDocument(id: number): Promise<ApiResponse> {
-    return this.delete(`/documents/${id}`);
+    return await this.delete(`/documents/${id}`);
   }
 
   // Employee endpoints
@@ -449,7 +449,7 @@ export class ApiService {
    */
   async getEmployees(params?: PaginationParams): Promise<PaginatedResponse<User>> {
     const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
-    return this.get('/users', queryParams);
+    return await this.get('/users', queryParams);
   }
 
   /**
@@ -457,7 +457,7 @@ export class ApiService {
    * @param id
    */
   async getEmployee(id: number): Promise<User> {
-    return this.get(`/users/${id}`);
+    return await this.get(`/users/${id}`);
   }
 
   /**
@@ -465,7 +465,7 @@ export class ApiService {
    * @param data
    */
   async createEmployee(data: Partial<User>): Promise<ApiResponse<User>> {
-    return this.post('/users', data);
+    return await this.post('/users', data);
   }
 
   /**
@@ -474,7 +474,7 @@ export class ApiService {
    * @param data
    */
   async updateEmployee(id: number, data: Partial<User>): Promise<ApiResponse<User>> {
-    return this.patch(`/users/${id}`, data);
+    return await this.patch(`/users/${id}`, data);
   }
 
   /**
@@ -482,7 +482,7 @@ export class ApiService {
    * @param id
    */
   async deleteEmployee(id: number): Promise<ApiResponse> {
-    return this.delete(`/users/${id}`);
+    return await this.delete(`/users/${id}`);
   }
 }
 

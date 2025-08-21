@@ -128,7 +128,7 @@ export class ApiClient {
       // If v2 fails with server error and we're not explicitly using v2, try v1 as fallback
       if (version === 'v2' && config.version === undefined && this.version !== 'v1' && !isClientError) {
         console.info('[API] v2 failed with server error, falling back to v1...');
-        return this.request<T>(endpoint, options, { ...config, version: 'v1' });
+        return await this.request<T>(endpoint, options, { ...config, version: 'v1' });
       }
 
       throw this.handleError(error);
@@ -295,11 +295,11 @@ export class ApiClient {
 
   // Convenience methods
   async get<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' }, config);
+    return await this.request<T>(endpoint, { method: 'GET' }, config);
   }
 
   async post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
-    return this.request<T>(
+    return await this.request<T>(
       endpoint,
       {
         method: 'POST',
@@ -310,7 +310,7 @@ export class ApiClient {
   }
 
   async put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
-    return this.request<T>(
+    return await this.request<T>(
       endpoint,
       {
         method: 'PUT',
@@ -321,7 +321,7 @@ export class ApiClient {
   }
 
   async patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
-    return this.request<T>(
+    return await this.request<T>(
       endpoint,
       {
         method: 'PATCH',
@@ -332,11 +332,11 @@ export class ApiClient {
   }
 
   async delete<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' }, config);
+    return await this.request<T>(endpoint, { method: 'DELETE' }, config);
   }
 
   async upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
-    return this.request<T>(
+    return await this.request<T>(
       endpoint,
       {
         method: 'POST',

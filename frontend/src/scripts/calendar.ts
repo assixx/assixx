@@ -5,7 +5,6 @@
 
 import type { User } from '../types/api.types';
 import { featureFlags } from '../utils/feature-flags';
-
 import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
 
@@ -2617,7 +2616,7 @@ async function fetchUserData(): Promise<UserData> {
     throw new Error('Failed to fetch user data');
   }
 
-  return response.json() as Promise<UserData>;
+  return await (response.json() as Promise<UserData>);
 }
 
 /**

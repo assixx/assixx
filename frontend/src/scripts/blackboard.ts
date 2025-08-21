@@ -5,7 +5,6 @@
 
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
-
 import { getAuthToken, showSuccess, showError } from './auth';
 import { escapeHtml } from './common';
 import { closeModal as dashboardCloseModal } from './dashboard-scripts';
@@ -676,13 +675,13 @@ async function loadEntries(): Promise<void> {
         response = {
           ok: true,
           status: 200,
-          json: async () => Promise.resolve(data),
+          json: async () => await Promise.resolve(data),
         };
       } catch (error) {
         response = {
           ok: false,
           status: (error as { status?: number }).status ?? 500,
-          json: async () => Promise.resolve(error),
+          json: async () => await Promise.resolve(error),
         };
       }
     } else {
@@ -1256,9 +1255,9 @@ async function saveEntry(): Promise<void> {
           },
           { version: 'v2' },
         );
-        response = { ok: true, json: async () => Promise.resolve(data) };
+        response = { ok: true, json: async () => await Promise.resolve(data) };
       } catch (error) {
-        response = { ok: false, json: async () => Promise.resolve(error) };
+        response = { ok: false, json: async () => await Promise.resolve(error) };
       }
     } else {
       const url = entryId.length > 0 ? `/api/blackboard/${entryId}` : '/api/blackboard';
@@ -1389,9 +1388,9 @@ async function uploadAttachments(entryId: number): Promise<void> {
           },
           { version: 'v2', contentType: '' },
         );
-        response = { ok: true, json: async () => Promise.resolve({}) };
+        response = { ok: true, json: async () => await Promise.resolve({}) };
       } catch (error) {
-        response = { ok: false, json: async () => Promise.resolve(error) };
+        response = { ok: false, json: async () => await Promise.resolve(error) };
       }
     } else {
       response = await fetch(`/api${endpoint}`, {
@@ -1514,9 +1513,9 @@ async function performDelete(entryId: number): Promise<void> {
     if (useV2) {
       try {
         await apiClient.request(endpoint, { method: 'DELETE' }, { version: 'v2' });
-        response = { ok: true, json: async () => Promise.resolve({}) };
+        response = { ok: true, json: async () => await Promise.resolve({}) };
       } catch (error) {
-        response = { ok: false, json: async () => Promise.resolve(error) };
+        response = { ok: false, json: async () => await Promise.resolve(error) };
       }
     } else {
       response = await fetch(`/api${endpoint}`, {

@@ -462,20 +462,21 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
     }
 
     const attachments = await Promise.all(
-      files.map(async (file) =>
-        kvpService.addAttachment(
-          suggestionId,
-          {
-            fileName: file.filename,
-            filePath: file.path,
-            fileType: file.mimetype,
-            fileSize: file.size,
-            uploadedBy: req.user.id,
-          },
-          req.user.tenant_id,
-          req.user.id,
-          req.user.role,
-        ),
+      files.map(
+        async (file) =>
+          await kvpService.addAttachment(
+            suggestionId,
+            {
+              fileName: file.filename,
+              filePath: file.path,
+              fileType: file.mimetype,
+              fileSize: file.size,
+              uploadedBy: req.user.id,
+            },
+            req.user.tenant_id,
+            req.user.id,
+            req.user.role,
+          ),
       ),
     );
 

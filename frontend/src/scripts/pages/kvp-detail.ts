@@ -802,14 +802,14 @@ class KvpDetailPage {
     // TODO: Implement custom confirmation dialog
     // For now, return true to avoid using native confirm
     console.warn('Confirmation dialog not implemented:', message);
-    return Promise.resolve(true);
+    return await Promise.resolve(true);
   }
 
   private async showPromptDialog(message: string): Promise<string | null> {
     // TODO: Implement custom prompt dialog
     // For now, return empty string to avoid using native prompt
     console.warn('Prompt dialog not implemented:', message);
-    return Promise.resolve(''); // Return empty string as default
+    return await Promise.resolve(''); // Return empty string as default
   }
 }
 

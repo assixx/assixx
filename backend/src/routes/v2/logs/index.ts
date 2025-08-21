@@ -8,10 +8,8 @@
  */
 
 import express, { Router, RequestHandler } from "express";
-
 import { authenticateV2, requireRoleV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
-
 import { logsController } from "./logs.controller.js";
 import { logsValidation } from "./logs.validation.js";
 

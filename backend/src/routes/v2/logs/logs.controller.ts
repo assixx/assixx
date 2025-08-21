@@ -1,12 +1,9 @@
 import bcrypt from "bcryptjs";
-
 import { Response } from "express";
-
 import User from "../../../models/user.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
-
 import { logsService } from "./logs.service.js";
 import { LogsFilterParams } from "./types.js";
 

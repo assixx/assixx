@@ -4,7 +4,6 @@
  */
 
 import type { User } from '../types/api.types';
-
 import { getAuthToken } from './auth';
 import notificationService from './services/notification.service';
 

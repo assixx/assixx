@@ -42,7 +42,7 @@ export class SessionManager {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       this.updateActivity();
-      return originalFetch.apply(window, args);
+      return await originalFetch.apply(window, args);
     };
   }
 

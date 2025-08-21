@@ -6,7 +6,6 @@
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { mapUsers, type UserAPIResponse } from '../utils/api-mappers';
-
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
 interface Employee extends User {

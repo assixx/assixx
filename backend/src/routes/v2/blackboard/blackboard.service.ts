@@ -243,7 +243,7 @@ export class BlackboardService {
    * @param userId
    */
   async archiveEntry(id: number, tenantId: number, userId: number) {
-    return this.updateEntry(id, { status: 'archived' }, tenantId, userId);
+    return await this.updateEntry(id, { status: 'archived' }, tenantId, userId);
   }
 
   /**
@@ -253,7 +253,7 @@ export class BlackboardService {
    * @param userId
    */
   async unarchiveEntry(id: number, tenantId: number, userId: number) {
-    return this.updateEntry(id, { status: 'active' }, tenantId, userId);
+    return await this.updateEntry(id, { status: 'active' }, tenantId, userId);
   }
 
   /**

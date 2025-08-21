@@ -829,7 +829,7 @@ interface UserData {
 | Was       | Verwenden                    | Nicht verwenden         |
 | --------- | ---------------------------- | ----------------------- | --- | ----------- |
 | Types     | `unknown`, spezifische Types | `any`                   |
-| Defaults  | `??` (nullish)               | ` |     | ` (logical) |
+| Defaults  | `??` (nullish)               | `                       |     | ` (logical) |
 | Strings   | Template Literals            | String Concatenation    |
 | Functions | Arrow Functions              | function keyword        |
 | Variables | `const`, `let`               | `var`                   |

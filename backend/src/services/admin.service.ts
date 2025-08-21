@@ -78,7 +78,7 @@ class AdminLogService {
    */
   async getById(_tenantDb: Pool, _id: number): Promise<AdminLogData | null> {
     // Model doesn't have getById, return null for now
-    return Promise.resolve(null);
+    return await Promise.resolve(null);
   }
 
   /**
@@ -134,7 +134,7 @@ class AdminLogService {
     _data: AdminLogUpdateData,
   ): Promise<AdminLogData | null> {
     // TODO: Implement update method in AdminLog model
-    return Promise.resolve(null);
+    return await Promise.resolve(null);
   }
 
   /**
@@ -144,7 +144,7 @@ class AdminLogService {
    */
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     // TODO: Implement delete method in AdminLog model
-    return Promise.resolve(false);
+    return await Promise.resolve(false);
   }
 }
 

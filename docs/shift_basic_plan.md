@@ -49,6 +49,7 @@
 ### 📝 Implementierte Dateien & Änderungen
 
 #### Frontend (19.08.2025 & 20.08.2025):
+
 - ✅ `/frontend/src/pages/shifts.html` - Area-Filter hinzugefügt (Zeile 832-862)
 - ✅ `/frontend/src/scripts/shifts.ts`:
   - Areas API Integration, selectedContext.areaId (19.08.)
@@ -56,6 +57,7 @@
   - getWeekNumber() Helper hinzugefügt (20.08., Zeilen 2712-2718)
 
 #### Backend (20.08.2025):
+
 - ✅ `/backend/src/routes/v2/shifts/shifts.service.ts`:
   - `createShiftPlan()` - Zeilen 820-929 (Transaction-basiert)
   - `getShiftPlan()` - Zeilen 934-1017 (mit Notes-Support)
@@ -68,6 +70,7 @@
   - GET /plan Route - Zeilen 702-706
 
 #### Datenbank (20.08.2025):
+
 - ✅ `/database/migrations/004-shift-plans-fix.sql` - Migration erstellt
 - ✅ `shift_plans` Tabelle erweitert (machine_id, area_id)
 - ✅ Build erfolgreich, Backend neugestartet
@@ -97,12 +100,14 @@ shifts (department_id, team_id, machine_id, user_id)
 ### 🚨 KRITISCHES PROBLEM (Stand: 20.08.2025) - GELÖST! ✅
 
 **Das war das Problem:** Shifts wurden OHNE plan_id direkt gespeichert!
+
 - ❌ Keine Editierbarkeit möglich
 - ❌ machine_id wurde nicht gespeichert (immer NULL)
 - ❌ Notizen redundant (10x statt 1x)
 - ❌ Kein Zusammenhang zwischen Schichten
 
 **Das ist die Lösung (VOLLSTÄNDIG IMPLEMENTIERT):**
+
 1. ✅ shift_plans erweitert mit machine_id, area_id
 2. ✅ Backend API /shifts/plan mit Transactions
 3. ✅ Frontend saveSchedule() nutzt Plan-basierte Speicherung
@@ -110,6 +115,7 @@ shifts (department_id, team_id, machine_id, user_id)
 ## 🎉 ZUSAMMENFASSUNG DER HEUTIGEN ARBEIT (20.08.2025)
 
 ### Was wurde erreicht:
+
 1. **Datenbank-Migration:** shift_plans Tabelle erweitert (machine_id, area_id)
 2. **Backend API v2:** Plan-Endpoints implementiert (POST & GET /api/v2/shifts/plan)
 3. **Frontend:** saveSchedule() auf Plan-basierte Speicherung umgestellt
@@ -117,6 +123,7 @@ shifts (department_id, team_id, machine_id, user_id)
 5. **Notes-Optimierung:** Notizen werden nur 1x pro Tag gespeichert (nicht redundant)
 
 ### Wichtige Verbesserungen:
+
 - ✅ Plan-ID verknüpft alle Shifts einer Woche
 - ✅ Machine-ID wird korrekt gespeichert
 - ✅ Area-ID für übergeordnete Filterung
@@ -124,11 +131,13 @@ shifts (department_id, team_id, machine_id, user_id)
 - ✅ Performance: 1 Request statt 10+ Requests
 
 ### ✅ ZUSÄTZLICH ERLEDIGT (20.08.2025, 17:00 Uhr):
+
 - ✅ loadCurrentWeekData() auf v2 API umgestellt (GET /api/v2/shifts/plan)
 - ✅ Alle ESLint/TypeScript Errors in Frontend und Backend behoben
 - ✅ Code-Qualität auf höchstem Standard
 
 ### Nächste Schritte (Optional):
+
 - Test mit Echtdaten (Albert Einstein & Mahatma Gandhi, KW 34/2025)
 - UI für Plan-Bearbeitung (Edit existing plans)
 - Plan-Historie anzeigen (alle vergangenen Pläne)

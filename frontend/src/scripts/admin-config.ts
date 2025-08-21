@@ -4,7 +4,6 @@
  */
 
 import type { User } from '../types/api.types';
-
 import { getAuthToken, showSuccess, showError } from './auth';
 import { formatDateTime } from './common';
 

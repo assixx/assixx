@@ -6,7 +6,6 @@
  */
 
 import type { User, Document } from '../types/api.types';
-
 import { getAuthToken, showError, showSuccess } from './auth';
 
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
@@ -36,13 +35,13 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       if (!response.ok) {
         throw new Error('Mitarbeiter konnte nicht abgerufen werden');
       }
-      return response.json() as Promise<User>;
+      return await (response.json() as Promise<User>);
     })
     .then(async (employee: User) => {
       selectedEmployeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
 
       // Prüfen, ob der Mitarbeiter Dokumente hat
-      return fetch(`/api/documents?user_id=${employeeId}`, {
+      return await fetch(`/api/documents?user_id=${employeeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     })

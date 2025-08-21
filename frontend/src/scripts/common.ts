@@ -6,7 +6,6 @@
 import type { User, BlackboardEntry } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
 import { ResponseAdapter } from '../utils/response-adapter';
-
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
 

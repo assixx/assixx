@@ -4,7 +4,6 @@
  */
 
 import type { Document } from '../types/api.types';
-
 import { fetchWithAuth, showError, showSuccess } from './auth';
 
 // Document scope type
@@ -427,7 +426,7 @@ export class DocumentBase {
       fetchWithAuth(endpoint)
         .then(async (response) => {
           if (!response.ok) throw new Error('Preview failed');
-          return response.blob();
+          return await response.blob();
         })
         .then((blob) => {
           const blobUrl = URL.createObjectURL(blob);

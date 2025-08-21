@@ -201,7 +201,9 @@ router.get(
 router.post(
   '/login',
   ...security.auth(validationSchemas.login),
-  async (req: Request, res: Response) => authController.login(req, res),
+  async (req: Request, res: Response) => {
+    await authController.login(req, res);
+  },
 );
 
 /**
@@ -278,7 +280,9 @@ router.post(
 router.post(
   '/register',
   ...security.auth(validationSchemas.signup),
-  async (req: Request, res: Response) => authController.register(req, res),
+  async (req: Request, res: Response) => {
+    await authController.register(req, res);
+  },
 );
 
 /**
@@ -310,7 +314,9 @@ router.post(
 router.post(
   '/logout',
   ...security.user(),
-  typed.auth(async (req, res) => authController.logout(req, res)),
+  typed.auth(async (req, res) => {
+    await authController.logout(req, res);
+  }),
 );
 
 /**

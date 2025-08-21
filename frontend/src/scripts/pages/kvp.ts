@@ -638,7 +638,7 @@ class KvpPage {
     // TODO: Implement custom confirmation dialog
     // For now, return true to avoid using native confirm
     console.warn('Confirmation dialog not implemented:', message);
-    return Promise.resolve(true);
+    return await Promise.resolve(true);
   }
 
   private openCreateModal(): void {

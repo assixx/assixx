@@ -625,7 +625,7 @@ export async function createSurveyFromTemplate(
     status: 'draft',
   };
 
-  return createSurvey(surveyData, tenantId, createdBy);
+  return await createSurvey(surveyData, tenantId, createdBy);
 }
 
 /**
