@@ -3345,7 +3345,8 @@ class ShiftPlanningSystem {
       }
 
       const result = (await response.json()) as { data: ShiftFavorite[] };
-      return result.data;
+      // Ensure we have valid data array
+      return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
       console.error('Error loading favorites:', error);
       return [];
@@ -3556,15 +3557,33 @@ class ShiftPlanningSystem {
       favoritesList.firstChild.remove();
     }
 
+    // Only render if we have valid favorites
+    if (!Array.isArray(this.favorites) || this.favorites.length === 0) {
+      return;
+    }
+
     // Create buttons using DOM methods (safe approach)
     this.favorites.forEach((fav) => {
+      // Skip invalid favorites
+      if (!fav?.id || !fav.teamName) {
+        console.warn('Skipping invalid favorite:', fav);
+        return;
+      }
+
       const button = document.createElement('button');
       button.className = 'favorite-btn';
       button.dataset.favoriteId = fav.id;
-      button.title = `${fav.areaName} → ${fav.departmentName} → ${fav.machineName} → ${fav.teamName}`;
+
+      // Build title with fallback values
+      const areaName = fav.areaName ?? 'Unknown Area';
+      const departmentName = fav.departmentName ?? 'Unknown Department';
+      const machineName = fav.machineName ?? 'Unknown Machine';
+      const teamName = fav.teamName ?? 'Unknown Team';
+
+      button.title = `${areaName} → ${departmentName} → ${machineName} → ${teamName}`;
 
       // Add team name text
-      const textNode = document.createTextNode(fav.teamName);
+      const textNode = document.createTextNode(teamName);
       button.append(textNode);
 
       // Add remove button
