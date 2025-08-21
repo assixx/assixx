@@ -31,7 +31,7 @@ interface DocumentUpdateRequest extends AuthenticatedRequest {
 // Type guard to check if request is authenticated
 /**
  *
- * @param req
+ * @param req - The request object
  */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
@@ -45,8 +45,8 @@ function isAuthenticated(req: Request): req is AuthenticatedRequest {
 class DocumentController {
   /**
    * Get all documents with pagination
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getDocuments(req: Request, res: Response): Promise<void> {
     try {
@@ -107,8 +107,8 @@ class DocumentController {
 
   /**
    * Get document by ID
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getDocumentById(req: Request, res: Response): Promise<void> {
     try {
@@ -150,8 +150,8 @@ class DocumentController {
 
   /**
    * Upload new document
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async uploadDocument(
     req: Request & Partial<DocumentUploadRequest>,
@@ -211,8 +211,8 @@ class DocumentController {
 
   /**
    * Update document metadata
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async updateDocument(
     req: Request & Partial<DocumentUpdateRequest>,
@@ -262,8 +262,8 @@ class DocumentController {
 
   /**
    * Delete document
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteDocument(req: Request, res: Response): Promise<void> {
     try {
@@ -305,8 +305,8 @@ class DocumentController {
 
   /**
    * Download document
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async downloadDocument(req: Request, res: Response): Promise<void> {
     try {
@@ -350,8 +350,8 @@ class DocumentController {
 
   /**
    * Mark document as read
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async markDocumentAsRead(req: Request, res: Response): Promise<void> {
     try {

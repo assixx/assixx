@@ -1,3 +1,17 @@
+/**
+ * ⚠️ DEPRECATED FILE - DO NOT USE ⚠️
+ * 
+ * This file has been replaced by a cleaner architecture:
+ * - Use `config/database.ts` for database pool configuration
+ * - Use `utils/db.ts` for database utility functions (query, execute, transaction)
+ * 
+ * This file is kept as backup (.bak) for reference only.
+ * It was causing circular dependency issues and duplicating functionality.
+ * 
+ * Migration completed: 2025-08-21
+ * All imports have been updated to use the new structure.
+ */
+
 import * as dotenv from 'dotenv';
 import * as mysql from 'mysql2/promise';
 import { FieldPacket, PoolOptions, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
@@ -44,6 +58,7 @@ interface MockDocument extends RowDataPacket {
 if (USE_MOCK_DB) {
   // Mock-Implementierung
   const mockDb: MockDatabase = {
+    // eslint-disable-next-line @typescript-eslint/require-await
     async query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
       sql: string,
       params?: unknown[],
@@ -167,6 +182,7 @@ if (USE_MOCK_DB) {
     ): Promise<[T, FieldPacket[]]> {
       return await this.query<T>(sql, params);
     },
+    // eslint-disable-next-line @typescript-eslint/require-await
     async getConnection() {
       // Mock connection object
       return {
@@ -206,7 +222,7 @@ if (USE_MOCK_DB) {
   console.info('[DEBUG] Database config:', {
     host: process.env.DB_HOST ?? 'localhost',
     user: process.env.DB_USER ?? 'assixx_user',
-    database: process.env.DB_NAME ?? (process.env.NODE_ENV === 'test' ? 'main' : 'main'),
+    database: process.env.DB_NAME ?? 'main',
     port: process.env.DB_PORT ?? (process.env.CI ? '3306' : '3307'),
     NODE_ENV: process.env.NODE_ENV,
     CI: process.env.CI,
@@ -215,7 +231,7 @@ if (USE_MOCK_DB) {
   // Initialize pool immediately with config
   // Use port 3306 for CI, 3307 for local development
   const defaultPort = process.env.CI ? '3306' : '3307';
-  const defaultDatabase = process.env.NODE_ENV === 'test' ? 'main' : 'main';
+  const defaultDatabase = 'main';
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? 'localhost',
     port: Number.parseInt(process.env.DB_PORT ?? defaultPort),
@@ -264,16 +280,19 @@ if (USE_MOCK_DB) {
     console.error('Fehler beim Verbinden mit der Datenbank:', error);
     // Create a dummy pool that throws errors
     pool = {
+      // eslint-disable-next-line @typescript-eslint/require-await
       async query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(): Promise<
         [T, FieldPacket[]]
       > {
         throw new Error('Database connection failed');
       },
+      // eslint-disable-next-line @typescript-eslint/require-await
       async execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(): Promise<
         [T, FieldPacket[]]
       > {
         throw new Error('Database connection failed');
       },
+      // eslint-disable-next-line @typescript-eslint/require-await
       async getConnection(): Promise<{
         query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
           sql: string,
@@ -297,8 +316,5 @@ if (USE_MOCK_DB) {
 // Export the pool
 export default pool;
 export { pool };
-
-// Re-export utility functions from db.ts
-export { query as executeQuery, execute } from './utils/db';
 
 // CommonJS compatibility

@@ -54,8 +54,8 @@ interface TenantUpdateData {
 class TenantService {
   /**
    * Holt alle Tenant Einträge für einen Tenant
-   * @param _tenantDb
-   * @param _filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
   getAll(_tenantDb: Pool, _filters: TenantFilters = {}): TenantData[] {
     try {
@@ -70,8 +70,8 @@ class TenantService {
 
   /**
    * Holt einen Tenant Eintrag per ID
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   getById(_tenantDb: Pool, _id: number): TenantData | null {
     try {
@@ -86,8 +86,8 @@ class TenantService {
 
   /**
    * Erstellt einen neuen Tenant Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   async create(_tenantDb: Pool, data: ModelTenantCreateData): Promise<TenantCreateResult> {
     try {
@@ -100,9 +100,9 @@ class TenantService {
 
   /**
    * Aktualisiert einen Tenant Eintrag
-   * @param _tenantDb
-   * @param _id
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
   update(_tenantDb: Pool, _id: number, _data: TenantUpdateData): TenantData | null {
     try {
@@ -117,8 +117,8 @@ class TenantService {
 
   /**
    * Löscht einen Tenant Eintrag
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {

@@ -46,9 +46,9 @@ interface AssignmentRow extends RowDataPacket {
 export class DepartmentGroupsService {
   /**
    * Create a new department group
-   * @param data
-   * @param tenantId
-   * @param createdBy
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param createdBy - The createdBy parameter
    */
   async createGroup(
     data: CreateGroupRequest,
@@ -119,7 +119,7 @@ export class DepartmentGroupsService {
 
   /**
    * Get all groups with hierarchy
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroupWithHierarchy[]> {
     try {
@@ -200,8 +200,8 @@ export class DepartmentGroupsService {
 
   /**
    * Get a single group by ID
-   * @param groupId
-   * @param tenantId
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
    */
   async getGroupById(groupId: number, tenantId: number): Promise<DepartmentGroup> {
     try {
@@ -237,10 +237,10 @@ export class DepartmentGroupsService {
 
   /**
    * Update a group
-   * @param groupId
-   * @param data
-   * @param tenantId
-   * @param updatedBy
+   * @param groupId - The groupId parameter
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param updatedBy - The updatedBy parameter
    */
   async updateGroup(
     groupId: number,
@@ -279,9 +279,9 @@ export class DepartmentGroupsService {
 
   /**
    * Delete a group
-   * @param groupId
-   * @param tenantId
-   * @param deletedBy
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
+   * @param deletedBy - The deletedBy parameter
    */
   async deleteGroup(groupId: number, tenantId: number, deletedBy: number): Promise<void> {
     const connection = await getConnection();
@@ -361,10 +361,10 @@ export class DepartmentGroupsService {
 
   /**
    * Add departments to a group
-   * @param groupId
-   * @param departmentIds
-   * @param tenantId
-   * @param addedBy
+   * @param groupId - The groupId parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param tenantId - The tenant ID
+   * @param addedBy - The addedBy parameter
    */
   async addDepartmentsToGroup(
     groupId: number,
@@ -414,10 +414,10 @@ export class DepartmentGroupsService {
 
   /**
    * Remove a department from a group
-   * @param groupId
-   * @param departmentId
-   * @param tenantId
-   * @param removedBy
+   * @param groupId - The groupId parameter
+   * @param departmentId - The departmentId parameter
+   * @param tenantId - The tenant ID
+   * @param removedBy - The removedBy parameter
    */
   async removeDepartmentFromGroup(
     groupId: number,
@@ -452,9 +452,9 @@ export class DepartmentGroupsService {
 
   /**
    * Get departments in a group
-   * @param groupId
-   * @param tenantId
-   * @param includeSubgroups
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
+   * @param includeSubgroups - The includeSubgroups parameter
    */
   async getGroupDepartments(
     groupId: number,
@@ -498,8 +498,8 @@ export class DepartmentGroupsService {
 
   /**
    * Get departments from all subgroups recursively
-   * @param parentGroupId
-   * @param tenantId
+   * @param parentGroupId - The parentGroupId parameter
+   * @param tenantId - The tenant ID
    */
   private async getSubgroupDepartments(
     parentGroupId: number,
@@ -532,9 +532,9 @@ export class DepartmentGroupsService {
 
   /**
    * Check for circular dependencies
-   * @param groupId
-   * @param targetId
-   * @param tenantId
+   * @param groupId - The groupId parameter
+   * @param targetId - The targetId parameter
+   * @param tenantId - The tenant ID
    */
   private async checkCircularDependency(
     groupId: number,

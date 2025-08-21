@@ -71,8 +71,8 @@ class BlackboardController {
   /**
    * Holt alle Blackboard Einträge
    * GET /api/blackboard
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: BlackboardQueryRequest, res: Response): Promise<void> {
     try {
@@ -109,8 +109,8 @@ class BlackboardController {
   /**
    * Holt einen Blackboard Eintrag per ID
    * GET /api/blackboard/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: BlackboardGetRequest, res: Response): Promise<void> {
     try {
@@ -143,8 +143,8 @@ class BlackboardController {
   /**
    * Erstellt einen neuen Blackboard Eintrag
    * POST /api/blackboard
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: BlackboardCreateRequest, res: Response): Promise<void> {
     try {
@@ -185,8 +185,8 @@ class BlackboardController {
   /**
    * Aktualisiert einen Blackboard Eintrag
    * PUT /api/blackboard/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: BlackboardUpdateRequest, res: Response): Promise<void> {
     try {
@@ -230,8 +230,8 @@ class BlackboardController {
   /**
    * Löscht einen Blackboard Eintrag
    * DELETE /api/blackboard/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: BlackboardGetRequest, res: Response): Promise<void> {
     try {

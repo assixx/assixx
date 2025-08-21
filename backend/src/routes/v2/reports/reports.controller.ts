@@ -11,8 +11,8 @@ import * as reportsService from './reports.service.js';
 
 /**
  * Get company overview report with high-level KPIs
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getOverviewReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -42,8 +42,8 @@ export const getOverviewReport = async (req: AuthenticatedRequest, res: Response
 
 /**
  * Get detailed employee analytics report
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getEmployeeReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -75,8 +75,8 @@ export const getEmployeeReport = async (req: AuthenticatedRequest, res: Response
 
 /**
  * Get department performance analytics
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getDepartmentReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -106,8 +106,8 @@ export const getDepartmentReport = async (req: AuthenticatedRequest, res: Respon
 
 /**
  * Get shift coverage and overtime analytics
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getShiftReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -139,8 +139,8 @@ export const getShiftReport = async (req: AuthenticatedRequest, res: Response) =
 
 /**
  * Get KVP ROI and performance report
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getKvpReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -171,8 +171,8 @@ export const getKvpReport = async (req: AuthenticatedRequest, res: Response) => 
 
 /**
  * Get attendance and absence report
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getAttendanceReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -204,8 +204,8 @@ export const getAttendanceReport = async (req: AuthenticatedRequest, res: Respon
 
 /**
  * Get labor law compliance report
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getComplianceReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -284,8 +284,8 @@ export const generateCustomReport = async (req: AuthenticatedRequest, res: Respo
 
 /**
  * Export report in various formats (PDF, Excel, CSV)
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const exportReport = async (req: AuthenticatedRequest, res: Response) => {
   try {

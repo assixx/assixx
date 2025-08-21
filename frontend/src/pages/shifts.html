@@ -810,6 +810,114 @@
       body #breadcrumb-container + * {
         margin-top: -15px !important;
       }
+
+      /* ============ FAVORITES STYLES ============ */
+      .favorites-container {
+        margin-bottom: var(--spacing-lg);
+        padding: var(--spacing-md);
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        border: var(--glass-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .favorites-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+      }
+
+      .favorites-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .favorites-list {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+        flex: 1;
+      }
+
+      .favorite-btn {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        color: #4caf50;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .favorite-btn:hover {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.2));
+        border-color: rgba(76, 175, 80, 0.6);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+      }
+
+      .favorite-btn:active {
+        transform: translateY(0);
+      }
+
+      .remove-favorite {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border-radius: 50%;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .remove-favorite:hover {
+        background: rgba(244, 67, 54, 0.4);
+        transform: scale(1.1);
+      }
+
+      .add-favorite-btn {
+        margin-top: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        padding: 10px 20px;
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        color: #4caf50;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .add-favorite-btn:hover {
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.2));
+        border-color: rgba(76, 175, 80, 0.6);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
+      }
+
+      .add-favorite-btn:active {
+        transform: translateY(0);
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>

@@ -6,7 +6,7 @@ import express, { Request, Router } from 'express';
 import { RowDataPacket } from 'mysql2/promise';
 
 import { authenticateToken } from '../auth';
-import { execute } from '../database';
+import { execute } from '../utils/db';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();
@@ -225,14 +225,19 @@ router.post('/', authenticateToken, (req, res): void => {
       return;
     }
 
-    const { name, department_id, description, location } = req.body as {
+    const {
+      name,
+      department_id: departmentId,
+      description,
+      location,
+    } = req.body as {
       name?: string;
       department_id?: number;
       description?: string;
       location?: string;
     };
 
-    if (name == null || name === '' || department_id == null || department_id === 0) {
+    if (name == null || name === '' || departmentId == null || departmentId === 0) {
       res.status(400).json({
         success: false,
         message: 'Name und Abteilung sind erforderlich',
@@ -244,7 +249,7 @@ router.post('/', authenticateToken, (req, res): void => {
     const machine: Machine = {
       id: Date.now(),
       name: name,
-      department_id: department_id,
+      department_id: departmentId,
       description: description ?? undefined,
       location: location ?? undefined,
       status: 'active',

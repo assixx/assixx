@@ -19,8 +19,8 @@ export class MachinesService {
   // List all machines with filters
   /**
    *
-   * @param tenantId
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param filters - The filter criteria
    */
   async listMachines(tenantId: number, filters: MachineFilters = {}): Promise<MachineResponse[]> {
     const machines = await MachineModel.findAll(tenantId, filters);
@@ -30,8 +30,8 @@ export class MachinesService {
   // Get machine by ID
   /**
    *
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getMachineById(id: number, tenantId: number): Promise<MachineResponse> {
     const machine = await MachineModel.findById(id, tenantId);
@@ -44,11 +44,11 @@ export class MachinesService {
   // Create new machine
   /**
    *
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async createMachine(
     data: MachineCreateRequest,
@@ -119,12 +119,12 @@ export class MachinesService {
   // Update machine
   /**
    *
-   * @param id
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async updateMachine(
     id: number,
@@ -208,11 +208,11 @@ export class MachinesService {
   // Delete machine (hard delete)
   /**
    *
-   * @param id
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async deleteMachine(
     id: number,
@@ -244,11 +244,11 @@ export class MachinesService {
   // Deactivate machine
   /**
    *
-   * @param id
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async deactivateMachine(
     id: number,
@@ -282,11 +282,11 @@ export class MachinesService {
   // Activate machine
   /**
    *
-   * @param id
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async activateMachine(
     id: number,
@@ -320,8 +320,8 @@ export class MachinesService {
   // Get maintenance history
   /**
    *
-   * @param machineId
-   * @param tenantId
+   * @param machineId - The machineId parameter
+   * @param tenantId - The tenant ID
    */
   async getMaintenanceHistory(
     machineId: number,
@@ -337,11 +337,11 @@ export class MachinesService {
   // Add maintenance record
   /**
    *
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async addMaintenanceRecord(
     data: MaintenanceRecordRequest,
@@ -401,8 +401,8 @@ export class MachinesService {
   // Get upcoming maintenance
   /**
    *
-   * @param tenantId
-   * @param days
+   * @param tenantId - The tenant ID
+   * @param days - The days parameter
    */
   async getUpcomingMaintenance(tenantId: number, days = 30): Promise<MachineResponse[]> {
     const machines = await MachineModel.getUpcomingMaintenance(tenantId, days);
@@ -412,7 +412,7 @@ export class MachinesService {
   // Get statistics
   /**
    *
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getStatistics(tenantId: number): Promise<MachineStatistics> {
     const stats = await MachineModel.getStatistics(tenantId);
@@ -446,7 +446,7 @@ export class MachinesService {
   // Helper: Format machine response
   /**
    *
-   * @param machine
+   * @param machine - The machine parameter
    */
   private formatMachineResponse(
     machine: Machine & {
@@ -493,7 +493,7 @@ export class MachinesService {
   // Helper: Format maintenance response
   /**
    *
-   * @param record
+   * @param record - The record parameter
    */
   private formatMaintenanceResponse(
     record: MachineMaintenanceHistory & {

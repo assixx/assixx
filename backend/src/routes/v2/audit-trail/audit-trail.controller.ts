@@ -14,8 +14,8 @@ import { AuditEntry, AuditFilter } from './types.js';
 export const auditTrailController = {
   /**
    * Get audit entries with filters
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -91,8 +91,8 @@ export const auditTrailController = {
 
   /**
    * Get audit entry by ID
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -123,8 +123,8 @@ export const auditTrailController = {
 
   /**
    * Get audit statistics
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -160,8 +160,8 @@ export const auditTrailController = {
 
   /**
    * Generate compliance report
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async generateReport(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -203,8 +203,8 @@ export const auditTrailController = {
 
   /**
    * Export audit entries
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async exportEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -267,8 +267,8 @@ export const auditTrailController = {
 
   /**
    * Delete old audit entries (data retention)
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteOldEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -338,7 +338,7 @@ export const auditTrailController = {
 
   /**
    * Generate CSV from audit entries
-   * @param entries
+   * @param entries - The entries parameter
    */
   generateCSV(entries: AuditEntry[]): string {
     const headers = [

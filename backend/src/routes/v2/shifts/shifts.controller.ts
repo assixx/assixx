@@ -85,8 +85,8 @@ interface SwapRequestCreateData {
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function listShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -143,8 +143,8 @@ export async function listShifts(req: AuthenticatedRequest, res: Response): Prom
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function getShiftById(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -170,8 +170,8 @@ export async function getShiftById(req: AuthenticatedRequest, res: Response): Pr
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function createShift(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -198,8 +198,8 @@ export async function createShift(req: AuthenticatedRequest, res: Response): Pro
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function updateShift(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -232,8 +232,8 @@ export async function updateShift(req: AuthenticatedRequest, res: Response): Pro
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function deleteShift(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -267,8 +267,8 @@ export async function deleteShift(req: AuthenticatedRequest, res: Response): Pro
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function listTemplates(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -289,8 +289,8 @@ export async function listTemplates(req: AuthenticatedRequest, res: Response): P
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function getTemplateById(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -316,8 +316,8 @@ export async function getTemplateById(req: AuthenticatedRequest, res: Response):
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function createTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -344,8 +344,8 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response): 
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function updateTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -378,8 +378,8 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response): 
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -413,8 +413,8 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response): 
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function listSwapRequests(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -441,8 +441,8 @@ export async function listSwapRequests(req: AuthenticatedRequest, res: Response)
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function createSwapRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -475,8 +475,8 @@ export async function createSwapRequest(req: AuthenticatedRequest, res: Response
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function updateSwapRequestStatus(
@@ -516,8 +516,8 @@ export async function updateSwapRequestStatus(
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function getOvertimeReport(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -555,8 +555,8 @@ export async function getOvertimeReport(req: AuthenticatedRequest, res: Response
 
 /**
  * List all shifts with filters
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  * @returns Promise resolving to response
  */
 export async function exportShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -603,8 +603,8 @@ export async function exportShifts(req: AuthenticatedRequest, res: Response): Pr
 
 /**
  * Create a complete shift plan
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  */
 export async function createShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -648,8 +648,8 @@ export async function createShiftPlan(req: AuthenticatedRequest, res: Response):
 
 /**
  * Get shift plan with shifts and notes
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  */
 export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -691,8 +691,8 @@ export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Pr
 
 /**
  * Update existing shift plan
- * @param req
- * @param res
+ * @param req - The authenticated request
+ * @param res - The response object
  */
 export async function updateShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -741,6 +741,99 @@ export async function updateShiftPlan(req: AuthenticatedRequest, res: Response):
           errorResponse(
             ERROR_CODES.SERVER_ERROR,
             error instanceof Error ? error.message : 'Failed to update shift plan',
+          ),
+        );
+    }
+  }
+}
+
+// ============= FAVORITES =============
+
+/**
+ * List user's shift planning favorites
+ */
+export async function listFavorites(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const favorites = await shiftsService.listFavorites(req.user.tenant_id, req.user.id);
+
+    res.json(successResponse(favorites, 'Favorites retrieved successfully'));
+  } catch (error: unknown) {
+    res
+      .status(500)
+      .json(
+        errorResponse(
+          ERROR_CODES.SERVER_ERROR,
+          error instanceof Error ? error.message : 'Failed to list favorites',
+        ),
+      );
+  }
+}
+
+/**
+ * Create new shift planning favorite
+ */
+export async function createFavorite(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = req.body as {
+      name: string;
+      areaId: number;
+      areaName: string;
+      departmentId: number;
+      departmentName: string;
+      machineId: number;
+      machineName: string;
+      teamId: number;
+      teamName: string;
+    };
+
+    const favorite = await shiftsService.createFavorite(req.user.tenant_id, req.user.id, data);
+
+    res.status(201).json(successResponse(favorite, 'Favorite created successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res
+        .status(error.code === 'DUPLICATE' ? 409 : 400)
+        .json(errorResponse(error.code, error.message));
+    } else {
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            ERROR_CODES.SERVER_ERROR,
+            error instanceof Error ? error.message : 'Failed to create favorite',
+          ),
+        );
+    }
+  }
+}
+
+/**
+ * Delete shift planning favorite
+ */
+export async function deleteFavorite(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const favoriteId = Number.parseInt(req.params.id, 10);
+
+    if (Number.isNaN(favoriteId)) {
+      res.status(400).json(errorResponse('INVALID_ID', 'Invalid favorite ID'));
+      return;
+    }
+
+    await shiftsService.deleteFavorite(favoriteId, req.user.tenant_id, req.user.id);
+
+    res.json(successResponse(null, 'Favorite deleted successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res
+        .status(error.code === 'NOT_FOUND' ? 404 : 400)
+        .json(errorResponse(error.code, error.message));
+    } else {
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            ERROR_CODES.SERVER_ERROR,
+            error instanceof Error ? error.message : 'Failed to delete favorite',
           ),
         );
     }

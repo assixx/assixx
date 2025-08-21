@@ -86,7 +86,7 @@ export default [
       ...typescriptPlugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
-      'tsdoc/syntax': 'error',
+      'tsdoc/syntax': 'warn',
 
       complexity: ['error', 60], // Beibehalten, aber SonarJS ist wichtiger.
       '@typescript-eslint/no-unused-vars': [

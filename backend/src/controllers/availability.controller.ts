@@ -10,7 +10,7 @@ import type { AuthenticatedRequest } from '../types/request.types';
 // Type guard to check if request has authenticated user
 /**
  *
- * @param req
+ * @param req - The request object
  */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return 'user' in req && req.user != null && 'tenant_id' in req.user;
@@ -23,8 +23,8 @@ class AvailabilityController {
   /**
    * Get all availability records
    * GET /api/availability
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: Request, res: Response): Promise<void> {
     try {
@@ -56,8 +56,8 @@ class AvailabilityController {
   /**
    * Get current availability status for all employees
    * GET /api/availability/current
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getCurrentStatus(req: Request, res: Response): Promise<void> {
     try {
@@ -78,8 +78,8 @@ class AvailabilityController {
   /**
    * Get availability summary for date range
    * GET /api/availability/summary
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getSummary(req: Request, res: Response): Promise<void> {
     try {
@@ -110,8 +110,8 @@ class AvailabilityController {
   /**
    * Get availability by ID
    * GET /api/availability/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
@@ -139,8 +139,8 @@ class AvailabilityController {
   /**
    * Create new availability record
    * POST /api/availability
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: Request, res: Response): Promise<void> {
     try {
@@ -216,8 +216,8 @@ class AvailabilityController {
   /**
    * Update availability record
    * PUT /api/availability/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
@@ -293,8 +293,8 @@ class AvailabilityController {
   /**
    * Delete availability record
    * DELETE /api/availability/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {

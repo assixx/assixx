@@ -25,7 +25,7 @@ export class FeaturesService {
   // Get all available features
   /**
    *
-   * @param includeInactive
+   * @param includeInactive - The includeInactive parameter
    */
   static async getAllFeatures(includeInactive = false): Promise<Feature[]> {
     try {
@@ -51,7 +51,7 @@ export class FeaturesService {
   // Get features grouped by category
   /**
    *
-   * @param includeInactive
+   * @param includeInactive - The includeInactive parameter
    */
   static async getFeaturesByCategory(includeInactive = false): Promise<FeatureCategory[]> {
     try {
@@ -78,7 +78,7 @@ export class FeaturesService {
   // Get single feature by code
   /**
    *
-   * @param code
+   * @param code - The code parameter
    */
   static async getFeatureByCode(code: string): Promise<Feature | null> {
     try {
@@ -95,7 +95,7 @@ export class FeaturesService {
   // Get tenant features
   /**
    *
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async getTenantFeatures(tenantId: number): Promise<TenantFeature[]> {
     try {
@@ -147,7 +147,7 @@ export class FeaturesService {
   // Get all features with tenant-specific info
   /**
    *
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
     try {
@@ -217,8 +217,8 @@ export class FeaturesService {
   // Activate feature for tenant
   /**
    *
-   * @param request
-   * @param activatedBy
+   * @param request - The request parameter
+   * @param activatedBy - The activatedBy parameter
    */
   static async activateFeature(
     request: FeatureActivationRequest,
@@ -304,9 +304,9 @@ export class FeaturesService {
   // Deactivate feature for tenant
   /**
    *
-   * @param tenantId
-   * @param featureCode
-   * @param deactivatedBy
+   * @param tenantId - The tenant ID
+   * @param featureCode - The featureCode parameter
+   * @param deactivatedBy - The deactivatedBy parameter
    */
   static async deactivateFeature(
     tenantId: number,
@@ -351,10 +351,10 @@ export class FeaturesService {
   // Get feature usage statistics
   /**
    *
-   * @param tenantId
-   * @param featureCode
-   * @param startDate
-   * @param endDate
+   * @param tenantId - The tenant ID
+   * @param featureCode - The featureCode parameter
+   * @param startDate - The startDate parameter
+   * @param endDate - The endDate parameter
    */
   static async getUsageStats(
     tenantId: number,
@@ -400,7 +400,7 @@ export class FeaturesService {
   // Get tenant features summary
   /**
    *
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async getTenantFeaturesSummary(tenantId: number): Promise<TenantFeaturesSummary> {
     try {
@@ -436,8 +436,8 @@ export class FeaturesService {
   // Check if tenant has access to feature
   /**
    *
-   * @param tenantId
-   * @param featureCode
+   * @param tenantId - The tenant ID
+   * @param featureCode - The featureCode parameter
    */
   static async checkTenantAccess(tenantId: number, featureCode: string): Promise<boolean> {
     try {
@@ -464,10 +464,10 @@ export class FeaturesService {
   // Log feature usage
   /**
    *
-   * @param tenantId
-   * @param featureCode
-   * @param userId
-   * @param metadata
+   * @param tenantId - The tenant ID
+   * @param featureCode - The featureCode parameter
+   * @param userId - The user ID
+   * @param metadata - The metadata parameter
    */
   static async logUsage(
     tenantId: number,

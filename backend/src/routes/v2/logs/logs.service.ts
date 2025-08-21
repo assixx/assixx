@@ -39,7 +39,7 @@ interface StatsRow extends RowDataPacket {
 export class LogsService {
   /**
    * Get paginated logs with filters (Root only)
-   * @param filters
+   * @param filters - The filter criteria
    */
   async getLogs(filters: LogsFilterParams): Promise<LogsListResponse> {
     logger.info('[Logs v2 Service] getLogs called with filters:', filters);
@@ -217,7 +217,7 @@ export class LogsService {
 
   /**
    * Delete logs with filters (Root only)
-   * @param filters
+   * @param filters - The filter criteria
    * @param filters.userId
    * @param filters.tenantId
    * @param filters.olderThanDays
@@ -286,7 +286,7 @@ export class LogsService {
 
   /**
    * Format database log to API response
-   * @param log
+   * @param log - The log parameter
    */
   private formatLogResponse(log: DbLogRow): LogsResponse {
     return {

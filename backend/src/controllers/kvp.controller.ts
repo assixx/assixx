@@ -5,8 +5,9 @@
 import { Request, Response } from 'express';
 import { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import pool, { executeQuery } from '../database.js';
+import pool from '../config/database.js';
 import kvpPermissionService from '../services/kvpPermission.service.js';
+import { query as executeQuery } from '../utils/db.js';
 
 // Extended Request interface with tenant database and user
 interface TenantRequest extends Request {
@@ -85,8 +86,8 @@ class KvpController {
   /**
    * Get visible KVP suggestions based on user role and permissions
    * GET /api/kvp
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: KvpQueryRequest, res: Response): Promise<void> {
     try {
@@ -239,8 +240,8 @@ class KvpController {
   /**
    * Get a single KVP suggestion if user has permission
    * GET /api/kvp/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -308,8 +309,8 @@ class KvpController {
   /**
    * Create a new KVP suggestion
    * POST /api/kvp
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: KvpCreateRequest, res: Response): Promise<void> {
     try {
@@ -411,8 +412,8 @@ class KvpController {
   /**
    * Update a KVP suggestion if user has permission
    * PUT /api/kvp/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: KvpUpdateRequest, res: Response): Promise<void> {
     try {
@@ -545,8 +546,8 @@ class KvpController {
   /**
    * Archive a KVP suggestion (soft delete)
    * DELETE /api/kvp/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -602,8 +603,8 @@ class KvpController {
   /**
    * Share a suggestion company-wide
    * POST /api/kvp/:id/share
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async shareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
@@ -692,8 +693,8 @@ class KvpController {
   /**
    * Unshare a suggestion (back to department level)
    * POST /api/kvp/:id/unshare
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async unshareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
@@ -771,8 +772,8 @@ class KvpController {
   /**
    * Get department statistics
    * GET /api/kvp/stats
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getStatistics(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -866,8 +867,8 @@ class KvpController {
   /**
    * Get KVP categories
    * GET /api/kvp/categories
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getCategories(req: TenantRequest, res: Response): Promise<void> {
     try {
@@ -896,8 +897,8 @@ class KvpController {
   /**
    * Get comments for a suggestion
    * GET /api/kvp/:id/comments
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getComments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -961,8 +962,8 @@ class KvpController {
   /**
    * Add comment to a suggestion
    * POST /api/kvp/:id/comments
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async addComment(
     req: TenantRequest & {
@@ -1032,8 +1033,8 @@ class KvpController {
   /**
    * Get attachments for a suggestion
    * GET /api/kvp/:id/attachments
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAttachments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
@@ -1088,8 +1089,8 @@ class KvpController {
   /**
    * Upload photo attachments for a KVP suggestion
    * POST /api/kvp/:id/attachments
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async uploadAttachment(
     req: TenantRequest & {
@@ -1189,8 +1190,8 @@ class KvpController {
   /**
    * Download a KVP attachment
    * GET /api/kvp/attachments/:attachmentId/download
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async downloadAttachment(
     req: TenantRequest & { params: { attachmentId: string } },

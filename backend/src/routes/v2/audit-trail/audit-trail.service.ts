@@ -42,11 +42,11 @@ interface DbAuditEntry extends RowDataPacket {
 export class AuditTrailService {
   /**
    * Create a new audit entry
-   * @param tenantId
-   * @param userId
-   * @param entry
-   * @param ipAddress
-   * @param userAgent
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param entry - The entry parameter
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
    */
   async createEntry(
     tenantId: number,
@@ -100,7 +100,7 @@ export class AuditTrailService {
 
   /**
    * Get audit entries with filters
-   * @param filter
+   * @param filter - The filter parameter
    */
   async getEntries(filter: AuditFilter): Promise<{ entries: AuditEntry[]; total: number }> {
     const {
@@ -197,8 +197,8 @@ export class AuditTrailService {
 
   /**
    * Get audit entry by ID
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getEntryById(id: number, tenantId: number): Promise<AuditEntry> {
     const [rows] = await execute<DbAuditEntry[]>(
@@ -215,7 +215,7 @@ export class AuditTrailService {
 
   /**
    * Get audit statistics
-   * @param filter
+   * @param filter - The filter parameter
    */
   async getStats(filter: AuditFilter): Promise<AuditStats> {
     const { tenantId, dateFrom, dateTo } = filter;
@@ -321,11 +321,11 @@ export class AuditTrailService {
 
   /**
    * Generate compliance report
-   * @param tenantId
-   * @param reportType
-   * @param dateFrom
-   * @param dateTo
-   * @param generatedBy
+   * @param tenantId - The tenant ID
+   * @param reportType - The reportType parameter
+   * @param dateFrom - The dateFrom parameter
+   * @param dateTo - The dateTo parameter
+   * @param generatedBy - The generatedBy parameter
    */
   async generateComplianceReport(
     tenantId: number,
@@ -399,8 +399,8 @@ export class AuditTrailService {
 
   /**
    * Delete old audit entries (for data retention policies)
-   * @param tenantId
-   * @param olderThan
+   * @param tenantId - The tenant ID
+   * @param olderThan - The olderThan parameter
    */
   async deleteOldEntries(tenantId: number, olderThan: Date): Promise<number> {
     const [result] = await execute<ResultSetHeader>(
@@ -413,7 +413,7 @@ export class AuditTrailService {
 
   /**
    * Map database row to AuditEntry
-   * @param row
+   * @param row - The row parameter
    */
   private mapToAuditEntry(row: DbAuditEntry): AuditEntry {
     return {

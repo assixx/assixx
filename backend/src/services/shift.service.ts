@@ -78,7 +78,7 @@ interface ShiftTemplate {
   description?: string | null;
   start_time: string;
   end_time: string;
-  duration_hours: number;
+  durationHours: number;
   break_minutes: number;
   color: string;
   is_active: boolean | number;
@@ -109,8 +109,8 @@ class ShiftService {
   /**
    * Holt alle Shift Einträge für einen Tenant
    * NOTE: This generic method doesn't match the actual Shift model functionality
-   * @param _tenantDb
-   * @param _filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
   getAll(_tenantDb: Pool, _filters: ShiftFilters = {}): ShiftEntry[] {
     try {
@@ -126,8 +126,8 @@ class ShiftService {
   /**
    * Holt einen Shift Eintrag per ID
    * NOTE: This should use specific methods depending on what's being retrieved
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   getById(_tenantDb: Pool, _id: number): ShiftEntry | null {
     try {
@@ -142,8 +142,8 @@ class ShiftService {
   /**
    * Erstellt einen neuen Shift Eintrag
    * NOTE: This should use createShift, createShiftPlan, or createShiftTemplate
-   * @param _tenantDb
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _data - The _data parameter
    */
   create(_tenantDb: Pool, _data: ShiftCreateData): ShiftEntry {
     try {
@@ -160,9 +160,9 @@ class ShiftService {
   /**
    * Aktualisiert einen Shift Eintrag
    * NOTE: The Shift model doesn't have generic update methods
-   * @param _tenantDb
-   * @param _id
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
   update(_tenantDb: Pool, _id: number, _data: ShiftUpdateData): ShiftEntry | null {
     try {
@@ -179,8 +179,8 @@ class ShiftService {
   /**
    * Löscht einen Shift Eintrag
    * NOTE: The Shift model doesn't have generic delete methods
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
@@ -204,7 +204,12 @@ class ShiftService {
    */
   async getShiftTemplates(tenantId: number): Promise<ShiftTemplate[]> {
     try {
-      return await getShiftTemplates(tenantId);
+      const templates = await getShiftTemplates(tenantId);
+      // Map duration_hours to durationHours for interface compatibility
+      return templates.map((template) => ({
+        ...template,
+        durationHours: template.duration_hours,
+      }));
     } catch (error: unknown) {
       console.error('Error in ShiftService.getShiftTemplates:', error);
       throw error;
@@ -213,7 +218,7 @@ class ShiftService {
 
   /**
    * Create a new shift template
-   * @param templateData
+   * @param templateData - The templateData parameter
    * @param templateData.tenant_id
    * @param templateData.name
    * @param templateData.description
@@ -235,20 +240,26 @@ class ShiftService {
     created_by: number;
   }): Promise<ShiftTemplate> {
     try {
-      // Calculate duration_hours from start_time and end_time
+      // Calculate durationHours from start_time and end_time
       const start = new Date(`2000-01-01 ${templateData.start_time}`);
       const end = new Date(`2000-01-01 ${templateData.end_time}`);
-      let duration_hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      let durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
       // Handle overnight shifts
-      if (duration_hours < 0) {
-        duration_hours += 24;
+      if (durationHours < 0) {
+        durationHours += 24;
       }
 
-      return await createShiftTemplate({
+      const template = await createShiftTemplate({
         ...templateData,
-        duration_hours,
+        duration_hours: durationHours,
       });
+
+      // Map duration_hours to durationHours for interface compatibility
+      return {
+        ...template,
+        durationHours: template.duration_hours || 0,
+      };
     } catch (error: unknown) {
       console.error('Error in ShiftService.createShiftTemplate:', error);
       throw error;
@@ -257,9 +268,9 @@ class ShiftService {
 
   /**
    * Get all shift plans for a tenant with optional filters
-   * @param tenantId
-   * @param userId
-   * @param options
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param options - The options object
    * @returns Promise resolving to shift plans with metadata
    */
   async getShiftPlans(
@@ -285,7 +296,7 @@ class ShiftService {
 
   /**
    * Create a new shift plan
-   * @param planData
+   * @param planData - The planData parameter
    * @param planData.tenant_id
    * @param planData.name
    * @param planData.description
@@ -316,9 +327,9 @@ class ShiftService {
 
   /**
    * Get shifts for a specific plan
-   * @param planId
-   * @param tenantId
-   * @param userId
+   * @param planId - The planId parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    * @returns Promise resolving to array of shift entries
    */
   async getShiftsByPlan(planId: number, tenantId: number, userId: number): Promise<ShiftEntry[]> {
@@ -347,7 +358,7 @@ class ShiftService {
 
   /**
    * Create a shift
-   * @param shiftData
+   * @param shiftData - The shiftData parameter
    * @returns Promise resolving to the created shift entry
    */
   async createShift(shiftData: ShiftCreateData & { created_by: number }): Promise<ShiftEntry> {
@@ -387,7 +398,7 @@ class ShiftService {
 
   /**
    * Assign employee to a shift
-   * @param assignmentData
+   * @param assignmentData - The assignmentData parameter
    * @param assignmentData.shift_id
    * @param assignmentData.employee_id
    * @param assignmentData.tenant_id
@@ -429,10 +440,10 @@ class ShiftService {
 
   /**
    * Get employee shifts for a date range
-   * @param tenantId
-   * @param userId
-   * @param startDate
-   * @param endDate
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param startDate - The startDate parameter
+   * @param endDate - The endDate parameter
    * @returns Promise resolving to array of employee shifts
    */
   async getEmployeeShifts(

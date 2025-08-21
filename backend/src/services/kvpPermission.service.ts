@@ -21,8 +21,8 @@ interface KvpVisibilityQuery {
 class KvpPermissionService {
   /**
    * Get all departments an admin has access to
-   * @param adminId
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
    */
   async getAdminDepartments(adminId: number, tenantId: number): Promise<number[]> {
     try {
@@ -36,10 +36,10 @@ class KvpPermissionService {
 
   /**
    * Check if user can view a specific KVP suggestion
-   * @param userId
-   * @param suggestionId
-   * @param role
-   * @param tenantId
+   * @param userId - The user ID
+   * @param suggestionId - The suggestionId parameter
+   * @param role - The role parameter
+   * @param tenantId - The tenant ID
    */
   async canViewSuggestion(
     userId: number,
@@ -103,10 +103,10 @@ class KvpPermissionService {
 
   /**
    * Check if user can edit a specific KVP suggestion
-   * @param userId
-   * @param suggestionId
-   * @param role
-   * @param tenantId
+   * @param userId - The user ID
+   * @param suggestionId - The suggestionId parameter
+   * @param role - The role parameter
+   * @param tenantId - The tenant ID
    */
   async canEditSuggestion(
     userId: number,
@@ -154,7 +154,7 @@ class KvpPermissionService {
 
   /**
    * Build SQL WHERE clause for visibility filtering
-   * @param params
+   * @param params - The parameters object
    */
   async buildVisibilityQuery(params: KvpVisibilityQuery): Promise<{
     whereClause: string;
@@ -235,9 +235,9 @@ class KvpPermissionService {
 
   /**
    * Check if admin can share a suggestion company-wide
-   * @param adminId
-   * @param suggestionId
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param suggestionId - The suggestionId parameter
+   * @param tenantId - The tenant ID
    */
   async canShareSuggestion(
     adminId: number,
@@ -273,13 +273,13 @@ class KvpPermissionService {
 
   /**
    * Log admin action for audit trail
-   * @param adminId
-   * @param action
-   * @param entityId
-   * @param entityType
-   * @param tenantId
-   * @param oldValue
-   * @param newValue
+   * @param adminId - The adminId parameter
+   * @param action - The action parameter
+   * @param entityId - The entityId parameter
+   * @param entityType - The entityType parameter
+   * @param tenantId - The tenant ID
+   * @param oldValue - The oldValue parameter
+   * @param newValue - The newValue parameter
    */
   async logAdminAction(
     adminId: number,
@@ -312,9 +312,9 @@ class KvpPermissionService {
 
   /**
    * Get suggestion statistics for a department or company
-   * @param scope
-   * @param scopeId
-   * @param tenantId
+   * @param scope - The scope parameter
+   * @param scopeId - The scopeId parameter
+   * @param tenantId - The tenant ID
    */
   async getSuggestionStats(
     scope: 'company' | 'department',

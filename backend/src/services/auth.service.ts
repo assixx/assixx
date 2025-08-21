@@ -246,7 +246,7 @@ class AuthService {
 
   /**
    * Map database user format to application user format
-   * @param dbUser
+   * @param dbUser - The dbUser parameter
    * @private
    */
   private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<DatabaseUser, 'password_hash'> & {
@@ -300,7 +300,7 @@ class AuthService {
 
   /**
    * Convert DbUser to DatabaseUser format
-   * @param dbUser
+   * @param dbUser - The dbUser parameter
    * @param dbUser.id
    * @param dbUser.username
    * @param dbUser.email

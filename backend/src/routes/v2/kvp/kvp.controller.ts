@@ -55,8 +55,8 @@ interface AwardPointsBody {
 
 /**
  * Get all KVP categories
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getCategories(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -76,8 +76,8 @@ export async function getCategories(req: AuthenticatedRequest, res: Response): P
 
 /**
  * List KVP suggestions with pagination and filters
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function listSuggestions(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -123,8 +123,8 @@ export async function listSuggestions(req: AuthenticatedRequest, res: Response):
 
 /**
  * Get a specific KVP suggestion by ID
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getSuggestionById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -151,8 +151,8 @@ export async function getSuggestionById(req: AuthenticatedRequest, res: Response
 
 /**
  * Create a new KVP suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function createSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -208,8 +208,8 @@ export async function createSuggestion(req: AuthenticatedRequest, res: Response)
 
 /**
  * Update a KVP suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function updateSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -287,8 +287,8 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
 
 /**
  * Delete a KVP suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function deleteSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -339,8 +339,8 @@ export async function deleteSuggestion(req: AuthenticatedRequest, res: Response)
 
 /**
  * Get comments for a suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getComments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -367,8 +367,8 @@ export async function getComments(req: AuthenticatedRequest, res: Response): Pro
 
 /**
  * Add a comment to a suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function addComment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -419,8 +419,8 @@ export async function addComment(req: AuthenticatedRequest, res: Response): Prom
 
 /**
  * Get attachments for a suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -447,8 +447,8 @@ export async function getAttachments(req: AuthenticatedRequest, res: Response): 
 
 /**
  * Upload attachments to a suggestion
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function uploadAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -514,8 +514,8 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
 
 /**
  * Download an attachment
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function downloadAttachment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -544,8 +544,8 @@ export async function downloadAttachment(req: AuthenticatedRequest, res: Respons
 
 /**
  * Award points to a user (Admin only)
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function awardPoints(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -598,8 +598,8 @@ export async function awardPoints(req: AuthenticatedRequest, res: Response): Pro
 
 /**
  * Get user points summary
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getUserPoints(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -627,8 +627,8 @@ export async function getUserPoints(req: AuthenticatedRequest, res: Response): P
 
 /**
  * Get KVP dashboard statistics
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getDashboardStats(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {

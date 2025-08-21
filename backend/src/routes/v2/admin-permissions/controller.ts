@@ -17,8 +17,8 @@ export const adminPermissionsController = {
   /**
    * Get permissions for a specific admin
    * Root only
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAdminPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -71,8 +71,8 @@ export const adminPermissionsController = {
 
   /**
    * Get current admin's permissions
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getMyPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -113,8 +113,8 @@ export const adminPermissionsController = {
   /**
    * Set permissions for an admin
    * Root only
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async setPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -191,8 +191,8 @@ export const adminPermissionsController = {
   /**
    * Remove specific department permission
    * Root only
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async removeDepartmentPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -250,8 +250,8 @@ export const adminPermissionsController = {
   /**
    * Remove specific group permission
    * Root only
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async removeGroupPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -309,8 +309,8 @@ export const adminPermissionsController = {
   /**
    * Bulk update permissions
    * Root only
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async bulkUpdatePermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -361,8 +361,8 @@ export const adminPermissionsController = {
   /**
    * Check if admin has access to a department
    * Root only (for debugging/verification)
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async checkAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {

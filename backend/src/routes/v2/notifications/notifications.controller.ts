@@ -11,8 +11,8 @@ import * as notificationsService from './notifications.service.js';
 import { NotificationData, NotificationPreferences } from './types.js';
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications:
  *   get:
@@ -89,8 +89,8 @@ export const listNotifications = async (req: AuthenticatedRequest, res: Response
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications:
  *   post:
@@ -144,8 +144,8 @@ export const createNotification = async (req: AuthenticatedRequest, res: Respons
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/{id}/read:
  *   put:
@@ -186,8 +186,8 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/mark-all-read:
  *   put:
@@ -231,8 +231,8 @@ export const markAllAsRead = async (req: AuthenticatedRequest, res: Response) =>
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/{id}:
  *   delete:
@@ -280,8 +280,8 @@ export const deleteNotification = async (req: AuthenticatedRequest, res: Respons
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/preferences:
  *   get:
@@ -316,8 +316,8 @@ export const getPreferences = async (req: AuthenticatedRequest, res: Response) =
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/preferences:
  *   put:
@@ -360,8 +360,8 @@ export const updatePreferences = async (req: AuthenticatedRequest, res: Response
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/stats:
  *   get:
@@ -403,8 +403,8 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response) =>
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/stats/me:
  *   get:
@@ -439,8 +439,8 @@ export const getPersonalStats = async (req: AuthenticatedRequest, res: Response)
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/subscribe:
  *   post:
@@ -491,8 +491,8 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/subscribe/{id}:
  *   delete:
@@ -529,8 +529,8 @@ export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/templates:
  *   get:
@@ -572,8 +572,8 @@ export const getTemplates = async (req: AuthenticatedRequest, res: Response) => 
 };
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/notifications/from-template:
  *   post:

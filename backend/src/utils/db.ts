@@ -8,8 +8,8 @@ import pool from '../config/database.js';
 
 /**
  * Type-safe database query function
- * @param sql SQL query string
- * @param params Query parameters
+ * @param sql - SQL query string
+ * @param params - Query parameters
  * @returns Promise with query result and fields
  */
 export async function query<T extends RowDataPacket[] | ResultSetHeader>(
@@ -34,8 +34,8 @@ export async function query<T extends RowDataPacket[] | ResultSetHeader>(
 
 /**
  * Type-safe database execute function (for prepared statements)
- * @param sql SQL query string
- * @param params Query parameters
+ * @param sql - SQL query string
+ * @param params - Query parameters
  * @returns Promise with query result and fields
  */
 export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
@@ -72,17 +72,52 @@ export async function getConnection(): Promise<PoolConnection> {
 }
 
 /**
- * Transaction helper function
- * @param callback Transaction callback function
- * @returns Promise with transaction result
+ * Get a transactional database connection
+ * @returns Promise with connection that has transaction methods
  */
+export async function getTransactionConnection(): Promise<{
+  connection: PoolConnection;
+  commit: () => Promise<void>;
+  rollback: () => Promise<void>;
+  release: () => void;
+}> {
+  const connection = await getConnection();
+
+  await connection.beginTransaction();
+
+  return {
+    connection,
+    commit: async () => {
+      await connection.commit();
+    },
+    rollback: async () => {
+      await connection.rollback();
+    },
+    release: () => {
+      connection.release();
+    },
+  };
+}
+
+/**
+ * Transaction helper function
+ * @param callback - Transaction callback function
+ * @returns Promise with transaction result
+ *
+ * NOTE: The callback pattern is intentional here as it guarantees proper
+ * connection handling with automatic rollback on error and release in finally.
+ * This is a proven pattern used by many database libraries (Knex, TypeORM, etc.)
+ */
+
 export async function transaction<T>(
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- See function comment
   callback: (connection: PoolConnection) => Promise<T>,
 ): Promise<T> {
   const connection = await getConnection();
 
   try {
     await connection.beginTransaction();
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Executing the transaction callback
     const result = await callback(connection);
     await connection.commit();
     return result;

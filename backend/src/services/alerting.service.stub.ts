@@ -39,7 +39,7 @@ interface PagerDutyIncident {
 export class AlertingService {
   /**
    * Send alert to Slack (stub)
-   * @param alert
+   * @param alert - The alert parameter
    */
   async sendSlackAlert(alert: SlackAlert): Promise<void> {
     logger.info(`[STUB] Slack alert: ${alert.title} - ${alert.message}`);
@@ -48,7 +48,7 @@ export class AlertingService {
 
   /**
    * Send alert to Microsoft Teams (stub)
-   * @param alert
+   * @param alert - The alert parameter
    */
   async sendTeamsAlert(alert: TeamsAlert): Promise<void> {
     logger.info(`[STUB] Teams alert: ${alert.title} - ${alert.message}`);
@@ -57,7 +57,7 @@ export class AlertingService {
 
   /**
    * Create PagerDuty incident (stub)
-   * @param incident
+   * @param incident - The incident parameter
    */
   async sendPagerDutyAlert(incident: PagerDutyIncident): Promise<void> {
     logger.info(`[STUB] PagerDuty incident: ${incident.summary}`);
@@ -73,9 +73,9 @@ export class AlertingService {
 
   /**
    * Send alert to all configured channels based on severity
-   * @param title
-   * @param message
-   * @param details
+   * @param title - The title parameter
+   * @param message - The message parameter
+   * @param details - The details parameter
    */
   async sendCriticalAlert(
     title: string,
@@ -117,13 +117,13 @@ export class AlertingService {
 
   /**
    * Log alert to database for audit trail
-   * @param alertType
-   * @param severity
-   * @param channel
-   * @param title
-   * @param message
-   * @param responseCode
-   * @param errorMessage
+   * @param alertType - The alertType parameter
+   * @param severity - The severity parameter
+   * @param channel - The channel parameter
+   * @param title - The title parameter
+   * @param message - The message parameter
+   * @param responseCode - The responseCode parameter
+   * @param errorMessage - The errorMessage parameter
    */
   private async logAlert(
     alertType: string,

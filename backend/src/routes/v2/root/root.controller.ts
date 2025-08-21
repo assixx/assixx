@@ -22,8 +22,8 @@ import {
  */
 export class RootController {
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/admins:
    *   get:
@@ -58,8 +58,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/admins/{id}:
    *   get:
@@ -105,8 +105,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/admins:
    *   post:
@@ -156,8 +156,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/admins/{id}:
    *   put:
@@ -208,8 +208,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/admins/{id}:
    *   delete:
@@ -254,8 +254,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/admins/{id}/logs:
    *   get:
@@ -309,8 +309,8 @@ export class RootController {
   }
 
   /**
-   * @param _req
-   * @param res
+   * @param _req - The _req parameter
+   * @param res - The response object
    * @swagger
    * /api/v2/root/tenants:
    *   get:
@@ -336,8 +336,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/users:
    *   get:
@@ -363,8 +363,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/users/{id}:
    *   get:
@@ -410,8 +410,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/users:
    *   post:
@@ -479,8 +479,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/users/{id}:
    *   put:
@@ -549,8 +549,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/users/{id}:
    *   delete:
@@ -619,8 +619,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/dashboard:
    *   get:
@@ -646,8 +646,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/storage:
    *   get:
@@ -678,8 +678,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/tenant/deletion:
    *   post:
@@ -739,8 +739,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/tenant/deletion-status:
    *   get:
@@ -777,8 +777,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/tenant/cancel-deletion:
    *   post:
@@ -807,8 +807,8 @@ export class RootController {
   }
 
   /**
-   * @param _req
-   * @param res
+   * @param _req - The _req parameter
+   * @param res - The response object
    * @swagger
    * /api/v2/root/deletion-approvals:
    *   get:
@@ -834,8 +834,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/deletion-approvals/pending:
    *   get:
@@ -861,8 +861,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/deletion-approvals/{queueId}/approve:
    *   post:
@@ -906,8 +906,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/deletion-approvals/{queueId}/reject:
    *   post:
@@ -964,8 +964,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/deletion-queue/{queueId}/emergency-stop:
    *   post:
@@ -1002,8 +1002,8 @@ export class RootController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/root/tenant/deletion-dry-run:
    *   post:

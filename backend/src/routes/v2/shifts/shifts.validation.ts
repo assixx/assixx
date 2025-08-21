@@ -306,6 +306,30 @@ export const shiftsValidation = {
     handleValidationErrors,
   ],
 
+  // ============= FAVORITES =============
+
+  createFavorite: [
+    body('name')
+      .notEmpty()
+      .trim()
+      .isLength({ max: 100 })
+      .withMessage('Name is required and must be less than 100 characters'),
+    body('areaId').isInt({ min: 1 }).withMessage('Area ID is required'),
+    body('areaName').notEmpty().trim().withMessage('Area name is required'),
+    body('departmentId').isInt({ min: 1 }).withMessage('Department ID is required'),
+    body('departmentName').notEmpty().trim().withMessage('Department name is required'),
+    body('machineId').isInt({ min: 1 }).withMessage('Machine ID is required'),
+    body('machineName').notEmpty().trim().withMessage('Machine name is required'),
+    body('teamId').isInt({ min: 1 }).withMessage('Team ID is required'),
+    body('teamName').notEmpty().trim().withMessage('Team name is required'),
+    handleValidationErrors,
+  ],
+
+  deleteFavorite: [
+    param('id').isInt({ min: 1 }).withMessage('Favorite ID must be a positive integer'),
+    handleValidationErrors,
+  ],
+
   // ============= EXPORT =============
 
   exportShifts: [

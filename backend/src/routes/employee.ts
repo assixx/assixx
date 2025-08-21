@@ -1,19 +1,15 @@
 /**
  * Employee Self-Service Routes
  * API endpoints for employee access to their information and documents
- * @swagger
- * tags:
- *   name: Employee
- *   description: Employee self-service operations
  */
 import express, { Router } from 'express';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { executeQuery } from '../database.js';
 import { security } from '../middleware/security';
-import Document from '../models/document';
-import User from '../models/user';
+import documentModel from '../models/document';
+import userModel from '../models/user';
 import { errorResponse, successResponse } from '../types/response.types';
+import { query as executeQuery } from '../utils/db.js';
 import { getErrorMessage } from '../utils/errorHandler';
 import { logger } from '../utils/logger';
 import { typed } from '../utils/routeHandlers';
@@ -23,8 +19,7 @@ import { typed } from '../utils/routeHandlers';
 const router: Router = express.Router();
 
 /**
- * @swagger
- * /employee/info:
+ * GET /employee/info
  *   get:
  *     summary: Get employee information
  *     description: Retrieve the current employee's personal information
@@ -75,7 +70,7 @@ router.get(
     try {
       const employeeId = req.user.id;
       logger.info(`Employee ${employeeId} requesting their information`);
-      const employee = await User.findById(employeeId, req.user.tenant_id);
+      const employee = await userModel.findById(employeeId, req.user.tenant_id);
       if (!employee) {
         logger.warn(`Employee with ID ${employeeId} not found`);
         res.status(404).json(errorResponse('Mitarbeiter nicht gefunden', 404));
@@ -83,7 +78,19 @@ router.get(
       }
 
       // Remove sensitive data before sending to client
-      const { password: _password, ...employeeData } = employee;
+      const employeeData = {
+        id: employee.id,
+        username: employee.username,
+        email: employee.email,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
+        role: employee.role,
+        department_id: employee.department_id,
+        position: employee.position,
+        tenant_id: employee.tenant_id,
+        created_at: employee.created_at,
+        updated_at: employee.updated_at,
+      };
 
       logger.info(`Information retrieved for Employee ${employeeId}`);
       res.json(successResponse(employeeData));
@@ -95,8 +102,7 @@ router.get(
 );
 
 /**
- * @swagger
- * /employee/documents:
+ * GET /employee/documents
  *   get:
  *     summary: Get employee documents
  *     description: Retrieve all documents accessible to the employee (personal, team, department, and company documents)
@@ -142,7 +148,7 @@ router.get(
       logger.info(`Employee ${employeeId} requesting their accessible documents`);
 
       // Use the new method that includes team, department, and company documents
-      const result = await Document.findByEmployeeWithAccess(employeeId, tenantId);
+      const result = await documentModel.findByEmployeeWithAccess(employeeId, tenantId);
 
       logger.info(
         `Retrieved ${result.documents.length} accessible documents for Employee ${employeeId}`,
@@ -169,11 +175,11 @@ router.post(
       logger.info(`Employee ${employeeId} marking all accessible documents as read`);
 
       // Get all accessible documents
-      const result = await Document.findByEmployeeWithAccess(employeeId, tenantId);
+      const result = await documentModel.findByEmployeeWithAccess(employeeId, tenantId);
 
       // Mark each document as read
       for (const doc of result.documents) {
-        await Document.markAsRead(doc.id, employeeId, tenantId);
+        await documentModel.markAsRead(doc.id, employeeId, tenantId);
       }
 
       logger.info(`Marked ${result.documents.length} documents as read for Employee ${employeeId}`);
@@ -200,7 +206,7 @@ router.get(
       const tenantId = req.user.tenant_id;
 
       // Get real unread count from database
-      const unreadCount = await Document.getUnreadCountForUser(employeeId, tenantId);
+      const unreadCount = await documentModel.getUnreadCountForUser(employeeId, tenantId);
 
       res.json(successResponse({ unreadCount }));
     } catch (error: unknown) {
@@ -230,7 +236,11 @@ router.get(
       }
 
       // Use the new search method that includes team, department, and company documents
-      const documents = await Document.searchWithEmployeeAccess(employeeId, tenantId, queryString);
+      const documents = await documentModel.searchWithEmployeeAccess(
+        employeeId,
+        tenantId,
+        queryString,
+      );
 
       logger.info(
         `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${queryString}`,
@@ -259,7 +269,7 @@ router.get(
         `Employee ${employeeId} requesting their salary documents (archived: ${archived})`,
       );
 
-      const documents = await Document.findByUserIdAndCategory(employeeId, 'salary', archived);
+      const documents = await documentModel.findByUserIdAndCategory(employeeId, 'salary', archived);
       logger.info(`Retrieved ${documents.length} salary documents for Employee ${employeeId}`);
       res.json(successResponse(documents));
     } catch (error: unknown) {
@@ -285,7 +295,7 @@ router.get(
       logger.info(`Employee ${employeeId} attempting to download document ${documentId}`);
 
       // Dokument suchen
-      const document = await Document.findById(Number.parseInt(documentId, 10));
+      const document = await documentModel.findById(Number.parseInt(documentId, 10));
 
       // Prüfen, ob das Dokument existiert
       if (!document) {
@@ -345,7 +355,7 @@ router.get(
       }
 
       // Download-Zähler erhöhen
-      await Document.incrementDownloadCount(Number.parseInt(documentId, 10));
+      await documentModel.incrementDownloadCount(Number.parseInt(documentId, 10));
 
       // Content-Type Header setzen
       res.setHeader('Content-Type', 'application/pdf');

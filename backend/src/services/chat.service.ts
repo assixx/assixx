@@ -130,8 +130,8 @@ class ChatService {
   /**
    * Holt alle verfügbaren Chat-Benutzer für einen Tenant
    * Berücksichtigt Department-Zugehörigkeit und Chat-Berechtigungen
-   * @param tenantId
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getUsers(tenantId: string | number, userId: string | number): Promise<ChatUser[]> {
     try {
@@ -265,8 +265,8 @@ class ChatService {
 
   /**
    * Holt alle Konversationen für einen Benutzer
-   * @param tenantId
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getConversations(
     tenantId: string | number,
@@ -396,11 +396,11 @@ class ChatService {
   /**
    * Erstellt eine neue Konversation
    * Nur Admins und Root können initial Nachrichten an Employees senden
-   * @param tenantId
-   * @param userId
-   * @param participantIds
-   * @param isGroup
-   * @param name
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param participantIds - The participantIds parameter
+   * @param isGroup - The isGroup parameter
+   * @param name - The name parameter
    */
   async createConversation(
     tenantId: string | number,
@@ -501,11 +501,11 @@ class ChatService {
 
   /**
    * Holt Nachrichten einer Konversation
-   * @param tenantId
-   * @param conversationId
-   * @param userId
-   * @param limit
-   * @param offset
+   * @param tenantId - The tenant ID
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
+   * @param limit - The result limit
+   * @param offset - The result offset
    */
   async getMessages(
     tenantId: string | number,
@@ -581,11 +581,11 @@ class ChatService {
   /**
    * Sendet eine Nachricht
    * Prüft Chat-Permissions basierend auf Rollen
-   * @param tenantId
-   * @param conversationId
-   * @param senderId
-   * @param content
-   * @param attachment
+   * @param tenantId - The tenant ID
+   * @param conversationId - The conversationId parameter
+   * @param senderId - The senderId parameter
+   * @param content - The content parameter
+   * @param attachment - The attachment parameter
    */
   async sendMessage(
     tenantId: string | number,
@@ -672,8 +672,8 @@ class ChatService {
 
   /**
    * Markiert Nachrichten als gelesen
-   * @param messageId
-   * @param userId
+   * @param messageId - The messageId parameter
+   * @param userId - The user ID
    */
   async markAsRead(messageId: number, userId: number): Promise<void> {
     await db.promise().query(
@@ -686,8 +686,8 @@ class ChatService {
 
   /**
    * Löscht eine Nachricht
-   * @param messageId
-   * @param userId
+   * @param messageId - The messageId parameter
+   * @param userId - The user ID
    */
   async deleteMessage(messageId: number, userId: number): Promise<boolean> {
     const [result] = await db
@@ -702,9 +702,9 @@ class ChatService {
 
   /**
    * Holt die Anzahl ungelesener Nachrichten
-   * @param _tenantDb
-   * @param tenantId
-   * @param userId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getUnreadCount(
     _tenantDb: Pool,
@@ -735,8 +735,8 @@ class ChatService {
 
   /**
    * Mark all messages in a conversation as read for a user
-   * @param conversationId
-   * @param userId
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
    */
   async markConversationAsRead(conversationId: number, userId: number): Promise<void> {
     try {
@@ -768,8 +768,8 @@ class ChatService {
 
   /**
    * Archiviert eine Nachricht
-   * @param messageId
-   * @param userId
+   * @param messageId - The messageId parameter
+   * @param userId - The user ID
    */
   async archiveMessage(messageId: number, userId: number): Promise<boolean> {
     await db.promise().query(
@@ -784,8 +784,8 @@ class ChatService {
 
   /**
    * Löscht eine Konversation für einen Benutzer
-   * @param conversationId
-   * @param userId
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
    */
   async deleteConversation(conversationId: number, userId: number): Promise<boolean> {
     const connection = await db.promise().getConnection();
@@ -864,8 +864,8 @@ class ChatService {
   // Get participants of a conversation
   /**
    *
-   * @param conversationId
-   * @param tenantId
+   * @param conversationId - The conversationId parameter
+   * @param tenantId - The tenant ID
    */
   async getConversationParticipants(
     conversationId: number,
@@ -889,10 +889,10 @@ class ChatService {
   // Add participant to conversation
   /**
    *
-   * @param conversationId
-   * @param userId
-   * @param addedBy
-   * @param _tenantId
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
+   * @param addedBy - The addedBy parameter
+   * @param _tenantId - The _tenantId parameter
    */
   async addParticipant(
     conversationId: number,
@@ -941,10 +941,10 @@ class ChatService {
   // Remove participant from conversation
   /**
    *
-   * @param conversationId
-   * @param userId
-   * @param removedBy
-   * @param _tenantId
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
+   * @param removedBy - The removedBy parameter
+   * @param _tenantId - The _tenantId parameter
    */
   async removeParticipant(
     conversationId: number,
@@ -993,10 +993,10 @@ class ChatService {
   // Update conversation name
   /**
    *
-   * @param conversationId
-   * @param name
-   * @param updatedBy
-   * @param _tenantId
+   * @param conversationId - The conversationId parameter
+   * @param name - The name parameter
+   * @param updatedBy - The updatedBy parameter
+   * @param _tenantId - The _tenantId parameter
    */
   async updateConversationName(
     conversationId: number,

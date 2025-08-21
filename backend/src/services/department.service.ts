@@ -32,9 +32,9 @@ interface DepartmentFilters {
 class DepartmentService {
   /**
    * Holt alle Department Einträge für einen Tenant
-   * @param _tenantDb
-   * @param tenantId
-   * @param _filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param tenantId - The tenant ID
+   * @param _filters - The _filters parameter
    */
   async getAll(
     _tenantDb: Pool,
@@ -53,9 +53,9 @@ class DepartmentService {
 
   /**
    * Holt einen Department Eintrag per ID
-   * @param _tenantDb
-   * @param id
-   * @param tenantId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<DepartmentData | null> {
     try {
@@ -68,8 +68,8 @@ class DepartmentService {
 
   /**
    * Erstellt einen neuen Department Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   async create(_tenantDb: Pool, data: DepartmentCreateData): Promise<DepartmentData> {
     try {
@@ -87,10 +87,10 @@ class DepartmentService {
 
   /**
    * Aktualisiert einen Department Eintrag
-   * @param _tenantDb
-   * @param id
-   * @param tenantId
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param data - The data object
    */
   async update(
     _tenantDb: Pool,
@@ -112,8 +112,8 @@ class DepartmentService {
 
   /**
    * Löscht einen Department Eintrag
-   * @param _tenantDb
-   * @param id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {

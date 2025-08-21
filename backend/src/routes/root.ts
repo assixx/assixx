@@ -7,7 +7,6 @@ import express, { Router } from 'express';
 import { param } from 'express-validator';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import { execute, executeQuery } from '../database';
 import { security } from '../middleware/security';
 import { createValidation } from '../middleware/validation';
 import { getLastRootLogin, getRootLogsByUserId } from '../models/rootLog';
@@ -15,7 +14,7 @@ import Tenant from '../models/tenant';
 import User from '../models/user';
 import { tenantDeletionService } from '../services/tenantDeletion.service';
 import { errorResponse, successResponse } from '../types/response.types';
-import { query } from '../utils/db';
+import { execute, query as executeQuery } from '../utils/db';
 import { getErrorMessage } from '../utils/errorHandler';
 import { logger } from '../utils/logger';
 import { typed } from '../utils/routeHandlers';
@@ -869,7 +868,7 @@ router.get(
     );
 
     try {
-      const [deletionQueue] = await query<RowDataPacket[]>(
+      const [deletionQueue] = await executeQuery<RowDataPacket[]>(
         `SELECT
           dq.*,
           t.company_name,
@@ -1044,7 +1043,7 @@ router.get(
 
     try {
       // Get pending approvals from view
-      const [pendingApprovals] = await query(
+      const [pendingApprovals] = await executeQuery(
         `SELECT * FROM v_pending_deletion_approvals
          WHERE requester_id != ?
          ORDER BY requested_at DESC`,

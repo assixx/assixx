@@ -65,8 +65,8 @@ class AdminLogController {
   /**
    * Holt alle AdminLog Einträge
    * GET /api/admin
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: AdminLogQueryRequest, res: Response): Promise<void> {
     try {
@@ -109,8 +109,8 @@ class AdminLogController {
   /**
    * Holt einen AdminLog Eintrag per ID
    * GET /api/admin/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
@@ -143,8 +143,8 @@ class AdminLogController {
   /**
    * Erstellt einen neuen AdminLog Eintrag
    * POST /api/admin
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: AdminLogCreateRequest, res: Response): Promise<void> {
     try {
@@ -180,8 +180,8 @@ class AdminLogController {
   /**
    * Aktualisiert einen AdminLog Eintrag
    * PUT /api/admin/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: AdminLogUpdateRequest, res: Response): Promise<void> {
     try {
@@ -210,8 +210,8 @@ class AdminLogController {
   /**
    * Löscht einen AdminLog Eintrag
    * DELETE /api/admin/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {

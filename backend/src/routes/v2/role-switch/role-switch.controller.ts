@@ -14,8 +14,8 @@ import { RoleSwitchService, ServiceError } from './role-switch.service.js';
  */
 export class RoleSwitchController {
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @route POST /api/v2/role-switch/to-employee
    * @description Switch admin/root view to employee mode
    * @access Private (Admin/Root only)
@@ -48,8 +48,8 @@ export class RoleSwitchController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @route POST /api/v2/role-switch/to-original
    * @description Switch back to original role (admin/root)
    * @access Private
@@ -82,8 +82,8 @@ export class RoleSwitchController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @route POST /api/v2/role-switch/root-to-admin
    * @description Switch root to admin view
    * @access Private (Root only)
@@ -116,8 +116,8 @@ export class RoleSwitchController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @route GET /api/v2/role-switch/status
    * @description Get current role switch status
    * @access Private

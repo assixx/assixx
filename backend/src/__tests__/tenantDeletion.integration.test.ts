@@ -8,7 +8,7 @@ import request from 'supertest';
 
 import app from '../app';
 import { getRedisClient } from '../config/redis';
-import { closeDatabaseConnection, connectDatabase } from '../database';
+// import { closeDatabaseConnection, connectDatabase } from '../database'; // These functions don't exist anymore
 import { tenantDeletionService } from '../services/tenantDeletion.service';
 import { query } from '../utils/db';
 import { emailService } from '../utils/emailService';
@@ -58,7 +58,7 @@ describe('Tenant Deletion Integration Tests', () => {
 
   beforeAll(async () => {
     // Initialize database connection
-    await connectDatabase();
+    // await connectDatabase(); // Not needed anymore, pool is initialized automatically
 
     // Create test tenant and user
     const [tenantResult] = await query(
@@ -89,7 +89,7 @@ describe('Tenant Deletion Integration Tests', () => {
     }
 
     // Close database connection
-    await closeDatabaseConnection();
+    // await closeDatabaseConnection(); // Pool cleanup handled automatically
   });
 
   beforeEach(() => {

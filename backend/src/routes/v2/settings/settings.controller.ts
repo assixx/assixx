@@ -15,8 +15,8 @@ import { BulkUpdateRequest, SystemSetting, UserSetting } from './types.js';
 
 /**
  * Get all system settings
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getSystemSettings = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -46,8 +46,8 @@ export const getSystemSettings = async (req: AuthenticatedRequest, res: Response
 
 /**
  * Get single system setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getSystemSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -68,8 +68,8 @@ export const getSystemSetting = async (req: AuthenticatedRequest, res: Response)
 
 /**
  * Create or update system setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const upsertSystemSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -108,8 +108,8 @@ export const upsertSystemSetting = async (req: AuthenticatedRequest, res: Respon
 
 /**
  * Delete system setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const deleteSystemSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -140,8 +140,8 @@ export const deleteSystemSetting = async (req: AuthenticatedRequest, res: Respon
 
 /**
  * Get all tenant settings
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getTenantSettings = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -168,8 +168,8 @@ export const getTenantSettings = async (req: AuthenticatedRequest, res: Response
 
 /**
  * Get single tenant setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getTenantSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -191,8 +191,8 @@ export const getTenantSetting = async (req: AuthenticatedRequest, res: Response)
 
 /**
  * Create or update tenant setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const upsertTenantSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -231,8 +231,8 @@ export const upsertTenantSetting = async (req: AuthenticatedRequest, res: Respon
 
 /**
  * Delete tenant setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const deleteTenantSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -263,8 +263,8 @@ export const deleteTenantSetting = async (req: AuthenticatedRequest, res: Respon
 
 /**
  * Get all user settings
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getUserSettings = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -291,8 +291,8 @@ export const getUserSettings = async (req: AuthenticatedRequest, res: Response) 
 
 /**
  * Get single user setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getUserSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -314,8 +314,8 @@ export const getUserSetting = async (req: AuthenticatedRequest, res: Response) =
 
 /**
  * Create or update user setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const upsertUserSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -346,8 +346,8 @@ export const upsertUserSetting = async (req: AuthenticatedRequest, res: Response
 
 /**
  * Delete user setting
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const deleteUserSetting = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -371,8 +371,8 @@ export const deleteUserSetting = async (req: AuthenticatedRequest, res: Response
 
 /**
  * Get another user's settings (admin only)
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const getAdminUserSettings = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -401,8 +401,8 @@ export const getAdminUserSettings = async (req: AuthenticatedRequest, res: Respo
 
 /**
  * Get settings categories
- * @param _req
- * @param res
+ * @param _req - The _req parameter
+ * @param res - The response object
  */
 export const getCategories = async (_req: AuthenticatedRequest, res: Response) => {
   try {
@@ -415,8 +415,8 @@ export const getCategories = async (_req: AuthenticatedRequest, res: Response) =
 
 /**
  * Bulk update settings
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
   try {

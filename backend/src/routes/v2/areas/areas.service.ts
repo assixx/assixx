@@ -27,8 +27,8 @@ interface AreaRow extends RowDataPacket {
 
 /**
  * Get all areas for a tenant
- * @param tenantId
- * @param filters
+ * @param tenantId - The tenant ID
+ * @param filters - The filter criteria
  */
 export async function getAreas(tenantId: number, filters?: AreaFilters): Promise<Area[]> {
   let query = `
@@ -93,8 +93,8 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
 
 /**
  * Get area by ID
- * @param id
- * @param tenantId
+ * @param id - The resource ID
+ * @param tenantId - The tenant ID
  */
 export async function getAreaById(id: number, tenantId: number): Promise<Area | null> {
   const query = `
@@ -135,7 +135,7 @@ export async function getAreaById(id: number, tenantId: number): Promise<Area | 
 
 /**
  * Get area hierarchy (tree structure)
- * @param tenantId
+ * @param tenantId - The tenant ID
  */
 export async function getAreaHierarchy(tenantId: number): Promise<Area[]> {
   const query = `
@@ -190,9 +190,9 @@ export async function getAreaHierarchy(tenantId: number): Promise<Area[]> {
 
 /**
  * Create new area
- * @param data
- * @param tenantId
- * @param userId
+ * @param data - The data object
+ * @param tenantId - The tenant ID
+ * @param userId - The user ID
  */
 export async function createArea(
   data: CreateAreaRequest,
@@ -236,9 +236,9 @@ export async function createArea(
 
 /**
  * Update area
- * @param id
- * @param data
- * @param tenantId
+ * @param id - The resource ID
+ * @param data - The data object
+ * @param tenantId - The tenant ID
  */
 export async function updateArea(
   id: number,
@@ -317,8 +317,8 @@ export async function updateArea(
 
 /**
  * Delete area (hard delete)
- * @param id
- * @param tenantId
+ * @param id - The resource ID
+ * @param tenantId - The tenant ID
  */
 export async function deleteArea(id: number, tenantId: number): Promise<void> {
   // Check if area exists
@@ -343,7 +343,7 @@ export async function deleteArea(id: number, tenantId: number): Promise<void> {
 
 /**
  * Get area statistics
- * @param tenantId
+ * @param tenantId - The tenant ID
  */
 export async function getAreaStats(tenantId: number): Promise<{
   totalAreas: number;

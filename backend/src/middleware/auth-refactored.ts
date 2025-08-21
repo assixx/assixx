@@ -6,11 +6,11 @@ import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { executeQuery } from '../database';
 import { TokenPayload } from '../types/auth.types';
 import { AuthenticationMiddleware } from '../types/middleware.types';
 import { AuthUser, AuthenticatedRequest, PublicRequest } from '../types/request.types';
 import { errorResponse } from '../types/response.types';
+import { query as executeQuery } from '../utils/db';
 
 // Get JWT secret with proper fallback
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
@@ -21,8 +21,8 @@ if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
 
 // Helper to extract token from request
 /**
- *
- * @param req
+ * Extracts JWT token from request headers or cookies
+ * @param req - The incoming request object
  */
 function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
@@ -40,8 +40,8 @@ function extractToken(req: PublicRequest): string | null {
 
 // Helper to verify JWT token
 /**
- *
- * @param token
+ * Verifies and decodes a JWT token
+ * @param token - The JWT token to verify
  */
 function verifyToken(token: string): TokenPayload | null {
   try {
@@ -57,9 +57,9 @@ function verifyToken(token: string): TokenPayload | null {
 
 // Helper to validate session (optional)
 /**
- *
- * @param userId
- * @param sessionId
+ * Checks if a session exists in the database
+ * @param userId - The user ID to check
+ * @param sessionId - The session ID to verify
  */
 async function validateSession(userId: number, sessionId?: string): Promise<boolean> {
   if (sessionId == null || sessionId === '' || process.env.VALIDATE_SESSIONS !== 'true') {
@@ -81,8 +81,8 @@ async function validateSession(userId: number, sessionId?: string): Promise<bool
 
 // Helper to get user details from database
 /**
- *
- * @param userId
+ * Fetches user data from the database
+ * @param userId - The user ID to fetch
  */
 async function getUserDetails(userId: number): Promise<Partial<AuthUser> | null> {
   try {
@@ -395,10 +395,10 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
 // Optional authentication middleware (doesn't fail if no token)
 /**
- *
- * @param req
- * @param res
- * @param next
+ * Optional authentication middleware that doesn't fail if no token is present
+ * @param req - The incoming request object
+ * @param res - The response object
+ * @param next - Express next function
  */
 export async function optionalAuth(
   req: PublicRequest,
@@ -425,8 +425,8 @@ export async function optionalAuth(
 
 // Role-based authorization middleware
 /**
- *
- * @param allowedRoles
+ * Creates a middleware that checks if user has required role
+ * @param allowedRoles - Single role or array of allowed roles
  */
 export function requireRole(allowedRoles: string | string[]) {
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];

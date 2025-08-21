@@ -19,7 +19,7 @@ interface TenantAuthenticatedRequest extends AuthenticatedRequest {
 // Type guard to check if request is authenticated
 /**
  *
- * @param req
+ * @param req - The request object
  */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
@@ -34,8 +34,8 @@ class ChatController {
   // Get list of users available for chat
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getUsers(req: Request, res: Response): Promise<void> {
     try {
@@ -54,8 +54,8 @@ class ChatController {
   // Create a new conversation
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async createConversation(req: Request, res: Response): Promise<void> {
     try {
@@ -95,8 +95,8 @@ class ChatController {
   // Get user's conversations
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getConversations(req: Request, res: Response): Promise<void> {
     try {
@@ -116,8 +116,8 @@ class ChatController {
   // Get messages for a conversation
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getMessages(req: Request, res: Response): Promise<void> {
     try {
@@ -148,8 +148,8 @@ class ChatController {
   // Send a message
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async sendMessage(req: Request, res: Response): Promise<void> {
     try {
@@ -199,8 +199,8 @@ class ChatController {
   // Get conversation participants
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getConversationParticipants(req: Request, res: Response): Promise<void> {
     try {
@@ -225,8 +225,8 @@ class ChatController {
   // Add participant to conversation
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async addParticipant(req: Request, res: Response): Promise<void> {
     try {
@@ -254,8 +254,8 @@ class ChatController {
   // Remove participant from conversation
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async removeParticipant(req: Request, res: Response): Promise<void> {
     try {
@@ -283,8 +283,8 @@ class ChatController {
   // Update conversation name
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async updateConversationName(req: Request, res: Response): Promise<void> {
     try {
@@ -317,8 +317,8 @@ class ChatController {
   // Handle file download
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async downloadFile(req: Request, res: Response): Promise<void> {
     try {
@@ -348,8 +348,8 @@ class ChatController {
   // Get unread message count
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getUnreadCount(req: Request, res: Response): Promise<void> {
     try {
@@ -379,8 +379,8 @@ class ChatController {
   // Mark all messages in a conversation as read
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async markConversationAsRead(req: Request, res: Response): Promise<void> {
     try {
@@ -403,8 +403,8 @@ class ChatController {
   // Delete conversation
   /**
    *
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteConversation(req: Request, res: Response): Promise<void> {
     try {

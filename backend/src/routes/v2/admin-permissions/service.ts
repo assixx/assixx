@@ -44,10 +44,10 @@ interface GroupPermissionRow extends RowDataPacket {
 export class AdminPermissionsService {
   /**
    * Check if admin has access to a specific department
-   * @param adminId
-   * @param departmentId
-   * @param tenantId
-   * @param requiredPermission
+   * @param adminId - The adminId parameter
+   * @param departmentId - The departmentId parameter
+   * @param tenantId - The tenant ID
+   * @param requiredPermission - The requiredPermission parameter
    */
   async checkAccess(
     adminId: number,
@@ -124,8 +124,8 @@ export class AdminPermissionsService {
 
   /**
    * Get all permissions for an admin
-   * @param adminId
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
    */
   async getAdminPermissions(adminId: number, tenantId: number): Promise<AdminPermissionsResponse> {
     try {
@@ -225,11 +225,11 @@ export class AdminPermissionsService {
 
   /**
    * Set department permissions for an admin
-   * @param adminId
-   * @param departmentIds
-   * @param permissions
-   * @param modifiedBy
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param permissions - The permissions parameter
+   * @param modifiedBy - The modifiedBy parameter
+   * @param tenantId - The tenant ID
    */
   async setDepartmentPermissions(
     adminId: number,
@@ -288,11 +288,11 @@ export class AdminPermissionsService {
 
   /**
    * Set group permissions for an admin
-   * @param adminId
-   * @param groupIds
-   * @param permissions
-   * @param modifiedBy
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param groupIds - The groupIds parameter
+   * @param permissions - The permissions parameter
+   * @param modifiedBy - The modifiedBy parameter
+   * @param tenantId - The tenant ID
    */
   async setGroupPermissions(
     adminId: number,
@@ -351,10 +351,10 @@ export class AdminPermissionsService {
 
   /**
    * Remove specific department permission
-   * @param adminId
-   * @param departmentId
-   * @param modifiedBy
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param departmentId - The departmentId parameter
+   * @param modifiedBy - The modifiedBy parameter
+   * @param tenantId - The tenant ID
    */
   async removeDepartmentPermission(
     adminId: number,
@@ -389,10 +389,10 @@ export class AdminPermissionsService {
 
   /**
    * Remove specific group permission
-   * @param adminId
-   * @param groupId
-   * @param modifiedBy
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param groupId - The groupId parameter
+   * @param modifiedBy - The modifiedBy parameter
+   * @param tenantId - The tenant ID
    */
   async removeGroupPermission(
     adminId: number,
@@ -427,12 +427,12 @@ export class AdminPermissionsService {
 
   /**
    * Bulk update permissions
-   * @param adminIds
-   * @param operation
-   * @param departmentIds
-   * @param permissions
-   * @param modifiedBy
-   * @param tenantId
+   * @param adminIds - The adminIds parameter
+   * @param operation - The operation parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param permissions - The permissions parameter
+   * @param modifiedBy - The modifiedBy parameter
+   * @param tenantId - The tenant ID
    */
   async bulkUpdatePermissions(
     adminIds: number[],
@@ -474,8 +474,8 @@ export class AdminPermissionsService {
 
   /**
    * Check permission level
-   * @param permission
-   * @param requiredLevel
+   * @param permission - The permission parameter
+   * @param requiredLevel - The requiredLevel parameter
    */
   private checkPermissionLevel(permission: RowDataPacket, requiredLevel: PermissionLevel): boolean {
     switch (requiredLevel) {

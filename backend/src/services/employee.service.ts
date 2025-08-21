@@ -38,8 +38,8 @@ type EmployeeFilters = UserFilter;
 class UserService {
   /**
    * Holt alle User Einträge für einen Tenant
-   * @param _tenantDb
-   * @param filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param filters - The filter criteria
    */
   async getAll(_tenantDb: Pool, filters: EmployeeFilters): Promise<EmployeeData[]> {
     try {
@@ -53,9 +53,9 @@ class UserService {
 
   /**
    * Holt einen User Eintrag per ID
-   * @param _tenantDb
-   * @param id
-   * @param tenantId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<EmployeeData | null> {
     try {
@@ -69,8 +69,8 @@ class UserService {
 
   /**
    * Erstellt einen neuen User Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   async create(_tenantDb: Pool, data: EmployeeCreateData): Promise<EmployeeData> {
     try {
@@ -91,10 +91,10 @@ class UserService {
 
   /**
    * Aktualisiert einen User Eintrag
-   * @param _tenantDb
-   * @param id
-   * @param tenantId
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param data - The data object
    */
   async update(
     _tenantDb: Pool,
@@ -117,8 +117,8 @@ class UserService {
 
   /**
    * Löscht einen User Eintrag
-   * @param _tenantDb
-   * @param id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {

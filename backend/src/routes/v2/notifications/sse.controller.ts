@@ -11,8 +11,8 @@ export class SSENotificationController {
   /**
    * SSE Stream endpoint for real-time notifications
    * GET /api/v2/notifications/stream
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async stream(req: AuthenticatedRequest, res: Response): Promise<void> {
     if (!req.user) {
@@ -177,8 +177,8 @@ export class SSENotificationController {
   /**
    * Get SSE connection statistics
    * GET /api/v2/notifications/stats
-   * @param _req
-   * @param res
+   * @param _req - The _req parameter
+   * @param res - The response object
    */
   async getStats(_req: AuthenticatedRequest, res: Response): Promise<void> {
     const stats = {

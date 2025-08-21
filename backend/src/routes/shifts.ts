@@ -10,11 +10,12 @@ import express, { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import db, { executeQuery } from '../database';
+import pool from '../config/database';
 import { security } from '../middleware/security';
 import { createValidation } from '../middleware/validation';
 import Shift, { ShiftExchangeFilters, ShiftPlanFilters } from '../models/shift';
 import { errorResponse, successResponse } from '../types/response.types';
+import { query as executeQuery } from '../utils/db';
 import { getErrorMessage } from '../utils/errorHandler';
 import { typed } from '../utils/routeHandlers';
 
@@ -801,7 +802,7 @@ router.post(
           return;
         }
         // Get a connection for transaction
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
 
         try {
           // Start transaction

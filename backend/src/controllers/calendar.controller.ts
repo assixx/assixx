@@ -82,8 +82,8 @@ class CalendarController {
    * Holt alle Calendar Einträge
    * GET /api/calendar
    * NOTE: This method should be refactored to use getAllEvents with proper tenantId and userId
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getAll(req: CalendarEventQueryRequest, res: Response): void {
     try {
@@ -138,8 +138,8 @@ class CalendarController {
    * Holt einen Calendar Eintrag per ID
    * GET /api/calendar/:id
    * NOTE: This method should be refactored to use getEventById with proper tenantId and userId
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getById(req: CalendarEventGetRequest, res: Response): void {
     try {
@@ -180,8 +180,8 @@ class CalendarController {
    * Erstellt einen neuen Calendar Eintrag
    * POST /api/calendar
    * NOTE: This method should be refactored to use createEvent
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: CalendarEventCreateRequest, res: Response): Promise<void> {
     try {
@@ -214,8 +214,8 @@ class CalendarController {
    * Aktualisiert einen Calendar Eintrag
    * PUT /api/calendar/:id
    * NOTE: This method should be refactored to use updateEvent
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   update(req: CalendarEventUpdateRequest, res: Response): void {
     try {
@@ -256,8 +256,8 @@ class CalendarController {
    * Löscht einen Calendar Eintrag
    * DELETE /api/calendar/:id
    * NOTE: This method should be refactored to use deleteEvent
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   delete(req: CalendarEventGetRequest, res: Response): void {
     try {
@@ -299,8 +299,8 @@ class CalendarController {
   /**
    * Get all events (proper implementation)
    * GET /api/calendar/events
-   * @param _req
-   * @param res
+   * @param _req - The _req parameter
+   * @param res - The response object
    */
   getAllEvents(_req: CalendarEventQueryRequest, res: Response): void {
     try {

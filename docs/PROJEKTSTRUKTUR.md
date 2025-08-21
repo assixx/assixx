@@ -804,7 +804,7 @@ docs/
 
 1. **Vor Start:** `/scripts/dev-status.sh` ausführen
 2. **Docker aus:** `/home/scs/projects/Assixx/docker` starten
-3. **Bei Änderungen:** TypeScript kompilieren mit `pnpm run build:ts`
+3. **Bei Änderungen:** TypeScript kompilieren mit `pnpm run build
 4. **Tests:** Immer mit `pnpm test` vor Commit
 
 ### 📦 Package Manager

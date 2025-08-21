@@ -16,7 +16,7 @@ import { logsValidation } from "./logs.validation.js";
 const router: Router = express.Router();
 
 /**
- * @param handler
+ * @param handler - The handler parameter
  * @swagger
  * /api/v2/logs:
  *   get:

@@ -14,7 +14,7 @@ interface AuthRequest extends Request {
 
 /**
  * Middleware to check if user has one of the required roles
- * @param allowedRoles Array of allowed roles
+ * @param allowedRoles - Array of allowed roles
  */
 export function checkRole(allowedRoles: string[]) {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {

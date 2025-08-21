@@ -18,9 +18,9 @@ import { calendarService } from './calendar.service.js';
 import type { CalendarEventData, CalendarEventUpdateData } from './calendar.service.js';
 
 /**
- * @param req
- * @param res
- * @param _next
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
  * @swagger
  * /api/v2/calendar/events:
  *   get:
@@ -123,9 +123,9 @@ export async function listEvents(
 }
 
 /**
- * @param req
- * @param res
- * @param _next
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
  * @swagger
  * /api/v2/calendar/events/{id}:
  *   get:
@@ -176,9 +176,9 @@ export async function getEvent(
 }
 
 /**
- * @param req
- * @param res
- * @param _next
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
  * @swagger
  * /api/v2/calendar/events:
  *   post:
@@ -292,9 +292,9 @@ export async function createEvent(
 }
 
 /**
- * @param req
- * @param res
- * @param next
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
  * @swagger
  * /api/v2/calendar/events/{id}:
  *   put:
@@ -446,9 +446,9 @@ export async function updateEvent(
 }
 
 /**
- * @param req
- * @param res
- * @param next
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
  * @swagger
  * /api/v2/calendar/events/{id}:
  *   delete:
@@ -547,9 +547,9 @@ export async function deleteEvent(
 }
 
 /**
- * @param req
- * @param res
- * @param _next
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
  * @swagger
  * /api/v2/calendar/events/{id}/attendees/response:
  *   put:
@@ -627,9 +627,9 @@ export async function updateAttendeeResponse(
 }
 
 /**
- * @param req
- * @param res
- * @param _next
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
  * @swagger
  * /api/v2/calendar/export:
  *   get:
@@ -687,9 +687,9 @@ export async function exportEvents(
 }
 
 /**
- * @param req
- * @param res
- * @param next
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
  * @swagger
  * /api/v2/calendar/dashboard:
  *   get:
@@ -751,9 +751,9 @@ export async function getDashboardEvents(
 }
 
 /**
- * @param req
- * @param res
- * @param next
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
  * @swagger
  * /api/v2/calendar/unread-events:
  *   get:

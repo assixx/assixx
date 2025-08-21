@@ -4,8 +4,8 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import RootLog from '../../../models/rootLog';
-import Shift from '../../../models/shift';
+import rootLog from '../../../models/rootLog';
+import shiftModel from '../../../models/shift';
 import { ServiceError } from '../../../utils/ServiceError';
 import { execute, query } from '../../../utils/db';
 import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
@@ -211,8 +211,8 @@ export class ShiftsService {
 
   /**
    * List shifts for a tenant with filters
-   * @param tenantId
-   * @param filters
+   * @param tenantId - Parameter description
+   * @param filters - Parameter description
    * @returns Promise resolving to array of shifts
    */
   async listShifts(tenantId: number, filters: ShiftFilters): Promise<ShiftApiResponse[]> {
@@ -223,8 +223,8 @@ export class ShiftsService {
         tenant_id: tenantId,
       };
 
-      const shifts = await Shift.findAll(dbFilters);
-      return shifts.map((shift) => dbShiftToApi(shift));
+      const shifts = await shiftModel.findAll(dbFilters);
+      return shifts.map((s) => dbShiftToApi(s));
     } catch (error: unknown) {
       logger.error('Error listing shifts:', error);
       throw new ServiceError('LIST_SHIFTS_ERROR', 'Failed to list shifts');
@@ -233,17 +233,17 @@ export class ShiftsService {
 
   /**
    * Get shift by ID
-   * @param id
-   * @param tenantId
+   * @param id - Parameter description
+   * @param tenantId - Parameter description
    * @returns Promise resolving to shift or throws error
    */
   async getShiftById(id: number, tenantId: number): Promise<ShiftApiResponse> {
     try {
-      const shift = await Shift.findById(id, tenantId);
-      if (!shift) {
+      const shiftData = await shiftModel.findById(id, tenantId);
+      if (!shiftData) {
         throw new ServiceError('SHIFT_NOT_FOUND', 'Shift not found');
       }
-      return dbShiftToApi(shift);
+      return dbShiftToApi(shiftData);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error('Error getting shift:', error);
@@ -254,11 +254,11 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param data - Parameter description
+   * @param tenantId - Parameter description
+   * @param userId - Parameter description
+   * @param ipAddress - Parameter description
+   * @param userAgent - Parameter description
    */
   async createShift(
     data: ShiftCreateData,
@@ -275,10 +275,10 @@ export class ShiftsService {
         created_by: userId,
       };
 
-      const shiftId = await Shift.create(dbData as Partial<DbShiftData>);
+      const shiftId = await shiftModel.create(dbData as Partial<DbShiftData>);
 
       // Log the creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'create',
@@ -299,12 +299,12 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param id
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - Parameter description
+   * @param data - Parameter description
+   * @param tenantId - Parameter description
+   * @param userId - Parameter description
+   * @param ipAddress - Parameter description
+   * @param userAgent - Parameter description
    */
   async updateShift(
     id: number,
@@ -319,10 +319,10 @@ export class ShiftsService {
       const oldShift = await this.getShiftById(id, tenantId);
 
       const dbData = apiToDb(data as unknown as Record<string, unknown>);
-      await Shift.update(id, dbData as Partial<DbShiftData>, tenantId);
+      await shiftModel.update(id, dbData as Partial<DbShiftData>, tenantId);
 
       // Log the update
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'update',
@@ -345,11 +345,11 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param id
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - Parameter description
+   * @param tenantId - Parameter description
+   * @param userId - Parameter description
+   * @param ipAddress - Parameter description
+   * @param userAgent - Parameter description
    */
   async deleteShift(
     id: number,
@@ -361,10 +361,10 @@ export class ShiftsService {
     try {
       const shift = await this.getShiftById(id, tenantId);
 
-      await Shift.delete(id, tenantId);
+      await shiftModel.delete(id, tenantId);
 
       // Log the deletion
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'delete',
@@ -388,11 +388,11 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param tenantId
+   * @param tenantId - Parameter description
    */
   async listTemplates(tenantId: number): Promise<unknown[]> {
     try {
-      const templates = await Shift.getTemplates(tenantId);
+      const templates = await shiftModel.getTemplates(tenantId);
       return templates.map((template) => dbToApi(template));
     } catch (error: unknown) {
       logger.error('Error listing templates:', error);
@@ -402,13 +402,13 @@ export class ShiftsService {
 
   /**
    * Get shift by ID
-   * @param id
-   * @param tenantId
+   * @param id - Parameter description
+   * @param tenantId - Parameter description
    * @returns Promise resolving to shift or throws error
    */
   async getTemplateById(id: number, tenantId: number): Promise<unknown> {
     try {
-      const template = await Shift.getTemplateById(id, tenantId);
+      const template = await shiftModel.getTemplateById(id, tenantId);
       if (!template) {
         throw new ServiceError('TEMPLATE_NOT_FOUND', 'Template not found');
       }
@@ -422,11 +422,11 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param data - Parameter description
+   * @param tenantId - Parameter description
+   * @param userId - Parameter description
+   * @param ipAddress - Parameter description
+   * @param userAgent - Parameter description
    */
   async createTemplate(
     data: TemplateCreateData,
@@ -443,7 +443,7 @@ export class ShiftsService {
         // shift_templates table doesn't have created_by column
       };
 
-      const templateId = await Shift.createTemplate(
+      const templateId = await shiftModel.createTemplate(
         dbData as {
           tenant_id: number;
           name: string;
@@ -457,7 +457,7 @@ export class ShiftsService {
       );
 
       // Log the creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'create',
@@ -478,12 +478,12 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param id
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - Parameter description
+   * @param data - Parameter description
+   * @param tenantId - Parameter description
+   * @param userId - Parameter description
+   * @param ipAddress - Parameter description
+   * @param userAgent - Parameter description
    */
   async updateTemplate(
     id: number,
@@ -497,7 +497,7 @@ export class ShiftsService {
       const oldTemplate = await this.getTemplateById(id, tenantId);
 
       const dbData = apiToDb(data as unknown as Record<string, unknown>);
-      await Shift.updateTemplate(
+      await shiftModel.updateTemplate(
         id,
         dbData as Partial<{
           name?: string;
@@ -512,7 +512,7 @@ export class ShiftsService {
       );
 
       // Log the update
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'update',
@@ -535,11 +535,11 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param id
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * @param id - Parameter description
+   * @param tenantId - Parameter description
+   * @param userId - Parameter description
+   * @param ipAddress - Parameter description
+   * @param userAgent - Parameter description
    */
   async deleteTemplate(
     id: number,
@@ -551,10 +551,10 @@ export class ShiftsService {
     try {
       const template = await this.getTemplateById(id, tenantId);
 
-      await Shift.deleteTemplate(id, tenantId);
+      await shiftModel.deleteTemplate(id, tenantId);
 
       // Log the deletion
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'delete',
@@ -576,19 +576,17 @@ export class ShiftsService {
   // ============= SWAP REQUESTS =============
 
   /**
-   * Method implementation
-   * @returns Promise resolving to result
-   * @param tenantId
-   * @param filters
-   * @param filters.userId
-   * @param filters.status
+   * Lists swap requests for shifts
+   * @param tenantId - Tenant ID for multi-tenant isolation
+   * @param filters - Filter options containing userId and status
+   * @returns Promise resolving to array of swap requests
    */
   async listSwapRequests(
     tenantId: number,
     filters: { userId?: number; status?: string },
   ): Promise<unknown[]> {
     try {
-      const requests = await Shift.getSwapRequests(tenantId, filters);
+      const requests = await shiftModel.getSwapRequests(tenantId, filters);
       return requests.map((request) => dbToApi(request));
     } catch (error: unknown) {
       logger.error('Error listing swap requests:', error);
@@ -597,13 +595,13 @@ export class ShiftsService {
   }
 
   /**
-   * Method implementation
-   * @returns Promise resolving to result
-   * @param data
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * Creates a new swap request
+   * @param data - Swap request data
+   * @param tenantId - Tenant ID for multi-tenant isolation
+   * @param userId - ID of the user creating the request
+   * @param ipAddress - Client IP address for logging
+   * @param userAgent - Client user agent for logging
+   * @returns Promise resolving to created swap request
    */
   async createSwapRequest(
     data: SwapRequestCreateData,
@@ -628,10 +626,10 @@ export class ShiftsService {
         status: 'pending',
       };
 
-      const requestId = await Shift.createSwapRequest(dbData);
+      const requestId = await shiftModel.createSwapRequest(dbData);
 
       // Log the creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'create_swap_request',
@@ -656,14 +654,14 @@ export class ShiftsService {
   }
 
   /**
-   * Method implementation
-   * @returns Promise resolving to result
-   * @param id
-   * @param status
-   * @param tenantId
-   * @param userId
-   * @param ipAddress
-   * @param userAgent
+   * Updates the status of a swap request
+   * @param id - ID of the swap request to update
+   * @param status - New status for the swap request
+   * @param tenantId - Tenant ID for multi-tenant isolation
+   * @param userId - ID of the user updating the request
+   * @param ipAddress - Client IP address for logging
+   * @param userAgent - Client user agent for logging
+   * @returns Promise resolving to status message
    */
   async updateSwapRequestStatus(
     id: number,
@@ -674,15 +672,15 @@ export class ShiftsService {
     userAgent?: string,
   ): Promise<{ message: string }> {
     try {
-      const request = await Shift.getSwapRequestById(id, tenantId);
+      const request = await shiftModel.getSwapRequestById(id, tenantId);
       if (!request) {
         throw new ServiceError('SWAP_REQUEST_NOT_FOUND', 'Swap request not found');
       }
 
-      await Shift.updateSwapRequestStatus(id, status, userId, tenantId);
+      await shiftModel.updateSwapRequestStatus(id, status, userId, tenantId);
 
       // Log the update
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: `${status}_swap_request`,
@@ -707,12 +705,12 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param data
-   * @param tenantId
+   * @param data - Parameter description
+   * @param tenantId - Parameter description
    */
   async getOvertimeReport(data: OverTimeData, tenantId: number): Promise<unknown> {
     try {
-      const overtime = await Shift.getOvertimeByUser(
+      const overtime = await shiftModel.getOvertimeByUser(
         data.userId,
         data.startDate,
         data.endDate,
@@ -730,9 +728,9 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param filters
-   * @param tenantId
-   * @param format
+   * @param filters - Parameter description
+   * @param tenantId - Parameter description
+   * @param format - Parameter description
    */
   async exportShifts(
     filters: ShiftFilters,
@@ -761,7 +759,7 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param shifts
+   * @param shifts - Parameter description
    */
   private generateCSV(shifts: ShiftApiResponse[]): string {
     const headers = [
@@ -799,9 +797,9 @@ export class ShiftsService {
   /**
    * Method implementation
    * @returns Promise resolving to result
-   * @param startTime
-   * @param endTime
-   * @param breakMinutes
+   * @param startTime - Parameter description
+   * @param endTime - Parameter description
+   * @param breakMinutes - Parameter description
    */
   private calculateHours(startTime: string, endTime: string, breakMinutes = 0): number {
     const start = new Date(`2000-01-01T${startTime}`);
@@ -816,18 +814,9 @@ export class ShiftsService {
 
   /**
    * Create a complete shift plan with shifts and notes
-   * @param data
-   * @param data.startDate
-   * @param data.endDate
-   * @param data.areaId
-   * @param data.departmentId
-   * @param data.teamId
-   * @param data.machineId
-   * @param data.name
-   * @param data.shiftNotes
-   * @param data.shifts
-   * @param tenantId
-   * @param userId
+   * @param data - Shift plan data containing startDate, endDate, areaId, departmentId, teamId, machineId, name, shiftNotes, and shifts array
+   * @param tenantId - Tenant ID for multi-tenant isolation
+   * @param userId - ID of user creating the plan
    * @returns Object containing planId, shiftIds array and success message
    */
   async createShiftPlan(
@@ -962,14 +951,8 @@ export class ShiftsService {
 
   /**
    * Get shift plan with all shifts and notes
-   * @param filters
-   * @param filters.areaId
-   * @param filters.departmentId
-   * @param filters.teamId
-   * @param filters.machineId
-   * @param filters.startDate
-   * @param filters.endDate
-   * @param tenantId
+   * @param filters - Filter object containing areaId, departmentId, teamId, machineId, startDate, and endDate
+   * @param tenantId - Tenant ID for multi-tenant isolation
    * @returns Object containing plan details, shifts array and notes
    */
   async getShiftPlan(
@@ -1058,18 +1041,9 @@ export class ShiftsService {
   /**
    * Update existing shift plan
    * @param planId - Plan ID to update
-   * @param data - Update data
-   * @param data.startDate - Start date
-   * @param data.endDate - End date
-   * @param data.areaId - Area ID
-   * @param data.departmentId - Department ID
-   * @param data.teamId - Team ID
-   * @param data.machineId - Machine ID
-   * @param data.name - Plan name
-   * @param data.shiftNotes - Shift notes
-   * @param data.shifts - Array of shifts
-   * @param tenantId - Tenant ID
-   * @param userId - User ID
+   * @param data - Update data containing optional startDate, endDate, areaId, departmentId, teamId, machineId, name, shiftNotes, and shifts array
+   * @param tenantId - Tenant ID for multi-tenant isolation
+   * @param userId - User ID performing the update
    * @returns Update result
    */
   async updateShiftPlan(
@@ -1218,7 +1192,7 @@ export class ShiftsService {
 
   /**
    * Helper to get week number
-   * @param date
+   * @param date - Parameter description
    * @returns ISO week number
    */
   private getWeekNumber(date: Date): number {
@@ -1227,6 +1201,116 @@ export class ShiftsService {
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  // ============= FAVORITES =============
+
+  /**
+   * List user's shift planning favorites
+   */
+  async listFavorites(tenantId: number, userId: number): Promise<unknown[]> {
+    return await query<RowDataPacket[]>(
+      `SELECT
+        id,
+        name,
+        area_id as areaId,
+        area_name as areaName,
+        department_id as departmentId,
+        department_name as departmentName,
+        machine_id as machineId,
+        machine_name as machineName,
+        team_id as teamId,
+        team_name as teamName,
+        created_at as createdAt
+      FROM shift_favorites
+      WHERE tenant_id = ? AND user_id = ?
+      ORDER BY created_at DESC`,
+      [tenantId, userId],
+    );
+  }
+
+  /**
+   * Create new shift planning favorite
+   */
+  async createFavorite(
+    tenantId: number,
+    userId: number,
+    data: {
+      name: string;
+      areaId: number;
+      areaName: string;
+      departmentId: number;
+      departmentName: string;
+      machineId: number;
+      machineName: string;
+      teamId: number;
+      teamName: string;
+    },
+  ): Promise<unknown> {
+    // Check if a favorite with the same name already exists for this user
+    const [existing] = await query<RowDataPacket[]>(
+      'SELECT id FROM shift_favorites WHERE tenant_id = ? AND user_id = ? AND name = ?',
+      [tenantId, userId, data.name],
+    );
+
+    if (existing.length > 0) {
+      throw new ServiceError('DUPLICATE', 'Ein Favorit mit diesem Namen existiert bereits');
+    }
+
+    // Insert new favorite
+    const [result] = await execute(
+      `INSERT INTO shift_favorites (
+        tenant_id,
+        user_id,
+        name,
+        area_id,
+        area_name,
+        department_id,
+        department_name,
+        machine_id,
+        machine_name,
+        team_id,
+        team_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        tenantId,
+        userId,
+        data.name,
+        data.areaId,
+        data.areaName,
+        data.departmentId,
+        data.departmentName,
+        data.machineId,
+        data.machineName,
+        data.teamId,
+        data.teamName,
+      ],
+    );
+
+    const insertId = 'insertId' in result ? result.insertId : 0;
+
+    return {
+      id: insertId,
+      ...data,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Delete shift planning favorite
+   */
+  async deleteFavorite(favoriteId: number, tenantId: number, userId: number): Promise<void> {
+    // Delete the favorite (will fail if not exists or no permission)
+    const [result] = await execute(
+      'DELETE FROM shift_favorites WHERE id = ? AND tenant_id = ? AND user_id = ?',
+      [favoriteId, tenantId, userId],
+    );
+
+    const affectedRows = 'affectedRows' in result ? result.affectedRows : 0;
+
+    if (affectedRows === 0) {
+      throw new ServiceError('NOT_FOUND', 'Favorit nicht gefunden oder keine Berechtigung');
+    }
   }
 }
 

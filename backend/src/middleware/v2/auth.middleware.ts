@@ -6,9 +6,9 @@ import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { executeQuery } from '../../database';
 import type { AuthenticatedRequest, PublicRequest } from '../../types/request.types';
 import { errorResponse } from '../../utils/apiResponse';
+import { query as executeQuery } from '../../utils/db';
 import { dbToApi } from '../../utils/fieldMapping';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';

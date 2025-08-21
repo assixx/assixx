@@ -48,7 +48,7 @@ interface TenantRow extends RowDataPacket {
 export class RootService {
   /**
    * Get all admin users for a tenant
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
     try {
@@ -88,8 +88,8 @@ export class RootService {
 
   /**
    * Get single admin by ID
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
     try {
@@ -131,8 +131,8 @@ export class RootService {
 
   /**
    * Create new admin user
-   * @param data
-   * @param tenantId
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
     try {
@@ -174,9 +174,9 @@ export class RootService {
 
   /**
    * Update admin user
-   * @param id
-   * @param data
-   * @param tenantId
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async updateAdmin(id: number, data: UpdateAdminRequest, tenantId: number): Promise<void> {
     try {
@@ -213,8 +213,8 @@ export class RootService {
 
   /**
    * Delete admin user
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async deleteAdmin(id: number, tenantId: number): Promise<void> {
     try {
@@ -236,9 +236,9 @@ export class RootService {
 
   /**
    * Get admin logs
-   * @param adminId
-   * @param tenantId
-   * @param days
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
+   * @param days - The days parameter
    */
   async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
     try {
@@ -317,7 +317,7 @@ export class RootService {
 
   /**
    * Get all root users for a tenant
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     try {
@@ -351,8 +351,8 @@ export class RootService {
 
   /**
    * Get single root user
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     try {
@@ -390,8 +390,8 @@ export class RootService {
 
   /**
    * Create root user
-   * @param data
-   * @param tenantId
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
     try {
@@ -449,9 +449,9 @@ export class RootService {
 
   /**
    * Update root user
-   * @param id
-   * @param data
-   * @param tenantId
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async updateRootUser(id: number, data: UpdateRootUserRequest, tenantId: number): Promise<void> {
     try {
@@ -505,9 +505,9 @@ export class RootService {
 
   /**
    * Delete root user
-   * @param id
-   * @param tenantId
-   * @param currentUserId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param currentUserId - The currentUserId parameter
    */
   async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
     try {
@@ -545,7 +545,7 @@ export class RootService {
 
   /**
    * Get dashboard statistics
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
     try {
@@ -591,7 +591,7 @@ export class RootService {
 
   /**
    * Get storage information
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
     try {
@@ -656,10 +656,10 @@ export class RootService {
 
   /**
    * Request tenant deletion
-   * @param tenantId
-   * @param requestedBy
-   * @param reason
-   * @param ipAddress
+   * @param tenantId - The tenant ID
+   * @param requestedBy - The requestedBy parameter
+   * @param reason - The reason parameter
+   * @param ipAddress - The ipAddress parameter
    */
   async requestTenantDeletion(
     tenantId: number,
@@ -692,7 +692,7 @@ export class RootService {
 
   /**
    * Get tenant deletion status
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getDeletionStatus(tenantId: number): Promise<TenantDeletionStatus | null> {
     try {
@@ -773,7 +773,7 @@ export class RootService {
 
   /**
    * Get pending approvals
-   * @param currentUserId
+   * @param currentUserId - The currentUserId parameter
    */
   async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     try {
@@ -812,7 +812,7 @@ export class RootService {
 
   /**
    * Perform deletion dry run
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async performDeletionDryRun(tenantId: number): Promise<DeletionDryRunReport> {
     try {

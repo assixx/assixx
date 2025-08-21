@@ -94,8 +94,8 @@ class ShiftController {
   /**
    * Holt alle Shift Einträge
    * GET /api/shift
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getAll(req: ShiftQueryRequest, res: Response): void {
     try {
@@ -130,8 +130,8 @@ class ShiftController {
   /**
    * Holt einen Shift Eintrag per ID
    * GET /api/shift/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getById(req: ShiftGetRequest, res: Response): void {
     try {
@@ -164,8 +164,8 @@ class ShiftController {
   /**
    * Erstellt einen neuen Shift Eintrag
    * POST /api/shift
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   create(req: ShiftCreateRequest, res: Response): void {
     try {
@@ -201,8 +201,8 @@ class ShiftController {
   /**
    * Aktualisiert einen Shift Eintrag
    * PUT /api/shift/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   update(req: ShiftUpdateRequest, res: Response): void {
     try {
@@ -231,8 +231,8 @@ class ShiftController {
   /**
    * Löscht einen Shift Eintrag
    * DELETE /api/shift/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   delete(req: ShiftGetRequest, res: Response): void {
     try {

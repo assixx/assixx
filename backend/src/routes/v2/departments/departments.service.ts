@@ -59,9 +59,9 @@ export interface DepartmentMember {
 export class ServiceError extends Error {
   /**
    *
-   * @param code
-   * @param message
-   * @param details
+   * @param code - The code parameter
+   * @param message - The message parameter
+   * @param details - The details parameter
    */
   constructor(
     public code: number,
@@ -79,8 +79,8 @@ export class ServiceError extends Error {
 export class DepartmentService {
   /**
    * Get all departments for a tenant
-   * @param tenantId
-   * @param includeExtended
+   * @param tenantId - The tenant ID
+   * @param includeExtended - The includeExtended parameter
    */
   async getDepartments(tenantId: number, includeExtended = true): Promise<DepartmentV2[]> {
     try {
@@ -113,8 +113,8 @@ export class DepartmentService {
 
   /**
    * Get a single department by ID
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getDepartmentById(id: number, tenantId: number): Promise<DepartmentV2> {
     try {
@@ -152,8 +152,8 @@ export class DepartmentService {
 
   /**
    * Create a new department
-   * @param data
-   * @param tenantId
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async createDepartment(data: CreateDepartmentData, tenantId: number): Promise<DepartmentV2> {
     try {
@@ -198,9 +198,9 @@ export class DepartmentService {
 
   /**
    * Update a department
-   * @param id
-   * @param data
-   * @param tenantId
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async updateDepartment(
     id: number,
@@ -268,8 +268,8 @@ export class DepartmentService {
 
   /**
    * Delete a department
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async deleteDepartment(id: number, tenantId: number): Promise<void> {
     try {
@@ -301,8 +301,8 @@ export class DepartmentService {
 
   /**
    * Get department members
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
     try {
@@ -346,7 +346,7 @@ export class DepartmentService {
 
   /**
    * Get department statistics
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getDepartmentStats(tenantId: number): Promise<{
     totalDepartments: number;

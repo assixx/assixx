@@ -117,8 +117,8 @@ class KvpService {
   /**
    * Holt alle Kvp Einträge für einen Tenant
    * NOTE: This generic method doesn't match the actual KVP model functionality
-   * @param _tenantDb
-   * @param _filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
   getAll(_tenantDb: Pool, _filters: KvpFilters = {}): KvpEntry[] {
     try {
@@ -135,8 +135,8 @@ class KvpService {
   /**
    * Holt einen Kvp Eintrag per ID
    * NOTE: This should use getSuggestionById
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   getById(_tenantDb: Pool, _id: number): KvpEntry | null {
     try {
@@ -153,8 +153,8 @@ class KvpService {
   /**
    * Erstellt einen neuen Kvp Eintrag
    * NOTE: This should use createSuggestion
-   * @param _tenantDb
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _data - The _data parameter
    */
   create(_tenantDb: Pool, _data: KvpCreateData): KvpEntry {
     try {
@@ -169,9 +169,9 @@ class KvpService {
   /**
    * Aktualisiert einen Kvp Eintrag
    * NOTE: This should use updateSuggestionStatus or other specific update methods
-   * @param _tenantDb
-   * @param _id
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
   update(_tenantDb: Pool, _id: number, _data: KvpUpdateData): KvpEntry | null {
     try {
@@ -188,8 +188,8 @@ class KvpService {
   /**
    * Löscht einen Kvp Eintrag
    * NOTE: This should use deleteSuggestion
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {
@@ -206,7 +206,7 @@ class KvpService {
 
   /**
    * Get all categories for a tenant
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getCategories(tenantId: number): Promise<Category[]> {
     try {
@@ -222,10 +222,10 @@ class KvpService {
 
   /**
    * Get suggestions with filters
-   * @param tenantId
-   * @param userId
-   * @param userRole
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
+   * @param filters - The filter criteria
    */
   async getSuggestions(
     tenantId: number,
@@ -243,7 +243,7 @@ class KvpService {
 
   /**
    * Create a new suggestion
-   * @param data
+   * @param data - The data object
    */
   async createSuggestion(data: KvpCreateData): Promise<Suggestion> {
     try {
@@ -267,7 +267,7 @@ class KvpService {
 
   /**
    * Get dashboard statistics
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getDashboardStats(tenantId: number): Promise<{
     totalSuggestions: number;

@@ -175,9 +175,9 @@ interface MessageRow extends RowDataPacket {
 export class ChatService {
   /**
    * Get list of users available for chat
-   * @param tenantId
-   * @param currentUserId
-   * @param search
+   * @param tenantId - The tenant ID
+   * @param currentUserId - The currentUserId parameter
+   * @param search - The search parameter
    */
   async getChatUsers(
     tenantId: number,
@@ -276,9 +276,9 @@ export class ChatService {
 
   /**
    * Get user's conversations with pagination
-   * @param tenantId
-   * @param userId
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param filters - The filter criteria
    */
   async getConversations(
     tenantId: number,
@@ -473,9 +473,9 @@ export class ChatService {
 
   /**
    * Create a new conversation
-   * @param tenantId
-   * @param creatorId
-   * @param data
+   * @param tenantId - The tenant ID
+   * @param creatorId - The creatorId parameter
+   * @param data - The data object
    */
   async createConversation(
     tenantId: number,
@@ -586,10 +586,10 @@ export class ChatService {
 
   /**
    * Get messages from a conversation with pagination
-   * @param tenantId
-   * @param conversationId
-   * @param userId
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
+   * @param filters - The filter criteria
    */
   async getMessages(
     tenantId: number,
@@ -735,10 +735,10 @@ export class ChatService {
 
   /**
    * Send a message to a conversation
-   * @param tenantId
-   * @param conversationId
-   * @param senderId
-   * @param data
+   * @param tenantId - The tenant ID
+   * @param conversationId - The conversationId parameter
+   * @param senderId - The senderId parameter
+   * @param data - The data object
    */
   async sendMessage(
     tenantId: number,
@@ -826,8 +826,8 @@ export class ChatService {
 
   /**
    * Get unread message count
-   * @param tenantId
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getUnreadCount(tenantId: number, userId: number): Promise<UnreadCountSummary> {
     try {
@@ -877,8 +877,8 @@ export class ChatService {
 
   /**
    * Mark all messages in a conversation as read
-   * @param conversationId
-   * @param userId
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
    */
   async markConversationAsRead(
     conversationId: number,
@@ -942,9 +942,9 @@ export class ChatService {
 
   /**
    * Delete a conversation (admin only or single participant)
-   * @param conversationId
-   * @param userId
-   * @param userRole
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
    */
   async deleteConversation(
     conversationId: number,
@@ -1005,9 +1005,9 @@ export class ChatService {
 
   /**
    * Get single conversation details
-   * @param tenantId
-   * @param conversationId
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param conversationId - The conversationId parameter
+   * @param userId - The user ID
    */
   async getConversation(
     tenantId: number,

@@ -7,7 +7,7 @@ import 'dotenv/config';
 import * as http from 'http';
 import { IncomingMessage, ServerResponse } from 'http';
 
-import pool from '../database';
+import pool from '../config/database';
 import { tenantDeletionService } from '../services/tenantDeletion.service';
 import { logger } from '../utils/logger';
 

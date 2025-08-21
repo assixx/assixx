@@ -73,8 +73,8 @@ class TeamController {
   /**
    * Holt alle Team Einträge
    * GET /api/team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: TeamQueryRequest, res: Response): Promise<void> {
     try {
@@ -120,8 +120,8 @@ class TeamController {
   /**
    * Holt einen Team Eintrag per ID
    * GET /api/team/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: TeamGetRequest, res: Response): Promise<void> {
     try {
@@ -154,8 +154,8 @@ class TeamController {
   /**
    * Erstellt einen neuen Team Eintrag
    * POST /api/team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: TeamCreateRequest, res: Response): Promise<void> {
     try {
@@ -178,8 +178,8 @@ class TeamController {
   /**
    * Aktualisiert einen Team Eintrag
    * PUT /api/team/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: TeamUpdateRequest, res: Response): Promise<void> {
     try {
@@ -208,8 +208,8 @@ class TeamController {
   /**
    * Löscht einen Team Eintrag
    * DELETE /api/team/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: TeamGetRequest, res: Response): Promise<void> {
     try {

@@ -101,12 +101,10 @@ if (USE_MOCK_DB) {
           T,
           mysql.FieldPacket[],
         ]);
-      } else if (sql.includes('COUNT(*) as count FROM departments')) {
-        return await Promise.resolve([[[{ count: 2 }] as RowDataPacket[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
-      } else if (sql.includes('COUNT(*) as count FROM documents')) {
+      } else if (
+        sql.includes('COUNT(*) as count FROM departments') ||
+        sql.includes('COUNT(*) as count FROM documents')
+      ) {
         return await Promise.resolve([[[{ count: 2 }] as RowDataPacket[]], []] as unknown as [
           T,
           mysql.FieldPacket[],
@@ -158,8 +156,11 @@ if (USE_MOCK_DB) {
           ] as unknown as [T, mysql.FieldPacket[]]);
         }
         return await Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
-      } else if (sql.includes('UPDATE users SET') && sql.includes('WHERE id = ?')) {
-        // Mock für update
+      } else if (
+        (sql.includes('UPDATE users SET') && sql.includes('WHERE id = ?')) ||
+        sql.includes('DELETE FROM users WHERE id = ?')
+      ) {
+        // Mock für update/delete
         return await Promise.resolve([[{ affectedRows: 1 } as ResultSetHeader], []] as unknown as [
           T,
           mysql.FieldPacket[],
@@ -167,12 +168,6 @@ if (USE_MOCK_DB) {
       } else if (sql.includes('INSERT INTO users')) {
         // Mock für create
         return await Promise.resolve([[{ insertId: 4 } as ResultSetHeader], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
-      } else if (sql.includes('DELETE FROM users WHERE id = ?')) {
-        // Mock für delete
-        return await Promise.resolve([[{ affectedRows: 1 } as ResultSetHeader], []] as unknown as [
           T,
           mysql.FieldPacket[],
         ]);
@@ -231,7 +226,7 @@ if (USE_MOCK_DB) {
   console.info('[DEBUG] Database config:', {
     host: process.env.DB_HOST ?? 'localhost',
     user: process.env.DB_USER ?? 'assixx_user',
-    database: process.env.DB_NAME ?? (process.env.NODE_ENV === 'test' ? 'main' : 'main'),
+    database: process.env.DB_NAME ?? 'main',
     port: process.env.DB_PORT ?? (process.env.CI !== undefined ? '3306' : '3307'),
     NODE_ENV: process.env.NODE_ENV,
     CI: process.env.CI,
@@ -240,7 +235,7 @@ if (USE_MOCK_DB) {
   // Initialize pool immediately with config
   // Use port 3306 for CI, 3307 for local development
   const defaultPort = process.env.CI !== undefined && process.env.CI !== '' ? '3306' : '3307';
-  const defaultDatabase = process.env.NODE_ENV === 'test' ? 'main' : 'main';
+  const defaultDatabase = 'main';
   const config: PoolOptions = {
     host: process.env.DB_HOST ?? 'localhost',
     port: Number.parseInt(
@@ -278,18 +273,18 @@ if (USE_MOCK_DB) {
     // Skip connection test in test environment
     if (process.env.NODE_ENV !== 'test') {
       // Test the connection immediately
-      pool
-        .getConnection()
-        .then((conn) => {
+      void (async () => {
+        try {
+          const conn = await pool.getConnection();
           console.info('[DEBUG] Database connection test successful');
           conn.release();
-        })
-        .catch((error: unknown) => {
+        } catch (error: unknown) {
           console.error(
             '[DEBUG] Database connection test failed:',
             error instanceof Error ? error.message : 'Unknown error',
           );
-        });
+        }
+      })();
     }
   } catch (error: unknown) {
     console.error('Fehler beim Verbinden mit der Datenbank:', error);
@@ -345,8 +340,5 @@ export async function closePool(): Promise<void> {
     }
   }
 }
-
-// Re-export utility functions from db.ts
-export { query as executeQuery, execute } from '../utils/db';
 
 // CommonJS compatibility

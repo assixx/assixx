@@ -12,8 +12,8 @@ import type { FeatureActivationRequest, FeatureDeactivationRequest } from './typ
  */
 export class FeaturesController {
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features:
    *   get:
@@ -68,8 +68,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/categories:
    *   get:
@@ -107,8 +107,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/{code}:
    *   get:
@@ -156,8 +156,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/tenant/{tenantId}:
    *   get:
@@ -208,8 +208,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/my-features:
    *   get:
@@ -242,8 +242,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/tenant/{tenantId}/summary:
    *   get:
@@ -294,8 +294,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/activate:
    *   post:
@@ -348,8 +348,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/deactivate:
    *   post:
@@ -400,8 +400,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/usage/{featureCode}:
    *   get:
@@ -479,8 +479,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/test/{featureCode}:
    *   get:
@@ -541,8 +541,8 @@ export class FeaturesController {
   }
 
   /**
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    * @swagger
    * /api/v2/features/all-tenants:
    *   get:

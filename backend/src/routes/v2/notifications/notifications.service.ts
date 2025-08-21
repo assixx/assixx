@@ -4,17 +4,17 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import { executeQuery } from '../../../database.js';
 import RootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
+import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 /**
  * Get notifications for a user with filters
- * @param userId
- * @param tenantId
- * @param filters
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param filters - The filter criteria
  */
 export async function listNotifications(
   userId: number,
@@ -109,11 +109,11 @@ export async function listNotifications(
 
 /**
  * Create a new notification
- * @param data
- * @param createdBy
- * @param tenantId
- * @param ipAddress
- * @param userAgent
+ * @param data - The data object
+ * @param createdBy - The createdBy parameter
+ * @param tenantId - The tenant ID
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function createNotification(
   data: NotificationData,
@@ -160,9 +160,9 @@ export async function createNotification(
 
 /**
  * Mark notification as read
- * @param notificationId
- * @param userId
- * @param tenantId
+ * @param notificationId - The notificationId parameter
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
 export async function markAsRead(notificationId: number, userId: number, tenantId: number) {
   // Check if notification exists and user has access
@@ -198,8 +198,8 @@ export async function markAsRead(notificationId: number, userId: number, tenantI
 
 /**
  * Mark all notifications as read
- * @param userId
- * @param tenantId
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
 export async function markAllAsRead(userId: number, tenantId: number) {
   // Get all unread notifications for user
@@ -228,12 +228,12 @@ export async function markAllAsRead(userId: number, tenantId: number) {
 
 /**
  * Delete notification
- * @param notificationId
- * @param userId
- * @param tenantId
- * @param userRole
- * @param ipAddress
- * @param userAgent
+ * @param notificationId - The notificationId parameter
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function deleteNotification(
   notificationId: number,
@@ -280,8 +280,8 @@ export async function deleteNotification(
 
 /**
  * Get notification preferences
- * @param userId
- * @param tenantId
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
 export async function getPreferences(userId: number, tenantId: number) {
   try {
@@ -330,11 +330,11 @@ export async function getPreferences(userId: number, tenantId: number) {
 
 /**
  * Update notification preferences
- * @param userId
- * @param tenantId
- * @param preferences
- * @param ipAddress
- * @param userAgent
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param preferences - The preferences parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function updatePreferences(
   userId: number,
@@ -399,7 +399,7 @@ export async function updatePreferences(
 
 /**
  * Get notification statistics (admin only)
- * @param tenantId
+ * @param tenantId - The tenant ID
  */
 export async function getStatistics(tenantId: number) {
   // Total notifications
@@ -472,8 +472,8 @@ export async function getStatistics(tenantId: number) {
 
 /**
  * Get personal notification statistics
- * @param userId
- * @param tenantId
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
 export async function getPersonalStats(userId: number, tenantId: number) {
   // Total notifications for user

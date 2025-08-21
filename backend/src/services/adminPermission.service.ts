@@ -26,10 +26,10 @@ interface DepartmentWithPermission {
 class AdminPermissionService {
   /**
    * Check if admin has access to a specific department
-   * @param adminId
-   * @param departmentId
-   * @param tenantId
-   * @param requiredPermission
+   * @param adminId - The adminId parameter
+   * @param departmentId - The departmentId parameter
+   * @param tenantId - The tenant ID
+   * @param requiredPermission - The requiredPermission parameter
    */
   async hasAccess(
     adminId: number,
@@ -78,8 +78,8 @@ class AdminPermissionService {
 
   /**
    *
-   * @param permission
-   * @param requiredLevel
+   * @param permission - The permission parameter
+   * @param requiredLevel - The requiredLevel parameter
    */
   private checkPermissionLevel(
     permission: RowDataPacket,
@@ -99,8 +99,8 @@ class AdminPermissionService {
 
   /**
    * Get all departments an admin has access to (direct + via groups)
-   * @param adminId
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
    */
   async getAdminDepartments(
     adminId: number,
@@ -196,11 +196,11 @@ class AdminPermissionService {
 
   /**
    * Set department permissions for an admin (overwrites existing)
-   * @param adminId
-   * @param departmentIds
-   * @param assignedBy
-   * @param tenantId
-   * @param permissions
+   * @param adminId - The adminId parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param assignedBy - The assignedBy parameter
+   * @param tenantId - The tenant ID
+   * @param permissions - The permissions parameter
    */
   async setPermissions(
     adminId: number,
@@ -304,11 +304,11 @@ class AdminPermissionService {
 
   /**
    * Set group permissions for an admin
-   * @param adminId
-   * @param groupIds
-   * @param assignedBy
-   * @param tenantId
-   * @param permissions
+   * @param adminId - The adminId parameter
+   * @param groupIds - The groupIds parameter
+   * @param assignedBy - The assignedBy parameter
+   * @param tenantId - The tenant ID
+   * @param permissions - The permissions parameter
    */
   async setGroupPermissions(
     adminId: number,
@@ -368,9 +368,9 @@ class AdminPermissionService {
 
   /**
    * Remove specific department permission
-   * @param adminId
-   * @param departmentId
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param departmentId - The departmentId parameter
+   * @param tenantId - The tenant ID
    */
   async removePermission(
     adminId: number,
@@ -393,9 +393,9 @@ class AdminPermissionService {
 
   /**
    * Remove specific group permission
-   * @param adminId
-   * @param groupId
-   * @param tenantId
+   * @param adminId - The adminId parameter
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
    */
   async removeGroupPermission(
     adminId: number,
@@ -418,14 +418,14 @@ class AdminPermissionService {
 
   /**
    * Log permission change for audit trail
-   * @param action
-   * @param adminId
-   * @param targetId
-   * @param targetType
-   * @param changedBy
-   * @param tenantId
-   * @param oldPermissions
-   * @param newPermissions
+   * @param action - The action parameter
+   * @param adminId - The adminId parameter
+   * @param targetId - The targetId parameter
+   * @param targetType - The targetType parameter
+   * @param changedBy - The changedBy parameter
+   * @param tenantId - The tenant ID
+   * @param oldPermissions - The oldPermissions parameter
+   * @param newPermissions - The newPermissions parameter
    */
   async logPermissionChange(
     action: 'grant' | 'revoke' | 'modify',

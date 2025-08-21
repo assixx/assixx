@@ -101,8 +101,8 @@ class EmployeeController {
   /**
    * Holt alle Employee Einträge
    * GET /api/employee
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: EmployeeQueryRequest, res: Response): Promise<void> {
     try {
@@ -160,8 +160,8 @@ class EmployeeController {
   /**
    * Holt einen Employee Eintrag per ID
    * GET /api/employee/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
@@ -201,8 +201,8 @@ class EmployeeController {
   /**
    * Erstellt einen neuen Employee Eintrag
    * POST /api/employee
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: EmployeeCreateRequest, res: Response): Promise<void> {
     try {
@@ -247,8 +247,8 @@ class EmployeeController {
   /**
    * Aktualisiert einen Employee Eintrag
    * PUT /api/employee/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: EmployeeUpdateRequest, res: Response): Promise<void> {
     try {
@@ -305,8 +305,8 @@ class EmployeeController {
   /**
    * Löscht einen Employee Eintrag
    * DELETE /api/employee/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {

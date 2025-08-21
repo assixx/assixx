@@ -23,8 +23,8 @@ import { AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
 /**
  * Get all areas
  * GET /api/v2/areas
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAreasController(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -50,8 +50,8 @@ export async function getAreasController(req: AuthenticatedRequest, res: Respons
 /**
  * Get area hierarchy
  * GET /api/v2/areas/hierarchy
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAreaHierarchyController(
   req: AuthenticatedRequest,
@@ -70,8 +70,8 @@ export async function getAreaHierarchyController(
 /**
  * Get area by ID
  * GET /api/v2/areas/:id
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAreaByIdController(
   req: AuthenticatedRequest,
@@ -102,8 +102,8 @@ export async function getAreaByIdController(
 /**
  * Create new area
  * POST /api/v2/areas
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function createAreaController(
   req: AuthenticatedRequest,
@@ -154,8 +154,8 @@ export async function createAreaController(
 /**
  * Update area
  * PUT /api/v2/areas/:id
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function updateAreaController(
   req: AuthenticatedRequest,
@@ -225,8 +225,8 @@ export async function updateAreaController(
 /**
  * Delete area
  * DELETE /api/v2/areas/:id
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function deleteAreaController(
   req: AuthenticatedRequest,
@@ -286,8 +286,8 @@ export async function deleteAreaController(
 /**
  * Get area statistics
  * GET /api/v2/areas/stats
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAreaStatsController(
   req: AuthenticatedRequest,

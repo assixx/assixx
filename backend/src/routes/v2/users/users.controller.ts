@@ -38,7 +38,7 @@ interface User {
 // Helper to map validation errors to our error response format
 /**
  *
- * @param errors
+ * @param errors - The errors parameter
  */
 function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
   return errors.map((error) => ({

@@ -6,8 +6,8 @@ import express, { Router } from 'express';
 import { RowDataPacket } from 'mysql2/promise';
 
 import { authenticateToken } from '../auth';
-import { execute } from '../database';
 import type { AuthenticatedRequest } from '../types/request.types';
+import { execute } from '../utils/db';
 import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();

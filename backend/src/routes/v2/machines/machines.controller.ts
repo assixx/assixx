@@ -15,7 +15,7 @@ import { MachineCreateRequest, MachineUpdateRequest, MaintenanceRecordRequest } 
 // Helper to map validation errors to our error response format
 /**
  *
- * @param errors
+ * @param errors - The errors parameter
  */
 function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
   return errors.map((error) => ({
@@ -28,8 +28,8 @@ export const machinesController = {
   /**
    * List all machines with filters
    * GET /api/v2/machines
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async listMachines(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -82,8 +82,8 @@ export const machinesController = {
   /**
    * Get machine by ID
    * GET /api/v2/machines/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -113,8 +113,8 @@ export const machinesController = {
   /**
    * Create new machine
    * POST /api/v2/machines
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async createMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -163,8 +163,8 @@ export const machinesController = {
   /**
    * Update machine
    * PUT /api/v2/machines/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async updateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -220,8 +220,8 @@ export const machinesController = {
   /**
    * Delete machine (hard delete)
    * DELETE /api/v2/machines/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -258,8 +258,8 @@ export const machinesController = {
   /**
    * Deactivate machine
    * PUT /api/v2/machines/:id/deactivate
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deactivateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -296,8 +296,8 @@ export const machinesController = {
   /**
    * Activate machine
    * PUT /api/v2/machines/:id/activate
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async activateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -334,8 +334,8 @@ export const machinesController = {
   /**
    * Get maintenance history for a machine
    * GET /api/v2/machines/:id/maintenance
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getMaintenanceHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -365,8 +365,8 @@ export const machinesController = {
   /**
    * Add maintenance record
    * POST /api/v2/machines/maintenance
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async addMaintenanceRecord(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -415,8 +415,8 @@ export const machinesController = {
   /**
    * Get upcoming maintenance
    * GET /api/v2/machines/upcoming-maintenance
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getUpcomingMaintenance(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -446,8 +446,8 @@ export const machinesController = {
   /**
    * Get machine statistics
    * GET /api/v2/machines/statistics
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -471,8 +471,8 @@ export const machinesController = {
   /**
    * Get machine categories
    * GET /api/v2/machines/categories
-   * @param _req
-   * @param res
+   * @param _req - The _req parameter
+   * @param res - The response object
    */
   async getCategories(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {

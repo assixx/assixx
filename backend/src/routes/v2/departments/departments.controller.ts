@@ -23,9 +23,9 @@ interface Department {
 export class DepartmentController {
   /**
    * Get all departments
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartments(
     req: AuthenticatedRequest,
@@ -66,9 +66,9 @@ export class DepartmentController {
 
   /**
    * Get department by ID
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartmentById(
     req: AuthenticatedRequest,
@@ -114,9 +114,9 @@ export class DepartmentController {
 
   /**
    * Create a new department
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async createDepartment(
     req: AuthenticatedRequest,
@@ -207,9 +207,9 @@ export class DepartmentController {
 
   /**
    * Update a department
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async updateDepartment(
     req: AuthenticatedRequest,
@@ -318,9 +318,9 @@ export class DepartmentController {
 
   /**
    * Delete a department
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async deleteDepartment(
     req: AuthenticatedRequest,
@@ -403,9 +403,9 @@ export class DepartmentController {
 
   /**
    * Get department members
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartmentMembers(
     req: AuthenticatedRequest,
@@ -451,9 +451,9 @@ export class DepartmentController {
 
   /**
    * Get department statistics
-   * @param req
-   * @param res
-   * @param _next
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartmentStats(
     req: AuthenticatedRequest,

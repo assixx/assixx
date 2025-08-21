@@ -125,8 +125,8 @@ class SurveyController {
   /**
    * Holt alle Survey Einträge für einen Tenant
    * GET /api/surveys
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: SurveyQueryRequest, res: Response): Promise<void> {
     try {
@@ -162,8 +162,8 @@ class SurveyController {
   /**
    * Holt einen Survey Eintrag per ID mit Fragen und Optionen
    * GET /api/surveys/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: SurveyByIdRequest, res: Response): Promise<void> {
     try {
@@ -187,8 +187,8 @@ class SurveyController {
   /**
    * Erstellt einen neuen Survey
    * POST /api/surveys
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: SurveyCreateRequest, res: Response): Promise<void> {
     try {
@@ -222,8 +222,8 @@ class SurveyController {
   /**
    * Aktualisiert einen Survey
    * PUT /api/surveys/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: SurveyUpdateRequest, res: Response): Promise<void> {
     try {
@@ -275,8 +275,8 @@ class SurveyController {
   /**
    * Löscht einen Survey
    * DELETE /api/surveys/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: SurveyByIdRequest, res: Response): Promise<void> {
     try {
@@ -300,8 +300,8 @@ class SurveyController {
   /**
    * Holt Templates
    * GET /api/surveys/templates
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getTemplates(req: SurveyQueryRequest, res: Response): Promise<void> {
     try {
@@ -320,8 +320,8 @@ class SurveyController {
   /**
    * Erstellt Survey aus Template
    * POST /api/surveys/from-template/:templateId
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async createFromTemplate(req: SurveyTemplateRequest, res: Response): Promise<void> {
     try {
@@ -345,8 +345,8 @@ class SurveyController {
   /**
    * Holt Survey Statistiken
    * GET /api/surveys/:id/statistics
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getStatistics(req: SurveyByIdRequest, res: Response): Promise<void> {
     try {

@@ -10,8 +10,8 @@ import { errorResponse, paginatedResponse, successResponse } from '../../../util
 import { SurveyCreateData, SurveyUpdateData, surveysService } from './surveys.service';
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys:
  *   get:
@@ -79,8 +79,8 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys/{id}:
  *   get:
@@ -124,8 +124,8 @@ export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys:
  *   post:
@@ -168,8 +168,8 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys/{id}:
  *   put:
@@ -222,8 +222,8 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys/{id}:
  *   delete:
@@ -269,8 +269,8 @@ export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys/templates:
  *   get:
@@ -294,8 +294,8 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys/templates/{templateId}:
  *   post:
@@ -340,8 +340,8 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/surveys/{id}/statistics:
  *   get:

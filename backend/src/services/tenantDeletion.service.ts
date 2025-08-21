@@ -1396,10 +1396,10 @@ export class TenantDeletionService {
 
   /**
    * Request tenant deletion (requires approval from second root user)
-   * @param tenantId
-   * @param requestedBy
-   * @param reason
-   * @param ipAddress
+   * @param tenantId - The tenant ID
+   * @param requestedBy - The requestedBy parameter
+   * @param reason - The reason parameter
+   * @param ipAddress - The ipAddress parameter
    */
   async requestTenantDeletion(
     tenantId: number,
@@ -1502,9 +1502,9 @@ export class TenantDeletionService {
 
   /**
    * Approve tenant deletion request
-   * @param queueId
-   * @param approverId
-   * @param comment
+   * @param queueId - The queueId parameter
+   * @param approverId - The approverId parameter
+   * @param comment - The comment parameter
    */
   async approveDeletion(queueId: number, approverId: number, comment?: string): Promise<void> {
     await transaction(async (connection) => {
@@ -1600,9 +1600,9 @@ export class TenantDeletionService {
 
   /**
    * Reject tenant deletion request
-   * @param queueId
-   * @param approverId
-   * @param reason
+   * @param queueId - The queueId parameter
+   * @param approverId - The approverId parameter
+   * @param reason - The reason parameter
    */
   async rejectDeletion(queueId: number, approverId: number, reason: string): Promise<void> {
     await transaction(async (connection) => {
@@ -1685,8 +1685,8 @@ export class TenantDeletionService {
 
   /**
    * Emergency stop for a deletion in progress
-   * @param queueId
-   * @param stoppedBy
+   * @param queueId - The queueId parameter
+   * @param stoppedBy - The stoppedBy parameter
    */
   async emergencyStop(queueId: number, stoppedBy: number): Promise<void> {
     try {
@@ -1763,7 +1763,7 @@ export class TenantDeletionService {
 
   /**
    * Process single tenant deletion
-   * @param queueId
+   * @param queueId - The queueId parameter
    */
   private async processTenantDeletion(queueId: number): Promise<void> {
     let tenantId = 0;
@@ -1940,8 +1940,8 @@ export class TenantDeletionService {
 
   /**
    * Trigger emergency stop for deletion
-   * @param queueId
-   * @param stoppedBy
+   * @param queueId - The queueId parameter
+   * @param stoppedBy - The stoppedBy parameter
    */
   async triggerEmergencyStop(queueId: number, stoppedBy: number): Promise<void> {
     // Set emergency stop flag
@@ -1980,8 +1980,8 @@ export class TenantDeletionService {
 
   /**
    * Handle emergency stop during deletion
-   * @param queueId
-   * @param tenantId
+   * @param queueId - The queueId parameter
+   * @param tenantId - The tenant ID
    */
   private async handleEmergencyStop(queueId: number, tenantId: number): Promise<void> {
     logger.warn(`Handling emergency stop for queue ${queueId}`);
@@ -2030,7 +2030,7 @@ export class TenantDeletionService {
 
   /**
    * Get deletion status
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getDeletionStatus(tenantId: number): Promise<DeletionStatusRow | null> {
     const [result] = await query<DeletionStatusRow[]>(
@@ -2053,7 +2053,7 @@ export class TenantDeletionService {
 
   /**
    * Retry failed deletion
-   * @param queueId
+   * @param queueId - The queueId parameter
    */
   async retryDeletion(queueId: number): Promise<void> {
     const [queueItems] = await query<RowDataPacket[]>(
@@ -2073,8 +2073,8 @@ export class TenantDeletionService {
 
   /**
    * Cancel queued deletion (within grace period)
-   * @param tenantId
-   * @param cancelledBy
+   * @param tenantId - The tenant ID
+   * @param cancelledBy - The cancelledBy parameter
    */
   async cancelDeletion(tenantId: number, cancelledBy: number): Promise<void> {
     const [queueItems] = await query<RowDataPacket[]>(
@@ -2120,7 +2120,7 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   private async createTenantDataExport(tenantId: number): Promise<string> {
     const exportDir = `/exports/tenant_${tenantId}`;
@@ -2175,7 +2175,7 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param filePath
+   * @param filePath - The filePath parameter
    */
   private async calculateFileChecksum(filePath: string): Promise<string> {
     const fileBuffer = await fs.readFile(filePath);
@@ -2186,11 +2186,11 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param tenantId
-   * @param requestedBy
-   * @param reason
-   * @param ipAddress
-   * @param connection
+   * @param tenantId - The tenant ID
+   * @param requestedBy - The requestedBy parameter
+   * @param reason - The reason parameter
+   * @param ipAddress - The ipAddress parameter
+   * @param connection - The connection parameter
    */
   private async createDeletionAuditTrail(
     tenantId: number,
@@ -2300,8 +2300,8 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param tenantId
-   * @param scheduledDate
+   * @param tenantId - The tenant ID
+   * @param scheduledDate - The scheduledDate parameter
    */
   private async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
     const [admins] = await query<DbUser[]>(
@@ -2340,8 +2340,8 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param tenantId
-   * @param scheduledDate
+   * @param tenantId - The tenant ID
+   * @param scheduledDate - The scheduledDate parameter
    */
   private async scheduleReminderEmails(tenantId: number, scheduledDate: Date): Promise<void> {
     const reminders = [
@@ -2377,10 +2377,10 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param tenantId
-   * @param requestedBy
-   * @param tenantName
-   * @param queueId
+   * @param tenantId - The tenant ID
+   * @param requestedBy - The requestedBy parameter
+   * @param tenantName - The tenantName parameter
+   * @param queueId - The queueId parameter
    */
   private async notifyRootAdminsForApproval(
     tenantId: number,
@@ -2439,11 +2439,11 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param tenantId
-   * @param requesterId
-   * @param status
-   * @param approverId
-   * @param reason
+   * @param tenantId - The tenant ID
+   * @param requesterId - The requesterId parameter
+   * @param status - The status parameter
+   * @param approverId - The approverId parameter
+   * @param reason - The reason parameter
    */
   private async notifyApprovalStatus(
     tenantId: number,
@@ -2531,8 +2531,8 @@ export class TenantDeletionService {
 
   /**
    *
-   * @param queueId
-   * @param error
+   * @param queueId - The queueId parameter
+   * @param error - The error object
    */
   private async sendDeletionFailureAlert(queueId: number, error: string): Promise<void> {
     // Email an alle Root-User
@@ -2584,9 +2584,9 @@ export class TenantDeletionService {
 
   /**
    * Notify admins about emergency stop
-   * @param tenantId
-   * @param queueId
-   * @param stoppedBy
+   * @param tenantId - The tenant ID
+   * @param queueId - The queueId parameter
+   * @param stoppedBy - The stoppedBy parameter
    */
   private async notifyEmergencyStop(
     tenantId: number,
@@ -2626,7 +2626,7 @@ export class TenantDeletionService {
 
   /**
    * Perform dry-run simulation
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async performDryRun(tenantId: number): Promise<{
     tenantId: number;

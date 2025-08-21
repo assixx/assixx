@@ -46,8 +46,8 @@ interface TeamUpdateData extends Omit<ModelTeamUpdateData, 'team_lead_id'> {
 class TeamService {
   /**
    * Holt alle Team Einträge für einen Tenant
-   * @param _tenantDb
-   * @param _filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
   async getAll(_tenantDb: Pool, _filters: TeamFilters = {}): Promise<TeamData[]> {
     try {
@@ -67,8 +67,8 @@ class TeamService {
 
   /**
    * Holt einen Team Eintrag per ID
-   * @param _tenantDb
-   * @param id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
    */
   async getById(_tenantDb: Pool, id: number): Promise<TeamData | null> {
     try {
@@ -89,8 +89,8 @@ class TeamService {
 
   /**
    * Erstellt einen neuen Team Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   async create(_tenantDb: Pool, data: TeamCreateData): Promise<TeamData> {
     try {
@@ -117,9 +117,9 @@ class TeamService {
 
   /**
    * Aktualisiert einen Team Eintrag
-   * @param tenantDb
-   * @param id
-   * @param data
+   * @param tenantDb - The tenantDb parameter
+   * @param id - The resource ID
+   * @param data - The data object
    */
   async update(tenantDb: Pool, id: number, data: TeamUpdateData): Promise<TeamData | null> {
     try {
@@ -140,8 +140,8 @@ class TeamService {
 
   /**
    * Löscht einen Team Eintrag
-   * @param _tenantDb
-   * @param id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {

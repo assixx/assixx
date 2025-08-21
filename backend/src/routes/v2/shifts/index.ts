@@ -119,7 +119,7 @@ router.get(
 router.get('/templates', authenticateV2, typed.auth(shiftsController.listTemplates));
 
 /**
- * /api/v2/shifts/templates/{id}:
+ * /api/v2/shifts/templates/\{id\}:
  *   get:
  *     summary: Get template by ID
  *     tags: [Shifts v2]
@@ -179,7 +179,7 @@ router.post(
 );
 
 /**
- * /api/v2/shifts/templates/{id}:
+ * /api/v2/shifts/templates/\{id\}:
  *   put:
  *     summary: Update shift template
  *     tags: [Shifts v2]
@@ -217,7 +217,7 @@ router.put(
 );
 
 /**
- * /api/v2/shifts/templates/{id}:
+ * /api/v2/shifts/templates/\{id\}:
  *   delete:
  *     summary: Delete shift template
  *     tags: [Shifts v2]
@@ -313,7 +313,7 @@ router.post(
 );
 
 /**
- * /api/v2/shifts/swap-requests/{id}/status:
+ * /api/v2/shifts/swap-requests/\{id\}/status:
  *   put:
  *     summary: Update swap request status
  *     tags: [Shifts v2]
@@ -396,6 +396,112 @@ router.get(
   authenticateV2,
   shiftsValidation.getOvertimeReport,
   typed.auth(shiftsController.getOvertimeReport),
+);
+
+// ============= FAVORITES (MUST BE BEFORE /:id) =============
+
+/**
+ * /api/v2/shifts/favorites:
+ *   get:
+ *     summary: List user's shift planning favorites
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Favorites retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ShiftFavoriteV2'
+ */
+router.get('/favorites', authenticateV2, typed.auth(shiftsController.listFavorites));
+
+/**
+ * /api/v2/shifts/favorites:
+ *   post:
+ *     summary: Create new shift planning favorite
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - areaId
+ *               - areaName
+ *               - departmentId
+ *               - departmentName
+ *               - machineId
+ *               - machineName
+ *               - teamId
+ *               - teamName
+ *             properties:
+ *               name:
+ *                 type: string
+ *               areaId:
+ *                 type: integer
+ *               areaName:
+ *                 type: string
+ *               departmentId:
+ *                 type: integer
+ *               departmentName:
+ *                 type: string
+ *               machineId:
+ *                 type: integer
+ *               machineName:
+ *                 type: string
+ *               teamId:
+ *                 type: integer
+ *               teamName:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Favorite created successfully
+ */
+router.post(
+  '/favorites',
+  authenticateV2,
+  shiftsValidation.createFavorite,
+  typed.auth(shiftsController.createFavorite),
+);
+
+/**
+ * /api/v2/shifts/favorites/\{id\}:
+ *   delete:
+ *     summary: Delete shift planning favorite
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Favorite ID
+ *     responses:
+ *       200:
+ *         description: Favorite deleted successfully
+ *       404:
+ *         description: Favorite not found
+ */
+router.delete(
+  '/favorites/:id',
+  authenticateV2,
+  shiftsValidation.deleteFavorite,
+  typed.auth(shiftsController.deleteFavorite),
 );
 
 // ============= EXPORT (MUST BE BEFORE /:id) =============
@@ -489,8 +595,7 @@ router.get(
 router.get('/plan', authenticateV2, typed.auth(shiftsController.getShiftPlan));
 
 /**
- * @swagger
- * /api/v2/shifts/plan/{id}:
+ * /api/v2/shifts/plan/\{id\}:
  *   put:
  *     summary: Update existing shift plan
  *     tags: [Shifts v2]
@@ -548,7 +653,7 @@ router.get('/plan', authenticateV2, typed.auth(shiftsController.getShiftPlan));
 router.put('/plan/:id', authenticateV2, typed.auth(shiftsController.updateShiftPlan));
 
 /**
- * /api/v2/shifts/{id}:
+ * /api/v2/shifts/\{id\}:
  *   get:
  *     summary: Get shift by ID
  *     tags: [Shifts v2]
@@ -608,7 +713,7 @@ router.post(
 );
 
 /**
- * /api/v2/shifts/{id}:
+ * /api/v2/shifts/\{id\}:
  *   put:
  *     summary: Update shift
  *     tags: [Shifts v2]
@@ -646,7 +751,7 @@ router.put(
 );
 
 /**
- * /api/v2/shifts/{id}:
+ * /api/v2/shifts/\{id\}:
  *   delete:
  *     summary: Delete shift
  *     tags: [Shifts v2]

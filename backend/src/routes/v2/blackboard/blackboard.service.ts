@@ -87,9 +87,9 @@ export interface AttachmentData {
 export class BlackboardService {
   /**
    * List all blackboard entries visible to the user
-   * @param tenantId
-   * @param userId
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param filters - The filter criteria
    */
   async listEntries(
     tenantId: number,
@@ -130,9 +130,9 @@ export class BlackboardService {
 
   /**
    * Get a specific blackboard entry by ID
-   * @param id
-   * @param tenantId
-   * @param userId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getEntryById(id: number, tenantId: number, userId: number) {
     const entry = await Blackboard.getEntryById(id, tenantId, userId);
@@ -144,9 +144,9 @@ export class BlackboardService {
 
   /**
    * Create a new blackboard entry
-   * @param data
-   * @param tenantId
-   * @param authorId
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param authorId - The authorId parameter
    */
   async createEntry(data: BlackboardCreateData, tenantId: number, authorId: number) {
     // Validate org_id requirement
@@ -181,10 +181,10 @@ export class BlackboardService {
 
   /**
    * Update a blackboard entry
-   * @param id
-   * @param data
-   * @param tenantId
-   * @param userId
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async updateEntry(id: number, data: BlackboardUpdateData, tenantId: number, userId: number) {
     // Check if entry exists and user has access
@@ -217,9 +217,9 @@ export class BlackboardService {
 
   /**
    * Delete a blackboard entry
-   * @param id
-   * @param tenantId
-   * @param userId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async deleteEntry(id: number, tenantId: number, userId: number) {
     // Check if entry exists and user has access
@@ -238,9 +238,9 @@ export class BlackboardService {
 
   /**
    * Archive a blackboard entry
-   * @param id
-   * @param tenantId
-   * @param userId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async archiveEntry(id: number, tenantId: number, userId: number) {
     return await this.updateEntry(id, { status: 'archived' }, tenantId, userId);
@@ -248,9 +248,9 @@ export class BlackboardService {
 
   /**
    * Unarchive a blackboard entry
-   * @param id
-   * @param tenantId
-   * @param userId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async unarchiveEntry(id: number, tenantId: number, userId: number) {
     return await this.updateEntry(id, { status: 'active' }, tenantId, userId);
@@ -258,8 +258,8 @@ export class BlackboardService {
 
   /**
    * Confirm reading a blackboard entry
-   * @param entryId
-   * @param userId
+   * @param entryId - The entryId parameter
+   * @param userId - The user ID
    */
   async confirmEntry(entryId: number, userId: number) {
     const success = await Blackboard.confirmEntry(entryId, userId);
@@ -274,8 +274,8 @@ export class BlackboardService {
 
   /**
    * Get confirmation status for an entry
-   * @param entryId
-   * @param tenantId
+   * @param entryId - The entryId parameter
+   * @param tenantId - The tenant ID
    */
   async getConfirmationStatus(entryId: number, tenantId: number) {
     const users = await Blackboard.getConfirmationStatus(entryId, tenantId);
@@ -284,9 +284,9 @@ export class BlackboardService {
 
   /**
    * Get dashboard entries for a user
-   * @param tenantId
-   * @param userId
-   * @param limit
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param limit - The result limit
    */
   async getDashboardEntries(tenantId: number, userId: number, limit = 3) {
     const entries = await Blackboard.getDashboardEntries(tenantId, userId, limit);
@@ -295,7 +295,7 @@ export class BlackboardService {
 
   /**
    * Get all available tags
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getAllTags(tenantId: number) {
     const tags = await Blackboard.getAllTags(tenantId);
@@ -304,7 +304,7 @@ export class BlackboardService {
 
   /**
    * Get tags for a specific entry
-   * @param entryId
+   * @param entryId - The entryId parameter
    */
   async getEntryTags(entryId: number) {
     const tags = await Blackboard.getEntryTags(entryId);
@@ -314,8 +314,8 @@ export class BlackboardService {
 
   /**
    * Add attachment to entry
-   * @param entryId
-   * @param attachment
+   * @param entryId - The entryId parameter
+   * @param attachment - The attachment parameter
    */
   async addAttachment(entryId: number, attachment: AttachmentData) {
     const attachmentId = await Blackboard.addAttachment(entryId, {
@@ -332,7 +332,7 @@ export class BlackboardService {
 
   /**
    * Get attachments for an entry
-   * @param entryId
+   * @param entryId - The entryId parameter
    */
   async getEntryAttachments(entryId: number) {
     const attachments = await Blackboard.getEntryAttachments(entryId);
@@ -341,8 +341,8 @@ export class BlackboardService {
 
   /**
    * Get single attachment
-   * @param attachmentId
-   * @param tenantId
+   * @param attachmentId - The attachmentId parameter
+   * @param tenantId - The tenant ID
    */
   async getAttachmentById(attachmentId: number, tenantId: number) {
     const attachment = await Blackboard.getAttachmentById(attachmentId, tenantId);
@@ -354,8 +354,8 @@ export class BlackboardService {
 
   /**
    * Delete attachment
-   * @param attachmentId
-   * @param tenantId
+   * @param attachmentId - The attachmentId parameter
+   * @param tenantId - The tenant ID
    */
   async deleteAttachment(attachmentId: number, tenantId: number) {
     const success = await Blackboard.deleteAttachment(attachmentId, tenantId);
@@ -367,7 +367,7 @@ export class BlackboardService {
 
   /**
    * Transform database entry to API format
-   * @param entry
+   * @param entry - The entry parameter
    */
   private transformEntry(entry: DbBlackboardEntry): BlackboardEntry {
     const transformed = dbToApi(entry);

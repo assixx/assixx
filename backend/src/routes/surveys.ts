@@ -9,7 +9,7 @@
 import express, { Router } from 'express';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import db, { execute } from '../database';
+import pool from '../config/database';
 import { checkFeature } from '../middleware/features';
 import { rateLimiter } from '../middleware/rateLimiter';
 import { security } from '../middleware/security';
@@ -21,6 +21,7 @@ import {
 } from '../middleware/validators';
 import Survey from '../models/survey';
 import { errorResponse, successResponse } from '../types/response.types';
+import { execute } from '../utils/db';
 import { getErrorStack } from '../utils/errorHandler';
 import { typed } from '../utils/routeHandlers';
 
@@ -568,7 +569,7 @@ router.post(
       }
 
       // Create response
-      const connection = await db.getConnection();
+      const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
 

@@ -86,6 +86,20 @@ interface SelectedContext {
   teamLeaderId: number | null;
 }
 
+interface ShiftFavorite {
+  id: string;
+  name: string; // Team name for display
+  areaId: number;
+  areaName: string;
+  departmentId: number;
+  departmentName: string;
+  machineId: number;
+  machineName: string;
+  teamId: number;
+  teamName: string;
+  createdAt: string;
+}
+
 interface ShiftsWindow extends Window {
   selectOption: (type: string, value: string, text: string) => void;
 }
@@ -165,6 +179,7 @@ class ShiftPlanningSystem {
   private teams: Team[];
   private teamLeaders: TeamLeader[];
   private selectedContext: SelectedContext;
+  private favorites: ShiftFavorite[]; // Store shift planning favorites
 
   constructor() {
     // Initialize API client and check feature flag
@@ -197,6 +212,20 @@ class ShiftPlanningSystem {
     };
     this.currentPlanId = null;
     this.isEditMode = false;
+
+    // Load favorites from API
+    this.favorites = [];
+    void (async () => {
+      try {
+        const favs = await this.loadFavorites();
+        this.favorites = favs;
+        this.renderFavorites();
+        // Check button visibility after favorites are loaded
+        this.updateAddFavoriteButton();
+      } catch (error: unknown) {
+        console.error('Failed to load favorites:', error);
+      }
+    })();
 
     // weeklyNotes removed - notes are part of shifts in v2
 
@@ -463,6 +492,9 @@ class ShiftPlanningSystem {
       // Highlight employee's own shifts
       this.highlightEmployeeShifts();
 
+      // Render favorites on init
+      this.renderFavorites();
+
       console.info('[SHIFTS] Shift Planning System initialized successfully');
     } catch (error) {
       console.error('[SHIFTS ERROR] Failed to initialize:', error);
@@ -557,11 +589,47 @@ class ShiftPlanningSystem {
       console.error('[SHIFTS ERROR] Next week button not found!');
     }
 
+    // Detect drag attempt on non-draggable items
+    let mouseDownTime = 0;
+    document.addEventListener('mousedown', (e) => {
+      const target = e.target as HTMLElement;
+      const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
+      if (employeeItem && employeeItem.getAttribute('draggable') === 'false') {
+        mouseDownTime = Date.now();
+
+        // Set up temporary mousemove listener to detect drag attempt
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+          // If mouse moved more than 5px, it's a drag attempt
+          const distance = Math.sqrt(
+            Math.pow(moveEvent.clientX - e.clientX, 2) + Math.pow(moveEvent.clientY - e.clientY, 2),
+          );
+
+          if (distance > 5) {
+            // User is trying to drag a locked item
+            if (this.currentPlanId !== null && !this.isEditMode) {
+              showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
+            }
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+          }
+        };
+
+        const handleMouseUp = () => {
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+      }
+    });
+
     // Employee selection (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
-      if (employeeItem && !this.isDragging) {
+      if (employeeItem && !this.isDragging && Date.now() - mouseDownTime < 200) {
+        // Only process click if it wasn't a drag attempt (quick click < 200ms)
         this.selectEmployee(employeeItem as HTMLElement);
       }
     });
@@ -627,6 +695,11 @@ class ShiftPlanningSystem {
         if (employeeItem.getAttribute('draggable') === 'false') {
           console.info('[SHIFTS DEBUG] Employee not draggable, preventing drag');
           e.preventDefault();
+
+          // Show alert if trying to drag in read-only mode
+          if (this.currentPlanId !== null && !this.isEditMode) {
+            showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
+          }
           return;
         }
 
@@ -1221,6 +1294,9 @@ class ShiftPlanningSystem {
       // Hide planning area if no team selected
       this.togglePlanningAreaVisibility();
     }
+
+    // Update favorites button visibility
+    this.updateAddFavoriteButton();
   }
 
   async loadTeamsForMachine(machineId: number): Promise<void> {
@@ -1788,9 +1864,11 @@ class ShiftPlanningSystem {
       item.className = 'employee-item';
       item.dataset.employeeId = employee.id.toString();
 
-      // Only available employees can be dragged
+      // Only available employees can be dragged AND only in edit mode or when no plan exists
       const isDraggable =
-        this.isAdmin && (employee.availability_status === 'available' || employee.availability_status === undefined);
+        this.isAdmin &&
+        (employee.availability_status === 'available' || employee.availability_status === undefined) &&
+        (this.currentPlanId === null || this.isEditMode);
       item.setAttribute('draggable', isDraggable.toString());
 
       console.info(
@@ -1971,6 +2049,12 @@ class ShiftPlanningSystem {
   selectEmployee(employeeItem: HTMLElement): void {
     if (!this.isAdmin) return;
 
+    // Check if in edit mode when a plan exists
+    if (this.currentPlanId !== null && !this.isEditMode) {
+      showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
+      return;
+    }
+
     // Remove previous selection
     document.querySelectorAll(CSS_SELECTORS.EMPLOYEE_ITEM).forEach((item) => {
       item.classList.remove('selected');
@@ -1985,6 +2069,12 @@ class ShiftPlanningSystem {
 
   assignEmployeeToShift(shiftCell: HTMLElement): void {
     if (!this.isAdmin || this.selectedEmployee === null) return;
+
+    // Check if in edit mode when a plan exists
+    if (this.currentPlanId !== null && !this.isEditMode) {
+      showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
+      return;
+    }
 
     // Let assignShift handle the date calculation
     this.assignShift(shiftCell, this.selectedEmployee.id);
@@ -3230,6 +3320,339 @@ class ShiftPlanningSystem {
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  // ============== FAVORITES FUNCTIONALITY ==============
+
+  /**
+   * Load favorites from API
+   */
+  private async loadFavorites(): Promise<ShiftFavorite[]> {
+    try {
+      const token = localStorage.getItem('token');
+      if (token === null || token === '') {
+        throw new Error('No authentication token');
+      }
+
+      const response = await fetch('/api/v2/shifts/favorites', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load favorites');
+      }
+
+      const result = (await response.json()) as { data: ShiftFavorite[] };
+      return result.data;
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Refresh favorites from API
+   */
+  private async refreshFavorites(): Promise<void> {
+    try {
+      this.favorites = await this.loadFavorites();
+      this.renderFavorites();
+    } catch (error) {
+      console.error('Error refreshing favorites:', error);
+    }
+  }
+
+  /**
+   * Add current context as favorite
+   */
+  private async addToFavorites(): Promise<void> {
+    // Check if all required fields are selected
+    if (
+      this.selectedContext.areaId === null ||
+      this.selectedContext.departmentId === null ||
+      this.selectedContext.machineId === null ||
+      this.selectedContext.teamId === null
+    ) {
+      showErrorAlert('Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)');
+      return;
+    }
+
+    // Get names for display
+    const area = this.areas.find((a) => a.id === this.selectedContext.areaId);
+    const department = this.departments.find((d) => d.id === this.selectedContext.departmentId);
+    const machine = this.machines.find((m) => m.id === this.selectedContext.machineId);
+    const team = this.teams.find((t) => t.id === this.selectedContext.teamId);
+
+    if (!area || !department || !machine || !team) {
+      showErrorAlert('Fehler beim Speichern des Favoriten');
+      return;
+    }
+
+    // Double-check if this combination already exists (should not happen due to button hiding)
+    if (this.isCombinationFavorited()) {
+      showInfo('Diese Kombination ist bereits als Favorit gespeichert');
+      return;
+    }
+
+    // Create new favorite via API
+    try {
+      const token = localStorage.getItem('token');
+      if (token === null || token === '') {
+        showErrorAlert('Nicht authentifiziert');
+        return;
+      }
+
+      const response = await fetch('/api/v2/shifts/favorites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: team.name,
+          areaId: this.selectedContext.areaId,
+          areaName: area.name,
+          departmentId: this.selectedContext.departmentId,
+          departmentName: department.name,
+          machineId: this.selectedContext.machineId,
+          machineName: machine.name,
+          teamId: this.selectedContext.teamId,
+          teamName: team.name,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          showInfo('Ein Favorit mit diesem Namen existiert bereits');
+        } else {
+          const error = (await response.json()) as { error?: { message?: string } };
+          showErrorAlert(error.error?.message ?? 'Fehler beim Speichern des Favoriten');
+        }
+        return;
+      }
+
+      // Refresh favorites list
+      await this.refreshFavorites();
+      showSuccessAlert(`Favorit "${team.name}" wurde gespeichert`);
+
+      // Update button visibility since we added a new favorite
+      this.updateAddFavoriteButton();
+    } catch (error) {
+      console.error('Error saving favorite:', error);
+      showErrorAlert('Fehler beim Speichern des Favoriten');
+    }
+  }
+
+  /**
+   * Remove favorite by ID
+   */
+  private async removeFavorite(favoriteId: string | number): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (token === null || token === '') {
+        showErrorAlert('Nicht authentifiziert');
+        return;
+      }
+
+      const response = await fetch(`/api/v2/shifts/favorites/${favoriteId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = (await response.json()) as { error?: { message?: string } };
+        showErrorAlert(error.error?.message ?? 'Fehler beim Löschen des Favoriten');
+        return;
+      }
+
+      // Refresh favorites list
+      await this.refreshFavorites();
+      showSuccessAlert('Favorit wurde gelöscht');
+
+      // Update button visibility since we removed a favorite
+      this.updateAddFavoriteButton();
+    } catch (error) {
+      console.error('Error deleting favorite:', error);
+      showErrorAlert('Fehler beim Löschen des Favoriten');
+    }
+  }
+
+  /**
+   * Load favorite and apply its filters
+   */
+  private loadFavorite(favorite: ShiftFavorite): void {
+    // Set all context values
+    this.selectedContext.areaId = favorite.areaId;
+    this.selectedContext.departmentId = favorite.departmentId;
+    this.selectedContext.machineId = favorite.machineId;
+    this.selectedContext.teamId = favorite.teamId;
+
+    // Update UI displays
+    const areaDisplay = document.querySelector('#areaDisplay span');
+    const departmentDisplay = document.querySelector('#departmentDisplay span');
+    const machineDisplay = document.querySelector('#machineDisplay span');
+    const teamDisplay = document.querySelector('#teamDisplay span');
+
+    if (areaDisplay) areaDisplay.textContent = favorite.areaName;
+    if (departmentDisplay) departmentDisplay.textContent = favorite.departmentName;
+    if (machineDisplay) machineDisplay.textContent = favorite.machineName;
+    if (teamDisplay) teamDisplay.textContent = favorite.teamName;
+
+    // Set hidden inputs
+    const areaSelect = $$id<HTMLInputElement>('areaSelect');
+    const departmentSelect = $$id<HTMLInputElement>('departmentSelect');
+    const machineSelect = $$id<HTMLInputElement>('machineSelect');
+    const teamSelect = $$id<HTMLInputElement>('teamSelect');
+
+    if (areaSelect) areaSelect.value = String(favorite.areaId);
+    if (departmentSelect) departmentSelect.value = String(favorite.departmentId);
+    if (machineSelect) machineSelect.value = String(favorite.machineId);
+    if (teamSelect) teamSelect.value = String(favorite.teamId);
+
+    // Trigger team selection logic
+    void this.onTeamSelected(favorite.teamId);
+
+    // Update button visibility (should hide since we loaded a favorited combination)
+    this.updateAddFavoriteButton();
+
+    showSuccessAlert(`Favorit "${favorite.name}" wurde geladen`);
+  }
+
+  /**
+   * Render favorites UI
+   */
+  private renderFavorites(): void {
+    // Check if favorites container exists, if not create it
+    let favoritesContainer = document.querySelector('#favoritesContainer');
+
+    if (!favoritesContainer) {
+      // Create favorites container above the filter row
+      const filterRow = document.querySelector('.shift-info-row');
+      if (!filterRow) return;
+
+      const container = document.createElement('div');
+      container.id = 'favoritesContainer';
+      container.className = 'favorites-container';
+      container.innerHTML = `
+        <div class="favorites-header">
+          <span class="favorites-label">⭐ Favoriten:</span>
+          <div class="favorites-list" id="favoritesList"></div>
+        </div>
+      `;
+      filterRow.parentElement?.insertBefore(container, filterRow);
+      favoritesContainer = container;
+    }
+
+    // Render favorite buttons
+    const favoritesList = document.querySelector('#favoritesList');
+    if (!favoritesList) return;
+
+    // Clear existing content safely
+    while (favoritesList.firstChild) {
+      favoritesList.firstChild.remove();
+    }
+
+    // Create buttons using DOM methods (safe approach)
+    this.favorites.forEach((fav) => {
+      const button = document.createElement('button');
+      button.className = 'favorite-btn';
+      button.dataset.favoriteId = fav.id;
+      button.title = `${fav.areaName} → ${fav.departmentName} → ${fav.machineName} → ${fav.teamName}`;
+
+      // Add team name text
+      const textNode = document.createTextNode(fav.teamName);
+      button.append(textNode);
+
+      // Add remove button
+      const removeBtn = document.createElement('span');
+      removeBtn.className = 'remove-favorite';
+      removeBtn.dataset.favoriteId = fav.id;
+      removeBtn.textContent = '×';
+      button.append(removeBtn);
+
+      // Add click event listener
+      button.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        // Check if remove button was clicked
+        if (target.classList.contains('remove-favorite')) {
+          e.stopPropagation();
+          const favId = target.dataset.favoriteId;
+          if (favId !== undefined && favId !== '') void this.removeFavorite(favId);
+        } else {
+          // Load the favorite
+          const favId = button.dataset.favoriteId;
+          const favorite = this.favorites.find((f) => f.id === favId);
+          if (favorite) this.loadFavorite(favorite);
+        }
+      });
+
+      favoritesList.append(button);
+    });
+
+    // Show/hide add to favorites button based on team selection
+    this.updateAddFavoriteButton();
+  }
+
+  /**
+   * Check if current filter combination is already favorited
+   */
+  private isCombinationFavorited(): boolean {
+    if (
+      this.selectedContext.areaId === null ||
+      this.selectedContext.departmentId === null ||
+      this.selectedContext.machineId === null ||
+      this.selectedContext.teamId === null
+    ) {
+      return false;
+    }
+
+    return this.favorites.some(
+      (fav) =>
+        fav.areaId === this.selectedContext.areaId &&
+        fav.departmentId === this.selectedContext.departmentId &&
+        fav.machineId === this.selectedContext.machineId &&
+        fav.teamId === this.selectedContext.teamId,
+    );
+  }
+
+  /**
+   * Update visibility of "Add to Favorites" button
+   */
+  private updateAddFavoriteButton(): void {
+    let addBtn = document.querySelector('#addToFavoritesBtn');
+
+    // Check if all filters are selected AND combination is not already favorited
+    const shouldShowButton =
+      this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0 && !this.isCombinationFavorited();
+
+    if (shouldShowButton) {
+      // Show button only if combination is not favorited
+      if (!addBtn) {
+        // Create button if it doesn't exist
+        const filterRow = document.querySelector('.shift-info-row');
+        if (!filterRow) return;
+
+        const btn = document.createElement('button');
+        btn.id = 'addToFavoritesBtn';
+        btn.className = 'btn btn-success add-favorite-btn';
+        btn.innerHTML = '⭐ Zu Favoriten hinzufügen';
+        btn.onclick = () => {
+          void this.addToFavorites();
+        };
+
+        // Insert after the filter row
+        filterRow.parentElement?.insertBefore(btn, filterRow.nextSibling);
+      }
+    } else {
+      // Hide button if no team selected OR combination already favorited
+      if (addBtn) {
+        addBtn.remove();
+      }
+    }
   }
 }
 

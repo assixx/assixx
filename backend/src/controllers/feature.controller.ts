@@ -81,8 +81,8 @@ class FeatureController {
   /**
    * Holt alle Feature Einträge
    * GET /api/feature
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getAll(req: FeatureQueryRequest, res: Response): void {
     try {
@@ -114,8 +114,8 @@ class FeatureController {
   /**
    * Holt einen Feature Eintrag per ID
    * GET /api/feature/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getById(req: FeatureGetRequest, res: Response): void {
     try {
@@ -148,8 +148,8 @@ class FeatureController {
   /**
    * Erstellt einen neuen Feature Eintrag
    * POST /api/feature
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   create(req: FeatureCreateRequest, res: Response): void {
     try {
@@ -178,8 +178,8 @@ class FeatureController {
   /**
    * Aktualisiert einen Feature Eintrag
    * PUT /api/feature/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   update(req: FeatureUpdateRequest, res: Response): void {
     try {
@@ -208,8 +208,8 @@ class FeatureController {
   /**
    * Löscht einen Feature Eintrag
    * DELETE /api/feature/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   delete(req: FeatureGetRequest, res: Response): void {
     try {

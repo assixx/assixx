@@ -64,11 +64,11 @@ export interface CalendarEventUpdateData {
 export class CalendarService {
   /**
    * Get paginated list of calendar events with filter optimization
-   * @param tenantId
-   * @param userId
-   * @param userDepartmentId
-   * @param userTeamId
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userDepartmentId - The userDepartmentId parameter
+   * @param userTeamId - The userTeamId parameter
+   * @param filters - The filter criteria
    */
   async listEvents(
     tenantId: number,
@@ -140,10 +140,10 @@ export class CalendarService {
 
   /**
    * Get single event by ID
-   * @param eventId
-   * @param tenantId
-   * @param userId
-   * @param _userDepartmentId
+   * @param eventId - The eventId parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param _userDepartmentId - The _userDepartmentId parameter
    */
   async getEventById(
     eventId: number,
@@ -184,12 +184,12 @@ export class CalendarService {
 
   /**
    * Create new calendar event with permission checks
-   * @param eventData
-   * @param tenantId
-   * @param userId
-   * @param userRole
-   * @param userDepartmentId
-   * @param userTeamId
+   * @param eventData - The eventData parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
+   * @param userDepartmentId - The userDepartmentId parameter
+   * @param userTeamId - The userTeamId parameter
    */
   async createEvent(
     eventData: CalendarEventData,
@@ -352,11 +352,11 @@ export class CalendarService {
 
   /**
    * Update calendar event
-   * @param eventId
-   * @param updateData
-   * @param tenantId
-   * @param userId
-   * @param userRole
+   * @param eventId - The eventId parameter
+   * @param updateData - The updateData parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
    */
   async updateEvent(
     eventId: number,
@@ -429,10 +429,10 @@ export class CalendarService {
 
   /**
    * Delete calendar event
-   * @param eventId
-   * @param tenantId
-   * @param userId
-   * @param userRole
+   * @param eventId - The eventId parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
    */
   async deleteEvent(eventId: number, tenantId: number, userId: number, userRole: string) {
     // First check if event exists
@@ -469,10 +469,10 @@ export class CalendarService {
 
   /**
    * Update attendee response
-   * @param eventId
-   * @param userId
-   * @param response
-   * @param tenantId
+   * @param eventId - The eventId parameter
+   * @param userId - The user ID
+   * @param response - The response parameter
+   * @param tenantId - The tenant ID
    */
   async updateAttendeeResponse(
     eventId: number,
@@ -503,10 +503,10 @@ export class CalendarService {
 
   /**
    * Export events
-   * @param tenantId
-   * @param userId
-   * @param _userDepartmentId
-   * @param format
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param _userDepartmentId - The _userDepartmentId parameter
+   * @param format - The format parameter
    */
   async exportEvents(
     tenantId: number,
@@ -535,7 +535,7 @@ export class CalendarService {
 
   /**
    * Generate CSV export
-   * @param events
+   * @param events - The events parameter
    */
   private generateCSV(events: CalendarEvent[]): string {
     const headers = ['Title', 'Description', 'Location', 'Start', 'End', 'All Day', 'Status'];
@@ -556,8 +556,8 @@ export class CalendarService {
 
   /**
    * Get unread events (events requiring response)
-   * @param tenantId
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getUnreadEvents(tenantId: number, userId: number) {
     try {
@@ -612,7 +612,7 @@ export class CalendarService {
 
   /**
    * Generate ICS export
-   * @param events
+   * @param events - The events parameter
    */
   private generateICS(events: CalendarEvent[]): string {
     const icsEvents = events

@@ -5,7 +5,7 @@ import type { Pool, PoolConnection, RowDataPacket } from 'mysql2/promise';
 
 /**
  * Validates international phone number format
- * @param phone Phone number to validate
+ * @param phone - Phone number to validate
  * @returns true if valid, false otherwise
  */
 export function isValidPhoneNumber(phone: string | null | undefined): boolean {
@@ -18,7 +18,7 @@ export function isValidPhoneNumber(phone: string | null | undefined): boolean {
 
 /**
  * Formats a phone number by removing all spaces and special characters
- * @param phone Phone number to format
+ * @param phone - Phone number to format
  * @returns Formatted phone number
  */
 export function formatPhoneNumber(phone: string | null | undefined): string {
@@ -53,9 +53,9 @@ export const COUNTRY_CODES = {
 
 /**
  * Checks if a phone number is unique in the database
- * @param phone Phone number to check
- * @param userId User ID to exclude from check (for updates)
- * @param connection Database connection
+ * @param phone - Phone number to check
+ * @param userId - User ID to exclude from check (for updates)
+ * @param connection - Database connection
  * @returns true if unique, false if already exists
  */
 export async function isPhoneUnique(

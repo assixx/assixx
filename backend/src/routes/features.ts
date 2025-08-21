@@ -6,12 +6,12 @@ import express, { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import { RowDataPacket } from 'mysql2';
 
-import { execute } from '../database';
 import { checkFeature } from '../middleware/features';
 import { security } from '../middleware/security';
 import { createValidation } from '../middleware/validation';
 import Feature from '../models/feature';
 import { errorResponse, successResponse } from '../types/response.types';
+import { execute } from '../utils/db';
 import { getErrorMessage } from '../utils/errorHandler';
 import { logger } from '../utils/logger';
 import { typed } from '../utils/routeHandlers';

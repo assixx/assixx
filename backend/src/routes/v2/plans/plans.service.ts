@@ -1,6 +1,6 @@
-import { executeQuery as query } from '../../../config/database';
 import PlanModel from '../../../models/plan';
 import RootLog from '../../../models/rootLog';
+import { query } from '../../../utils/db';
 import {
   CostCalculation,
   CurrentPlanResponse,
@@ -29,7 +29,7 @@ type ModelDbTenantPlan = DbTenantPlan & { expires_at?: Date | null };
 export class PlansService {
   /**
    * Convert DB plan to API format (snake_case to camelCase)
-   * @param dbPlan
+   * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiPlan(dbPlan: DbPlan): Plan {
     return {
@@ -50,7 +50,7 @@ export class PlansService {
 
   /**
    * Convert DB plan feature to API format
-   * @param dbFeature
+   * @param dbFeature - The dbFeature parameter
    */
   private static dbToApiFeature(dbFeature: DbPlanFeature): PlanFeature {
     return {
@@ -64,7 +64,7 @@ export class PlansService {
 
   /**
    * Convert DB tenant plan to API format
-   * @param dbPlan
+   * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiTenantPlan(dbPlan: DbTenantPlan): TenantPlan {
     return {
@@ -83,7 +83,7 @@ export class PlansService {
 
   /**
    * Convert DB addon to API format
-   * @param dbAddon
+   * @param dbAddon - The dbAddon parameter
    */
   private static dbToApiAddon(dbAddon: DbTenantAddon): TenantAddon {
     return {
@@ -99,7 +99,7 @@ export class PlansService {
 
   /**
    * Get all available plans
-   * @param includeInactive
+   * @param includeInactive - The includeInactive parameter
    */
   static async getAllPlans(includeInactive = false): Promise<PlanWithFeatures[]> {
     // Get all plans based on includeInactive filter
@@ -122,7 +122,7 @@ export class PlansService {
 
   /**
    * Get plan by ID
-   * @param planId
+   * @param planId - The planId parameter
    */
   static async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
     const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = ?', [planId]);
@@ -145,7 +145,7 @@ export class PlansService {
 
   /**
    * Get current plan for tenant
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async getCurrentPlan(tenantId: number): Promise<CurrentPlanResponse | null> {
     const dbTenantPlan = await PlanModel.getTenantPlan(tenantId);
@@ -189,10 +189,10 @@ export class PlansService {
 
   /**
    * Upgrade/downgrade plan
-   * @param tenantId
-   * @param newPlanCode
-   * @param effectiveDate
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param newPlanCode - The newPlanCode parameter
+   * @param effectiveDate - The effectiveDate parameter
+   * @param userId - The user ID
    */
   static async upgradePlan(
     tenantId: number,
@@ -246,7 +246,7 @@ export class PlansService {
 
   /**
    * Get plan features
-   * @param planId
+   * @param planId - The planId parameter
    */
   static async getPlanFeatures(planId: number): Promise<PlanFeature[]> {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
@@ -255,7 +255,7 @@ export class PlansService {
 
   /**
    * Get tenant addons (simple counts)
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async getTenantAddons(tenantId: number): Promise<TenantAddons> {
     const [dbAddons] = await query<DbAddonResult[]>(
@@ -285,7 +285,7 @@ export class PlansService {
 
   /**
    * Get tenant addon details (full records)
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async getTenantAddonDetails(tenantId: number): Promise<TenantAddon[]> {
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
@@ -294,9 +294,9 @@ export class PlansService {
 
   /**
    * Update tenant addons
-   * @param tenantId
-   * @param addons
-   * @param userId
+   * @param tenantId - The tenant ID
+   * @param addons - The addons parameter
+   * @param userId - The user ID
    */
   static async updateAddons(
     tenantId: number,
@@ -332,7 +332,7 @@ export class PlansService {
 
   /**
    * Calculate tenant costs
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   static async calculateCosts(tenantId: number): Promise<CostCalculation> {
     const costs = await PlanModel.calculateTenantCost(tenantId);

@@ -17,8 +17,8 @@ import { AddDepartmentsRequest, CreateGroupRequest, UpdateGroupRequest } from '.
 export class DepartmentGroupsController {
   /**
    * Get all department groups with hierarchy
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getGroups(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -42,8 +42,8 @@ export class DepartmentGroupsController {
 
   /**
    * Get a single group by ID
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getGroupById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -78,8 +78,8 @@ export class DepartmentGroupsController {
 
   /**
    * Create a new department group
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async createGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -149,8 +149,8 @@ export class DepartmentGroupsController {
 
   /**
    * Update a department group
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async updateGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -219,8 +219,8 @@ export class DepartmentGroupsController {
 
   /**
    * Delete a department group
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteGroup(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -284,8 +284,8 @@ export class DepartmentGroupsController {
 
   /**
    * Add departments to a group
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async addDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -355,8 +355,8 @@ export class DepartmentGroupsController {
 
   /**
    * Remove a department from a group
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async removeDepartment(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Check if user is root
@@ -427,8 +427,8 @@ export class DepartmentGroupsController {
 
   /**
    * Get departments in a group
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getGroupDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
     // Validate request

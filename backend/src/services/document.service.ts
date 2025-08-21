@@ -119,7 +119,7 @@ class DocumentService {
 
   /**
    * Get documents with filters
-   * @param options
+   * @param options - The options object
    */
   async getDocuments(options: GetDocumentsOptions): Promise<DocumentsResponse> {
     try {
@@ -225,8 +225,8 @@ class DocumentService {
 
   /**
    * Get document by ID
-   * @param documentId
-   * @param _tenantId
+   * @param documentId - The documentId parameter
+   * @param _tenantId - The _tenantId parameter
    */
   async getDocumentById(documentId: number, _tenantId: number): Promise<DocumentData | null> {
     try {
@@ -259,7 +259,7 @@ class DocumentService {
 
   /**
    * Create new document record
-   * @param documentData
+   * @param documentData - The documentData parameter
    */
   async createDocument(documentData: ServiceDocumentCreateData): Promise<DocumentData | null> {
     try {
@@ -287,9 +287,9 @@ class DocumentService {
 
   /**
    * Update document metadata
-   * @param documentId
-   * @param updateData
-   * @param tenant_id
+   * @param documentId - The documentId parameter
+   * @param updateData - The updateData parameter
+   * @param tenant_id - The tenant_id parameter
    */
   async updateDocument(
     documentId: number,
@@ -318,8 +318,8 @@ class DocumentService {
 
   /**
    * Delete document
-   * @param documentId
-   * @param tenant_id
+   * @param documentId - The documentId parameter
+   * @param tenant_id - The tenant_id parameter
    */
   async deleteDocument(documentId: number, tenant_id: number): Promise<boolean> {
     try {
@@ -348,7 +348,7 @@ class DocumentService {
 
   /**
    * Get full path for document file
-   * @param filename
+   * @param filename - The filename parameter
    */
   async getDocumentPath(filename: string): Promise<string> {
     const filePath = path.join(this.uploadDir, filename);
@@ -364,8 +364,8 @@ class DocumentService {
 
   /**
    * Get documents by user
-   * @param userId
-   * @param _tenantId
+   * @param userId - The user ID
+   * @param _tenantId - The _tenantId parameter
    */
   async getDocumentsByUser(userId: number, _tenantId: number): Promise<DocumentData[]> {
     try {
@@ -400,7 +400,7 @@ class DocumentService {
 
   /**
    * Get document statistics
-   * @param _tenantId
+   * @param _tenantId - The _tenantId parameter
    */
   getDocumentStats(_tenantId: number): DocumentStats {
     try {
@@ -428,9 +428,9 @@ class DocumentService {
 
   /**
    * Mark document as read by user
-   * @param documentId
-   * @param userId
-   * @param tenant_id
+   * @param documentId - The documentId parameter
+   * @param userId - The user ID
+   * @param tenant_id - The tenant_id parameter
    */
   async markDocumentAsRead(
     documentId: number,

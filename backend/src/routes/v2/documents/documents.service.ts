@@ -15,10 +15,10 @@ import { logger } from '../../../utils/logger';
 export class ServiceError extends Error {
   /**
    *
-   * @param code
-   * @param message
-   * @param statusCode
-   * @param details
+   * @param code - The code parameter
+   * @param message - The message parameter
+   * @param statusCode - The statusCode parameter
+   * @param details - The details parameter
    */
   constructor(
     public code: string,
@@ -79,9 +79,9 @@ export interface DocumentUpdateInput {
 export class DocumentsService {
   /**
    * List documents with filters
-   * @param userId
-   * @param tenantId
-   * @param filters
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param filters - The filter criteria
    */
   async listDocuments(userId: number, tenantId: number, filters?: DocumentFilters) {
     try {
@@ -175,9 +175,9 @@ export class DocumentsService {
 
   /**
    * Get document by ID
-   * @param id
-   * @param userId
-   * @param tenantId
+   * @param id - The resource ID
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async getDocumentById(id: number, userId: number, tenantId: number) {
     try {
@@ -238,9 +238,9 @@ export class DocumentsService {
 
   /**
    * Create a new document
-   * @param data
-   * @param createdBy
-   * @param tenantId
+   * @param data - The data object
+   * @param createdBy - The createdBy parameter
+   * @param tenantId - The tenant ID
    */
   async createDocument(data: DocumentCreateInput, createdBy: number, tenantId: number) {
     try {
@@ -289,10 +289,10 @@ export class DocumentsService {
 
   /**
    * Update a document
-   * @param id
-   * @param data
-   * @param userId
-   * @param tenantId
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async updateDocument(id: number, data: DocumentUpdateInput, userId: number, tenantId: number) {
     try {
@@ -346,9 +346,9 @@ export class DocumentsService {
 
   /**
    * Delete a document
-   * @param id
-   * @param userId
-   * @param tenantId
+   * @param id - The resource ID
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async deleteDocument(id: number, userId: number, tenantId: number) {
     try {
@@ -384,10 +384,10 @@ export class DocumentsService {
 
   /**
    * Archive/Unarchive a document
-   * @param id
-   * @param archive
-   * @param userId
-   * @param tenantId
+   * @param id - The resource ID
+   * @param archive - The archive parameter
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async archiveDocument(id: number, archive: boolean, userId: number, tenantId: number) {
     try {
@@ -429,9 +429,9 @@ export class DocumentsService {
 
   /**
    * Get document content for download/preview
-   * @param id
-   * @param userId
-   * @param tenantId
+   * @param id - The resource ID
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async getDocumentContent(id: number, userId: number, tenantId: number) {
     try {
@@ -468,8 +468,8 @@ export class DocumentsService {
 
   /**
    * Get document statistics
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async getDocumentStats(userId: number, tenantId: number) {
     try {
@@ -503,9 +503,9 @@ export class DocumentsService {
 
   /**
    * Check if user has access to a document
-   * @param document
-   * @param userId
-   * @param tenantId
+   * @param document - The document parameter
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   private async checkDocumentAccess(
     document: DbDocument,
@@ -544,8 +544,8 @@ export class DocumentsService {
 
   /**
    * Validate recipient based on type
-   * @param data
-   * @param tenantId
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   private async validateRecipient(data: DocumentCreateInput, tenantId: number) {
     switch (data.recipientType) {
@@ -597,7 +597,7 @@ export class DocumentsService {
 
   /**
    * Check if file type is allowed
-   * @param mimeType
+   * @param mimeType - The mimeType parameter
    */
   private isAllowedFileType(mimeType: string): boolean {
     const allowedTypes = ['application/pdf'];

@@ -53,10 +53,10 @@ interface BlackboardUpdateData {
 class BlackboardService {
   /**
    * Holt alle Blackboard Einträge für einen Tenant
-   * @param _tenantDb
-   * @param filters
-   * @param tenantId
-   * @param userId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param filters - The filter criteria
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getAll(
     _tenantDb: Pool,
@@ -77,10 +77,10 @@ class BlackboardService {
 
   /**
    * Holt einen Blackboard Eintrag per ID
-   * @param _tenantDb
-   * @param id
-   * @param tenantId
-   * @param userId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
   async getById(
     _tenantDb: Pool,
@@ -98,8 +98,8 @@ class BlackboardService {
 
   /**
    * Erstellt einen neuen Blackboard Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   async create(_tenantDb: Pool, data: BlackboardCreateData): Promise<BlackboardEntry> {
     try {
@@ -134,10 +134,10 @@ class BlackboardService {
 
   /**
    * Aktualisiert einen Blackboard Eintrag
-   * @param _tenantDb
-   * @param id
-   * @param data
-   * @param tenantId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async update(
     _tenantDb: Pool,
@@ -169,9 +169,9 @@ class BlackboardService {
 
   /**
    * Löscht einen Blackboard Eintrag
-   * @param _tenantDb
-   * @param id
-   * @param tenantId
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async delete(_tenantDb: Pool, id: number, tenantId: number): Promise<boolean> {
     try {

@@ -131,13 +131,13 @@ router.get(
       console.info('[DEBUG] Plans route - starting');
 
       // Direct database query to bypass the issue
-      const { execute } = await import('../database');
-      const query = `
+      const { execute } = await import('../utils/db.js');
+      const sql = `
       SELECT * FROM plans
       WHERE is_active = true
       ORDER BY sort_order ASC
     `;
-      const [plans] = await execute<RowDataPacket[]>(query);
+      const [plans] = await execute<RowDataPacket[]>(sql);
       console.info('[DEBUG] Plans fetched directly:', plans);
 
       // Add feature information to each plan

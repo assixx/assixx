@@ -4,9 +4,9 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import { executeQuery } from '../../../database.js';
 import RootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
+import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export type SettingType = 'string' | 'number' | 'boolean' | 'json';
@@ -36,8 +36,8 @@ interface SettingFilters {
 
 /**
  * Parse setting value based on type
- * @param value
- * @param type
+ * @param value - The value parameter
+ * @param type - The type parameter
  */
 function parseSettingValue(
   value: string | null,
@@ -63,8 +63,8 @@ function parseSettingValue(
 
 /**
  * Serialize setting value for storage
- * @param value
- * @param type
+ * @param value - The value parameter
+ * @param type - The type parameter
  */
 function serializeSettingValue(
   value: string | number | boolean | Record<string, unknown> | null,
@@ -86,8 +86,8 @@ function serializeSettingValue(
 
 /**
  * Get all system settings
- * @param filters
- * @param userRole
+ * @param filters - The filter criteria
+ * @param userRole - The userRole parameter
  */
 export async function getSystemSettings(filters: SettingFilters, userRole: string) {
   // Only root can access system settings
@@ -129,8 +129,8 @@ export async function getSystemSettings(filters: SettingFilters, userRole: strin
 
 /**
  * Get single system setting
- * @param key
- * @param userRole
+ * @param key - The key parameter
+ * @param userRole - The userRole parameter
  */
 export async function getSystemSetting(key: string, userRole: string) {
   // Check if setting is public or user has permission
@@ -157,12 +157,12 @@ export async function getSystemSetting(key: string, userRole: string) {
 
 /**
  * Create or update system setting
- * @param data
- * @param userId
- * @param tenantId
- * @param userRole
- * @param ipAddress
- * @param userAgent
+ * @param data - The data object
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function upsertSystemSetting(
   data: SettingData,
@@ -234,12 +234,12 @@ export async function upsertSystemSetting(
 
 /**
  * Delete system setting
- * @param key
- * @param userId
- * @param tenantId
- * @param userRole
- * @param ipAddress
- * @param userAgent
+ * @param key - The key parameter
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function deleteSystemSetting(
   key: string,
@@ -283,8 +283,8 @@ export async function deleteSystemSetting(
 
 /**
  * Get all tenant settings
- * @param tenantId
- * @param filters
+ * @param tenantId - The tenant ID
+ * @param filters - The filter criteria
  */
 export async function getTenantSettings(tenantId: number, filters: SettingFilters) {
   let query = `SELECT * FROM tenant_settings WHERE tenant_id = ?`;
@@ -314,8 +314,8 @@ export async function getTenantSettings(tenantId: number, filters: SettingFilter
 
 /**
  * Get single tenant setting
- * @param key
- * @param tenantId
+ * @param key - The key parameter
+ * @param tenantId - The tenant ID
  */
 export async function getTenantSetting(key: string, tenantId: number) {
   const [[setting]] = await executeQuery<RowDataPacket[]>(
@@ -335,12 +335,12 @@ export async function getTenantSetting(key: string, tenantId: number) {
 
 /**
  * Create or update tenant setting
- * @param data
- * @param tenantId
- * @param userId
- * @param userRole
- * @param ipAddress
- * @param userAgent
+ * @param data - The data object
+ * @param tenantId - The tenant ID
+ * @param userId - The user ID
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function upsertTenantSetting(
   data: SettingData,
@@ -410,12 +410,12 @@ export async function upsertTenantSetting(
 
 /**
  * Delete tenant setting
- * @param key
- * @param tenantId
- * @param userId
- * @param userRole
- * @param ipAddress
- * @param userAgent
+ * @param key - The key parameter
+ * @param tenantId - The tenant ID
+ * @param userId - The user ID
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function deleteTenantSetting(
   key: string,
@@ -462,8 +462,8 @@ export async function deleteTenantSetting(
 
 /**
  * Get all user settings
- * @param userId
- * @param filters
+ * @param userId - The user ID
+ * @param filters - The filter criteria
  */
 export async function getUserSettings(userId: number, filters: SettingFilters) {
   let query = `SELECT * FROM user_settings WHERE user_id = ?`;
@@ -493,8 +493,8 @@ export async function getUserSettings(userId: number, filters: SettingFilters) {
 
 /**
  * Get single user setting
- * @param key
- * @param userId
+ * @param key - The key parameter
+ * @param userId - The user ID
  */
 export async function getUserSetting(key: string, userId: number) {
   const [[setting]] = await executeQuery<RowDataPacket[]>(
@@ -514,10 +514,10 @@ export async function getUserSetting(key: string, userId: number) {
 
 /**
  * Create or update user setting
- * @param data
- * @param userId
- * @param _ipAddress
- * @param _userAgent
+ * @param data - The data object
+ * @param userId - The user ID
+ * @param _ipAddress - The _ipAddress parameter
+ * @param _userAgent - The _userAgent parameter
  */
 export async function upsertUserSetting(
   data: SettingData,
@@ -568,8 +568,8 @@ export async function upsertUserSetting(
 
 /**
  * Delete user setting
- * @param key
- * @param userId
+ * @param key - The key parameter
+ * @param userId - The user ID
  */
 export async function deleteUserSetting(key: string, userId: number) {
   const [[setting]] = await executeQuery<RowDataPacket[]>(
@@ -591,9 +591,9 @@ export async function deleteUserSetting(key: string, userId: number) {
 
 /**
  * Get admin's user settings (for admin panel)
- * @param targetUserId
- * @param tenantId
- * @param userRole
+ * @param targetUserId - The targetUserId parameter
+ * @param tenantId - The tenant ID
+ * @param userRole - The userRole parameter
  */
 export async function getAdminUserSettings(
   targetUserId: number,
@@ -658,14 +658,14 @@ export async function getSettingsCategories() {
 
 /**
  * Bulk update settings
- * @param type
- * @param settings
- * @param contextId
- * @param userId
- * @param userTenantId
- * @param userRole
- * @param ipAddress
- * @param userAgent
+ * @param type - The type parameter
+ * @param settings - The settings parameter
+ * @param contextId - The contextId parameter
+ * @param userId - The user ID
+ * @param userTenantId - The userTenantId parameter
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function bulkUpdateSettings(
   type: 'system' | 'tenant' | 'user',

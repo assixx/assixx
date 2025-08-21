@@ -5,11 +5,11 @@
 import express, { Router } from 'express';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { executeQuery } from '../database.js';
 import { security } from '../middleware/security';
 import { body, createValidation, param } from '../middleware/validation';
 import adminPermissionService from '../services/adminPermission.service.js';
 import { errorResponse, successResponse } from '../types/response.types';
+import { query as executeQuery } from '../utils/db.js';
 import { getErrorMessage } from '../utils/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { typed } from '../utils/routeHandlers';

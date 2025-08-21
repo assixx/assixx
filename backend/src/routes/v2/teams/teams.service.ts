@@ -18,10 +18,10 @@ import { logger } from '../../../utils/logger.js';
 export class ServiceError extends Error {
   /**
    *
-   * @param code
-   * @param message
-   * @param statusCode
-   * @param details
+   * @param code - The code parameter
+   * @param message - The message parameter
+   * @param statusCode - The statusCode parameter
+   * @param details - The details parameter
    */
   constructor(
     public code: string,
@@ -61,8 +61,8 @@ export interface TeamUpdateInput {
 export class TeamsService {
   /**
    * List all teams for a tenant
-   * @param tenantId
-   * @param filters
+   * @param tenantId - The tenant ID
+   * @param filters - The filter criteria
    */
   async listTeams(tenantId: number, filters?: TeamFilters) {
     try {
@@ -123,8 +123,8 @@ export class TeamsService {
 
   /**
    * Get team by ID
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getTeamById(id: number, tenantId: number) {
     try {
@@ -190,8 +190,8 @@ export class TeamsService {
 
   /**
    * Create a new team
-   * @param data
-   * @param tenantId
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async createTeam(data: TeamCreateInput, tenantId: number) {
     try {
@@ -243,9 +243,9 @@ export class TeamsService {
 
   /**
    * Update a team
-   * @param id
-   * @param data
-   * @param tenantId
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
   async updateTeam(id: number, data: TeamUpdateInput, tenantId: number) {
     try {
@@ -326,8 +326,8 @@ export class TeamsService {
 
   /**
    * Delete a team
-   * @param id
-   * @param tenantId
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    * @param force - If true, removes all team members before deleting the team
    */
   async deleteTeam(id: number, tenantId: number, force = false) {
@@ -370,8 +370,8 @@ export class TeamsService {
 
   /**
    * Get team members
-   * @param teamId
-   * @param tenantId
+   * @param teamId - The teamId parameter
+   * @param tenantId - The tenant ID
    */
   async getTeamMembers(teamId: number, tenantId: number) {
     try {
@@ -403,9 +403,9 @@ export class TeamsService {
 
   /**
    * Add member to team
-   * @param teamId
-   * @param userId
-   * @param tenantId
+   * @param teamId - The teamId parameter
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async addTeamMember(teamId: number, userId: number, tenantId: number) {
     try {
@@ -446,9 +446,9 @@ export class TeamsService {
 
   /**
    * Remove member from team
-   * @param teamId
-   * @param userId
-   * @param tenantId
+   * @param teamId - The teamId parameter
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async removeTeamMember(teamId: number, userId: number, tenantId: number) {
     try {
@@ -475,8 +475,8 @@ export class TeamsService {
 
   /**
    * Get team machines
-   * @param teamId
-   * @param tenantId
+   * @param teamId - The teamId parameter
+   * @param tenantId - The tenant ID
    */
   async getTeamMachines(teamId: number, tenantId: number) {
     try {
@@ -514,10 +514,10 @@ export class TeamsService {
 
   /**
    * Add machine to team
-   * @param teamId
-   * @param machineId
-   * @param tenantId
-   * @param assignedBy
+   * @param teamId - The teamId parameter
+   * @param machineId - The machineId parameter
+   * @param tenantId - The tenant ID
+   * @param assignedBy - The assignedBy parameter
    */
   async addTeamMachine(teamId: number, machineId: number, tenantId: number, assignedBy: number) {
     try {
@@ -569,9 +569,9 @@ export class TeamsService {
 
   /**
    * Remove machine from team
-   * @param teamId
-   * @param machineId
-   * @param tenantId
+   * @param teamId - The teamId parameter
+   * @param machineId - The machineId parameter
+   * @param tenantId - The tenant ID
    */
   async removeTeamMachine(teamId: number, machineId: number, tenantId: number) {
     try {

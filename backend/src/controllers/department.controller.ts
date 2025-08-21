@@ -81,8 +81,8 @@ class DepartmentController {
   /**
    * Holt alle Department Einträge
    * GET /api/department
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: DepartmentQueryRequest, res: Response): Promise<void> {
     try {
@@ -139,8 +139,8 @@ class DepartmentController {
   /**
    * Holt einen Department Eintrag per ID
    * GET /api/department/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
@@ -180,8 +180,8 @@ class DepartmentController {
   /**
    * Erstellt einen neuen Department Eintrag
    * POST /api/department
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: DepartmentCreateRequest, res: Response): Promise<void> {
     try {
@@ -213,8 +213,8 @@ class DepartmentController {
   /**
    * Aktualisiert einen Department Eintrag
    * PUT /api/department/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: DepartmentUpdateRequest, res: Response): Promise<void> {
     try {
@@ -258,8 +258,8 @@ class DepartmentController {
   /**
    * Löscht einen Department Eintrag
    * DELETE /api/department/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {

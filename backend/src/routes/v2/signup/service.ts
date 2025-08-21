@@ -13,7 +13,7 @@ import type { SignupRequest, SubdomainValidation } from './types.js';
 export class SignupService {
   /**
    * Register a new tenant and admin user
-   * @param data
+   * @param data - The data object
    */
   async registerTenant(data: SignupRequest): Promise<{
     tenantId: number;
@@ -129,7 +129,7 @@ export class SignupService {
 
   /**
    * Check if a subdomain is available
-   * @param subdomain
+   * @param subdomain - The subdomain parameter
    */
   async checkSubdomainAvailability(subdomain: string): Promise<{
     available: boolean;
@@ -162,7 +162,7 @@ export class SignupService {
 
   /**
    * Validate subdomain format
-   * @param subdomain
+   * @param subdomain - The subdomain parameter
    */
   validateSubdomain(subdomain: string): SubdomainValidation {
     return Tenant.validateSubdomain(subdomain);

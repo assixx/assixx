@@ -30,9 +30,9 @@ export interface RoleSwitchResult {
 export class ServiceError extends Error {
   /**
    *
-   * @param message
-   * @param statusCode
-   * @param code
+   * @param message - The message parameter
+   * @param statusCode - The statusCode parameter
+   * @param code - The code parameter
    */
   constructor(
     message: string,
@@ -51,8 +51,8 @@ export class RoleSwitchService {
   /**
    * SECURITY: Verify user belongs to the same tenant
    * CRITICAL: This prevents cross-tenant access
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   private static async verifyUserTenant(userId: number, tenantId: number): Promise<DbUser> {
     const user = await User.findById(userId, tenantId);
@@ -74,9 +74,9 @@ export class RoleSwitchService {
   /**
    * Generate JWT token with role switch information
    * SECURITY: Always preserves original role, tenant_id, and user_id
-   * @param user
-   * @param activeRole
-   * @param isRoleSwitched
+   * @param user - The user parameter
+   * @param activeRole - The activeRole parameter
+   * @param isRoleSwitched - The isRoleSwitched parameter
    */
   private static generateToken(user: DbUser, activeRole: string, isRoleSwitched: boolean): string {
     return jwt.sign(
@@ -103,11 +103,11 @@ export class RoleSwitchService {
 
   /**
    * Log role switch action for audit trail
-   * @param tenantId
-   * @param userId
-   * @param fromRole
-   * @param toRole
-   * @param action
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param fromRole - The fromRole parameter
+   * @param toRole - The toRole parameter
+   * @param action - The action parameter
    */
   private static async logRoleSwitch(
     tenantId: number,
@@ -134,8 +134,8 @@ export class RoleSwitchService {
   /**
    * Switch to employee view
    * Only admin and root users can switch to employee
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   static async switchToEmployee(userId: number, tenantId: number): Promise<RoleSwitchResult> {
     // SECURITY: Verify user and tenant
@@ -188,8 +188,8 @@ export class RoleSwitchService {
 
   /**
    * Switch back to original role (admin or root)
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   static async switchToOriginalRole(userId: number, tenantId: number): Promise<RoleSwitchResult> {
     // SECURITY: Verify user and tenant
@@ -233,8 +233,8 @@ export class RoleSwitchService {
 
   /**
    * Root user switches to admin view
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   static async rootToAdmin(userId: number, tenantId: number): Promise<RoleSwitchResult> {
     // SECURITY: Verify user and tenant

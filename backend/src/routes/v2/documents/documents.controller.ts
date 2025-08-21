@@ -45,8 +45,8 @@ const upload = multer({
 export const uploadMiddleware = upload.single('document');
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents:
  *   get:
@@ -165,8 +165,8 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}:
  *   get:
@@ -219,8 +219,8 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response) 
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents:
  *   post:
@@ -356,8 +356,8 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}:
  *   put:
@@ -456,8 +456,8 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}:
  *   delete:
@@ -546,8 +546,8 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}/archive:
  *   post:
@@ -610,8 +610,8 @@ export async function archiveDocument(req: AuthenticatedRequest, res: Response) 
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}/unarchive:
  *   post:
@@ -673,8 +673,8 @@ export async function unarchiveDocument(req: AuthenticatedRequest, res: Response
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}/download:
  *   get:
@@ -734,8 +734,8 @@ export async function downloadDocument(req: AuthenticatedRequest, res: Response)
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/{id}/preview:
  *   get:
@@ -795,8 +795,8 @@ export async function previewDocument(req: AuthenticatedRequest, res: Response) 
 }
 
 /**
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  * @swagger
  * /api/v2/documents/stats:
  *   get:

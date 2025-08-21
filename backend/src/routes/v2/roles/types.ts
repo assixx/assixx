@@ -52,8 +52,8 @@ export interface ErrorResponse {
 export class ServiceError extends Error {
   /**
    *
-   * @param code
-   * @param message
+   * @param code - The code parameter
+   * @param message - The message parameter
    */
   constructor(
     public code: string,

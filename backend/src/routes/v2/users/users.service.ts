@@ -23,10 +23,10 @@ import {
 export class ServiceError extends Error {
   /**
    *
-   * @param code
-   * @param message
-   * @param statusCode
-   * @param details
+   * @param code - The code parameter
+   * @param message - The message parameter
+   * @param statusCode - The statusCode parameter
+   * @param details - The details parameter
    */
   constructor(
     public code: string,
@@ -41,7 +41,7 @@ export class ServiceError extends Error {
 
 /**
  * Helper to remove sensitive fields from user objects
- * @param user
+ * @param user - The user parameter
  */
 const sanitizeUser = <T extends Record<string, unknown>>(
   user: T,
@@ -66,8 +66,8 @@ const sanitizeUser = <T extends Record<string, unknown>>(
 export class UsersService {
   /**
    * List users with pagination and filters
-   * @param tenantId
-   * @param query
+   * @param tenantId - The tenant ID
+   * @param query - The query parameters
    */
   async listUsers(tenantId: number, query: ListUsersQuery): Promise<unknown> {
     const page = Number.parseInt(query.page ?? '1', 10);
@@ -124,8 +124,8 @@ export class UsersService {
 
   /**
    * Get user by ID
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async getUserById(userId: number, tenantId: number): Promise<unknown> {
     const user = await User.findById(userId, tenantId);
@@ -139,8 +139,8 @@ export class UsersService {
 
   /**
    * Create new user
-   * @param userData
-   * @param tenantId
+   * @param userData - The userData parameter
+   * @param tenantId - The tenant ID
    */
   async createUser(userData: CreateUserBody, tenantId: number): Promise<unknown> {
     // Check if email already exists within the same tenant
@@ -202,9 +202,9 @@ export class UsersService {
 
   /**
    * Update user
-   * @param userId
-   * @param updateData
-   * @param tenantId
+   * @param userId - The user ID
+   * @param updateData - The updateData parameter
+   * @param tenantId - The tenant ID
    */
   async updateUser(userId: number, updateData: UpdateUserBody, tenantId: number): Promise<unknown> {
     // Check if user exists
@@ -254,9 +254,9 @@ export class UsersService {
 
   /**
    * Update user profile (limited fields)
-   * @param userId
-   * @param profileData
-   * @param tenantId
+   * @param userId - The user ID
+   * @param profileData - The profileData parameter
+   * @param tenantId - The tenant ID
    */
   async updateProfile(
     userId: number,
@@ -318,10 +318,10 @@ export class UsersService {
 
   /**
    * Change user password
-   * @param userId
-   * @param tenantId
-   * @param currentPassword
-   * @param newPassword
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param currentPassword - The currentPassword parameter
+   * @param newPassword - The newPassword parameter
    */
   async changePassword(
     userId: number,
@@ -341,9 +341,9 @@ export class UsersService {
 
   /**
    * Delete user
-   * @param userId
-   * @param currentUserId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param currentUserId - The currentUserId parameter
+   * @param tenantId - The tenant ID
    */
   async deleteUser(
     userId: number,
@@ -368,8 +368,8 @@ export class UsersService {
 
   /**
    * Archive user
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async archiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     // Check if user exists
@@ -385,8 +385,8 @@ export class UsersService {
 
   /**
    * Unarchive user
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async unarchiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     // Check if user exists (including archived)
@@ -402,8 +402,8 @@ export class UsersService {
 
   /**
    * Get profile picture path
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async getProfilePicturePath(userId: number, tenantId: number): Promise<string | null> {
     const user = await User.findById(userId, tenantId);
@@ -430,9 +430,9 @@ export class UsersService {
 
   /**
    * Update profile picture
-   * @param userId
-   * @param filePath
-   * @param tenantId
+   * @param userId - The user ID
+   * @param filePath - The filePath parameter
+   * @param tenantId - The tenant ID
    */
   async updateProfilePicture(
     userId: number,
@@ -456,8 +456,8 @@ export class UsersService {
 
   /**
    * Delete profile picture
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async deleteProfilePicture(userId: number, tenantId: number): Promise<{ message: string }> {
     const user = await User.findById(userId, tenantId);
@@ -485,9 +485,9 @@ export class UsersService {
 
   /**
    * Update user availability
-   * @param userId
-   * @param availabilityData
-   * @param tenantId
+   * @param userId - The user ID
+   * @param availabilityData - The availabilityData parameter
+   * @param tenantId - The tenant ID
    */
   async updateAvailability(
     userId: number,

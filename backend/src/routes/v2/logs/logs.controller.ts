@@ -12,8 +12,8 @@ export const logsController = {
   /**
    * Get logs with filters
    * GET /api/v2/logs
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     console.log("===== LOGS V2 CONTROLLER GETLOGS CALLED =====");
@@ -77,8 +77,8 @@ export const logsController = {
   /**
    * Get log statistics
    * GET /api/v2/logs/stats
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -99,8 +99,8 @@ export const logsController = {
   /**
    * Delete logs with filters
    * DELETE /api/v2/logs
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {

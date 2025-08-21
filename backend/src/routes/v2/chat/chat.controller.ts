@@ -37,9 +37,9 @@ interface ChatMessageResult {
 export class ChatController {
   /**
    * Get available chat users
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async getChatUsers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -67,9 +67,9 @@ export class ChatController {
 
   /**
    * Get user's conversations
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async getConversations(
     req: AuthenticatedRequest,
@@ -106,9 +106,9 @@ export class ChatController {
 
   /**
    * Create a new conversation
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async createConversation(
     req: AuthenticatedRequest,
@@ -173,9 +173,9 @@ export class ChatController {
 
   /**
    * Get messages from a conversation
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async getMessages(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -207,9 +207,9 @@ export class ChatController {
 
   /**
    * Send a message to a conversation
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async sendMessage(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -282,9 +282,9 @@ export class ChatController {
 
   /**
    * Get unread message count
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async getUnreadCount(
     req: AuthenticatedRequest,
@@ -310,9 +310,9 @@ export class ChatController {
 
   /**
    * Mark all messages in a conversation as read
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async markAsRead(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -338,9 +338,9 @@ export class ChatController {
 
   /**
    * Delete a conversation
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async deleteConversation(
     req: AuthenticatedRequest,
@@ -389,9 +389,9 @@ export class ChatController {
 
   /**
    * Download chat attachment
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async downloadAttachment(
     req: AuthenticatedRequest,
@@ -443,9 +443,9 @@ export class ChatController {
 
   /**
    * Get conversation details
-   * @param req
-   * @param res
-   * @param next
+   * @param req - The request object
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async getConversation(
     req: AuthenticatedRequest,
@@ -478,9 +478,9 @@ export class ChatController {
 
   /**
    * Update conversation (name, etc.)
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async updateConversation(
     _req: AuthenticatedRequest,
@@ -497,9 +497,9 @@ export class ChatController {
 
   /**
    * Add participants to conversation
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async addParticipants(
     _req: AuthenticatedRequest,
@@ -516,9 +516,9 @@ export class ChatController {
 
   /**
    * Remove participant from conversation
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async removeParticipant(
     _req: AuthenticatedRequest,
@@ -535,9 +535,9 @@ export class ChatController {
 
   /**
    * Leave conversation
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async leaveConversation(
     _req: AuthenticatedRequest,
@@ -554,9 +554,9 @@ export class ChatController {
 
   /**
    * Search messages across all conversations
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async searchMessages(
     _req: AuthenticatedRequest,
@@ -573,9 +573,9 @@ export class ChatController {
 
   /**
    * Delete a message
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async deleteMessage(
     _req: AuthenticatedRequest,
@@ -592,9 +592,9 @@ export class ChatController {
 
   /**
    * Edit a message
-   * @param _req
-   * @param res
-   * @param next
+   * @param _req - The _req parameter
+   * @param res - The response object
+   * @param next - The next middleware function
    */
   async editMessage(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {

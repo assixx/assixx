@@ -66,8 +66,8 @@ export class TeamsController {
 
   /**
    * List all teams
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async listTeams(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -104,8 +104,8 @@ export class TeamsController {
 
   /**
    * Get team by ID
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getTeamById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -137,8 +137,8 @@ export class TeamsController {
 
   /**
    * Create new team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async createTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -197,8 +197,8 @@ export class TeamsController {
 
   /**
    * Update team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async updateTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -267,8 +267,8 @@ export class TeamsController {
 
   /**
    * Delete team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteTeam(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -326,8 +326,8 @@ export class TeamsController {
 
   /**
    * Get team members
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getTeamMembers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -359,8 +359,8 @@ export class TeamsController {
 
   /**
    * Add team member
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async addTeamMember(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -412,8 +412,8 @@ export class TeamsController {
 
   /**
    * Remove team member
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async removeTeamMember(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -447,8 +447,8 @@ export class TeamsController {
 
   /**
    * Get team machines
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async getTeamMachines(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -480,8 +480,8 @@ export class TeamsController {
 
   /**
    * Add machine to team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async addTeamMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -538,8 +538,8 @@ export class TeamsController {
 
   /**
    * Remove machine from team
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async removeTeamMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {

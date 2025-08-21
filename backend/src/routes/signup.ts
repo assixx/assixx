@@ -92,7 +92,7 @@ router.post(
 
       // Debug DB connection (removed in production)
       if (process.env.NODE_ENV === 'development') {
-        const pool = (await import('../database')).default;
+        const pool = (await import('../config/database.js')).default;
         logger.info('[DEBUG] Pool type:', typeof pool);
       }
 

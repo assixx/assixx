@@ -51,8 +51,8 @@ interface AdminLogUpdateData {
 class AdminLogService {
   /**
    * Holt alle AdminLog Einträge für einen Tenant
-   * @param _tenantDb
-   * @param filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param filters - The filter criteria
    */
   async getAll(_tenantDb: Pool, filters: AdminLogFilters = {}): Promise<AdminLogData[]> {
     try {
@@ -73,8 +73,8 @@ class AdminLogService {
 
   /**
    * Holt einen AdminLog Eintrag per ID
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   async getById(_tenantDb: Pool, _id: number): Promise<AdminLogData | null> {
     // Model doesn't have getById, return null for now
@@ -83,8 +83,8 @@ class AdminLogService {
 
   /**
    * Erstellt einen neuen AdminLog Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   async create(_tenantDb: Pool, data: AdminLogCreateData): Promise<AdminLogData> {
     try {
@@ -124,9 +124,9 @@ class AdminLogService {
 
   /**
    * Aktualisiert einen AdminLog Eintrag
-   * @param _tenantDb
-   * @param _id
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
   async update(
     _tenantDb: Pool,
@@ -139,8 +139,8 @@ class AdminLogService {
 
   /**
    * Löscht einen AdminLog Eintrag
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     // TODO: Implement delete method in AdminLog model

@@ -146,7 +146,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 ### Frontend-Änderung
 
-1. docker exec assixx-backend pnpm run build:ts
+1. docker exec assixx-backend pnpm run build
 2. Browser Cache leeren (Ctrl+Shift+R)
 3. Testen auf <http://localhost:3000>
 

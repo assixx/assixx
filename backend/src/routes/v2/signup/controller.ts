@@ -23,8 +23,8 @@ interface SignupResult {
 export class SignupController {
   /**
    * Register a new tenant
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async signup(req: Request, res: Response): Promise<void> {
     console.info('[SignupController] METHOD START');
@@ -136,8 +136,8 @@ export class SignupController {
 
   /**
    * Check subdomain availability
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   async checkSubdomain(req: Request, res: Response): Promise<void> {
     // Validate request

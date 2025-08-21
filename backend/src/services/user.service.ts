@@ -69,8 +69,8 @@ interface UpdateUserData {
 class UserService {
   /**
    * Get user by ID
-   * @param userId
-   * @param tenantId
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
   async getUserById(userId: number, tenantId: number): Promise<UserData | null> {
     try {
@@ -104,7 +104,7 @@ class UserService {
 
   /**
    * Get user by username
-   * @param username
+   * @param username - The username parameter
    */
   async getUserByUsername(username: string): Promise<UserData | null> {
     try {
@@ -129,7 +129,7 @@ class UserService {
 
   /**
    * Get all users with pagination
-   * @param options
+   * @param options - The options object
    */
   async getUsers(options: GetUsersOptions = {}): Promise<UsersResponse> {
     try {
@@ -177,9 +177,9 @@ class UserService {
 
   /**
    * Update user profile
-   * @param userId
-   * @param tenantId
-   * @param updateData
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param updateData - The updateData parameter
    */
   async updateUser(
     userId: number,
@@ -205,9 +205,9 @@ class UserService {
 
   /**
    * Update user password
-   * @param userId
-   * @param tenantId
-   * @param newPassword
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param newPassword - The newPassword parameter
    */
   async updatePassword(userId: number, tenantId: number, newPassword: string): Promise<boolean> {
     try {
@@ -223,7 +223,7 @@ class UserService {
 
   /**
    * Delete user (soft delete)
-   * @param userId
+   * @param userId - The user ID
    */
   async deleteUser(userId: number): Promise<boolean> {
     try {
@@ -237,9 +237,9 @@ class UserService {
 
   /**
    * Archive/Unarchive user
-   * @param userId
-   * @param tenantId
-   * @param archived
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param archived - The archived parameter
    */
   async archiveUser(userId: number, tenantId: number, archived = true): Promise<boolean> {
     try {

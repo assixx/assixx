@@ -4,10 +4,10 @@
  */
 import { log, error as logError } from 'console';
 
+import { ServiceError } from '../../../utils/ServiceError.js';
 // For debugging
 
-import { executeQuery } from '../../../database.js';
-import { ServiceError } from '../../../utils/ServiceError.js';
+import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 
 interface DateRangeFilter {
@@ -24,7 +24,7 @@ interface ReportFilters extends DateRangeFilter {
 
 /**
  * Get company overview report with KPIs
- * @param filters
+ * @param filters - The filter criteria
  * @param filters.tenantId
  * @param filters.dateFrom
  * @param filters.dateTo
@@ -80,7 +80,7 @@ export async function getOverviewReport(filters: {
 
 /**
  * Get detailed employee report
- * @param filters
+ * @param filters - The filter criteria
  */
 export async function getEmployeeReport(filters: ReportFilters) {
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
@@ -154,7 +154,7 @@ export async function getEmployeeReport(filters: ReportFilters) {
 
 /**
  * Get department performance report
- * @param filters
+ * @param filters - The filter criteria
  * @param filters.tenantId
  * @param filters.dateFrom
  * @param filters.dateTo
@@ -225,7 +225,7 @@ export async function getDepartmentReport(filters: {
 
 /**
  * Get shift analytics report
- * @param filters
+ * @param filters - The filter criteria
  */
 export async function getShiftReport(filters: ReportFilters) {
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
@@ -332,7 +332,7 @@ export async function getShiftReport(filters: ReportFilters) {
 
 /**
  * Get KVP ROI report
- * @param filters
+ * @param filters - The filter criteria
  * @param filters.tenantId
  * @param filters.dateFrom
  * @param filters.dateTo
@@ -447,7 +447,7 @@ export async function getKvpReport(filters: {
 
 /**
  * Get attendance report
- * @param filters
+ * @param filters - The filter criteria
  */
 export async function getAttendanceReport(filters: ReportFilters) {
   // For now, return mock data
@@ -500,7 +500,7 @@ export async function getAttendanceReport(filters: ReportFilters) {
 
 /**
  * Get compliance report
- * @param filters
+ * @param filters - The filter criteria
  * @param filters.tenantId
  * @param filters.dateFrom
  * @param filters.dateTo
@@ -570,7 +570,7 @@ interface CustomReportParams {
 
 /**
  *
- * @param params
+ * @param params - The parameters object
  */
 export async function generateCustomReport(params: CustomReportParams) {
   const reportId = `RPT-${String(Date.now())}-${String(Math.random().toString(36).substr(2, 9))}`;
@@ -643,7 +643,7 @@ interface ExportReportParams {
 
 /**
  *
- * @param params
+ * @param params - The parameters object
  */
 export async function exportReport(params: ExportReportParams) {
   // Get report data based on type
@@ -743,9 +743,9 @@ function getDefaultDateTo(): string {
 
 /**
  *
- * @param tenantId
- * @param _dateFrom
- * @param _dateTo
+ * @param tenantId - The tenant ID
+ * @param _dateFrom - The _dateFrom parameter
+ * @param _dateTo - The _dateTo parameter
  */
 async function getEmployeeMetrics(tenantId: number, _dateFrom: string, _dateTo: string) {
   const [resultRows] = await executeQuery(
@@ -771,9 +771,9 @@ async function getEmployeeMetrics(tenantId: number, _dateFrom: string, _dateTo: 
 
 /**
  *
- * @param tenantId
- * @param _dateFrom
- * @param _dateTo
+ * @param tenantId - The tenant ID
+ * @param _dateFrom - The _dateFrom parameter
+ * @param _dateTo - The _dateTo parameter
  */
 async function getDepartmentMetrics(tenantId: number, _dateFrom: string, _dateTo: string) {
   const [deptResultRows] = await executeQuery(
@@ -802,9 +802,9 @@ async function getDepartmentMetrics(tenantId: number, _dateFrom: string, _dateTo
 
 /**
  *
- * @param tenantId
- * @param dateFrom
- * @param dateTo
+ * @param tenantId - The tenant ID
+ * @param dateFrom - The dateFrom parameter
+ * @param dateTo - The dateTo parameter
  */
 async function getShiftMetrics(tenantId: number, dateFrom: string, dateTo: string) {
   const [shiftResultRows] = await executeQuery(
@@ -830,9 +830,9 @@ async function getShiftMetrics(tenantId: number, dateFrom: string, dateTo: strin
 
 /**
  *
- * @param tenantId
- * @param dateFrom
- * @param dateTo
+ * @param tenantId - The tenant ID
+ * @param dateFrom - The dateFrom parameter
+ * @param dateTo - The dateTo parameter
  */
 async function getKvpMetrics(tenantId: number, dateFrom: string, dateTo: string) {
   const [kvpResultRows] = await executeQuery(
@@ -861,9 +861,9 @@ async function getKvpMetrics(tenantId: number, dateFrom: string, dateTo: string)
 
 /**
  *
- * @param tenantId
- * @param dateFrom
- * @param dateTo
+ * @param tenantId - The tenant ID
+ * @param dateFrom - The dateFrom parameter
+ * @param dateTo - The dateTo parameter
  */
 async function getSurveyMetrics(tenantId: number, dateFrom: string, dateTo: string) {
   const [surveyResultRows] = await executeQuery(
@@ -898,11 +898,11 @@ async function getSurveyMetrics(tenantId: number, dateFrom: string, dateTo: stri
 
 /**
  *
- * @param _tenantId
- * @param _dateFrom
- * @param _dateTo
- * @param _departmentId
- * @param _teamId
+ * @param _tenantId - The _tenantId parameter
+ * @param _dateFrom - The _dateFrom parameter
+ * @param _dateTo - The _dateTo parameter
+ * @param _departmentId - The _departmentId parameter
+ * @param _teamId - The _teamId parameter
  */
 async function getAttendanceMetrics(
   _tenantId: number,
@@ -920,11 +920,11 @@ async function getAttendanceMetrics(
 
 /**
  *
- * @param tenantId
- * @param dateFrom
- * @param dateTo
- * @param _departmentId
- * @param _teamId
+ * @param tenantId - The tenant ID
+ * @param dateFrom - The dateFrom parameter
+ * @param dateTo - The dateTo parameter
+ * @param _departmentId - The _departmentId parameter
+ * @param _teamId - The _teamId parameter
  */
 async function getPerformanceMetrics(
   tenantId: number,
@@ -963,7 +963,7 @@ async function getPerformanceMetrics(
 
 /**
  *
- * @param data
+ * @param data - The data object
  */
 function convertToCSV(data: Record<string, unknown>): Buffer {
   // Simple CSV conversion for demonstration

@@ -42,8 +42,8 @@ interface FeatureUpdateData {
 class FeatureService {
   /**
    * Holt alle Feature Einträge für einen Tenant
-   * @param _tenantDb
-   * @param _filters
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
   getAll(_tenantDb: Pool, _filters: FeatureFilters = {}): FeatureData[] {
     try {
@@ -58,8 +58,8 @@ class FeatureService {
 
   /**
    * Holt einen Feature Eintrag per ID
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   getById(_tenantDb: Pool, _id: number): FeatureData | null {
     try {
@@ -74,8 +74,8 @@ class FeatureService {
 
   /**
    * Erstellt einen neuen Feature Eintrag
-   * @param _tenantDb
-   * @param data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
   create(_tenantDb: Pool, data: FeatureCreateData): FeatureData {
     try {
@@ -90,9 +90,9 @@ class FeatureService {
 
   /**
    * Aktualisiert einen Feature Eintrag
-   * @param _tenantDb
-   * @param _id
-   * @param _data
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
   update(_tenantDb: Pool, _id: number, _data: FeatureUpdateData): FeatureData | null {
     try {
@@ -107,8 +107,8 @@ class FeatureService {
 
   /**
    * Löscht einen Feature Eintrag
-   * @param _tenantDb
-   * @param _id
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   delete(_tenantDb: Pool, _id: number): boolean {
     try {

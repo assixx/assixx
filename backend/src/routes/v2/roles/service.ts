@@ -71,7 +71,7 @@ export class RolesService {
 
   /**
    * Get a single role by ID
-   * @param roleId
+   * @param roleId - The roleId parameter
    */
   async getRoleById(roleId: RoleName): Promise<Role> {
     const role = RolesService.ROLES[roleId];
@@ -83,7 +83,7 @@ export class RolesService {
 
   /**
    * Check if a user has a specific role
-   * @param request
+   * @param request - The request parameter
    */
   async checkUserRole(request: RoleCheckRequest): Promise<{
     hasRole: boolean;
@@ -147,7 +147,7 @@ export class RolesService {
 
   /**
    * Get roles available for assignment by current user role
-   * @param currentUserRole
+   * @param currentUserRole - The currentUserRole parameter
    */
   async getAssignableRoles(currentUserRole: RoleName): Promise<Role[]> {
     switch (currentUserRole) {

@@ -4,8 +4,8 @@ import { body, query, validationResult } from 'express-validator';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 import { authenticateToken, authorizeRole } from '../auth.js';
-import { executeQuery } from '../database.js';
 import type { AuthenticatedRequest } from '../types/request.types.js';
+import { query as executeQuery } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
 interface LogEntry extends RowDataPacket {
@@ -132,7 +132,7 @@ router.get(
       // Logs mit User-Informationen abrufen
       const [logs] = await executeQuery<LogEntry[]>(
         `
-        SELECT 
+        SELECT
           al.id,
           al.tenant_id,
           al.user_id,
@@ -366,34 +366,36 @@ router.delete(
         filterDescriptions.push(`Benutzer: ${userInfo[0]?.name ?? `ID ${userId}`}`);
       }
       if (action !== null && action !== '') {
-        const actionLabels: Record<string, string> = {
-          login: 'Anmeldungen',
-          logout: 'Abmeldungen',
-          create: 'Erstellungen',
-          update: 'Aktualisierungen',
-          delete: 'Löschungen',
-          upload: 'Uploads',
-          download: 'Downloads',
-          view: 'Ansichten',
-          assign: 'Zuweisungen',
-          unassign: 'Entfernungen',
-        };
-        filterDescriptions.push(`Aktion: ${actionLabels[action] ?? action}`);
+        const actionLabels = new Map<string, string>([
+          ['login', 'Anmeldungen'],
+          ['logout', 'Abmeldungen'],
+          ['create', 'Erstellungen'],
+          ['update', 'Aktualisierungen'],
+          ['delete', 'Löschungen'],
+          ['upload', 'Uploads'],
+          ['download', 'Downloads'],
+          ['view', 'Ansichten'],
+          ['assign', 'Zuweisungen'],
+          ['unassign', 'Entfernungen'],
+        ]);
+        const actionLabel = actionLabels.get(action) ?? action;
+        filterDescriptions.push(`Aktion: ${actionLabel}`);
       }
       if (entityType !== null && entityType !== '') {
         filterDescriptions.push(`Typ: ${entityType}`);
       }
       if (timerange !== null && timerange !== '') {
-        const timeLabels: Record<string, string> = {
-          today: 'Heute',
-          yesterday: 'Gestern',
-          week: 'Letzte 7 Tage',
-          month: 'Letzter Monat',
-          '3months': 'Letzte 3 Monate',
-          '6months': 'Letzte 6 Monate',
-          year: 'Letztes Jahr',
-        };
-        filterDescriptions.push(`Zeitraum: ${timeLabels[timerange] ?? timerange}`);
+        const timeLabels = new Map<string, string>([
+          ['today', 'Heute'],
+          ['yesterday', 'Gestern'],
+          ['week', 'Letzte 7 Tage'],
+          ['month', 'Letzter Monat'],
+          ['3months', 'Letzte 3 Monate'],
+          ['6months', 'Letzte 6 Monate'],
+          ['year', 'Letztes Jahr'],
+        ]);
+        const timeLabel = timeLabels.get(timerange) ?? timerange;
+        filterDescriptions.push(`Zeitraum: ${timeLabel}`);
       }
 
       const detailsText = `${deletedCount} Logs gelöscht. Filter: ${filterDescriptions.join(', ')}`;
@@ -447,7 +449,7 @@ export async function createLog(
   try {
     await executeQuery(
       `
-      INSERT INTO root_logs 
+      INSERT INTO root_logs
       (tenant_id, user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `,

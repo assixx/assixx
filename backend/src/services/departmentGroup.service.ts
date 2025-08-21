@@ -26,11 +26,11 @@ interface Department {
 class DepartmentGroupService {
   /**
    * Create a new department group
-   * @param name
-   * @param description
-   * @param parentGroupId
-   * @param tenantId
-   * @param createdBy
+   * @param name - The name parameter
+   * @param description - The description parameter
+   * @param parentGroupId - The parentGroupId parameter
+   * @param tenantId - The tenant ID
+   * @param createdBy - The createdBy parameter
    */
   async createGroup(
     name: string,
@@ -67,10 +67,10 @@ class DepartmentGroupService {
 
   /**
    * Add departments to a group
-   * @param groupId
-   * @param departmentIds
-   * @param tenantId
-   * @param addedBy
+   * @param groupId - The groupId parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param tenantId - The tenant ID
+   * @param addedBy - The addedBy parameter
    */
   async addDepartmentsToGroup(
     groupId: number,
@@ -111,9 +111,9 @@ class DepartmentGroupService {
 
   /**
    * Remove departments from a group
-   * @param groupId
-   * @param departmentIds
-   * @param tenantId
+   * @param groupId - The groupId parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param tenantId - The tenant ID
    */
   async removeDepartmentsFromGroup(
     groupId: number,
@@ -140,9 +140,9 @@ class DepartmentGroupService {
 
   /**
    * Get all departments in a group (including subgroups recursively)
-   * @param groupId
-   * @param tenantId
-   * @param includeSubgroups
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
+   * @param includeSubgroups - The includeSubgroups parameter
    */
   async getGroupDepartments(
     groupId: number,
@@ -186,8 +186,8 @@ class DepartmentGroupService {
 
   /**
    * Get departments from all subgroups recursively
-   * @param parentGroupId
-   * @param tenantId
+   * @param parentGroupId - The parentGroupId parameter
+   * @param tenantId - The tenant ID
    */
   private async getSubgroupDepartments(
     parentGroupId: number,
@@ -220,7 +220,7 @@ class DepartmentGroupService {
 
   /**
    * Get the complete group hierarchy for a tenant
-   * @param tenantId
+   * @param tenantId - The tenant ID
    */
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroup[]> {
     try {
@@ -295,10 +295,10 @@ class DepartmentGroupService {
 
   /**
    * Update a group
-   * @param groupId
-   * @param name
-   * @param description
-   * @param tenantId
+   * @param groupId - The groupId parameter
+   * @param name - The name parameter
+   * @param description - The description parameter
+   * @param tenantId - The tenant ID
    */
   async updateGroup(
     groupId: number,
@@ -326,8 +326,8 @@ class DepartmentGroupService {
 
   /**
    * Delete a group (only if no admin permissions exist)
-   * @param groupId
-   * @param tenantId
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
    */
   async deleteGroup(groupId: number, tenantId: number): Promise<boolean> {
     const connection = await getConnection();
@@ -384,9 +384,9 @@ class DepartmentGroupService {
 
   /**
    * Check for circular dependencies
-   * @param groupId
-   * @param targetId
-   * @param tenantId
+   * @param groupId - The groupId parameter
+   * @param targetId - The targetId parameter
+   * @param tenantId - The tenant ID
    */
   private async checkCircularDependency(
     groupId: number,

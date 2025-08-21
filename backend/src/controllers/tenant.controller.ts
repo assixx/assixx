@@ -81,8 +81,8 @@ class TenantController {
   /**
    * Holt alle Tenant Einträge
    * GET /api/tenant
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getAll(req: TenantQueryRequest, res: Response): void {
     try {
@@ -120,8 +120,8 @@ class TenantController {
   /**
    * Holt einen Tenant Eintrag per ID
    * GET /api/tenant/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   getById(req: TenantGetRequest, res: Response): void {
     try {
@@ -154,8 +154,8 @@ class TenantController {
   /**
    * Erstellt einen neuen Tenant Eintrag
    * POST /api/tenant
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   create(req: TenantCreateRequest, res: Response): void {
     try {
@@ -205,8 +205,8 @@ class TenantController {
   /**
    * Aktualisiert einen Tenant Eintrag
    * PUT /api/tenant/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   update(req: TenantUpdateRequest, res: Response): void {
     try {
@@ -235,8 +235,8 @@ class TenantController {
   /**
    * Löscht einen Tenant Eintrag
    * DELETE /api/tenant/:id
-   * @param req
-   * @param res
+   * @param req - The request object
+   * @param res - The response object
    */
   delete(req: TenantGetRequest, res: Response): void {
     try {

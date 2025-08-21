@@ -61,8 +61,8 @@ interface BlackboardEntry {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function listEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -118,8 +118,8 @@ export async function listEntries(req: AuthenticatedRequest, res: Response): Pro
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getEntryById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -139,8 +139,8 @@ export async function getEntryById(req: AuthenticatedRequest, res: Response): Pr
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function createEntry(req: AuthenticatedRequest, res: Response) {
   try {
@@ -195,8 +195,8 @@ export async function createEntry(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function updateEntry(req: AuthenticatedRequest, res: Response) {
   try {
@@ -264,8 +264,8 @@ export async function updateEntry(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
   try {
@@ -313,8 +313,8 @@ export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
   try {
@@ -351,8 +351,8 @@ export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function unarchiveEntry(req: AuthenticatedRequest, res: Response) {
   try {
@@ -372,8 +372,8 @@ export async function unarchiveEntry(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function confirmEntry(req: AuthenticatedRequest, res: Response) {
   try {
@@ -393,8 +393,8 @@ export async function confirmEntry(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getConfirmationStatus(req: AuthenticatedRequest, res: Response) {
   try {
@@ -414,8 +414,8 @@ export async function getConfirmationStatus(req: AuthenticatedRequest, res: Resp
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getDashboardEntries(req: AuthenticatedRequest, res: Response) {
   try {
@@ -439,8 +439,8 @@ export async function getDashboardEntries(req: AuthenticatedRequest, res: Respon
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAllTags(req: AuthenticatedRequest, res: Response) {
   try {
@@ -458,8 +458,8 @@ export async function getAllTags(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function uploadAttachment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -496,8 +496,8 @@ export async function uploadAttachment(req: AuthenticatedRequest, res: Response)
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function getAttachments(req: AuthenticatedRequest, res: Response) {
   try {
@@ -520,8 +520,8 @@ export async function getAttachments(req: AuthenticatedRequest, res: Response) {
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function downloadAttachment(req: AuthenticatedRequest, res: Response) {
   try {
@@ -545,8 +545,8 @@ export async function downloadAttachment(req: AuthenticatedRequest, res: Respons
 
 /**
  *
- * @param req
- * @param res
+ * @param req - The request object
+ * @param res - The response object
  */
 export async function deleteAttachment(req: AuthenticatedRequest, res: Response) {
   try {
