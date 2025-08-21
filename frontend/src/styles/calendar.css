@@ -30,6 +30,12 @@
   vertical-align: middle;
 }
 
+
+
+.calendar-fullscreen-mode .fc .fc-scroller-harness {
+  margin-bottom: -96px;
+}
+
 .fc-icon-chevron-right::before {
   content: "\f054";
 
@@ -837,14 +843,14 @@
   margin: 0 !important;
   border-radius: 0 !important;
 
-  background: linear-gradient(
+  /*background: linear-gradient(
     5deg,
     transparent,
     rgb(0 142 255 / 10%) 100%,
     #01000482 0,
     rgb(0 0 4 / 60%) 100%,
     #000
-  ) !important;
+  ) !important;*/
 
   /* background: linear-gradient(0deg,#0088bd29,rgba(0, 142, 255, 0.16) 100%,#010004 0,rgba(0, 0, 4, 0) 100%,#000) !important; */
 }
@@ -865,7 +871,7 @@
 /* Override FullCalendar default styles in fullscreen mode */
 .calendar-fullscreen-mode .fc td,
 .calendar-fullscreen-mode .fc th {
-  padding: 25px;
+  padding-bottom: 70px;
   vertical-align: top;
 }
 

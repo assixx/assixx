@@ -3226,7 +3226,22 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
     if (response.ok) {
       const data = (await response.json()) as ApiV2Response<User> | User[];
-      const users: User[] = useV2Users && 'data' in data ? data.data.data : (data as User[]);
+      let users: User[] = [];
+
+      // Safely extract users array from response
+      if (useV2Users && 'data' in data) {
+        // v2 API response structure
+        if (Array.isArray(data.data.data)) {
+          users = data.data.data;
+        } else if (Array.isArray(data.data)) {
+          // Sometimes v2 API returns data directly under data
+          users = data.data as unknown as User[];
+        }
+      } else if (Array.isArray(data)) {
+        // v1 API response or direct array
+        users = data;
+      }
+
       const attendeesList = $$('#attendeesList');
 
       // Get current user ID to exclude from list

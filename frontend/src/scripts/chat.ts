@@ -1623,6 +1623,17 @@ class ChatClient {
   }
 
   addDateSeparator(dateString: string, container: HTMLElement): void {
+    // Check if a separator for this date already exists
+    const existingSeparators = container.querySelectorAll('.date-separator');
+    const separatorExists = [...existingSeparators].some((separator) => {
+      return separator.dataset.date === dateString;
+    });
+
+    // Don't add duplicate separator
+    if (separatorExists) {
+      return;
+    }
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
