@@ -1209,7 +1209,7 @@ export class ShiftsService {
    * List user's shift planning favorites
    */
   async listFavorites(tenantId: number, userId: number): Promise<unknown[]> {
-    return await query<RowDataPacket[]>(
+    const [rows] = await query<RowDataPacket[]>(
       `SELECT
         id,
         name,
@@ -1227,6 +1227,7 @@ export class ShiftsService {
       ORDER BY created_at DESC`,
       [tenantId, userId],
     );
+    return rows;
   }
 
   /**

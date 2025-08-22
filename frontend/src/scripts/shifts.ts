@@ -3485,42 +3485,61 @@ class ShiftPlanningSystem {
   /**
    * Load favorite and apply its filters
    */
-  private loadFavorite(favorite: ShiftFavorite): void {
-    // Set all context values
-    this.selectedContext.areaId = favorite.areaId;
-    this.selectedContext.departmentId = favorite.departmentId;
-    this.selectedContext.machineId = favorite.machineId;
-    this.selectedContext.teamId = favorite.teamId;
+  private async loadFavorite(favorite: ShiftFavorite): Promise<void> {
+    try {
+      // 1. Set and load Area
+      this.selectedContext.areaId = favorite.areaId;
+      const areaSelect = $$id<HTMLInputElement>('areaSelect');
+      if (areaSelect) areaSelect.value = String(favorite.areaId);
 
-    // Update UI displays
-    const areaDisplay = document.querySelector('#areaDisplay span');
-    const departmentDisplay = document.querySelector('#departmentDisplay span');
-    const machineDisplay = document.querySelector('#machineDisplay span');
-    const teamDisplay = document.querySelector('#teamDisplay span');
+      const areaDisplay = document.querySelector('#areaDisplay span');
+      if (areaDisplay) areaDisplay.textContent = favorite.areaName;
 
-    if (areaDisplay) areaDisplay.textContent = favorite.areaName;
-    if (departmentDisplay) departmentDisplay.textContent = favorite.departmentName;
-    if (machineDisplay) machineDisplay.textContent = favorite.machineName;
-    if (teamDisplay) teamDisplay.textContent = favorite.teamName;
+      // Use the global selectOption to trigger loading departments
+      const shiftsWindow = window as unknown as ShiftsWindow;
+      shiftsWindow.selectOption('area', String(favorite.areaId), favorite.areaName);
 
-    // Set hidden inputs
-    const areaSelect = $$id<HTMLInputElement>('areaSelect');
-    const departmentSelect = $$id<HTMLInputElement>('departmentSelect');
-    const machineSelect = $$id<HTMLInputElement>('machineSelect');
-    const teamSelect = $$id<HTMLInputElement>('teamSelect');
+      // 2. Set and load Department
+      this.selectedContext.departmentId = favorite.departmentId;
+      const departmentSelect = $$id<HTMLInputElement>('departmentSelect');
+      if (departmentSelect) departmentSelect.value = String(favorite.departmentId);
 
-    if (areaSelect) areaSelect.value = String(favorite.areaId);
-    if (departmentSelect) departmentSelect.value = String(favorite.departmentId);
-    if (machineSelect) machineSelect.value = String(favorite.machineId);
-    if (teamSelect) teamSelect.value = String(favorite.teamId);
+      const departmentDisplay = document.querySelector('#departmentDisplay span');
+      if (departmentDisplay) departmentDisplay.textContent = favorite.departmentName;
 
-    // Trigger team selection logic
-    void this.onTeamSelected(favorite.teamId);
+      // Load machines for this department
+      await this.loadMachines();
 
-    // Update button visibility (should hide since we loaded a favorited combination)
-    this.updateAddFavoriteButton();
+      // 3. Set and load Machine
+      this.selectedContext.machineId = favorite.machineId;
+      const machineSelect = $$id<HTMLInputElement>('machineSelect');
+      if (machineSelect) machineSelect.value = String(favorite.machineId);
 
-    showSuccessAlert(`Favorit "${favorite.name}" wurde geladen`);
+      const machineDisplay = document.querySelector('#machineDisplay span');
+      if (machineDisplay) machineDisplay.textContent = favorite.machineName;
+
+      // Load teams for this machine
+      await this.onMachineSelected(favorite.machineId);
+
+      // 4. Set Team and load shift plan
+      this.selectedContext.teamId = favorite.teamId;
+      const teamSelect = $$id<HTMLInputElement>('teamSelect');
+      if (teamSelect) teamSelect.value = String(favorite.teamId);
+
+      const teamDisplay = document.querySelector('#teamDisplay span');
+      if (teamDisplay) teamDisplay.textContent = favorite.teamName;
+
+      // Trigger team selection logic (loads shift plan)
+      await this.onTeamSelected(favorite.teamId);
+
+      // Update button visibility (should hide since we loaded a favorited combination)
+      this.updateAddFavoriteButton();
+
+      showSuccessAlert(`Favorit "${favorite.name}" wurde geladen`);
+    } catch (error) {
+      console.error('Error loading favorite:', error);
+      showErrorAlert('Fehler beim Laden des Favoriten');
+    }
   }
 
   /**
@@ -3565,7 +3584,7 @@ class ShiftPlanningSystem {
     // Create buttons using DOM methods (safe approach)
     this.favorites.forEach((fav) => {
       // Skip invalid favorites
-      if (!fav?.id || !fav.teamName) {
+      if (fav.id === '' || fav.teamName === '') {
         console.warn('Skipping invalid favorite:', fav);
         return;
       }
@@ -3574,11 +3593,11 @@ class ShiftPlanningSystem {
       button.className = 'favorite-btn';
       button.dataset.favoriteId = fav.id;
 
-      // Build title with fallback values
-      const areaName = fav.areaName ?? 'Unknown Area';
-      const departmentName = fav.departmentName ?? 'Unknown Department';
-      const machineName = fav.machineName ?? 'Unknown Machine';
-      const teamName = fav.teamName ?? 'Unknown Team';
+      // Build title with values
+      const areaName = fav.areaName;
+      const departmentName = fav.departmentName;
+      const machineName = fav.machineName;
+      const teamName = fav.teamName;
 
       button.title = `${areaName} → ${departmentName} → ${machineName} → ${teamName}`;
 
@@ -3605,7 +3624,7 @@ class ShiftPlanningSystem {
           // Load the favorite
           const favId = button.dataset.favoriteId;
           const favorite = this.favorites.find((f) => f.id === favId);
-          if (favorite) this.loadFavorite(favorite);
+          if (favorite) void this.loadFavorite(favorite);
         }
       });
 
