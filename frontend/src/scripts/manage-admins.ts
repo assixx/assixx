@@ -969,14 +969,13 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       }
 
       // Request succeeded, show success message
-      console.info('✅ Permissions saved successfully, reloading page...');
+      console.info('✅ Permissions saved successfully');
       showSuccessAlert('Berechtigungen erfolgreich aktualisiert');
       const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
       if (closeModal) closeModal();
-      // Seite nach 2 Sekunden neu laden für vollständige Aktualisierung
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      
+      // Admin-Liste dynamisch neu laden (ohne Seiten-Reload)
+      await loadAdmins();
     } catch (error) {
       console.error('Error saving permissions:', error);
       showErrorAlert('Netzwerkfehler beim Speichern');
@@ -1171,8 +1170,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         );
         const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
         if (closeModal) closeModal();
-        // Seite neu laden für vollständige Aktualisierung
-        window.location.reload();
+        
+        // Admin-Liste dynamisch neu laden (ohne Seiten-Reload)
+        await loadAdmins();
       } catch (error) {
         console.error('Fehler:', error);
         showErrorAlert('Netzwerkfehler beim Speichern');

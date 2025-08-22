@@ -48,11 +48,13 @@ export const logsController = {
         page = Number.parseInt(req.query.page as string);
       }
 
+      // KRITISCH: IMMER nach tenant_id des angemeldeten Users filtern!
+      // Dies ist essentiell für Multi-Tenant-Isolation
       const filters: LogsFilterParams = {
         page,
         limit,
         userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
-        tenantId: req.query.tenantId ? Number.parseInt(req.query.tenantId as string) : undefined,
+        tenantId: req.user.tenant_id, // IMMER die tenant_id des angemeldeten Users verwenden!
         action: req.query.action as string,
         entityType: req.query.entityType as string,
         startDate: req.query.startDate as string,
@@ -60,7 +62,7 @@ export const logsController = {
         search: req.query.search as string,
       };
 
-      logger.info("[Logs v2] Fetching logs with filters:", filters);
+      logger.info("[Logs v2] Fetching logs with filters (tenant_id enforced):", filters);
       const result = await logsService.getLogs(filters);
       logger.info(`[Logs v2] Successfully fetched ${result.logs.length} logs`);
       res.json(successResponse(result));
@@ -88,7 +90,8 @@ export const logsController = {
         return;
       }
 
-      const stats = await logsService.getStats();
+      // KRITISCH: Stats nur für den eigenen Tenant!
+      const stats = await logsService.getStats(req.user.tenant_id);
       res.json(successResponse(stats));
     } catch (error: unknown) {
       logger.error("[Logs v2] Error fetching stats:", error);
@@ -143,9 +146,10 @@ export const logsController = {
         return;
       }
 
+      // KRITISCH: Nur Logs des eigenen Tenants dürfen gelöscht werden!
       const deletedCount = await logsService.deleteLogs({
         userId,
-        tenantId,
+        tenantId: req.user.tenant_id, // IMMER die tenant_id des angemeldeten Users erzwingen!
         olderThanDays,
         action,
         entityType

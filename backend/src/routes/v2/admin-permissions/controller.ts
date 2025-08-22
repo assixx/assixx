@@ -10,6 +10,7 @@ import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { execute } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
 import { BulkPermissionsRequest, PermissionLevel, SetPermissionsRequest } from './types.js';
 
@@ -21,7 +22,18 @@ export const adminPermissionsController = {
    * @param res - The response object
    */
   async getAdminPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
+    logger.info('[Admin Permissions v2] === START getAdminPermissions ===');
+    logger.info('[Admin Permissions v2] Request URL:', req.url);
+    logger.info('[Admin Permissions v2] Request method:', req.method);
+
     try {
+      logger.info('[Admin Permissions v2] Inside try block');
+      logger.info('[Admin Permissions v2] User object:', JSON.stringify(req.user));
+      logger.info('[Admin Permissions v2] Params:', JSON.stringify(req.params));
+      logger.info('[Admin Permissions v2] User role:', req.user.role);
+      logger.info('[Admin Permissions v2] User id:', req.user.id);
+      logger.info('[Admin Permissions v2] User tenantId:', req.user.tenant_id);
+
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -35,11 +47,13 @@ export const adminPermissionsController = {
 
       // Check permissions
       if (req.user.role !== 'root') {
+        logger.info('[Admin Permissions v2] Access denied - not root');
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
 
       const adminId = Number.parseInt(req.params.adminId);
+      logger.info('[Admin Permissions v2] Admin ID:', adminId);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(
@@ -60,7 +74,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(permissions));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Get permissions error:', error);
+      logger.error('[Admin Permissions v2] Get permissions error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
@@ -101,7 +115,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(permissions));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Get my permissions error:', error);
+      logger.error('[Admin Permissions v2] Get my permissions error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
@@ -177,7 +191,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(null, 'Permissions updated successfully'));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Set permissions error:', error);
+      logger.error('[Admin Permissions v2] Set permissions error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
@@ -236,7 +250,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(null, 'Permission removed successfully'));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Remove permission error:', error);
+      logger.error('[Admin Permissions v2] Remove permission error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
@@ -295,7 +309,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(null, 'Group permission removed successfully'));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Remove group permission error:', error);
+      logger.error('[Admin Permissions v2] Remove group permission error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
@@ -347,7 +361,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(result, 'Bulk operation completed'));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Bulk update error:', error);
+      logger.error('[Admin Permissions v2] Bulk update error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
@@ -383,7 +397,8 @@ export const adminPermissionsController = {
 
       const adminId = Number.parseInt(req.params.adminId);
       const departmentId = Number.parseInt(req.params.departmentId);
-      const permissionLevel = (req.params.permissionLevel as PermissionLevel) ?? 'read';
+      const permissionLevel: PermissionLevel =
+        req.params.permissionLevel ? (req.params.permissionLevel as PermissionLevel) : 'read';
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(
@@ -407,7 +422,7 @@ export const adminPermissionsController = {
 
       res.json(successResponse(result));
     } catch (error: unknown) {
-      console.error('[Admin Permissions v2] Check access error:', error);
+      logger.error('[Admin Permissions v2] Check access error:', error);
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {

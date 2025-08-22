@@ -73,27 +73,27 @@ export class LogsService {
       params.push(tenantId);
     }
 
-    if (action !== null && action !== undefined && action !== "") {
+    if (action !== undefined && action !== "") {
       conditions.push('rl.action = ?');
       params.push(action);
     }
 
-    if (entityType !== null && entityType !== undefined && entityType !== "") {
+    if (entityType !== undefined && entityType !== "") {
       conditions.push('rl.entity_type = ?');
       params.push(entityType);
     }
 
-    if (startDate !== null && startDate !== undefined && startDate !== "") {
+    if (startDate !== undefined && startDate !== "") {
       conditions.push('rl.created_at >= ?');
       params.push(startDate);
     }
 
-    if (endDate !== null && endDate !== undefined && endDate !== "") {
+    if (endDate !== undefined && endDate !== "") {
       conditions.push('rl.created_at <= ?');
       params.push(endDate);
     }
 
-    if (search !== null && search !== undefined && search !== "") {
+    if (search !== undefined && search !== "") {
       conditions.push('(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)');
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern);
@@ -112,7 +112,7 @@ export class LogsService {
         countQuery,
         params
       );
-      const total = countResult[0].total;
+      const total = (countResult[0] as { total: number }).total;
       logger.info(`[Logs v2 Service] Total count: ${total}`);
 
       // Get paginated logs with user and tenant info
@@ -157,30 +157,35 @@ export class LogsService {
   }
 
   /**
-   * Get log statistics (Root only)
+   * Get log statistics (Root only) - filtered by tenant
+   * @param tenantId - The tenant ID to filter by
    */
-  async getStats(): Promise<LogsStatsResponse> {
+  async getStats(tenantId: number): Promise<LogsStatsResponse> {
     try {
-      // Basic stats
+      // Basic stats - FILTERED BY TENANT
       const [basicStats] = await executeQuery<StatsRow[]>(
         `SELECT 
           COUNT(*) as total_logs,
           COUNT(DISTINCT user_id) as unique_users,
           COUNT(DISTINCT tenant_id) as unique_tenants,
           SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today_logs
-         FROM root_logs`
+         FROM root_logs
+         WHERE tenant_id = ?`,
+        [tenantId]
       );
 
-      // Top actions
+      // Top actions - FILTERED BY TENANT
       const [topActions] = await executeQuery<StatsRow[]>(
         `SELECT action, COUNT(*) as count 
          FROM root_logs 
+         WHERE tenant_id = ?
          GROUP BY action 
          ORDER BY count DESC 
-         LIMIT 10`
+         LIMIT 10`,
+        [tenantId]
       );
 
-      // Top users
+      // Top users - FILTERED BY TENANT
       const [topUsers] = await executeQuery<StatsRow[]>(
         `SELECT 
           rl.user_id,
@@ -188,9 +193,11 @@ export class LogsService {
           COUNT(*) as count
          FROM root_logs rl
          LEFT JOIN users u ON rl.user_id = u.id
-         GROUP BY rl.user_id
+         WHERE rl.tenant_id = ?
+         GROUP BY rl.user_id, u.username
          ORDER BY count DESC
-         LIMIT 10`
+         LIMIT 10`,
+        [tenantId]
       );
 
       const stats = basicStats[0];
@@ -218,11 +225,6 @@ export class LogsService {
   /**
    * Delete logs with filters (Root only)
    * @param filters - The filter criteria
-   * @param filters.userId
-   * @param filters.tenantId
-   * @param filters.olderThanDays
-   * @param filters.action
-   * @param filters.entityType
    */
   async deleteLogs(filters: {
     userId?: number;
@@ -300,8 +302,8 @@ export class LogsService {
       action: log.action,
       entityType: log.entity_type,
       entityId: log.entity_id,
-      oldValues: log.old_values ? (typeof log.old_values === 'string' ? JSON.parse(log.old_values) : log.old_values) : undefined,
-      newValues: log.new_values ? (typeof log.new_values === 'string' ? JSON.parse(log.new_values) : log.new_values) : undefined,
+      oldValues: log.old_values ? (typeof log.old_values === 'string' ? JSON.parse(log.old_values) as Record<string, unknown> : log.old_values) : undefined,
+      newValues: log.new_values ? (typeof log.new_values === 'string' ? JSON.parse(log.new_values) as Record<string, unknown> : log.new_values) : undefined,
       ipAddress: log.ip_address,
       userAgent: log.user_agent,
       wasRoleSwitched: Boolean(log.was_role_switched),

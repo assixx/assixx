@@ -129,13 +129,20 @@ export class AdminPermissionsService {
    */
   async getAdminPermissions(adminId: number, tenantId: number): Promise<AdminPermissionsResponse> {
     try {
+      logger.info(`[getAdminPermissions] Starting for adminId: ${adminId}, tenantId: ${tenantId}`);
+
       // Get the admin user to check their role
       const [adminRows] = await execute<RowDataPacket[]>(
         'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
         [adminId, tenantId],
       );
 
+      logger.info(`[getAdminPermissions] Admin query result:`, adminRows);
+
       if (adminRows.length === 0) {
+        logger.error(
+          `[getAdminPermissions] Admin not found - adminId: ${adminId}, tenantId: ${tenantId}`,
+        );
         throw new ServiceError('NOT_FOUND', 'Admin not found');
       }
 
@@ -154,7 +161,7 @@ export class AdminPermissionsService {
         JOIN departments d ON adp.department_id = d.id
         WHERE adp.admin_user_id = ?
         AND adp.tenant_id = ?
-        AND d.is_active = 1
+        AND d.status = 'active'
         ORDER BY d.name
       `;
       const [departmentRows] = await execute<DepartmentPermissionRow[]>(departmentQuery, [
@@ -186,7 +193,6 @@ export class AdminPermissionsService {
         LEFT JOIN department_group_members dgm ON dg.id = dgm.group_id
         WHERE agp.admin_user_id = ?
         AND agp.tenant_id = ?
-        AND dg.is_active = 1
         GROUP BY dg.id, dg.name, dg.description, agp.can_read, agp.can_write, agp.can_delete
         ORDER BY dg.name
       `;
@@ -204,7 +210,7 @@ export class AdminPermissionsService {
 
       // Get total department count
       const [countResult] = await execute<RowDataPacket[]>(
-        'SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND is_active = 1',
+        "SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND status = 'active'",
         [tenantId],
       );
       const totalDepartments = (countResult[0] as { total: number }).total;
@@ -218,7 +224,11 @@ export class AdminPermissionsService {
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      logger.error('Error getting admin permissions:', error);
+      logger.error('[getAdminPermissions] Unexpected error:', error);
+      logger.error(
+        '[getAdminPermissions] Error stack:',
+        error instanceof Error ? error.stack : 'No stack',
+      );
       throw new ServiceError('SERVER_ERROR', 'Failed to get permissions');
     }
   }
