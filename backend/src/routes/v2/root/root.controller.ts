@@ -5,6 +5,7 @@
 import { Request, Response } from 'express';
 
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
+import { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
@@ -44,8 +45,9 @@ export class RootController {
    *                   items:
    *                     $ref: '#/components/schemas/AdminUser'
    */
-  async getAdmins(req: Request, res: Response): Promise<void> {
+  async getAdmins(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      // Root users see all admins from their tenant
       const admins = await rootService.getAdmins(req.user.tenant_id);
       res.json({ admins });
     } catch (error: unknown) {
@@ -79,7 +81,7 @@ export class RootController {
    *       404:
    *         description: Admin not found
    */
-  async getAdminById(req: Request, res: Response): Promise<void> {
+  async getAdminById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const admin = await rootService.getAdminById(
         Number.parseInt(req.params.id),
@@ -126,9 +128,9 @@ export class RootController {
    *       409:
    *         description: Username or email already exists
    */
-  async createAdmin(req: Request, res: Response): Promise<void> {
+  async createAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const data: CreateAdminRequest = req.body;
+      const data = req.body as CreateAdminRequest;
       const adminId = await rootService.createAdmin(data, req.user.tenant_id);
 
       logger.info(`Admin user created: ${data.email} (ID: ${adminId})`);
@@ -183,10 +185,10 @@ export class RootController {
    *       404:
    *         description: Admin not found
    */
-  async updateAdmin(req: Request, res: Response): Promise<void> {
+  async updateAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const data: UpdateAdminRequest = req.body;
-      await rootService.updateAdmin(Number.parseInt(req.params.id), data, req.user.tenant_id);
+      const data = req.body as UpdateAdminRequest;
+      await rootService.updateAdmin(Number.parseInt(req.params.id, 10), data, req.user.tenant_id);
 
       res.json({ message: 'Admin updated successfully' });
     } catch (error: unknown) {
@@ -229,7 +231,7 @@ export class RootController {
    *       404:
    *         description: Admin not found
    */
-  async deleteAdmin(req: Request, res: Response): Promise<void> {
+  async deleteAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       await rootService.deleteAdmin(Number.parseInt(req.params.id), req.user.tenant_id);
 
@@ -280,9 +282,10 @@ export class RootController {
    *       404:
    *         description: Admin not found
    */
-  async getAdminLogs(req: Request, res: Response): Promise<void> {
+  async getAdminLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const days = Number.parseInt(req.query.days as string) ?? 30;
+      const daysParam = Number.parseInt(req.query.days as string, 10);
+      const days = Number.isNaN(daysParam) ? 30 : daysParam;
       const logs = await rootService.getAdminLogs(
         Number.parseInt(req.params.id),
         req.user.tenant_id,
@@ -322,9 +325,10 @@ export class RootController {
    *       200:
    *         description: List of all tenants
    */
-  async getTenants(_req: Request, res: Response): Promise<void> {
+  async getTenants(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const tenants = await rootService.getTenants();
+      // CRITICAL: Multi-tenant isolation - only return user's own tenant
+      const tenants = await rootService.getTenants(req.user.tenant_id);
       res.json({ tenants });
     } catch (error: unknown) {
       logger.error('Error getting tenants:', error);
@@ -349,7 +353,7 @@ export class RootController {
    *       200:
    *         description: List of root users
    */
-  async getRootUsers(req: Request, res: Response): Promise<void> {
+  async getRootUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const users = await rootService.getRootUsers(req.user.tenant_id);
       res.json({ users });
@@ -384,7 +388,7 @@ export class RootController {
    *       404:
    *         description: Root user not found
    */
-  async getRootUserById(req: Request, res: Response): Promise<void> {
+  async getRootUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const user = await rootService.getRootUserById(
         Number.parseInt(req.params.id),
@@ -431,9 +435,9 @@ export class RootController {
    *       400:
    *         description: Email already in use
    */
-  async createRootUser(req: Request, res: Response): Promise<void> {
+  async createRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const data: CreateRootUserRequest = req.body;
+      const data = req.body as CreateRootUserRequest;
       const userId = await rootService.createRootUser(data, req.user.tenant_id);
 
       // Log the action
@@ -506,9 +510,9 @@ export class RootController {
    *       404:
    *         description: Root user not found
    */
-  async updateRootUser(req: Request, res: Response): Promise<void> {
+  async updateRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const data: UpdateRootUserRequest = req.body;
+      const data = req.body as UpdateRootUserRequest;
       await rootService.updateRootUser(Number.parseInt(req.params.id), data, req.user.tenant_id);
 
       // Log the action
@@ -572,7 +576,7 @@ export class RootController {
    *       404:
    *         description: Root user not found
    */
-  async deleteRootUser(req: Request, res: Response): Promise<void> {
+  async deleteRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       await rootService.deleteRootUser(
         Number.parseInt(req.params.id),
@@ -632,7 +636,7 @@ export class RootController {
    *       200:
    *         description: Dashboard statistics
    */
-  async getDashboard(req: Request, res: Response): Promise<void> {
+  async getDashboard(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const stats = await rootService.getDashboardStats(req.user.tenant_id);
       res.json(stats);
@@ -661,7 +665,7 @@ export class RootController {
    *       404:
    *         description: Tenant not found
    */
-  async getStorageInfo(req: Request, res: Response): Promise<void> {
+  async getStorageInfo(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const storage = await rootService.getStorageInfo(req.user.tenant_id);
       res.json(successResponse(storage));
@@ -701,9 +705,9 @@ export class RootController {
    *       400:
    *         description: Insufficient root users
    */
-  async requestTenantDeletion(req: Request, res: Response): Promise<void> {
+  async requestTenantDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { reason }: TenantDeletionRequest = req.body;
+      const { reason } = req.body as TenantDeletionRequest;
       const queueId = await rootService.requestTenantDeletion(
         req.user.tenant_id,
         req.user.id,
@@ -754,7 +758,7 @@ export class RootController {
    *       404:
    *         description: No active deletion found
    */
-  async getDeletionStatus(req: Request, res: Response): Promise<void> {
+  async getDeletionStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const status = await rootService.getDeletionStatus(req.user.tenant_id);
 
@@ -792,7 +796,7 @@ export class RootController {
    *       404:
    *         description: No active deletion found
    */
-  async cancelDeletion(req: Request, res: Response): Promise<void> {
+  async cancelDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       await tenantDeletionService.cancelDeletion(req.user.tenant_id, req.user.id);
 
@@ -847,7 +851,7 @@ export class RootController {
    *       200:
    *         description: List of pending approvals
    */
-  async getPendingApprovals(req: Request, res: Response): Promise<void> {
+  async getPendingApprovals(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const approvals = await rootService.getPendingApprovals(req.user.id);
       res.json({ approvals });
@@ -888,10 +892,10 @@ export class RootController {
    *       200:
    *         description: Deletion approved
    */
-  async approveDeletion(req: Request, res: Response): Promise<void> {
+  async approveDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const queueId = Number.parseInt(req.params.queueId);
-      const { comment } = req.body;
+      const { comment } = req.body as { comment?: string };
 
       await tenantDeletionService.approveDeletion(queueId, req.user.id, comment);
 
@@ -938,10 +942,10 @@ export class RootController {
    *       400:
    *         description: Reason required
    */
-  async rejectDeletion(req: Request, res: Response): Promise<void> {
+  async rejectDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const queueId = Number.parseInt(req.params.queueId);
-      const { reason } = req.body;
+      const { reason } = req.body as { reason?: string };
 
       if (!reason) {
         res.status(400).json({
@@ -983,7 +987,7 @@ export class RootController {
    *       200:
    *         description: Emergency stop activated
    */
-  async emergencyStop(req: Request, res: Response): Promise<void> {
+  async emergencyStop(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const queueId = Number.parseInt(req.params.queueId);
 
@@ -1015,7 +1019,7 @@ export class RootController {
    *       200:
    *         description: Dry run report
    */
-  async deletionDryRun(req: Request, res: Response): Promise<void> {
+  async deletionDryRun(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const report = await rootService.performDeletionDryRun(req.user.tenant_id);
       res.json(report);

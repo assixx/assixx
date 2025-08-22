@@ -58,8 +58,8 @@ export class AdminPermissionsService {
     try {
       // Check direct department permissions
       const directQuery = `
-        SELECT can_read, can_write, can_delete 
-        FROM admin_department_permissions 
+        SELECT can_read, can_write, can_delete
+        FROM admin_department_permissions
         WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?
       `;
       const [directPermissions] = await execute<RowDataPacket[]>(directQuery, [
@@ -87,8 +87,8 @@ export class AdminPermissionsService {
         SELECT agp.can_read, agp.can_write, agp.can_delete
         FROM admin_group_permissions agp
         JOIN department_group_members dgm ON agp.group_id = dgm.group_id
-        WHERE agp.admin_user_id = ? 
-        AND dgm.department_id = ? 
+        WHERE agp.admin_user_id = ?
+        AND dgm.department_id = ?
         AND agp.tenant_id = ?
       `;
       const [groupPermissions] = await execute<RowDataPacket[]>(groupQuery, [
@@ -135,7 +135,7 @@ export class AdminPermissionsService {
         [adminId, tenantId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         throw new ServiceError('NOT_FOUND', 'Admin not found');
       }
 
@@ -143,7 +143,7 @@ export class AdminPermissionsService {
 
       // Get direct department permissions
       const departmentQuery = `
-        SELECT 
+        SELECT
           d.id,
           d.name,
           d.description,
@@ -152,7 +152,7 @@ export class AdminPermissionsService {
           adp.can_delete
         FROM admin_department_permissions adp
         JOIN departments d ON adp.department_id = d.id
-        WHERE adp.admin_user_id = ? 
+        WHERE adp.admin_user_id = ?
         AND adp.tenant_id = ?
         AND d.is_active = 1
         ORDER BY d.name
@@ -173,7 +173,7 @@ export class AdminPermissionsService {
 
       // Get group permissions
       const groupQuery = `
-        SELECT 
+        SELECT
           dg.id,
           dg.name,
           dg.description,
@@ -184,7 +184,7 @@ export class AdminPermissionsService {
         FROM admin_group_permissions agp
         JOIN department_groups dg ON agp.group_id = dg.id
         LEFT JOIN department_group_members dgm ON dg.id = dgm.group_id
-        WHERE agp.admin_user_id = ? 
+        WHERE agp.admin_user_id = ?
         AND agp.tenant_id = ?
         AND dg.is_active = 1
         GROUP BY dg.id, dg.name, dg.description, agp.can_read, agp.can_write, agp.can_delete
@@ -207,7 +207,7 @@ export class AdminPermissionsService {
         'SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND is_active = 1',
         [tenantId],
       );
-      const totalDepartments = countResult[0].total;
+      const totalDepartments = (countResult[0] as { total: number }).total;
 
       return {
         departments,
@@ -238,15 +238,26 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<void> {
+    logger.info('setDepartmentPermissions called with:', {
+      adminId,
+      departmentIds,
+      permissions,
+      modifiedBy,
+      tenantId,
+    });
+
     try {
+      logger.info('Starting to remove existing permissions...');
       // Remove existing department permissions
       await execute(
         'DELETE FROM admin_department_permissions WHERE admin_user_id = ? AND tenant_id = ?',
         [adminId, tenantId],
       );
+      logger.info('Existing permissions removed successfully');
 
       // Add new permissions
       if (departmentIds.length > 0) {
+        logger.info('Adding new permissions for departments:', departmentIds);
         const values = departmentIds.map((deptId) => [
           adminId,
           deptId,
@@ -254,20 +265,25 @@ export class AdminPermissionsService {
           permissions.canRead ? 1 : 0,
           permissions.canWrite ? 1 : 0,
           permissions.canDelete ? 1 : 0,
+          modifiedBy, // assigned_by
         ]);
 
-        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
         const flatValues = values.flat();
 
+        logger.info('SQL INSERT values:', { placeholders, flatValues });
+
         await execute(
-          `INSERT INTO admin_department_permissions 
-          (admin_user_id, department_id, tenant_id, can_read, can_write, can_delete) 
+          `INSERT INTO admin_department_permissions
+          (admin_user_id, department_id, tenant_id, can_read, can_write, can_delete, assigned_by)
           VALUES ${placeholders}`,
           flatValues,
         );
+        logger.info('Permissions inserted successfully');
       }
 
       // Log the action
+      logger.info('Creating root log entry...');
       await createRootLog({
         action: 'update_admin_permissions',
         user_id: modifiedBy,
@@ -280,8 +296,17 @@ export class AdminPermissionsService {
           },
         )}`,
       });
+      logger.info('Root log entry created successfully');
     } catch (error: unknown) {
       logger.error('Error setting department permissions:', error);
+      logger.error('Error details:', {
+        adminId,
+        departmentIds,
+        permissions,
+        tenantId,
+        modifiedBy,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new ServiceError('SERVER_ERROR', 'Failed to set permissions');
     }
   }
@@ -317,14 +342,15 @@ export class AdminPermissionsService {
           permissions.canRead ? 1 : 0,
           permissions.canWrite ? 1 : 0,
           permissions.canDelete ? 1 : 0,
+          modifiedBy, // assigned_by
         ]);
 
-        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
         const flatValues = values.flat();
 
         await execute(
-          `INSERT INTO admin_group_permissions 
-          (admin_user_id, group_id, tenant_id, can_read, can_write, can_delete) 
+          `INSERT INTO admin_group_permissions
+          (admin_user_id, group_id, tenant_id, can_read, can_write, can_delete, assigned_by)
           VALUES ${placeholders}`,
           flatValues,
         );
@@ -364,7 +390,7 @@ export class AdminPermissionsService {
   ): Promise<void> {
     try {
       const [result] = await execute<ResultSetHeader>(
-        `DELETE FROM admin_department_permissions 
+        `DELETE FROM admin_department_permissions
         WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
         [adminId, departmentId, tenantId],
       );
@@ -402,7 +428,7 @@ export class AdminPermissionsService {
   ): Promise<void> {
     try {
       const [result] = await execute<ResultSetHeader>(
-        `DELETE FROM admin_group_permissions 
+        `DELETE FROM admin_group_permissions
         WHERE admin_user_id = ? AND group_id = ? AND tenant_id = ?`,
         [adminId, groupId, tenantId],
       );
@@ -461,7 +487,7 @@ export class AdminPermissionsService {
           successCount++;
         }
       } catch (error: unknown) {
-        errors.push(`Admin ${adminId}: ${String(getErrorMessage(error))}`);
+        errors.push(`Admin ${adminId}: ${getErrorMessage(error)}`);
       }
     }
 

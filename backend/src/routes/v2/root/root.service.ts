@@ -5,13 +5,14 @@
 import bcrypt from 'bcryptjs';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import RootLog from '../../../models/rootLog';
-import TenantModel from '../../../models/tenant.js';
-import UserModel from '../../../models/user.js';
+import rootLog from '../../../models/rootLog';
+import tenantModel from '../../../models/tenant.js';
+import userModel from '../../../models/user.js';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute } from '../../../utils/db.js';
 import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
+import { logger } from '../../../utils/logger.js';
 import {
   AdminLog,
   AdminUser,
@@ -53,14 +54,17 @@ export class RootService {
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
     try {
       // Get admins with extended information
-      const admins = await UserModel.findByRole('admin', true, tenantId);
+      // If no tenantId provided, get ALL admins from ALL tenants
+      logger.info(`[RootService.getAdmins] Fetching admins for tenant ${tenantId}`);
+      const admins = await userModel.findByRole('admin', true, tenantId);
+      logger.info(`[RootService.getAdmins] Found ${admins.length} admins for tenant ${tenantId}`);
 
       // Add tenant information
       return await Promise.all(
         admins.map(async (admin) => {
           let tenantName: string | undefined;
           if (admin.tenant_id) {
-            const tenant = await TenantModel.findById(admin.tenant_id);
+            const tenant = await tenantModel.findById(admin.tenant_id);
             tenantName = tenant?.company_name;
           }
 
@@ -68,8 +72,8 @@ export class RootService {
             id: admin.id,
             username: admin.username,
             email: admin.email,
-            firstName: admin.first_name ?? '',
-            lastName: admin.last_name ?? '',
+            firstName: admin.first_name || '',
+            lastName: admin.last_name || '',
             company: admin.company,
             notes: admin.notes,
             isActive: admin.is_active ?? false,
@@ -93,7 +97,7 @@ export class RootService {
    */
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
     try {
-      const admin = await UserModel.findById(id, tenantId);
+      const admin = await userModel.findById(id, tenantId);
 
       if (!admin || admin.role !== 'admin') {
         return null;
@@ -102,19 +106,19 @@ export class RootService {
       // Get tenant name
       let tenantName: string | undefined;
       if (admin.tenant_id) {
-        const tenant = await TenantModel.findById(admin.tenant_id);
+        const tenant = await tenantModel.findById(admin.tenant_id);
         tenantName = tenant?.company_name;
       }
 
       // Get last login
-      const lastLogin = await RootLog.getLastLogin(id);
+      const lastLogin = await rootLog.getLastLogin(id);
 
       return {
         id: admin.id,
         username: admin.username,
         email: admin.email,
-        firstName: admin.first_name ?? '',
-        lastName: admin.last_name ?? '',
+        firstName: admin.first_name || '',
+        lastName: admin.last_name || '',
         company: admin.company,
         notes: admin.notes,
         isActive: admin.is_active ?? false,
@@ -149,7 +153,7 @@ export class RootService {
         notes: data.notes,
       };
 
-      const adminId = await UserModel.create(adminData);
+      const adminId = await userModel.create(adminData);
 
       // Add admin to tenant_admins table
       try {
@@ -201,7 +205,7 @@ export class RootService {
         updateData.password = await bcrypt.hash(data.password, 10);
       }
 
-      const success = await UserModel.update(id, updateData, tenantId);
+      const success = await userModel.update(id, updateData, tenantId);
       if (!success) {
         throw new ServiceError('UPDATE_FAILED', 'Failed to update admin', 500);
       }
@@ -224,7 +228,7 @@ export class RootService {
         throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
-      const success = await UserModel.delete(id);
+      const success = await userModel.delete(id);
       if (!success) {
         throw new ServiceError('DELETE_FAILED', 'Failed to delete admin', 500);
       }
@@ -248,7 +252,7 @@ export class RootService {
         throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
-      const logs = await RootLog.getByUserId(adminId, days ?? 0);
+      const logs = await rootLog.getByUserId(adminId, days ?? 0);
 
       return logs.map((log) => ({
         id: log.id,
@@ -256,7 +260,7 @@ export class RootService {
         action: log.action,
         entityType: log.entity_type ?? '',
         entityId: log.entity_id,
-        description: log.description,
+        description: log.description as string | undefined,
         ipAddress: log.ip_address,
         userAgent: log.user_agent,
         createdAt: log.created_at,
@@ -268,11 +272,19 @@ export class RootService {
   }
 
   /**
-   * Get all tenants
+   * Get tenants - ONLY the root user's own tenant for security
+   * @param tenantId - The tenant ID of the requesting user
    */
-  async getTenants(): Promise<Tenant[]> {
+  async getTenants(tenantId: number): Promise<Tenant[]> {
     try {
-      const tenants = await TenantModel.findAll();
+      // CRITICAL: Multi-tenant isolation - only return user's own tenant
+      const tenant = await tenantModel.findById(tenantId);
+
+      if (!tenant) {
+        return [];
+      }
+
+      const tenants = [tenant]; // Only return the user's own tenant
 
       // Get user counts for each tenant
       return await Promise.all(
@@ -304,9 +316,9 @@ export class RootService {
             country: (tenant as TenantRow).country,
             createdAt: tenant.created_at,
             updatedAt: tenant.updated_at,
-            adminCount: adminCount[0].count,
-            employeeCount: employeeCount[0].count,
-            storageUsed: storageUsed[0].total,
+            adminCount: (adminCount[0] as { count: number }).count,
+            employeeCount: (employeeCount[0] as { count: number }).count,
+            storageUsed: (storageUsed[0] as { total: number }).total,
           };
         }),
       );
@@ -322,27 +334,27 @@ export class RootService {
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     try {
       const [users] = await execute<RowDataPacket[]>(
-        `SELECT 
-          id, username, email, first_name, last_name, 
+        `SELECT
+          id, username, email, first_name, last_name,
           position, notes, is_active, employee_id, created_at, updated_at
-        FROM users 
+        FROM users
         WHERE role = 'root' AND tenant_id = ?
         ORDER BY created_at DESC`,
         [tenantId],
       );
 
-      return users.map((user) => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        position: user.position,
-        notes: user.notes,
-        isActive: user.is_active,
-        employeeId: user.employee_id,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
+      return users.map((user: RowDataPacket) => ({
+        id: user.id as number,
+        username: user.username as string,
+        email: user.email as string,
+        firstName: user.first_name as string,
+        lastName: user.last_name as string,
+        position: (user.position as string | null) ?? undefined,
+        notes: (user.notes as string | null) ?? undefined,
+        isActive: user.is_active as boolean,
+        employeeId: user.employee_id as string,
+        createdAt: user.created_at as Date,
+        updatedAt: user.updated_at as Date,
       }));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root users', error);
@@ -357,10 +369,10 @@ export class RootService {
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     try {
       const [users] = await execute<RowDataPacket[]>(
-        `SELECT 
-          id, username, email, first_name, last_name, 
+        `SELECT
+          id, username, email, first_name, last_name,
           position, notes, is_active, employee_id, created_at, updated_at
-        FROM users 
+        FROM users
         WHERE id = ? AND role = 'root' AND tenant_id = ?`,
         [id, tenantId],
       );
@@ -371,17 +383,17 @@ export class RootService {
 
       const user = users[0];
       return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        position: user.position,
-        notes: user.notes,
-        isActive: user.is_active,
-        employeeId: user.employee_id,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
+        id: user.id as number,
+        username: user.username as string,
+        email: user.email as string,
+        firstName: user.first_name as string,
+        lastName: user.last_name as string,
+        position: (user.position as string | null) ?? undefined,
+        notes: (user.notes as string | null) ?? undefined,
+        isActive: user.is_active as boolean,
+        employeeId: user.employee_id as string,
+        createdAt: user.created_at as Date,
+        updatedAt: user.updated_at as Date,
       };
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root user', error);
@@ -419,11 +431,11 @@ export class RootService {
       // Create root user
       const [result] = await execute<ResultSetHeader>(
         `INSERT INTO users (
-          username, email, password, first_name, last_name, 
+          username, email, password, first_name, last_name,
           role, position, notes, is_active, tenant_id, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, NOW(), NOW())`,
         [
-          data.username ?? data.email,
+          data.username || data.email,
           data.email,
           hashedPassword,
           data.firstName,
@@ -496,7 +508,7 @@ export class RootService {
       fields.push('updated_at = NOW()');
       values.push(id);
 
-      await execute(`UPDATE users SET ${String(fields.join(', '))} WHERE id = ?`, values);
+      await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to update root user', error);
@@ -550,8 +562,8 @@ export class RootService {
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
     try {
       // Get user counts
-      const admins = await UserModel.findByRole('admin', false, tenantId);
-      const employees = await UserModel.findByRole('employee', false, tenantId);
+      const admins = await userModel.findByRole('admin', false, tenantId);
+      const employees = await userModel.findByRole('employee', false, tenantId);
 
       // Get tenant count (for multi-tenant overview)
       const [tenantCount] = await execute<RowDataPacket[]>(
@@ -560,14 +572,14 @@ export class RootService {
 
       // Get active features
       const [features] = await execute<RowDataPacket[]>(
-        `SELECT f.code 
-         FROM tenant_features tf 
-         JOIN features f ON tf.feature_id = f.id 
+        `SELECT f.code
+         FROM tenant_features tf
+         JOIN features f ON tf.feature_id = f.id
          WHERE tf.tenant_id = ? AND tf.is_active = 1`,
         [tenantId],
       );
 
-      const activeFeatures = features.map((f: RowDataPacket) => f.code);
+      const activeFeatures = features.map((f: RowDataPacket) => f.code as string);
 
       // Simple system health check
       const systemHealth = {
@@ -580,7 +592,7 @@ export class RootService {
         adminCount: admins.length,
         employeeCount: employees.length,
         totalUsers: admins.length + employees.length + 1, // +1 for root
-        tenantCount: tenantCount[0].count,
+        tenantCount: (tenantCount[0] as { count: number }).count,
         activeFeatures,
         systemHealth,
       };
@@ -596,7 +608,7 @@ export class RootService {
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
     try {
       // Get tenant information
-      const tenant = await TenantModel.findById(tenantId);
+      const tenant = await tenantModel.findById(tenantId);
       if (!tenant) {
         throw new ServiceError('NOT_FOUND', 'Tenant not found', 404);
       }
@@ -617,7 +629,7 @@ export class RootService {
       );
 
       const [attachments] = await execute<RowDataPacket[]>(
-        `SELECT COALESCE(SUM(ka.file_size), 0) as total 
+        `SELECT COALESCE(SUM(ka.file_size), 0) as total
          FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
          WHERE ks.tenant_id = ?`,
@@ -669,7 +681,7 @@ export class RootService {
   ): Promise<number> {
     try {
       // Check if there are at least 2 root users
-      const rootUsers = await UserModel.findByRole('root', false, tenantId);
+      const rootUsers = await userModel.findByRole('root', false, tenantId);
       if (rootUsers.length < 2) {
         throw new ServiceError(
           'INSUFFICIENT_ROOT_USERS',
@@ -697,7 +709,7 @@ export class RootService {
   async getDeletionStatus(tenantId: number): Promise<TenantDeletionStatus | null> {
     try {
       const [deletions] = await execute<RowDataPacket[]>(
-        `SELECT 
+        `SELECT
           dq.*,
           t.company_name,
           u.username as requested_by_name
@@ -717,18 +729,25 @@ export class RootService {
 
       const deletion = deletions[0];
       return {
-        queueId: deletion.id,
-        tenantId: deletion.tenant_id,
-        status: deletion.status,
-        requestedBy: deletion.created_by,
-        requestedByName: deletion.requested_by_name,
-        requestedAt: deletion.created_at,
-        approvedBy: deletion.approved_by,
-        approvedAt: deletion.approved_at,
-        scheduledFor: deletion.scheduled_for,
-        reason: deletion.reason,
-        errorMessage: deletion.error_message,
-        canCancel: ['pending', 'approved'].includes(deletion.status),
+        queueId: deletion.id as number,
+        tenantId: deletion.tenant_id as number,
+        status: deletion.status as
+          | 'cancelled'
+          | 'pending'
+          | 'approved'
+          | 'executing'
+          | 'completed'
+          | 'failed'
+          | 'stopped',
+        requestedBy: deletion.created_by as number,
+        requestedByName: deletion.requested_by_name as string,
+        requestedAt: deletion.created_at as Date,
+        approvedBy: (deletion.approved_by as number | null) ?? undefined,
+        approvedAt: (deletion.approved_at as Date | null) ?? undefined,
+        scheduledFor: (deletion.scheduled_for as Date | null) ?? undefined,
+        reason: deletion.reason as string,
+        errorMessage: (deletion.error_message as string | null) ?? undefined,
+        canCancel: ['pending', 'approved'].includes(deletion.status as string),
         canApprove: deletion.status === 'pending',
       };
     } catch (error: unknown) {
@@ -742,7 +761,7 @@ export class RootService {
   async getAllDeletionRequests(): Promise<DeletionApproval[]> {
     try {
       const [deletions] = await execute<RowDataPacket[]>(
-        `SELECT 
+        `SELECT
           q.*,
           t.company_name,
           t.subdomain,
@@ -755,16 +774,16 @@ export class RootService {
       );
 
       return deletions.map((d: RowDataPacket) => ({
-        queueId: d.id,
-        tenantId: d.tenant_id,
-        companyName: d.company_name,
-        subdomain: d.subdomain,
-        requesterId: d.created_by,
-        requesterName: d.requester_name,
-        requesterEmail: d.requester_email,
-        requestedAt: d.created_at,
-        reason: d.reason,
-        status: d.status,
+        queueId: d.id as number,
+        tenantId: d.tenant_id as number,
+        companyName: d.company_name as string,
+        subdomain: d.subdomain as string,
+        requesterId: d.created_by as number,
+        requesterName: d.requester_name as string,
+        requesterEmail: d.requester_email as string,
+        requestedAt: d.created_at as Date,
+        reason: d.reason as string,
+        status: d.status as string,
       }));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get deletion requests', error);
@@ -778,7 +797,7 @@ export class RootService {
   async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     try {
       const [approvals] = await execute<RowDataPacket[]>(
-        `SELECT 
+        `SELECT
           q.*,
           t.company_name,
           t.subdomain,
@@ -787,23 +806,23 @@ export class RootService {
         FROM tenant_deletion_queue q
         JOIN tenants t ON t.id = q.tenant_id
         JOIN users u ON u.id = q.created_by
-        WHERE q.status = 'pending' 
+        WHERE q.status = 'pending'
         AND q.created_by != ?
         ORDER BY q.created_at DESC`,
         [currentUserId],
       );
 
       return approvals.map((a: RowDataPacket) => ({
-        queueId: a.id,
-        tenantId: a.tenant_id,
-        companyName: a.company_name,
-        subdomain: a.subdomain,
-        requesterId: a.created_by,
-        requesterName: a.requester_name,
-        requesterEmail: a.requester_email,
-        requestedAt: a.created_at,
-        reason: a.reason,
-        status: a.status,
+        queueId: a.id as number,
+        tenantId: a.tenant_id as number,
+        companyName: a.company_name as string,
+        subdomain: a.subdomain as string,
+        requesterId: a.created_by as number,
+        requesterName: a.requester_name as string,
+        requesterEmail: a.requester_email as string,
+        requestedAt: a.created_at as Date,
+        reason: a.reason as string,
+        status: a.status as string,
       }));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get pending approvals', error);
@@ -819,7 +838,7 @@ export class RootService {
       const report = await tenantDeletionService.performDryRun(tenantId);
 
       // Get tenant name
-      const tenant = await TenantModel.findById(tenantId);
+      const tenant = await tenantModel.findById(tenantId);
       const companyName = tenant?.company_name ?? 'Unknown';
 
       // Transform to our API format
@@ -828,15 +847,15 @@ export class RootService {
         companyName,
         estimatedDuration: `${report.estimatedDuration} minutes`,
         affectedRecords: {
-          users: report.affectedRecords.users ?? 0,
-          documents: report.affectedRecords.documents ?? 0,
-          departments: report.affectedRecords.departments ?? 0,
-          teams: report.affectedRecords.teams ?? 0,
-          shifts: report.affectedRecords.shifts ?? 0,
-          kvpSuggestions: report.affectedRecords.kvp_suggestions ?? 0,
-          surveys: report.affectedRecords.surveys ?? 0,
-          logs: report.affectedRecords.logs ?? 0,
-          total: report.totalRecords ?? 0,
+          users: report.affectedRecords.users || 0,
+          documents: report.affectedRecords.documents || 0,
+          departments: report.affectedRecords.departments || 0,
+          teams: report.affectedRecords.teams || 0,
+          shifts: report.affectedRecords.shifts || 0,
+          kvpSuggestions: report.affectedRecords.kvp_suggestions || 0,
+          surveys: report.affectedRecords.surveys || 0,
+          logs: report.affectedRecords.logs || 0,
+          total: report.totalRecords || 0,
         },
         storageToFree: 0, // Not provided by service
         warnings: report.warnings,

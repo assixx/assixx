@@ -110,22 +110,22 @@ export async function createUser(userData: UserCreateData): Promise<number> {
     role,
     company,
     notes,
-    first_name,
-    last_name,
+    first_name: firstName,
+    last_name: lastName,
     age,
-    employee_id,
-    employee_number,
-    department_id,
+    employee_id: employeeId,
+    employee_number: employeeNumber,
+    department_id: departmentId,
     position,
     phone,
     address,
     birthday,
-    hire_date,
-    emergency_contact,
-    profile_picture,
+    hire_date: hireDate,
+    emergency_contact: emergencyContact,
+    profile_picture: profilePicture,
     status = 'active',
-    is_archived = 0,
-    is_active = 1,
+    is_archived: isArchived = 0,
+    is_active: isActive = 1,
   } = userData;
 
   // Always use email as username
@@ -137,9 +137,9 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Generate employee_id if not provided
-  let finalEmployeeId = employee_id;
+  let finalEmployeeId = employeeId;
 
-  if (employee_id == null || employee_id === '') {
+  if (employeeId == null || employeeId === '') {
     // Get subdomain from tenant
     const [tenantResult] = await executeQuery<RowDataPacket[]>(
       'SELECT subdomain FROM tenants WHERE id = ?',
@@ -172,30 +172,30 @@ export async function createUser(userData: UserCreateData): Promise<number> {
       role,
       company,
       notes,
-      first_name,
-      last_name,
+      firstName,
+      lastName,
       age,
       finalEmployeeId,
-      employee_number ?? `EMP${Date.now()}`,
+      employeeNumber ?? `EMP${Date.now()}`,
       iban,
-      department_id,
+      departmentId,
       position,
       phone,
       address,
       birthday,
-      hire_date,
-      emergency_contact,
-      profile_picture,
+      hireDate,
+      emergencyContact,
+      profilePicture,
       status,
-      is_archived,
-      is_active,
+      isArchived,
+      isActive,
       userData.tenant_id,
     ]);
 
     logger.info(`User created successfully with ID: ${result.insertId}`);
 
     // Update employee_id with actual user ID if it was generated
-    if ((employee_id == null || employee_id === '') && finalEmployeeId?.includes('TEMP') === true) {
+    if ((employeeId == null || employeeId === '') && finalEmployeeId?.includes('TEMP') === true) {
       const [tenantResult] = await executeQuery<RowDataPacket[]>(
         'SELECT subdomain FROM tenants WHERE id = ?',
         [userData.tenant_id],
@@ -243,18 +243,18 @@ export async function findUserByUsername(username: string): Promise<DbUser | und
   }
 }
 
-export async function findUserById(id: number, tenant_id: number): Promise<DbUser | undefined> {
+export async function findUserById(id: number, tenantId: number): Promise<DbUser | undefined> {
   try {
     // Validate inputs with detailed logging
     console.info(
-      `[DEBUG] User.findById called with: id=${id} (type: ${typeof id}), tenant_id=${tenant_id} (type: ${typeof tenant_id})`,
+      `[DEBUG] User.findById called with: id=${id} (type: ${typeof id}), tenant_id=${tenantId} (type: ${typeof tenantId})`,
     );
 
-    if (!id || !tenant_id || isNaN(id) || isNaN(tenant_id)) {
+    if (!id || !tenantId || Number.isNaN(id) || Number.isNaN(tenantId)) {
       logger.error(
-        `Invalid parameters for User.findById: id=${id}, tenant_id=${tenant_id}, idType=${typeof id}, tenantType=${typeof tenant_id}`,
+        `Invalid parameters for User.findById: id=${id}, tenant_id=${tenantId}, idType=${typeof id}, tenantType=${typeof tenantId}`,
       );
-      throw new Error(`Invalid user ID (${id}) or tenant ID (${tenant_id})`);
+      throw new Error(`Invalid user ID (${id}) or tenant ID (${tenantId})`);
     }
 
     const [rows] = await executeQuery<DbUser[]>(
@@ -270,7 +270,7 @@ export async function findUserById(id: number, tenant_id: number): Promise<DbUse
              LEFT JOIN departments d ON u.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
              WHERE u.id = ? AND u.tenant_id = ?`,
-      [id, tenant_id],
+      [id, tenantId],
     );
 
     if (rows.length > 0) {
@@ -290,11 +290,15 @@ export async function findUserById(id: number, tenant_id: number): Promise<DbUse
 export async function findUsersByRole(
   role: string,
   includeArchived = false,
-  tenant_id: number, // PFLICHT - nicht mehr optional!
+  tenantId: number, // PFLICHT - nicht mehr optional!
 ): Promise<DbUser[]> {
   try {
+    logger.info(
+      `[findUsersByRole] Called with role=${role}, includeArchived=${includeArchived}, tenantId=${tenantId}`,
+    );
+
     let query = `
-        SELECT u.id, u.username, u.email, u.role, u.company,
+        SELECT u.id, u.username, u.email, u.role, u.company, u.tenant_id,
         u.first_name, u.last_name, u.created_at, u.department_id,
         u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
@@ -305,7 +309,7 @@ export async function findUsersByRole(
         WHERE u.role = ? AND u.tenant_id = ?
       `;
 
-    const params: unknown[] = [role, tenant_id];
+    const params: unknown[] = [role, tenantId];
 
     if (!includeArchived) {
       query += ` AND u.is_archived = 0`;
@@ -835,14 +839,15 @@ export async function updateOwnProfile(
     ];
 
     // Nur erlaubte Felder übernehmen
-    const updates: Record<string, unknown> = {};
-    Object.keys(userData).forEach((key) => {
-      if (allowedFields.includes(key) && userData[key as keyof UserCreateData] !== undefined) {
-        updates[key] = userData[key as keyof UserCreateData];
+    const updates = new Map<string, unknown>();
+    allowedFields.forEach((field) => {
+      const value = userData[field as keyof UserCreateData];
+      if (value !== undefined) {
+        updates.set(field, value);
       }
     });
 
-    if (Object.keys(updates).length === 0) {
+    if (updates.size === 0) {
       return {
         success: false,
         message: 'Keine gültigen Felder zum Aktualisieren',
@@ -850,8 +855,8 @@ export async function updateOwnProfile(
     }
 
     // SQL-Query dynamisch erstellen
-    const fields = Object.keys(updates);
-    const values = Object.values(updates);
+    const fields = [...updates.keys()];
+    const values = [...updates.values()];
     // SECURITY FIX: Escape column names with backticks to prevent SQL injection
     const setClause = fields.map((field) => `\`${field}\` = ?`).join(', ');
 

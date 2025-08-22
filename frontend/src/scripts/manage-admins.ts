@@ -16,6 +16,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     DEPARTMENT_SELECT_CONTAINER: '#departmentSelectContainer',
     PERMISSION_TYPE_RADIO: 'input[name="permissionType"]',
     PERMISSION_TYPE_CHECKED: 'input[name="permissionType"]:checked',
+    EMAIL_ERROR: '#email-error',
+    PASSWORD_ERROR: '#password-error',
   } as const;
 
   // API Endpoints
@@ -83,6 +85,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
   interface ManageAdminsWindow extends Window {
     editAdmin: typeof editAdminHandler | null;
     deleteAdmin: typeof deleteAdminHandler | null;
+    showPermissionsModal: typeof showPermissionsModal | null;
     showAddAdminModal: (() => void) | null;
     closeAdminModal: (() => void) | null;
     closePermissionsModal: (() => void) | null;
@@ -91,6 +94,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
   (window as unknown as ManageAdminsWindow).editAdmin = null;
   (window as unknown as ManageAdminsWindow).deleteAdmin = null;
+  (window as unknown as ManageAdminsWindow).showPermissionsModal = null;
   (window as unknown as ManageAdminsWindow).showAddAdminModal = null;
   (window as unknown as ManageAdminsWindow).closeAdminModal = null;
 
@@ -111,8 +115,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       );
 
       // Map the API response to ensure consistent field names
-      const userData = Array.isArray(data) ? data : [];
-      admins = mapUsers(userData as UserAPIResponse[]) as Admin[];
+      // API v2 returns { admins: [...] }, v1 returns array directly
+      const adminData =
+        useV2API && typeof data === 'object' && 'admins' in data
+          ? (data as { admins: UserAPIResponse[] }).admins
+          : Array.isArray(data)
+            ? data
+            : [];
+      admins = mapUsers(adminData as UserAPIResponse[]) as Admin[];
       console.info('Loaded admins:', admins);
 
       // Load permissions for each admin
@@ -143,21 +153,20 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
   // Tenants laden für Dropdown
   async function loadTenants() {
     try {
-      const authToken = localStorage.getItem('token');
-      const response = await fetch('/api/root/tenants', {
-        headers: {
-          Authorization: `Bearer ${authToken ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const endpoint = '/root/tenants';
 
-      if (response.ok) {
-        tenants = (await response.json()) as Tenant[];
-        console.info('Loaded tenants:', tenants);
-        updateTenantDropdown();
-      } else {
-        console.error('Error loading tenants - status:', response.status);
-      }
+      const response = await apiClient.request<{ success: boolean; data: Tenant[]; timestamp: string }>(
+        endpoint,
+        {
+          method: 'GET',
+        },
+        { version: useV2API ? 'v2' : 'v1' },
+      );
+
+      console.info('Loaded tenants:', response);
+      // The data field is always present in the response type
+      tenants = response.data;
+      updateTenantDropdown();
     } catch (error) {
       console.error('Fehler beim Laden der Tenants:', error);
     }
@@ -309,9 +318,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
             <td>${admin.createdAt !== undefined ? new Date(admin.createdAt).toLocaleDateString('de-DE') : '-'}</td>
             <td>${admin.lastLogin !== undefined && admin.lastLogin !== '' ? new Date(admin.lastLogin).toLocaleDateString('de-DE') : '-'}</td>
             <td>
-              <button class="action-btn edit" data-admin-id="${String(admin.id)}">Bearbeiten</button>
-              <button class="action-btn permissions" data-admin-id="${String(admin.id)}" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
-              <button class="action-btn delete" data-admin-id="${String(admin.id)}">Löschen</button>
+              <button class="action-btn edit" onclick="editAdmin(${String(admin.id)})">Bearbeiten</button>
+              <button class="action-btn permissions" onclick="showPermissionsModal(${String(admin.id)})" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
+              <button class="action-btn delete" onclick="deleteAdmin(${String(admin.id)})">Löschen</button>
             </td>
           </tr>
         `;
@@ -322,54 +331,6 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
   `;
 
     setHTML(container, tableHTML);
-
-    console.info('Adding event listeners to buttons...');
-
-    // Add event listeners to buttons
-    const editButtons = $all('.action-btn.edit');
-    console.info('Found edit buttons:', editButtons.length);
-    editButtons.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        console.info('Edit button clicked!');
-        const target = e.target as HTMLElement;
-        const adminId = Number.parseInt(target.dataset.adminId ?? '0', 10);
-        console.info('Admin ID:', adminId);
-        if (adminId > 0) {
-          void editAdminHandler(adminId);
-        }
-      });
-    });
-
-    const deleteButtons = $all('.action-btn.delete');
-    console.info('Found delete buttons:', deleteButtons.length);
-    deleteButtons.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        console.info('Delete button clicked!');
-        const target = e.target as HTMLElement;
-        const adminId = Number.parseInt(target.dataset.adminId ?? '0', 10);
-        console.info('Admin ID:', adminId);
-        if (adminId > 0) {
-          void deleteAdminHandler(adminId);
-        }
-      });
-    });
-
-    const permissionButtons = $all('.action-btn.permissions');
-    console.info('Found permission buttons:', permissionButtons.length);
-    permissionButtons.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        console.info('🔵 Permission button clicked!');
-        const target = e.target as HTMLElement;
-        const button = target.closest('.action-btn.permissions');
-        const adminId = Number.parseInt(button?.getAttribute('data-admin-id') ?? '0', 10);
-        console.info('Admin ID from button:', adminId);
-        if (adminId > 0) {
-          e.preventDefault();
-          e.stopPropagation();
-          void showPermissionsModal(adminId);
-        }
-      });
-    });
 
     // Add hover event listeners for department badges
     const departmentBadges = $all('.department-badge');
@@ -432,11 +393,19 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     console.info('Setting checkbox for edit - admin.isActive:', admin.isActive, 'checkbox will be:', isActive);
     isActiveCheckbox.checked = isActive;
 
-    // Hide password fields when editing (optional password change)
+    // Hide confirmation fields when editing
+    const emailConfirmGroup = $$('#emailConfirmGroup');
+    if (emailConfirmGroup) emailConfirmGroup.style.display = 'none';
     const passwordGroup = $$('#passwordGroup');
     const passwordConfirmGroup = $$('#passwordConfirmGroup');
     if (passwordGroup) passwordGroup.style.display = 'none';
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'none';
+
+    // Clear error messages
+    const emailError = $$('#email-error');
+    const passwordError = $$('#password-error');
+    if (emailError) emailError.style.display = 'none';
+    if (passwordError) passwordError.style.display = 'none';
 
     // Load current department assignments
     console.info('🔵 Loading department assignments for admin:', adminId);
@@ -497,7 +466,12 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       }
     }
 
-    // Passwort-Felder als optional setzen beim Bearbeiten
+    // Passwort-Felder und E-Mail-Bestätigung als optional setzen beim Bearbeiten
+    const emailConfirmField = $$<HTMLInputElement>('#adminEmailConfirm');
+    if (emailConfirmField !== null) {
+      emailConfirmField.required = false;
+    }
+
     const passwordField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
     const passwordConfirmField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
     if (passwordField !== null) {
@@ -577,25 +551,22 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     }
 
     try {
-      const authToken = localStorage.getItem('token');
-      const response = await fetch(`/api/root/admins/${String(adminId)}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${authToken ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const endpoint = `/root/admins/${String(adminId)}`;
 
-      if (response.ok) {
-        showSuccessAlert('Administrator erfolgreich gelöscht');
-        await loadAdmins();
-      } else {
-        const errorData = (await response.json()) as { message?: string };
-        showErrorAlert(errorData.message ?? 'Fehler beim Löschen des Administrators');
-      }
+      await apiClient.request(
+        endpoint,
+        {
+          method: 'DELETE',
+        },
+        { version: useV2API ? 'v2' : 'v1' },
+      );
+
+      showSuccessAlert('Administrator erfolgreich gelöscht');
+      await loadAdmins();
     } catch (error) {
       console.error('Fehler:', error);
-      showErrorAlert('Netzwerkfehler beim Löschen');
+      const errorMessage = error instanceof Error ? error.message : 'Netzwerkfehler beim Löschen';
+      showErrorAlert(errorMessage);
     }
   }
 
@@ -622,17 +593,28 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     const activeStatusGroup = $$('#activeStatusGroup');
     if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
-    // Passwort-Felder als required setzen für neue Admins
+    // Passwort-Felder und E-Mail-Bestätigung als required setzen für neue Admins
+    const emailConfirmField = $$<HTMLInputElement>('#adminEmailConfirm');
+    if (emailConfirmField !== null) emailConfirmField.required = true;
+
     const passwordField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
     const passwordConfirmField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
     if (passwordField !== null) passwordField.required = true;
     if (passwordConfirmField !== null) passwordConfirmField.required = true;
 
-    // Show password fields for new admin
+    // Show confirmation fields for new admin
+    const emailConfirmGroup = $$('#emailConfirmGroup');
+    if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
     const passwordGroup = $$('#passwordGroup');
     const passwordConfirmGroup = $$('#passwordConfirmGroup');
     if (passwordGroup) passwordGroup.style.display = 'block';
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
+
+    // Clear error messages
+    const emailError = $$('#email-error');
+    const passwordError = $$('#password-error');
+    if (emailError) emailError.style.display = 'none';
+    if (passwordError) passwordError.style.display = 'none';
 
     modal?.classList.add('active');
   };
@@ -642,6 +624,12 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     const modal = $$(SELECTORS.ADMIN_MODAL);
     modal?.classList.remove('active');
     currentAdminId = null;
+
+    // Clear error messages when closing
+    const emailError = $$('#email-error');
+    const passwordError = $$('#password-error');
+    if (emailError) emailError.style.display = 'none';
+    if (passwordError) passwordError.style.display = 'none';
   };
 
   // Permissions Modal schließen
@@ -657,73 +645,65 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
   // Department Permission Handling Functions
   async function loadDepartments(): Promise<Department[]> {
     try {
-      const authToken = localStorage.getItem('token');
-      const response = await fetch('/api/departments', {
-        headers: {
-          Authorization: `Bearer ${authToken ?? ''}`,
-          'Content-Type': 'application/json',
+      const endpoint = '/departments';
+      return await apiClient.request<Department[]>(
+        endpoint,
+        {
+          method: 'GET',
         },
-      });
-
-      if (response.ok) {
-        return (await response.json()) as Department[];
-      }
+        { version: useV2API ? 'v2' : 'v1' },
+      );
     } catch (error) {
       console.error('Fehler beim Laden der Abteilungen:', error);
+      return [];
     }
-    return [];
   }
 
   async function loadDepartmentGroups(): Promise<DepartmentGroup[]> {
     try {
-      const authToken = localStorage.getItem('token');
-      const response = await fetch('/api/department-groups/hierarchy', {
-        headers: {
-          Authorization: `Bearer ${authToken ?? ''}`,
-          'Content-Type': 'application/json',
+      const endpoint = '/department-groups/hierarchy';
+      const result = await apiClient.request<{ data?: DepartmentGroup[] }>(
+        endpoint,
+        {
+          method: 'GET',
         },
-      });
-
-      if (response.ok) {
-        const result = (await response.json()) as { data?: DepartmentGroup[] };
-        return result.data ?? [];
-      }
+        { version: useV2API ? 'v2' : 'v1' },
+      );
+      return result.data ?? [];
     } catch (error) {
       console.error('Fehler beim Laden der Abteilungsgruppen:', error);
+      return [];
     }
-    return [];
   }
 
   // Load admin permissions
   async function loadAdminPermissions(adminId: number): Promise<{ departments: Department[]; hasAllAccess: boolean }> {
     try {
-      const authToken = localStorage.getItem('token');
-      const response = await fetch(`${API_ENDPOINTS.ADMIN_PERMISSIONS}/${String(adminId)}`, {
-        headers: {
-          Authorization: `Bearer ${authToken ?? ''}`,
-          'Content-Type': 'application/json',
+      const endpoint = `/admin-permissions/${String(adminId)}`;
+      const result = await apiClient.request<{
+        success?: boolean;
+        data?: { departments: Department[]; hasAllAccess: boolean };
+        departments?: Department[];
+        hasAllAccess?: boolean;
+      }>(
+        endpoint,
+        {
+          method: 'GET',
         },
-      });
+        { version: useV2API ? 'v2' : 'v1' },
+      );
 
-      if (response.ok) {
-        const result = (await response.json()) as {
-          success?: boolean;
-          data?: { departments: Department[]; hasAllAccess: boolean };
-          departments?: Department[];
-          hasAllAccess?: boolean;
+      console.info(`Raw API response for admin ${String(adminId)}:`, result);
+
+      // Handle the wrapped response structure
+      if (result.success === true && result.data !== undefined) {
+        return result.data;
+      } else if (result.departments !== undefined) {
+        // Fallback for direct structure
+        return {
+          departments: result.departments,
+          hasAllAccess: result.hasAllAccess ?? false,
         };
-        console.info(`Raw API response for admin ${String(adminId)}:`, result);
-
-        // Handle the wrapped response structure
-        if (result.success === true && result.data !== undefined) {
-          return result.data;
-        } else if (result.departments !== undefined) {
-          // Fallback for direct structure
-          return {
-            departments: result.departments,
-            hasAllAccess: result.hasAllAccess ?? false,
-          };
-        }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Admin-Berechtigungen:', error);
@@ -941,9 +921,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       const canWriteEl = $$<HTMLInputElement>('#permCanWrite');
       const canDeleteEl = $$<HTMLInputElement>('#permCanDelete');
       const permissions = {
-        can_read: true,
-        can_write: canWriteEl !== null ? canWriteEl.checked : false,
-        can_delete: canDeleteEl !== null ? canDeleteEl.checked : false,
+        canRead: true,
+        canWrite: canWriteEl !== null ? canWriteEl.checked : false,
+        canDelete: canDeleteEl !== null ? canDeleteEl.checked : false,
       };
 
       console.info('Permissions:', permissions);
@@ -959,59 +939,44 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       console.info('Token exists:', authToken !== null && authToken !== '');
       console.info('Making request to:', API_ENDPOINTS.ADMIN_PERMISSIONS);
 
-      const deptResponse = await fetch(API_ENDPOINTS.ADMIN_PERMISSIONS, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${authToken ?? ''}`,
-          'Content-Type': 'application/json',
+      const deptResponse = await apiClient.request<{ success?: boolean; message?: string }>(
+        '/admin-permissions',
+        {
+          method: 'POST',
+          body: JSON.stringify(requestBody),
         },
-        body: JSON.stringify(requestBody),
-      });
+        { version: useV2API ? 'v2' : 'v1' },
+      );
 
-      console.info('Department response status:', deptResponse.status);
-
-      if (!deptResponse.ok) {
-        const errorData = (await deptResponse.json()) as { message?: string };
-        console.error('❌ Department response error:', errorData);
-      } else {
-        const responseData = (await deptResponse.json()) as { success?: boolean; message?: string };
-        console.info('✅ Department permissions saved successfully:', responseData);
-      }
+      console.info('✅ Department permissions saved successfully:', deptResponse);
 
       // Update group permissions if any selected
       if (selectedGroups.length > 0) {
-        const groupResponse = await fetch(`${API_ENDPOINTS.ADMIN_PERMISSIONS}/groups`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${authToken ?? ''}`,
-            'Content-Type': 'application/json',
+        await apiClient.request(
+          '/admin-permissions/groups',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              adminId: currentPermissionAdminId,
+              groupIds: selectedGroups,
+              permissions,
+            }),
           },
-          body: JSON.stringify({
-            adminId: currentPermissionAdminId,
-            groupIds: selectedGroups,
-            permissions,
-          }),
-        });
+          { version: useV2API ? 'v2' : 'v1' },
+        );
 
-        console.info('Group response status:', groupResponse.status);
-
-        if (!groupResponse.ok) {
-          const errorData = (await groupResponse.json()) as { message?: string };
-          console.error('Group response error:', errorData);
-        }
+        console.info('✅ Group permissions saved successfully');
       }
 
-      if (deptResponse.ok) {
-        console.info('✅ Permissions saved successfully, reloading page...');
-        showSuccessAlert('Berechtigungen erfolgreich aktualisiert');
-        const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
-        if (closeModal) closeModal();
-        // Seite neu laden für vollständige Aktualisierung
+      // Request succeeded, show success message
+      console.info('✅ Permissions saved successfully, reloading page...');
+      showSuccessAlert('Berechtigungen erfolgreich aktualisiert');
+      const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
+      if (closeModal) closeModal();
+      // Seite nach 2 Sekunden neu laden für vollständige Aktualisierung
+      setTimeout(() => {
         window.location.reload();
-      } else {
-        console.error('❌ Failed to save permissions');
-        showErrorAlert('Fehler beim Speichern der Berechtigungen');
-      }
+      }, 2000);
     } catch (error) {
       console.error('Error saving permissions:', error);
       showErrorAlert('Netzwerkfehler beim Speichern');
@@ -1028,9 +993,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       const emailConfirmEl = $$<HTMLInputElement>('#adminEmailConfirm');
       const email = emailEl !== null ? emailEl.value : '';
       const emailConfirm = emailConfirmEl !== null ? emailConfirmEl.value : '';
+      const emailError = $$('#email-error');
+
       if (email !== emailConfirm) {
+        if (emailError) emailError.style.display = 'block';
         showErrorAlert('Die E-Mail-Adressen stimmen nicht überein!');
         return;
+      } else {
+        if (emailError) emailError.style.display = 'none';
       }
 
       // Validate password match (only for new admins or if password is being changed)
@@ -1038,15 +1008,21 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       const passwordConfirmEl = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
       const password = passwordEl !== null ? passwordEl.value : '';
       const passwordConfirm = passwordConfirmEl !== null ? passwordConfirmEl.value : '';
+      const passwordError = $$('#password-error');
+
       if (password !== '' && password !== passwordConfirm) {
+        if (passwordError) passwordError.style.display = 'block';
         showErrorAlert('Die Passwörter stimmen nicht überein!');
         return;
+      } else {
+        if (passwordError) passwordError.style.display = 'none';
       }
 
       interface AdminFormData {
         firstName: string;
         lastName: string;
         email: string;
+        username: string;
         password?: string;
         position: string;
         notes: string;
@@ -1062,6 +1038,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         firstName: firstNameEl !== null ? firstNameEl.value : '',
         lastName: lastNameEl !== null ? lastNameEl.value : '',
         email,
+        username: email, // Use email as username
         password,
         position: positionEl !== null ? positionEl.value : '',
         notes: $<HTMLTextAreaElement>('#adminNotes').value,
@@ -1081,13 +1058,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       console.info('isActive value being sent:', formData.isActive);
 
       try {
-        const authToken = localStorage.getItem('token');
-        const url =
-          currentAdminId !== null && currentAdminId !== 0
-            ? `/api/root/admins/${String(currentAdminId)}`
-            : '/api/root/admins';
-
-        const method = currentAdminId !== null && currentAdminId !== 0 ? 'PUT' : 'POST';
+        const isUpdate = currentAdminId !== null && currentAdminId !== 0;
+        const endpoint = isUpdate ? `/root/admins/${String(currentAdminId)}` : '/root/admins';
+        const method = isUpdate ? 'PUT' : 'POST';
 
         // Bei Update: Passwort nur senden wenn ausgefüllt
         if (
@@ -1098,120 +1071,108 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
           delete formData.password;
         }
 
-        const response = await fetch(url, {
-          method,
-          headers: {
-            Authorization: `Bearer ${authToken ?? ''}`,
-            'Content-Type': 'application/json',
+        // Use apiClient for consistent v2 API usage
+        const result = await apiClient.request<{ adminId?: number; id?: number }>(
+          endpoint,
+          {
+            method,
+            body: JSON.stringify(formData),
           },
-          body: JSON.stringify(formData),
-        });
+          { version: 'v2' },
+        );
 
-        if (response.ok) {
-          const result = (await response.json()) as { adminId?: number; id?: number };
-          const adminId = currentAdminId ?? result.adminId ?? result.id ?? 0;
+        const adminId = currentAdminId ?? result.adminId ?? result.id ?? 0;
 
-          // Set permissions for both new and existing admins
-          const permissionTypeInput = document.querySelector(SELECTORS.PERMISSION_TYPE_CHECKED);
-          const permissionType =
-            permissionTypeInput instanceof HTMLInputElement ? permissionTypeInput.value : undefined;
-          console.info('🔵 Permission type selected:', permissionType);
+        // Set permissions for both new and existing admins
+        const permissionTypeInput = document.querySelector(SELECTORS.PERMISSION_TYPE_CHECKED);
+        const permissionType = permissionTypeInput instanceof HTMLInputElement ? permissionTypeInput.value : undefined;
+        console.info('🔵 Permission type selected:', permissionType);
 
-          if (adminId !== 0 && permissionType !== undefined) {
-            // Always update permissions based on form selection
-            if (permissionType !== 'none') {
-              let departmentIds: number[] = [];
-              let groupIds: number[] = [];
+        if (adminId !== 0 && permissionType !== undefined) {
+          // Always update permissions based on form selection
+          if (permissionType !== 'none') {
+            let departmentIds: number[] = [];
+            let groupIds: number[] = [];
 
-              if (permissionType === 'specific') {
-                const select = $$<HTMLSelectElement>(SELECTORS.DEPARTMENT_SELECT);
-                if (select !== null) {
-                  departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
-                }
-              } else if (permissionType === 'groups') {
-                const checkboxes = $all('input[name="groupSelect"]:checked');
-                groupIds = [...checkboxes].map((checkbox) => Number.parseInt((checkbox as HTMLInputElement).value, 10));
-              } else if (permissionType === 'all') {
-                // Get all departments
-                const allDepts = await loadDepartments();
-                departmentIds = allDepts.map((d) => d.id);
+            if (permissionType === 'specific') {
+              const select = $$<HTMLSelectElement>(SELECTORS.DEPARTMENT_SELECT);
+              if (select !== null) {
+                departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
               }
+            } else if (permissionType === 'groups') {
+              const checkboxes = $all('input[name="groupSelect"]:checked');
+              groupIds = [...checkboxes].map((checkbox) => Number.parseInt((checkbox as HTMLInputElement).value, 10));
+            } else if (permissionType === 'all') {
+              // Get all departments
+              const allDepts = await loadDepartments();
+              departmentIds = allDepts.map((d) => d.id);
+            }
 
-              // Set permissions
-              console.info('🔵 Setting department permissions for admin:', adminId);
-              console.info('Department IDs:', departmentIds);
+            // Set permissions
+            console.info('🔵 Setting department permissions for admin:', adminId);
+            console.info('Department IDs:', departmentIds);
 
-              const permResponse = await fetch(API_ENDPOINTS.ADMIN_PERMISSIONS, {
+            const permResponse = await apiClient.request(
+              '/admin-permissions',
+              {
                 method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${authToken ?? ''}`,
-                  'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                   adminId,
                   departmentIds,
                   permissions: { can_read: true, can_write: false, can_delete: false },
                 }),
-              });
+              },
+              { version: useV2API ? 'v2' : 'v1' },
+            );
 
-              if (permResponse.ok) {
-                console.info('✅ Department permissions updated successfully');
-              } else {
-                console.error('❌ Failed to update department permissions');
-              }
+            if (permResponse != null) {
+              console.info('✅ Department permissions updated successfully');
+            }
 
-              if (groupIds.length > 0) {
-                await fetch(`${API_ENDPOINTS.ADMIN_PERMISSIONS}/groups`, {
+            if (groupIds.length > 0) {
+              await apiClient.request(
+                '/admin-permissions/groups',
+                {
                   method: 'POST',
-                  headers: {
-                    Authorization: `Bearer ${authToken ?? ''}`,
-                    'Content-Type': 'application/json',
-                  },
                   body: JSON.stringify({
                     adminId,
                     groupIds,
                     permissions: { can_read: true, can_write: false, can_delete: false },
                   }),
-                });
-              }
-            } else {
-              // Permission type is 'none' - remove all permissions
-              console.info('🔵 Removing all department permissions for admin:', adminId);
-
-              const permResponse = await fetch(API_ENDPOINTS.ADMIN_PERMISSIONS, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${authToken ?? ''}`,
-                  'Content-Type': 'application/json',
                 },
+                { version: useV2API ? 'v2' : 'v1' },
+              );
+            }
+          } else {
+            // Permission type is 'none' - remove all permissions
+            console.info('🔵 Removing all department permissions for admin:', adminId);
+
+            const permResponse = await apiClient.request(
+              '/admin-permissions',
+              {
+                method: 'POST',
                 body: JSON.stringify({
                   adminId,
                   departmentIds: [], // Empty array removes all permissions
                   permissions: { can_read: true, can_write: false, can_delete: false },
                 }),
-              });
+              },
+              { version: useV2API ? 'v2' : 'v1' },
+            );
 
-              if (permResponse.ok) {
-                console.info('✅ All department permissions removed');
-              } else {
-                console.error('❌ Failed to remove department permissions');
-              }
+            if (permResponse != null) {
+              console.info('✅ All department permissions removed');
             }
           }
-
-          showSuccessAlert(
-            currentAdminId !== null && currentAdminId !== 0
-              ? 'Administrator aktualisiert'
-              : 'Administrator hinzugefügt',
-          );
-          const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
-          if (closeModal) closeModal();
-          // Seite neu laden für vollständige Aktualisierung
-          window.location.reload();
-        } else {
-          const error = (await response.json()) as { message?: string };
-          showErrorAlert(error.message ?? 'Fehler beim Speichern');
         }
+
+        showSuccessAlert(
+          currentAdminId !== null && currentAdminId !== 0 ? 'Administrator aktualisiert' : 'Administrator hinzugefügt',
+        );
+        const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
+        if (closeModal) closeModal();
+        // Seite neu laden für vollständige Aktualisierung
+        window.location.reload();
       } catch (error) {
         console.error('Fehler:', error);
         showErrorAlert('Netzwerkfehler beim Speichern');
@@ -1231,13 +1192,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     }
   });
 
+  // Make functions globally available
+  (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
+  (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
+  (window as unknown as ManageAdminsWindow).showPermissionsModal = showPermissionsModal;
+
   // Initialisierung
   document.addEventListener('DOMContentLoaded', () => {
     void (async () => {
-      // Assign global functions to handlers after DOM is ready
-      (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
-      (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
-
       // Load user profile to trigger unified navigation update
       try {
         const userProfile = await apiClient.get<MappedUser>(API_ENDPOINTS.USERS_ME);
@@ -1254,6 +1216,40 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
         radio.addEventListener('change', handlePermissionTypeChange);
       });
+
+      // Real-time validation for email confirmation
+      const emailConfirmInput = $$<HTMLInputElement>('#adminEmailConfirm');
+      if (emailConfirmInput) {
+        emailConfirmInput.addEventListener('input', () => {
+          const emailEl = $$<HTMLInputElement>('#adminEmail');
+          const email = emailEl !== null ? emailEl.value : '';
+          const emailConfirm = emailConfirmInput.value;
+          const emailError = $$('#email-error');
+
+          if (emailConfirm !== '' && email !== emailConfirm) {
+            if (emailError) emailError.style.display = 'block';
+          } else {
+            if (emailError) emailError.style.display = 'none';
+          }
+        });
+      }
+
+      // Real-time validation for password confirmation
+      const passwordConfirmInput = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
+      if (passwordConfirmInput) {
+        passwordConfirmInput.addEventListener('input', () => {
+          const passwordEl = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
+          const password = passwordEl !== null ? passwordEl.value : '';
+          const passwordConfirm = passwordConfirmInput.value;
+          const passwordError = $$('#password-error');
+
+          if (passwordConfirm !== '' && password !== passwordConfirm) {
+            if (passwordError) passwordError.style.display = 'block';
+          } else {
+            if (passwordError) passwordError.style.display = 'none';
+          }
+        });
+      }
     })();
   });
 })();

@@ -665,9 +665,10 @@
             <label class="form-label">E-Mail *</label>
             <input type="email" id="adminEmail" class="form-control" required />
           </div>
-          <div class="form-group">
+          <div class="form-group" id="emailConfirmGroup">
             <label class="form-label">E-Mail wiederholen *</label>
             <input type="email" id="adminEmailConfirm" class="form-control" required />
+            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Personalnummer *</label>
@@ -691,6 +692,7 @@
           <div class="form-group" id="passwordConfirmGroup">
             <label class="form-label">Passwort wiederholen *</label>
             <input type="password" id="adminPasswordConfirm" class="form-control" />
+            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Position *</label>
@@ -956,10 +958,12 @@
 
     <!-- Scripts -->
     <!-- Enable v2 API for root users -->
+    <script src="/feature-flags.js"></script>
     <script>
       window.FEATURE_FLAGS = window.FEATURE_FLAGS || {};
       window.FEATURE_FLAGS.USE_API_V2_AUTH = true;
       window.FEATURE_FLAGS.USE_API_V2_USERS = true;
+      window.FEATURE_FLAGS.USE_API_V2_ROOT = true;
     </script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-admins.ts"></script>

@@ -34,7 +34,7 @@ export const adminPermissionsController = {
       }
 
       // Check permissions
-      if (!req.user || req.user.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
@@ -47,12 +47,12 @@ export const adminPermissionsController = {
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = (adminRows[0] as { tenant_id: number }).tenant_id;
       const permissions = await adminPermissionsService.getAdminPermissions(
         adminId,
         targetTenantId,
@@ -76,7 +76,7 @@ export const adminPermissionsController = {
    */
   async getMyPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || !req.tenantId) {
+      if (!req.tenantId) {
         res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
         return;
       }
@@ -130,7 +130,7 @@ export const adminPermissionsController = {
       }
 
       // Check permissions
-      if (!req.user || req.user.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
@@ -148,26 +148,24 @@ export const adminPermissionsController = {
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = (adminRows[0] as { tenant_id: number }).tenant_id;
 
       // Set department permissions
-      if (departmentIds !== undefined) {
-        await adminPermissionsService.setDepartmentPermissions(
-          adminId,
-          departmentIds,
-          permissions,
-          req.user.id,
-          targetTenantId,
-        );
-      }
+      await adminPermissionsService.setDepartmentPermissions(
+        adminId,
+        departmentIds,
+        permissions,
+        req.user.id,
+        targetTenantId,
+      );
 
       // Set group permissions if provided
-      if (groupIds && groupIds.length > 0) {
+      if (groupIds.length > 0) {
         await adminPermissionsService.setGroupPermissions(
           adminId,
           groupIds,
@@ -208,7 +206,7 @@ export const adminPermissionsController = {
       }
 
       // Check permissions
-      if (!req.user || req.user.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
@@ -222,12 +220,12 @@ export const adminPermissionsController = {
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = (adminRows[0] as { tenant_id: number }).tenant_id;
 
       await adminPermissionsService.removeDepartmentPermission(
         adminId,
@@ -267,7 +265,7 @@ export const adminPermissionsController = {
       }
 
       // Check permissions
-      if (!req.user || req.user.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
@@ -281,12 +279,12 @@ export const adminPermissionsController = {
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = (adminRows[0] as { tenant_id: number }).tenant_id;
 
       await adminPermissionsService.removeGroupPermission(
         adminId,
@@ -326,7 +324,7 @@ export const adminPermissionsController = {
       }
 
       // Check permissions
-      if (!req.user || req.user.role !== 'root' || !req.tenantId) {
+      if (req.user.role !== 'root' || !req.tenantId) {
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
@@ -378,7 +376,7 @@ export const adminPermissionsController = {
       }
 
       // Check permissions
-      if (!req.user || req.user.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
         return;
       }
@@ -393,12 +391,12 @@ export const adminPermissionsController = {
         [adminId],
       );
 
-      if (!adminRows || adminRows.length === 0) {
+      if (adminRows.length === 0) {
         res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
         return;
       }
 
-      const targetTenantId = adminRows[0].tenant_id;
+      const targetTenantId = (adminRows[0] as { tenant_id: number }).tenant_id;
 
       const result = await adminPermissionsService.checkAccess(
         adminId,
