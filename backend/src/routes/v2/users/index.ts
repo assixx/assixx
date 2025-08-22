@@ -83,7 +83,7 @@ router.get(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidation.list,
-  typed.auth(usersController.listUsers),
+  typed.auth((req, res) => usersController.listUsers(req, res)),
 );
 
 /**
@@ -410,6 +410,54 @@ router.put(
 
 /**
  * @swagger
+ * /api/v2/users/me:
+ *   patch:
+ *     summary: Update current user (partial)
+ *     description: Partially update current user's data including employee number
+ *     tags: [Users v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               employee_number:
+ *                 type: string
+ *                 maxLength: 10
+ *                 description: Employee number (up to 10 characters)
+ *               firstName:
+ *                 type: string
+ *                 maxLength: 100
+ *               lastName:
+ *                 type: string
+ *                 maxLength: 100
+ *     responses:
+ *       200:
+ *         description: Successfully updated user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/UserV2'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+// Update current user (partial) - including employee_number
+router.patch(
+  '/me',
+  authenticateV2 as RequestHandler,
+  typed.auth(usersController.updateCurrentUserProfile),
+);
+
+/**
+ * @swagger
  * /api/v2/users/me/password:
  *   put:
  *     summary: Change password
@@ -565,7 +613,7 @@ router.post(
   '/:id/archive',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  typed.auth(usersController.archiveUser),
+  typed.auth((req, res) => usersController.archiveUser(req, res)),
 );
 
 /**
@@ -611,7 +659,7 @@ router.post(
   '/:id/unarchive',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  typed.auth(usersController.unarchiveUser),
+  typed.auth((req, res) => usersController.unarchiveUser(req, res)),
 );
 
 /**
@@ -698,7 +746,9 @@ router.post(
   '/me/profile-picture',
   authenticateV2 as RequestHandler,
   rateLimiter.upload, // Limit uploads
-  typed.auth(usersController.uploadProfilePicture),
+  typed.auth((req, res) => {
+    usersController.uploadProfilePicture(req, res);
+  }),
 );
 
 /**

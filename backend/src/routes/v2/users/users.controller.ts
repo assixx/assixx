@@ -5,7 +5,7 @@
 import { Response } from 'express';
 import { ValidationError, validationResult } from 'express-validator';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types';
 import {
   type PaginationMeta,
@@ -49,7 +49,7 @@ function mapValidationErrors(errors: ValidationError[]): { field: string; messag
 
 export const usersController = {
   // List all users with pagination and filters
-  async listUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+  listUsers: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -83,7 +83,7 @@ export const usersController = {
   },
 
   // Get current authenticated user
-  async getCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  getCurrentUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (req.userId === undefined || req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
@@ -102,7 +102,7 @@ export const usersController = {
   },
 
   // Get user by ID
-  async getUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
+  getUserById: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -132,7 +132,7 @@ export const usersController = {
   },
 
   // Create new user
-  async createUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  createUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -152,7 +152,7 @@ export const usersController = {
       const user = await usersService.createUser(body, req.tenantId);
 
       // Log user creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.tenantId,
         user_id: req.userId ?? 0,
         action: 'create',
@@ -184,7 +184,7 @@ export const usersController = {
   },
 
   // Update user
-  async updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  updateUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -209,7 +209,7 @@ export const usersController = {
       const user = await usersService.updateUser(userId, body, req.tenantId);
 
       // Log user update
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.tenantId,
         user_id: req.userId ?? 0,
         action: 'update',
@@ -250,7 +250,7 @@ export const usersController = {
   },
 
   // Update current user profile
-  async updateCurrentUserProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+  updateCurrentUserProfile: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -281,7 +281,7 @@ export const usersController = {
   },
 
   // Change password
-  async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+  changePassword: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -312,7 +312,7 @@ export const usersController = {
   },
 
   // Delete user
-  async deleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  deleteUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -336,13 +336,13 @@ export const usersController = {
       await usersService.deleteUser(userId, req.userId, req.tenantId);
 
       // Log user deletion
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.tenantId,
         user_id: req.userId,
         action: 'delete',
         entity_type: 'user',
         entity_id: userId,
-        details: `Benutzer gelöscht: ${(deletedUser as User | null)?.email}`,
+        details: `Benutzer gelöscht: ${(deletedUser as User | null)?.email ?? 'unbekannt'}`,
         old_values: {
           email: (deletedUser as User | null)?.email,
           username: (deletedUser as User | null)?.username,
@@ -443,7 +443,7 @@ export const usersController = {
   },
 
   // Get profile picture
-  async getProfilePicture(req: AuthenticatedRequest, res: Response): Promise<void> {
+  getProfilePicture: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (req.userId === undefined || req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
@@ -465,50 +465,49 @@ export const usersController = {
   },
 
   // Upload profile picture
-  uploadProfilePicture(req: AuthenticatedRequest, res: Response): void {
-    uploadMiddleware.single('profilePicture')(req, res, (err) => {
-      if (err !== null && err !== undefined && err !== '') {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        res.status(400).json(errorResponse('BAD_REQUEST', errorMessage));
+  uploadProfilePicture: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    // Promisify the multer upload
+    await new Promise<void>((resolve, reject) => {
+      uploadMiddleware.single('profilePicture')(req, res, (err) => {
+        if (err !== null && err !== undefined && err !== '') {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        } else {
+          resolve();
+        }
+      });
+    }).catch((error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(400).json(errorResponse('BAD_REQUEST', errorMessage));
+    });
+
+    // Continue with the upload logic if no error occurred
+    if (res.headersSent) return;
+
+    try {
+      if (!req.file) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'No file uploaded'));
         return;
       }
 
-      // Handle async operations in a separate function
-      const handleUpload = async (): Promise<void> => {
-        try {
-          if (!req.file) {
-            res.status(400).json(errorResponse('BAD_REQUEST', 'No file uploaded'));
-            return;
-          }
+      if (req.userId === undefined || req.tenantId === undefined) {
+        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        return;
+      }
+      const user = await usersService.updateProfilePicture(req.userId, req.file.path, req.tenantId);
 
-          if (req.userId === undefined || req.tenantId === undefined) {
-            res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
-            return;
-          }
-          const user = await usersService.updateProfilePicture(
-            req.userId,
-            req.file.path,
-            req.tenantId,
-          );
-
-          res.json(successResponse(user, 'Profile picture uploaded successfully'));
-        } catch (error: unknown) {
-          console.error('[Users v2] Upload profile picture error:', error);
-          if (error instanceof ServiceError) {
-            res.status(error.statusCode).json(errorResponse(error.code, error.message));
-          } else {
-            res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to upload profile picture'));
-          }
-        }
-      };
-
-      // Execute the async handler
-      void handleUpload();
-    });
+      res.json(successResponse(user, 'Profile picture uploaded successfully'));
+    } catch (error: unknown) {
+      console.error('[Users v2] Upload profile picture error:', error);
+      if (error instanceof ServiceError) {
+        res.status(error.statusCode).json(errorResponse(error.code, error.message));
+      } else {
+        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to upload profile picture'));
+      }
+    }
   },
 
   // Delete profile picture
-  async deleteProfilePicture(req: AuthenticatedRequest, res: Response): Promise<void> {
+  deleteProfilePicture: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (req.userId === undefined || req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
@@ -527,7 +526,7 @@ export const usersController = {
   },
 
   // Update availability
-  async updateAvailability(req: AuthenticatedRequest, res: Response): Promise<void> {
+  updateAvailability: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {

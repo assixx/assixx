@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
 import path from 'path';
 
-import User from '../../../models/user';
+import userModel from '../../../models/user';
 import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
 import {
   CreateUserBody,
@@ -95,7 +95,7 @@ export class UsersService {
     if (isArchived !== undefined) filters.is_archived = isArchived;
 
     // Get total count
-    const total = await User.countWithFilters(filters);
+    const total = await userModel.countWithFilters(filters);
 
     // Get users
     const searchFilters = {
@@ -106,7 +106,7 @@ export class UsersService {
       sort_by: sortBy,
       sort_dir: sortOrder,
     };
-    const users = await User.search(searchFilters);
+    const users = await userModel.search(searchFilters);
 
     // Sanitize and convert to camelCase
     const sanitizedUsers = users.map((user) => dbToApi(sanitizeUser(user)));
@@ -128,7 +128,7 @@ export class UsersService {
    * @param tenantId - The tenant ID
    */
   async getUserById(userId: number, tenantId: number): Promise<unknown> {
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
 
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
@@ -144,7 +144,7 @@ export class UsersService {
    */
   async createUser(userData: CreateUserBody, tenantId: number): Promise<unknown> {
     // Check if email already exists within the same tenant
-    const existingUser = await User.findByEmail(userData.email, tenantId);
+    const existingUser = await userModel.findByEmail(userData.email, tenantId);
     if (existingUser) {
       throw new ServiceError('CONFLICT', 'Email already exists', 409);
     }
@@ -169,10 +169,12 @@ export class UsersService {
 
     try {
       // Create user - returns the new user ID
-      const userId = await User.create(dbUserData as unknown as Parameters<typeof User.create>[0]);
+      const userId = await userModel.create(
+        dbUserData as unknown as Parameters<typeof userModel.create>[0],
+      );
 
       // Fetch complete user data
-      const createdUser = await User.findById(userId, tenantId);
+      const createdUser = await userModel.findById(userId, tenantId);
 
       if (!createdUser) {
         throw new ServiceError('SERVER_ERROR', 'Failed to retrieve created user', 500);
@@ -208,7 +210,7 @@ export class UsersService {
    */
   async updateUser(userId: number, updateData: UpdateUserBody, tenantId: number): Promise<unknown> {
     // Check if user exists
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
     }
@@ -223,10 +225,10 @@ export class UsersService {
 
     try {
       // Update user
-      await User.update(userId, dbUpdateData, tenantId);
+      await userModel.update(userId, dbUpdateData, tenantId);
 
       // Fetch updated user
-      const updatedUser = await User.findById(userId, tenantId);
+      const updatedUser = await userModel.findById(userId, tenantId);
 
       if (!updatedUser) {
         throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);
@@ -267,28 +269,37 @@ export class UsersService {
     const dbUpdateData = apiToDb(profileData as Record<string, unknown>);
 
     // Only allow specific fields to be updated
-    const allowedFields = [
-      'first_name',
-      'last_name',
-      'phone',
-      'address',
-      'emergency_contact',
-      'emergency_phone',
-    ];
     const filteredData: Record<string, unknown> = {};
 
-    for (const field of allowedFields) {
-      if (dbUpdateData[field] !== undefined) {
-        filteredData[field] = dbUpdateData[field];
-      }
+    // Use explicit property assignment to avoid object injection
+    if (dbUpdateData.first_name !== undefined) {
+      filteredData.first_name = dbUpdateData.first_name;
+    }
+    if (dbUpdateData.last_name !== undefined) {
+      filteredData.last_name = dbUpdateData.last_name;
+    }
+    if (dbUpdateData.phone !== undefined) {
+      filteredData.phone = dbUpdateData.phone;
+    }
+    if (dbUpdateData.address !== undefined) {
+      filteredData.address = dbUpdateData.address;
+    }
+    if (dbUpdateData.emergency_contact !== undefined) {
+      filteredData.emergency_contact = dbUpdateData.emergency_contact;
+    }
+    if (dbUpdateData.emergency_phone !== undefined) {
+      filteredData.emergency_phone = dbUpdateData.emergency_phone;
+    }
+    if (dbUpdateData.employee_number !== undefined) {
+      filteredData.employee_number = dbUpdateData.employee_number;
     }
 
     try {
       // Update user
-      await User.update(userId, filteredData, tenantId);
+      await userModel.update(userId, filteredData, tenantId);
 
       // Fetch updated user
-      const updatedUser = await User.findById(userId, tenantId);
+      const updatedUser = await userModel.findById(userId, tenantId);
 
       if (!updatedUser) {
         throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);
@@ -330,7 +341,7 @@ export class UsersService {
     newPassword: string,
   ): Promise<{ message: string }> {
     // Verify current password and change it
-    const result = await User.changePassword(userId, tenantId, currentPassword, newPassword);
+    const result = await userModel.changePassword(userId, tenantId, currentPassword, newPassword);
 
     if (!result.success) {
       throw new ServiceError('UNAUTHORIZED', 'Current password is incorrect', 401);
@@ -351,7 +362,7 @@ export class UsersService {
     tenantId: number,
   ): Promise<{ message: string }> {
     // Check if user exists
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
     }
@@ -362,7 +373,7 @@ export class UsersService {
     }
 
     // Delete user
-    await User.delete(userId);
+    await userModel.delete(userId);
     return { message: 'User deleted successfully' };
   }
 
@@ -373,13 +384,13 @@ export class UsersService {
    */
   async archiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     // Check if user exists
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
     }
 
     // Archive user
-    await User.archiveUser(userId, tenantId);
+    await userModel.archiveUser(userId, tenantId);
     return { message: 'User archived successfully' };
   }
 
@@ -390,13 +401,13 @@ export class UsersService {
    */
   async unarchiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     // Check if user exists (including archived)
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
     }
 
     // Unarchive user
-    await User.unarchiveUser(userId, tenantId);
+    await userModel.unarchiveUser(userId, tenantId);
     return { message: 'User unarchived successfully' };
   }
 
@@ -406,7 +417,7 @@ export class UsersService {
    * @param tenantId - The tenant ID
    */
   async getProfilePicturePath(userId: number, tenantId: number): Promise<string | null> {
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
 
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
@@ -442,10 +453,10 @@ export class UsersService {
     const relativePath = path.relative(process.cwd(), filePath);
 
     // Update user profile picture
-    await User.updateProfilePicture(userId, relativePath, tenantId);
+    await userModel.updateProfilePicture(userId, relativePath, tenantId);
 
     // Fetch updated user
-    const updatedUser = await User.findById(userId, tenantId);
+    const updatedUser = await userModel.findById(userId, tenantId);
 
     if (!updatedUser) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);
@@ -460,7 +471,7 @@ export class UsersService {
    * @param tenantId - The tenant ID
    */
   async deleteProfilePicture(userId: number, tenantId: number): Promise<{ message: string }> {
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
 
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
@@ -470,16 +481,22 @@ export class UsersService {
       throw new ServiceError('NOT_FOUND', 'No profile picture to delete', 404);
     }
 
-    // Delete file
-    const filePath = path.join(process.cwd(), user.profile_picture);
+    // Delete file - validate path to prevent directory traversal
+    const profilePicture = user.profile_picture;
+    const normalizedPath = path.normalize(profilePicture);
+    if (normalizedPath.includes('..') || path.isAbsolute(normalizedPath)) {
+      throw new ServiceError('BAD_REQUEST', 'Invalid profile picture path', 400);
+    }
+    const filePath = path.join(process.cwd(), normalizedPath);
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       await fs.unlink(filePath);
     } catch (error: unknown) {
       console.error('Failed to delete profile picture file:', error);
     }
 
     // Update database
-    await User.updateProfilePicture(userId, '', tenantId);
+    await userModel.updateProfilePicture(userId, '', tenantId);
     return { message: 'Profile picture deleted successfully' };
   }
 
@@ -495,13 +512,13 @@ export class UsersService {
     tenantId: number,
   ): Promise<{ message: string }> {
     // Check if user exists
-    const user = await User.findById(userId, tenantId);
+    const user = await userModel.findById(userId, tenantId);
     if (!user) {
       throw new ServiceError('NOT_FOUND', 'User not found', 404);
     }
 
     // Update availability
-    await User.updateAvailability(userId, tenantId, {
+    await userModel.updateAvailability(userId, tenantId, {
       availability_status: availabilityData.availabilityStatus,
       availability_start: availabilityData.availabilityStart ?? undefined,
       availability_end: availabilityData.availabilityEnd ?? undefined,
@@ -509,7 +526,7 @@ export class UsersService {
     });
 
     // Fetch updated user
-    const updatedUser = await User.findById(userId, tenantId);
+    const updatedUser = await userModel.findById(userId, tenantId);
 
     if (!updatedUser) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);

@@ -88,6 +88,11 @@ class EmployeesManager {
   }
 
   private initializeEventListeners() {
+    // Floating Add Button
+    document.querySelector('.add-employee-btn')?.addEventListener('click', () => {
+      this.showEmployeeModal();
+    });
+
     // Filter buttons
     document.querySelector('#show-all-employees')?.addEventListener('click', () => {
       this.currentFilter = 'all';
@@ -194,44 +199,54 @@ class EmployeesManager {
           },
         });
 
-        if (availabilityResponse.ok) {
-          const availabilityData = (await availabilityResponse.json()) as {
-            employees?: {
-              employeeId?: number;
-              employee_id?: number;
-              availabilityStatus?: string;
-              availability_status?: string;
-              reason?: string;
-              availableFrom?: string;
-              available_from?: string;
-            }[];
-          };
-          const availabilityMap = new Map<number, { status: string; reason?: string; availableFrom?: string }>();
+        // Handle 403 gracefully - feature might not be available for this tenant
+        if (availabilityResponse.status === 403) {
+          console.info('[EmployeesManager] Availability feature not available for this tenant - skipping');
+          return;
+        }
 
-          // Create a map of employee_id -> availability status
-          if (availabilityData.employees !== undefined && Array.isArray(availabilityData.employees)) {
-            availabilityData.employees.forEach((emp) => {
-              const employeeId = emp.employeeId ?? emp.employee_id;
-              if (employeeId !== undefined) {
-                availabilityMap.set(employeeId, {
-                  status: emp.availabilityStatus ?? emp.availability_status ?? 'available',
-                  reason: emp.reason,
-                  availableFrom: emp.availableFrom ?? emp.available_from,
-                });
-              }
-            });
-          }
+        if (!availabilityResponse.ok) {
+          console.warn(`[EmployeesManager] Failed to load availability: ${availabilityResponse.status}`);
+          return;
+        }
 
-          // Merge availability data with employee data
-          this.employees.forEach((emp) => {
-            const availability = availabilityMap.get(emp.id);
-            if (availability !== undefined) {
-              emp.availabilityStatus = availability.status;
-              emp.availabilityReason = availability.reason;
-              emp.availableFrom = availability.availableFrom;
+        // Process availability data
+        const availabilityData = (await availabilityResponse.json()) as {
+          employees?: {
+            employeeId?: number;
+            employee_id?: number;
+            availabilityStatus?: string;
+            availability_status?: string;
+            reason?: string;
+            availableFrom?: string;
+            available_from?: string;
+          }[];
+        };
+        const availabilityMap = new Map<number, { status: string; reason?: string; availableFrom?: string }>();
+
+        // Create a map of employee_id -> availability status
+        if (availabilityData.employees !== undefined && Array.isArray(availabilityData.employees)) {
+          availabilityData.employees.forEach((emp) => {
+            const employeeId = emp.employeeId ?? emp.employee_id;
+            if (employeeId !== undefined) {
+              availabilityMap.set(employeeId, {
+                status: emp.availabilityStatus ?? emp.availability_status ?? 'available',
+                reason: emp.reason,
+                availableFrom: emp.availableFrom ?? emp.available_from,
+              });
             }
           });
         }
+
+        // Merge availability data with employee data
+        this.employees.forEach((emp) => {
+          const availability = availabilityMap.get(emp.id);
+          if (availability !== undefined) {
+            emp.availabilityStatus = availability.status;
+            emp.availabilityReason = availability.reason;
+            emp.availableFrom = availability.availableFrom;
+          }
+        });
       } catch (availError) {
         console.warn('Could not load availability data:', availError);
       }

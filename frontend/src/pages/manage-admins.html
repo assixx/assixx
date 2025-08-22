@@ -955,6 +955,12 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Enable v2 API for root users -->
+    <script>
+      window.FEATURE_FLAGS = window.FEATURE_FLAGS || {};
+      window.FEATURE_FLAGS.USE_API_V2_AUTH = true;
+      window.FEATURE_FLAGS.USE_API_V2_USERS = true;
+    </script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-admins.ts"></script>
 

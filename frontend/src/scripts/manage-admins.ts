@@ -22,6 +22,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
   const API_ENDPOINTS = {
     ADMIN_PERMISSIONS: '/api/admin-permissions',
     ADMIN_PERMISSIONS_GROUPS: '/api/admin-permissions/groups',
+    USERS_ME: '/users/me',
   } as const;
 
   // Initialize API Client
@@ -1236,6 +1237,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       // Assign global functions to handlers after DOM is ready
       (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
       (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
+
+      // Load user profile to trigger unified navigation update
+      try {
+        const userProfile = await apiClient.get<MappedUser>(API_ENDPOINTS.USERS_ME);
+        console.info('[manage-admins] User profile loaded:', userProfile);
+      } catch (error) {
+        console.error('[manage-admins] Failed to load user profile:', error);
+      }
 
       // Daten laden
       await loadAdmins();
