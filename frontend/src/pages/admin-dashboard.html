@@ -802,63 +802,7 @@
     <!-- Team Modal moved to /manage-teams -->
 
     <!-- Employee Status Modal -->
-    <div id="employee-status-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Mitarbeiter-Status ändern</h3>
-          <button class="modal-close" onclick="hideModal('employee-status-modal')">&times;</button>
-        </div>
-        <form id="employee-status-form">
-          <input type="hidden" id="status-employee-id" />
-          <div class="form-group">
-            <label class="form-label">Mitarbeiter</label>
-            <input type="text" id="status-employee-name" class="form-control" readonly />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="employee-status-display" onclick="toggleDropdown('employee-status')">
-                <span>Verfügbar</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="employee-status-dropdown">
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'available', 'Verfügbar')">
-                  <span class="badge badge-success">Verfügbar</span>
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'vacation', 'Urlaub')">
-                  <span class="badge badge-warning">Urlaub</span>
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'sick', 'Krank')">
-                  <span class="badge badge-danger">Krank</span>
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'unavailable', 'Beurlaubt')">
-                  <span class="badge badge-secondary">Beurlaubt</span>
-                </div>
-              </div>
-              <input type="hidden" name="status" id="employee-status-select" value="available" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Von Datum</label>
-            <input type="date" name="start_date" id="availability-start-date" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Bis Datum</label>
-            <input type="date" name="end_date" id="availability-end-date" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Notiz (optional)</label>
-            <textarea name="notes" class="form-control" rows="3" placeholder="z.B. Familienurlaub, Krankmeldung bis..."></textarea>
-          </div>
-          <div class="button-group">
-            <button type="submit" class="btn btn-primary">Status speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="hideModal('employee-status-modal')">Abbrechen</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- Employee Status Modal removed - functionality moved to manage-employees.html -->
 
     <!-- Document Modal -->
     <div id="document-modal" class="modal" class="u-hidden">

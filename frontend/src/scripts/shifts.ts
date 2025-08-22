@@ -15,7 +15,9 @@ interface Employee extends User {
   department_id?: number;
   team_id?: number;
   shift_assignments?: ShiftAssignment[];
-  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  availability_reason?: string;
+  available_from?: string;
 }
 
 interface ShiftAssignment {
@@ -87,7 +89,7 @@ interface SelectedContext {
 }
 
 interface ShiftFavorite {
-  id: string;
+  id: number | string;
   name: string; // Team name for display
   areaId: number;
   areaName: string;
@@ -474,6 +476,9 @@ class ShiftPlanningSystem {
       // Update UI based on user role
       console.info('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
       this.updateUIForRole();
+
+      // Initialize the week display immediately
+      this.updateWeekDisplay();
 
       // Check if department is selected and toggle visibility
       this.togglePlanningAreaVisibility();
@@ -1819,7 +1824,8 @@ class ShiftPlanningSystem {
           this.employees.map((e) => e.id),
         );
 
-        // Availability is now part of user data, no need for separate call
+        // Load availability status for the current week
+        await this.loadEmployeeAvailability();
 
         this.renderEmployeeList();
       } else {
@@ -1834,11 +1840,77 @@ class ShiftPlanningSystem {
     }
   }
 
+  async loadEmployeeAvailability(): Promise<void> {
+    try {
+      // Get the start and end date for the current week
+      const weekStart = this.getWeekStart(this.currentWeek);
+      const weekEnd = this.getWeekEnd(this.currentWeek);
+
+      // Format dates for API
+      const startStr = this.formatDate(weekStart);
+      const endStr = this.formatDate(weekEnd);
+
+      console.info('[SHIFTS] Loading availability for week:', startStr, 'to', endStr);
+
+      // Load availability status from API
+      const response = await fetch(`/api/availability/current?start_date=${startStr}&end_date=${endStr}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as {
+          employees?: {
+            employee_id: number;
+            current_status: string;
+            current_reason?: string;
+            available_from?: string;
+          }[];
+        };
+
+        const availabilityData = data.employees ?? [];
+
+        // Map availability to employees
+        this.employees.forEach((employee) => {
+          const availability = availabilityData.find((a) => a.employee_id === employee.id);
+          if (availability) {
+            employee.availability_status = availability.current_status as
+              | 'available'
+              | 'unavailable'
+              | 'vacation'
+              | 'sick'
+              | 'training'
+              | 'other';
+            employee.availability_reason = availability.current_reason;
+            employee.available_from = availability.available_from;
+          } else {
+            // Default to available if no specific status
+            employee.availability_status = 'available';
+          }
+        });
+
+        console.info('[SHIFTS] Availability loaded for', availabilityData.length, 'employees');
+      } else {
+        console.warn('[SHIFTS] Could not load availability, defaulting all to available');
+        // Default all to available if API fails
+        this.employees.forEach((employee) => {
+          employee.availability_status = 'available';
+        });
+      }
+    } catch (error) {
+      console.error('[SHIFTS] Error loading availability:', error);
+      // Default all to available on error
+      this.employees.forEach((employee) => {
+        employee.availability_status = 'available';
+      });
+    }
+  }
+
   loadAvailabilityStatus(): void {
-    // Availability is now part of user data in v2
-    // This method is kept for backward compatibility but does nothing
-    // Employee availability status is loaded with user data in loadEmployees()
-    console.info('[SHIFTS] Availability status is now loaded with user data');
+    // Deprecated - kept for backward compatibility
+    console.info('[SHIFTS] loadAvailabilityStatus is deprecated, use loadEmployeeAvailability');
   }
 
   renderEmployeeList(): void {
@@ -2111,25 +2183,41 @@ class ShiftPlanningSystem {
       return;
     }
 
-    console.info('[SHIFTS DEBUG] Found employee:', employee);
-
-    // Check if employee is available
+    // Check employee availability before assignment
     if (employee.availability_status !== undefined && employee.availability_status !== 'available') {
-      console.info('[SHIFTS DEBUG] Employee not available:', employee.availability_status);
+      // Build error message with details
+      const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+      const employeeName = fullName !== '' ? fullName : employee.username;
+      let errorMsg = `${employeeName} ist nicht verfügbar`;
 
-      // Get status text and badge color
-      const statusText = {
-        vacation: 'Urlaub',
-        sick: 'Krank',
-        unavailable: 'Beurlaubt',
-      }[employee.availability_status];
+      // Add status text
+      const statusTexts: Record<string, string> = {
+        vacation: 'im Urlaub',
+        sick: 'krankgemeldet',
+        unavailable: 'nicht verfügbar',
+        training: 'in Schulung',
+        other: 'anderweitig abwesend',
+      };
 
-      const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
-      const employeeName = name !== '' ? name : employee.username;
+      if (employee.availability_status in statusTexts) {
+        errorMsg = `${employeeName} ist ${statusTexts[employee.availability_status]}`;
+      }
 
-      showErrorAlert(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
+      // Add date range if available
+      if (employee.available_from !== undefined && employee.available_from !== '') {
+        errorMsg += ` (verfügbar ab ${new Date(employee.available_from).toLocaleDateString('de-DE')})`;
+      }
+
+      // Add reason if available
+      if (employee.availability_reason !== undefined && employee.availability_reason !== '') {
+        errorMsg += `: ${employee.availability_reason}`;
+      }
+
+      showErrorAlert(errorMsg);
       return;
     }
+
+    console.info('[SHIFTS DEBUG] Found employee:', employee);
 
     // Validate date format to prevent object injection
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -2506,6 +2594,9 @@ class ShiftPlanningSystem {
     this.isEditMode = false;
 
     console.info('[SHIFTS DEBUG] New week after:', this.currentWeek);
+
+    // Update the week display immediately
+    this.updateWeekDisplay();
     console.info('[SHIFTS DEBUG] PlanId reset to null for new week');
 
     // Update button visibility after resetting planId
@@ -2544,18 +2635,36 @@ class ShiftPlanningSystem {
     return `${String(year)}-${month}-${day}`;
   }
 
+  updateWeekDisplay(): void {
+    const weekStart = this.getWeekStart(this.currentWeek);
+    const currentWeekElement = document.querySelector('#currentWeekInfo');
+    if (currentWeekElement) {
+      currentWeekElement.textContent = this.formatWeekRange(weekStart);
+      console.info('[SHIFTS DEBUG] Week display updated:', currentWeekElement.textContent);
+    } else {
+      console.warn('[SHIFTS WARN] currentWeekInfo element not found');
+    }
+  }
+
   formatWeekRange(weekStart: Date): string {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    const options: Intl.DateTimeFormatOptions = {
-      day: 'numeric',
-      month: 'short',
-    };
-    const startStr = weekStart.toLocaleDateString('de-DE', options);
-    const endStr = weekEnd.toLocaleDateString('de-DE', options);
+    // Get calendar week number
+    const weekNumber = this.getWeekNumber(weekStart);
 
-    return `${startStr} - ${endStr} ${String(weekEnd.getFullYear())}`;
+    // Format dates in German format DD.MM.YYYY
+    const formatDate = (date: Date): string => {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = String(date.getFullYear());
+      return `${day}.${month}.${year}`;
+    };
+
+    const startStr = formatDate(weekStart);
+    const endStr = formatDate(weekEnd);
+
+    return `KW ${String(weekNumber)} - ${startStr} bis ${endStr}`;
   }
 
   updateShiftCells(weekStart: Date): void {
@@ -3369,6 +3478,19 @@ class ShiftPlanningSystem {
    * Add current context as favorite
    */
   private async addToFavorites(): Promise<void> {
+    console.info('[FAVORITE ADD] Current context:', this.selectedContext);
+
+    // First check if this combination might already be favorited
+    // Check by team since that's usually unique enough
+    if (this.selectedContext.teamId !== null) {
+      const existingFavorite = this.favorites.find((fav) => fav.teamId === this.selectedContext.teamId);
+      if (existingFavorite) {
+        console.info('[FAVORITE ADD] Team already exists as favorite:', existingFavorite);
+        showErrorAlert(`Diese Kombination ist bereits als Favorit "${existingFavorite.name}" gespeichert!`);
+        return;
+      }
+    }
+
     // Check if all required fields are selected
     if (
       this.selectedContext.areaId === null ||
@@ -3376,7 +3498,20 @@ class ShiftPlanningSystem {
       this.selectedContext.machineId === null ||
       this.selectedContext.teamId === null
     ) {
+      console.error('[FAVORITE ADD] Missing filters:', {
+        areaId: this.selectedContext.areaId,
+        departmentId: this.selectedContext.departmentId,
+        machineId: this.selectedContext.machineId,
+        teamId: this.selectedContext.teamId,
+      });
       showErrorAlert('Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)');
+      return;
+    }
+
+    // Double-check if this exact combination is already favorited
+    if (this.isCombinationFavorited()) {
+      console.info('[FAVORITE ADD] Combination already exists as favorite');
+      showErrorAlert('Diese Kombination existiert bereits als Favorit!');
       return;
     }
 
@@ -3486,28 +3621,53 @@ class ShiftPlanningSystem {
    * Load favorite and apply its filters
    */
   private async loadFavorite(favorite: ShiftFavorite): Promise<void> {
+    console.info('[LOADFAVORITE] Starting to load favorite:', favorite);
     try {
       // 1. Set and load Area
+      console.info('[LOADFAVORITE] Setting area:', favorite.areaId, favorite.areaName);
       this.selectedContext.areaId = favorite.areaId;
       const areaSelect = $$id<HTMLInputElement>('areaSelect');
-      if (areaSelect) areaSelect.value = String(favorite.areaId);
+      if (areaSelect) {
+        areaSelect.value = String(favorite.areaId);
+        console.info('[LOADFAVORITE] Area select value set to:', areaSelect.value);
+      } else {
+        console.error('[LOADFAVORITE] Area select element not found!');
+      }
 
       const areaDisplay = document.querySelector('#areaDisplay span');
-      if (areaDisplay) areaDisplay.textContent = favorite.areaName;
+      if (areaDisplay) {
+        areaDisplay.textContent = favorite.areaName;
+        console.info('[LOADFAVORITE] Area display updated to:', favorite.areaName);
+      } else {
+        console.error('[LOADFAVORITE] Area display element not found!');
+      }
 
       // Use the global selectOption to trigger loading departments
       const shiftsWindow = window as unknown as ShiftsWindow;
+      console.info('[LOADFAVORITE] Calling selectOption for area');
       shiftsWindow.selectOption('area', String(favorite.areaId), favorite.areaName);
 
       // 2. Set and load Department
+      console.info('[LOADFAVORITE] Setting department:', favorite.departmentId, favorite.departmentName);
       this.selectedContext.departmentId = favorite.departmentId;
       const departmentSelect = $$id<HTMLInputElement>('departmentSelect');
-      if (departmentSelect) departmentSelect.value = String(favorite.departmentId);
+      if (departmentSelect) {
+        departmentSelect.value = String(favorite.departmentId);
+        console.info('[LOADFAVORITE] Department select value set to:', departmentSelect.value);
+      } else {
+        console.error('[LOADFAVORITE] Department select element not found!');
+      }
 
       const departmentDisplay = document.querySelector('#departmentDisplay span');
-      if (departmentDisplay) departmentDisplay.textContent = favorite.departmentName;
+      if (departmentDisplay) {
+        departmentDisplay.textContent = favorite.departmentName;
+        console.info('[LOADFAVORITE] Department display updated to:', favorite.departmentName);
+      } else {
+        console.error('[LOADFAVORITE] Department display element not found!');
+      }
 
       // Load machines for this department
+      console.info('[LOADFAVORITE] Loading machines for department');
       await this.loadMachines();
 
       // 3. Set and load Machine
@@ -3530,14 +3690,17 @@ class ShiftPlanningSystem {
       if (teamDisplay) teamDisplay.textContent = favorite.teamName;
 
       // Trigger team selection logic (loads shift plan)
+      console.info('[LOADFAVORITE] Calling onTeamSelected with teamId:', favorite.teamId);
       await this.onTeamSelected(favorite.teamId);
 
       // Update button visibility (should hide since we loaded a favorited combination)
+      console.info('[LOADFAVORITE] Updating add favorite button visibility');
       this.updateAddFavoriteButton();
 
+      console.info('[LOADFAVORITE] Successfully loaded favorite!');
       showSuccessAlert(`Favorit "${favorite.name}" wurde geladen`);
     } catch (error) {
-      console.error('Error loading favorite:', error);
+      console.error('[LOADFAVORITE] Error loading favorite:', error);
       showErrorAlert('Fehler beim Laden des Favoriten');
     }
   }
@@ -3591,7 +3754,7 @@ class ShiftPlanningSystem {
 
       const button = document.createElement('button');
       button.className = 'favorite-btn';
-      button.dataset.favoriteId = fav.id;
+      button.dataset.favoriteId = String(fav.id);
 
       // Build title with values
       const areaName = fav.areaName;
@@ -3608,23 +3771,33 @@ class ShiftPlanningSystem {
       // Add remove button
       const removeBtn = document.createElement('span');
       removeBtn.className = 'remove-favorite';
-      removeBtn.dataset.favoriteId = fav.id;
+      removeBtn.dataset.favoriteId = String(fav.id);
       removeBtn.textContent = '×';
       button.append(removeBtn);
 
       // Add click event listener
       button.addEventListener('click', (e) => {
+        console.info('[FAVORITE DEBUG] Button clicked!', e.target);
         const target = e.target as HTMLElement;
         // Check if remove button was clicked
         if (target.classList.contains('remove-favorite')) {
+          console.info('[FAVORITE DEBUG] Remove button clicked, favId:', target.dataset.favoriteId);
           e.stopPropagation();
           const favId = target.dataset.favoriteId;
           if (favId !== undefined && favId !== '') void this.removeFavorite(favId);
         } else {
           // Load the favorite
           const favId = button.dataset.favoriteId;
-          const favorite = this.favorites.find((f) => f.id === favId);
-          if (favorite) void this.loadFavorite(favorite);
+          console.info('[FAVORITE DEBUG] Loading favorite with ID:', favId);
+          console.info('[FAVORITE DEBUG] All favorites:', this.favorites);
+          const favorite = this.favorites.find((f) => String(f.id) === favId);
+          console.info('[FAVORITE DEBUG] Found favorite:', favorite);
+          if (favorite) {
+            console.info('[FAVORITE DEBUG] Calling loadFavorite with:', favorite);
+            void this.loadFavorite(favorite);
+          } else {
+            console.error('[FAVORITE DEBUG] Favorite not found!');
+          }
         }
       });
 
@@ -3664,8 +3837,15 @@ class ShiftPlanningSystem {
     let addBtn = document.querySelector('#addToFavoritesBtn');
 
     // Check if all filters are selected AND combination is not already favorited
-    const shouldShowButton =
-      this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0 && !this.isCombinationFavorited();
+    const isFavorited = this.isCombinationFavorited();
+    const shouldShowButton = this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0 && !isFavorited;
+
+    console.info('[FAVORITE BUTTON] Update button visibility:', {
+      teamId: this.selectedContext.teamId,
+      isFavorited,
+      shouldShowButton,
+      buttonExists: addBtn !== null,
+    });
 
     if (shouldShowButton) {
       // Show button only if combination is not favorited

@@ -7,6 +7,7 @@ import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { mapUsers, type UserAPIResponse } from '../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
+import { $$id, show, hide, setHTML } from '../utils/dom-utils';
 
 interface Employee extends User {
   employeeId?: string;
@@ -18,6 +19,10 @@ interface Employee extends User {
   position?: string;
   hireDate?: string;
   status: 'active' | 'inactive' | 'vacation' | 'sick' | 'terminated';
+  // Availability fields
+  availabilityStatus?: string;
+  availabilityReason?: string;
+  availableFrom?: string;
   // Add both snake_case and camelCase for compatibility
   first_name?: string;
   last_name?: string;
@@ -100,15 +105,15 @@ class EmployeesManager {
     });
 
     // Search
-    document.querySelector('#employee-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#employee-search');
-      this.searchTerm = searchInput !== null ? searchInput.value : '';
+    $$id('employee-search-btn')?.addEventListener('click', () => {
+      const searchInput = $$id('employee-search');
+      this.searchTerm = searchInput instanceof HTMLInputElement ? searchInput.value : '';
       void this.loadEmployees();
     });
 
     // Enter key on search
-    document.querySelector('#employee-search')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+    $$id('employee-search')?.addEventListener('keypress', (e) => {
+      if (e instanceof KeyboardEvent && e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
         void this.loadEmployees();
@@ -174,6 +179,63 @@ class EmployeesManager {
         );
       }
 
+      // Load availability data for all employees
+      try {
+        const token = localStorage.getItem('token');
+        if (token === null || token === '') {
+          console.warn('No auth token available for loading availability');
+          return;
+        }
+
+        const availabilityResponse = await fetch('/api/availability/current', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (availabilityResponse.ok) {
+          const availabilityData = (await availabilityResponse.json()) as {
+            employees?: {
+              employeeId?: number;
+              employee_id?: number;
+              availabilityStatus?: string;
+              availability_status?: string;
+              reason?: string;
+              availableFrom?: string;
+              available_from?: string;
+            }[];
+          };
+          const availabilityMap = new Map<number, { status: string; reason?: string; availableFrom?: string }>();
+
+          // Create a map of employee_id -> availability status
+          if (availabilityData.employees !== undefined && Array.isArray(availabilityData.employees)) {
+            availabilityData.employees.forEach((emp) => {
+              const employeeId = emp.employeeId ?? emp.employee_id;
+              if (employeeId !== undefined) {
+                availabilityMap.set(employeeId, {
+                  status: emp.availabilityStatus ?? emp.availability_status ?? 'available',
+                  reason: emp.reason,
+                  availableFrom: emp.availableFrom ?? emp.available_from,
+                });
+              }
+            });
+          }
+
+          // Merge availability data with employee data
+          this.employees.forEach((emp) => {
+            const availability = availabilityMap.get(emp.id);
+            if (availability !== undefined) {
+              emp.availabilityStatus = availability.status;
+              emp.availabilityReason = availability.reason;
+              emp.availableFrom = availability.availableFrom;
+            }
+          });
+        }
+      } catch (availError) {
+        console.warn('Could not load availability data:', availError);
+      }
+
       this.renderEmployeesTable();
     } catch (error) {
       console.error('Error loading employees:', error);
@@ -191,21 +253,26 @@ class EmployeesManager {
   }
 
   private renderEmployeesTable(): void {
-    const tableBody = document.querySelector('#employees-table-body');
+    const tableBody = $$id('employees-table-body');
     if (tableBody === null) return;
 
     if (this.employees.length === 0) {
-      tableBody.innerHTML = `
+      setHTML(
+        tableBody,
+        `
         <tr>
-          <td colspan="7" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
+          <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
         </tr>
-      `;
+      `,
+      );
       return;
     }
 
-    tableBody.innerHTML = this.employees
-      .map(
-        (employee) => `
+    setHTML(
+      tableBody,
+      this.employees
+        .map(
+          (employee) => `
       <tr>
         <td>
           <strong>${employee.first_name ?? ''} ${employee.last_name ?? ''}</strong>
@@ -222,8 +289,7 @@ class EmployeesManager {
           </span>
         </td>
         <td>
-          <span class="availability-dot ${this.getAvailabilityClass(employee.availability)}"></span>
-          ${this.getAvailabilityLabel(employee.availability)}
+          ${this.getAvailabilityBadge(employee)}
         </td>
         <td>
           <button class="btn btn-sm btn-secondary" onclick="window.editEmployee(${employee.id})">
@@ -238,8 +304,9 @@ class EmployeesManager {
         </td>
       </tr>
     `,
-      )
-      .join('');
+        )
+        .join(''),
+    );
   }
 
   // Unused methods - commenting out to resolve TypeScript warnings
@@ -280,38 +347,49 @@ class EmployeesManager {
   }
   */
 
-  private getAvailabilityClass(availability?: string): string {
-    switch (availability) {
-      case 'available':
-        return 'available';
-      case 'busy':
-        return 'busy';
-      case 'away':
-        return 'away';
-      case 'offline':
-      default:
-        return 'offline';
-    }
-  }
+  private getAvailabilityBadge(employee: Employee): string {
+    const status = employee.availabilityStatus ?? 'available';
 
-  private getAvailabilityLabel(availability?: string): string {
-    switch (availability) {
+    // Farben basierend auf design-standards
+    // Grün = Verfügbar, Orange = Urlaub, Rot = Krank, Cyan = Schulung, Grau = Nicht verfügbar/Sonstiges
+    let badgeClass = 'badge-success';
+    let badgeText = 'Verfügbar';
+
+    switch (status) {
+      case 'vacation':
+        badgeClass = 'badge-warning';
+        badgeText = 'Urlaub';
+        break;
+      case 'sick':
+        badgeClass = 'badge-danger';
+        badgeText = 'Krank';
+        break;
+      case 'unavailable':
+        badgeClass = 'badge-secondary';
+        badgeText = 'Nicht verfügbar';
+        break;
+      case 'training':
+        badgeClass = 'badge-info';
+        badgeText = 'Schulung';
+        break;
+      case 'other':
+        badgeClass = 'badge-dark';
+        badgeText = 'Sonstiges';
+        break;
       case 'available':
-        return 'Verfügbar';
-      case 'busy':
-        return 'Beschäftigt';
-      case 'away':
-        return 'Abwesend';
-      case 'offline':
       default:
-        return 'Offline';
+        badgeClass = 'badge-success';
+        badgeText = 'Verfügbar';
+        break;
     }
+
+    return `<span class="badge ${badgeClass}">${badgeText}</span>`;
   }
 
   showEmployeeModal(): void {
-    const modal = document.querySelector('#employee-modal');
+    const modal = $$id('employee-modal');
     if (modal !== null) {
-      modal.style.display = 'flex';
+      show(modal);
 
       // Load departments and teams after showing modal
       setTimeout(() => {
@@ -323,9 +401,9 @@ class EmployeesManager {
   }
 
   hideEmployeeModal(): void {
-    const modal = document.querySelector('#employee-modal');
+    const modal = $$id('employee-modal');
     if (modal !== null) {
-      modal.style.display = 'none';
+      hide(modal);
     }
   }
 
@@ -501,19 +579,39 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveEmployee = async () => {
-      const form = document.querySelector('#employee-form');
-      if (form === null) return;
+      const form = $$id('employee-form');
+      if (!(form instanceof HTMLFormElement)) return;
 
       const formData = new FormData(form);
       const data: Record<string, unknown> = {};
 
       formData.forEach((value, key) => {
         if (typeof value === 'string' && value.length > 0) {
-          // Convert to appropriate types
-          if (key === 'departmentId' || key === 'teamId') {
-            data[key] = Number.parseInt(value, 10);
-          } else {
-            data[key] = value;
+          // Convert to appropriate types - using safe key assignments
+          switch (key) {
+            case 'departmentId':
+            case 'teamId':
+              // eslint-disable-next-line security/detect-object-injection
+              data[key] = Number.parseInt(value, 10);
+              break;
+            case 'email':
+            case 'first_name':
+            case 'last_name':
+            case 'position':
+            case 'employee_number':
+            case 'phone':
+            case 'isActive':
+            case 'availabilityStatus':
+            case 'availability_start':
+            case 'availability_end':
+            case 'availability_notes':
+              // eslint-disable-next-line security/detect-object-injection
+              data[key] = value;
+              break;
+            default:
+              // Skip unknown keys for security
+              console.warn(`Skipping unknown form field: ${key}`);
+              break;
           }
         }
       });
@@ -600,8 +698,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.loadTeamsForEmployeeSelect = async () => {
       const teams = await employeesManager?.loadTeams();
-      const selectedDeptId = document.querySelector('#employee-department-select')?.value;
-      const selectElement = document.querySelector('#employee-team-select');
+      const deptSelect = $$id('employee-department-select');
+      const selectedDeptId = deptSelect instanceof HTMLSelectElement ? deptSelect.value : undefined;
+      const selectElement = $$id('employee-team-select');
 
       if (selectElement !== null && teams !== undefined) {
         // Filter teams by department if one is selected

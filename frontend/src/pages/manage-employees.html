@@ -199,11 +199,6 @@
         transition: all 0.2s ease;
       }
 
-      tr:hover .badge-danger {
-        background: rgba(244, 67, 54, 0.15);
-        border-color: rgba(244, 67, 54, 0.3);
-      }
-
       .badge-info {
         display: inline-flex;
         align-items: center;
@@ -218,6 +213,37 @@
         border: 1px solid rgba(0, 188, 212, 0.2);
         width: fit-content;
         transition: all 0.2s ease;
+      }
+
+      .badge-dark {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(69, 90, 100, 0.9);
+        background: rgba(69, 90, 100, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(69, 90, 100, 0.2);
+        width: fit-content;
+        transition: all 0.2s ease;
+      }
+
+      tr:hover .badge-info {
+        background: rgba(0, 188, 212, 0.15);
+        border-color: rgba(0, 188, 212, 0.3);
+      }
+
+      tr:hover .badge-secondary {
+        background: rgba(108, 117, 125, 0.15);
+        border-color: rgba(108, 117, 125, 0.3);
+      }
+
+      tr:hover .badge-dark {
+        background: rgba(69, 90, 100, 0.15);
+        border-color: rgba(69, 90, 100, 0.3);
       }
 
       /* Button Styles - Exakt aus admin-dashboard.html kopiert */
@@ -503,8 +529,43 @@
               <!-- Will be populated dynamically -->
             </select>
           </div>
+
+          <!-- Availability Section -->
+          <div class="form-section" style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 20px">
+            <h4 style="color: #fff; margin-bottom: 15px">Verfügbarkeit</h4>
+            <div class="form-group">
+              <label class="form-label">Verfügbarkeitsstatus</label>
+              <select name="availabilityStatus" id="availability-status-select" class="form-control">
+                <option value="available">Verfügbar</option>
+                <option value="vacation">Urlaub</option>
+                <option value="sick">Krank</option>
+                <option value="unavailable">Nicht verfügbar</option>
+                <option value="training">Schulung</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Von Datum</label>
+              <input type="date" name="availabilityStart" id="availability-start-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bis Datum</label>
+              <input type="date" name="availabilityEnd" id="availability-end-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Notiz (optional)</label>
+              <textarea
+                name="availabilityNotes"
+                id="availability-notes"
+                class="form-control"
+                rows="3"
+                placeholder="z.B. Familienurlaub, Krankmeldung bis..."
+              ></textarea>
+            </div>
+          </div>
+
           <div class="form-group">
-            <label class="form-label">Status</label>
+            <label class="form-label">Account Status</label>
             <select name="isActive" class="form-control">
               <option value="1">Aktiv</option>
               <option value="0">Inaktiv</option>
@@ -542,11 +603,66 @@
         // Employee management is handled by manage-employees.ts
       });
 
+      // Helper function to get availability badge
+      window.getAvailabilityBadge = function (employee) {
+        const status = employee.availability_status || employee.availabilityStatus || 'available';
+
+        const statusConfig = {
+          available: { class: 'badge-success', text: 'Verfügbar' },
+          vacation: { class: 'badge-warning', text: 'Urlaub' },
+          sick: { class: 'badge-danger', text: 'Krank' },
+          unavailable: { class: 'badge-secondary', text: 'Nicht verfügbar' },
+          training: { class: 'badge-info', text: 'Schulung' },
+          other: { class: 'badge-secondary', text: 'Sonstiges' },
+        };
+
+        const config = statusConfig[status] || statusConfig.available;
+        return `<span class="badge ${config.class}">${config.text}</span>`;
+      };
+
       // Legacy functions for backwards compatibility
       window.loadEmployees = async function () {
         try {
           const employees = await apiClient.get('/users');
           const employeeUsers = employees.filter((u) => u.role === 'employee');
+
+          // Load availability data for all employees
+          try {
+            const availabilityResponse = await fetch('/api/availability/current', {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (availabilityResponse.ok) {
+              const availabilityData = await availabilityResponse.json();
+              const availabilityMap = new Map();
+
+              // Create a map of employee_id -> availability status
+              if (availabilityData.employees && Array.isArray(availabilityData.employees)) {
+                availabilityData.employees.forEach((emp) => {
+                  availabilityMap.set(emp.employeeId || emp.employee_id, {
+                    status: emp.availabilityStatus || emp.availability_status || 'available',
+                    reason: emp.reason,
+                    availableFrom: emp.availableFrom || emp.available_from,
+                  });
+                });
+              }
+
+              // Merge availability data with employee data
+              employeeUsers.forEach((emp) => {
+                const availability = availabilityMap.get(emp.id);
+                if (availability) {
+                  emp.availability_status = availability.status;
+                  emp.availability_reason = availability.reason;
+                  emp.available_from = availability.availableFrom;
+                }
+              });
+            }
+          } catch (availError) {
+            console.warn('Could not load availability data:', availError);
+          }
           renderEmployees(employeeUsers);
         } catch (error) {
           console.error('Error loading employees:', error);
@@ -578,6 +694,7 @@
                 <th>Abteilung</th>
                 <th>Team</th>
                 <th>Status</th>
+                <th>Verfügbarkeit</th>
                 <th>Aktionen</th>
               </tr>
             </thead>
@@ -608,6 +725,9 @@
                       <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
                         ${isActive ? 'Aktiv' : 'Inaktiv'}
                       </span>
+                    </td>
+                    <td>
+                      ${getAvailabilityBadge(emp)}
                     </td>
                     <td>
                       <button class="action-btn edit" onclick="editEmployee(${emp.id})">Bearbeiten</button>
@@ -684,6 +804,39 @@
           form.password.removeAttribute('required');
           form.emailConfirm.removeAttribute('required');
           form.passwordConfirm.removeAttribute('required');
+
+          // Load availability data (if exists)
+          try {
+            const availabilityResponse = await apiClient.get(`/availability?employee_id=${id}`);
+            if (availabilityResponse.availability && availabilityResponse.availability.length > 0) {
+              // Get the most recent availability entry
+              const currentAvailability = availabilityResponse.availability[0];
+
+              // Set availability fields
+              if (form.availabilityStatus) {
+                form.availabilityStatus.value = currentAvailability.status || 'available';
+              }
+              if (form.availabilityStart) {
+                form.availabilityStart.value = currentAvailability.start_date || '';
+              }
+              if (form.availabilityEnd) {
+                form.availabilityEnd.value = currentAvailability.end_date || '';
+              }
+              if (form.availabilityNotes) {
+                form.availabilityNotes.value = currentAvailability.notes || '';
+              }
+            } else {
+              // No availability record, set to default
+              if (form.availabilityStatus) form.availabilityStatus.value = 'available';
+              if (form.availabilityStart) form.availabilityStart.value = '';
+              if (form.availabilityEnd) form.availabilityEnd.value = '';
+              if (form.availabilityNotes) form.availabilityNotes.value = '';
+            }
+          } catch (availErr) {
+            console.warn('Could not load availability data:', availErr);
+            // Set defaults on error
+            if (form.availabilityStatus) form.availabilityStatus.value = 'available';
+          }
           form.firstName.value = emp.first_name || emp.firstName || '';
           form.lastName.value = emp.last_name || emp.lastName || '';
           form.email.value = emp.email || emp.username || '';
@@ -779,9 +932,7 @@
         }
       }
 
-      // Form submit - DISABLED: Using TypeScript handler from manage-employees.ts instead
-      // This prevents duplicate handlers and ensures consistent error handling with NotificationService
-      /*
+      // Form submit handler with availability support
       document.getElementById('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -867,7 +1018,29 @@
             if (!data.password) {
               delete data.password;
             }
+
+            // Update employee data first
             await apiClient.put(`/users/${employeeId}`, data);
+
+            // Then update availability if any fields are set
+            if (data.availabilityStatus || data.availabilityStart || data.availabilityEnd) {
+              try {
+                const availabilityData = {
+                  availabilityStatus: data.availabilityStatus || 'available',
+                  availabilityStart: data.availabilityStart || null,
+                  availabilityEnd: data.availabilityEnd || null,
+                  availabilityNotes: data.availabilityNotes || '',
+                };
+
+                // Use v2 API endpoint for availability
+                await apiClient.put(`/users/${employeeId}/availability`, availabilityData);
+                console.log('Availability updated successfully');
+              } catch (availErr) {
+                console.error('Error updating availability:', availErr);
+                // Don't fail the whole operation if availability update fails
+              }
+            }
+
             alert('Mitarbeiter aktualisiert');
             window.closeEmployeeModal();
             window.location.reload();
@@ -904,7 +1077,6 @@
           }
         }
       });
-      */
 
       // Close modal on outside click
       window.addEventListener('click', (e) => {

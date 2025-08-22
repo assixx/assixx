@@ -11,7 +11,7 @@ import type { Notification } from '../../types/utils.types';
 export class NotificationService {
   private container: HTMLElement | null = null;
   private notifications = new Map<string, Notification>();
-  private defaultDuration = 5000; // 5 seconds
+  private defaultDuration = 2000; // 2 seconds
 
   /**
    *

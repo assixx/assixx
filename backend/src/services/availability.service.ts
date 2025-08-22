@@ -90,11 +90,31 @@ class AvailabilityService {
           u.last_name,
           u.email,
           u.department_id,
-          COALESCE(cea.current_status, 'available') as availability_status,
-          cea.current_reason as reason,
-          cea.available_from
+          COALESCE(
+            (SELECT ea.status 
+             FROM employee_availability ea 
+             WHERE ea.employee_id = u.id 
+             AND ea.tenant_id = u.tenant_id
+             AND CURDATE() BETWEEN ea.start_date AND ea.end_date 
+             ORDER BY ea.created_at DESC 
+             LIMIT 1),
+            'available'
+          ) as availability_status,
+          (SELECT ea.reason 
+           FROM employee_availability ea 
+           WHERE ea.employee_id = u.id 
+           AND ea.tenant_id = u.tenant_id
+           AND CURDATE() BETWEEN ea.start_date AND ea.end_date 
+           ORDER BY ea.created_at DESC 
+           LIMIT 1) as reason,
+          (SELECT DATE_ADD(ea.end_date, INTERVAL 1 DAY)
+           FROM employee_availability ea 
+           WHERE ea.employee_id = u.id 
+           AND ea.tenant_id = u.tenant_id
+           AND CURDATE() BETWEEN ea.start_date AND ea.end_date 
+           ORDER BY ea.created_at DESC 
+           LIMIT 1) as available_from
         FROM users u
-        LEFT JOIN current_employee_availability cea ON u.id = cea.employee_id
         WHERE u.tenant_id = ? AND u.role = 'employee' AND u.is_active = 1
         ORDER BY u.first_name, u.last_name
       `;
