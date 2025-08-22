@@ -28,6 +28,8 @@ export interface CreateAdminRequest {
   lastName?: string;
   company?: string;
   notes?: string;
+  employeeNumber?: string;
+  position?: string;
 }
 
 export interface UpdateAdminRequest {
@@ -39,6 +41,8 @@ export interface UpdateAdminRequest {
   company?: string;
   notes?: string;
   isActive?: boolean;
+  employeeNumber?: string;
+  position?: string;
 }
 
 // Root User Types

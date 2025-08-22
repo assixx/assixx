@@ -2014,7 +2014,7 @@ class ChatClient {
     if (this.conversations.length === 0) {
       conversationsList.innerHTML = `
         <div class="no-conversations">
-          <p>Keine Unterhaltungen vorhanden</p>
+          <p></p>
         </div>
       `;
       return;

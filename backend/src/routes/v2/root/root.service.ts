@@ -151,6 +151,8 @@ export class RootService {
         is_active: true,
         company: data.company,
         notes: data.notes,
+        employee_number: data.employeeNumber ?? '',
+        position: data.position ?? '',
       };
 
       const adminId = await userModel.create(adminData);
@@ -199,6 +201,8 @@ export class RootService {
       if (data.company !== undefined) updateData.company = data.company;
       if (data.notes !== undefined) updateData.notes = data.notes;
       if (data.isActive !== undefined) updateData.is_active = data.isActive;
+      if (data.employeeNumber !== undefined) updateData.employee_number = data.employeeNumber;
+      if (data.position !== undefined) updateData.position = data.position;
 
       // Hash password if provided
       if (data.password) {

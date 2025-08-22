@@ -973,7 +973,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       showSuccessAlert('Berechtigungen erfolgreich aktualisiert');
       const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
       if (closeModal) closeModal();
-      
+
       // Admin-Liste dynamisch neu laden (ohne Seiten-Reload)
       await loadAdmins();
     } catch (error) {
@@ -1027,12 +1027,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         notes: string;
         role: string;
         isActive?: boolean;
+        employeeNumber?: string; // camelCase für API!
       }
 
       const firstNameEl = $$<HTMLInputElement>('#adminFirstName');
       const lastNameEl = $$<HTMLInputElement>('#adminLastName');
       const positionEl = $$<HTMLInputElement>(SELECTORS.POSITION_DROPDOWN_VALUE);
 
+      const employeeNumberEl = $$<HTMLInputElement>('#adminEmployeeNumber');
       const formData: AdminFormData = {
         firstName: firstNameEl !== null ? firstNameEl.value : '',
         lastName: lastNameEl !== null ? lastNameEl.value : '',
@@ -1042,6 +1044,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         position: positionEl !== null ? positionEl.value : '',
         notes: $<HTMLTextAreaElement>('#adminNotes').value,
         role: 'admin',
+        employeeNumber: employeeNumberEl !== null ? employeeNumberEl.value : '', // camelCase für API!
       };
 
       // Include isActive only when updating
@@ -1170,7 +1173,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         );
         const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
         if (closeModal) closeModal();
-        
+
         // Admin-Liste dynamisch neu laden (ohne Seiten-Reload)
         await loadAdmins();
       } catch (error) {

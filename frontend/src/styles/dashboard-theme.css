@@ -938,7 +938,7 @@ body {
 
   font-size: 0.8rem;
   color: var(--text-primary);
-
+  min-height: 0;
   background: rgb(255 255 255 / 2.1%);
   backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
