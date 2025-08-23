@@ -1,657 +1,445 @@
-/**
- * Admin Departments Management
- * Handles department CRUD operations for admin dashboard
- */
+// Departments Management Module
+import { apiClient } from '../utils/api-client.js';
+import { showSuccessAlert, showErrorAlert } from './utils/alerts.js';
+import { setHTML } from '../utils/dom-utils.js';
 
-import { ApiClient } from '../utils/api-client';
-import { mapDepartment, type DepartmentAPIResponse } from '../utils/api-mappers';
-import { setHTML } from '../utils/dom-utils';
-import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
-
+// Types
 interface Department {
   id: number;
   name: string;
-  description?: string;
-  managerId?: number;
+  description?: string | null;
+  manager_id?: number | null;
   managerName?: string;
-  areaId?: number;
+  area_id?: number | null;
   areaName?: string;
-  parentId?: number;
+  parent_id?: number | null;
   parentName?: string;
-  memberCount?: number;
-  teamCount?: number;
-  machineCount?: number;
-  budget?: number;
-  costCenter?: string;
   status: 'active' | 'inactive' | 'restructuring';
-  foundedDate?: string;
+  visibility?: 'public' | 'private';
+  employee_count?: number;
+  team_count?: number;
+  machine_count?: number;
+  budget?: number;
+  cost_center?: string;
+  founded_date?: string;
   notes?: string;
-  isActive?: boolean;
-  createdAt: string;
-  updatedAt: string;
+  created_at?: string;
+  updated_at?: string;
+  tenant_id?: number;
+  created_by?: number;
 }
 
 interface Area {
   id: number;
   name: string;
   type?: string;
+  description?: string;
 }
 
-interface User {
-  id: number;
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  role?: string;
-}
+// Global variables
+let departments: Department[] = [];
+let filteredDepartments: Department[] = [];
+let editingDepartmentId: number | null = null;
 
-interface WindowWithDepartmentHandlers extends Window {
-  loadDepartmentsTable?: () => void;
-  editDepartment?: (id: number) => Promise<void>;
-  viewDepartmentDetails?: (id: number) => Promise<void>;
-  deleteDepartment?: (id: number) => Promise<void>;
-  showDepartmentModal?: () => void;
-  closeDepartmentModal?: () => void;
-  saveDepartment?: () => Promise<void>;
-}
+// DOM Elements
+let addDepartmentBtn: HTMLButtonElement | null;
+let departmentModal: HTMLElement | null;
+let deleteModal: HTMLElement | null;
+let departmentForm: HTMLFormElement | null;
+let departmentTableContent: HTMLElement | null;
 
-class DepartmentsManager {
-  // Constants
-  private static readonly DROPDOWN_OPTION_CLASS = 'dropdown-option';
+// Initialize the page
+async function initializePage(): Promise<void> {
+  try {
+    // Check authentication
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
 
-  public apiClient: ApiClient;
-  private departments: Department[] = [];
-  private currentFilter: 'all' | 'active' | 'inactive' | 'restructuring' = 'all';
-  private searchTerm = '';
-
-  constructor() {
-    this.apiClient = ApiClient.getInstance();
-    this.initializeEventListeners();
-  }
-
-  /**
-   * Escapes HTML to prevent XSS attacks
-   * @param text - The text to escape
-   * @returns Escaped HTML string
-   */
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  /**
-   * Sets up event delegation for dropdown clicks
-   * @param dropdownId - The dropdown container ID
-   * @param selectId - The select input ID prefix
-   */
-  private setupDropdownEventDelegation(dropdownId: string, selectId: string): void {
-    const dropdown = document.querySelector(`#${dropdownId}`);
-    if (!dropdown) return;
-
-    // Remove any existing listeners to prevent duplicates
-    const newDropdown = dropdown.cloneNode(true) as HTMLElement;
-    dropdown.parentNode?.replaceChild(newDropdown, dropdown);
-
-    // Add event delegation
-    newDropdown.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      const option = target.closest('.dropdown-option');
-
-      if (option !== null && option instanceof HTMLElement) {
-        const value = option.dataset.value ?? '';
-        const text = option.dataset.text ?? '';
-
-        // Call the global selectDropdownOption function safely
-        // Using window extension interface for type safety
-        const windowWithSelect = window as Window & {
-          selectDropdownOption?: (dropdownId: string, value: string, text: string) => void;
-        };
-
-        if (typeof windowWithSelect.selectDropdownOption === 'function') {
-          windowWithSelect.selectDropdownOption(selectId, value, text);
-        }
-      }
-    });
-  }
-
-  private async confirmAction(message: string): Promise<boolean> {
-    return await showConfirm(message);
-  }
-
-  private initializeEventListeners() {
-    // Filter buttons
-    document.querySelector('#show-all-departments')?.addEventListener('click', () => {
-      this.currentFilter = 'all';
-      void this.loadDepartments();
-    });
-
-    document.querySelector('#filter-departments-active')?.addEventListener('click', () => {
-      this.currentFilter = 'active';
-      void this.loadDepartments();
-    });
-
-    document.querySelector('#filter-departments-inactive')?.addEventListener('click', () => {
-      this.currentFilter = 'inactive';
-      void this.loadDepartments();
-    });
-
-    document.querySelector('#filter-departments-restructuring')?.addEventListener('click', () => {
-      this.currentFilter = 'restructuring';
-      void this.loadDepartments();
-    });
-
-    // Search
-    document.querySelector('#department-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector<HTMLInputElement>('#department-search');
-      this.searchTerm = searchInput !== null ? searchInput.value : '';
-      void this.loadDepartments();
-    });
-
-    // Enter key on search
-    document.querySelector('#department-search')?.addEventListener('keypress', (e) => {
-      if (e instanceof KeyboardEvent && e.key === 'Enter') {
-        const searchInput = e.target as HTMLInputElement;
-        this.searchTerm = searchInput.value;
-        void this.loadDepartments();
-      }
-    });
-
-    // Close modal buttons
-    document.querySelectorAll('[data-action="close-department-modal"]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        this.closeDepartmentModal();
-      });
-    });
-  }
-
-  async loadDepartments(): Promise<void> {
-    try {
-      const params: Record<string, string> = {};
-
-      if (this.currentFilter !== 'all') {
-        params.status = this.currentFilter;
-      }
-
-      if (this.searchTerm.length > 0) {
-        params.search = this.searchTerm;
-      }
-
-      const response = await this.apiClient.request<DepartmentAPIResponse[]>('/api/v2/departments', {
-        method: 'GET',
-      });
-
-      // v2 API: Map response through api-mappers for consistent field names
-      this.departments = response.map(mapDepartment) as Department[];
-
-      // Apply client-side filtering if needed
-      if (this.currentFilter !== 'all') {
-        this.departments = this.departments.filter((dept) => dept.status === this.currentFilter);
-      }
-
-      if (this.searchTerm.length > 0) {
-        const search = this.searchTerm.toLowerCase();
-        this.departments = this.departments.filter(
-          (dept) =>
-            dept.name.toLowerCase().includes(search) ||
-            dept.description?.toLowerCase().includes(search) === true ||
-            dept.managerName?.toLowerCase().includes(search) === true,
-        );
-      }
-
-      this.renderDepartmentsTable();
-    } catch (error) {
-      console.error('Error loading departments:', error);
-      showErrorAlert('Fehler beim Laden der Abteilungen');
-    }
-  }
-
-  private renderDepartmentsTable() {
-    const tableBody = document.querySelector<HTMLElement>('#departments-table-body');
-    if (!tableBody) return;
-
-    if (this.departments.length === 0) {
-      setHTML(
-        tableBody,
-        `
-        <tr>
-          <td colspan="8" class="text-center text-muted">Keine Abteilungen gefunden</td>
-        </tr>
-      `,
-      );
+    if (token === null || token === '' || (role !== 'admin' && role !== 'root')) {
+      window.location.href = '/login';
       return;
     }
 
-    const tableHTML = this.departments
-      .map(
-        (dept) => `
-      <tr>
-        <td>
-          <strong>${dept.name}</strong>
-          ${dept.description !== undefined ? `<br><small class="text-muted">${dept.description}</small>` : ''}
-        </td>
-        <td>${dept.managerName ?? '-'}</td>
-        <td>${dept.areaName ?? '-'}</td>
-        <td>${dept.parentName ?? '-'}</td>
-        <td>
-          <span class="badge ${this.getStatusBadgeClass(dept.status)}">
-            ${this.getStatusLabel(dept.status)}
-          </span>
-        </td>
-        <td>${String(dept.memberCount ?? 0)}</td>
-        <td>${String(dept.teamCount ?? 0)}</td>
-        <td>
-          <button class="btn btn-sm btn-secondary" onclick="window.editDepartment(${dept.id})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-secondary" onclick="window.viewDepartmentDetails(${dept.id})">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="window.deleteDepartment(${dept.id})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `,
-      )
-      .join('');
-
-    setHTML(tableBody, tableHTML);
+    initializeDOMElements();
+    attachEventListeners();
+    await loadDepartments();
+  } catch (error) {
+    console.error('Error initializing page:', error);
+    showErrorAlert('Fehler beim Laden der Seite');
   }
+}
 
-  private getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'active':
-        return 'badge-success';
-      case 'inactive':
-        return 'badge-secondary';
-      case 'restructuring':
-        return 'badge-warning';
-      default:
-        return 'badge-secondary';
+// Initialize DOM elements
+function initializeDOMElements(): void {
+  addDepartmentBtn = document.querySelector('#add-department-btn');
+  departmentModal = document.querySelector('#department-modal');
+  deleteModal = document.querySelector('#delete-department-modal');
+  departmentForm = document.querySelector('#department-form');
+  departmentTableContent = document.querySelector('#departmentTableContent');
+}
+
+// Attach event listeners
+function attachEventListeners(): void {
+  // Add department button
+  addDepartmentBtn?.addEventListener('click', () => {
+    openDepartmentModal();
+  });
+
+  // Form submit
+  departmentForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    void saveDepartment();
+  });
+
+  // Modal close buttons
+  document.querySelector('#close-delete-modal')?.addEventListener('click', closeDeleteModal);
+  document.querySelector('#cancel-delete-modal')?.addEventListener('click', closeDeleteModal);
+
+  // Delete confirmation
+  document.querySelector('#confirm-delete-department')?.addEventListener('click', () => {
+    const deleteInput = document.querySelector<HTMLInputElement>('#delete-department-id');
+    if (deleteInput !== null && deleteInput.value !== '') {
+      void deleteDepartment(Number.parseInt(deleteInput.value, 10));
     }
-  }
+  });
 
-  private getStatusLabel(status: string): string {
-    switch (status) {
-      case 'active':
-        return 'Aktiv';
-      case 'inactive':
-        return 'Inaktiv';
-      case 'restructuring':
-        return 'Umstrukturierung';
-      default:
-        return status;
+  // Close buttons for department modal
+  document.querySelector('#close-department-modal')?.addEventListener('click', closeDepartmentModal);
+  document.querySelector('#cancel-department-modal')?.addEventListener('click', closeDepartmentModal);
+
+  // Close modals on outside click
+  departmentModal?.addEventListener('click', (e) => {
+    if (e.target === departmentModal) {
+      closeDepartmentModal();
     }
-  }
+  });
 
-  showDepartmentModal(): void {
-    const modal = document.querySelector<HTMLElement>('#department-modal');
-    if (modal !== null) {
-      modal.style.display = 'flex';
-
-      // Load areas for dropdown
-      void this.loadAreasForDepartmentSelect();
-
-      // Load managers for dropdown
-      void this.loadManagersForDepartmentSelect();
-
-      // Load parent departments for hierarchy
-      void this.loadParentDepartmentsForSelect();
+  deleteModal?.addEventListener('click', (e) => {
+    if (e.target === deleteModal) {
+      closeDeleteModal();
     }
-  }
+  });
+}
 
-  closeDepartmentModal(): void {
-    const modal = document.querySelector<HTMLElement>('#department-modal');
-    if (modal !== null) {
-      modal.style.display = 'none';
-    }
-    // Genau wie bei closeAreaModal - Form reset
-    const form = document.querySelector<HTMLFormElement>('#department-form');
-    if (form !== null) {
-      form.reset();
-    }
-  }
-
-  async createDepartment(data: Partial<Department>): Promise<void> {
-    try {
-      await this.apiClient.request<DepartmentAPIResponse>('/api/v2/departments', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-
-      showSuccessAlert('Abteilung erfolgreich erstellt');
-      await this.loadDepartments();
-    } catch (error) {
-      console.error('Error creating department:', error);
-      showErrorAlert('Fehler beim Erstellen der Abteilung');
-      throw error;
-    }
-  }
-
-  async updateDepartment(id: number, data: Partial<Department>): Promise<Department> {
-    try {
-      const response = await this.apiClient.request<DepartmentAPIResponse>(`/api/v2/departments/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-
-      showSuccessAlert('Abteilung erfolgreich aktualisiert');
-      await this.loadDepartments();
-      return mapDepartment(response) as Department;
-    } catch (error) {
-      console.error('Error updating department:', error);
-      showErrorAlert('Fehler beim Aktualisieren der Abteilung');
-      throw error;
-    }
-  }
-
-  async deleteDepartment(id: number): Promise<void> {
-    // Use custom confirmation dialog or showErrorAlert for better UX
-    const confirmed = await this.confirmAction(
-      'Sind Sie sicher, dass Sie diese Abteilung löschen möchten? Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.',
+// Load departments from API
+async function loadDepartments(): Promise<void> {
+  try {
+    // API v2 endpoint - apiClient already adds /api/v2 prefix
+    const response = await apiClient.get<Department[] | { success: boolean; data: Department[]; message: string }>(
+      '/departments',
     );
 
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await this.apiClient.request(`/api/v2/departments/${id}`, {
-        method: 'DELETE',
-      });
-
-      showSuccessAlert('Abteilung erfolgreich gelöscht');
-      await this.loadDepartments();
-    } catch (error) {
-      console.error('Error deleting department:', error);
-      showErrorAlert('Fehler beim Löschen der Abteilung');
-    }
-  }
-
-  async getDepartmentDetails(id: number): Promise<Department | null> {
-    try {
-      return await this.apiClient.request<Department>(`/departments/${id}`, {
-        method: 'GET',
-      });
-    } catch (error) {
-      console.error('Error getting department details:', error);
-      showErrorAlert('Fehler beim Laden der Abteilungsdetails');
-      return null;
-    }
-  }
-
-  async loadAreasForDepartmentSelect(): Promise<void> {
-    try {
-      const response = await this.apiClient.request<Area[]>('/areas', {
-        method: 'GET',
-      });
-
-      const dropdown = document.querySelector<HTMLElement>('#department-area-dropdown');
-      if (dropdown !== null) {
-        setHTML(dropdown, '');
-
-        // Add default option
-        const defaultOption = document.createElement('div');
-        defaultOption.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
-        defaultOption.dataset.value = '';
-        defaultOption.dataset.text = 'Kein Bereich';
-        setHTML(defaultOption, `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Bereich')}`);
-        dropdown.append(defaultOption);
-
-        // Add area options
-        response.forEach((area) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
-          optionDiv.dataset.value = area.id.toString();
-          optionDiv.dataset.text = area.name;
-          setHTML(optionDiv, `<i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(area.name)}`);
-          dropdown.append(optionDiv);
-        });
-
-        // Setup event delegation
-        this.setupDropdownEventDelegation('department-area-dropdown', 'department-area');
-
-        console.info('[DepartmentsManager] Loaded areas:', response.length);
+    // Handle both response formats
+    if (Array.isArray(response)) {
+      departments = response;
+    } else if (typeof response === 'object' && 'data' in response) {
+      const typedResponse = response as { success: boolean; data: Department[]; message: string };
+      if (Array.isArray(typedResponse.data)) {
+        departments = typedResponse.data;
+      } else {
+        departments = [];
       }
-    } catch (error) {
-      console.error('Error loading areas:', error);
+    } else {
+      console.error('Invalid response structure:', response);
+      departments = [];
     }
-  }
 
-  async loadManagersForDepartmentSelect(): Promise<void> {
-    try {
-      const response = await this.apiClient.request<User[]>('/users', {
-        method: 'GET',
-      });
-
-      // Filter for users who can be managers (admins or managers)
-      const managers = response.filter((user) => user.role === 'admin' || user.role === 'manager');
-
-      const dropdown = document.querySelector<HTMLElement>('#department-manager-dropdown');
-      if (dropdown !== null) {
-        setHTML(dropdown, '');
-
-        // Add default option
-        const defaultOption = document.createElement('div');
-        defaultOption.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
-        defaultOption.dataset.value = '';
-        defaultOption.dataset.text = 'Kein Manager';
-        setHTML(defaultOption, `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Manager')}`);
-        dropdown.append(defaultOption);
-
-        // Add manager options
-        managers.forEach((manager) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
-          optionDiv.dataset.value = manager.id.toString();
-          const name =
-            manager.firstName !== undefined && manager.lastName !== undefined
-              ? `${manager.firstName} ${manager.lastName}`
-              : manager.username;
-          optionDiv.dataset.text = name;
-          setHTML(optionDiv, `<i class="fas fa-user-tie"></i> ${this.escapeHtml(name)}`);
-          dropdown.append(optionDiv);
-        });
-
-        // Setup event delegation
-        this.setupDropdownEventDelegation('department-manager-dropdown', 'department-manager');
-
-        console.info('[DepartmentsManager] Loaded managers:', managers.length);
-      }
-    } catch (error) {
-      console.error('Error loading managers:', error);
-    }
-  }
-
-  async loadParentDepartmentsForSelect(): Promise<void> {
-    try {
-      const response = await this.apiClient.request<DepartmentAPIResponse[]>('/api/v2/departments', {
-        method: 'GET',
-      });
-
-      const dropdown = document.querySelector<HTMLElement>('#department-parent-dropdown');
-      if (dropdown !== null) {
-        setHTML(dropdown, '');
-
-        // Add default option
-        const defaultOption = document.createElement('div');
-        defaultOption.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
-        defaultOption.dataset.value = '';
-        defaultOption.dataset.text = 'Keine übergeordnete Abteilung';
-        setHTML(
-          defaultOption,
-          `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Keine übergeordnete Abteilung')}`,
-        );
-        dropdown.append(defaultOption);
-
-        // Add department options
-        response.map(mapDepartment).forEach((dept) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
-          optionDiv.dataset.value = dept.id.toString();
-          optionDiv.dataset.text = dept.name;
-          setHTML(optionDiv, `<i class="fas fa-sitemap"></i> ${this.escapeHtml(dept.name)}`);
-          dropdown.append(optionDiv);
-        });
-
-        // Setup event delegation
-        this.setupDropdownEventDelegation('department-parent-dropdown', 'department-parent');
-
-        console.info('[DepartmentsManager] Loaded parent departments:', response.length);
-      }
-    } catch (error) {
-      console.error('Error loading parent departments:', error);
-    }
+    // Apply current filter and search (for now just show all)
+    filteredDepartments = departments;
+    renderDepartments();
+  } catch (error) {
+    console.error('Error loading departments:', error);
+    showErrorAlert('Fehler beim Laden der Abteilungen');
+    departments = [];
+    renderDepartments();
   }
 }
 
-// Export manager instance
-let departmentsManager: DepartmentsManager | null = null;
+// Render departments table
+function renderDepartments(): void {
+  if (!departmentTableContent) return;
 
-// Initialize on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Only initialize if we're on the admin dashboard
-  if (window.location.pathname === '/admin-dashboard') {
-    departmentsManager = new DepartmentsManager();
+  if (filteredDepartments.length === 0) {
+    setHTML(
+      departmentTableContent,
+      `
+      <div class="empty-state">
+        <div class="empty-state-icon">🏢</div>
+        <div class="empty-state-text">Keine Abteilungen gefunden</div>
+        <div class="empty-state-subtext">Fügen Sie Ihre erste Abteilung hinzu</div>
+      </div>
+    `,
+    );
+    return;
+  }
 
-    // Setup global window functions
-    const w = window as WindowWithDepartmentHandlers;
-
-    w.loadDepartmentsTable = () => {
-      console.info('[DepartmentsManager] loadDepartmentsTable called');
-      void departmentsManager?.loadDepartments();
-    };
-
-    w.editDepartment = async (id: number) => {
-      const department = await departmentsManager?.getDepartmentDetails(id);
-      if (department !== null) {
-        console.info('Edit department:', department);
-        // TODO: Fill form with department data
-        departmentsManager?.showDepartmentModal();
-      }
-    };
-
-    w.viewDepartmentDetails = async (id: number) => {
-      const department = await departmentsManager?.getDepartmentDetails(id);
-      if (department !== null) {
-        console.info('View department:', department);
-        // TODO: Show department details modal
-        showErrorAlert('Detailansicht noch nicht implementiert');
-      }
-    };
-
-    w.deleteDepartment = async (id: number) => {
-      await departmentsManager?.deleteDepartment(id);
-    };
-
-    w.showDepartmentModal = () => {
-      departmentsManager?.showDepartmentModal();
-    };
-
-    w.closeDepartmentModal = () => {
-      departmentsManager?.closeDepartmentModal();
-    };
-
-    w.saveDepartment = async () => {
-      const form = document.querySelector<HTMLFormElement>('#department-form');
-      if (form === null) return;
-
-      const formData = new FormData(form);
-      const data: Partial<Department> = {};
-
-      // Define allowed keys to prevent object injection
-      const allowedKeys = new Set(['name', 'description', 'areaId', 'managerId', 'parentId', 'status']);
-      const numericKeys = new Set(['areaId', 'managerId', 'parentId']);
-
-      formData.forEach((value, key) => {
-        if (typeof value === 'string' && value.length > 0 && allowedKeys.has(key)) {
-          // Convert to appropriate types
-          if (numericKeys.has(key)) {
-            // Safe assignment with type checking
-            switch (key) {
-              case 'areaId':
-                data.areaId = Number.parseInt(value, 10);
-                break;
-              case 'managerId':
-                data.managerId = Number.parseInt(value, 10);
-                break;
-              case 'parentId':
-                data.parentId = Number.parseInt(value, 10);
-                break;
+  const tableHTML = `
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Beschreibung</th>
+          <th>Status</th>
+          <th>Sichtbarkeit</th>
+          <th>Manager</th>
+          <th>Mitarbeiter</th>
+          <th>Teams</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filteredDepartments
+          .map((dept) => {
+            // Handle description properly
+            let description = '-';
+            if (dept.description !== null && dept.description !== undefined) {
+              if (typeof dept.description === 'string') {
+                description = dept.description;
+              } else if (typeof dept.description === 'object') {
+                // Check if it's a Buffer object
+                const bufferObj = dept.description as unknown as { type?: string; data?: number[] };
+                if (bufferObj.type === 'Buffer' && Array.isArray(bufferObj.data)) {
+                  description = String.fromCharCode(...bufferObj.data);
+                }
+              }
             }
-          } else {
-            // Safe assignment for string fields
-            switch (key) {
-              case 'name':
-                data.name = value;
-                break;
-              case 'description':
-                data.description = value;
-                break;
-              case 'status':
-                data.status = value as 'active' | 'inactive' | 'restructuring';
-                break;
-            }
-          }
-        }
+
+            return `
+              <tr>
+                <td>${dept.name !== '' ? dept.name : '-'}</td>
+                <td>${description}</td>
+                <td>
+                  <span class="badge ${getStatusBadgeClass(dept.status)}">
+                    ${getStatusLabel(dept.status)}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge ${dept.visibility === 'public' ? 'badge-primary' : 'badge-secondary'}">
+                    ${dept.visibility === 'public' ? 'Öffentlich' : 'Privat'}
+                  </span>
+                </td>
+                <td>${dept.managerName ?? '-'}</td>
+                <td>${dept.employee_count ?? 0}</td>
+                <td>${dept.team_count ?? 0}</td>
+                <td>
+                  <button class="action-btn ${dept.status === 'active' ? 'deactivate' : 'activate'}" onclick="window.manageDepartments.toggleStatus(${dept.id}, '${dept.status}')">
+                    ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
+                  </button>
+                  <button class="action-btn edit" onclick="window.manageDepartments.editDepartment(${dept.id})">Bearbeiten</button>
+                  <button class="action-btn delete" onclick="window.manageDepartments.confirmDelete(${dept.id})">Löschen</button>
+                </td>
+              </tr>
+            `;
+          })
+          .join('')}
+      </tbody>
+    </table>
+  `;
+
+  setHTML(departmentTableContent, tableHTML);
+}
+
+// Get status badge class
+function getStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'active':
+      return 'badge-success';
+    case 'inactive':
+      return 'badge-secondary';
+    case 'restructuring':
+      return 'badge-warning';
+    default:
+      return 'badge-secondary';
+  }
+}
+
+// Get status label
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'active':
+      return 'Aktiv';
+    case 'inactive':
+      return 'Inaktiv';
+    case 'restructuring':
+      return 'Umstrukturierung';
+    default:
+      return status;
+  }
+}
+
+// Open department modal
+function openDepartmentModal(departmentId?: number): void {
+  editingDepartmentId = departmentId ?? null;
+
+  const modalTitle = document.querySelector('#modalTitle');
+  if (modalTitle) {
+    modalTitle.textContent = departmentId !== undefined ? 'Abteilung bearbeiten' : 'Neue Abteilung';
+  }
+
+  // Load areas for dropdown
+  void loadAreasForDropdown();
+
+  if (departmentId !== undefined) {
+    // Load department data for editing
+    const department = departments.find((d) => d.id === departmentId);
+    if (department && departmentForm) {
+      const form = departmentForm as HTMLFormElement & {
+        name: HTMLInputElement;
+        description: HTMLTextAreaElement;
+        area_id: HTMLSelectElement;
+        status: HTMLSelectElement;
+        visibility: HTMLSelectElement;
+      };
+
+      form.name.value = department.name;
+      form.description.value = department.description ?? '';
+      form.area_id.value = department.area_id?.toString() ?? '';
+      form.status.value = department.status;
+      form.visibility.value = department.visibility ?? 'public';
+    }
+  } else {
+    // Reset form for new department
+    departmentForm?.reset();
+  }
+
+  departmentModal?.classList.add('active');
+}
+
+// Load areas for dropdown
+async function loadAreasForDropdown(): Promise<void> {
+  try {
+    const response = await apiClient.get<Area[]>('/areas');
+    const areaSelect = document.querySelector<HTMLSelectElement>('#department-area-select');
+
+    if (areaSelect && Array.isArray(response)) {
+      setHTML(areaSelect, '<option value="">Kein Bereich</option>');
+      response.forEach((area) => {
+        const option = document.createElement('option');
+        option.value = area.id.toString();
+        option.textContent = `${area.name} (${area.type ?? 'other'})`;
+        areaSelect.append(option);
       });
+    }
+  } catch (error) {
+    console.error('Error loading areas:', error);
+  }
+}
 
-      // Ensure required fields
-      if (typeof data.name !== 'string' || data.name.length === 0) {
-        showErrorAlert('Bitte geben Sie einen Abteilungsnamen ein');
-        return;
-      }
+// Close department modal
+function closeDepartmentModal(): void {
+  departmentModal?.classList.remove('active');
+  departmentForm?.reset();
+  editingDepartmentId = null;
+}
 
-      try {
-        // GENAU wie bei manage-areas!
-        await departmentsManager?.apiClient.request('/api/v2/departments', {
-          method: 'POST',
-          body: JSON.stringify(data),
-        });
+// Save department (create or update)
+async function saveDepartment(): Promise<void> {
+  if (!departmentForm) {
+    showErrorAlert('Formular nicht gefunden');
+    return;
+  }
 
-        showSuccessAlert('Abteilung erfolgreich erstellt');
+  try {
+    const formData = new FormData(departmentForm);
+    const descriptionValue = formData.get('description') as string;
+    const areaIdValue = formData.get('area_id') as string;
 
-        // GENAU wie bei areas: closeModal() und dann loadDepartments()
-        departmentsManager?.closeDepartmentModal();
-        await departmentsManager?.loadDepartments();
-      } catch (error) {
-        console.error('Error saving department:', error);
-        showErrorAlert('Fehler beim Speichern der Abteilung');
-      }
+    const departmentData = {
+      name: formData.get('name') as string,
+      description: descriptionValue !== '' ? descriptionValue : undefined,
+      areaId: areaIdValue !== '' ? Number.parseInt(areaIdValue, 10) : undefined, // camelCase for v2 API
+      status: formData.get('status') as Department['status'],
+      visibility: formData.get('visibility') as 'public' | 'private',
     };
 
-    // Check URL and load departments if needed
-    const checkAndLoadDepartments = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const currentPath = window.location.pathname;
+    if (editingDepartmentId !== null) {
+      // Update existing department
+      await apiClient.put(`/departments/${editingDepartmentId}`, departmentData);
+      showSuccessAlert('Abteilung erfolgreich aktualisiert');
+    } else {
+      // Create new department
+      await apiClient.post('/departments', departmentData);
+      showSuccessAlert('Abteilung erfolgreich erstellt');
+    }
 
-      // Load departments if on admin dashboard departments section OR on manage-departments page
-      if (urlParams.get('section') === 'departments' || currentPath.includes('manage-departments')) {
-        void departmentsManager?.loadDepartments();
-      }
-    };
+    closeDepartmentModal();
+    await loadDepartments();
+  } catch (error) {
+    console.error('Error saving department:', error);
+    showErrorAlert('Fehler beim Speichern der Abteilung');
+  }
+}
 
-    // Initial check
-    checkAndLoadDepartments();
+// Toggle department status
+async function toggleDepartmentStatus(departmentId: number, currentStatus: string): Promise<void> {
+  try {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
-    // Listen for URL changes
-    window.addEventListener('popstate', checkAndLoadDepartments);
+    await apiClient.put(`/departments/${departmentId}`, { status: newStatus });
+    showSuccessAlert(`Abteilung wurde ${newStatus === 'active' ? 'aktiviert' : 'deaktiviert'}`);
+    await loadDepartments();
+  } catch (error) {
+    console.error('Error toggling department status:', error);
+    showErrorAlert('Fehler beim Ändern des Status');
+  }
+}
 
-    // Override pushState and replaceState
-    const originalPushState = window.history.pushState.bind(window.history);
-    window.history.pushState = function (...args) {
-      originalPushState.apply(window.history, args);
-      setTimeout(checkAndLoadDepartments, 100);
-    };
+// Confirm delete
+function confirmDelete(departmentId: number): void {
+  const department = departments.find((d) => d.id === departmentId);
+  if (!department) return;
 
-    const originalReplaceState = window.history.replaceState.bind(window.history);
-    window.history.replaceState = function (...args) {
-      originalReplaceState.apply(window.history, args);
-      setTimeout(checkAndLoadDepartments, 100);
+  const deleteInput = document.querySelector<HTMLInputElement>('#delete-department-id');
+  if (deleteInput) {
+    deleteInput.value = departmentId.toString();
+  }
+  deleteModal?.classList.add('active');
+}
+
+// Close delete modal
+function closeDeleteModal(): void {
+  deleteModal?.classList.remove('active');
+  const deleteInput = document.querySelector<HTMLInputElement>('#delete-department-id');
+  if (deleteInput) {
+    deleteInput.value = '';
+  }
+}
+
+// Delete department
+async function deleteDepartment(departmentId: number): Promise<void> {
+  try {
+    await apiClient.delete(`/departments/${departmentId}`);
+    showSuccessAlert('Abteilung erfolgreich gelöscht');
+    closeDeleteModal();
+    await loadDepartments();
+  } catch (error) {
+    console.error('Error deleting department:', error);
+    showErrorAlert('Fehler beim Löschen der Abteilung');
+  }
+}
+
+// Export functions for global access (for onclick handlers)
+declare global {
+  interface Window {
+    manageDepartments: {
+      editDepartment: (id: number) => void;
+      confirmDelete: (id: number) => void;
+      toggleStatus: (id: number, status: string) => void;
     };
   }
-});
+}
 
-export { DepartmentsManager };
+window.manageDepartments = {
+  editDepartment: (id: number) => {
+    openDepartmentModal(id);
+  },
+  confirmDelete,
+  toggleStatus: (id: number, status: string) => {
+    void toggleDepartmentStatus(id, status);
+  },
+};
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  void initializePage();
+});

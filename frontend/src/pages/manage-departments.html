@@ -461,7 +461,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="modalTitle">Neue Abteilung</h3>
-          <button class="modal-close" onclick="closeDepartmentModal()">&times;</button>
+          <button class="modal-close" id="close-department-modal">&times;</button>
         </div>
         <form id="department-form" style="padding: 20px">
           <div class="form-group">
@@ -495,14 +495,33 @@
           </div>
           <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
             <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="closeDepartmentModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" id="cancel-department-modal">Abbrechen</button>
           </div>
         </form>
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-department-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Abteilung löschen</h3>
+          <button class="modal-close" id="close-delete-modal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 24px;">
+          <p>Möchten Sie diese Abteilung wirklich löschen?</p>
+          <p class="text-secondary">Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.</p>
+          <input type="hidden" id="delete-department-id" />
+        </div>
+        <div class="modal-footer" style="padding: 24px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-department">Löschen</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Floating Add Button -->
-    <button class="add-department-btn" onclick="showDepartmentModal()">+</button>
+    <button class="add-department-btn" id="add-department-btn">+</button>
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -511,245 +530,5 @@
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
     <!-- Department Management -->
     <script type="module" src="/scripts/manage-departments.ts"></script>
-    <script type="module">
-      // Auth check
-      const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('userRole');
-
-      if (!token || (userRole !== 'root' && userRole !== 'admin')) {
-        window.location.href = '/login';
-      }
-
-      // Load departments
-      async function loadDepartments() {
-        try {
-          const departments = await apiClient.get('/departments');
-          renderDepartments(departments);
-        } catch (error) {
-          console.error('Error loading departments:', error);
-        }
-      }
-
-      function renderDepartments(departments) {
-        const container = document.getElementById('departmentTableContent');
-
-        if (departments.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-icon">🏢</div>
-              <div class="empty-state-text">Keine Abteilungen gefunden</div>
-              <div class="empty-state-subtext">Fügen Sie Ihre erste Abteilung hinzu</div>
-            </div>
-          `;
-          return;
-        }
-
-        const tableHTML = `
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Beschreibung</th>
-                <th>Status</th>
-                <th>Sichtbarkeit</th>
-                <th>Manager</th>
-                <th>Mitarbeiter</th>
-                <th>Teams</th>
-                <th>Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${departments
-                .map((dept) => {
-                  // Convert Buffer to String if needed
-                  let description = '-';
-                  if (dept.description) {
-                    if (dept.description.type === 'Buffer' && dept.description.data) {
-                      description = String.fromCharCode(...dept.description.data);
-                    } else if (typeof dept.description === 'string') {
-                      description = dept.description;
-                    }
-                  }
-
-                  return `
-                  <tr>
-                    <td>${dept.name || '-'}</td>
-                    <td>${description}</td>
-                    <td>
-                      <span class="badge ${dept.status === 'active' ? 'badge-success' : 'badge-warning'}">
-                        ${dept.status === 'active' ? 'Aktiv' : 'Inaktiv'}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="badge ${dept.visibility === 'public' ? 'badge-primary' : 'badge-secondary'}">
-                        ${dept.visibility === 'public' ? 'Öffentlich' : 'Privat'}
-                      </span>
-                    </td>
-                    <td>${dept.manager_name || '-'}</td>
-                    <td>${dept.employee_count || 0}</td>
-                    <td>${dept.team_count || 0}</td>
-                    <td>
-                      <button class="action-btn ${dept.status === 'active' ? 'deactivate' : 'activate'}" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
-                        ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
-                      </button>
-                      <button class="action-btn edit" onclick="editDepartment(${dept.id})">Bearbeiten</button>
-                      <button class="action-btn delete" onclick="deleteDepartment(${dept.id})">Löschen</button>
-                    </td>
-                  </tr>
-                  `;
-                })
-                .join('')}
-            </tbody>
-          </table>
-        `;
-
-        container.innerHTML = tableHTML;
-      }
-
-      // Modal functions
-      window.showDepartmentModal = async function () {
-        document.getElementById('modalTitle').textContent = 'Neue Abteilung';
-        document.getElementById('department-form').reset();
-
-        // Load areas for dropdown
-        try {
-          const response = await apiClient.get('/areas');
-          const areaSelect = document.getElementById('department-area-select');
-          if (areaSelect && response) {
-            areaSelect.innerHTML = '<option value="">Kein Bereich</option>';
-            response.forEach((area) => {
-              const option = document.createElement('option');
-              option.value = area.id;
-              option.textContent = `${area.name} (${area.type || 'other'})`;
-              areaSelect.appendChild(option);
-            });
-          }
-        } catch (error) {
-          console.error('Error loading areas:', error);
-        }
-
-        document.getElementById('department-modal').classList.add('active');
-      };
-
-      window.closeDepartmentModal = function () {
-        document.getElementById('department-modal').classList.remove('active');
-      };
-
-      window.editDepartment = async function (id) {
-        try {
-          const dept = await apiClient.get(`/departments/${id}`);
-          document.getElementById('modalTitle').textContent = 'Abteilung bearbeiten';
-
-          const form = document.getElementById('department-form');
-          form.name.value = dept.name || '';
-          form.description.value = dept.description || '';
-          form.status.value = dept.status || 'active';
-          form.visibility.value = dept.visibility || 'public';
-
-          // Load areas and select the current one
-          const response = await apiClient.get('/areas');
-          const areaSelect = document.getElementById('department-area-select');
-          if (areaSelect && response) {
-            areaSelect.innerHTML = '<option value="">Kein Bereich</option>';
-            response.forEach((area) => {
-              const option = document.createElement('option');
-              option.value = area.id;
-              option.textContent = `${area.name} (${area.type || 'other'})`;
-              if (area.id === dept.area_id || area.id === dept.areaId) {
-                option.selected = true;
-              }
-              areaSelect.appendChild(option);
-            });
-          }
-
-          form.dataset.departmentId = id;
-          document.getElementById('department-modal').classList.add('active');
-        } catch (error) {
-          console.error('Error loading department:', error);
-        }
-      };
-
-      window.toggleDepartmentStatus = async function (id, currentStatus) {
-        console.info(`Toggling department ${id} status from ${currentStatus}`);
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-
-        try {
-          const response = await fetch(`/api/departments/${id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ status: newStatus }),
-          });
-
-          if (response.ok) {
-            loadDepartments();
-          } else {
-            const error = await response.json();
-          }
-        } catch (error) {
-          console.error('Error toggling department status:', error);
-        }
-      };
-
-      window.deleteDepartment = async function (id) {
-        if (!confirm('Möchten Sie diese Abteilung wirklich löschen?')) {
-          return;
-        }
-
-        try {
-          await apiClient.delete(`/departments/${id}`);
-          // window.location.reload(); // Handled by TypeScript module
-        } catch (error) {
-          console.error('Error deleting department:', error);
-        }
-      };
-
-      // Form submit
-      document.getElementById('department-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-        const departmentId = e.target.dataset.departmentId;
-
-        // Convert area_id to areaId (camelCase for v2 API) and to integer if it exists
-        if (data.area_id && data.area_id !== '') {
-          data.areaId = parseInt(data.area_id); // Use camelCase for v2 API
-        } else {
-          data.areaId = null;
-        }
-        delete data.area_id; // Remove snake_case version
-
-        console.info('Department form data:', data);
-
-        try {
-          if (departmentId) {
-            // Update existing department
-            await apiClient.put(`/departments/${departmentId}`, data);
-          } else {
-            // Create new department
-            await apiClient.post('/departments', data);
-          }
-          // window.location.reload(); // Handled by TypeScript module
-        } catch (error) {
-          console.error('Error saving department:', error);
-        }
-      });
-
-      // Close modal on outside click
-      window.addEventListener('click', (e) => {
-        const modal = document.getElementById('department-modal');
-        if (e.target === modal) {
-          closeDepartmentModal();
-        }
-      });
-
-      // Initialize
-      document.addEventListener('DOMContentLoaded', () => {
-        loadDepartments();
-      });
-    </script>
   </body>
 </html>
