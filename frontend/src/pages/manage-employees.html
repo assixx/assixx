@@ -603,9 +603,70 @@
         // Employee management is handled by manage-employees.ts
       });
 
+      // Helper function to check if availability dates apply to today
+      function checkAvailabilityAppliesToday(startDate, endDate) {
+        if (!startDate && !endDate) {
+          // If no dates specified, assume it always applies
+          return true;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+
+        if (start) {
+          start.setHours(0, 0, 0, 0);
+        }
+        if (end) {
+          end.setHours(23, 59, 59, 999); // End of day
+        }
+
+        // Check if today falls within the range
+        const afterStart = !start || today >= start;
+        const beforeEnd = !end || today <= end;
+
+        return afterStart && beforeEnd;
+      }
+
+      // Helper function to get current availability status (considering dates)
+      function getCurrentAvailabilityStatus(employee) {
+        // Handle both snake_case and camelCase from API
+        const rawStatus = employee.availability_status || employee.availabilityStatus || 'available';
+
+        // Parse the status (might be "available vacation" format)
+        let status = 'available';
+        if (rawStatus) {
+          const parts = rawStatus.trim().split(/\s+/);
+          if (parts.length > 1) {
+            status = parts[1]; // e.g., "available vacation" -> "vacation"
+          } else {
+            status = parts[0] || 'available';
+          }
+        }
+
+        // If status is already "available", no need to check dates
+        if (status === 'available') {
+          return 'available';
+        }
+
+        // Check if the special status applies to today
+        const startDate = employee.availability_start || employee.availabilityStart;
+        const endDate = employee.availability_end || employee.availabilityEnd;
+
+        if (checkAvailabilityAppliesToday(startDate, endDate)) {
+          return status;
+        }
+
+        // Status doesn't apply to today, return available
+        return 'available';
+      }
+
       // Helper function to get availability badge
       function getAvailabilityBadge(employee) {
-        const status = employee.availability_status || employee.availabilityStatus || 'available';
+        // Get the current (today-aware) status
+        const status = getCurrentAvailabilityStatus(employee);
 
         const statusConfig = {
           available: { class: 'badge-success', text: 'Verfügbar' },
@@ -618,6 +679,69 @@
 
         const config = statusConfig[status] || statusConfig.available;
         return `<span class="badge ${config.class}">${config.text}</span>`;
+      }
+
+      // Helper function to format planned availability period
+      function getPlannedAvailability(employee) {
+        const rawStatus = employee.availability_status || employee.availabilityStatus || 'available';
+
+        // Parse the status
+        let status = 'available';
+        if (rawStatus) {
+          const parts = rawStatus.trim().split(/\s+/);
+          if (parts.length > 1) {
+            status = parts[1];
+          } else {
+            status = parts[0] || 'available';
+          }
+        }
+
+        // If available, return dash
+        if (status === 'available') {
+          return '-';
+        }
+
+        // Get dates
+        const startDate = employee.availability_start || employee.availabilityStart;
+        const endDate = employee.availability_end || employee.availabilityEnd;
+
+        // Format the status text
+        let statusText = '';
+        switch (status) {
+          case 'vacation':
+            statusText = 'Urlaub';
+            break;
+          case 'sick':
+            statusText = 'Krank';
+            break;
+          case 'training':
+            statusText = 'Schulung';
+            break;
+          case 'unavailable':
+            statusText = 'Nicht verfügbar';
+            break;
+          case 'other':
+            statusText = 'Sonstiges';
+            break;
+          default:
+            statusText = status;
+        }
+
+        // Format dates if available
+        if (startDate || endDate) {
+          const formatDate = (dateStr) => {
+            if (!dateStr) return '?';
+            const date = new Date(dateStr);
+            return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+          };
+
+          const startFormatted = formatDate(startDate);
+          const endFormatted = formatDate(endDate);
+
+          return `${statusText}: ${startFormatted} - ${endFormatted}`;
+        }
+
+        return statusText;
       }
 
       // Legacy functions for backwards compatibility
@@ -661,6 +785,8 @@
                 <th>Team</th>
                 <th>Status</th>
                 <th>Verfügbarkeit</th>
+                <th>Geplant</th>
+                <th>Notizen</th>
                 <th>Aktionen</th>
               </tr>
             </thead>
@@ -679,6 +805,9 @@
                     isActive = emp.is_active === true || emp.is_active === 1;
                   }
 
+                  // Get availability notes
+                  const notes = emp.availability_notes || emp.availabilityNotes || '-';
+
                   return `
                   <tr>
                     <td>${fullName}</td>
@@ -694,6 +823,12 @@
                     </td>
                     <td>
                       ${getAvailabilityBadge(emp)}
+                    </td>
+                    <td>
+                      ${getPlannedAvailability(emp)}
+                    </td>
+                    <td title="${notes}">
+                      ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
                     </td>
                     <td>
                       <button class="action-btn edit" onclick="editEmployee(${emp.id})">Bearbeiten</button>

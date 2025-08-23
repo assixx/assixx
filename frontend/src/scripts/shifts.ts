@@ -1489,8 +1489,29 @@ class ShiftPlanningSystem {
           shiftType !== undefined &&
           shiftType !== ''
         ) {
-          // Wrap async call in void to handle promise correctly
-          void this.assignUserToShift(Number(userId), date, shiftType, cellElement);
+          // Find the employee to check availability
+          const employeeId = Number(userId);
+          const employee = this.employees.find((emp) => emp.id === employeeId);
+
+          if (employee !== undefined) {
+            // Check if employee is available on this specific date
+            if (this.isEmployeeAvailableOnDate(employee, date)) {
+              // Wrap async call in void to handle promise correctly
+              void this.assignUserToShift(employeeId, date, shiftType, cellElement);
+            } else {
+              // Employee is not available on this date
+              const firstName = employee.first_name ?? '';
+              const lastName = employee.last_name ?? '';
+              const name = `${firstName} ${lastName}`.trim();
+              const displayName = name !== '' ? name : employee.username;
+
+              // Format date for display
+              const dateObj = new Date(date);
+              const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getFullYear()}`;
+
+              showErrorAlert(`${displayName} ist am ${formattedDate} nicht verfügbar`);
+            }
+          }
         }
       });
     });
@@ -1946,26 +1967,11 @@ class ShiftPlanningSystem {
       item.className = 'employee-item';
       item.dataset.employeeId = employee.id.toString();
 
-      // Handle both snake_case and camelCase from API
-      let rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+      // Get the week-specific availability status
+      const availabilityStatus = this.getWeekAvailabilityStatus(employee);
 
-      // API v2 sometimes returns combined statuses like "available vacation"
-      // Extract the actual status (second word if exists, otherwise first)
-      let availabilityStatus = 'available';
-      if (typeof rawStatus === 'string') {
-        const parts = rawStatus.trim().split(/\s+/);
-        // If we have multiple parts, the actual status is usually the second one
-        // e.g., "available vacation" -> "vacation"
-        if (parts.length > 1) {
-          availabilityStatus = parts[1];
-        } else {
-          availabilityStatus = parts[0] !== '' ? parts[0] : 'available';
-        }
-      }
-
-      // Only available employees can be dragged AND only in edit mode or when no plan exists
-      const isDraggable =
-        this.isAdmin && availabilityStatus === 'available' && (this.currentPlanId === null || this.isEditMode);
+      // Admin can drag any employee (availability check happens on drop)
+      const isDraggable = this.isAdmin && (this.currentPlanId === null || this.isEditMode);
       item.setAttribute('draggable', isDraggable.toString());
 
       console.info(
@@ -1973,12 +1979,14 @@ class ShiftPlanningSystem {
         employee.username,
         'Draggable:',
         isDraggable,
-        'Status (resolved):',
+        'Week-specific status:',
         availabilityStatus,
-        'Original snake_case:',
-        employee.availability_status,
-        'Original camelCase:',
-        employee.availabilityStatus,
+        'Raw status:',
+        employee.availability_status ?? employee.availabilityStatus,
+        'Date range:',
+        employee.availability_start,
+        'to',
+        employee.availability_end,
       );
 
       // Add visual indicators for unavailable employees
@@ -2004,6 +2012,14 @@ class ShiftPlanningSystem {
       const badgeElement = this.createAvailabilityBadge(availabilityStatus);
       if (badgeElement) {
         infoDiv.append(badgeElement);
+      }
+
+      // Add date range if not available
+      if (availabilityStatus !== 'available') {
+        const dateRangeElement = this.createAvailabilityDateRange(employee);
+        if (dateRangeElement) {
+          infoDiv.append(dateRangeElement);
+        }
       }
 
       const statsDiv = createElement('div', { className: 'employee-stats' });
@@ -2063,6 +2079,44 @@ class ShiftPlanningSystem {
     });
   }
 
+  // Create date range element for availability period
+  createAvailabilityDateRange(employee: Employee): HTMLElement | null {
+    const startDate = employee.availability_start;
+    const endDate = employee.availability_end;
+
+    // Only show if we have at least one date
+    if (startDate === undefined && endDate === undefined) {
+      return null;
+    }
+
+    // Format dates in German format (DD.MM.YYYY)
+    const formatDate = (dateStr?: string): string => {
+      if (dateStr === undefined) return '?';
+      const date = new Date(dateStr);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    };
+
+    const startFormatted = formatDate(startDate);
+    const endFormatted = formatDate(endDate);
+
+    // Create the date range element
+    const dateRangeSpan = createElement(
+      'span',
+      {
+        className: 'availability-date-range',
+      },
+      `(${startFormatted} - ${endFormatted})`,
+    );
+
+    // Apply styles directly
+    dateRangeSpan.style.color = '#da3d3dff';
+
+    return dateRangeSpan;
+  }
+
   // Create badge element instead of HTML string
   createAvailabilityBadge(status?: string): HTMLElement | null {
     let badgeClass = '';
@@ -2106,6 +2160,113 @@ class ShiftPlanningSystem {
     );
   }
 
+  /**
+   * Calculate availability status for a specific week based on date ranges
+   */
+  getWeekAvailabilityStatus(employee: Employee): string {
+    // If no special status, return available
+    const baseStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+
+    // Parse the base status (might be "available vacation" format)
+    let actualStatus = 'available';
+    if (baseStatus !== '') {
+      const parts = baseStatus.trim().split(/\s+/);
+      if (parts.length > 1) {
+        actualStatus = parts[1]; // e.g., "available vacation" -> "vacation"
+      } else {
+        actualStatus = parts[0] !== '' ? parts[0] : 'available';
+      }
+    }
+
+    // If status is already "available", no need to check dates
+    if (actualStatus === 'available') {
+      return 'available';
+    }
+
+    // Check if the status applies to the current week
+    const weekStart = this.getWeekStart(this.currentWeek);
+    const weekEnd = this.getWeekEnd(this.currentWeek);
+
+    // If we have date ranges, check if they overlap with current week
+    if (employee.availability_start !== undefined || employee.availability_end !== undefined) {
+      const availStart = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
+      const availEnd = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
+
+      // Check if the availability period overlaps with the current week
+      const overlaps = this.checkDateRangeOverlap(availStart, availEnd, weekStart, weekEnd);
+
+      // If the special status doesn't apply to this week, return available
+      if (!overlaps) {
+        const firstName = employee.first_name ?? 'Unknown';
+        const lastName = employee.last_name ?? 'Unknown';
+        console.info(
+          `[SHIFTS] Employee ${firstName} ${lastName} status "${actualStatus}" doesn't apply to week ${this.formatWeekRange(weekStart)}`,
+        );
+        return 'available';
+      }
+    }
+
+    // The special status applies to this week
+    return actualStatus;
+  }
+
+  /**
+   * Check if two date ranges overlap
+   */
+  checkDateRangeOverlap(start1: Date | null, end1: Date | null, start2: Date, end2: Date): boolean {
+    // If no start date, assume it started in the past
+    const effectiveStart = start1 ?? new Date('1900-01-01');
+    // If no end date, assume it continues into the future
+    const effectiveEnd = end1 ?? new Date('2100-01-01');
+
+    // Check if ranges overlap
+    return effectiveStart <= end2 && effectiveEnd >= start2;
+  }
+
+  /**
+   * Check if employee is available on a specific date
+   */
+  isEmployeeAvailableOnDate(employee: Employee, dateString: string): boolean {
+    // Get the employee's availability status
+    const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+
+    // Parse the status
+    let status = 'available';
+    if (typeof rawStatus === 'string') {
+      const parts = rawStatus.trim().split(/\s+/);
+      if (parts.length > 1) {
+        status = parts[1]; // e.g., "available vacation" -> "vacation"
+      } else {
+        status = parts[0] !== '' ? parts[0] : 'available';
+      }
+    }
+
+    // If status is available, no need to check dates
+    if (status === 'available') {
+      return true;
+    }
+
+    // Check if the unavailability applies to this specific date
+    const checkDate = new Date(dateString);
+    const startDate = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
+    const endDate = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
+
+    // Set time to noon to avoid timezone issues
+    checkDate.setHours(12, 0, 0, 0);
+    if (startDate !== null) {
+      startDate.setHours(0, 0, 0, 0);
+    }
+    if (endDate !== null) {
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    // Check if the date falls within the unavailability period
+    const isWithinPeriod = this.checkDateRangeOverlap(startDate, endDate, checkDate, checkDate);
+
+    // If within unavailability period, employee is NOT available
+    return !isWithinPeriod;
+  }
+
   // Keep the old methods for backward compatibility if needed elsewhere
   getAvailabilityIcon(status?: string): string {
     switch (status) {
@@ -2121,12 +2282,12 @@ class ShiftPlanningSystem {
   }
 
   getAvailabilityBadge(status?: string): string {
-    // Handle API v2 combined statuses like "available vacation"
+    // Parse the status (already resolved by getWeekAvailabilityStatus if called from there)
     let resolvedStatus = 'available';
     if (status !== undefined && status !== '') {
+      // If it's already a simple status (from getWeekAvailabilityStatus), use it directly
+      // Otherwise parse combined format
       const parts = status.trim().split(/\s+/);
-      // If we have multiple parts, the actual status is usually the second one
-      // e.g., "available vacation" -> "vacation"
       if (parts.length > 1) {
         resolvedStatus = parts[1];
       } else {
@@ -2246,34 +2407,44 @@ class ShiftPlanningSystem {
       return;
     }
 
-    // Check employee availability before assignment
-    if (employee.availability_status !== undefined && employee.availability_status !== 'available') {
+    // Check employee availability for this specific date
+    if (!this.isEmployeeAvailableOnDate(employee, date)) {
       // Build error message with details
       const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
       const employeeName = fullName !== '' ? fullName : employee.username;
-      let errorMsg = `${employeeName} ist nicht verfügbar`;
 
-      // Add status text
-      const statusTexts: Record<string, string> = {
-        vacation: 'im Urlaub',
-        sick: 'krankgemeldet',
-        unavailable: 'nicht verfügbar',
-        training: 'in Schulung',
-        other: 'anderweitig abwesend',
-      };
+      // Format the specific date
+      const dateObj = new Date(date);
+      const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getFullYear()}`;
 
-      if (employee.availability_status in statusTexts) {
-        errorMsg = `${employeeName} ist ${statusTexts[employee.availability_status]}`;
+      // Get the status type
+      const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+      let status = 'available';
+      if (typeof rawStatus === 'string') {
+        const parts = rawStatus.trim().split(/\s+/);
+        if (parts.length > 1) {
+          status = parts[1];
+        } else {
+          status = parts[0] !== '' ? parts[0] : 'available';
+        }
       }
 
-      // Add date range if available
-      if (employee.available_from !== undefined && employee.available_from !== '') {
-        errorMsg += ` (verfügbar ab ${new Date(employee.available_from).toLocaleDateString('de-DE')})`;
-      }
+      // Build status text
+      const statusTexts = new Map<string, string>([
+        ['vacation', 'im Urlaub'],
+        ['sick', 'krankgemeldet'],
+        ['unavailable', 'nicht verfügbar'],
+        ['training', 'in Schulung'],
+        ['other', 'anderweitig abwesend'],
+      ]);
+
+      const statusText = statusTexts.get(status) ?? 'nicht verfügbar';
+      let errorMsg = `${employeeName} ist am ${formattedDate} ${statusText}`;
 
       // Add reason if available
-      if (employee.availability_reason !== undefined && employee.availability_reason !== '') {
-        errorMsg += `: ${employee.availability_reason}`;
+      const reason = employee.availability_reason;
+      if (reason !== undefined && reason !== '') {
+        errorMsg += `: ${reason}`;
       }
 
       showErrorAlert(errorMsg);

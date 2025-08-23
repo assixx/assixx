@@ -291,6 +291,8 @@ class EmployeesManager {
             <th>Team</th>
             <th>Status</th>
             <th>Verfügbarkeit</th>
+            <th>Geplant</th>
+            <th>Notizen</th>
             <th>Aktionen</th>
           </tr>
         </thead>
@@ -313,6 +315,9 @@ class EmployeesManager {
                 isActive = employee.is_active;
               }
 
+              // Get availability notes
+              const notes = employee.availability_notes ?? employee.availabilityNotes ?? '-';
+
               return `
             <tr>
               <td>${displayName}</td>
@@ -328,6 +333,12 @@ class EmployeesManager {
               </td>
               <td>
                 ${this.getAvailabilityBadge(employee)}
+              </td>
+              <td>
+                ${this.getPlannedAvailability(employee)}
+              </td>
+              <td title="${notes}">
+                ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
               </td>
               <td>
                 <button class="action-btn edit" onclick="window.editEmployee(${employee.id})">Bearbeiten</button>
@@ -382,29 +393,149 @@ class EmployeesManager {
   }
   */
 
-  private getAvailabilityBadge(employee: Employee): string {
-    // Handle both snake_case and camelCase from API
-    let rawStatus = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+  /**
+   * Check if availability dates apply to today
+   */
+  private checkAvailabilityAppliesToday(startDate?: string, endDate?: string): boolean {
+    if (startDate === undefined && endDate === undefined) {
+      // If no dates specified, assume it always applies
+      return true;
+    }
 
-    // API v2 sometimes returns combined statuses like "available vacation"
-    // Extract the actual status (second word if exists, otherwise first)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+
+    const start = startDate !== undefined ? new Date(startDate) : null;
+    const end = endDate !== undefined ? new Date(endDate) : null;
+
+    if (start !== null) {
+      start.setHours(0, 0, 0, 0);
+    }
+    if (end !== null) {
+      end.setHours(23, 59, 59, 999); // End of day
+    }
+
+    // Check if today falls within the range
+    const afterStart = start === null || today >= start;
+    const beforeEnd = end === null || today <= end;
+
+    return afterStart && beforeEnd;
+  }
+
+  /**
+   * Get the current availability status (considering dates)
+   */
+  private getCurrentAvailabilityStatus(employee: Employee): string {
+    // Handle both snake_case and camelCase from API
+    const rawStatus = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+
+    // Parse the status (handle both single and combined format for compatibility)
     let status = 'available';
     if (typeof rawStatus === 'string') {
       const parts = rawStatus.trim().split(/\s+/);
-      // If we have multiple parts, the actual status is usually the second one
-      // e.g., "available vacation" -> "vacation"
       if (parts.length > 1) {
-        status = parts[1]; // Take the second part as the actual status
+        // Combined format like "available vacation" from v2 API
+        status = parts[1];
       } else {
+        // Single status from DB
         status = parts[0] !== '' ? parts[0] : 'available';
       }
     }
 
+    // If status is already "available", no need to check dates
+    if (status === 'available') {
+      return 'available';
+    }
+
+    // Check if the special status applies to today
+    const startDate = employee.availability_start ?? employee.availabilityStart;
+    const endDate = employee.availability_end ?? employee.availabilityEnd;
+
+    if (this.checkAvailabilityAppliesToday(startDate, endDate)) {
+      return status;
+    }
+
+    // Status doesn't apply to today, return available
+    return 'available';
+  }
+
+  /**
+   * Format the planned availability period
+   */
+  private getPlannedAvailability(employee: Employee): string {
+    const rawStatus = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+
+    // Parse the status (handle both single and combined format for compatibility)
+    let status = 'available';
+    if (typeof rawStatus === 'string') {
+      const parts = rawStatus.trim().split(/\s+/);
+      if (parts.length > 1) {
+        // Combined format like "available vacation" from v2 API
+        status = parts[1];
+      } else {
+        // Single status from DB
+        status = parts[0] !== '' ? parts[0] : 'available';
+      }
+    }
+
+    // If available, return dash
+    if (status === 'available') {
+      return '-';
+    }
+
+    // Get dates
+    const startDate = employee.availability_start ?? employee.availabilityStart;
+    const endDate = employee.availability_end ?? employee.availabilityEnd;
+
+    // Format the status text
+    let statusText = '';
+    switch (status) {
+      case 'vacation':
+        statusText = 'Urlaub';
+        break;
+      case 'sick':
+        statusText = 'Krank';
+        break;
+      case 'training':
+        statusText = 'Schulung';
+        break;
+      case 'unavailable':
+        statusText = 'Nicht verfügbar';
+        break;
+      case 'other':
+        statusText = 'Sonstiges';
+        break;
+      default:
+        statusText = status;
+    }
+
+    // Format dates if available
+    if (startDate !== undefined || endDate !== undefined) {
+      const formatDate = (dateStr?: string): string => {
+        if (dateStr === undefined) return '?';
+        const date = new Date(dateStr);
+        return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+      };
+
+      const startFormatted = formatDate(startDate);
+      const endFormatted = formatDate(endDate);
+
+      return `${statusText}: ${startFormatted} - ${endFormatted}`;
+    }
+
+    return statusText;
+  }
+
+  private getAvailabilityBadge(employee: Employee): string {
+    // Get the current (today-aware) status
+    const status = this.getCurrentAvailabilityStatus(employee);
+
     console.info('[EmployeesManager] Availability status for', employee.email, ':', {
       availabilityStatus: employee.availabilityStatus,
       availability_status: employee.availability_status,
-      rawStatus: rawStatus,
-      resolved: status,
+      currentStatus: status,
+      start: employee.availability_start ?? employee.availabilityStart,
+      end: employee.availability_end ?? employee.availabilityEnd,
     });
 
     // Farben basierend auf design-standards
