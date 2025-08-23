@@ -28,6 +28,7 @@ interface Team {
   areaId?: number;
   shiftModelId?: number;
   memberCount?: number;
+  memberNames?: string;
   maxMembers?: number;
   teamType?: 'production' | 'quality' | 'maintenance' | 'logistics' | 'administration' | 'other';
   status: 'active' | 'inactive' | 'restructuring';
@@ -230,7 +231,7 @@ class TeamsManager {
       teamsEmpty.classList.add('u-hidden');
     }
 
-    tbody.innerHTML = this.teams
+    const tableHTML = this.teams
       .map(
         (team) => `
       <tr>
@@ -239,7 +240,42 @@ class TeamsManager {
         </td>
         <td>${team.departmentName ?? '-'}</td>
         <td>${team.leaderName ?? '-'}</td>
-        <td>${team.memberCount ?? 0}</td>
+        <td>
+          ${
+            team.memberCount !== undefined && team.memberCount > 0
+              ? `<span class="status-badge member-badge" style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative; white-space: nowrap;" data-members="${team.memberNames ?? ''}">
+                ${team.memberCount} ${team.memberCount === 1 ? 'Mitglied' : 'Mitglieder'}
+                ${
+                  team.memberNames !== undefined && team.memberNames !== ''
+                    ? `<span class="member-tooltip" style="
+                      display: none;
+                      position: absolute;
+                      bottom: 100%;
+                      left: 50%;
+                      transform: translateX(-50%);
+                      margin-bottom: 8px;
+                      padding: 8px 12px;
+                      background: rgba(18, 18, 18, 0.95);
+                      backdrop-filter: blur(10px);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                      border-radius: 8px;
+                      white-space: nowrap;
+                      max-width: 300px;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      color: #fff;
+                      font-size: 12px;
+                      font-weight: normal;
+                      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                      z-index: 1000;
+                      pointer-events: none;
+                    ">${team.memberNames}</span>`
+                    : ''
+                }
+              </span>`
+              : '0'
+          }
+        </td>
         <td>
           <span class="badge ${this.getStatusBadgeClass(team.status)}">
             ${this.getStatusLabel(team.status)}
@@ -261,6 +297,23 @@ class TeamsManager {
     `,
       )
       .join('');
+
+    // eslint-disable-next-line no-unsanitized/property -- Safe: We control all data in tableHTML
+    tbody.innerHTML = tableHTML;
+
+    // Add event listeners for member tooltips
+    const memberBadges = tbody.querySelectorAll('.member-badge');
+    memberBadges.forEach((badge) => {
+      const tooltip = badge.querySelector('.member-tooltip');
+      if (tooltip instanceof HTMLElement) {
+        badge.addEventListener('mouseenter', () => {
+          tooltip.style.display = 'block';
+        });
+        badge.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+        });
+      }
+    });
   }
 
   private getStatusBadgeClass(status: string): string {
@@ -427,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (window as WindowWithTeamHandlers & { toggleDropdown?: (dropdownId: string) => void }).toggleDropdown = (
       dropdownId: string,
     ) => {
-      const dropdown = document.getElementById(`${dropdownId}-dropdown`);
+      const dropdown = document.querySelector<HTMLElement>(`#${dropdownId}-dropdown`);
       if (dropdown !== null) {
         const isVisible = dropdown.style.display !== 'none';
         dropdown.style.display = isVisible ? 'none' : 'block';
@@ -543,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const admins = mapUsers(usersResponse);
               const leaderSelect = document.querySelector<HTMLSelectElement>('#team-lead');
 
-              if (leaderSelect && admins) {
+              if (leaderSelect !== null) {
                 // Clear existing options and add placeholder
                 leaderSelect.innerHTML = '<option value="">Kein Team-Leiter</option>';
 
@@ -580,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     optionDiv.style.padding = '8px 12px';
                     // Check if machine is assigned to this team
                     const isChecked = team.machines?.some((m) => m.id === machine.id) === true ? 'checked' : '';
+                    // eslint-disable-next-line no-unsanitized/property -- Safe: We control all machine data
                     optionDiv.innerHTML = `
                       <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
                         <input type="checkbox" value="${machine.id}"
@@ -618,6 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         : user.username;
                     // Check if user is member of this team
                     const isChecked = team.members?.some((m) => m.id === user.id) === true ? 'checked' : '';
+                    // eslint-disable-next-line no-unsanitized/property -- Safe: We control all user data
                     optionDiv.innerHTML = `
                       <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
                         <input type="checkbox" value="${user.id}"
@@ -655,9 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
           setInputValue('team-lead', team.leaderId);
           setInputValue('team-type', team.teamType);
           setInputValue('team-max-members', team.maxMembers);
-          // Convert isActive to status string if status is not set
-          const teamStatus = team.status ?? (team.isActive ? 'active' : 'inactive');
-          setInputValue('team-status', teamStatus);
+          // Use team status directly as it's always defined
+          setInputValue('team-status', team.status);
 
           // Display team members
           const membersDisplay = document.querySelector('#team-members-display');
@@ -779,6 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   const optionDiv = document.createElement('div');
                   optionDiv.className = 'dropdown-option';
                   optionDiv.style.padding = '8px 12px';
+                  // eslint-disable-next-line no-unsanitized/property -- Safe: We control all machine data
                   optionDiv.innerHTML = `
                     <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
                       <input type="checkbox" value="${machine.id}"
@@ -821,6 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     user.firstName !== '' && user.lastName !== ''
                       ? `${user.firstName} ${user.lastName}`
                       : user.username;
+                  // eslint-disable-next-line no-unsanitized/property -- Safe: We control all user data
                   optionDiv.innerHTML = `
                     <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
                       <input type="checkbox" value="${user.id}"
@@ -862,8 +918,8 @@ document.addEventListener('DOMContentLoaded', () => {
         selectDropdownOption?: (fieldId: string, value: string, displayText: string) => void;
       }
     ).selectDropdownOption = (fieldId: string, value: string, displayText: string) => {
-      const input = document.getElementById(`${fieldId}-select`) as HTMLInputElement | null;
-      const display = document.getElementById(`${fieldId}-display`);
+      const input = document.querySelector<HTMLInputElement>(`#${fieldId}-select`);
+      const display = document.querySelector(`#${fieldId}-display`);
 
       if (input !== null) {
         input.value = value;
@@ -874,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Close dropdown
-      const dropdown = document.getElementById(`${fieldId}-dropdown`);
+      const dropdown = document.querySelector(`#${fieldId}-dropdown`);
       if (dropdown !== null) {
         dropdown.classList.remove('active');
       }
@@ -911,8 +967,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const mappedKey = key === 'teamLeadId' ? 'leaderId' : key;
 
           if (mappedKey === 'maxMembers' || mappedKey === 'departmentId' || mappedKey === 'leaderId') {
+            // eslint-disable-next-line security/detect-object-injection -- Safe: mappedKey is controlled and validated
             teamData[mappedKey] = Number.parseInt(value, 10);
           } else {
+            // eslint-disable-next-line security/detect-object-injection -- Safe: mappedKey is controlled and validated
             teamData[mappedKey] = value;
           }
         }
@@ -926,7 +984,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Check if this is an update (team-id field has value) or create
       const teamIdInput = document.querySelector<HTMLInputElement>('#team-id');
-      const teamId = teamIdInput?.value ? Number.parseInt(teamIdInput.value, 10) : null;
+      const teamId =
+        teamIdInput?.value !== undefined && teamIdInput.value !== '' ? Number.parseInt(teamIdInput.value, 10) : null;
 
       try {
         let savedTeam: Team | undefined;

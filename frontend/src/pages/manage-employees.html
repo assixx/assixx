@@ -618,7 +618,7 @@
 
         const config = statusConfig[status] || statusConfig.available;
         return `<span class="badge ${config.class}">${config.text}</span>`;
-      };
+      }
 
       // Legacy functions for backwards compatibility
       async function loadEmployees() {
@@ -667,7 +667,7 @@
         } catch (error) {
           console.error('Error loading employees:', error);
         }
-      };
+      }
 
       function renderEmployees(employees) {
         const container = document.getElementById('employeeTableContent');
@@ -776,7 +776,7 @@
         await loadTeams();
 
         document.getElementById('employee-modal').classList.add('active');
-      };
+      }
 
       function closeEmployeeModal() {
         const modal = document.getElementById('employee-modal');
@@ -787,7 +787,7 @@
         delete form.dataset.employeeId;
 
         modal.classList.remove('active');
-      };
+      }
 
       async function editEmployee(id) {
         try {
@@ -879,7 +879,7 @@
         } catch (error) {
           console.error('Error loading employee:', error);
         }
-      };
+      }
 
       async function deleteEmployee(id) {
         if (!confirm('Möchten Sie diesen Mitarbeiter wirklich löschen?')) {
@@ -894,10 +894,10 @@
           console.error('Error deleting employee:', error);
           alert(error.message || 'Netzwerkfehler beim Löschen');
         }
-      };
+      }
 
       function viewEmployeeDetails(id) {
-        // Temporär: Zeige Details in Alert  
+        // Temporär: Zeige Details in Alert
         // TODO: Implementiere vollständige Detail-Ansicht
         editEmployee(id); // Vorerst zum Bearbeiten-Modal weiterleiten
       }

@@ -930,17 +930,17 @@ class UnifiedNavigation {
           url: '/manage-root-users',
         },
         {
+          id: 'admins',
+          icon: this.getSVGIcon('admin'),
+          label: 'Administratoren',
+          url: '/manage-admins',
+        },
+        {
           id: 'areas',
           icon: this.getSVGIcon('sitemap'),
           label: 'Bereiche',
           url: '/manage-areas',
           section: 'areas',
-        },
-        {
-          id: 'admins',
-          icon: this.getSVGIcon('admin'),
-          label: 'Administratoren',
-          url: '/manage-admins',
         },
         {
           id: 'departments',

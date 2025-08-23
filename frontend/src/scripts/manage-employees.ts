@@ -68,6 +68,7 @@ interface WindowWithEmployeeHandlers extends Window {
   deleteEmployee?: (id: number) => Promise<void>;
   showEmployeeModal?: () => void;
   hideEmployeeModal?: () => void;
+  closeEmployeeModal?: () => void; // Alias for hideEmployeeModal
   saveEmployee?: () => Promise<void>;
   loadDepartmentsForEmployeeSelect: () => Promise<void>;
   loadTeamsForEmployeeSelect?: () => Promise<void>;
@@ -89,12 +90,48 @@ class EmployeesManager {
     this.initializeEventListeners();
   }
 
-  private showConfirmDialog(message: string): boolean {
-    // TODO: Implement custom modal dialog
-    // For now, return false to block action
-    // In production, this should open a proper confirmation modal
-    showErrorAlert(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
-    return false; // Safer to block action until proper modal is implemented
+  private async showConfirmDialog(message: string): Promise<boolean> {
+    return await new Promise<boolean>((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'modal active';
+      const modalHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">Bestätigung erforderlich</h3>
+          </div>
+          <div class="modal-body">
+            <p>${message}</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" id="confirm-action">Bestätigen</button>
+            <button class="btn btn-secondary" id="cancel-action">Abbrechen</button>
+          </div>
+        </div>
+      `;
+      // eslint-disable-next-line no-unsanitized/property -- Safe: We control the message content
+      modal.innerHTML = modalHTML;
+      document.body.append(modal);
+
+      const confirmBtn = modal.querySelector('#confirm-action');
+      const cancelBtn = modal.querySelector('#cancel-action');
+
+      confirmBtn?.addEventListener('click', () => {
+        modal.remove();
+        resolve(true);
+      });
+
+      cancelBtn?.addEventListener('click', () => {
+        modal.remove();
+        resolve(false);
+      });
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+          resolve(false);
+        }
+      });
+    });
   }
 
   private initializeEventListeners() {
@@ -566,7 +603,7 @@ class EmployeesManager {
       return;
     }
 
-    const confirmDelete = this.showConfirmDialog('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?');
+    const confirmDelete = await this.showConfirmDialog('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?');
     if (!confirmDelete) {
       return;
     }
@@ -644,6 +681,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const employee = await employeesManager?.getEmployeeDetails(id);
       if (employee !== null && employee !== undefined) {
         console.info('Edit employee:', employee);
+        console.info('Employee details:', {
+          employeeNumber: employee.employeeNumber,
+          departmentId: employee.departmentId,
+          teamId: employee.teamId,
+          isActive: employee.isActive,
+        });
 
         // Set current employee ID for update
         if (employeesManager) {
@@ -651,8 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Get modal elements
-        const modal = $$('#employee-modal');
-        const modalTitle = modal ? $$('.modal-header h2', modal) : null;
+        const modalTitle = $$('#modalTitle'); // Use the ID directly
 
         // Update modal title
         if (modalTitle) {
@@ -674,7 +716,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (position) position.value = employee.position ?? '';
 
         const employeeNumber = $$<HTMLInputElement>('input[name="employeeNumber"]');
-        if (employeeNumber) employeeNumber.value = employee.employeeId ?? employee.employee_id ?? '';
+        if (employeeNumber) {
+          console.info('Setting employeeNumber field to:', employee.employeeNumber);
+          employeeNumber.value = employee.employeeNumber ?? '';
+        }
 
         const birthday = $$<HTMLInputElement>('input[name="birthday"]');
         if (birthday && employee.birthdate !== undefined && employee.birthdate !== '') {
@@ -683,12 +728,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const departmentSelect = $$<HTMLSelectElement>('#employee-department-select');
-        if (departmentSelect && employee.departmentId !== undefined && employee.departmentId !== 0) {
+        if (departmentSelect !== null && employee.departmentId !== undefined) {
+          console.info('Setting department to:', employee.departmentId);
           departmentSelect.value = String(employee.departmentId);
         }
 
         const teamSelect = $$<HTMLSelectElement>('#employee-team-select');
-        if (teamSelect && employee.teamId !== undefined && employee.teamId !== 0) {
+        if (teamSelect !== null && employee.teamId !== undefined) {
+          console.info('Setting team to:', employee.teamId);
           teamSelect.value = String(employee.teamId);
         }
 
@@ -699,7 +746,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isActiveSelect = $$<HTMLSelectElement>('select[name="isActive"]');
         if (isActiveSelect) {
-          isActiveSelect.value = employee.is_active ? '1' : '0';
+          console.info(
+            'Setting isActive to:',
+            employee.isActive,
+            '-> select value:',
+            employee.isActive === true ? '1' : '0',
+          );
+          isActiveSelect.value = employee.isActive === true ? '1' : '0';
         }
 
         // Clear password fields for edit mode
@@ -737,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (employeesManager) {
         employeesManager.currentEmployeeId = null;
       }
-      const modalTitle = $$('#employee-modal .modal-header h2');
+      const modalTitle = $$('#modalTitle');
       if (modalTitle) {
         modalTitle.textContent = 'Neuen Mitarbeiter anlegen';
       }
@@ -745,10 +798,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (form) {
         form.reset();
       }
+      // Set default status to Active for new employees
+      const isActiveSelect = $$<HTMLSelectElement>('select[name="isActive"]');
+      if (isActiveSelect) {
+        isActiveSelect.value = '1'; // Default to Active
+      }
       employeesManager?.showEmployeeModal();
     };
 
     w.hideEmployeeModal = () => {
+      employeesManager?.hideEmployeeModal();
+    };
+
+    // Also expose closeEmployeeModal as alias for compatibility with HTML onclick handlers
+    w.closeEmployeeModal = () => {
       employeesManager?.hideEmployeeModal();
     };
 

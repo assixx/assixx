@@ -195,6 +195,7 @@ export interface MappedTeam {
   areaId?: number;
   shiftModelId?: number;
   memberCount?: number;
+  memberNames?: string;
   maxMembers?: number;
   teamType?: 'production' | 'quality' | 'maintenance' | 'logistics' | 'administration' | 'other';
   status: 'active' | 'inactive' | 'restructuring';
@@ -227,6 +228,8 @@ export interface TeamAPIResponse {
   shiftModelId?: number;
   member_count?: number;
   memberCount?: number;
+  member_names?: string;
+  memberNames?: string;
   max_members?: number;
   maxMembers?: number;
   team_type?: string;
@@ -260,6 +263,7 @@ export function mapTeam(team: TeamAPIResponse): MappedTeam {
     areaId: team.area_id ?? team.areaId,
     shiftModelId: team.shift_model_id ?? team.shiftModelId,
     memberCount: team.member_count ?? team.memberCount,
+    memberNames: team.member_names ?? team.memberNames,
     maxMembers: team.max_members ?? team.maxMembers,
     teamType: (team.team_type ?? team.teamType) as MappedTeam['teamType'],
     status: (team.status ?? 'active') as MappedTeam['status'],

@@ -5,6 +5,7 @@
  */
 
 import notificationService from '../services/notification.service';
+import { setHTML } from '../../utils/dom-utils';
 
 /**
  * Show an alert message
@@ -96,7 +97,9 @@ export async function showConfirm(message: string): Promise<boolean> {
     // Use notification service with action buttons
     const confirmDiv = document.createElement('div');
     confirmDiv.className = 'custom-confirm-dialog';
-    confirmDiv.innerHTML = `
+    setHTML(
+      confirmDiv,
+      `
       <div class="confirm-overlay">
         <div class="confirm-modal">
           <p>${message}</p>
@@ -106,7 +109,8 @@ export async function showConfirm(message: string): Promise<boolean> {
           </div>
         </div>
       </div>
-    `;
+    `,
+    );
 
     document.body.append(confirmDiv);
 

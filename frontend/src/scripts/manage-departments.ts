@@ -5,7 +5,8 @@
 
 import { ApiClient } from '../utils/api-client';
 import { mapDepartment, type DepartmentAPIResponse } from '../utils/api-mappers';
-import { showSuccess, showError } from './auth';
+import { setHTML } from '../utils/dom-utils';
+import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
 interface Department {
   id: number;
@@ -56,6 +57,9 @@ interface WindowWithDepartmentHandlers extends Window {
 }
 
 class DepartmentsManager {
+  // Constants
+  private static readonly DROPDOWN_OPTION_CLASS = 'dropdown-option';
+
   public apiClient: ApiClient;
   private departments: Department[] = [];
   private currentFilter: 'all' | 'active' | 'inactive' | 'restructuring' = 'all';
@@ -83,7 +87,7 @@ class DepartmentsManager {
    * @param selectId - The select input ID prefix
    */
   private setupDropdownEventDelegation(dropdownId: string, selectId: string): void {
-    const dropdown = document.getElementById(dropdownId);
+    const dropdown = document.querySelector(`#${dropdownId}`);
     if (!dropdown) return;
 
     // Remove any existing listeners to prevent duplicates
@@ -95,7 +99,7 @@ class DepartmentsManager {
       const target = event.target as HTMLElement;
       const option = target.closest('.dropdown-option');
 
-      if (option !== null) {
+      if (option !== null && option instanceof HTMLElement) {
         const value = option.dataset.value ?? '';
         const text = option.dataset.text ?? '';
 
@@ -115,7 +119,7 @@ class DepartmentsManager {
   private async confirmAction(message: string): Promise<boolean> {
     // TODO: Implement custom confirmation modal
     // For now, show error and block action for safety
-    showError(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
+    showErrorAlert(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
     return await Promise.resolve(false); // Block action until proper modal is implemented
   }
 
@@ -143,14 +147,14 @@ class DepartmentsManager {
 
     // Search
     document.querySelector('#department-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector('#department-search');
+      const searchInput = document.querySelector<HTMLInputElement>('#department-search');
       this.searchTerm = searchInput !== null ? searchInput.value : '';
       void this.loadDepartments();
     });
 
     // Enter key on search
     document.querySelector('#department-search')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+      if (e instanceof KeyboardEvent && e.key === 'Enter') {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
         void this.loadDepartments();
@@ -202,24 +206,27 @@ class DepartmentsManager {
       this.renderDepartmentsTable();
     } catch (error) {
       console.error('Error loading departments:', error);
-      showError('Fehler beim Laden der Abteilungen');
+      showErrorAlert('Fehler beim Laden der Abteilungen');
     }
   }
 
   private renderDepartmentsTable() {
-    const tableBody = document.querySelector('#departments-table-body');
+    const tableBody = document.querySelector<HTMLElement>('#departments-table-body');
     if (!tableBody) return;
 
     if (this.departments.length === 0) {
-      tableBody.innerHTML = `
+      setHTML(
+        tableBody,
+        `
         <tr>
           <td colspan="8" class="text-center text-muted">Keine Abteilungen gefunden</td>
         </tr>
-      `;
+      `,
+      );
       return;
     }
 
-    tableBody.innerHTML = this.departments
+    const tableHTML = this.departments
       .map(
         (dept) => `
       <tr>
@@ -252,6 +259,8 @@ class DepartmentsManager {
     `,
       )
       .join('');
+
+    setHTML(tableBody, tableHTML);
   }
 
   private getStatusBadgeClass(status: string): string {
@@ -281,7 +290,7 @@ class DepartmentsManager {
   }
 
   showDepartmentModal(): void {
-    const modal = document.querySelector('#department-modal');
+    const modal = document.querySelector<HTMLElement>('#department-modal');
     if (modal !== null) {
       modal.style.display = 'flex';
 
@@ -297,7 +306,7 @@ class DepartmentsManager {
   }
 
   closeDepartmentModal(): void {
-    const modal = document.querySelector('#department-modal');
+    const modal = document.querySelector<HTMLElement>('#department-modal');
     if (modal !== null) {
       modal.style.display = 'none';
     }
@@ -310,12 +319,12 @@ class DepartmentsManager {
         body: JSON.stringify(data),
       });
 
-      showSuccess('Abteilung erfolgreich erstellt');
+      showSuccessAlert('Abteilung erfolgreich erstellt');
       await this.loadDepartments();
       return mapDepartment(response) as Department;
     } catch (error) {
       console.error('Error creating department:', error);
-      showError('Fehler beim Erstellen der Abteilung');
+      showErrorAlert('Fehler beim Erstellen der Abteilung');
       throw error;
     }
   }
@@ -327,18 +336,18 @@ class DepartmentsManager {
         body: JSON.stringify(data),
       });
 
-      showSuccess('Abteilung erfolgreich aktualisiert');
+      showSuccessAlert('Abteilung erfolgreich aktualisiert');
       await this.loadDepartments();
       return mapDepartment(response) as Department;
     } catch (error) {
       console.error('Error updating department:', error);
-      showError('Fehler beim Aktualisieren der Abteilung');
+      showErrorAlert('Fehler beim Aktualisieren der Abteilung');
       throw error;
     }
   }
 
   async deleteDepartment(id: number): Promise<void> {
-    // Use custom confirmation dialog or showError for better UX
+    // Use custom confirmation dialog or showErrorAlert for better UX
     const confirmed = await this.confirmAction(
       'Sind Sie sicher, dass Sie diese Abteilung löschen möchten? Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.',
     );
@@ -352,11 +361,11 @@ class DepartmentsManager {
         method: 'DELETE',
       });
 
-      showSuccess('Abteilung erfolgreich gelöscht');
+      showSuccessAlert('Abteilung erfolgreich gelöscht');
       await this.loadDepartments();
     } catch (error) {
       console.error('Error deleting department:', error);
-      showError('Fehler beim Löschen der Abteilung');
+      showErrorAlert('Fehler beim Löschen der Abteilung');
     }
   }
 
@@ -367,7 +376,7 @@ class DepartmentsManager {
       });
     } catch (error) {
       console.error('Error getting department details:', error);
-      showError('Fehler beim Laden der Abteilungsdetails');
+      showErrorAlert('Fehler beim Laden der Abteilungsdetails');
       return null;
     }
   }
@@ -378,25 +387,25 @@ class DepartmentsManager {
         method: 'GET',
       });
 
-      const dropdown = document.querySelector('#department-area-dropdown');
+      const dropdown = document.querySelector<HTMLElement>('#department-area-dropdown');
       if (dropdown !== null) {
-        dropdown.innerHTML = '';
+        setHTML(dropdown, '');
 
         // Add default option
         const defaultOption = document.createElement('div');
-        defaultOption.className = 'dropdown-option';
+        defaultOption.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
         defaultOption.dataset.value = '';
         defaultOption.dataset.text = 'Kein Bereich';
-        defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Bereich')}`;
+        setHTML(defaultOption, `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Bereich')}`);
         dropdown.append(defaultOption);
 
         // Add area options
         response.forEach((area) => {
           const optionDiv = document.createElement('div');
-          optionDiv.className = 'dropdown-option';
+          optionDiv.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
           optionDiv.dataset.value = area.id.toString();
           optionDiv.dataset.text = area.name;
-          optionDiv.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(area.name)}`;
+          setHTML(optionDiv, `<i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(area.name)}`);
           dropdown.append(optionDiv);
         });
 
@@ -419,29 +428,29 @@ class DepartmentsManager {
       // Filter for users who can be managers (admins or managers)
       const managers = response.filter((user) => user.role === 'admin' || user.role === 'manager');
 
-      const dropdown = document.querySelector('#department-manager-dropdown');
+      const dropdown = document.querySelector<HTMLElement>('#department-manager-dropdown');
       if (dropdown !== null) {
-        dropdown.innerHTML = '';
+        setHTML(dropdown, '');
 
         // Add default option
         const defaultOption = document.createElement('div');
-        defaultOption.className = 'dropdown-option';
+        defaultOption.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
         defaultOption.dataset.value = '';
         defaultOption.dataset.text = 'Kein Manager';
-        defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Manager')}`;
+        setHTML(defaultOption, `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Kein Manager')}`);
         dropdown.append(defaultOption);
 
         // Add manager options
         managers.forEach((manager) => {
           const optionDiv = document.createElement('div');
-          optionDiv.className = 'dropdown-option';
+          optionDiv.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
           optionDiv.dataset.value = manager.id.toString();
           const name =
             manager.firstName !== undefined && manager.lastName !== undefined
               ? `${manager.firstName} ${manager.lastName}`
               : manager.username;
           optionDiv.dataset.text = name;
-          optionDiv.innerHTML = `<i class="fas fa-user-tie"></i> ${this.escapeHtml(name)}`;
+          setHTML(optionDiv, `<i class="fas fa-user-tie"></i> ${this.escapeHtml(name)}`);
           dropdown.append(optionDiv);
         });
 
@@ -461,25 +470,28 @@ class DepartmentsManager {
         method: 'GET',
       });
 
-      const dropdown = document.querySelector('#department-parent-dropdown');
+      const dropdown = document.querySelector<HTMLElement>('#department-parent-dropdown');
       if (dropdown !== null) {
-        dropdown.innerHTML = '';
+        setHTML(dropdown, '');
 
         // Add default option
         const defaultOption = document.createElement('div');
-        defaultOption.className = 'dropdown-option';
+        defaultOption.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
         defaultOption.dataset.value = '';
         defaultOption.dataset.text = 'Keine übergeordnete Abteilung';
-        defaultOption.innerHTML = `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Keine übergeordnete Abteilung')}`;
+        setHTML(
+          defaultOption,
+          `<i class="fas fa-times-circle"></i> ${this.escapeHtml('Keine übergeordnete Abteilung')}`,
+        );
         dropdown.append(defaultOption);
 
         // Add department options
         response.map(mapDepartment).forEach((dept) => {
           const optionDiv = document.createElement('div');
-          optionDiv.className = 'dropdown-option';
+          optionDiv.className = DepartmentsManager.DROPDOWN_OPTION_CLASS;
           optionDiv.dataset.value = dept.id.toString();
           optionDiv.dataset.text = dept.name;
-          optionDiv.innerHTML = `<i class="fas fa-sitemap"></i> ${this.escapeHtml(dept.name)}`;
+          setHTML(optionDiv, `<i class="fas fa-sitemap"></i> ${this.escapeHtml(dept.name)}`);
           dropdown.append(optionDiv);
         });
 
@@ -525,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (department !== null) {
         console.info('View department:', department);
         // TODO: Show department details modal
-        showError('Detailansicht noch nicht implementiert');
+        showErrorAlert('Detailansicht noch nicht implementiert');
       }
     };
 
@@ -542,34 +554,60 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveDepartment = async () => {
-      const form = document.querySelector('#department-form');
+      const form = document.querySelector<HTMLFormElement>('#department-form');
       if (form === null) return;
 
       const formData = new FormData(form);
-      const data: Record<string, unknown> = {};
+      const data: Partial<Department> = {};
+
+      // Define allowed keys to prevent object injection
+      const allowedKeys = new Set(['name', 'description', 'areaId', 'managerId', 'parentId', 'status']);
+      const numericKeys = new Set(['areaId', 'managerId', 'parentId']);
 
       formData.forEach((value, key) => {
-        if (typeof value === 'string' && value.length > 0) {
+        if (typeof value === 'string' && value.length > 0 && allowedKeys.has(key)) {
           // Convert to appropriate types
-          if (key === 'areaId' || key === 'managerId' || key === 'parentId') {
-            data[key] = Number.parseInt(value, 10);
+          if (numericKeys.has(key)) {
+            // Safe assignment with type checking
+            switch (key) {
+              case 'areaId':
+                data.areaId = Number.parseInt(value, 10);
+                break;
+              case 'managerId':
+                data.managerId = Number.parseInt(value, 10);
+                break;
+              case 'parentId':
+                data.parentId = Number.parseInt(value, 10);
+                break;
+            }
           } else {
-            data[key] = value;
+            // Safe assignment for string fields
+            switch (key) {
+              case 'name':
+                data.name = value;
+                break;
+              case 'description':
+                data.description = value;
+                break;
+              case 'status':
+                data.status = value as 'active' | 'inactive' | 'restructuring';
+                break;
+            }
           }
         }
       });
 
       // Ensure required fields
       if (typeof data.name !== 'string' || data.name.length === 0) {
-        showError('Bitte geben Sie einen Abteilungsnamen ein');
+        showErrorAlert('Bitte geben Sie einen Abteilungsnamen ein');
         return;
       }
 
       try {
-        await departmentsManager?.createDepartment(data as Partial<Department>);
+        await departmentsManager?.createDepartment(data);
         w.closeDepartmentModal?.();
         form.reset();
-        showSuccess('Abteilung erfolgreich erstellt');
+        showSuccessAlert('Abteilung erfolgreich erstellt');
       } catch (error) {
         console.error('Error saving department:', error);
       }
