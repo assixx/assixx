@@ -404,7 +404,7 @@ class EmployeesManager {
   showEmployeeModal(): void {
     const modal = $$id('employee-modal');
     if (modal !== null) {
-      show(modal);
+      modal.classList.add('active'); // Verwende .active Klasse wie bei manage-admins!
 
       // Load departments and teams after showing modal
       setTimeout(() => {
@@ -418,7 +418,7 @@ class EmployeesManager {
   hideEmployeeModal(): void {
     const modal = $$id('employee-modal');
     if (modal !== null) {
-      hide(modal);
+      modal.classList.remove('active'); // Verwende .active Klasse wie bei manage-admins!
     }
   }
 
