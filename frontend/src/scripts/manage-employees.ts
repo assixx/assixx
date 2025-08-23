@@ -480,7 +480,7 @@ class EmployeesManager {
     return `<span class="badge ${badgeClass}">${badgeText}</span>`;
   }
 
-  showEmployeeModal(isEdit = false): void {
+  showEmployeeModal(isEdit = false, departmentId?: number, teamId?: number): void {
     const modal = $$id('employee-modal');
     if (modal !== null) {
       modal.classList.add('active'); // Verwende .active Klasse wie bei manage-admins!
@@ -498,8 +498,33 @@ class EmployeesManager {
       // Load departments and teams after showing modal
       setTimeout(() => {
         const w = window as WindowWithEmployeeHandlers;
-        void w.loadDepartmentsForEmployeeSelect();
-        void w.loadTeamsForEmployeeSelect?.();
+
+        // Use void to handle promise without async/await in setTimeout
+        void (async () => {
+          // Load departments first
+          await w.loadDepartmentsForEmployeeSelect();
+
+          // Restore department selection if provided
+          if (departmentId !== undefined) {
+            const deptSelect = $$<HTMLSelectElement>('#employee-department-select');
+            if (deptSelect !== null) {
+              console.info('[showEmployeeModal] Restoring department selection:', departmentId);
+              deptSelect.value = String(departmentId);
+            }
+          }
+
+          // Load teams (will be filtered by selected department)
+          await w.loadTeamsForEmployeeSelect?.();
+
+          // Restore team selection if provided
+          if (teamId !== undefined) {
+            const teamSelect = $$<HTMLSelectElement>('#employee-team-select');
+            if (teamSelect !== null) {
+              console.info('[showEmployeeModal] Restoring team selection:', teamId);
+              teamSelect.value = String(teamId);
+            }
+          }
+        })();
       }, 100);
     }
   }
@@ -514,6 +539,10 @@ class EmployeesManager {
   async createEmployee(data: Partial<Employee>): Promise<Employee> {
     // Clean optional fields - send undefined instead of empty strings
     const cleanedData = { ...data };
+
+    // Store teamId separately for later assignment
+    const teamId = cleanedData.teamId;
+    delete cleanedData.teamId; // Remove from user creation data
 
     // Handle optional fields - delete empty strings
     if (cleanedData.phone === '') {
@@ -542,6 +571,23 @@ class EmployeesManager {
       body: JSON.stringify(cleanedData),
     });
 
+    // If teamId was provided, assign the user to the team
+    if (teamId !== undefined) {
+      try {
+        console.info('[createEmployee] Assigning user to team:', teamId);
+        // Use the same endpoint as manage-teams
+        await this.apiClient.request(`/teams/${teamId}/members`, {
+          method: 'POST',
+          body: JSON.stringify({ userId: response.id }),
+        });
+        console.info('[createEmployee] User successfully assigned to team');
+      } catch (error) {
+        console.error('[createEmployee] Error assigning user to team:', error);
+        // Don't fail the whole operation, just show a warning
+        showErrorAlert('Mitarbeiter wurde erstellt, aber die Team-Zuweisung ist fehlgeschlagen');
+      }
+    }
+
     showSuccessAlert('Mitarbeiter erfolgreich erstellt');
 
     // Reload employees list without page reload (like in manage-admins)
@@ -569,11 +615,61 @@ class EmployeesManager {
       throw new Error('Security violation');
     }
 
+    // Store teamId separately for later assignment
+    // data.teamId comes from form (could be string), user.teamId from API (number)
+    const newTeamIdRaw = data.teamId;
+    const currentTeamId = user.teamId;
+    delete data.teamId; // Remove from user update data
+
     try {
       const response = await this.apiClient.request<UserAPIResponse>(`/users/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+
+      // Handle team assignment changes
+      // Both should be numbers at this point (form values are converted in saveEmployee)
+      const newTeamIdNum = newTeamIdRaw ?? null;
+      const currentTeamIdNum = currentTeamId ?? null;
+
+      console.info('[updateEmployee] Team comparison:', {
+        newTeamId: newTeamIdNum,
+        currentTeamId: currentTeamIdNum,
+        willUpdate: newTeamIdNum !== currentTeamIdNum,
+      });
+
+      if (newTeamIdNum !== currentTeamIdNum) {
+        // Remove from old team if exists
+        if (currentTeamIdNum !== null) {
+          try {
+            console.info('[updateEmployee] Removing user from old team:', currentTeamIdNum);
+            // Use the same endpoint as manage-teams
+            await this.apiClient.request(`/teams/${currentTeamIdNum}/members/${id}`, {
+              method: 'DELETE',
+            });
+          } catch (error) {
+            console.error('[updateEmployee] Error removing from old team:', error);
+          }
+        }
+
+        // Add to new team if specified
+        if (newTeamIdNum !== null) {
+          try {
+            console.info('[updateEmployee] Assigning user to new team:', newTeamIdNum);
+            // Use the same endpoint as manage-teams
+            await this.apiClient.request(`/teams/${newTeamIdNum}/members`, {
+              method: 'POST',
+              body: JSON.stringify({ userId: id }),
+            });
+            console.info('[updateEmployee] User successfully assigned to new team');
+          } catch (error) {
+            console.error('[updateEmployee] Error assigning to new team:', error);
+            showErrorAlert('Team-Zuweisung konnte nicht aktualisiert werden');
+          }
+        }
+      } else {
+        console.info('[updateEmployee] Team unchanged, skipping team assignment');
+      }
 
       showSuccessAlert('Mitarbeiter erfolgreich aktualisiert');
       await this.loadEmployees();
@@ -727,17 +823,9 @@ document.addEventListener('DOMContentLoaded', () => {
           birthday.value = date.toISOString().split('T')[0];
         }
 
-        const departmentSelect = $$<HTMLSelectElement>('#employee-department-select');
-        if (departmentSelect !== null && employee.departmentId !== undefined) {
-          console.info('Setting department to:', employee.departmentId);
-          departmentSelect.value = String(employee.departmentId);
-        }
-
-        const teamSelect = $$<HTMLSelectElement>('#employee-team-select');
-        if (teamSelect !== null && employee.teamId !== undefined) {
-          console.info('Setting team to:', employee.teamId);
-          teamSelect.value = String(employee.teamId);
-        }
+        // Store department and team IDs for restoration after loading
+        const departmentId = employee.departmentId;
+        const teamId = employee.teamId;
 
         const availabilityStatus = $$<HTMLSelectElement>('#availability-status-select');
         if (availabilityStatus && employee.availabilityStatus !== undefined && employee.availabilityStatus !== '') {
@@ -761,8 +849,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (passwordField) passwordField.value = '';
         if (passwordConfirmField) passwordConfirmField.value = '';
 
-        // Show modal in edit mode
-        employeesManager?.showEmployeeModal(true);
+        // Show modal in edit mode and pass department/team IDs for restoration
+        employeesManager?.showEmployeeModal(true, departmentId, teamId);
       }
     };
 
@@ -949,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    w.loadDepartmentsForEmployeeSelect = async () => {
+    w.loadDepartmentsForEmployeeSelect = async (): Promise<void> => {
       const departments = await employeesManager?.loadDepartments();
       const selectElement = document.querySelector('#employee-department-select');
 
@@ -969,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    w.loadTeamsForEmployeeSelect = async () => {
+    w.loadTeamsForEmployeeSelect = async (): Promise<void> => {
       const teams = await employeesManager?.loadTeams();
       const deptSelect = $$id('employee-department-select');
       const selectedDeptId = deptSelect instanceof HTMLSelectElement ? deptSelect.value : undefined;

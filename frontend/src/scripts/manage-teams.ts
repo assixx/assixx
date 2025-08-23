@@ -1109,6 +1109,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         w.closeTeamModal?.();
+        // Reload teams to show updated member/machine counts
+        await teamsManager?.loadTeams();
         // Success message already shown in createTeam method
       } catch (error) {
         console.error('Error creating team:', error);

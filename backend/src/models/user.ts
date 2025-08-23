@@ -303,9 +303,13 @@ export async function findUsersByRole(
         u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
-        d.name as department_name
+        d.name as department_name,
+        t.name as team_name,
+        ut.team_id
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+        LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
         WHERE u.role = ? AND u.tenant_id = ?
       `;
 
@@ -463,9 +467,13 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
         u.department_id, u.position, u.phone, u.landline, u.employee_number, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
-        d.name as department_name
+        d.name as department_name,
+        t.name as team_name,
+        ut.team_id
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+        LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
         WHERE u.tenant_id = ?
       `;
 
