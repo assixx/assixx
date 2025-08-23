@@ -2,6 +2,8 @@
 
 Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf nicht gemischt werden. !!!! Stetige abfrage!!!! Kritisch
 
+Problem → Daten sammeln → Hypothesen → Testen → Validieren
+
 ## QUICK REFERENCE
 
 - Projekt: Multi-Tenant SaaS für Industriefirmen
