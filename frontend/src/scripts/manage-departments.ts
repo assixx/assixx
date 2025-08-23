@@ -6,7 +6,7 @@
 import { ApiClient } from '../utils/api-client';
 import { mapDepartment, type DepartmentAPIResponse } from '../utils/api-mappers';
 import { setHTML } from '../utils/dom-utils';
-import { showSuccessAlert, showErrorAlert } from './utils/alerts';
+import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 
 interface Department {
   id: number;
@@ -117,10 +117,7 @@ class DepartmentsManager {
   }
 
   private async confirmAction(message: string): Promise<boolean> {
-    // TODO: Implement custom confirmation modal
-    // For now, show error and block action for safety
-    showErrorAlert(`${message} (Bestätigung erforderlich - Feature noch nicht implementiert)`);
-    return await Promise.resolve(false); // Block action until proper modal is implemented
+    return await showConfirm(message);
   }
 
   private initializeEventListeners() {
@@ -310,18 +307,22 @@ class DepartmentsManager {
     if (modal !== null) {
       modal.style.display = 'none';
     }
+    // Genau wie bei closeAreaModal - Form reset
+    const form = document.querySelector<HTMLFormElement>('#department-form');
+    if (form !== null) {
+      form.reset();
+    }
   }
 
-  async createDepartment(data: Partial<Department>): Promise<Department> {
+  async createDepartment(data: Partial<Department>): Promise<void> {
     try {
-      const response = await this.apiClient.request<DepartmentAPIResponse>('/api/v2/departments', {
+      await this.apiClient.request<DepartmentAPIResponse>('/api/v2/departments', {
         method: 'POST',
         body: JSON.stringify(data),
       });
 
       showSuccessAlert('Abteilung erfolgreich erstellt');
       await this.loadDepartments();
-      return mapDepartment(response) as Department;
     } catch (error) {
       console.error('Error creating department:', error);
       showErrorAlert('Fehler beim Erstellen der Abteilung');
@@ -604,12 +605,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        await departmentsManager?.createDepartment(data);
-        w.closeDepartmentModal?.();
-        form.reset();
+        // GENAU wie bei manage-areas!
+        await departmentsManager?.apiClient.request('/api/v2/departments', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+
         showSuccessAlert('Abteilung erfolgreich erstellt');
+
+        // GENAU wie bei areas: closeModal() und dann loadDepartments()
+        departmentsManager?.closeDepartmentModal();
+        await departmentsManager?.loadDepartments();
       } catch (error) {
         console.error('Error saving department:', error);
+        showErrorAlert('Fehler beim Speichern der Abteilung');
       }
     };
 

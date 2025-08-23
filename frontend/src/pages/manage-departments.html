@@ -684,15 +684,12 @@
           });
 
           if (response.ok) {
-            alert(`Abteilung wurde ${newStatus === 'active' ? 'aktiviert' : 'deaktiviert'}`);
             loadDepartments();
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
           }
         } catch (error) {
           console.error('Error toggling department status:', error);
-          alert('Ein Fehler ist aufgetreten.');
         }
       };
 
@@ -703,11 +700,9 @@
 
         try {
           await apiClient.delete(`/departments/${id}`);
-          alert('Abteilung erfolgreich gelöscht');
-          window.location.reload();
+          // window.location.reload(); // Handled by TypeScript module
         } catch (error) {
           console.error('Error deleting department:', error);
-          alert(error.message || 'Netzwerkfehler beim Löschen');
         }
       };
 
@@ -733,16 +728,13 @@
           if (departmentId) {
             // Update existing department
             await apiClient.put(`/departments/${departmentId}`, data);
-            alert('Abteilung aktualisiert');
           } else {
             // Create new department
             await apiClient.post('/departments', data);
-            alert('Abteilung erstellt');
           }
-          window.location.reload();
+          // window.location.reload(); // Handled by TypeScript module
         } catch (error) {
           console.error('Error saving department:', error);
-          alert('Netzwerkfehler beim Speichern');
         }
       });
 
