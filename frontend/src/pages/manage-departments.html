@@ -508,12 +508,17 @@
           <h3 class="modal-title">Abteilung löschen</h3>
           <button class="modal-close" id="close-delete-modal">&times;</button>
         </div>
-        <div class="modal-body" style="padding: 24px;">
+        <div class="modal-body" style="padding: 24px">
           <p>Möchten Sie diese Abteilung wirklich löschen?</p>
-          <p class="text-secondary">Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.</p>
+          <p class="text-secondary">
+            Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.
+          </p>
           <input type="hidden" id="delete-department-id" />
         </div>
-        <div class="modal-footer" style="padding: 24px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+        <div
+          class="modal-footer"
+          style="padding: 24px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid rgba(255, 255, 255, 0.1)"
+        >
           <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
           <button type="button" class="btn btn-danger" id="confirm-delete-department">Löschen</button>
         </div>

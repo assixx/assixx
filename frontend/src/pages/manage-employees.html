@@ -626,43 +626,9 @@
           const employees = await apiClient.get('/users');
           const employeeUsers = employees.filter((u) => u.role === 'employee');
 
-          // Load availability data for all employees
-          try {
-            const availabilityResponse = await fetch('/api/availability/current', {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (availabilityResponse.ok) {
-              const availabilityData = await availabilityResponse.json();
-              const availabilityMap = new Map();
-
-              // Create a map of employee_id -> availability status
-              if (availabilityData.employees && Array.isArray(availabilityData.employees)) {
-                availabilityData.employees.forEach((emp) => {
-                  availabilityMap.set(emp.employeeId || emp.employee_id, {
-                    status: emp.availabilityStatus || emp.availability_status || 'available',
-                    reason: emp.reason,
-                    availableFrom: emp.availableFrom || emp.available_from,
-                  });
-                });
-              }
-
-              // Merge availability data with employee data
-              employeeUsers.forEach((emp) => {
-                const availability = availabilityMap.get(emp.id);
-                if (availability) {
-                  emp.availability_status = availability.status;
-                  emp.availability_reason = availability.reason;
-                  emp.available_from = availability.availableFrom;
-                }
-              });
-            }
-          } catch (availError) {
-            console.warn('Could not load availability data:', availError);
-          }
+          // V2 API already provides availability data in the user objects
+          // No need for additional availability API call
+          console.info('[Inline Script] Using availability data from v2 API');
           renderEmployees(employeeUsers);
         } catch (error) {
           console.error('Error loading employees:', error);

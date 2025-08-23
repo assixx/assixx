@@ -38,6 +38,15 @@ export interface UserAPIResponse {
   createdAt?: string;
   updated_at?: string;
   updatedAt?: string;
+  // Availability fields
+  availability_status?: string;
+  availabilityStatus?: string;
+  availability_start?: string;
+  availabilityStart?: string;
+  availability_end?: string;
+  availabilityEnd?: string;
+  availability_notes?: string;
+  availabilityNotes?: string;
 }
 
 // Extended User type with both snake_case and camelCase fields for compatibility
@@ -59,6 +68,11 @@ export interface MappedUser {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // Availability fields
+  availabilityStatus?: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityNotes?: string;
 }
 
 /**
@@ -69,6 +83,14 @@ export function mapUser(user: UserAPIResponse): MappedUser {
   // Handle both v1 (snake_case) and v2 (camelCase) field names
   const firstName = user.first_name ?? user.firstName ?? '';
   const lastName = user.last_name ?? user.lastName ?? '';
+
+  // Debug availability mapping
+  console.info('[API Mapper] Mapping user availability:', {
+    id: user.id,
+    email: user.email,
+    availability_status: user.availability_status,
+    availabilityStatus: user.availabilityStatus,
+  });
 
   return {
     id: user.id,
@@ -88,6 +110,11 @@ export function mapUser(user: UserAPIResponse): MappedUser {
     isActive: user.is_active ?? user.isActive ?? true,
     createdAt: user.created_at ?? user.createdAt,
     updatedAt: user.updated_at ?? user.updatedAt,
+    // Map availability fields
+    availabilityStatus: user.availability_status ?? user.availabilityStatus ?? 'available',
+    availabilityStart: user.availability_start ?? user.availabilityStart,
+    availabilityEnd: user.availability_end ?? user.availabilityEnd,
+    availabilityNotes: user.availability_notes ?? user.availabilityNotes,
   };
 }
 

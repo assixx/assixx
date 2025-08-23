@@ -24,13 +24,17 @@ interface Employee extends User {
   hireDate?: string;
   birthday?: string; // Birthday field for form
   status: 'active' | 'inactive' | 'vacation' | 'sick' | 'terminated';
-  // Availability fields
+  // Availability fields - both snake_case and camelCase
   availabilityStatus?: string;
+  availability_status?: string;
   availabilityReason?: string;
   availableFrom?: string;
   availabilityStart?: string;
+  availability_start?: string;
   availabilityEnd?: string;
+  availability_end?: string;
   availabilityNotes?: string;
+  availability_notes?: string;
   // Add both snake_case and camelCase for compatibility
   first_name?: string;
   last_name?: string;
@@ -231,72 +235,9 @@ class EmployeesManager {
         );
       }
 
-      // Load availability data for all employees
-      try {
-        const token = localStorage.getItem('token');
-        if (token === null || token === '') {
-          console.warn('No auth token available for loading availability');
-          return;
-        }
-
-        const availabilityResponse = await fetch('/api/availability/current', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        // Handle 403 gracefully - feature might not be available for this tenant
-        if (availabilityResponse.status === 403) {
-          console.info('[EmployeesManager] Availability feature not available for this tenant - skipping');
-          return;
-        }
-
-        if (!availabilityResponse.ok) {
-          console.warn(`[EmployeesManager] Failed to load availability: ${availabilityResponse.status}`);
-          return;
-        }
-
-        // Process availability data
-        const availabilityData = (await availabilityResponse.json()) as {
-          employees?: {
-            employeeId?: number;
-            employee_id?: number;
-            availabilityStatus?: string;
-            availability_status?: string;
-            reason?: string;
-            availableFrom?: string;
-            available_from?: string;
-          }[];
-        };
-        const availabilityMap = new Map<number, { status: string; reason?: string; availableFrom?: string }>();
-
-        // Create a map of employee_id -> availability status
-        if (availabilityData.employees !== undefined && Array.isArray(availabilityData.employees)) {
-          availabilityData.employees.forEach((emp) => {
-            const employeeId = emp.employeeId ?? emp.employee_id;
-            if (employeeId !== undefined) {
-              availabilityMap.set(employeeId, {
-                status: emp.availabilityStatus ?? emp.availability_status ?? 'available',
-                reason: emp.reason,
-                availableFrom: emp.availableFrom ?? emp.available_from,
-              });
-            }
-          });
-        }
-
-        // Merge availability data with employee data
-        this.employees.forEach((emp) => {
-          const availability = availabilityMap.get(emp.id);
-          if (availability !== undefined) {
-            emp.availabilityStatus = availability.status;
-            emp.availabilityReason = availability.reason;
-            emp.availableFrom = availability.availableFrom;
-          }
-        });
-      } catch (availError) {
-        console.warn('Could not load availability data:', availError);
-      }
+      // V2 API already provides availability data in the user objects
+      // The availabilityStatus field is now included directly in the user response
+      console.info('[EmployeesManager] Using availability data from v2 API');
 
       this.renderEmployeesTable();
     } catch (error) {
@@ -442,7 +383,29 @@ class EmployeesManager {
   */
 
   private getAvailabilityBadge(employee: Employee): string {
-    const status = employee.availabilityStatus ?? 'available';
+    // Handle both snake_case and camelCase from API
+    let rawStatus = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+
+    // API v2 sometimes returns combined statuses like "available vacation"
+    // Extract the actual status (second word if exists, otherwise first)
+    let status = 'available';
+    if (typeof rawStatus === 'string') {
+      const parts = rawStatus.trim().split(/\s+/);
+      // If we have multiple parts, the actual status is usually the second one
+      // e.g., "available vacation" -> "vacation"
+      if (parts.length > 1) {
+        status = parts[1]; // Take the second part as the actual status
+      } else {
+        status = parts[0] !== '' ? parts[0] : 'available';
+      }
+    }
+
+    console.info('[EmployeesManager] Availability status for', employee.email, ':', {
+      availabilityStatus: employee.availabilityStatus,
+      availability_status: employee.availability_status,
+      rawStatus: rawStatus,
+      resolved: status,
+    });
 
     // Farben basierend auf design-standards
     // Grün = Verfügbar, Orange = Urlaub, Rot = Krank, Cyan = Schulung, Grau = Nicht verfügbar/Sonstiges

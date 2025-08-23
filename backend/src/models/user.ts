@@ -69,6 +69,10 @@ interface UserCreateData {
   is_archived?: boolean;
   is_active?: boolean;
   tenant_id?: number;
+  availability_status?: string;
+  availability_start?: string;
+  availability_end?: string;
+  availability_notes?: string;
 }
 
 interface UserFilter {
@@ -259,16 +263,22 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
 
     const [rows] = await executeQuery<DbUser[]>(
       process.env.NODE_ENV === 'test' ?
-        `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain
+        `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
+             ut.team_id, tm.name as team_name
              FROM users u
              LEFT JOIN departments d ON u.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
+             LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+             LEFT JOIN teams tm ON ut.team_id = tm.id AND tm.tenant_id = u.tenant_id
              WHERE u.id = ? AND u.tenant_id = ?`
       : `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
-             u.availability_status, u.availability_start, u.availability_end, u.availability_notes
+             u.availability_status, u.availability_start, u.availability_end, u.availability_notes,
+             ut.team_id, tm.name as team_name
              FROM users u
              LEFT JOIN departments d ON u.department_id = d.id
              LEFT JOIN tenants t ON u.tenant_id = t.id
+             LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+             LEFT JOIN teams tm ON ut.team_id = tm.id AND tm.tenant_id = u.tenant_id
              WHERE u.id = ? AND u.tenant_id = ?`,
       [id, tenantId],
     );
@@ -293,6 +303,9 @@ export async function findUsersByRole(
   tenantId: number, // PFLICHT - nicht mehr optional!
 ): Promise<DbUser[]> {
   try {
+    // Auto-reset expired availability before fetching
+    await autoResetExpiredAvailability(tenantId);
+
     logger.info(
       `[findUsersByRole] Called with role=${role}, includeArchived=${includeArchived}, tenantId=${tenantId}`,
     );
@@ -404,6 +417,10 @@ export async function updateUser(
       'status',
       'is_archived',
       'is_active',
+      'availability_status',
+      'availability_start',
+      'availability_end',
+      'availability_notes',
     ];
 
     // Dynamisch Query aufbauen basierend auf den zu aktualisierenden Feldern
@@ -461,6 +478,11 @@ export async function updateUser(
 // Neue Methode: Benutzer suchen mit Filtern
 export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
   try {
+    // Auto-reset expired availability before fetching
+    if (filters.tenant_id) {
+      await autoResetExpiredAvailability(filters.tenant_id);
+    }
+
     let query = `
         SELECT u.id, u.username, u.email, u.role, u.company,
         u.first_name, u.last_name, u.employee_id, u.created_at,
@@ -978,6 +1000,32 @@ export async function countActiveUsersByTenant(tenantId: number): Promise<number
   }
 }
 
+/**
+ * Auto-reset expired availability statuses to 'available'
+ * This should be called before fetching users to ensure current status
+ */
+export async function autoResetExpiredAvailability(tenantId: number): Promise<void> {
+  try {
+    // Reset all users whose availability_end date has passed
+    await executeQuery<ResultSetHeader>(
+      `UPDATE users
+       SET availability_status = 'available',
+           availability_start = NULL,
+           availability_end = NULL,
+           availability_notes = NULL,
+           updated_at = NOW()
+       WHERE tenant_id = ?
+         AND availability_status != 'available'
+         AND availability_end IS NOT NULL
+         AND availability_end < CURDATE()`,
+      [tenantId],
+    );
+  } catch (error) {
+    logger.error(`Error auto-resetting expired availability: ${(error as Error).message}`);
+    // Don't throw - this is a non-critical operation
+  }
+}
+
 export async function updateUserAvailability(
   userId: number,
   tenantId: number,
@@ -1029,6 +1077,7 @@ const User = {
   archiveUser,
   unarchiveUser,
   findArchivedUsers,
+  autoResetExpiredAvailability,
   hasDocuments: userHasDocuments,
   getDocumentCount: getUserDocumentCount,
   getUserDepartmentAndTeam,

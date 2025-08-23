@@ -15,7 +15,10 @@ interface Employee extends User {
   department_id?: number;
   team_id?: number;
   shift_assignments?: ShiftAssignment[];
-  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  availability_status?: string; // Allow any string for combined statuses like "available vacation"
+  availabilityStatus?: string; // camelCase version from API
+  availability_start?: string;
+  availability_end?: string;
   availability_reason?: string;
   available_from?: string;
 }
@@ -1781,57 +1784,88 @@ class ShiftPlanningSystem {
     }
 
     try {
-      // If a team is selected, load team members via user_teams junction
-      let url = '/api/users';
+      // Use v2 API for employees with availability data
+      const apiClientInstance = ApiClient.getInstance();
+
+      // ALWAYS load all users via v2 API to get availability data
+      console.info('[SHIFTS DEBUG] Loading all users via v2 API for availability data');
+      let allUsers = await apiClientInstance.get<UserAPIResponse[]>('/users');
+
+      let users: UserAPIResponse[] = [];
+
       if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
-        // Load team members directly via teams endpoint
-        url = `/api/teams/${String(this.selectedContext.teamId)}/members`;
-        console.info('[SHIFTS DEBUG] Loading team members from user_teams junction');
+        // Filter by team ID
+        console.info('[SHIFTS DEBUG] Filtering users by team ID:', this.selectedContext.teamId);
+        // For now, load team members separately to get the correct list
+        const teamMembers = await apiClientInstance.get<UserAPIResponse[]>(
+          `/teams/${String(this.selectedContext.teamId)}/members`,
+        );
+        const teamMemberIds = teamMembers.map((m) => m.id);
+        // Use the full user data with availability from /users endpoint
+        users = allUsers.filter((u) => teamMemberIds.includes(u.id));
       } else {
-        // Otherwise load all department users
-        const params = new URLSearchParams();
-
+        users = allUsers;
+        // Filter by department if selected
         if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          params.append('department_id', this.selectedContext.departmentId.toString());
-        }
-        if (this.selectedContext.teamLeaderId !== null && this.selectedContext.teamLeaderId !== 0) {
-          params.append('team_leader_id', this.selectedContext.teamLeaderId.toString());
-        }
-
-        const paramsString = params.toString();
-        if (paramsString !== '') {
-          url += `?${paramsString}`;
+          users = users.filter((u) => {
+            const deptId = u.department_id ?? u.departmentId;
+            return deptId === this.selectedContext.departmentId;
+          });
         }
       }
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          'Content-Type': 'application/json',
-        },
+      // Map the users to ensure we have availability data
+      const mappedUsers = mapUsers(users);
+
+      // Convert mapped users to Employee type with all required fields
+      this.employees = mappedUsers.map(
+        (u) =>
+          ({
+            id: u.id,
+            username: u.username,
+            email: u.email,
+            first_name: u.firstName,
+            last_name: u.lastName,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            role: u.role,
+            tenant_id: u.tenantId,
+            department_id: u.departmentId ?? undefined,
+            team_id: u.teamId ?? undefined,
+            position: u.position,
+            employee_number: u.employeeNumber,
+            is_active: u.isActive,
+            is_archived: false,
+            created_at: u.createdAt ?? new Date().toISOString(),
+            updated_at: u.updatedAt ?? new Date().toISOString(),
+            availability_status: (u.availabilityStatus as string | undefined) ?? undefined,
+            availabilityStatus: (u.availabilityStatus as string | undefined) ?? undefined,
+            availability_start: (u.availabilityStart as string | undefined) ?? undefined,
+            availability_end: (u.availabilityEnd as string | undefined) ?? undefined,
+            availability_notes: (u.availabilityNotes as string | undefined) ?? undefined,
+          }) as Employee,
+      );
+
+      console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
+      console.info('[SHIFTS DEBUG] Employee data:', this.employees);
+      console.info(
+        '[SHIFTS DEBUG] Employee IDs:',
+        this.employees.map((e) => e.id),
+      );
+
+      // Log availability status for debugging
+      this.employees.forEach((emp) => {
+        console.info('[SHIFTS DEBUG] Employee availability:', {
+          email: emp.email,
+          availability_status: emp.availability_status,
+          availabilityStatus: emp.availabilityStatus,
+        });
       });
 
-      if (response.ok) {
-        const data = (await response.json()) as User[] | { users?: User[] };
-        const users = Array.isArray(data) ? data : ((data as { users?: User[] }).users ?? []);
-        // Include all users from team (not just 'employee' role, as admins can also be team members)
-        this.employees = users as Employee[];
+      // No need to load availability separately - v2 API provides it
+      console.info('[SHIFTS] Using availability data from v2 API');
 
-        console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
-        console.info('[SHIFTS DEBUG] Employee data:', this.employees);
-        console.info(
-          '[SHIFTS DEBUG] Employee IDs:',
-          this.employees.map((e) => e.id),
-        );
-
-        // Load availability status for the current week
-        await this.loadEmployeeAvailability();
-
-        this.renderEmployeeList();
-      } else {
-        console.error('[SHIFTS ERROR] Failed to load employees, status:', response.status);
-        throw new Error('Failed to load employees');
-      }
+      this.renderEmployeeList();
     } catch (error) {
       console.error('Error loading employees:', error);
       // Fallback data
@@ -1840,7 +1874,7 @@ class ShiftPlanningSystem {
     }
   }
 
-  async loadEmployeeAvailability(): Promise<void> {
+  loadEmployeeAvailability(): void {
     try {
       // Get the start and end date for the current week
       const weekStart = this.getWeekStart(this.currentWeek);
@@ -1852,59 +1886,23 @@ class ShiftPlanningSystem {
 
       console.info('[SHIFTS] Loading availability for week:', startStr, 'to', endStr);
 
-      // Load availability status from API
-      const response = await fetch(`/api/availability/current?start_date=${startStr}&end_date=${endStr}`, {
-        headers: {
-          Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // V2 API already provides availability data in the employee objects
+      // The availability_status and availabilityStatus fields are included directly
+      console.info('[SHIFTS] Using availability data from v2 API for employees');
 
-      if (response.ok) {
-        const data = (await response.json()) as {
-          employees?: {
-            employee_id: number;
-            current_status: string;
-            current_reason?: string;
-            available_from?: string;
-          }[];
-        };
+      // Log current availability status from employees
+      const availableCount = this.employees.filter((e) => {
+        const status = e.availability_status ?? e.availabilityStatus ?? 'available';
+        // Parse combined statuses like "available vacation"
+        const parts = status.trim().split(/\s+/);
+        const actualStatus = parts.length > 1 ? parts[1] : parts[0];
+        return actualStatus === 'available';
+      }).length;
 
-        const availabilityData = data.employees ?? [];
-
-        // Map availability to employees
-        this.employees.forEach((employee) => {
-          const availability = availabilityData.find((a) => a.employee_id === employee.id);
-          if (availability) {
-            employee.availability_status = availability.current_status as
-              | 'available'
-              | 'unavailable'
-              | 'vacation'
-              | 'sick'
-              | 'training'
-              | 'other';
-            employee.availability_reason = availability.current_reason;
-            employee.available_from = availability.available_from;
-          } else {
-            // Default to available if no specific status
-            employee.availability_status = 'available';
-          }
-        });
-
-        console.info('[SHIFTS] Availability loaded for', availabilityData.length, 'employees');
-      } else {
-        console.warn('[SHIFTS] Could not load availability, defaulting all to available');
-        // Default all to available if API fails
-        this.employees.forEach((employee) => {
-          employee.availability_status = 'available';
-        });
-      }
+      console.info('[SHIFTS] Availability loaded:', availableCount, 'of', this.employees.length, 'employees available');
     } catch (error) {
-      console.error('[SHIFTS] Error loading availability:', error);
-      // Default all to available on error
-      this.employees.forEach((employee) => {
-        employee.availability_status = 'available';
-      });
+      console.error('[SHIFTS] Error processing availability data:', error);
+      // Keep existing availability data from v2 API
     }
   }
 
@@ -1930,17 +1928,44 @@ class ShiftPlanningSystem {
 
     container.innerHTML = '';
     console.info('[SHIFTS DEBUG] Rendering employees:', this.employees.length);
+    console.info('[SHIFTS DEBUG] Full employee data:', this.employees);
 
     this.employees.forEach((employee) => {
+      // Log ALL availability-related fields
+      console.info('[SHIFTS AVAILABILITY DEBUG]', {
+        id: employee.id,
+        name: `${employee.first_name ?? ''} ${employee.last_name ?? ''}`,
+        availability_status: employee.availability_status,
+        availabilityStatus: employee.availabilityStatus,
+        availability_start: employee.availability_start,
+        availability_end: employee.availability_end,
+        fullEmployee: employee,
+      });
+
       const item = document.createElement('div');
       item.className = 'employee-item';
       item.dataset.employeeId = employee.id.toString();
 
+      // Handle both snake_case and camelCase from API
+      let rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+
+      // API v2 sometimes returns combined statuses like "available vacation"
+      // Extract the actual status (second word if exists, otherwise first)
+      let availabilityStatus = 'available';
+      if (typeof rawStatus === 'string') {
+        const parts = rawStatus.trim().split(/\s+/);
+        // If we have multiple parts, the actual status is usually the second one
+        // e.g., "available vacation" -> "vacation"
+        if (parts.length > 1) {
+          availabilityStatus = parts[1];
+        } else {
+          availabilityStatus = parts[0] !== '' ? parts[0] : 'available';
+        }
+      }
+
       // Only available employees can be dragged AND only in edit mode or when no plan exists
       const isDraggable =
-        this.isAdmin &&
-        (employee.availability_status === 'available' || employee.availability_status === undefined) &&
-        (this.currentPlanId === null || this.isEditMode);
+        this.isAdmin && availabilityStatus === 'available' && (this.currentPlanId === null || this.isEditMode);
       item.setAttribute('draggable', isDraggable.toString());
 
       console.info(
@@ -1948,13 +1973,17 @@ class ShiftPlanningSystem {
         employee.username,
         'Draggable:',
         isDraggable,
-        'Status:',
+        'Status (resolved):',
+        availabilityStatus,
+        'Original snake_case:',
         employee.availability_status,
+        'Original camelCase:',
+        employee.availabilityStatus,
       );
 
       // Add visual indicators for unavailable employees
-      if (employee.availability_status !== undefined && employee.availability_status !== 'available') {
-        item.classList.add('unavailable', `status-${employee.availability_status}`);
+      if (availabilityStatus !== 'available') {
+        item.classList.add('unavailable', `status-${availabilityStatus}`);
       }
 
       const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
@@ -1965,14 +1994,14 @@ class ShiftPlanningSystem {
       const nameSpan = createElement('span', { className: CSS_CLASSES.EMPLOYEE_NAME }, displayName);
       infoDiv.append(nameSpan);
 
-      // Add status icon if present
-      const iconElement = this.createAvailabilityIcon(employee.availability_status);
+      // Add status icon if present (use resolved status)
+      const iconElement = this.createAvailabilityIcon(availabilityStatus);
       if (iconElement) {
         infoDiv.append(iconElement);
       }
 
-      // Add status badge if present
-      const badgeElement = this.createAvailabilityBadge(employee.availability_status);
+      // Add status badge if present (use resolved status)
+      const badgeElement = this.createAvailabilityBadge(availabilityStatus);
       if (badgeElement) {
         infoDiv.append(badgeElement);
       }
@@ -2014,6 +2043,16 @@ class ShiftPlanningSystem {
         statusClass = 'unavailable';
         title = 'Nicht verfügbar';
         break;
+      case 'training':
+        iconClass = 'fa-graduation-cap';
+        statusClass = 'training';
+        title = 'Schulung';
+        break;
+      case 'other':
+        iconClass = 'fa-clock';
+        statusClass = 'other';
+        title = 'Sonstiges';
+        break;
       default:
         return null;
     }
@@ -2030,10 +2069,6 @@ class ShiftPlanningSystem {
     let text = '';
 
     switch (status) {
-      case 'available':
-        badgeClass = 'badge-success';
-        text = 'Verfügbar';
-        break;
       case 'vacation':
         badgeClass = 'badge-warning';
         text = 'Urlaub';
@@ -2046,9 +2081,20 @@ class ShiftPlanningSystem {
         badgeClass = 'badge-secondary';
         text = 'Nicht verfügbar';
         break;
+      case 'training':
+        badgeClass = 'badge-info';
+        text = 'Schulung';
+        break;
+      case 'other':
+        badgeClass = 'badge-dark';
+        text = 'Sonstiges';
+        break;
+      case 'available':
       default:
         // Default to available if no status is set
-        return this.createAvailabilityBadge('available'); // Avoid code duplication
+        badgeClass = 'badge-success';
+        text = 'Verfügbar';
+        break;
     }
 
     return createElement(
@@ -2075,7 +2121,20 @@ class ShiftPlanningSystem {
   }
 
   getAvailabilityBadge(status?: string): string {
-    switch (status) {
+    // Handle API v2 combined statuses like "available vacation"
+    let resolvedStatus = 'available';
+    if (status !== undefined && status !== '') {
+      const parts = status.trim().split(/\s+/);
+      // If we have multiple parts, the actual status is usually the second one
+      // e.g., "available vacation" -> "vacation"
+      if (parts.length > 1) {
+        resolvedStatus = parts[1];
+      } else {
+        resolvedStatus = parts[0] !== '' ? parts[0] : 'available';
+      }
+    }
+
+    switch (resolvedStatus) {
       case 'available':
         return '<span class="badge badge-success">Verfügbar</span>';
       case 'vacation':
@@ -2084,6 +2143,10 @@ class ShiftPlanningSystem {
         return '<span class="badge badge-danger">Krank</span>';
       case 'unavailable':
         return '<span class="badge badge-secondary">Nicht verfügbar</span>';
+      case 'training':
+        return '<span class="badge badge-info">Schulung</span>';
+      case 'other':
+        return '<span class="badge badge-dark">Sonstiges</span>';
       default:
         // Default to available if no status is set
         return '<span class="badge badge-success">Verfügbar</span>';
