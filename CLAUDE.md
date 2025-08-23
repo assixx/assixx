@@ -1,5 +1,13 @@
 # Claude Code – Assixx Project Complete Guide
 
+## 🔴🔴🔴 STOPP! PFLICHTLEKTÜRE VOR ALLEM ANDEREN! 🔴🔴🔴
+
+## → LIES ZUERST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
+
+## → OHNE MANIFEST GELESEN = KEINE ARBEIT
+
+## → Das Manifest dokumentiert ALLE meine Fehler und wie ich sie vermeide
+
 Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf nicht gemischt werden. !!!! Stetige abfrage!!!! Kritisch
 
 Problem → Daten sammeln → Hypothesen → Testen → Validieren
@@ -114,24 +122,21 @@ Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
 
-- **Aktion:** Vollständige Pflicht-Checkliste durchführen
-- **Prozess:** Alle Starttasks, TodoWrite mit 10 Punkten, komplette Checks
+- **Aktion:** Vollständige Pflicht-Checkliste durchführen MIT dev-status.sh
+- **Prozess:** Alle Starttasks, TodoWrite mit 10+ Punkten, komplette Checks inklusive dev-status.sh
 - **Ziel:** Sicherstellen, dass alles korrekt läuft
 
-### Trigger 2: "weitermachen mit Assixx und skip" (Quick-Start-Modus)
+### Trigger 2: "weitermachen mit Assixx und skip" (Skip-Modus)
 
-- **Aktion:** Minimale Vorbereitung für sofortige Arbeit
-- **Prozess:**
-  1. TODO.md lesen (nur TL;DR Section)
-  2. README.md lesen (kurz)
-  3. CLAUDE.md + CLAUDE.local.md (bereits automatisch geladen)
-  4. Letzten Commit lesen und zusammenfassen
-  5. Direkt startbereit und auf Anweisungen warten
-- **Ziel:** Schneller Start für erfahrene Entwicklung
+- **Aktion:** Vollständige Pflicht-Checkliste durchführen OHNE dev-status.sh
+- **Prozess:** Alle Starttasks, TodoWrite mit 10+ Punkten, komplette Checks aber dev-status.sh wird übersprungen
+- **Ziel:** Schnellerer Start ohne System-Status-Check
+- **UNTERSCHIED:** Einziger Unterschied zu Trigger 1 ist das Überspringen von dev-status.sh
 
 ## DOCKER QUICK-CHECK
 
-**IMMER ZUERST ausführen:**
+**Bei "weitermachen mit Assixx" (Normal-Modus) IMMER ausführen:**
+**Bei "weitermachen mit Assixx und skip" (Skip-Modus) ÜBERSPRINGEN!**
 
 ```bash
 # Working Directory ist WICHTIG!
@@ -141,6 +146,7 @@ cd /home/scs/projects/Assixx/docker
 docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 # ODER nutze das neue Status-Script (empfohlen):
+# ACHTUNG: Bei "und skip" wird dev-status.sh NICHT ausgeführt!
 /home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
@@ -224,9 +230,9 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 - SMTP Warnings beim Start - optional, ignorieren
 - Port 3000 belegt - lsof -i :3000 && kill -9 PID
 
-## PFLICHT-CHECKLISTE (TodoWrite mit 10 Punkten)
+## PFLICHT-CHECKLISTE (TodoWrite mit 10+ Punkten)
 
-1. Docker-Check
+1. Docker-Check (bei "und skip": OHNE dev-status.sh)
 2. TODO.md (AKTUELLE PHASE + FORTSCHRITTS-TRACKING!)
 3. CLAUDE.md
 4. TypeScript-Standards
@@ -299,11 +305,19 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 ## WORKFLOW
 
-### Bei "weitermachen mit Assixx"
+### Bei "weitermachen mit Assixx" (Normal-Modus)
 
-1. TodoWrite mit 10 Punkten erstellen (siehe PFLICHT-CHECKLISTE)
-2. Alle Checks durchführen
+1. TodoWrite mit 10+ Punkten erstellen (siehe PFLICHT-CHECKLISTE)
+2. Alle Checks durchführen INKLUSIVE dev-status.sh
 3. Zusammenfassung erstellen
+
+### Bei "weitermachen mit Assixx und skip" (Skip-Modus)
+
+1. TodoWrite mit 10+ Punkten erstellen (siehe PFLICHT-CHECKLISTE)
+2. Alle Checks durchführen OHNE dev-status.sh
+3. Zusammenfassung erstellen
+
+**MERKE:** Der einzige Unterschied ist das Überspringen von dev-status.sh bei "und skip"
 
 ### Dokumentation aktualisieren bei
 
@@ -417,10 +431,11 @@ git merge --no-ff branch-name
 
 weitere Notes:
 
-## 🎯 START-TRIGGER QUICK REFERENCE (13.06.2025)
+## 🎯 START-TRIGGER QUICK REFERENCE (23.08.2025)
 
-- **"weitermachen mit Assixx"** → Normal-Modus mit allen Checks
-- **"weitermachen mit Assixx und skip"** → Quick-Start für schnelle Fortsetzung
+- **"weitermachen mit Assixx"** → Normal-Modus mit allen Checks INKLUSIVE dev-status.sh
+- **"weitermachen mit Assixx und skip"** → Skip-Modus mit allen Checks OHNE dev-status.sh
+- **EINZIGER UNTERSCHIED:** Bei "und skip" wird dev-status.sh übersprungen!
 
 ## Aktuelle Notizen (26.06.2025)
 

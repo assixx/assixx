@@ -7,27 +7,36 @@ import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { mapUsers, type UserAPIResponse } from '../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
-import { $$id, show, hide, setHTML } from '../utils/dom-utils';
+import { $, $$, $$id, setHTML } from '../utils/dom-utils';
 
 interface Employee extends User {
   employeeId?: string;
   employee_id?: string; // Database field name
+  employeeNumber?: string; // Employee Number field
+  employee_number?: string; // snake_case version
   departmentId?: number;
   departmentName?: string;
+  department_name?: string; // snake_case version
   teamId?: number;
   teamName?: string;
+  team_name?: string; // snake_case version
   position?: string;
   hireDate?: string;
+  birthday?: string; // Birthday field for form
   status: 'active' | 'inactive' | 'vacation' | 'sick' | 'terminated';
   // Availability fields
   availabilityStatus?: string;
   availabilityReason?: string;
   availableFrom?: string;
+  availabilityStart?: string;
+  availabilityEnd?: string;
+  availabilityNotes?: string;
   // Add both snake_case and camelCase for compatibility
   first_name?: string;
   last_name?: string;
   firstName?: string;
   lastName?: string;
+  isActive?: boolean | number; // API v2 camelCase (can be boolean or 0/1)
   phone?: string;
   address?: string;
   emergencyContact?: string;
@@ -70,6 +79,7 @@ class EmployeesManager {
   private currentFilter: 'all' | 'active' | 'inactive' = 'all';
   private searchTerm = '';
   private useV2API = true; // Default to v2 API
+  public currentEmployeeId: number | null = null; // Track current employee being edited
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
@@ -268,60 +278,92 @@ class EmployeesManager {
   }
 
   private renderEmployeesTable(): void {
-    const tableBody = $$id('employees-table-body');
-    if (tableBody === null) return;
+    // Use the same container as the HTML file uses
+    const container = $$id('employeeTableContent');
+    if (container === null) {
+      console.error('[renderEmployeesTable] Container #employeeTableContent not found!');
+      return;
+    }
+    console.info('[renderEmployeesTable] Rendering table with', this.employees.length, 'employees');
 
     if (this.employees.length === 0) {
       setHTML(
-        tableBody,
+        container,
         `
-        <tr>
-          <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
-        </tr>
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <div class="empty-state-text">Keine Mitarbeiter gefunden</div>
+          <div class="empty-state-subtext">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
+        </div>
       `,
       );
       return;
     }
 
-    setHTML(
-      tableBody,
-      this.employees
-        .map(
-          (employee) => `
-      <tr>
-        <td>
-          <strong>${employee.first_name ?? ''} ${employee.last_name ?? ''}</strong>
-          ${employee.position !== undefined && employee.position.length > 0 ? `<br><small class="text-muted">${employee.position}</small>` : ''}
-        </td>
-        <td>${employee.email}</td>
-        <td>
-          <code>${employee.employee_id ?? employee.employeeId ?? '-'}</code>
-        </td>
-        <td>${employee.departmentName ?? '-'}</td>
-        <td>
-          <span class="badge ${!employee.is_active ? 'badge-secondary' : 'badge-success'}">
-            ${!employee.is_active ? 'Inaktiv' : 'Aktiv'}
-          </span>
-        </td>
-        <td>
-          ${this.getAvailabilityBadge(employee)}
-        </td>
-        <td>
-          <button class="btn btn-sm btn-secondary" onclick="window.editEmployee(${employee.id})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-secondary" onclick="window.viewEmployeeDetails(${employee.id})">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="window.deleteEmployee(${employee.id})">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `,
-        )
-        .join(''),
-    );
+    // Render full table structure (same as HTML version)
+    const tableHTML = `
+      <table class="employee-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>E-Mail</th>
+            <th>Position</th>
+            <th>Personalnummer</th>
+            <th>Abteilung</th>
+            <th>Team</th>
+            <th>Status</th>
+            <th>Verfügbarkeit</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.employees
+            .map((employee) => {
+              const firstName = employee.first_name ?? employee.firstName ?? '';
+              const lastName = employee.last_name ?? employee.lastName ?? '';
+              const fullName = `${firstName} ${lastName}`.trim();
+              const displayName = fullName !== '' ? fullName : employee.username;
+
+              // Check both snake_case and camelCase fields (API v1 vs v2)
+              // Priority: Check isActive first (API v2), then is_active (API v1/DB)
+              let isActive = true; // Default to active
+              if ('isActive' in employee && employee.isActive !== undefined) {
+                // isActive can be boolean or number (0/1)
+                isActive = employee.isActive === true || employee.isActive === 1;
+              } else if ('is_active' in employee) {
+                // is_active is always boolean
+                isActive = employee.is_active;
+              }
+
+              return `
+            <tr>
+              <td>${displayName}</td>
+              <td>${employee.email}</td>
+              <td>${employee.position ?? '-'}</td>
+              <td>${employee.employee_number ?? employee.employeeNumber ?? employee.employee_id ?? employee.employeeId ?? '-'}</td>
+              <td>${employee.department_name ?? employee.departmentName ?? '-'}</td>
+              <td>${employee.team_name ?? employee.teamName ?? '-'}</td>
+              <td>
+                <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
+                  ${isActive ? 'Aktiv' : 'Inaktiv'}
+                </span>
+              </td>
+              <td>
+                ${this.getAvailabilityBadge(employee)}
+              </td>
+              <td>
+                <button class="action-btn edit" onclick="window.editEmployee(${employee.id})">Bearbeiten</button>
+                <button class="action-btn delete" onclick="window.deleteEmployee(${employee.id})">Löschen</button>
+              </td>
+            </tr>
+          `;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    `;
+
+    setHTML(container, tableHTML);
   }
 
   // Unused methods - commenting out to resolve TypeScript warnings
@@ -401,10 +443,20 @@ class EmployeesManager {
     return `<span class="badge ${badgeClass}">${badgeText}</span>`;
   }
 
-  showEmployeeModal(): void {
+  showEmployeeModal(isEdit = false): void {
     const modal = $$id('employee-modal');
     if (modal !== null) {
       modal.classList.add('active'); // Verwende .active Klasse wie bei manage-admins!
+
+      // Show/hide availability section based on mode
+      const availabilitySections = modal.querySelectorAll('.form-section');
+      availabilitySections.forEach((section) => {
+        const heading = section.querySelector('h4');
+        if (heading !== null && heading.textContent === 'Verfügbarkeit') {
+          // Show for edit mode, hide for create mode
+          (section as HTMLElement).style.display = isEdit ? 'block' : 'none';
+        }
+      });
 
       // Load departments and teams after showing modal
       setTimeout(() => {
@@ -423,17 +475,42 @@ class EmployeesManager {
   }
 
   async createEmployee(data: Partial<Employee>): Promise<Employee> {
+    // Clean optional fields - send undefined instead of empty strings
+    const cleanedData = { ...data };
+
+    // Handle optional fields - delete empty strings
+    if (cleanedData.phone === '') {
+      delete cleanedData.phone;
+    }
+    // Handle birthday field - keep as is, DB column is 'birthday'
+    if (cleanedData.birthday === '') {
+      delete cleanedData.birthday;
+    }
+    if (cleanedData.position === '') {
+      delete cleanedData.position;
+    }
+    if (cleanedData.employeeNumber === '' || cleanedData.employeeNumber === undefined) {
+      // Generate unique employee number if not provided
+      cleanedData.employeeNumber = `EMP${Date.now()}`;
+    }
+
+    // Remove availability fields for new employees
+    delete cleanedData.availabilityStatus;
+    delete cleanedData.availabilityStart;
+    delete cleanedData.availabilityEnd;
+    delete cleanedData.availabilityNotes;
+
     const response = await this.apiClient.request<UserAPIResponse>('/users', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(cleanedData),
     });
 
     showSuccessAlert('Mitarbeiter erfolgreich erstellt');
 
-    // Reload page after successful creation
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    // Reload employees list without page reload (like in manage-admins)
+    console.info('[createEmployee] Reloading employees list...');
+    await this.loadEmployees();
+    console.info('[createEmployee] Employees list reloaded successfully');
 
     // Map single user response
     const mappedUsers = mapUsers([response]);
@@ -565,10 +642,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.editEmployee = async (id: number) => {
       const employee = await employeesManager?.getEmployeeDetails(id);
-      if (employee !== null) {
+      if (employee !== null && employee !== undefined) {
         console.info('Edit employee:', employee);
-        // TODO: Fill form with employee data
-        employeesManager?.showEmployeeModal();
+
+        // Set current employee ID for update
+        if (employeesManager) {
+          employeesManager.currentEmployeeId = id;
+        }
+
+        // Get modal elements
+        const modal = $$('#employee-modal');
+        const modalTitle = modal ? $$('.modal-header h2', modal) : null;
+
+        // Update modal title
+        if (modalTitle) {
+          modalTitle.textContent = 'Mitarbeiter bearbeiten';
+        }
+
+        // Fill form with employee data - using $$ for null-safe access like manage-admins
+        // Fill basic required fields
+        $<HTMLInputElement>('input[name="firstName"]').value = employee.firstName ?? '';
+        $<HTMLInputElement>('input[name="lastName"]').value = employee.lastName ?? '';
+        $<HTMLInputElement>('input[name="email"]').value = employee.email;
+        $<HTMLInputElement>('input[name="emailConfirm"]').value = employee.email;
+
+        // Optional fields - using $$ for null-safe access
+        const phone = $$<HTMLInputElement>('input[name="phone"]');
+        if (phone) phone.value = employee.phone ?? '';
+
+        const position = $$<HTMLInputElement>('input[name="position"]');
+        if (position) position.value = employee.position ?? '';
+
+        const employeeNumber = $$<HTMLInputElement>('input[name="employeeNumber"]');
+        if (employeeNumber) employeeNumber.value = employee.employeeId ?? employee.employee_id ?? '';
+
+        const birthday = $$<HTMLInputElement>('input[name="birthday"]');
+        if (birthday && employee.birthdate !== undefined && employee.birthdate !== '') {
+          const date = new Date(employee.birthdate);
+          birthday.value = date.toISOString().split('T')[0];
+        }
+
+        const departmentSelect = $$<HTMLSelectElement>('#employee-department-select');
+        if (departmentSelect && employee.departmentId !== undefined && employee.departmentId !== 0) {
+          departmentSelect.value = String(employee.departmentId);
+        }
+
+        const teamSelect = $$<HTMLSelectElement>('#employee-team-select');
+        if (teamSelect && employee.teamId !== undefined && employee.teamId !== 0) {
+          teamSelect.value = String(employee.teamId);
+        }
+
+        const availabilityStatus = $$<HTMLSelectElement>('#availability-status-select');
+        if (availabilityStatus && employee.availabilityStatus !== undefined && employee.availabilityStatus !== '') {
+          availabilityStatus.value = employee.availabilityStatus;
+        }
+
+        const isActiveSelect = $$<HTMLSelectElement>('select[name="isActive"]');
+        if (isActiveSelect) {
+          isActiveSelect.value = employee.is_active ? '1' : '0';
+        }
+
+        // Clear password fields for edit mode
+        const passwordField = $$<HTMLInputElement>('input[name="password"]');
+        const passwordConfirmField = $$<HTMLInputElement>('input[name="passwordConfirm"]');
+        if (passwordField) passwordField.value = '';
+        if (passwordConfirmField) passwordConfirmField.value = '';
+
+        // Show modal in edit mode
+        employeesManager?.showEmployeeModal(true);
       }
     };
 
@@ -585,7 +726,25 @@ document.addEventListener('DOMContentLoaded', () => {
       await employeesManager?.deleteEmployee(id);
     };
 
+    w.viewEmployeeDetails = async (id: number) => {
+      // Vorerst zur Bearbeiten-Funktion weiterleiten
+      // TODO: Implementiere separate Detail-Ansicht
+      await w.editEmployee?.(id);
+    };
+
     w.showEmployeeModal = () => {
+      // Reset form for new employee
+      if (employeesManager) {
+        employeesManager.currentEmployeeId = null;
+      }
+      const modalTitle = $$('#employee-modal .modal-header h2');
+      if (modalTitle) {
+        modalTitle.textContent = 'Neuen Mitarbeiter anlegen';
+      }
+      const form = $$<HTMLFormElement>('#employee-form');
+      if (form) {
+        form.reset();
+      }
       employeesManager?.showEmployeeModal();
     };
 
@@ -594,8 +753,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     w.saveEmployee = async () => {
+      console.info('[saveEmployee] Function called');
       const form = $$id('employee-form');
-      if (!(form instanceof HTMLFormElement)) return;
+      if (!(form instanceof HTMLFormElement)) {
+        console.error('[saveEmployee] Form not found or not a form element');
+        return;
+      }
+      console.info('[saveEmployee] Form found, processing data...');
 
       const formData = new FormData(form);
       const data: Record<string, unknown> = {};
@@ -610,22 +774,38 @@ document.addEventListener('DOMContentLoaded', () => {
               data[key] = Number.parseInt(value, 10);
               break;
             case 'email':
-            case 'first_name':
-            case 'last_name':
+            case 'firstName':
+            case 'lastName':
             case 'position':
-            case 'employee_number':
+            case 'employeeNumber':
             case 'phone':
+            case 'birthday':
             case 'isActive':
             case 'availabilityStatus':
-            case 'availability_start':
-            case 'availability_end':
-            case 'availability_notes':
+            case 'availabilityStart':
+            case 'availabilityEnd':
+            case 'availabilityNotes':
               // eslint-disable-next-line security/detect-object-injection
               data[key] = value;
               break;
+            case 'password':
+              // Only include password if it's not empty (for updates)
+              if (value.length > 0) {
+                // eslint-disable-next-line security/detect-object-injection
+                data[key] = value;
+              }
+              break;
+            case 'passwordConfirm':
+            case 'emailConfirm':
+              // These fields are only for client-side validation
+              // They should NOT be sent to the API
+              // Silently skip them - this is expected behavior
+              break;
             default:
-              // Skip unknown keys for security
-              console.warn(`Skipping unknown form field: ${key}`);
+              // SECURITY: Log any unexpected form fields
+              // This helps detect potential security issues or typos
+              console.warn(`[SECURITY] Unexpected form field detected: ${key}`);
+              // DO NOT include unknown fields in data for security
               break;
           }
         }
@@ -654,9 +834,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        await employeesManager?.createEmployee(data as Partial<Employee>);
+        console.info('[saveEmployee] Starting save operation...');
+        // Check if we're updating or creating
+        if (employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined) {
+          console.info('[saveEmployee] Updating employee ID:', employeesManager.currentEmployeeId);
+          // Update existing employee
+          await employeesManager.updateEmployee(employeesManager.currentEmployeeId, data as Partial<Employee>);
+        } else {
+          console.info('[saveEmployee] Creating new employee...');
+          // Create new employee
+          await employeesManager?.createEmployee(data as Partial<Employee>);
+        }
+        console.info('[saveEmployee] Save successful, closing modal...');
         w.hideEmployeeModal?.();
         form.reset();
+        // Reset current employee ID
+        if (employeesManager) {
+          employeesManager.currentEmployeeId = null;
+        }
       } catch (error) {
         console.error('Error saving employee:', error);
 
@@ -739,14 +934,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Add form submit handler
-    const employeeForm = document.querySelector('#employee-form');
-    if (employeeForm !== null) {
-      employeeForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        void w.saveEmployee?.();
-      });
-    }
+    // Add form submit handler - wait for DOM to be ready
+    setTimeout(() => {
+      const employeeForm = document.querySelector('#employee-form');
+      console.info('[EmployeesManager] Looking for form element...');
+      if (employeeForm !== null) {
+        console.info('[EmployeesManager] Form found, adding submit handler');
+        employeeForm.addEventListener('submit', (e) => {
+          console.info('[EmployeesManager] Form submit triggered');
+          e.preventDefault();
+          e.stopPropagation();
+          void w.saveEmployee?.();
+          return false;
+        });
+      } else {
+        console.error('[EmployeesManager] Form element not found!');
+      }
+    }, 100);
 
     // Check URL and load employees if needed
     const checkAndLoadEmployees = () => {

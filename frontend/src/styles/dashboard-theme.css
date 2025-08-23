@@ -281,6 +281,29 @@ body {
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* Employee Table - Identische Styles wie admin-table */
+.employee-table {
+  border-collapse: collapse;
+  margin-top: 20px;
+  width: 100%;
+}
+.employee-table th {
+  background: rgba(33, 150, 243, 0.1);
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.employee-table td {
+  padding: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.employee-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 /* Buttons */
 .btn {
   cursor: pointer;
