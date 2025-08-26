@@ -5,9 +5,17 @@
 
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
-import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse } from '../utils/api-mappers';
-import { $$id, createElement } from '../utils/dom-utils';
+import {
+  mapTeams,
+  mapUsers,
+  mapRotationPatterns,
+  type TeamAPIResponse,
+  type UserAPIResponse,
+  type RotationPatternAPIResponse,
+} from '../utils/api-mappers';
+import { $$, $$id, createElement } from '../utils/dom-utils';
 import { getAuthToken, showInfo } from './auth';
+// escapeHtml removed - using DOM manipulation instead
 import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 import { openModal } from './utils/modal-manager';
 
@@ -109,6 +117,21 @@ interface ShiftsWindow extends Window {
   selectOption: (type: string, value: string, text: string) => void;
 }
 
+// Autofill and Rotation Interfaces
+interface ShiftAutofillConfig {
+  enabled: boolean;
+  fillWeekdays: boolean;
+  skipWeekends: boolean;
+  respectAvailability: boolean;
+}
+
+interface ShiftRotationConfig {
+  enabled: boolean;
+  pattern: 'F_S_alternate' | 'custom';
+  nightFixed: boolean;
+  autoGenerateWeeks: number; // Number of weeks to generate ahead
+}
+
 // CSS Selectors Constants
 const CSS_SELECTORS = {
   EMPLOYEE_ITEM: '.employee-item',
@@ -186,6 +209,15 @@ class ShiftPlanningSystem {
   private selectedContext: SelectedContext;
   private favorites: ShiftFavorite[]; // Store shift planning favorites
 
+  // Autofill and Rotation Configuration
+  private autofillConfig: ShiftAutofillConfig;
+  private rotationConfig: ShiftRotationConfig;
+  private userPreferencesCache: Record<string, string | boolean | object>;
+
+  // Edit mode variables for rotation
+  private editMode = false;
+  private currentPatternId: number | null = null;
+
   constructor() {
     // Initialize API client and check feature flag
     this.apiClient = ApiClient.getInstance();
@@ -220,6 +252,24 @@ class ShiftPlanningSystem {
 
     // Load favorites from API
     this.favorites = [];
+
+    // Initialize Autofill and Rotation configs
+    this.autofillConfig = {
+      enabled: false,
+      fillWeekdays: true,
+      skipWeekends: true,
+      respectAvailability: true,
+    };
+
+    this.rotationConfig = {
+      enabled: false,
+      pattern: 'F_S_alternate',
+      nightFixed: true,
+      autoGenerateWeeks: 4,
+    };
+
+    this.userPreferencesCache = {};
+
     void (async () => {
       try {
         const favs = await this.loadFavorites();
@@ -288,6 +338,12 @@ class ShiftPlanningSystem {
 
   async init(): Promise<void> {
     console.info('[SHIFTS] Initializing Shift Planning System...');
+    console.info('[SHIFTS] Initial context:', {
+      areaId: this.selectedContext.areaId,
+      departmentId: this.selectedContext.departmentId,
+      machineId: this.selectedContext.machineId,
+      teamId: this.selectedContext.teamId,
+    });
 
     // Check if there's a saved context from before a reload
     const savedContextStr = localStorage.getItem('shiftsReloadContext');
@@ -448,6 +504,12 @@ class ShiftPlanningSystem {
         delete windowWithShifts.shiftsSavedReloadContext;
 
         console.info('[SHIFTS RELOAD DEBUG] Dropdown selections restored');
+
+        // Reload user preferences with the restored team_id
+        if (context.teamId !== null) {
+          console.info('[SHIFTS RELOAD DEBUG] Loading preferences for restored team:', context.teamId);
+          await this.loadUserPreferencesFromDatabase();
+        }
       }
 
       // Only load data if a team is already selected (e.g., from saved state)
@@ -459,6 +521,13 @@ class ShiftPlanningSystem {
 
       if (shouldLoadData) {
         console.info('[SHIFTS DEBUG] Team/Department selected, loading data...');
+
+        // Load user preferences for the selected team (important for rotation checkbox!)
+        if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+          console.info('[SHIFTS DEBUG] Loading preferences for selected team on init:', this.selectedContext.teamId);
+          await this.loadUserPreferencesFromDatabase();
+        }
+
         console.info('[SHIFTS DEBUG] Loading employees...');
         await this.loadEmployees();
         console.info('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
@@ -680,6 +749,9 @@ class ShiftPlanningSystem {
         void this.updateSchedule();
       }
     });
+
+    // Setup shift control checkboxes (preferences will be loaded after team selection)
+    this.setupShiftControls();
 
     // Remove logout functionality - handled by unified navigation
   }
@@ -1288,6 +1360,10 @@ class ShiftPlanningSystem {
 
     console.info('[SHIFTS DEBUG] selectedContext after setting teamId:', this.selectedContext);
 
+    // Load user preferences for the selected team (includes rotation checkbox state)
+    console.info('[SHIFTS DEBUG] Loading user preferences for team:', teamId);
+    await this.loadUserPreferencesFromDatabase();
+
     // Load team members when a team is selected
     if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
       console.info('[SHIFTS DEBUG] Team selected, loading data...');
@@ -1601,6 +1677,12 @@ class ShiftPlanningSystem {
           await response.json();
           showSuccessAlert('Schicht zugewiesen');
           this.updateShiftCell(cellElement, userId, shiftType);
+
+          // Trigger autofill if enabled
+          const day = cellElement.dataset.day;
+          if (this.autofillConfig.enabled && day !== undefined && day !== '') {
+            this.performAutofill(userId, day, shiftType);
+          }
         } else {
           showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
         }
@@ -1628,6 +1710,12 @@ class ShiftPlanningSystem {
         // Response is always truthy after successful await (throws on error)
         showSuccessAlert('Schicht erfolgreich zugewiesen');
         this.updateShiftCell(cellElement, userId, shiftType);
+
+        // Trigger autofill if enabled
+        const day = cellElement.dataset.day;
+        if (this.autofillConfig.enabled && day !== undefined && day !== '') {
+          this.performAutofill(userId, day, shiftType);
+        }
       } catch (error) {
         console.error('Error assigning shift (v2):', error);
         showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
@@ -1774,6 +1862,10 @@ class ShiftPlanningSystem {
       if (adminActions && this.isAdmin) (adminActions as HTMLElement).style.display = 'block';
       if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'flex';
 
+      // Show shift controls when planning area is shown
+      const shiftControls = $$('.shift-controls');
+      if (shiftControls) shiftControls.style.display = 'block';
+
       // Load data for the selected department
       void (async () => {
         console.info('[SHIFTS DEBUG] Loading employees for selected team/department');
@@ -1793,6 +1885,10 @@ class ShiftPlanningSystem {
       if (mainPlanningArea) (mainPlanningArea as HTMLElement).style.display = 'none';
       if (adminActions) (adminActions as HTMLElement).style.display = 'none';
       if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'none';
+
+      // Hide shift controls when planning area is hidden
+      const shiftControls = $$('.shift-controls');
+      if (shiftControls) shiftControls.style.display = 'none';
     }
   }
 
@@ -1859,11 +1955,11 @@ class ShiftPlanningSystem {
             is_archived: false,
             created_at: u.createdAt ?? new Date().toISOString(),
             updated_at: u.updatedAt ?? new Date().toISOString(),
-            availability_status: (u.availabilityStatus as string | undefined) ?? undefined,
-            availabilityStatus: (u.availabilityStatus as string | undefined) ?? undefined,
-            availability_start: (u.availabilityStart as string | undefined) ?? undefined,
-            availability_end: (u.availabilityEnd as string | undefined) ?? undefined,
-            availability_notes: (u.availabilityNotes as string | undefined) ?? undefined,
+            availability_status: u.availabilityStatus ?? undefined,
+            availabilityStatus: u.availabilityStatus ?? undefined,
+            availability_start: u.availabilityStart ?? undefined,
+            availability_end: u.availabilityEnd ?? undefined,
+            availability_notes: u.availabilityNotes ?? undefined,
           }) as Employee,
       );
 
@@ -2019,6 +2115,36 @@ class ShiftPlanningSystem {
         const dateRangeElement = this.createAvailabilityDateRange(employee);
         if (dateRangeElement) {
           infoDiv.append(dateRangeElement);
+        }
+      }
+
+      // Add "Verfügbar ab" date ONLY if it's relevant for the current week
+      if (employee.availability_end !== undefined && employee.availability_end !== '') {
+        const endDate = new Date(employee.availability_end);
+        endDate.setDate(endDate.getDate() + 1); // Add one day (this is when employee returns)
+
+        // Get current week boundaries
+        const weekStart = this.getWeekStart(this.currentWeek);
+        const weekEnd = this.getWeekEnd(this.currentWeek);
+
+        // Only show "Verfügbar ab" if the return date is within the current week
+        if (endDate >= weekStart && endDate <= weekEnd) {
+          const day = endDate.getDate().toString().padStart(2, '0');
+          const month = (endDate.getMonth() + 1).toString().padStart(2, '0');
+          const year = endDate.getFullYear();
+          const availableFromDate = `${day}.${month}.${year}`;
+
+          const availableFromSpan = createElement(
+            'div',
+            {
+              className: 'availability-return-date',
+            },
+            `Verfügbar ab ${availableFromDate}`,
+          );
+          availableFromSpan.style.fontSize = '11px';
+          availableFromSpan.style.color = '#4caf50';
+          availableFromSpan.style.marginTop = '2px';
+          infoDiv.append(availableFromSpan);
         }
       }
 
@@ -2187,6 +2313,16 @@ class ShiftPlanningSystem {
     const weekStart = this.getWeekStart(this.currentWeek);
     const weekEnd = this.getWeekEnd(this.currentWeek);
 
+    // Add debug logging
+    const firstName = employee.first_name ?? 'Unknown';
+    const lastName = employee.last_name ?? 'Unknown';
+    console.info(`[SHIFTS DEBUG] Checking week availability for ${firstName} ${lastName}:`, {
+      actualStatus,
+      weekRange: `${this.formatDate(weekStart)} to ${this.formatDate(weekEnd)}`,
+      availStart: employee.availability_start,
+      availEnd: employee.availability_end,
+    });
+
     // If we have date ranges, check if they overlap with current week
     if (employee.availability_start !== undefined || employee.availability_end !== undefined) {
       const availStart = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
@@ -2195,10 +2331,13 @@ class ShiftPlanningSystem {
       // Check if the availability period overlaps with the current week
       const overlaps = this.checkDateRangeOverlap(availStart, availEnd, weekStart, weekEnd);
 
+      console.info(`[SHIFTS DEBUG] Overlap check for ${firstName} ${lastName}:`, {
+        overlaps,
+        availRange: `${availStart ? this.formatDate(availStart) : 'null'} to ${availEnd ? this.formatDate(availEnd) : 'null'}`,
+      });
+
       // If the special status doesn't apply to this week, return available
       if (!overlaps) {
-        const firstName = employee.first_name ?? 'Unknown';
-        const lastName = employee.last_name ?? 'Unknown';
         console.info(
           `[SHIFTS] Employee ${firstName} ${lastName} status "${actualStatus}" doesn't apply to week ${this.formatWeekRange(weekStart)}`,
         );
@@ -2207,6 +2346,7 @@ class ShiftPlanningSystem {
     }
 
     // The special status applies to this week
+    console.info(`[SHIFTS DEBUG] ${firstName} ${lastName} status for this week: ${actualStatus}`);
     return actualStatus;
   }
 
@@ -2507,6 +2647,14 @@ class ShiftPlanningSystem {
     // Update UI - pass the cell directly
     this.renderShiftAssignments(shiftCell, date, shift);
     this.updateEmployeeShiftCounts();
+
+    // Trigger autofill if enabled (for drag & drop operations)
+    // But not if we're already autofilling (to prevent recursion)
+    // And not if we're removing an employee
+    if (this.autofillConfig.enabled && day !== undefined && day !== '' && !this.isAutofilling && !this.isRemoving) {
+      console.info('[SHIFTS DEBUG] Triggering autofill for employee:', employeeId, 'day:', day, 'shift:', shift);
+      this.performAutofill(employeeId, day, shift);
+    }
   }
 
   renderShiftAssignments(shiftCell: HTMLElement, date: string, shift: string): void {
@@ -2541,6 +2689,7 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS RELOAD DEBUG] loadCurrentWeekData called');
     console.info('[SHIFTS RELOAD DEBUG] Current context:', this.selectedContext);
     console.info('[SHIFTS RELOAD DEBUG] useV2API:', this.useV2API);
+    console.info('[SHIFTS RELOAD DEBUG] Rotation enabled:', this.rotationConfig.enabled);
 
     try {
       const weekStart = this.getWeekStart(this.currentWeek);
@@ -2551,6 +2700,75 @@ class ShiftPlanningSystem {
       const endStr = this.formatDate(weekEnd);
 
       console.info('[SHIFTS PLAN DEBUG] Loading shifts for range:', startStr, 'to', endStr);
+
+      // Check if rotation is enabled - if yes, load from shift_rotation_history
+      if (this.rotationConfig.enabled) {
+        console.info('[SHIFTS ROTATION] Loading from shift_rotation_history');
+
+        const response = await fetch(`/api/v2/shifts/rotation/history?start_date=${startStr}&end_date=${endStr}`, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as {
+            data?: {
+              history?: {
+                shiftDate: string; // camelCase from backend dbToApi
+                shiftType: string;
+                userId: number;
+                status: string;
+              }[];
+            };
+          };
+
+          console.info('[SHIFTS ROTATION] History data:', data);
+
+          if (data.data?.history && data.data.history.length > 0) {
+            // Convert rotation history to shift format
+            // Note: Backend uses camelCase due to dbToApi conversion
+            const shifts = data.data.history.map((h) => {
+              const employee = this.employees.find((e) => e.id === h.userId);
+              return {
+                date: h.shiftDate,
+                shift_type: h.shiftType,
+                employee_id: h.userId,
+                first_name: employee?.first_name ?? '',
+                last_name: employee?.last_name ?? '',
+                username: employee?.username ?? '',
+              };
+            });
+
+            this.processShiftData(shifts);
+            this.renderWeekView();
+
+            // Show edit rotation button since we have rotation data
+            this.showEditRotationButton(true);
+
+            // Show info that rotation mode is active
+            const infoBar = document.querySelector('.shift-info-bar');
+            if (infoBar) {
+              infoBar.innerHTML = '<span style="color: #4CAF50;">🔄 Automatische Rotation aktiv</span>';
+            }
+          } else {
+            console.info('[SHIFTS ROTATION] No rotation history found for this period');
+            this.weeklyShifts = new Map();
+            // Hide edit rotation button since no rotation data exists
+            this.showEditRotationButton(false);
+            this.shiftDetails = new Map();
+            this.renderWeekView();
+          }
+        } else {
+          console.error('[SHIFTS ROTATION] Failed to load rotation history');
+          throw new Error('Failed to load rotation history');
+        }
+        return; // Exit early when rotation is enabled
+      }
+
+      // Normal shift loading when rotation is disabled
+      // Hide edit rotation button when rotation is disabled
+      this.showEditRotationButton(false);
 
       // Check if v2 API is enabled
       if (!this.useV2API) {
@@ -2759,7 +2977,17 @@ class ShiftPlanningSystem {
       // Extract date part only (YYYY-MM-DD) from potentially full datetime string
       const dateString = shift.date;
       const date = dateString.split('T')[0]; // Get only YYYY-MM-DD part
-      const shiftType = shift.shift_type;
+      let shiftType = shift.shift_type;
+
+      // Map database shift types to UI shift types
+      // F = Frühschicht = early, S = Spätschicht = late, N = Nachtschicht = night
+      if (shiftType === 'F') {
+        shiftType = 'early';
+      } else if (shiftType === 'S') {
+        shiftType = 'late';
+      } else if (shiftType === 'N') {
+        shiftType = 'night';
+      }
 
       // Skip custom shifts or convert them based on time
       if (shiftType === 'custom') {
@@ -2901,6 +3129,926 @@ class ShiftPlanningSystem {
     return `KW ${String(weekNumber)} - ${startStr} bis ${endStr}`;
   }
 
+  // Shift Control Methods (Autofill & Rotation)
+  private setupShiftControls(): void {
+    console.info('[SHIFTS DEBUG] Setting up shift controls');
+    console.info('[SHIFTS DEBUG] Current team context:', this.selectedContext.teamId);
+
+    // Load preferences if team is already selected
+    if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+      console.info('[SHIFTS DEBUG] Team is selected during setupShiftControls, loading preferences...');
+      void this.loadUserPreferencesFromDatabase();
+    }
+
+    const autofillCheckbox = $$<HTMLInputElement>('#shift-autofill');
+    const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+
+    if (autofillCheckbox) {
+      autofillCheckbox.addEventListener('change', (e) => {
+        this.autofillConfig.enabled = (e.target as HTMLInputElement).checked;
+        void this.saveUserPreferenceToDatabase('shift_autofill_enabled', this.autofillConfig.enabled);
+
+        if (this.autofillConfig.enabled) {
+          showInfo('Autofill aktiviert: Woche wird automatisch ausgefüllt beim Zuweisen');
+        } else {
+          showInfo('Autofill deaktiviert');
+        }
+      });
+    }
+
+    if (rotationCheckbox) {
+      rotationCheckbox.addEventListener('change', (e) => {
+        void (async () => {
+          const newValue = (e.target as HTMLInputElement).checked;
+
+          if (newValue) {
+            // Aktivieren
+            const confirmed = await showConfirm(
+              'Möchten Sie die automatische Rotation aktivieren? Dies erstellt automatisch wechselnde Schichten für die nächsten Wochen.',
+            );
+
+            if (confirmed) {
+              this.rotationConfig.enabled = true;
+              this.editMode = false;
+              this.currentPatternId = null;
+              this.openRotationModal();
+            } else {
+              this.rotationConfig.enabled = false;
+              rotationCheckbox.checked = false;
+            }
+          } else {
+            // Deaktivieren - Warnung zeigen
+            const confirmed = await showConfirm(
+              '⚠️ Rotation deaktivieren?\n\nAlle automatisch generierten Schichten werden gelöscht!\nDie normale manuelle Schichtplanung wird wieder aktiviert.\n\nWirklich fortfahren?',
+            );
+
+            if (confirmed) {
+              this.rotationConfig.enabled = false;
+
+              // Delete all rotation history
+              try {
+                const token = getAuthToken();
+                if (token !== null && token !== '') {
+                  const response = await fetch('/api/v2/shifts/rotation/history', {
+                    method: 'DELETE',
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+
+                  if (response.ok) {
+                    showInfo('Rotation deaktiviert. Alle generierten Schichten wurden gelöscht.');
+                  } else {
+                    showErrorAlert('Fehler beim Löschen der Rotation-Historie');
+                  }
+                }
+              } catch (error) {
+                console.error('[SHIFTS ROTATION] Error deleting history:', error);
+                showErrorAlert('Fehler beim Löschen der Rotation-Historie');
+              }
+
+              // Reload to show normal shifts
+              void this.loadCurrentWeekData();
+            } else {
+              // User cancelled - keep rotation enabled
+              this.rotationConfig.enabled = true;
+              rotationCheckbox.checked = true;
+            }
+          }
+
+          // Save preference to database
+          void this.saveUserPreferenceToDatabase('shift_rotation_enabled', this.rotationConfig.enabled);
+        })();
+      });
+    }
+
+    // Setup edit rotation button listener
+    const editRotationBtn = $$id<HTMLButtonElement>('edit-rotation-btn');
+    if (editRotationBtn) {
+      editRotationBtn.addEventListener('click', () => {
+        console.info('[SHIFTS DEBUG] Edit rotation button clicked');
+        void this.loadRotationForEdit();
+      });
+    }
+  }
+
+  private isAutofilling = false; // Flag to prevent recursive autofill
+  private isRemoving = false; // Flag to prevent autofill when removing employees
+
+  private performAutofill(userId: number, day: string, shiftType: string): void {
+    if (!this.autofillConfig.enabled || !this.isAdmin || this.isAutofilling) return;
+
+    // Set flag to prevent recursive calls
+    this.isAutofilling = true;
+
+    const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const currentWeekStart = this.getWeekStart(this.currentWeek);
+
+    // Don't autofill the same day that was just assigned
+    const daysToFill = weekDays.filter((weekDay) => weekDay !== day);
+
+    console.info('[SHIFTS AUTOFILL] Filling week for employee:', userId, 'Shift type:', shiftType);
+
+    for (const weekDay of daysToFill) {
+      // Calculate the date for this weekday
+      const dayIndex = weekDays.indexOf(weekDay);
+      const shiftDate = new Date(currentWeekStart);
+      shiftDate.setDate(shiftDate.getDate() + dayIndex);
+
+      // Find the shift cell for this day and shift type
+      const shiftCell = $$(`.shift-cell[data-day="${weekDay}"][data-shift="${shiftType}"]`);
+
+      if (shiftCell) {
+        // Check if already has an employee assigned (not just empty-slot)
+        const existingEmployee = shiftCell.querySelector('.employee-card');
+        if (!existingEmployee) {
+          console.info('[SHIFTS AUTOFILL] Assigning', weekDay, 'for employee:', userId);
+          // Use regular assignShift to persist to database
+          this.assignShift(shiftCell, userId);
+        } else {
+          console.info('[SHIFTS AUTOFILL] Skipping', weekDay, '- already has employee');
+        }
+      }
+    }
+
+    // Reset flag
+    this.isAutofilling = false;
+
+    showSuccessAlert(
+      `Woche automatisch für Mitarbeiter ausgefüllt (${shiftType === 'early' ? 'Frühschicht' : shiftType === 'late' ? 'Spätschicht' : 'Nachtschicht'})`,
+    );
+  }
+
+  private async saveUserPreferenceToDatabase(key: string, value: boolean | string | object): Promise<void> {
+    try {
+      const token = getAuthToken();
+      if (token === null || token === '') return;
+
+      // Get current team_id from selected context
+      const teamId = this.selectedContext.teamId;
+
+      // Use the correct v2 settings API endpoint
+      const response = await fetch('/api/v2/settings/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          setting_key: key,
+          setting_value: typeof value === 'object' ? JSON.stringify(value) : String(value),
+          value_type: typeof value === 'boolean' ? 'boolean' : typeof value === 'object' ? 'json' : 'string',
+          category: 'shifts',
+          team_id: teamId, // Include team_id for team-specific settings
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to save preference:', await response.text());
+      }
+
+      // Update cache with team context
+      const cacheKey = teamId !== null ? `${key}_team_${teamId}` : key;
+      Reflect.set(this.userPreferencesCache, cacheKey, value);
+    } catch (error) {
+      console.error('Error saving preference:', error);
+    }
+  }
+
+  private async checkRotationPatternExists(teamId: number | null): Promise<boolean> {
+    if (teamId === null) return false;
+
+    try {
+      const token = getAuthToken();
+      if (token === null || token === '') return false;
+
+      const response = await fetch('/api/v2/shifts/rotation/patterns?active=true', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) return false;
+
+      const result = (await response.json()) as { data: { patterns: RotationPatternAPIResponse[] } };
+      const rawPatterns = result.data.patterns;
+
+      // Map the patterns to ensure consistent camelCase
+      const patterns = mapRotationPatterns(rawPatterns);
+
+      console.info('[SHIFTS DEBUG] Checking patterns for teamId:', teamId);
+      console.info('[SHIFTS DEBUG] Found patterns:', patterns);
+
+      // Check if any pattern exists for this team
+      return patterns.some((p) => p.teamId === teamId);
+    } catch (error) {
+      console.error('[SHIFTS] Error checking rotation patterns:', error);
+      return false;
+    }
+  }
+
+  private async loadUserPreferencesFromDatabase(): Promise<void> {
+    try {
+      const token = getAuthToken();
+      if (token === null || token === '') return;
+
+      // Get current team_id from selected context
+      const teamId = this.selectedContext.teamId;
+      console.info('[SHIFTS DEBUG] Loading preferences for team_id:', teamId);
+
+      const queryParams = new URLSearchParams({ category: 'shifts' });
+      if (teamId !== null) {
+        queryParams.append('team_id', String(teamId));
+      }
+
+      // Use the correct v2 settings API endpoint with team_id
+      const response = await fetch(`/api/v2/settings/user?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('Could not load user preferences');
+        return;
+      }
+
+      const result = (await response.json()) as {
+        data?: {
+          settings?: {
+            settingKey: string;
+            settingValue: boolean | string | number;
+            valueType: string;
+          }[];
+        };
+      };
+      const settings = result.data?.settings ?? [];
+
+      // Process settings
+      for (const setting of settings) {
+        switch (setting.settingKey) {
+          case 'shift_autofill_enabled': {
+            // settingValue is already a boolean from API v2
+            this.autofillConfig.enabled = setting.settingValue === true;
+            const autofillCheckbox = $$<HTMLInputElement>('#shift-autofill');
+            if (autofillCheckbox) {
+              autofillCheckbox.checked = this.autofillConfig.enabled;
+            }
+            console.info('[SHIFTS DEBUG] Loaded autofill setting from DB:', this.autofillConfig.enabled);
+            break;
+          }
+
+          case 'shift_rotation_enabled': {
+            // settingValue is already a boolean from API v2
+            const dbEnabled = setting.settingValue === true;
+
+            // Check if rotation pattern exists for this team
+            const patternExists = await this.checkRotationPatternExists(this.selectedContext.teamId);
+
+            // Only enable rotation if both DB setting is true AND pattern exists
+            this.rotationConfig.enabled = dbEnabled && patternExists;
+
+            const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+            if (rotationCheckbox) {
+              rotationCheckbox.checked = this.rotationConfig.enabled;
+            }
+
+            console.info('[SHIFTS DEBUG] Loaded rotation setting from DB:', dbEnabled);
+            console.info('[SHIFTS DEBUG] Pattern exists for team:', patternExists);
+            console.info('[SHIFTS DEBUG] Final rotation enabled state:', this.rotationConfig.enabled);
+            break;
+          }
+
+          case 'shift_autofill_config':
+            try {
+              // If it's already an object, use it directly; otherwise parse
+              if (typeof setting.settingValue === 'object') {
+                Object.assign(this.autofillConfig, setting.settingValue);
+              } else if (typeof setting.settingValue === 'string') {
+                Object.assign(this.autofillConfig, JSON.parse(setting.settingValue));
+              }
+            } catch {
+              // Invalid JSON, ignore
+            }
+            break;
+        }
+
+        // Update cache - convert value to string for consistency
+        this.userPreferencesCache[setting.settingKey] = String(setting.settingValue);
+      }
+    } catch (error) {
+      console.error('Error loading user preferences:', error);
+    }
+  }
+
+  private openRotationModal(existingPattern?: {
+    id?: number;
+    name: string;
+    description?: string;
+    patternType: string;
+    patternConfig: Record<string, unknown>;
+    startsAt: string;
+    endsAt?: string | null;
+  }): void {
+    // Populate employees in the modal
+    const employeesContainer = $$id<HTMLDivElement>('rotation-employees');
+    if (employeesContainer) {
+      // Clear existing content
+      while (employeesContainer.firstChild) {
+        employeesContainer.firstChild.remove();
+      }
+
+      // Create checkboxes for each employee
+      this.employees
+        .filter((e) => e.is_active)
+        .forEach((e) => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-label';
+          label.style.display = 'block';
+          label.style.margin = '5px 0';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.name = 'employees[]';
+          checkbox.value = String(e.id);
+
+          const text = document.createTextNode(` ${e.first_name ?? ''} ${e.last_name ?? ''}`);
+
+          label.append(checkbox);
+          label.append(text);
+          employeesContainer.append(label);
+        });
+    }
+
+    // Set default start date to today and end date constraints
+    const startDateInput = $$id<HTMLInputElement>('rotation-start-date');
+    const endDateInput = $$id<HTMLInputElement>('rotation-end-date');
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const maxDate = `${currentYear}-12-31`;
+
+    if (startDateInput) {
+      startDateInput.value = today.toISOString().split('T')[0];
+      startDateInput.min = today.toISOString().split('T')[0];
+    }
+
+    if (endDateInput) {
+      // Set default end date to same as start date
+      endDateInput.value = today.toISOString().split('T')[0];
+      endDateInput.min = today.toISOString().split('T')[0];
+      endDateInput.max = maxDate;
+    }
+
+    // Show/hide custom pattern config and night shift ignore option
+    const patternSelect = $$id<HTMLSelectElement>('rotation-pattern');
+    const customConfig = $$id<HTMLDivElement>('custom-pattern-config');
+    const ignoreNightGroup = $$id<HTMLDivElement>('ignore-night-shift-group');
+
+    if (patternSelect) {
+      patternSelect.addEventListener('change', () => {
+        // Show/hide custom config
+        if (customConfig) {
+          customConfig.style.display = patternSelect.value === 'custom' ? 'block' : 'none';
+        }
+
+        // Show/hide ignore night shift option for weekly rotation
+        if (ignoreNightGroup) {
+          ignoreNightGroup.style.display = patternSelect.value === 'weekly' ? 'block' : 'none';
+        }
+      });
+    }
+
+    // Update modal title based on mode
+    const modal = $$id<HTMLDivElement>('rotation-setup-modal');
+    if (modal) {
+      const modalHeader = modal.querySelector('.modal-header h2');
+      if (modalHeader) {
+        modalHeader.textContent = this.editMode ? 'Schichtrotation bearbeiten' : 'Schichtrotation einrichten';
+      }
+
+      modal.style.display = 'flex';
+      console.info('[SHIFTS DEBUG] Showing rotation setup modal in', this.editMode ? 'EDIT' : 'CREATE', 'mode');
+    }
+
+    // If editing, populate form with existing data
+    if (this.editMode && existingPattern !== undefined) {
+      const rotationStartInput = $$id<HTMLInputElement>('rotation-start-date');
+      const rotationEndInput = $$id<HTMLInputElement>('rotation-end-date');
+      const rotationPatternSelect = $$id<HTMLSelectElement>('rotation-pattern');
+
+      if (rotationPatternSelect) {
+        // Map patternType to select value
+        const patternMap: Record<string, string> = {
+          alternate_fs: 'weekly',
+          fixed_n: 'biweekly',
+          custom: 'custom',
+        };
+        rotationPatternSelect.value = patternMap[existingPattern.patternType] ?? 'weekly';
+      }
+
+      if (rotationStartInput) {
+        rotationStartInput.value = existingPattern.startsAt.split('T')[0];
+      }
+
+      if (rotationEndInput && existingPattern.endsAt !== null && existingPattern.endsAt !== undefined) {
+        rotationEndInput.value = existingPattern.endsAt.split('T')[0];
+      }
+    }
+
+    // Setup event handlers
+    const saveBtn = $$id<HTMLButtonElement>('save-rotation-btn');
+    if (saveBtn) {
+      // Update button text based on mode
+      saveBtn.textContent = this.editMode ? 'Änderungen speichern' : 'Rotation erstellen';
+
+      // Remove old listener and add new one
+      const newSaveBtn = saveBtn.cloneNode(true) as HTMLButtonElement;
+      saveBtn.parentNode?.replaceChild(newSaveBtn, saveBtn);
+      newSaveBtn.addEventListener('click', () => {
+        if (this.editMode) {
+          void this.updateRotation();
+        } else {
+          void this.createRotation();
+        }
+      });
+    }
+
+    // Setup close buttons
+    const closeButtons = document.querySelectorAll('[data-modal-close="rotation-setup-modal"]');
+    closeButtons.forEach((btn) => {
+      const newBtn = btn.cloneNode(true) as HTMLElement;
+      btn.parentNode?.replaceChild(newBtn, btn);
+      newBtn.addEventListener('click', () => {
+        this.closeRotationModal();
+      });
+    });
+
+    // Add CSS for modal if not exists
+    if (!document.querySelector('#rotation-modal-styles')) {
+      const style = document.createElement('style');
+      style.id = 'rotation-modal-styles';
+      style.textContent = `
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+        .modal-content {
+          background: var(--bg-secondary, #fff);
+          border-radius: 8px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal-header {
+          padding: 20px;
+          border-bottom: 1px solid var(--border-color, #ddd);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .modal-header h2 {
+          margin: 0;
+          color: var(--text-primary);
+        }
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          color: var(--text-secondary);
+        }
+        .modal-body {
+          padding: 20px;
+        }
+        .modal-footer {
+          padding: 20px;
+          border-top: 1px solid var(--border-color, #ddd);
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+        .checkbox-group {
+          max-height: 200px;
+          overflow-y: auto;
+          border: 1px solid var(--border-color, #ddd);
+          border-radius: 4px;
+          padding: 10px;
+        }
+        .pattern-builder {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 15px;
+        }
+        .pattern-week {
+          border: 1px solid var(--border-color, #ddd);
+          border-radius: 4px;
+          padding: 10px;
+        }
+        .pattern-week h4 {
+          margin-top: 0;
+          margin-bottom: 10px;
+          color: var(--text-primary);
+        }
+        .pattern-week label {
+          display: block;
+          margin: 5px 0;
+        }
+      `;
+      document.head.append(style);
+    }
+  }
+
+  private closeRotationModal(): void {
+    const modal = $$id<HTMLDivElement>('rotation-setup-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      console.info('[SHIFTS DEBUG] Closed rotation setup modal');
+    }
+
+    // Reset checkbox if modal was closed without saving
+    const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+    if (rotationCheckbox && !this.rotationConfig.enabled) {
+      rotationCheckbox.checked = false;
+    }
+  }
+
+  private async loadRotationForEdit(): Promise<void> {
+    try {
+      const token = getAuthToken();
+      if (token === null || token === '') {
+        showErrorAlert('Nicht angemeldet');
+        return;
+      }
+
+      if (this.selectedContext.teamId === null) {
+        showErrorAlert('Kein Team ausgewählt');
+        return;
+      }
+
+      // Get patterns for this team
+      const response = await fetch('/api/v2/shifts/rotation/patterns?active=true', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load patterns: ${response.statusText}`);
+      }
+
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: {
+          patterns?: {
+            id: number;
+            teamId: number | null;
+            name: string;
+            description?: string;
+            patternType: string;
+            patternConfig: Record<string, unknown>;
+            startsAt: string;
+            endsAt?: string | null;
+          }[];
+        };
+      };
+
+      if (!result.success || result.data?.patterns === undefined) {
+        showErrorAlert('Keine Rotationsmuster gefunden');
+        return;
+      }
+
+      // Find pattern for current team
+      const pattern = result.data.patterns.find((p) => p.teamId === this.selectedContext.teamId);
+      if (pattern === undefined) {
+        showErrorAlert('Kein Rotationsmuster für dieses Team gefunden');
+        return;
+      }
+
+      // Set edit mode
+      this.editMode = true;
+      this.currentPatternId = pattern.id;
+
+      // Open modal with loaded data
+      this.openRotationModal(pattern);
+    } catch (error) {
+      console.error('[SHIFTS ERROR] Failed to load rotation for edit:', error);
+      showErrorAlert('Fehler beim Laden der Rotation');
+    }
+  }
+
+  private async createRotation(): Promise<void> {
+    try {
+      const token = getAuthToken();
+      if (token === null || token === '') {
+        showErrorAlert('Nicht angemeldet');
+        return;
+      }
+
+      // Get form values from new modal structure
+      const patternSelect = $$id<HTMLSelectElement>('rotation-pattern');
+      const startInput = $$id<HTMLInputElement>('rotation-start-date');
+      const endInput = $$id<HTMLInputElement>('rotation-end-date');
+      const skipWeekendsInput = $$id<HTMLInputElement>('rotation-skip-weekends');
+      const ignoreNightInput = $$id<HTMLInputElement>('rotation-ignore-night');
+
+      const pattern = patternSelect?.value;
+      const startDate = startInput?.value;
+      const endDateValue = endInput?.value;
+      const skipWeekends = skipWeekendsInput?.checked ?? false;
+      const ignoreNightShift = ignoreNightInput?.checked ?? false;
+
+      // Validate required fields
+      if (pattern === undefined || pattern === '') {
+        showErrorAlert('Bitte wählen Sie ein Rotationsmuster');
+        return;
+      }
+
+      if (startDate === undefined || startDate === '') {
+        showErrorAlert('Bitte wählen Sie ein Startdatum');
+        return;
+      }
+
+      if (endDateValue === undefined || endDateValue === '') {
+        showErrorAlert('Bitte wählen Sie ein Enddatum');
+        return;
+      }
+
+      // Validate end date is after start date
+      const endDate = new Date(endDateValue);
+      if (endDate <= new Date(startDate)) {
+        showErrorAlert('Das Enddatum muss nach dem Startdatum liegen');
+        return;
+      }
+
+      // Schutz: Maximal bis Ende des aktuellen Jahres
+      const currentYear = new Date().getFullYear();
+      const maxEndDate = new Date(currentYear, 11, 31); // 31. Dezember des aktuellen Jahres
+      if (endDate > maxEndDate) {
+        showErrorAlert(`Das Enddatum darf maximal bis zum 31.12.${currentYear} gehen (Datenbankschutz)`);
+        return;
+      }
+
+      // Get selected employees
+      const employeeCheckboxes = document.querySelectorAll<HTMLInputElement>(
+        '#rotation-employees input[type="checkbox"]:checked',
+      );
+      const selectedEmployees: number[] = [];
+      for (const cb of employeeCheckboxes) {
+        selectedEmployees.push(Number(cb.value));
+      }
+
+      if (selectedEmployees.length === 0) {
+        showErrorAlert('Bitte wählen Sie mindestens einen Mitarbeiter aus');
+        return;
+      }
+
+      // Map pattern type to API format - always use 'custom' for flexibility
+      const patternType = 'custom';
+
+      // Get selected team from context
+      const teamId = this.selectedContext.teamId;
+      // Step 1: Create rotation pattern
+      const requestPayload = {
+        name: `${pattern} Rotation`,
+        description: `Automatische ${pattern} Rotation`,
+        team_id: teamId ?? null,
+        pattern_type: patternType,
+        pattern_config: {
+          skipWeekends: skipWeekends,
+          cycleWeeks: pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4,
+          ignoreNightShift: ignoreNightShift,
+        },
+        cycle_length_weeks: pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4,
+        starts_at: startDate,
+        ends_at: endDateValue,
+        is_active: true,
+      };
+
+      console.info('[ROTATION DEBUG] Creating pattern with payload:', requestPayload);
+
+      const patternResponse = await fetch('/api/v2/shifts/rotation/patterns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+      console.info('[ROTATION DEBUG] Pattern response status:', patternResponse.status);
+
+      if (!patternResponse.ok) {
+        const errorText = await patternResponse.text();
+        console.error('[ROTATION ERROR] Response:', errorText);
+        console.error('[ROTATION ERROR] Status:', patternResponse.status);
+        throw new Error(`Fehler beim Erstellen des Rotationsmusters: ${errorText}`);
+      }
+
+      const patternResult = (await patternResponse.json()) as { data: { pattern: { id: number } } };
+      const patternId = patternResult.data.pattern.id;
+
+      // Step 2: Assign employees to pattern
+      const shiftGroups: Record<number, string> = {};
+
+      // For simplified rotation, distribute employees evenly
+      selectedEmployees.forEach((id, index) => {
+        // If ignoring night shift, only alternate between early and late
+        // Use F/S/N notation for backend compatibility
+        const group = ignoreNightShift
+          ? index % 2 === 0
+            ? 'F'
+            : 'S'
+          : index % 3 === 0
+            ? 'F'
+            : index % 3 === 1
+              ? 'S'
+              : 'N';
+        Reflect.set(shiftGroups, id, group);
+      });
+
+      const assignResponse = await fetch('/api/v2/shifts/rotation/assign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          pattern_id: patternId,
+          user_ids: selectedEmployees,
+          team_id: teamId ?? null,
+          shift_groups: shiftGroups,
+          starts_at: startDate,
+          ends_at: endDate.toISOString().split('T')[0],
+        }),
+      });
+
+      if (!assignResponse.ok) {
+        throw new Error('Fehler beim Zuweisen der Mitarbeiter');
+      }
+
+      // Step 3: Generate shifts
+      const generateResponse = await fetch('/api/v2/shifts/rotation/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          pattern_id: patternId,
+          start_date: startDate,
+          end_date: endDate.toISOString().split('T')[0],
+          preview: false,
+        }),
+      });
+
+      if (!generateResponse.ok) {
+        throw new Error('Fehler beim Generieren der Schichten');
+      }
+
+      const generateResult = (await generateResponse.json()) as { data: { generatedShifts: unknown[] } };
+
+      showSuccessAlert(
+        `Rotation erfolgreich erstellt! ${generateResult.data.generatedShifts.length} Schichten wurden generiert.`,
+      );
+
+      // Close modal
+      this.closeRotationModal();
+
+      // Save rotation preference
+      await this.saveUserPreferenceToDatabase('shift_rotation_pattern_id', String(patternId));
+
+      // Keep the checkbox checked since we successfully created a rotation pattern
+      this.rotationConfig.enabled = true;
+      const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+      if (rotationCheckbox) {
+        rotationCheckbox.checked = true;
+      }
+
+      // Reload shift plan to show the rotation data from shift_rotation_history
+      console.info('[SHIFTS ROTATION] Reloading shift plan to display rotation data');
+      await this.loadCurrentWeekData();
+    } catch (error) {
+      console.error('Error creating rotation:', error);
+      showErrorAlert(error instanceof Error ? error.message : 'Fehler beim Erstellen der Rotation');
+    }
+  }
+
+  private showEditRotationButton(show: boolean): void {
+    const editBtn = $$id<HTMLButtonElement>('edit-rotation-btn');
+    if (editBtn) {
+      editBtn.style.display = show ? 'inline-block' : 'none';
+      console.info('[SHIFTS DEBUG] Edit rotation button visibility:', show);
+    }
+  }
+
+  private async updateRotation(): Promise<void> {
+    try {
+      const token = getAuthToken();
+      if (token === null || token === '') {
+        showErrorAlert('Nicht angemeldet');
+        return;
+      }
+
+      if (this.currentPatternId === null) {
+        showErrorAlert('Kein Muster zum Bearbeiten ausgewählt');
+        return;
+      }
+
+      // Get form values
+      const patternSelect = $$id<HTMLSelectElement>('rotation-pattern');
+      const startInput = $$id<HTMLInputElement>('rotation-start-date');
+      const endInput = $$id<HTMLInputElement>('rotation-end-date');
+      const skipWeekendsInput = $$id<HTMLInputElement>('rotation-skip-weekends');
+      const ignoreNightInput = $$id<HTMLInputElement>('rotation-ignore-night');
+
+      const pattern = patternSelect?.value;
+      const startDate = startInput?.value;
+      const endDateValue = endInput?.value;
+      const skipWeekends = skipWeekendsInput?.checked ?? false;
+      const ignoreNightShift = ignoreNightInput?.checked ?? false;
+
+      // Validate required fields
+      if (pattern === undefined || pattern === '') {
+        showErrorAlert('Bitte wählen Sie ein Rotationsmuster');
+        return;
+      }
+
+      if (startDate === undefined || startDate === '') {
+        showErrorAlert('Bitte wählen Sie ein Startdatum');
+        return;
+      }
+
+      // Map select value to pattern type
+      const patternTypeMap: Record<string, string> = {
+        weekly: 'alternate_fs',
+        biweekly: 'fixed_n',
+        custom: 'custom',
+      };
+
+      const requestPayload = {
+        name: `Team-Rotation ${this.selectedContext.teamId ?? 'Unknown'}`,
+        description: 'Automatisch generierte Schichtrotation',
+        team_id: this.selectedContext.teamId ?? null,
+        // eslint-disable-next-line security/detect-object-injection
+        pattern_type: patternTypeMap[pattern] ?? 'alternate_fs',
+        pattern_config: {
+          skipWeekends,
+          ignoreNightShift,
+        },
+        starts_at: startDate,
+        ends_at: endDateValue ?? startDate,
+        is_active: true,
+      };
+
+      // Update pattern
+      const response = await fetch(`/api/v2/shifts/rotation/patterns/${this.currentPatternId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+      if (!response.ok) {
+        const errorResponse = (await response.json()) as {
+          error?: {
+            code?: string;
+            message?: string;
+          };
+        };
+        const errorMessage = errorResponse.error?.message ?? 'Fehler beim Aktualisieren des Musters';
+        throw new Error(errorMessage);
+      }
+
+      showSuccessAlert('Rotation erfolgreich aktualisiert');
+
+      // Close modal
+      this.closeRotationModal();
+
+      // Reset edit mode
+      this.editMode = false;
+      this.currentPatternId = null;
+
+      // Reload shift plan
+      await this.loadCurrentWeekData();
+    } catch (error) {
+      console.error('Error updating rotation:', error);
+      showErrorAlert(error instanceof Error ? error.message : 'Fehler beim Aktualisieren der Rotation');
+    }
+  }
+
   updateShiftCells(weekStart: Date): void {
     console.info('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
 
@@ -3033,7 +4181,10 @@ class ShiftPlanningSystem {
         e.stopPropagation();
         const cell = card.closest(CSS_SELECTORS.SHIFT_CELL);
         if (cell) {
+          // Set flag to prevent autofill when removing
+          this.isRemoving = true;
           this.assignShift(cell as HTMLElement, employee.id);
+          this.isRemoving = false;
         }
       };
       // Hide button if not in edit mode
@@ -3912,20 +5063,32 @@ class ShiftPlanningSystem {
       const machineDisplay = document.querySelector('#machineDisplay span');
       if (machineDisplay) machineDisplay.textContent = favorite.machineName;
 
-      // Load teams for this machine
+      // Load teams for this machine but WITHOUT resetting teamId
+      // Store team ID temporarily
+      const savedTeamId = favorite.teamId;
       await this.onMachineSelected(favorite.machineId);
-
-      // 4. Set Team and load shift plan
-      this.selectedContext.teamId = favorite.teamId;
+      // Restore team ID after onMachineSelected resets it
+      this.selectedContext.teamId = savedTeamId;
       const teamSelect = $$id<HTMLInputElement>('teamSelect');
       if (teamSelect) teamSelect.value = String(favorite.teamId);
 
       const teamDisplay = document.querySelector('#teamDisplay span');
       if (teamDisplay) teamDisplay.textContent = favorite.teamName;
 
-      // Trigger team selection logic (loads shift plan)
-      console.info('[LOADFAVORITE] Calling onTeamSelected with teamId:', favorite.teamId);
-      await this.onTeamSelected(favorite.teamId);
+      // Trigger team selection logic (loads shift plan and preferences!)
+      console.info('[LOADFAVORITE] Calling onTeamSelected with teamId:', savedTeamId);
+
+      // WORKAROUND: Load preferences directly here since onTeamSelected seems to not work
+      console.info('[LOADFAVORITE] Loading preferences directly for team:', savedTeamId);
+      await this.loadUserPreferencesFromDatabase();
+
+      try {
+        // Call the method
+        await this.onTeamSelected(savedTeamId);
+        console.info('[LOADFAVORITE] onTeamSelected completed successfully');
+      } catch (teamError) {
+        console.error('[LOADFAVORITE] Error in onTeamSelected:', teamError);
+      }
 
       // Update button visibility (should hide since we loaded a favorited combination)
       console.info('[LOADFAVORITE] Updating add favorite button visibility');

@@ -921,9 +921,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const departmentId = employee.departmentId;
         const teamId = employee.teamId;
 
+        // Load availability fields
         const availabilityStatus = $$<HTMLSelectElement>('#availability-status-select');
-        if (availabilityStatus && employee.availabilityStatus !== undefined && employee.availabilityStatus !== '') {
-          availabilityStatus.value = employee.availabilityStatus;
+        if (availabilityStatus) {
+          // Handle both camelCase and snake_case
+          const status = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+          availabilityStatus.value = status;
+        }
+
+        // Load availability dates
+        const availabilityStart = $$<HTMLInputElement>('input[name="availabilityStart"]');
+        if (availabilityStart) {
+          const startDate = employee.availabilityStart ?? employee.availability_start ?? '';
+          availabilityStart.value = startDate;
+        }
+
+        const availabilityEnd = $$<HTMLInputElement>('input[name="availabilityEnd"]');
+        if (availabilityEnd) {
+          const endDate = employee.availabilityEnd ?? employee.availability_end ?? '';
+          availabilityEnd.value = endDate;
+        }
+
+        // Load availability notes - THIS IS THE FIX FOR BUG 2
+        const availabilityNotes = $$<HTMLTextAreaElement>('textarea[name="availabilityNotes"]');
+        if (availabilityNotes) {
+          const notes = employee.availabilityNotes ?? employee.availability_notes ?? '';
+          availabilityNotes.value = notes;
         }
 
         const isActiveSelect = $$<HTMLSelectElement>('select[name="isActive"]');
@@ -1010,13 +1033,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const data: Record<string, unknown> = {};
 
       formData.forEach((value, key) => {
-        if (typeof value === 'string' && value.length > 0) {
+        if (typeof value === 'string') {
           // Convert to appropriate types - using safe key assignments
           switch (key) {
             case 'departmentId':
             case 'teamId':
-              // eslint-disable-next-line security/detect-object-injection
-              data[key] = Number.parseInt(value, 10);
+              if (value.length > 0) {
+                // eslint-disable-next-line security/detect-object-injection
+                data[key] = Number.parseInt(value, 10);
+              }
               break;
             case 'email':
             case 'firstName':
@@ -1027,12 +1052,29 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'birthday':
             case 'isActive':
             case 'availabilityStatus':
+              if (value.length > 0) {
+                // eslint-disable-next-line security/detect-object-injection
+                data[key] = value;
+              }
+              break;
             case 'availabilityStart':
             case 'availabilityEnd':
+              // For dates: send NULL if empty OR if status is 'available'
+              if (value.length > 0) {
+                // eslint-disable-next-line security/detect-object-injection
+                data[key] = value;
+              } else {
+                // Explicitly set null for empty dates
+                // eslint-disable-next-line security/detect-object-injection
+                data[key] = null;
+              }
+              break;
             case 'availabilityNotes':
+              // Always include notes, even if empty
               // eslint-disable-next-line security/detect-object-injection
               data[key] = value;
               break;
+            // eslint-disable-next-line sonarjs/no-duplicated-branches
             case 'password':
               // Only include password if it's not empty (for updates)
               if (value.length > 0) {
@@ -1055,6 +1097,12 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       });
+
+      // Special handling: if availabilityStatus is 'available', set dates to null
+      if (data.availabilityStatus === 'available') {
+        data.availabilityStart = null;
+        data.availabilityEnd = null;
+      }
 
       // Ensure required fields
       if (

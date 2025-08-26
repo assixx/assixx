@@ -41,7 +41,7 @@ class ModalManager {
     console.info(`[ModalManager] Existing modal in map: ${String(modal !== undefined)}`);
 
     // Also check if it's in the DOM
-    const modalInDom = document.getElementById(modalId);
+    const modalInDom = document.querySelector(`#${modalId}`);
     console.info(`[ModalManager] Modal in DOM: ${String(modalInDom !== null)}`);
 
     // If modal exists in map but not in DOM, remove from map
@@ -77,7 +77,7 @@ class ModalManager {
 
       document.body.append(modal);
       console.info(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
-      console.info(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
+      console.info(`[ModalManager] Modal in DOM:`, document.querySelector(`#${modalId}`) !== null);
       console.info(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
     } else {
       console.info(`[ModalManager] Modal already in document.body`);
@@ -195,6 +195,7 @@ class ModalManager {
     if (template !== undefined && template !== '') {
       console.info(`[ModalManager] Creating modal from template...`);
       const div = document.createElement('div');
+      // eslint-disable-next-line no-unsanitized/property -- Template content is controlled internally
       div.innerHTML = template;
       const modal = div.firstElementChild as HTMLElement;
       console.info(`[ModalManager] Modal element created:`, modal.tagName, modal.id);
@@ -229,6 +230,7 @@ class ModalManager {
     `;
 
     const div = document.createElement('div');
+    // eslint-disable-next-line no-unsanitized/property -- Modal HTML is built from safe config values
     div.innerHTML = modalHtml;
     return div.firstElementChild as HTMLElement;
   }
@@ -306,7 +308,7 @@ if (typeof window !== 'undefined') {
 
   // Globale Funktionen gemäß Plan hinzufügen
   window.showModal = (modalId: string) => {
-    const modal = document.getElementById(modalId);
+    const modal = document.querySelector(`#${modalId}`);
     if (modal) {
       modal.classList.remove('u-hidden');
       modal.classList.add('u-flex');
@@ -317,7 +319,7 @@ if (typeof window !== 'undefined') {
   };
 
   window.hideModal = (modalId: string) => {
-    const modal = document.getElementById(modalId);
+    const modal = document.querySelector(`#${modalId}`);
     if (modal) {
       modal.classList.remove('u-flex');
       modal.classList.add('u-hidden');

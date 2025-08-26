@@ -72,6 +72,10 @@ function serializeSettingValue(
 ): string {
   switch (type) {
     case 'boolean':
+      // Handle string "false" and "true" properly
+      if (typeof value === 'string') {
+        return value.toLowerCase() === 'false' || value === '0' || value === '' ? 'false' : 'true';
+      }
       return value ? 'true' : 'false';
     case 'number':
       return String(value);
@@ -464,10 +468,33 @@ export async function deleteTenantSetting(
  * Get all user settings
  * @param userId - The user ID
  * @param filters - The filter criteria
+ * @param tenantId - The tenant ID
+ * @param teamId - Optional team ID for team-specific settings
  */
-export async function getUserSettings(userId: number, filters: SettingFilters) {
+export async function getUserSettings(
+  userId: number,
+  filters: SettingFilters,
+  tenantId?: number,
+  teamId?: number | null,
+) {
   let query = `SELECT * FROM user_settings WHERE user_id = ?`;
-  const params: (string | number | boolean)[] = [userId];
+  const params: (string | number | boolean | null)[] = [userId];
+
+  // Add tenant_id filter if provided
+  if (tenantId !== undefined) {
+    query += ` AND tenant_id = ?`;
+    params.push(tenantId);
+  }
+
+  // Add team_id filter - NULL means global settings
+  if (teamId !== undefined) {
+    if (teamId === null) {
+      query += ` AND team_id IS NULL`;
+    } else {
+      query += ` AND (team_id = ? OR team_id IS NULL)`;
+      params.push(teamId);
+    }
+  }
 
   if (filters.category) {
     query += ` AND category = ?`;
@@ -479,7 +506,7 @@ export async function getUserSettings(userId: number, filters: SettingFilters) {
     params.push(`%${filters.search}%`);
   }
 
-  query += ` ORDER BY category, setting_key`;
+  query += ` ORDER BY team_id DESC, category, setting_key`;
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, params);
 
@@ -516,21 +543,30 @@ export async function getUserSetting(key: string, userId: number) {
  * Create or update user setting
  * @param data - The data object
  * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param teamId - Optional team ID for team-specific settings
  * @param _ipAddress - The _ipAddress parameter
  * @param _userAgent - The _userAgent parameter
  */
 export async function upsertUserSetting(
-  data: SettingData,
+  data: SettingData & { team_id?: number | null },
   userId: number,
+  tenantId: number,
+  teamId?: number | null,
   _ipAddress?: string,
   _userAgent?: string,
 ) {
   const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
+  // Use provided team_id or default to parameter
+  const settingTeamId = data.team_id !== undefined ? data.team_id : teamId;
+
   // Check if setting exists
   const [[existing]] = await executeQuery<RowDataPacket[]>(
-    `SELECT id FROM user_settings WHERE setting_key = ? AND user_id = ?`,
-    [data.setting_key, userId],
+    `SELECT id FROM user_settings 
+     WHERE setting_key = ? AND user_id = ? AND tenant_id = ? 
+     AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
+    [data.setting_key, userId, tenantId, settingTeamId, settingTeamId],
   );
 
   if (existing) {
@@ -538,23 +574,29 @@ export async function upsertUserSetting(
     await executeQuery(
       `UPDATE user_settings 
        SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
-       WHERE setting_key = ? AND user_id = ?`,
+       WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
+       AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
       [
         serializedValue,
         data.value_type ?? 'string',
         data.category ?? 'other',
         data.setting_key,
         userId,
+        tenantId,
+        settingTeamId,
+        settingTeamId,
       ],
     );
   } else {
     // Insert new
     await executeQuery(
       `INSERT INTO user_settings 
-       (user_id, setting_key, setting_value, value_type, category)
-       VALUES (?, ?, ?, ?, ?)`,
+       (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
+        tenantId,
+        settingTeamId,
         data.setting_key,
         serializedValue,
         data.value_type ?? 'string',
@@ -689,7 +731,14 @@ export async function bulkUpdateSettings(
           await upsertTenantSetting(setting, contextId, userId, userRole, ipAddress, userAgent);
           break;
         case 'user':
-          await upsertUserSetting(setting, contextId, ipAddress, userAgent);
+          await upsertUserSetting(
+            setting,
+            contextId,
+            userTenantId,
+            undefined,
+            ipAddress,
+            userAgent,
+          );
           break;
       }
       results.push({ key: setting.setting_key, success: true });

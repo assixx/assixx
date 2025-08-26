@@ -526,7 +526,6 @@
         border-radius: var(--radius-sm);
         padding: var(--spacing-2);
         cursor: grab;
-        transition: all 0.3s ease;
         min-width: 150px;
       }
 
@@ -876,7 +875,6 @@
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
         position: relative;
         display: flex;
         align-items: center;
@@ -895,23 +893,35 @@
       }
 
       .remove-favorite {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: absolute;
+        top: -10px;
+        right: -3px;
+        background: rgba(244, 67, 54, 0.1);
+        border: 2px solid rgb(244, 67, 54);
+        color: rgb(244, 67, 54);
+        border-radius: 50%;
         width: 20px;
         height: 20px;
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-        border-radius: 50%;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 16px;
         line-height: 1;
-        cursor: pointer;
-        transition: all 0.2s ease;
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .favorite-btn:hover .remove-favorite {
+        opacity: 1;
+        visibility: visible;
       }
 
       .remove-favorite:hover {
-        background: rgba(244, 67, 54, 0.4);
-        transform: scale(1.1);
+        background: rgba(244, 67, 54, 0.37);
+        border-color: rgb(244, 67, 54);
+        transform: scale(1.2);
       }
 
       .add-favorite-btn {
@@ -925,7 +935,6 @@
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -940,6 +949,166 @@
 
       .add-favorite-btn:active {
         transform: translateY(0);
+      }
+
+      /* Shift Control Checkboxes */
+      .shift-controls {
+        margin: var(--spacing-md) auto var(--spacing-lg);
+        display: flex;
+        justify-content: center;
+        max-width: 900px;
+      }
+
+      .controls-group {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        flex-wrap: wrap;
+      }
+
+      .controls-group:hover {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .divider {
+        width: 1px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 var(--spacing-sm);
+      }
+
+      @media (max-width: 768px) {
+        .controls-group {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: var(--spacing-sm);
+        }
+        
+        .divider {
+          width: 100%;
+          height: 1px;
+          margin: var(--spacing-sm) 0;
+        }
+      }
+
+      .rotation-edit-btn {
+        white-space: nowrap;
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(33, 150, 243, 0.15);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        color: #2196f3;
+        transition: all 0.2s ease;
+      }
+
+      .rotation-edit-btn:hover {
+        background: rgba(33, 150, 243, 0.25);
+        border-color: rgba(33, 150, 243, 0.5);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+      }
+
+      .rotation-edit-btn i {
+        font-size: 0.75rem;
+      }
+
+      .checkbox-label {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        cursor: pointer;
+        position: relative;
+        min-width: 200px;
+        max-width: 450px;
+        margin-right: 10px;
+      }
+
+      .checkbox-label:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(33, 150, 243, 0.3);
+      }
+
+      .checkbox-label:has(input:checked) {
+        background: rgba(33, 150, 243, 0.1);
+        border-color: rgba(33, 150, 243, 0.5);
+        box-shadow: 0 0 20px rgba(33, 150, 243, 0.15);
+      }
+
+      .checkbox-label input[type='checkbox'] {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        margin-right: 12px;
+        position: relative;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .checkbox-label input[type='checkbox']:checked {
+        border-color: var(--primary-color, #2196f3);
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      .checkbox-label input[type='checkbox']:checked::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: var(--primary-color, #2196f3);
+        font-size: 14px;
+        font-weight: bold;
+        animation: checkboxCheck 0.3s ease;
+      }
+
+      @keyframes checkboxCheck {
+        0% {
+          transform: translate(-50%, -50%) scale(0);
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
+      .checkbox-text {
+        flex: 1;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+      }
+
+      .checkbox-label:has(input:checked) .checkbox-text {
+        color: rgba(255, 255, 255, 0.95);
+      }
+
+      .checkbox-hint {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-left: auto;
+        padding-left: 12px;
+      }
+
+      .checkbox-label:has(input:checked) .checkbox-hint {
+        color: rgba(33, 150, 243, 0.7);
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -1032,6 +1201,36 @@
                 <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
               </div>
               <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
+            </div>
+
+            <!-- Shift Control Checkboxes -->
+            <div class="shift-controls" style="display: none">
+              <div class="controls-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="shift-autofill" />
+                  <span class="checkbox-text">Autofill</span>
+                  <span class="checkbox-hint">Woche automatisch füllen</span>
+                </label>
+                
+                <div class="divider"></div>
+                
+                <label class="checkbox-label">
+                  <input type="checkbox" id="shift-rotation" />
+                  <span class="checkbox-text">F und S abwechselnd und N bleibt</span>
+                  <span class="checkbox-hint">Automatische Rotation</span>
+                </label>
+                
+                <button
+                  id="edit-rotation-btn"
+                  type="button"
+                  class="btn btn-sm btn-primary rotation-edit-btn"
+                  style="display: none"
+                  title="Rotation bearbeiten"
+                >
+                  <i class="fas fa-edit"></i>
+                  Bearbeiten
+                </button>
+              </div>
             </div>
 
             <!-- Team Selection Notice -->
@@ -1228,6 +1427,7 @@
               <!-- Employee Sidebar -->
               <div class="employee-sidebar">
                 <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
+
                 <div class="employee-list" id="employeeList">
                   <!-- Employee items will be loaded here dynamically -->
                 </div>
@@ -1292,6 +1492,135 @@
       window.toggleDropdown = toggleDropdown;
       window.selectOption = selectOption;
     </script>
+
+    <!-- Rotation Setup Modal -->
+    <div id="rotation-setup-modal" class="modal-overlay" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Schichtrotation einrichten</h2>
+          <button type="button" class="modal-close" data-modal-close="rotation-setup-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="rotation-setup-form">
+            <div class="form-group">
+              <label for="rotation-pattern">Rotationsmuster:</label>
+              <select id="rotation-pattern" name="pattern" class="form-control" required>
+                <option value="">Muster wählen...</option>
+                <option value="weekly">Wöchentlich (Früh → Spät → Nacht / konfigurierbar)</option>
+                <option value="biweekly">Zweiwöchentlich</option>
+                <option value="monthly">Monatlich</option>
+                <option value="custom">Benutzerdefiniert</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="rotation-start-date">Startdatum:</label>
+              <input type="date" id="rotation-start-date" name="startDate" class="form-control" required />
+            </div>
+
+            <div class="form-group">
+              <label for="rotation-end-date">Enddatum:</label>
+              <input type="date" id="rotation-end-date" name="endDate" class="form-control" required />
+              <small class="form-text text-muted">Bis zu diesem Datum werden Schichten generiert (max. bis Jahresende)</small>
+            </div>
+
+            <div class="form-group">
+              <label for="rotation-employees">Mitarbeiter in Rotation:</label>
+              <div id="rotation-employees" class="checkbox-group">
+                <!-- Will be populated dynamically -->
+              </div>
+            </div>
+
+            <div id="custom-pattern-config" style="display: none">
+              <div class="form-group">
+                <label>Benutzerdefiniertes Muster:</label>
+                <div class="pattern-builder">
+                  <div class="pattern-week">
+                    <h4>Woche 1</h4>
+                    <label>
+                      <input type="checkbox" name="week1[]" value="early" />
+                      Frühschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week1[]" value="late" />
+                      Spätschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week1[]" value="night" />
+                      Nachtschicht
+                    </label>
+                  </div>
+                  <div class="pattern-week">
+                    <h4>Woche 2</h4>
+                    <label>
+                      <input type="checkbox" name="week2[]" value="early" />
+                      Frühschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week2[]" value="late" />
+                      Spätschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week2[]" value="night" />
+                      Nachtschicht
+                    </label>
+                  </div>
+                  <div class="pattern-week">
+                    <h4>Woche 3</h4>
+                    <label>
+                      <input type="checkbox" name="week3[]" value="early" />
+                      Frühschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week3[]" value="late" />
+                      Spätschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week3[]" value="night" />
+                      Nachtschicht
+                    </label>
+                  </div>
+                  <div class="pattern-week">
+                    <h4>Woche 4</h4>
+                    <label>
+                      <input type="checkbox" name="week4[]" value="early" />
+                      Frühschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week4[]" value="late" />
+                      Spätschicht
+                    </label>
+                    <label>
+                      <input type="checkbox" name="week4[]" value="night" />
+                      Nachtschicht
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="rotation-skip-weekends" name="skipWeekends" />
+                Wochenenden überspringen
+              </label>
+            </div>
+
+            <div class="form-group" id="ignore-night-shift-group" style="display: none">
+              <label>
+                <input type="checkbox" id="rotation-ignore-night" name="ignoreNightShift" />
+                Nachtschicht ignorieren (nur Früh ↔ Spät Rotation)
+              </label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close="rotation-setup-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" id="save-rotation-btn">Rotation speichern</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/scripts/auth.ts"></script>
     <script type="module" src="/scripts/shifts.ts"></script>
     <script type="module" src="/scripts/utils/modal-manager.ts"></script>

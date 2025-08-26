@@ -20,7 +20,16 @@ const valueTypeValidation = body('value_type')
 
 const categoryValidation = body('category')
   .optional()
-  .isIn(['general', 'appearance', 'notifications', 'security', 'workflow', 'integration', 'other'])
+  .isIn([
+    'general',
+    'appearance',
+    'notifications',
+    'security',
+    'workflow',
+    'integration',
+    'shifts',
+    'other',
+  ])
   .withMessage('Invalid category');
 
 // System settings validations
@@ -34,6 +43,7 @@ export const getSystemSettingsValidation = [
       'security',
       'workflow',
       'integration',
+      'shifts',
       'other',
     ])
     .withMessage('Invalid category'),
@@ -100,6 +110,7 @@ export const getTenantSettingsValidation = [
       'security',
       'workflow',
       'integration',
+      'shifts',
       'other',
     ])
     .withMessage('Invalid category'),
@@ -148,6 +159,7 @@ export const getUserSettingsValidation = [
       'security',
       'workflow',
       'integration',
+      'shifts',
       'other',
     ])
     .withMessage('Invalid category'),
@@ -215,6 +227,7 @@ export const bulkUpdateValidation = [
       'security',
       'workflow',
       'integration',
+      'shifts',
       'other',
     ])
     .withMessage('Invalid category'),

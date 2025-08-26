@@ -260,7 +260,7 @@ DEFAULT 'day';
 
 ```sql
 -- Check existing departments
-SELECT * FROM departments WHERE tenant_id = 8;
+SELECT * FROM departments WHERE tenant_id = x;
 
 -- Create if needed
 INSERT INTO departments (tenant_id, name, description) VALUES

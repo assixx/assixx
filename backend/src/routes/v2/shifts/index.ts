@@ -11,6 +11,7 @@ import { Router } from 'express';
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
 import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware';
 import { typed } from '../../../utils/routeHandlers';
+import * as rotationController from './rotation.controller';
 import * as shiftsController from './shifts.controller';
 import { shiftsValidation } from './shifts.validation';
 
@@ -502,6 +503,305 @@ router.delete(
   authenticateV2,
   shiftsValidation.deleteFavorite,
   typed.auth(shiftsController.deleteFavorite),
+);
+
+// ============= ROTATION PATTERNS =============
+
+/**
+ * /api/v2/shifts/rotation/patterns:
+ *   get:
+ *     summary: List rotation patterns
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: active_only
+ *         schema:
+ *           type: boolean
+ *           default: true
+ *         description: Filter only active patterns
+ *     responses:
+ *       200:
+ *         description: Patterns retrieved successfully
+ */
+router.get(
+  '/rotation/patterns',
+  authenticateV2,
+  typed.auth(rotationController.getRotationPatterns),
+);
+
+/**
+ * /api/v2/shifts/rotation/patterns:\{id\}:
+ *   get:
+ *     summary: Get rotation pattern by ID
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Pattern retrieved successfully
+ *       404:
+ *         description: Pattern not found
+ */
+router.get(
+  '/rotation/patterns/:id',
+  authenticateV2,
+  typed.auth(rotationController.getRotationPattern),
+);
+
+/**
+ * /api/v2/shifts/rotation/patterns:
+ *   post:
+ *     summary: Create rotation pattern
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - pattern_type
+ *               - pattern_config
+ *               - starts_at
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               pattern_type:
+ *                 type: string
+ *                 enum: [alternate_fs, fixed_n, custom]
+ *               pattern_config:
+ *                 type: object
+ *               cycle_length_weeks:
+ *                 type: integer
+ *                 default: 2
+ *               starts_at:
+ *                 type: string
+ *                 format: date
+ *               ends_at:
+ *                 type: string
+ *                 format: date
+ *               is_active:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       201:
+ *         description: Pattern created successfully
+ */
+router.post(
+  '/rotation/patterns',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.createRotationPattern),
+);
+
+/**
+ * /api/v2/shifts/rotation/patterns/\{id\}:
+ *   put:
+ *     summary: Update rotation pattern
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Pattern updated successfully
+ *       404:
+ *         description: Pattern not found
+ */
+router.put(
+  '/rotation/patterns/:id',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.updateRotationPattern),
+);
+
+/**
+ * /api/v2/shifts/rotation/patterns/\{id\}:
+ *   delete:
+ *     summary: Delete rotation pattern
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Pattern deleted successfully
+ *       404:
+ *         description: Pattern not found
+ */
+router.delete(
+  '/rotation/patterns/:id',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.deleteRotationPattern),
+);
+
+/**
+ * /api/v2/shifts/rotation/assign:
+ *   post:
+ *     summary: Assign users to rotation pattern
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - pattern_id
+ *               - user_ids
+ *               - shift_groups
+ *               - starts_at
+ *             properties:
+ *               pattern_id:
+ *                 type: integer
+ *               user_ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *               shift_groups:
+ *                 type: object
+ *               starts_at:
+ *                 type: string
+ *                 format: date
+ *               ends_at:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Users assigned successfully
+ */
+router.post(
+  '/rotation/assign',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.assignUsersToPattern),
+);
+
+/**
+ * /api/v2/shifts/rotation/generate:
+ *   post:
+ *     summary: Generate rotation shifts
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - pattern_id
+ *               - start_date
+ *               - end_date
+ *             properties:
+ *               pattern_id:
+ *                 type: integer
+ *               start_date:
+ *                 type: string
+ *                 format: date
+ *               end_date:
+ *                 type: string
+ *                 format: date
+ *               preview:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       200:
+ *         description: Shifts generated successfully
+ */
+router.post(
+  '/rotation/generate',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.generateRotationShifts),
+);
+
+/**
+ * /api/v2/shifts/rotation/history:
+ *   get:
+ *     summary: Get rotation history
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: pattern_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: user_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [generated, confirmed, modified, cancelled]
+ *     responses:
+ *       200:
+ *         description: History retrieved successfully
+ */
+router.get('/rotation/history', authenticateV2, typed.auth(rotationController.getRotationHistory));
+
+/**
+ * /api/v2/shifts/rotation/history:
+ *   delete:
+ *     summary: Delete all rotation history for tenant
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: History deleted successfully
+ */
+router.delete(
+  '/rotation/history',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(rotationController.deleteRotationHistory),
 );
 
 // ============= EXPORT (MUST BE BEFORE /:id) =============

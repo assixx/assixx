@@ -422,3 +422,73 @@ export function mapMachine(machine: MachineAPIResponse): MappedMachine {
 export function mapMachines(machines: MachineAPIResponse[]): MappedMachine[] {
   return machines.map(mapMachine);
 }
+
+// Shift Rotation Pattern mapping
+export interface MappedRotationPattern {
+  id: number;
+  tenantId: number;
+  teamId: number | null;
+  name: string;
+  description?: string;
+  patternType: 'alternate_fs' | 'fixed_n' | 'custom';
+  patternConfig: Record<string, unknown>;
+  cycleLengthWeeks: number;
+  startsAt: string;
+  endsAt?: string | null;
+  isActive: boolean;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Rotation Pattern API response type
+export interface RotationPatternAPIResponse {
+  id: number;
+  tenant_id?: number;
+  tenantId?: number;
+  team_id?: number | null;
+  teamId?: number | null;
+  name?: string;
+  description?: string;
+  pattern_type?: string;
+  patternType?: string;
+  pattern_config?: Record<string, unknown>;
+  patternConfig?: Record<string, unknown>;
+  cycle_length_weeks?: number;
+  cycleLengthWeeks?: number;
+  starts_at?: string;
+  startsAt?: string;
+  ends_at?: string | null;
+  endsAt?: string | null;
+  is_active?: boolean | number;
+  isActive?: boolean | number;
+  created_by?: number;
+  createdBy?: number;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+}
+
+export function mapRotationPattern(pattern: RotationPatternAPIResponse): MappedRotationPattern {
+  return {
+    id: pattern.id,
+    tenantId: pattern.tenantId ?? pattern.tenant_id ?? 0,
+    teamId: pattern.teamId ?? pattern.team_id ?? null,
+    name: pattern.name ?? '',
+    description: pattern.description,
+    patternType: (pattern.patternType ?? pattern.pattern_type ?? 'custom') as 'alternate_fs' | 'fixed_n' | 'custom',
+    patternConfig: pattern.patternConfig ?? pattern.pattern_config ?? {},
+    cycleLengthWeeks: pattern.cycleLengthWeeks ?? pattern.cycle_length_weeks ?? 1,
+    startsAt: pattern.startsAt ?? pattern.starts_at ?? new Date().toISOString(),
+    endsAt: pattern.endsAt ?? pattern.ends_at ?? null,
+    isActive: Boolean(pattern.isActive ?? pattern.is_active ?? false),
+    createdBy: pattern.createdBy ?? pattern.created_by ?? 0,
+    createdAt: pattern.createdAt ?? pattern.created_at ?? new Date().toISOString(),
+    updatedAt: pattern.updatedAt ?? pattern.updated_at ?? new Date().toISOString(),
+  };
+}
+
+export function mapRotationPatterns(patterns: RotationPatternAPIResponse[]): MappedRotationPattern[] {
+  return patterns.map(mapRotationPattern);
+}

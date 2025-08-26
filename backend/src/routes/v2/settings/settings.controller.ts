@@ -18,12 +18,11 @@ import { BulkUpdateRequest, SystemSetting, UserSetting } from './types.js';
  * @param req - The request object
  * @param res - The response object
  */
-export const getSystemSettings = async (req: AuthenticatedRequest, res: Response) => {
+export const getSystemSettings = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const filters = {
       category: req.query.category as string | undefined,
       is_public:
@@ -37,7 +36,7 @@ export const getSystemSettings = async (req: AuthenticatedRequest, res: Response
     res.json(successResponse({ settings }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -49,17 +48,13 @@ export const getSystemSettings = async (req: AuthenticatedRequest, res: Response
  * @param req - The request object
  * @param res - The response object
  */
-export const getSystemSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const getSystemSetting = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const setting = await settingsService.getSystemSetting(req.params.key, req.user.role);
     res.json(successResponse(setting));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -71,18 +66,17 @@ export const getSystemSetting = async (req: AuthenticatedRequest, res: Response)
  * @param req - The request object
  * @param res - The response object
  */
-export const upsertSystemSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const upsertSystemSetting = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const bodyData = req.body as SystemSetting;
     const data: SettingData = {
       setting_key: req.params.key || bodyData.setting_key,
       setting_value: bodyData.setting_value,
-      value_type: (bodyData.value_type as SettingType) ?? 'string',
-      category: (bodyData.category as SettingCategory) ?? 'other',
+      value_type: bodyData.value_type ? (bodyData.value_type as SettingType) : 'string',
+      category: bodyData.category ? (bodyData.category as SettingCategory) : 'other',
       description: bodyData.description,
       is_public: bodyData.is_public,
     };
@@ -99,7 +93,7 @@ export const upsertSystemSetting = async (req: AuthenticatedRequest, res: Respon
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -111,12 +105,11 @@ export const upsertSystemSetting = async (req: AuthenticatedRequest, res: Respon
  * @param req - The request object
  * @param res - The response object
  */
-export const deleteSystemSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteSystemSetting = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     await settingsService.deleteSystemSetting(
       req.params.key,
       req.user.id,
@@ -129,7 +122,7 @@ export const deleteSystemSetting = async (req: AuthenticatedRequest, res: Respon
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -143,12 +136,11 @@ export const deleteSystemSetting = async (req: AuthenticatedRequest, res: Respon
  * @param req - The request object
  * @param res - The response object
  */
-export const getTenantSettings = async (req: AuthenticatedRequest, res: Response) => {
+export const getTenantSettings = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const filters = {
       category: req.query.category as string | undefined,
       search: req.query.search as string | undefined,
@@ -159,7 +151,7 @@ export const getTenantSettings = async (req: AuthenticatedRequest, res: Response
     res.json(successResponse({ settings }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -171,18 +163,14 @@ export const getTenantSettings = async (req: AuthenticatedRequest, res: Response
  * @param req - The request object
  * @param res - The response object
  */
-export const getTenantSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const getTenantSetting = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const setting = await settingsService.getTenantSetting(req.params.key, req.user.tenant_id);
 
     res.json(successResponse(setting));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -194,18 +182,17 @@ export const getTenantSetting = async (req: AuthenticatedRequest, res: Response)
  * @param req - The request object
  * @param res - The response object
  */
-export const upsertTenantSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const upsertTenantSetting = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const bodyData = req.body as SystemSetting;
     const data: SettingData = {
       setting_key: req.params.key || bodyData.setting_key,
       setting_value: bodyData.setting_value,
-      value_type: (bodyData.value_type as SettingType) ?? 'string',
-      category: (bodyData.category as SettingCategory) ?? 'other',
+      value_type: bodyData.value_type ? (bodyData.value_type as SettingType) : 'string',
+      category: bodyData.category ? (bodyData.category as SettingCategory) : 'other',
       description: bodyData.description,
       is_public: bodyData.is_public,
     };
@@ -222,7 +209,7 @@ export const upsertTenantSetting = async (req: AuthenticatedRequest, res: Respon
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -234,12 +221,11 @@ export const upsertTenantSetting = async (req: AuthenticatedRequest, res: Respon
  * @param req - The request object
  * @param res - The response object
  */
-export const deleteTenantSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteTenantSetting = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     await settingsService.deleteTenantSetting(
       req.params.key,
       req.user.tenant_id,
@@ -252,7 +238,7 @@ export const deleteTenantSetting = async (req: AuthenticatedRequest, res: Respon
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -266,23 +252,27 @@ export const deleteTenantSetting = async (req: AuthenticatedRequest, res: Respon
  * @param req - The request object
  * @param res - The response object
  */
-export const getUserSettings = async (req: AuthenticatedRequest, res: Response) => {
+export const getUserSettings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const filters = {
       category: req.query.category as string | undefined,
       search: req.query.search as string | undefined,
     };
 
-    const settings = await settingsService.getUserSettings(req.user.id, filters);
+    // Get team_id from query params if provided
+    const teamId = req.query.team_id ? Number(req.query.team_id) : undefined;
+
+    const settings = await settingsService.getUserSettings(
+      req.user.id,
+      filters,
+      req.user.tenant_id,
+      teamId,
+    );
 
     res.json(successResponse({ settings }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -294,18 +284,14 @@ export const getUserSettings = async (req: AuthenticatedRequest, res: Response) 
  * @param req - The request object
  * @param res - The response object
  */
-export const getUserSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const getUserSetting = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const setting = await settingsService.getUserSetting(req.params.key, req.user.id);
 
     res.json(successResponse(setting));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -317,27 +303,34 @@ export const getUserSetting = async (req: AuthenticatedRequest, res: Response) =
  * @param req - The request object
  * @param res - The response object
  */
-export const upsertUserSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const upsertUserSetting = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
-    const bodyData = req.body as UserSetting;
-    const data: SettingData = {
+    const bodyData = req.body as UserSetting & { team_id?: number | null };
+    const data: SettingData & { team_id?: number | null } = {
       setting_key: req.params.key || bodyData.setting_key,
       setting_value: bodyData.setting_value,
-      value_type: (bodyData.value_type as SettingType) ?? 'string',
-      category: (bodyData.category as SettingCategory) ?? 'other',
+      value_type: bodyData.value_type ? (bodyData.value_type as SettingType) : 'string',
+      category: bodyData.category ? (bodyData.category as SettingCategory) : 'other',
       description: bodyData.description,
+      team_id: bodyData.team_id, // Include team_id if provided
     };
 
-    await settingsService.upsertUserSetting(data, req.user.id, req.ip, req.get('user-agent'));
+    await settingsService.upsertUserSetting(
+      data,
+      req.user.id,
+      req.user.tenant_id,
+      bodyData.team_id,
+      req.ip,
+      req.get('user-agent'),
+    );
 
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -349,18 +342,17 @@ export const upsertUserSetting = async (req: AuthenticatedRequest, res: Response
  * @param req - The request object
  * @param res - The response object
  */
-export const deleteUserSetting = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteUserSetting = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     await settingsService.deleteUserSetting(req.params.key, req.user.id);
 
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -374,12 +366,11 @@ export const deleteUserSetting = async (req: AuthenticatedRequest, res: Response
  * @param req - The request object
  * @param res - The response object
  */
-export const getAdminUserSettings = async (req: AuthenticatedRequest, res: Response) => {
+export const getAdminUserSettings = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const targetUserId = Number.parseInt(req.params.userId);
     const settings = await settingsService.getAdminUserSettings(
       targetUserId,
@@ -390,7 +381,7 @@ export const getAdminUserSettings = async (req: AuthenticatedRequest, res: Respo
     res.json(successResponse({ settings }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }
@@ -404,7 +395,7 @@ export const getAdminUserSettings = async (req: AuthenticatedRequest, res: Respo
  * @param _req - The _req parameter
  * @param res - The response object
  */
-export const getCategories = async (_req: AuthenticatedRequest, res: Response) => {
+export const getCategories = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const categories = await settingsService.getSettingsCategories();
     res.json(successResponse({ categories }));
@@ -418,12 +409,8 @@ export const getCategories = async (_req: AuthenticatedRequest, res: Response) =
  * @param req - The request object
  * @param res - The response object
  */
-export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
+export const bulkUpdate = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const { type, settings } = req.body as BulkUpdateRequest;
 
     if (!['system', 'tenant', 'user'].includes(type)) {
@@ -440,8 +427,8 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
     const settingsData: SettingData[] = settings.map((setting) => ({
       setting_key: setting.setting_key,
       setting_value: setting.setting_value,
-      value_type: (setting.value_type as SettingType) ?? 'string',
-      category: (setting.category as SettingCategory) ?? 'other',
+      value_type: setting.value_type ? (setting.value_type as SettingType) : 'string',
+      category: setting.category ? (setting.category as SettingCategory) : 'other',
       description: setting.description,
       is_public: setting.is_public,
     }));
@@ -460,7 +447,7 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response) => {
     res.json(successResponse({ results }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
       res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
     }

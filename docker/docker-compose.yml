@@ -4,12 +4,13 @@ services:
     image: mysql:8.0
     container_name: assixx-mysql
     restart: unless-stopped
-    command: --sql-mode=""
+    command: --sql-mode="" --default-time-zone='+02:00'
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-main}
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      TZ: Europe/Berlin
     ports:
       - "3307:3306"
     volumes:
