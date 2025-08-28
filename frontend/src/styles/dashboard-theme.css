@@ -320,6 +320,7 @@ body {
   border: none;
   border-radius: var(--radius-sm);
 
+  font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
 }
@@ -403,6 +404,7 @@ body {
   padding: var(--spacing-2sm);
   border: var(--glass-form-border);
   border-radius: var(--radius-sm);
+  font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
   color: var(--text-primary);
   background: var(--glass-form-bg);
