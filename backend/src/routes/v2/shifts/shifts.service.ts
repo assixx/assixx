@@ -2023,6 +2023,75 @@ export class ShiftsService {
       `[SHIFTS] Deleted shift plan ${planId} and associated shifts for tenant ${tenantId}`,
     );
   }
+
+  /**
+   * Get user's shifts for calendar display
+   * Only returns shifts with F/S/N types for the specific user
+   */
+  async getUserCalendarShifts(
+    userId: number,
+    tenantId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<{ date: string; type: string }[]> {
+    try {
+      // Query BOTH tables as specified in shifts-in-calendar.md plan
+      const sqlQuery = `
+        SELECT DISTINCT date, type FROM (
+          -- From shifts table (primary source)
+          SELECT
+            DATE(date) as date,
+            CAST(type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as type
+          FROM shifts
+          WHERE user_id = ?
+            AND tenant_id = ?
+            AND date BETWEEN ? AND ?
+            AND type IN ('F', 'S', 'N', 'early', 'late', 'night')
+
+          UNION
+
+          -- From shift_rotation_history table (secondary source)
+          SELECT
+            DATE(shift_date) as date,
+            CAST(shift_type AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as type
+          FROM shift_rotation_history
+          WHERE user_id = ?
+            AND tenant_id = ?
+            AND shift_date BETWEEN ? AND ?
+        ) AS combined_shifts
+        ORDER BY date ASC
+      `;
+
+      const [rows] = await execute<RowDataPacket[]>(sqlQuery, [
+        // Parameters for shifts table
+        userId,
+        tenantId,
+        startDate,
+        endDate,
+        // Parameters for shift_rotation_history table
+        userId,
+        tenantId,
+        startDate,
+        endDate,
+      ]);
+
+      // Convert early/late/night to F/S/N for consistency
+      return rows.map((row) => {
+        const shiftRow = row as unknown as { date: string; type: string };
+        return {
+          date: shiftRow.date,
+          type:
+            shiftRow.type === 'early' ? 'F'
+            : shiftRow.type === 'late' ? 'S'
+            : shiftRow.type === 'night' ? 'N'
+            : shiftRow.type,
+        };
+      });
+    } catch (error: unknown) {
+      logger.error('Error fetching user calendar shifts:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to fetch user shifts');
+    }
+  }
 }
 
 // Export singleton instance

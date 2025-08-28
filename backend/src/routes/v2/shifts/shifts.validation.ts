@@ -52,6 +52,9 @@ export const shiftsValidation = {
         'night',
         'day',
         'flexible',
+        'F',  // Frühschicht
+        'S',  // Spätschicht
+        'N',  // Nachtschicht
       ])
       .withMessage(MESSAGES.INVALID_TYPE),
     query('templateId').optional().isInt({ min: 1 }).withMessage(MESSAGES.INVALID_TEMPLATE_ID),
@@ -120,6 +123,9 @@ export const shiftsValidation = {
         'night',
         'day',
         'flexible',
+        'F',  // Frühschicht
+        'S',  // Spätschicht
+        'N',  // Nachtschicht
       ])
       .withMessage(MESSAGES.INVALID_TYPE),
     body('notes').optional().trim().isLength({ max: 1000 }).withMessage(MESSAGES.NOTES_TOO_LONG),
@@ -181,6 +187,9 @@ export const shiftsValidation = {
         'night',
         'day',
         'flexible',
+        'F',  // Frühschicht
+        'S',  // Spätschicht
+        'N',  // Nachtschicht
       ])
       .withMessage(MESSAGES.INVALID_TYPE),
     body('notes').optional().trim().isLength({ max: 1000 }).withMessage(MESSAGES.NOTES_TOO_LONG),

@@ -1032,6 +1032,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = new FormData(form);
       const data: Record<string, unknown> = {};
 
+      // Check if we're creating or updating
+      const isUpdate =
+        employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined;
+
       formData.forEach((value, key) => {
         if (typeof value === 'string') {
           // Convert to appropriate types - using safe key assignments
@@ -1074,10 +1078,11 @@ document.addEventListener('DOMContentLoaded', () => {
               // eslint-disable-next-line security/detect-object-injection
               data[key] = value;
               break;
-            // eslint-disable-next-line sonarjs/no-duplicated-branches
+
             case 'password':
-              // Only include password if it's not empty (for updates)
-              if (value.length > 0) {
+              // For CREATE: always include password (required)
+              // For UPDATE: only include if not empty (optional)
+              if (!isUpdate || value.length > 0) {
                 // eslint-disable-next-line security/detect-object-injection
                 data[key] = value;
               }

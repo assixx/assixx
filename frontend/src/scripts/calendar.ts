@@ -8,6 +8,7 @@ import { $$, $all, $$id, setHTML } from '../utils/dom-utils';
 import { featureFlags } from '../utils/feature-flags';
 import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
+import { shiftCalendarIntegration } from './shifts-in-calendar';
 
 // Window.unifiedNav is already declared in global.d.ts
 
@@ -735,6 +736,9 @@ function initializeCalendar(): void {
     });
 
     calendar.render();
+
+    // Initialize shift calendar integration
+    shiftCalendarIntegration.init(calendar);
   } catch (error: unknown) {
     console.error('Error initializing calendar:', error);
     showError('Fehler beim Initialisieren des Kalenders. Bitte laden Sie die Seite neu.');

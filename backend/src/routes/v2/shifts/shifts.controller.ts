@@ -873,3 +873,38 @@ export async function deleteShiftPlan(req: AuthenticatedRequest, res: Response):
     }
   }
 }
+
+/**
+ * Get current user's shifts for calendar display
+ * Returns shifts in F/S/N format for the logged-in user
+ */
+export async function getMyCalendarShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+
+    if (!startDate || !endDate) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));
+      return;
+    }
+
+    // Get shifts for current user only
+    const shifts = await shiftsService.getUserCalendarShifts(
+      req.user.id,
+      req.user.tenant_id,
+      startDate,
+      endDate
+    );
+
+    res.json(successResponse(shifts, 'User shifts retrieved successfully'));
+  } catch (error: unknown) {
+    res
+      .status(500)
+      .json(
+        errorResponse(
+          ERROR_CODES.SERVER_ERROR,
+          error instanceof Error ? error.message : 'Failed to get user shifts',
+        ),
+      );
+  }
+}

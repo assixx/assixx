@@ -40,6 +40,19 @@ export function getAuthToken(): string | null {
   return localStorage.getItem('token') ?? localStorage.getItem('authToken');
 }
 
+// Get current user's ID
+export function getUserId(): number | null {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  
+  try {
+    const user = JSON.parse(userStr) as { id: number };
+    return user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Set authentication token
 export function setAuthToken(token: string, refreshToken?: string): void {
   // Check if v2 is enabled

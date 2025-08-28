@@ -804,6 +804,36 @@ router.delete(
   typed.auth(rotationController.deleteRotationHistory),
 );
 
+// ============= MY CALENDAR SHIFTS (MUST BE BEFORE /:id) =============
+
+/**
+ * /api/v2/shifts/my-calendar-shifts:
+ *   get:
+ *     summary: Get logged-in user's shifts for calendar display
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: true
+ *         description: Start date for shifts
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: true
+ *         description: End date for shifts
+ *     responses:
+ *       200:
+ *         description: User shifts retrieved successfully
+ */
+router.get('/my-calendar-shifts', authenticateV2, typed.auth(shiftsController.getMyCalendarShifts));
+
 // ============= EXPORT (MUST BE BEFORE /:id) =============
 
 /**
@@ -1214,4 +1244,7 @@ router.post(
  *       200:
  *         description: Shift plan retrieved successfully
  */
+
+// Route moved before /:id - see line 835
+
 export default router;

@@ -28,6 +28,7 @@ export interface UpdateUserBody {
   address?: string;
   isActive?: boolean;
   employeeNumber?: string;
+  password?: string;
 }
 
 export interface UpdateProfileBody {

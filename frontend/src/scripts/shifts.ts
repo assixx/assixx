@@ -1704,6 +1704,20 @@ class ShiftPlanningSystem {
     return { valid: true };
   }
 
+  /**
+   * Convert frontend shift type to database format
+   * Frontend uses: early, late, night
+   * Database expects: F, S, N
+   */
+  private convertShiftTypeForAPI(frontendType: string): string {
+    const typeMap: Record<string, string> = {
+      'early': 'F',  // Frühschicht
+      'late': 'S',   // Spätschicht
+      'night': 'N',  // Nachtschicht
+    };
+    return typeMap[frontendType] ?? frontendType;
+  }
+
   async assignUserToShift(userId: number, date: string, shiftType: string, cellElement: HTMLElement): Promise<void> {
     // Validate hierarchy before creating shift
     const validation = this.validateHierarchy();
@@ -1724,7 +1738,7 @@ class ShiftPlanningSystem {
           body: JSON.stringify({
             user_id: userId,
             date,
-            type: shiftType,
+            type: this.convertShiftTypeForAPI(shiftType),
             department_id: this.selectedContext.departmentId,
             team_id: this.selectedContext.teamId,
             machine_id: this.selectedContext.machineId,
@@ -1758,7 +1772,7 @@ class ShiftPlanningSystem {
           body: JSON.stringify({
             userId,
             date,
-            type: shiftType,
+            type: this.convertShiftTypeForAPI(shiftType),
             departmentId: this.selectedContext.departmentId,
             teamId: this.selectedContext.teamId,
             machineId: this.selectedContext.machineId,
@@ -4802,7 +4816,7 @@ class ShiftPlanningSystem {
               shiftsForPlan.push({
                 userId: employeeId,
                 date,
-                type: shiftType,
+                type: this.convertShiftTypeForAPI(shiftType),
                 startTime: this.getShiftStartTime(shiftType),
                 endTime: this.getShiftEndTime(shiftType),
               });

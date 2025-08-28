@@ -218,8 +218,15 @@ export class UsersService {
     // Convert from camelCase to snake_case
     const dbUpdateData = apiToDb(updateData as Record<string, unknown>);
 
+    // Handle password update if provided
+    if (updateData.password) {
+      const hashedPassword = await bcrypt.hash(updateData.password, 10);
+      dbUpdateData.password = hashedPassword;
+    } else {
+      delete dbUpdateData.password;
+    }
+
     // Remove fields that shouldn't be updated this way
-    delete dbUpdateData.password;
     delete dbUpdateData.tenant_id;
     delete dbUpdateData.created_at;
 
