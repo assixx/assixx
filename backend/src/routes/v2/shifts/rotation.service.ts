@@ -5,7 +5,7 @@
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { query as executeQuery } from '../../../utils/db.js';
+import { query as executeQuery, getConnection } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import type {
   AssignRotationRequest,
@@ -16,6 +16,14 @@ import type {
   ShiftRotationHistory,
   ShiftRotationPattern,
 } from './rotation.types.js';
+
+interface ShiftEntry {
+  userId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  type: string;
+}
 
 /**
  * Get all rotation patterns for a tenant
@@ -560,15 +568,182 @@ export async function getRotationHistory(
 }
 
 /**
- * Delete all rotation history for a tenant
+ * Delete all rotation data for a specific team
+ * CRITICAL: Must include team_id for multi-tenant isolation!
  */
-export async function deleteRotationHistory(tenantId: number): Promise<number> {
-  const query = `
-    DELETE FROM shift_rotation_history
-    WHERE tenant_id = ?
-  `;
+export async function deleteRotationHistory(
+  tenantId: number,
+  teamId: number,
+): Promise<{
+  historyDeleted: number;
+  assignmentsDeleted: number;
+  patternsDeleted: number;
+}> {
+  // Start transaction to ensure data consistency
+  const connection = await getConnection();
 
-  const [result] = await executeQuery<ResultSetHeader>(query, [tenantId]);
+  try {
+    await connection.beginTransaction();
 
-  return result.affectedRows;
+    // 1. Delete from shift_rotation_history (if exists)
+    const historyQuery = `
+      DELETE FROM shift_rotation_history
+      WHERE tenant_id = ? AND team_id = ?
+    `;
+    const [historyResult] = await connection.execute<ResultSetHeader>(historyQuery, [
+      tenantId,
+      teamId,
+    ]);
+
+    // 2. Delete from shift_rotation_assignments - CRITICAL: team_id filter!
+    const assignmentsQuery = `
+      DELETE FROM shift_rotation_assignments
+      WHERE tenant_id = ? AND team_id = ?
+    `;
+    const [assignmentsResult] = await connection.execute<ResultSetHeader>(assignmentsQuery, [
+      tenantId,
+      teamId,
+    ]);
+
+    // 3. Delete from shift_rotation_patterns - CRITICAL: team_id filter!
+    const patternsQuery = `
+      DELETE FROM shift_rotation_patterns
+      WHERE tenant_id = ? AND team_id = ?
+    `;
+    const [patternsResult] = await connection.execute<ResultSetHeader>(patternsQuery, [
+      tenantId,
+      teamId,
+    ]);
+
+    await connection.commit();
+
+    console.info('[ROTATION DELETE] Successfully deleted rotation data:', {
+      tenantId,
+      teamId,
+      historyDeleted: historyResult.affectedRows,
+      assignmentsDeleted: assignmentsResult.affectedRows,
+      patternsDeleted: patternsResult.affectedRows,
+    });
+
+    return {
+      historyDeleted: historyResult.affectedRows,
+      assignmentsDeleted: assignmentsResult.affectedRows,
+      patternsDeleted: patternsResult.affectedRows,
+    };
+  } catch (error) {
+    await connection.rollback();
+    console.error('[ROTATION DELETE ERROR]:', error);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Generate Kontischicht pattern for entire year
+ * Takes 2-week pattern and repeats it for all 52 weeks
+ * @param basePattern - Array of shifts for 2 weeks (template)
+ * @param year - Target year to generate shifts for
+ * @param tenantId - Tenant ID for multi-tenant isolation
+ * @returns Array of shifts for the entire year
+ */
+export function generateKontischichtYear(
+  basePattern: ShiftEntry[],
+  year: number,
+  tenantId: number,
+): ShiftEntry[] {
+  const yearShifts: ShiftEntry[] = [];
+
+  // Sort template shifts by date to understand the pattern
+  const sortedTemplate = [...basePattern].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+
+  if (sortedTemplate.length === 0) {
+    return yearShifts;
+  }
+
+  // Get the week numbers for the template weeks
+  const firstTemplateDate = new Date(sortedTemplate[0].date);
+  const firstWeekNumber = getISOWeekNumber(firstTemplateDate);
+
+  // Group template shifts by week (Week A and Week B)
+  const weekAShifts: ShiftEntry[] = [];
+  const weekBShifts: ShiftEntry[] = [];
+
+  for (const shift of sortedTemplate) {
+    const shiftDate = new Date(shift.date);
+    const weekNumber = getISOWeekNumber(shiftDate);
+
+    if (weekNumber === firstWeekNumber) {
+      weekAShifts.push(shift);
+    } else {
+      weekBShifts.push(shift);
+    }
+  }
+
+  console.info('[KONTISCHICHT] Pattern analysis:', {
+    weekACount: weekAShifts.length,
+    weekBCount: weekBShifts.length,
+    year,
+    tenantId,
+  });
+
+  // Generate shifts for entire year
+  const yearStart = new Date(year, 0, 1);
+  // Find first Monday of the year
+  const firstMonday = new Date(yearStart);
+  const yearStartWeekday = yearStart.getDay() || 7;
+  if (yearStartWeekday !== 1) {
+    firstMonday.setDate(yearStart.getDate() + (8 - yearStartWeekday));
+  }
+
+  // Iterate through all 52 weeks of the year
+  for (let weekOffset = 0; weekOffset < 52; weekOffset++) {
+    const currentWeekMonday = new Date(firstMonday);
+    currentWeekMonday.setDate(firstMonday.getDate() + weekOffset * 7);
+
+    // Determine which pattern to use (A or B) - alternating
+    const useWeekA = weekOffset % 2 === 0;
+    const templateWeek = useWeekA ? weekAShifts : weekBShifts;
+
+    // Generate shifts for this week based on pattern
+    for (const templateShift of templateWeek) {
+      const templateDate = new Date(templateShift.date);
+      const templateWeekday = templateDate.getDay() || 7;
+
+      // Calculate the actual date for this shift in the current week
+      const shiftDate = new Date(currentWeekMonday);
+      shiftDate.setDate(currentWeekMonday.getDate() + (templateWeekday - 1));
+
+      // Only add shifts that are actually in the target year
+      if (shiftDate.getFullYear() === year) {
+        yearShifts.push({
+          userId: templateShift.userId,
+          date: shiftDate.toISOString().split('T')[0],
+          startTime: templateShift.startTime,
+          endTime: templateShift.endTime,
+          type: templateShift.type,
+        });
+      }
+    }
+  }
+
+  console.info(`[KONTISCHICHT] Generated ${yearShifts.length} shifts for year ${year}`);
+  return yearShifts;
+}
+
+/**
+ * Helper function to get ISO week number
+ */
+function getISOWeekNumber(date: Date): number {
+  const target = new Date(date.valueOf());
+  const dayNumber = (date.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNumber + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
+  }
+  return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
 }

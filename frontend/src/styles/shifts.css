@@ -1,5 +1,189 @@
 /* Shift Planning Specific Styles */
 
+/* Generic Modal Overlay Class */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Modal Styles for Shift Rotation - Using Calendar Modal Design */
+
+/* Modal Background Overlay */
+#rotation-setup-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgb(0 0 0 / 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+
+#rotation-setup-modal.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Modal Content Container - Calendar Style */
+#rotation-setup-modal .modal-content {
+  overflow: auto;
+  background: hsla(0, 0%, 6.7%, 0.77);
+  max-height: 85vh !important;
+  transform: translateY(0);
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 900px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md, 16px);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+/* Modal Header - Calendar Style */
+#rotation-setup-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg, 1.5rem);
+  background: rgb(255 255 255 / 2%);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+#rotation-setup-modal .modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color, #3498db);
+}
+
+/* Modal Close Button - Calendar Style */
+#rotation-setup-modal .modal-close {
+  cursor: pointer;
+  padding: 10px;
+  border: none;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 20px;
+  color: var(--text-secondary, rgb(255 255 255 / 60%));
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+#rotation-setup-modal .modal-close:hover {
+  color: var(--primary-color, #3498db);
+  background: rgb(255 255 255 / 5%);
+  transform: rotate(90deg);
+}
+
+/* Modal Body */
+#rotation-setup-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg, 1.5rem);
+}
+
+/* Modal Footer - Calendar Style */
+#rotation-setup-modal .modal-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--spacing-lg, 1.5rem);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 2%);
+}
+
+/* Form Styles */
+#rotation-setup-modal .form-group {
+  margin-bottom: 1.5rem;
+}
+
+#rotation-setup-modal .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: rgb(255 255 255 / 80%);
+  font-weight: 500;
+}
+
+#rotation-setup-modal .form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 5%);
+  color: #fff;
+  font-size: 1rem;
+}
+
+#rotation-setup-modal .form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
+}
+
+#rotation-setup-modal .form-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 50%);
+}
+
+/* Checkbox and Pattern Builder Styles */
+.checkbox-group {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.pattern-builder {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 1rem;
+}
+
+.pattern-week {
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+  padding: 15px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.pattern-week h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.pattern-week label {
+  display: block;
+  margin: 8px 0;
+  color: var(--text-light);
+}
+
 /* Tab System */
 .content-tabs {
   display: flex;
@@ -676,7 +860,7 @@
   max-height: 90vh;
   padding: 0;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
 
   background: rgb(30 39 46 / 95%);
   backdrop-filter: blur(20px);
@@ -1004,17 +1188,17 @@
 .shift-cell.locked::after {
   content: "";
   position: absolute;
+  background: repeating-linear-gradient(
+    45deg,
+    #ffffff0a,
+    #0000 10px,
+    hsla(0, 0%, 0%, 0.03) 0,
+    hsla(0, 0%, 100%, 0) 20px
+  );
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    rgb(255 255 255 / 5%) 10px,
-    rgb(255 255 255 / 5%) 20px
-  );
   pointer-events: none;
 }
 
@@ -1037,4 +1221,253 @@
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgb(102 126 234 / 40%);
+}
+
+/* ================================
+   Kontischicht Ansicht Styles
+   ================================ */
+
+/* When Kontischicht is active */
+.week-schedule.kontischicht-active {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  position: relative;
+  max-width: 100%;
+  padding-bottom: 15px; /* Space for scrollbar */
+}
+
+/* Horizontal Scroll Container for Schedule Header */
+.kontischicht-scroll-container {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+
+  /* Make scrollbar visible and styled */
+  scrollbar-width: auto;
+  scrollbar-color: rgba(52, 152, 219, 0.5) rgba(255, 255, 255, 0.1);
+}
+
+.kontischicht-scroll-container::-webkit-scrollbar {
+  height: 12px !important;
+  display: block !important;
+}
+
+.kontischicht-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  margin: 0 10px;
+}
+
+.kontischicht-scroll-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.6), rgba(52, 152, 219, 0.4));
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.3s ease;
+}
+
+.kontischicht-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.8), rgba(52, 152, 219, 0.6));
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Scroll Navigation */
+.week-scroll-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.scroll-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.scroll-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.scroll-nav-btn:active {
+  transform: translateY(0);
+}
+
+.scroll-nav-btn i {
+  font-size: 0.75rem;
+  transition: transform 0.3s ease;
+}
+
+.scroll-nav-btn:hover i {
+  transform: scale(1.1);
+}
+
+/* Scroll Progress Indicator */
+.scroll-indicator {
+  flex: 1;
+  max-width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* Week 2 Headers Styling */
+.week-2-header {
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.15);
+  color: rgba(255, 152, 0, 0.9);
+  position: relative;
+}
+
+.week-2-header:hover {
+  background: rgba(255, 152, 0, 0.12);
+  border-color: rgba(255, 152, 0, 0.25);
+}
+
+.week-2-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+/* Enhanced Week Headers Layout for 14-day View */
+.kontischicht-scroll-container .day-header {
+  min-width: 120px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+/* Make "Schicht" header same size as shift labels */
+.kontischicht-scroll-container .day-header:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: rgba(30, 39, 46, 0.95);
+  backdrop-filter: blur(10px);
+  min-width: 120px;
+  width: 120px;
+}
+
+/* Apply horizontal scroll to shift rows when Kontischicht is active */
+.shift-row.kontischicht-scroll-container {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  /* Make scrollbar visible and styled */
+  scrollbar-width: auto;
+  scrollbar-color: rgba(52, 152, 219, 0.5) rgba(255, 255, 255, 0.1);
+}
+
+.shift-row.kontischicht-scroll-container::-webkit-scrollbar {
+  height: 12px !important;
+  display: block !important;
+}
+
+.shift-row.kontischicht-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.shift-row.kontischicht-scroll-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.6), rgba(52, 152, 219, 0.4));
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.shift-row.kontischicht-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.8), rgba(52, 152, 219, 0.6));
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Make shift label sticky like the Schicht header and same size */
+.shift-row.kontischicht-scroll-container .shift-label {
+  position: sticky;
+  left: 0;
+  z-index: 9;
+  background: rgba(30, 39, 46, 0.95);
+  backdrop-filter: blur(10px);
+  min-width: 120px;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+/* Ensure shift cells have same width as headers */
+.shift-row.kontischicht-scroll-container .shift-cell {
+  min-width: 120px;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+/* Smooth scrolling enhancement */
+.kontischicht-scroll-container {
+  scroll-padding-left: 140px; /* Account for sticky first column */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .week-scroll-navigation {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  .scroll-nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .scroll-indicator {
+    order: -1;
+    max-width: 100%;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .kontischicht-scroll-container .day-header {
+    min-width: 100px;
+  }
+}
+
+/* Touch-friendly scrolling on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .kontischicht-scroll-container {
+    scroll-padding-left: 110px;
+  }
+
+  .kontischicht-scroll-container .day-header {
+    min-width: 90px;
+  }
 }

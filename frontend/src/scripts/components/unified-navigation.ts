@@ -3112,6 +3112,7 @@ const unifiedNavigationCSS = `
 
     .title-text {
         /* transition: opacity 0.3s ease, width 0.3s ease; */
+        font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
         white-space: nowrap;
         overflow: hidden;
     }

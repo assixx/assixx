@@ -1,5 +1,8 @@
 /* Assixx Dashboard Theme - Konsistentes Design für alle Dashboards */
 
+/* Import Core Fonts - Outfit from Google Fonts */
+@import "./fonts-outfit.css";
+
 /* Import Utility Classes */
 @import "./utilities.css";
 

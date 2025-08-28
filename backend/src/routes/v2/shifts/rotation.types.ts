@@ -30,6 +30,30 @@ export interface PatternConfig {
   }[];
   skipWeekends?: boolean;
   ignoreNightShift?: boolean;
+
+  // NEW: Kontischicht custom patterns (2-week patterns)
+  customPattern?: {
+    week1: WeekSchedule;
+    week2: WeekSchedule;
+  };
+}
+
+// NEW: Supporting interfaces for Kontischicht
+export interface WeekSchedule {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
+export interface DaySchedule {
+  early: number[]; // User IDs assigned to early shift (F)
+  late: number[]; // User IDs assigned to late shift (S)
+  night: number[]; // User IDs assigned to night shift (N)
+  free: number[]; // User IDs marked as free/off duty
 }
 
 export interface ShiftRotationAssignment {

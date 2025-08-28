@@ -636,9 +636,9 @@ frontend/
 │ ├── 📄 profile-picture.css # Profile Pictures
 │ │
 │ ├── 📁 [Font Styles] # Schriftarten
-│ ├── 📄 fonts-geist.css # Geist Font
-│ ├── 📄 fonts-nunito.css # Nunito Font
-│ ├── 📄 fonts-opensans.css # Open Sans Font
+│ ├── 📄 fonts-geist.css # Geist Font/ aktuell Outline font
+│ ├── 📄 fonts-nunito.css # Nunito Font/ aktuell Outline font
+│ ├── 📄 fonts-opensans.css # Open Sans Font/ aktuell Outline font
 │ │
 │ └── 📁 webfonts/ # Font Files
 │ └── [Font Awesome Fonts] # FA Icons

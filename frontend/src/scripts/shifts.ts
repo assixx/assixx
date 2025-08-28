@@ -199,6 +199,7 @@ class ShiftPlanningSystem {
   private isDragging: boolean;
   private currentPlanId: number | null; // Store current plan ID for updates
   private isEditMode: boolean; // Track if we're in edit mode
+  private isPlanLocked: boolean; // Track if plan is locked (rotation mode or read-only)
 
   // Context data for shift planning
   private areas: Area[];
@@ -212,6 +213,7 @@ class ShiftPlanningSystem {
   // Autofill and Rotation Configuration
   private autofillConfig: ShiftAutofillConfig;
   private rotationConfig: ShiftRotationConfig;
+  private fallbackConfig: { enabled: boolean };
   private userPreferencesCache: Record<string, string | boolean | object>;
 
   // Edit mode variables for rotation
@@ -249,6 +251,7 @@ class ShiftPlanningSystem {
     };
     this.currentPlanId = null;
     this.isEditMode = false;
+    this.isPlanLocked = false;
 
     // Load favorites from API
     this.favorites = [];
@@ -266,6 +269,11 @@ class ShiftPlanningSystem {
       pattern: 'F_S_alternate',
       nightFixed: true,
       autoGenerateWeeks: 4,
+    };
+
+    // Fallback config - show normal shifts when rotation has no data
+    this.fallbackConfig = {
+      enabled: false, // Show normal shifts as fallback when rotation is empty
     };
 
     this.userPreferencesCache = {};
@@ -737,7 +745,7 @@ class ShiftPlanningSystem {
       void this.saveSchedule();
     });
     document.querySelector('#resetScheduleBtn')?.addEventListener('click', () => {
-      this.resetSchedule();
+      void this.resetSchedule();
     });
 
     // Edit mode button (will be created dynamically)
@@ -806,13 +814,33 @@ class ShiftPlanningSystem {
       }
     });
 
-    // Drag over shift cells
+    // Drag over for shift cells and to enable drops everywhere
     document.addEventListener('dragover', (e) => {
       const target = e.target as HTMLElement;
-      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
 
-      if (shiftCell) {
+      // Check if we're in rotation modal FIRST
+      const rotationModal = target.closest('#rotation-setup-modal');
+      if (rotationModal) {
+        // For rotation modal, ONLY preventDefault and let local handlers manage the rest
         e.preventDefault();
+        return;
+      }
+
+      // Always preventDefault to enable drop events
+      e.preventDefault();
+
+      // For rotation drop zones, let their specific handlers add visual effects
+      if (target.classList.contains('drop-zone') || target.closest('.drop-zone')) {
+        console.info('[GLOBAL DRAGOVER] Over drop zone, preventDefault called');
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'move'; // Ensure dropEffect is set
+        }
+        return; // Specific handlers will manage visual feedback
+      }
+
+      // For shift cells, add visual feedback
+      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
+      if (shiftCell) {
         if (e.dataTransfer) {
           e.dataTransfer.dropEffect = 'copy';
         }
@@ -830,27 +858,59 @@ class ShiftPlanningSystem {
       }
     });
 
-    // Drop on shift cells
-    document.addEventListener('drop', (e) => {
-      const target = e.target as HTMLElement;
-      const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
+    // Drop on shift cells - Listen in BOTH capture and bubble phase for debugging
+    document.addEventListener(
+      'drop',
+      (e) => {
+        const target = e.target as HTMLElement;
 
-      console.info('[SHIFTS DEBUG] Drop event on:', target);
+        console.info('[GLOBAL DROP CAPTURE] !!!!! Drop event in CAPTURE phase on:', target.className, target.id);
+        console.info('[GLOBAL DROP] Event details:', e.dataTransfer?.types, e.dataTransfer?.effectAllowed);
 
-      if (shiftCell) {
-        e.preventDefault();
-        shiftCell.classList.remove('drag-over');
-
-        const employeeId = e.dataTransfer?.getData('text/plain');
-        console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
-
-        if (employeeId !== undefined && employeeId !== '') {
-          this.assignShift(shiftCell as HTMLElement, Number.parseInt(employeeId, 10));
-        } else {
-          console.error('[SHIFTS ERROR] No employee ID in drop data');
+        // Check if this is a rotation modal drop zone - if so, let it handle the event
+        if (target.classList.contains('drop-zone') || target.closest('.drop-zone')) {
+          console.info('[SHIFTS DEBUG] Drop on rotation zone, letting specific handler manage it');
+          // Don't prevent default or stop propagation - let the event continue
+          return; // Let the specific drop zone handler handle this
         }
-      }
-    });
+
+        const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
+
+        console.info('[SHIFTS DEBUG] Drop event on:', target);
+
+        if (shiftCell) {
+          e.preventDefault();
+          shiftCell.classList.remove('drag-over');
+
+          const employeeId = e.dataTransfer?.getData('text/plain');
+          console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
+
+          if (employeeId !== undefined && employeeId !== '') {
+            this.assignShift(shiftCell as HTMLElement, Number.parseInt(employeeId, 10));
+          } else {
+            console.error('[SHIFTS ERROR] No employee ID in drop data');
+          }
+        }
+      },
+      false,
+    ); // Explicitly use bubbling phase
+
+    // Add another listener in capture phase for debugging
+    document.addEventListener(
+      'drop',
+      (e) => {
+        const target = e.target as HTMLElement;
+        console.info('[GLOBAL DROP DEBUG] Drop detected anywhere! Target:', target.className);
+
+        // If this is within the rotation modal, prevent default to avoid page reload
+        const rotationModal = target.closest('#rotation-setup-modal');
+        if (rotationModal) {
+          console.info('[GLOBAL DROP DEBUG] Drop within rotation modal - preventing default');
+          e.preventDefault(); // Prevent default action (important for modal drops)
+        }
+      },
+      true, // Use capture phase
+    );
   }
 
   setupContextEvents(): void {
@@ -2148,19 +2208,21 @@ class ShiftPlanningSystem {
         }
       }
 
+      /* Shift counts temporarily disabled
       const statsDiv = createElement('div', { className: 'employee-stats' });
       const countSpan = createElement('span', { className: 'shift-count' }, '0');
       statsDiv.append(countSpan);
+      item.append(statsDiv);
+      */
 
       item.append(infoDiv);
-      item.append(statsDiv);
 
       container.append(item);
     });
 
     console.info('[SHIFTS DEBUG] Employee list rendered');
-    // Update shift counts
-    this.updateEmployeeShiftCounts();
+    // Update shift counts - temporarily disabled
+    // this.updateEmployeeShiftCounts();
   }
 
   // Create icon element instead of HTML string
@@ -2485,6 +2547,12 @@ class ShiftPlanningSystem {
   selectEmployee(employeeItem: HTMLElement): void {
     if (!this.isAdmin) return;
 
+    // Check if plan is locked (rotation mode or existing plan without edit mode)
+    if (this.isPlanLocked) {
+      console.info('[SHIFTS] Selection blocked - plan is locked');
+      return;
+    }
+
     // Check if in edit mode when a plan exists
     if (this.currentPlanId !== null && !this.isEditMode) {
       showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
@@ -2646,7 +2714,7 @@ class ShiftPlanningSystem {
 
     // Update UI - pass the cell directly
     this.renderShiftAssignments(shiftCell, date, shift);
-    this.updateEmployeeShiftCounts();
+    // this.updateEmployeeShiftCounts(); // temporarily disabled
 
     // Trigger autofill if enabled (for drag & drop operations)
     // But not if we're already autofilling (to prevent recursion)
@@ -2672,7 +2740,7 @@ class ShiftPlanningSystem {
 
     if (employeeIds.length === 0) {
       // Show empty slot
-      assignmentDiv.innerHTML = '<div class="empty-slot">Mitarbeiter zuweisen</div>';
+      assignmentDiv.innerHTML = '<div class="empty-slot">+</div>';
     } else {
       // Create employee cards for assigned employees
       employeeIds.forEach((employeeId) => {
@@ -2746,29 +2814,72 @@ class ShiftPlanningSystem {
             // Show edit rotation button since we have rotation data
             this.showEditRotationButton(true);
 
+            // Lock shift plan when rotation is active - prevent drag & drop
+            this.lockShiftPlan();
+            console.info('[SHIFTS ROTATION] Plan locked - rotation mode active');
+
             // Show info that rotation mode is active
             const infoBar = document.querySelector('.shift-info-bar');
             if (infoBar) {
               infoBar.innerHTML = '<span style="color: #4CAF50;">🔄 Automatische Rotation aktiv</span>';
             }
+
+            return; // Exit when we have rotation data
           } else {
             console.info('[SHIFTS ROTATION] No rotation history found for this period');
-            this.weeklyShifts = new Map();
-            // Hide edit rotation button since no rotation data exists
-            this.showEditRotationButton(false);
-            this.shiftDetails = new Map();
-            this.renderWeekView();
+
+            // Check if fallback is enabled - if yes, load normal shifts
+            if (this.fallbackConfig.enabled) {
+              console.info('[SHIFTS FALLBACK] Loading normal shifts as fallback');
+              // Clear info bar to show normal mode
+              const infoBar = document.querySelector('.shift-info-bar');
+              if (infoBar) {
+                infoBar.innerHTML = '<span style="color: #FFC107;">📋 Normale Schichten (Fallback-Modus)</span>';
+              }
+              // Continue to load normal shifts below (don't return)
+            } else {
+              // No fallback - show empty
+              this.weeklyShifts = new Map();
+              // Hide edit rotation button since no rotation data exists
+              this.showEditRotationButton(false);
+              // Unlock plan when no rotation data exists
+              this.unlockShiftPlan();
+              this.shiftDetails = new Map();
+              this.currentPlanId = null; // Clear plan ID
+
+              // Clear notes textarea when no fallback and no rotation data
+              const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+              if (notesTextarea) {
+                notesTextarea.value = '';
+                // Clear any info bar message
+                const infoBar = document.querySelector('.shift-info-bar');
+                if (infoBar) {
+                  infoBar.innerHTML = '';
+                }
+              }
+
+              this.renderWeekView();
+              return; // Exit early when no rotation and no fallback
+            }
           }
         } else {
           console.error('[SHIFTS ROTATION] Failed to load rotation history');
-          throw new Error('Failed to load rotation history');
+          // Check if fallback is enabled before throwing error
+          if (!this.fallbackConfig.enabled) {
+            throw new Error('Failed to load rotation history');
+          }
+          // Continue with normal shifts if fallback is enabled
+          console.info('[SHIFTS FALLBACK] Rotation API failed, falling back to normal shifts');
         }
-        return; // Exit early when rotation is enabled
+        // Otherwise continue to load normal shifts as fallback
       }
 
       // Normal shift loading when rotation is disabled
       // Hide edit rotation button when rotation is disabled
       this.showEditRotationButton(false);
+      // Ensure plan is unlocked when rotation is disabled
+      // (will be locked later if an existing plan is found)
+      this.unlockShiftPlan();
 
       // Check if v2 API is enabled
       if (!this.useV2API) {
@@ -2951,7 +3062,7 @@ class ShiftPlanningSystem {
 
     // ALWAYS update counts and re-render employee list after loading data
     console.info('[SHIFTS RELOAD DEBUG] Updating employee shift counts after load...');
-    this.updateEmployeeShiftCounts();
+    // this.updateEmployeeShiftCounts(); // temporarily disabled
 
     console.info('[SHIFTS RELOAD DEBUG] Re-rendering employee list after load...');
     this.renderEmployeeList();
@@ -3189,7 +3300,14 @@ class ShiftPlanningSystem {
               try {
                 const token = getAuthToken();
                 if (token !== null && token !== '') {
-                  const response = await fetch('/api/v2/shifts/rotation/history', {
+                  // CRITICAL: Include team_id for multi-tenant isolation
+                  const teamId = this.selectedContext.teamId;
+                  if (teamId === null || teamId === 0) {
+                    showErrorAlert('Kein Team ausgewählt. Bitte wählen Sie zuerst ein Team.');
+                    return;
+                  }
+
+                  const response = await fetch(`/api/v2/shifts/rotation/history?team_id=${teamId}`, {
                     method: 'DELETE',
                     headers: {
                       Authorization: `Bearer ${token}`,
@@ -3197,6 +3315,8 @@ class ShiftPlanningSystem {
                   });
 
                   if (response.ok) {
+                    const result = (await response.json()) as { success: boolean; data?: unknown };
+                    console.info('[SHIFTS ROTATION] Deleted rotation data:', result);
                     showInfo('Rotation deaktiviert. Alle generierten Schichten wurden gelöscht.');
                   } else {
                     showErrorAlert('Fehler beim Löschen der Rotation-Historie');
@@ -3219,6 +3339,24 @@ class ShiftPlanningSystem {
           // Save preference to database
           void this.saveUserPreferenceToDatabase('shift_rotation_enabled', this.rotationConfig.enabled);
         })();
+      });
+    }
+
+    // Setup fallback checkbox
+    const fallbackCheckbox = $$<HTMLInputElement>('#shift-fallback');
+    if (fallbackCheckbox) {
+      fallbackCheckbox.addEventListener('change', (e) => {
+        this.fallbackConfig.enabled = (e.target as HTMLInputElement).checked;
+        void this.saveUserPreferenceToDatabase('shift_fallback_enabled', this.fallbackConfig.enabled);
+
+        if (this.fallbackConfig.enabled) {
+          showInfo('Fallback aktiviert: Normale Schichten werden angezeigt wenn keine Rotation vorhanden');
+        } else {
+          showInfo('Fallback deaktiviert: Nur Rotations-Daten werden angezeigt');
+        }
+
+        // Reload current week data with new fallback setting
+        void this.loadCurrentWeekData();
       });
     }
 
@@ -3348,6 +3486,194 @@ class ShiftPlanningSystem {
     }
   }
 
+  private rotationDropHandlers = new Map<
+    string,
+    { dragenter?: EventListener; dragover: EventListener; dragleave: EventListener; drop: EventListener }
+  >();
+
+  private setupRotationDragDrop(): void {
+    console.info('[ROTATION SETUP] Setting up drag & drop zones');
+    // Setup drop zones for each shift type
+    const dropZones = ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'];
+
+    dropZones.forEach((zoneId) => {
+      const dropZone = $$id<HTMLDivElement>(zoneId);
+      if (!dropZone) {
+        console.error('[ROTATION SETUP] Drop zone not found:', zoneId);
+        return;
+      }
+      console.info('[ROTATION SETUP] Setting up drop zone:', zoneId);
+
+      // Set inline handlers to ensure drop is allowed (belt and suspenders approach)
+      dropZone.ondragover = (e) => {
+        e.preventDefault();
+        return false;
+      };
+      dropZone.ondrop = (e) => {
+        e.preventDefault();
+        return false;
+      };
+
+      // Remove old handlers if they exist
+      const existingHandlers = this.rotationDropHandlers.get(zoneId);
+      if (existingHandlers) {
+        if ('dragenter' in existingHandlers && typeof existingHandlers.dragenter === 'function') {
+          dropZone.removeEventListener('dragenter', existingHandlers.dragenter);
+        }
+        dropZone.removeEventListener('dragover', existingHandlers.dragover);
+        dropZone.removeEventListener('dragleave', existingHandlers.dragleave);
+        dropZone.removeEventListener('drop', existingHandlers.drop);
+      }
+
+      // Create new handlers
+      const dragenterHandler = (e: Event) => {
+        const dragEvent = e as DragEvent;
+        dragEvent.preventDefault(); // Critical for allowing drop
+        dragEvent.stopPropagation();
+        dragEvent.stopImmediatePropagation();
+
+        if (dragEvent.dataTransfer) {
+          dragEvent.dataTransfer.dropEffect = 'move';
+        }
+
+        console.info('[ROTATION DRAGENTER] Entering zone:', zoneId);
+        dropZone.classList.add('drag-over'); // Also add visual feedback here
+      };
+
+      const dragoverHandler = (e: Event) => {
+        const dragEvent = e as DragEvent;
+        // MUST prevent default to allow drop!
+        dragEvent.preventDefault();
+        dragEvent.stopPropagation(); // Stop bubbling
+        dragEvent.stopImmediatePropagation(); // Stop all other handlers
+
+        // Always set dropEffect to signal drop is allowed
+        if (dragEvent.dataTransfer) {
+          dragEvent.dataTransfer.dropEffect = 'move';
+          dragEvent.dataTransfer.effectAllowed = 'move';
+        }
+
+        if (!dropZone.classList.contains('drag-over')) {
+          console.info('[ROTATION DRAGOVER] Drag over zone:', zoneId);
+          dropZone.classList.add('drag-over');
+        }
+      };
+
+      const dragleaveHandler = (e: Event) => {
+        const dragEvent = e as DragEvent;
+        // Check if we're really leaving the drop zone or just hovering over a child
+        const relatedTarget = (dragEvent as DragEvent & { relatedTarget?: EventTarget }).relatedTarget as
+          | HTMLElement
+          | null
+          | undefined;
+
+        // Only remove drag-over if we're truly leaving the zone
+        if (!relatedTarget || !dropZone.contains(relatedTarget)) {
+          console.info('[ROTATION DRAGLEAVE] Actually leaving zone:', zoneId);
+          dropZone.classList.remove('drag-over');
+        } else {
+          console.info('[ROTATION DRAGLEAVE] False leave (still in zone):', zoneId);
+        }
+      };
+
+      // Handle drop
+      const dropHandler = (e: Event) => {
+        console.info('[ROTATION DROP] DROP EVENT FIRED! Zone:', zoneId);
+        const dragEvent = e as DragEvent;
+        dragEvent.preventDefault();
+        dragEvent.stopPropagation(); // Prevent bubbling to document handler
+        dragEvent.stopImmediatePropagation(); // Stop ALL other handlers
+        dropZone.classList.remove('drag-over');
+
+        console.info('[ROTATION DROP] Drop event triggered on zone:', zoneId, 'Event:', dragEvent);
+
+        if (!dragEvent.dataTransfer) {
+          console.error('[ROTATION DROP] No dataTransfer object!');
+          return;
+        }
+
+        // Try to get data from different keys for compatibility
+        let employeeId = dragEvent.dataTransfer.getData('employeeId');
+        if (employeeId === '') {
+          employeeId = dragEvent.dataTransfer.getData('text/plain');
+        }
+        const employeeName = dragEvent.dataTransfer.getData('employeeName');
+
+        console.info('[ROTATION DROP] Received data - ID:', employeeId, 'Name:', employeeName);
+
+        if (employeeId === '') {
+          console.error('[ROTATION DROP] No employee ID received!');
+          return;
+        }
+
+        // Check if employee already exists in any drop zone and remove it
+        const existingElement = document.querySelector(`.drop-zone [data-employee-id="${employeeId}"]`);
+        if (existingElement !== null) {
+          existingElement.remove();
+        }
+
+        // Create employee element in drop zone
+        const employeeDiv = document.createElement('div');
+        employeeDiv.className = 'employee-item';
+        employeeDiv.dataset.employeeId = employeeId;
+        employeeDiv.dataset.shiftType = dropZone.dataset.shift ?? '';
+        employeeDiv.textContent = employeeName;
+
+        // Make it draggable again
+        employeeDiv.draggable = true;
+
+        // Add drag handlers for re-ordering
+        employeeDiv.addEventListener('dragstart', (dragEvent) => {
+          if (dragEvent.dataTransfer) {
+            dragEvent.dataTransfer.effectAllowed = 'move';
+            dragEvent.dataTransfer.setData('employeeId', employeeId);
+            dragEvent.dataTransfer.setData('employeeName', employeeName);
+            employeeDiv.classList.add('dragging');
+          }
+        });
+
+        employeeDiv.addEventListener('dragend', () => {
+          employeeDiv.classList.remove('dragging');
+        });
+
+        // Add click handler to remove (the × button)
+        employeeDiv.addEventListener('click', (clickEvent) => {
+          const target = clickEvent.target as HTMLElement;
+          const rect = target.getBoundingClientRect();
+          const clickX = clickEvent.clientX - rect.left;
+
+          // Check if click is on the right side (× button area)
+          if (clickX > rect.width - 30) {
+            employeeDiv.remove();
+          }
+        });
+
+        dropZone.append(employeeDiv);
+        console.info('[ROTATION DROP] Employee added to zone:', zoneId, 'ID:', employeeId);
+      };
+
+      // Register ALL handlers in CAPTURE phase to intercept before document handlers!
+      console.info('[ROTATION SETUP] Registering event handlers for zone:', zoneId);
+      dropZone.addEventListener('dragenter', dragenterHandler, true);
+      dropZone.addEventListener('dragover', dragoverHandler, true);
+      dropZone.addEventListener('dragleave', dragleaveHandler, true);
+      // CRITICAL: Use capture phase (true) for drop to intercept before any bubbling handlers!
+      dropZone.addEventListener('drop', dropHandler, true);
+
+      console.info('[ROTATION SETUP] Drop handler registered for zone:', zoneId, dropZone);
+
+      // Store handlers for cleanup later
+      this.rotationDropHandlers.set(zoneId, {
+        dragenter: dragenterHandler,
+        dragover: dragoverHandler,
+        dragleave: dragleaveHandler,
+        drop: dropHandler,
+      });
+
+      console.info('[ROTATION SETUP] Handlers stored for zone:', zoneId);
+    });
+  }
+
   private async loadUserPreferencesFromDatabase(): Promise<void> {
     try {
       const token = getAuthToken();
@@ -3420,6 +3746,17 @@ class ShiftPlanningSystem {
             break;
           }
 
+          case 'shift_fallback_enabled': {
+            // settingValue is already a boolean from API v2
+            this.fallbackConfig.enabled = setting.settingValue === true;
+            const fallbackCheckbox = $$<HTMLInputElement>('#shift-fallback');
+            if (fallbackCheckbox) {
+              fallbackCheckbox.checked = this.fallbackConfig.enabled;
+            }
+            console.info('[SHIFTS DEBUG] Loaded fallback setting from DB:', this.fallbackConfig.enabled);
+            break;
+          }
+
           case 'shift_autofill_config':
             try {
               // If it's already an object, use it directly; otherwise parse
@@ -3451,53 +3788,148 @@ class ShiftPlanningSystem {
     startsAt: string;
     endsAt?: string | null;
   }): void {
-    // Populate employees in the modal
-    const employeesContainer = $$id<HTMLDivElement>('rotation-employees');
-    if (employeesContainer) {
-      // Clear existing content
-      while (employeesContainer.firstChild) {
-        employeesContainer.firstChild.remove();
+    // Populate available employees for drag & drop
+    this.setupRotationDragDrop();
+
+    // Filter employees by selected team (Multi-tenant isolation)
+    const teamEmployees = this.employees.filter((e) => {
+      // Only show active employees from the selected team
+      if (!e.is_active) return false;
+
+      // Check if employee belongs to selected team
+      if (this.selectedContext.teamId !== null) {
+        // TODO: Add team_id check when employee data includes it
+        // For now, show all active employees from tenant
+        return true;
       }
 
-      // Create checkboxes for each employee
-      this.employees
-        .filter((e) => e.is_active)
-        .forEach((e) => {
-          const label = document.createElement('label');
-          label.className = 'checkbox-label';
-          label.style.display = 'block';
-          label.style.margin = '5px 0';
+      return true;
+    });
 
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.name = 'employees[]';
-          checkbox.value = String(e.id);
+    // Populate available employees list
+    const availableContainer = $$id<HTMLDivElement>('rotation-available-employees');
+    if (availableContainer) {
+      console.info('[ROTATION SETUP] Found available employees container, adding', teamEmployees.length, 'employees');
+      // Clear existing content
+      while (availableContainer.firstChild) {
+        availableContainer.firstChild.remove();
+      }
 
-          const text = document.createTextNode(` ${e.first_name ?? ''} ${e.last_name ?? ''}`);
+      // Create draggable employee items
+      teamEmployees.forEach((employee) => {
+        const employeeDiv = document.createElement('div');
+        employeeDiv.className = 'employee-item';
+        employeeDiv.draggable = true;
+        employeeDiv.dataset.employeeId = String(employee.id);
+        employeeDiv.dataset.employeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+        employeeDiv.textContent = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`;
 
-          label.append(checkbox);
-          label.append(text);
-          employeesContainer.append(label);
+        // Add drag event listeners
+        employeeDiv.addEventListener('dragstart', (e) => {
+          console.info(
+            '[ROTATION DRAG] Starting drag for employee:',
+            employee.id,
+            employee.first_name,
+            employee.last_name,
+          );
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(employee.id)); // Also set text/plain for compatibility
+            e.dataTransfer.setData('employeeId', String(employee.id));
+            e.dataTransfer.setData('employeeName', employeeDiv.dataset.employeeName ?? '');
+            employeeDiv.classList.add('dragging');
+            console.info('[ROTATION DRAG] Data set in dataTransfer');
+          }
         });
+
+        employeeDiv.addEventListener('dragend', (dragEndEvent) => {
+          console.info(
+            '[ROTATION DRAG] Drag ended for employee:',
+            employee.id,
+            employee.first_name,
+            employee.last_name,
+          );
+          console.info('[ROTATION DRAG] DragEnd event details:', dragEndEvent.dataTransfer?.dropEffect);
+          employeeDiv.classList.remove('dragging');
+        });
+
+        availableContainer.append(employeeDiv);
+      });
+
+      console.info(
+        '[ROTATION SETUP] Added all employees. Container now has',
+        availableContainer.children.length,
+        'children',
+      );
+    } else {
+      console.error('[ROTATION SETUP] Available employees container not found!');
     }
 
-    // Set default start date to today and end date constraints
+    // Set default start date and end date constraints
     const startDateInput = $$id<HTMLInputElement>('rotation-start-date');
     const endDateInput = $$id<HTMLInputElement>('rotation-end-date');
     const today = new Date();
     const currentYear = today.getFullYear();
     const maxDate = `${currentYear}-12-31`;
 
-    if (startDateInput) {
-      startDateInput.value = today.toISOString().split('T')[0];
-      startDateInput.min = today.toISOString().split('T')[0];
+    // Helper function to get next Monday
+    const getNextMonday = (date: Date): Date => {
+      const result = new Date(date);
+      const dayOfWeek = result.getDay();
+      // If today is Monday (1), get next Monday (+7 days)
+      // Otherwise calculate days until next Monday
+      const daysUntilMonday = dayOfWeek === 1 ? 7 : dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+      result.setDate(result.getDate() + daysUntilMonday);
+      return result;
+    };
+
+    // Helper function to get second Friday after a given date
+    const getSecondFridayAfter = (date: Date): Date => {
+      const result = new Date(date);
+      // First, get to the next Friday
+      const dayOfWeek = result.getDay();
+      const daysUntilFriday = dayOfWeek <= 5 ? 5 - dayOfWeek : 12 - dayOfWeek;
+      result.setDate(result.getDate() + daysUntilFriday);
+      // Then add one more week to get the second Friday
+      result.setDate(result.getDate() + 7);
+      return result;
+    };
+
+    // Only set default dates in CREATE mode
+    if (!this.editMode) {
+      const nextMonday = getNextMonday(today);
+      const secondFriday = getSecondFridayAfter(nextMonday);
+
+      if (startDateInput) {
+        startDateInput.value = nextMonday.toISOString().split('T')[0];
+        startDateInput.min = today.toISOString().split('T')[0];
+      }
+
+      if (endDateInput) {
+        // Set default end date to second Friday after start date
+        endDateInput.value = secondFriday.toISOString().split('T')[0];
+        endDateInput.min = today.toISOString().split('T')[0];
+        endDateInput.max = maxDate;
+      }
+    } else {
+      // In EDIT mode, just set the constraints
+      if (startDateInput) {
+        startDateInput.min = today.toISOString().split('T')[0];
+      }
+
+      if (endDateInput) {
+        endDateInput.min = today.toISOString().split('T')[0];
+        endDateInput.max = maxDate;
+      }
     }
 
-    if (endDateInput) {
-      // Set default end date to same as start date
-      endDateInput.value = today.toISOString().split('T')[0];
-      endDateInput.min = today.toISOString().split('T')[0];
-      endDateInput.max = maxDate;
+    // Auto-adjust end date when start date changes (only in CREATE mode)
+    if (!this.editMode && startDateInput && endDateInput) {
+      startDateInput.addEventListener('change', () => {
+        const newStartDate = new Date(startDateInput.value);
+        const newEndDate = getSecondFridayAfter(newStartDate);
+        endDateInput.value = newEndDate.toISOString().split('T')[0];
+      });
     }
 
     // Show/hide custom pattern config and night shift ignore option
@@ -3512,9 +3944,10 @@ class ShiftPlanningSystem {
           customConfig.style.display = patternSelect.value === 'custom' ? 'block' : 'none';
         }
 
-        // Show/hide ignore night shift option for weekly rotation
+        // Show/hide ignore night shift option for all patterns except custom
         if (ignoreNightGroup) {
-          ignoreNightGroup.style.display = patternSelect.value === 'weekly' ? 'block' : 'none';
+          ignoreNightGroup.style.display =
+            patternSelect.value !== 'custom' && patternSelect.value !== '' ? 'block' : 'none';
         }
       });
     }
@@ -3536,15 +3969,33 @@ class ShiftPlanningSystem {
       const rotationStartInput = $$id<HTMLInputElement>('rotation-start-date');
       const rotationEndInput = $$id<HTMLInputElement>('rotation-end-date');
       const rotationPatternSelect = $$id<HTMLSelectElement>('rotation-pattern');
+      const skipWeekendsInput = $$id<HTMLInputElement>('rotation-skip-weekends');
+      const ignoreNightInput = $$id<HTMLInputElement>('rotation-ignore-night');
 
       if (rotationPatternSelect) {
-        // Map patternType to select value
-        const patternMap: Record<string, string> = {
-          alternate_fs: 'weekly',
-          fixed_n: 'biweekly',
-          custom: 'custom',
-        };
-        rotationPatternSelect.value = patternMap[existingPattern.patternType] ?? 'weekly';
+        // Map patternType to select value based on pattern_type and pattern_config
+        // Check if it's a weekly rotation based on patternConfig
+        let selectValue = 'weekly'; // default
+
+        if (existingPattern.patternType === 'alternate_fs') {
+          selectValue = 'weekly';
+        } else if (existingPattern.patternType === 'fixed_n') {
+          selectValue = 'biweekly';
+        } else if (existingPattern.patternType === 'custom') {
+          // Check if it's actually a weekly rotation disguised as custom
+          // If cycleWeeks is 1 and has skipWeekends/ignoreNightShift, it's weekly
+          if ('cycleWeeks' in existingPattern.patternConfig && existingPattern.patternConfig.cycleWeeks === 1) {
+            selectValue = 'weekly';
+          } else {
+            selectValue = 'custom';
+          }
+        }
+
+        rotationPatternSelect.value = selectValue;
+
+        // Trigger change event to show/hide related options
+        const changeEvent = new Event('change');
+        rotationPatternSelect.dispatchEvent(changeEvent);
       }
 
       if (rotationStartInput) {
@@ -3553,6 +4004,85 @@ class ShiftPlanningSystem {
 
       if (rotationEndInput && existingPattern.endsAt !== null && existingPattern.endsAt !== undefined) {
         rotationEndInput.value = existingPattern.endsAt.split('T')[0];
+      }
+
+      // Load checkbox values from patternConfig
+      // Check if skipWeekends exists in patternConfig
+      if (skipWeekendsInput && 'skipWeekends' in existingPattern.patternConfig) {
+        skipWeekendsInput.checked = existingPattern.patternConfig.skipWeekends as boolean;
+      }
+
+      // Check if ignoreNightShift exists in patternConfig
+      if (ignoreNightInput && 'ignoreNightShift' in existingPattern.patternConfig) {
+        ignoreNightInput.checked = existingPattern.patternConfig.ignoreNightShift as boolean;
+      }
+
+      // Load employee shift assignments if they exist
+      if ('shiftGroups' in existingPattern.patternConfig) {
+        const shiftAssignments = existingPattern.patternConfig.shiftGroups as Record<string, string>;
+
+        // Clear all drop zones first
+        ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'].forEach((zoneId) => {
+          const zone = $$id<HTMLDivElement>(zoneId);
+          if (zone) {
+            while (zone.firstChild) {
+              zone.firstChild.remove();
+            }
+          }
+        });
+
+        // Place employees in their assigned shift columns
+        Object.entries(shiftAssignments).forEach(([employeeId, shiftType]) => {
+          // Find the employee in available list
+          const availableEmployee = availableContainer?.querySelector(
+            `[data-employee-id="${employeeId}"]`,
+          ) as HTMLDivElement | null;
+          if (availableEmployee !== null) {
+            // Determine target drop zone
+            let targetZoneId = 'drop-zone-f'; // default
+            if (shiftType === 'S') targetZoneId = 'drop-zone-s';
+            else if (shiftType === 'N') targetZoneId = 'drop-zone-n';
+
+            const targetZone = $$id<HTMLDivElement>(targetZoneId);
+            if (targetZone !== null) {
+              // Create employee element in drop zone
+              const employeeDiv = document.createElement('div');
+              employeeDiv.className = 'employee-item';
+              employeeDiv.dataset.employeeId = employeeId;
+              employeeDiv.dataset.shiftType = shiftType;
+              const employeeName = availableEmployee.dataset.employeeName ?? '';
+              employeeDiv.textContent = employeeName;
+              employeeDiv.draggable = true;
+
+              // Add drag handlers
+              employeeDiv.addEventListener('dragstart', (e) => {
+                if (e.dataTransfer) {
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('employeeId', employeeId);
+                  e.dataTransfer.setData('employeeName', employeeName);
+                  employeeDiv.classList.add('dragging');
+                }
+              });
+
+              employeeDiv.addEventListener('dragend', () => {
+                employeeDiv.classList.remove('dragging');
+              });
+
+              // Add click handler for removal
+              employeeDiv.addEventListener('click', (clickEvent) => {
+                const target = clickEvent.target as HTMLElement;
+                const rect = target.getBoundingClientRect();
+                const clickX = clickEvent.clientX - rect.left;
+
+                if (clickX > rect.width - 30) {
+                  employeeDiv.remove();
+                }
+              });
+
+              targetZone.append(employeeDiv);
+            }
+          }
+        });
       }
     }
 
@@ -3584,95 +4114,21 @@ class ShiftPlanningSystem {
       });
     });
 
-    // Add CSS for modal if not exists
-    if (!document.querySelector('#rotation-modal-styles')) {
-      const style = document.createElement('style');
-      style.id = 'rotation-modal-styles';
-      style.textContent = `
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-        }
-        .modal-content {
-          background: var(--bg-secondary, #fff);
-          border-radius: 8px;
-          max-width: 600px;
-          width: 90%;
-          max-height: 80vh;
-          overflow-y: auto;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .modal-header {
-          padding: 20px;
-          border-bottom: 1px solid var(--border-color, #ddd);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .modal-header h2 {
-          margin: 0;
-          color: var(--text-primary);
-        }
-        .modal-close {
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: var(--text-secondary);
-        }
-        .modal-body {
-          padding: 20px;
-        }
-        .modal-footer {
-          padding: 20px;
-          border-top: 1px solid var(--border-color, #ddd);
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-        }
-        .checkbox-group {
-          max-height: 200px;
-          overflow-y: auto;
-          border: 1px solid var(--border-color, #ddd);
-          border-radius: 4px;
-          padding: 10px;
-        }
-        .pattern-builder {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 15px;
-        }
-        .pattern-week {
-          border: 1px solid var(--border-color, #ddd);
-          border-radius: 4px;
-          padding: 10px;
-        }
-        .pattern-week h4 {
-          margin-top: 0;
-          margin-bottom: 10px;
-          color: var(--text-primary);
-        }
-        .pattern-week label {
-          display: block;
-          margin: 5px 0;
-        }
-      `;
-      document.head.append(style);
+    // Modal styles are now in shifts.css - no need for inline styles
+
+    // Show the modal (using the modal variable already declared above)
+    if (modal) {
+      modal.classList.add('show');
+      console.info('[SHIFTS DEBUG] Opened rotation setup modal');
+    } else {
+      console.error('[SHIFTS DEBUG] Modal element not found: rotation-setup-modal');
     }
   }
 
   private closeRotationModal(): void {
     const modal = $$id<HTMLDivElement>('rotation-setup-modal');
     if (modal) {
-      modal.style.display = 'none';
+      modal.classList.remove('show');
       console.info('[SHIFTS DEBUG] Closed rotation setup modal');
     }
 
@@ -3685,6 +4141,9 @@ class ShiftPlanningSystem {
 
   private async loadRotationForEdit(): Promise<void> {
     try {
+      // Plan remains locked during rotation editing - preventing drag & drop
+      console.info('[SHIFTS ROTATION] Plan stays locked during rotation editing');
+
       const token = getAuthToken();
       if (token === null || token === '') {
         showErrorAlert('Nicht angemeldet');
@@ -3799,17 +4258,51 @@ class ShiftPlanningSystem {
         return;
       }
 
-      // Get selected employees
-      const employeeCheckboxes = document.querySelectorAll<HTMLInputElement>(
-        '#rotation-employees input[type="checkbox"]:checked',
-      );
+      // Get selected employees from drop zones
+      const shiftGroups: Record<number, string> = {};
       const selectedEmployees: number[] = [];
-      for (const cb of employeeCheckboxes) {
-        selectedEmployees.push(Number(cb.value));
+
+      // Get employees from F column
+      const fZone = $$id<HTMLDivElement>('drop-zone-f');
+      if (fZone) {
+        const fEmployees = fZone.querySelectorAll<HTMLDivElement>('.employee-item');
+        fEmployees.forEach((emp) => {
+          const empId = Number(emp.dataset.employeeId);
+          if (empId !== 0 && !Number.isNaN(empId)) {
+            selectedEmployees.push(empId);
+            Reflect.set(shiftGroups, empId, 'F');
+          }
+        });
+      }
+
+      // Get employees from S column
+      const sZone = $$id<HTMLDivElement>('drop-zone-s');
+      if (sZone) {
+        const sEmployees = sZone.querySelectorAll<HTMLDivElement>('.employee-item');
+        sEmployees.forEach((emp) => {
+          const empId = Number(emp.dataset.employeeId);
+          if (empId !== 0 && !Number.isNaN(empId)) {
+            selectedEmployees.push(empId);
+            Reflect.set(shiftGroups, empId, 'S');
+          }
+        });
+      }
+
+      // Get employees from N column
+      const nZone = $$id<HTMLDivElement>('drop-zone-n');
+      if (nZone) {
+        const nEmployees = nZone.querySelectorAll<HTMLDivElement>('.employee-item');
+        nEmployees.forEach((emp) => {
+          const empId = Number(emp.dataset.employeeId);
+          if (empId !== 0 && !Number.isNaN(empId)) {
+            selectedEmployees.push(empId);
+            Reflect.set(shiftGroups, empId, 'N');
+          }
+        });
       }
 
       if (selectedEmployees.length === 0) {
-        showErrorAlert('Bitte wählen Sie mindestens einen Mitarbeiter aus');
+        showErrorAlert('Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte');
         return;
       }
 
@@ -3828,6 +4321,7 @@ class ShiftPlanningSystem {
           skipWeekends: skipWeekends,
           cycleWeeks: pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4,
           ignoreNightShift: ignoreNightShift,
+          shiftGroups: shiftGroups, // Include the shift assignments from drag & drop
         },
         cycle_length_weeks: pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4,
         starts_at: startDate,
@@ -3859,23 +4353,7 @@ class ShiftPlanningSystem {
       const patternId = patternResult.data.pattern.id;
 
       // Step 2: Assign employees to pattern
-      const shiftGroups: Record<number, string> = {};
-
-      // For simplified rotation, distribute employees evenly
-      selectedEmployees.forEach((id, index) => {
-        // If ignoring night shift, only alternate between early and late
-        // Use F/S/N notation for backend compatibility
-        const group = ignoreNightShift
-          ? index % 2 === 0
-            ? 'F'
-            : 'S'
-          : index % 3 === 0
-            ? 'F'
-            : index % 3 === 1
-              ? 'S'
-              : 'N';
-        Reflect.set(shiftGroups, id, group);
-      });
+      // Note: shiftGroups already collected from drag & drop zones above
 
       const assignResponse = await fetch('/api/v2/shifts/rotation/assign', {
         method: 'POST',
@@ -4148,7 +4626,7 @@ class ShiftPlanningSystem {
           } else {
             // Show empty slot - different text for employees vs admins
             if (this.isAdmin) {
-              assignmentDiv.innerHTML = '<div class="empty-slot">Mitarbeiter zuweisen</div>';
+              assignmentDiv.innerHTML = '<div class="empty-slot">+</div>';
             } else {
               assignmentDiv.innerHTML = '<div class="empty-slot">-</div>';
             }
@@ -4168,8 +4646,7 @@ class ShiftPlanningSystem {
 
     // Build card content with DOM methods
     const nameDiv = createElement('div', { className: CSS_CLASSES.EMPLOYEE_NAME }, name);
-    const positionDiv = createElement('div', { className: 'employee-position' }, employee.position ?? 'Mitarbeiter');
-    card.append(nameDiv, positionDiv);
+    card.append(nameDiv);
 
     // Add remove button for admins (only in edit mode)
     if (this.isAdmin) {
@@ -4341,17 +4818,55 @@ class ShiftPlanningSystem {
           return value ?? undefined;
         };
 
+        // Check if Kontischicht is active and get pattern
+        const windowWithKontischicht = window as typeof window & {
+          kontischichtManager: {
+            isKontischichtActive: () => boolean;
+            getSelectedPattern: () => {
+              name: string;
+              patternType: string;
+            } | null;
+          };
+        };
+        const kontischichtManager =
+          'kontischichtManager' in window ? windowWithKontischicht.kontischichtManager : undefined;
+        let planName = `Schichtplan KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`;
+        let kontischichtPattern: string | undefined;
+
+        // Override dates for Kontischicht with modal dates
+        let overrideStartDate = weekStart;
+        let overrideEndDate = weekEnd;
+
+        if (kontischichtManager?.isKontischichtActive() === true) {
+          const pattern = kontischichtManager.getSelectedPattern();
+          if (pattern !== null) {
+            planName = `Kontischicht ${pattern.name} KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`;
+            kontischichtPattern = pattern.patternType;
+            console.info('[SHIFTS] Kontischicht active with pattern:', pattern.name, pattern.patternType);
+
+            // Use dates from Kontischicht modal
+            if (pattern.startsAt !== '') {
+              overrideStartDate = pattern.startsAt;
+            }
+            if (pattern.endsAt !== undefined && pattern.endsAt !== '') {
+              overrideEndDate = pattern.endsAt;
+            }
+            console.info('[SHIFTS] Using Kontischicht dates:', overrideStartDate, 'to', overrideEndDate);
+          }
+        }
+
         // Erstelle Plan-Request für neuen /api/v2/shifts/plan Endpoint
         const planRequest = {
-          startDate: weekStart,
-          endDate: weekEnd,
+          startDate: overrideStartDate,
+          endDate: overrideEndDate,
           areaId: nullToUndefined(this.selectedContext.areaId),
           departmentId: nullToUndefined(this.selectedContext.departmentId),
           teamId: nullToUndefined(this.selectedContext.teamId),
           machineId: nullToUndefined(this.selectedContext.machineId),
-          name: `Schichtplan KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`,
+          name: planName,
           shiftNotes: notes !== '' ? notes : undefined, // API v2 uses camelCase
           shifts: shiftsForPlan,
+          kontischichtPattern, // Add pattern type for backend
           // dailyNotes removed - redundant with shiftNotes
         };
 
@@ -4430,38 +4945,84 @@ class ShiftPlanningSystem {
     }
   }
 
-  resetSchedule(): void {
+  async resetSchedule(): Promise<void> {
     if (!this.isAdmin) return;
 
-    // Use proper modal confirmation instead of confirm()
-    const modalContent = `
-      <div class="confirmation-modal">
-        <h3>Schichtplan zurücksetzen</h3>
-        <p>Möchten Sie den aktuellen Schichtplan wirklich zurücksetzen?</p>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="window.modalManager.closeModal()">Abbrechen</button>
-          <button class="btn btn-danger" onclick="window.shiftPlanning.confirmReset()">Zurücksetzen</button>
-        </div>
-      </div>
-    `;
+    // Use showConfirm from alerts.ts - same pattern as rotation deactivation
+    const confirmed = await showConfirm(
+      '⚠️ Schichtplan zurücksetzen?\n\nAlle Schichten dieser Woche werden dauerhaft aus der Datenbank gelöscht!\nDer Schichtplan wird komplett geleert.\n\nWirklich fortfahren?',
+    );
 
-    openModal(modalContent, {
-      title: 'Bestätigung erforderlich',
-      size: 'sm',
-    });
-  }
+    if (!confirmed) return;
 
-  confirmReset(): void {
-    if (!this.isAdmin) return;
+    try {
+      // If we have a plan ID, delete it from database
+      if (this.currentPlanId !== null && this.useV2API) {
+        console.info('[SHIFTS RESET] Deleting plan from database:', this.currentPlanId);
 
-    this.weeklyShifts = new Map();
-    this.renderWeekView();
-    this.updateEmployeeShiftCounts();
-    showInfo('Schichtplan wurde zurückgesetzt');
+        // Delete the plan via API
+        const response = await this.apiClient.request(`/shifts/plan/${String(this.currentPlanId)}`, {
+          method: 'DELETE',
+        });
 
-    // Close modal
-    if (typeof window !== 'undefined' && 'modalManager' in window) {
-      (window as unknown as { modalManager: { closeModal: () => void } }).modalManager.closeModal();
+        console.info('[SHIFTS RESET] Delete response:', response);
+        showSuccessAlert('Schichtplan wurde aus der Datenbank gelöscht');
+      } else if (!this.useV2API) {
+        // Legacy v1 API - delete individual shifts for the week
+        const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
+        const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
+
+        console.info('[SHIFTS RESET] Deleting shifts for week:', weekStart, 'to', weekEnd);
+
+        const response = await fetch('/api/shifts/bulk-delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          },
+          body: JSON.stringify({
+            week_start: weekStart,
+            week_end: weekEnd,
+            department_id: this.selectedContext.departmentId,
+            team_id: this.selectedContext.teamId,
+            machine_id: this.selectedContext.machineId,
+          }),
+        });
+
+        if (response.ok) {
+          showSuccessAlert('Schichten wurden aus der Datenbank gelöscht');
+        } else {
+          console.error('[SHIFTS RESET] Failed to delete shifts');
+        }
+      }
+
+      // Clear UI
+      this.weeklyShifts = new Map();
+      this.shiftDetails = new Map();
+      this.currentPlanId = null;
+
+      // Clear notes
+      const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+      if (notesTextarea) {
+        notesTextarea.value = '';
+      }
+
+      // Clear info bar
+      const infoBar = document.querySelector('.shift-info-bar');
+      if (infoBar) {
+        infoBar.innerHTML = '';
+      }
+
+      // Re-render view
+      this.renderWeekView();
+      // this.updateEmployeeShiftCounts(); // temporarily disabled
+
+      showInfo('Schichtplan wurde zurückgesetzt');
+
+      // No need to close modal - showConfirm handles that automatically
+    } catch (error) {
+      console.error('[SHIFTS RESET] Error during reset:', error);
+      showErrorAlert('Fehler beim Zurücksetzen des Schichtplans');
     }
   }
 
@@ -4536,6 +5097,8 @@ class ShiftPlanningSystem {
    * Lock shift plan (make read-only)
    */
   lockShiftPlan(): void {
+    this.isPlanLocked = true;
+
     // Disable drag and drop
     const draggableEmployees = document.querySelectorAll('.employee-item[draggable="true"]');
     draggableEmployees.forEach((el) => {
@@ -4566,6 +5129,8 @@ class ShiftPlanningSystem {
    * Unlock shift plan (make editable)
    */
   unlockShiftPlan(): void {
+    this.isPlanLocked = false;
+
     // Enable drag and drop
     const draggableEmployees = document.querySelectorAll('.employee-item[draggable="false"]');
     draggableEmployees.forEach((el) => {

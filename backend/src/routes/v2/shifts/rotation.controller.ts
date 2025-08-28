@@ -67,8 +67,8 @@ export const createRotationPattern = async (
   res: Response,
 ): Promise<void> => {
   try {
-    console.log('[ROTATION] Creating pattern - User:', req.user);
-    console.log('[ROTATION] Request body:', JSON.stringify(req.body, null, 2));
+    console.info('[ROTATION] Creating pattern - User:', req.user);
+    console.info('[ROTATION] Request body:', JSON.stringify(req.body, null, 2));
 
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can create rotation patterns', 403);
@@ -187,8 +187,8 @@ export const generateRotationShifts = async (
   res: Response,
 ): Promise<void> => {
   try {
-    console.log('[GENERATE] Starting generation - User:', req.user);
-    console.log('[GENERATE] Request body:', JSON.stringify(req.body, null, 2));
+    console.info('[GENERATE] Starting generation - User:', req.user);
+    console.info('[GENERATE] Request body:', JSON.stringify(req.body, null, 2));
 
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can generate rotation shifts', 403);
@@ -250,12 +250,19 @@ export const deleteRotationHistory = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const deletedCount = await rotationService.deleteRotationHistory(req.user.tenant_id);
+    // Get team_id from query params - CRITICAL for multi-tenant isolation
+    const teamId = req.query.team_id ? Number(req.query.team_id) : undefined;
+
+    if (!teamId) {
+      throw new ServiceError('BAD_REQUEST', 'team_id is required', 400);
+    }
+
+    const deletedCounts = await rotationService.deleteRotationHistory(req.user.tenant_id, teamId);
 
     res.json(
       successResponse({
-        message: `Successfully deleted ${deletedCount} rotation history entries`,
-        deletedCount,
+        message: `Successfully deleted rotation data for team ${teamId}`,
+        deletedCounts,
       }),
     );
   } catch (error: unknown) {

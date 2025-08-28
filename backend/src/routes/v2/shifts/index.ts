@@ -953,6 +953,33 @@ router.get('/plan', authenticateV2, typed.auth(shiftsController.getShiftPlan));
 router.put('/plan/:id', authenticateV2, typed.auth(shiftsController.updateShiftPlan));
 
 /**
+ * /api/v2/shifts/plan/\{id\}:
+ *   delete:
+ *     summary: Delete shift plan and associated shifts
+ *     tags: [Shifts v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Plan ID
+ *     responses:
+ *       200:
+ *         description: Plan deleted successfully
+ *       404:
+ *         description: Plan not found
+ */
+router.delete(
+  '/plan/:id',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  typed.auth(shiftsController.deleteShiftPlan),
+);
+
+/**
  * /api/v2/shifts/\{id\}:
  *   get:
  *     summary: Get shift by ID

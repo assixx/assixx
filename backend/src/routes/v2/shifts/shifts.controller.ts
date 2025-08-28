@@ -839,3 +839,37 @@ export async function deleteFavorite(req: AuthenticatedRequest, res: Response): 
     }
   }
 }
+
+/**
+ * Delete shift plan and associated shifts
+ */
+export async function deleteShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const planId = Number(req.params.id);
+
+    if (Number.isNaN(planId)) {
+      res.status(400).json(errorResponse('INVALID_INPUT', 'Invalid plan ID'));
+      return;
+    }
+
+    // Delete the shift plan and associated shifts
+    await shiftsService.deleteShiftPlan(planId, req.user.tenant_id);
+
+    res.json(successResponse(null, 'Shift plan deleted successfully'));
+  } catch (error: unknown) {
+    if (error instanceof ServiceError) {
+      res
+        .status(error.code === 'NOT_FOUND' ? 404 : 403)
+        .json(errorResponse(error.code, error.message));
+    } else {
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            ERROR_CODES.SERVER_ERROR,
+            error instanceof Error ? error.message : 'Failed to delete shift plan',
+          ),
+        );
+    }
+  }
+}

@@ -1,368 +1,122 @@
 # Claude Code – Assixx Project Complete Guide
 
-## 🔴🔴🔴 STOPP! PFLICHTLEKTÜRE VOR ALLEM ANDEREN! 🔴🔴🔴
+## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴
 
-## → LIES ZUERST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
-
-## → OHNE MANIFEST GELESEN = KEINE ARBEIT
-
-## → Das Manifest dokumentiert ALLE meine Fehler und wie ich sie vermeide
-
-Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf nicht gemischt werden. !!!! Stetige abfrage!!!! Kritisch
-
-Problem → Daten sammeln → Hypothesen → Testen → Validieren
+## → READ FIRST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
 
 ## QUICK REFERENCE
 
-- Projekt: Multi-Tenant SaaS für Industriefirmen
+- Project: Multi-Tenant SaaS for Industrial Companies
 - GitHub: <https://github.com/SCS-Technik/Assixx>
-- Aktueller Branch: debugging/v0.1.0--R2Stable
+- Current Branch: debugging/v0.1.0--R2Stable
 - Tech Stack: TypeScript, Express, MySQL, Docker, Redis, Vite
 - Dev URL: <http://localhost:3000>
 - Docker Dir: /home/scs/projects/Assixx/docker
 - Package Manager: pnpm
-- Datenbank: MySQL (Port 3307), Redis (Port 6379)
-- Projektstruktur: docs/PROJEKTSTRUKTUR.md
+- Database: MySQL (Port 3307), Redis (Port 6379)
 
-## KRITISCHE REGELN
+**Multi-Tenant-Isolation:** tenant_id = One Company → don't forget this! It must not be mixed.
 
-- **NIEMALS committen oder pushen ohne Erlaubnis vom User** immer um Freigabe bitten
-- **NIEMALS checkout ohne Erlaubnis vom User** immer um Freigabe bitten
-- **NIEMALS Fast-Forward merge durchführen**
-- **NIEMALS disable eslint kommentare benutzen, immer den besten Weg gehen um den bestmöglichen und sicheren strengen Code zu schreiben**
-- **IMMER existierende Dateien bearbeiten statt neue erstellen**
-- **IMMER Docker aus /home/scs/projects/Assixx/docker starten**
-- **IMMER langfristig denken - keine Quick-Fixes die später Probleme machen**
-- **BEI UNSICHERHEIT nachfragen - besonders bei kritischen Änderungen**
-- **BEHUTSAM vorgehen - lieber zweimal prüfen als einmal bereuen**
-- **VERMEIDE error "Unexpected any. Specify a different type" @typescript-eslint/no-explicit-any**
-- **TUE genau was ich sage und frag immer erst wenn du mehr machen sollst als verlangt**
-- **Use sub-agents liberally to parallelize work and save on context — but think carefully about when it's most effective. Think step-by-step**
-- **Always use best-practice methods**
-- **Always make todowrite list**
+## GOLDEN RULES
 
-## 🎨 UX/UI DESIGN STANDARDS (NEU - 16.08.2025)
+**NEVER:**
 
-### KEINE MODALS MEHR FÜR DATENEINGABE
+- Commit or push without permission from User
+- Checkout without permission from User
+- Perform Fast-Forward merge (always --no-ff)
+- Use ESLint disable comments
+- Create new files when existing ones can be edited
+- Do more than requested
 
-**Ab sofort gilt:** Alle Formulare für Dateneingabe werden als **Inline-Formulare** implementiert, KEINE Modals mehr!
+**ALWAYS:**
 
-#### Warum diese Änderung?
+- Start Docker from /home/scs/projects/Assixx/docker
+- Think long-term - no quick fixes
+- Ask when uncertain
+- Edit existing files instead of creating new ones
+- Use TypeScript types (no any)
+- Use MCP Tools before anything else
+- Apply best-practice methods
 
-- **Mobile-First:** Modals funktionieren schlecht auf Smartphones
-- **Better UX:** User bleibt im Kontext, kein Workflow-Unterbruch
-- **Accessibility:** Screen-Reader und Keyboard-Navigation freundlicher
-- **Modern Standards:** Inline-Forms sind 2025 Best Practice
-- **Performance:** Weniger JavaScript, keine Z-Index Probleme
+## 🎨 UX/UI DESIGN STANDARDS
 
-#### Neue UI-Patterns für Formulare
+### NO MORE MODALS FOR DATA ENTRY
 
-1. **Split-View Pattern (Bevorzugt für Desktop)**
-   - Links: Liste/Tabelle der Einträge
-   - Rechts: Permanentes Formular für Add/Edit
-   - Beispiel: Mitarbeiter-Verwaltung, Areas, Departments
+**From now on:** All forms as **Inline Forms**, NO Modals!
 
-2. **Inline-Expansion Pattern**
-   - "Add New" Button öffnet Formular direkt über/unter der Liste
-   - Edit-Form klappt direkt in der Zeile auf
-   - Beispiel: KVP-Vorschläge, Blackboard-Einträge
+#### New UI Patterns
 
-3. **Slide-in Panel Pattern**
-   - Von rechts einfahrendes Panel (nicht modal!)
-   - Overlay nur partial, Liste bleibt sichtbar
-   - Beispiel: Chat, Notifications
+1. **Split-View Pattern** - Left: List, Right: Form
+2. **Inline-Expansion Pattern** - Form expands in list
+3. **Slide-in Panel Pattern** - Sliding in from right (not modal)
+4. **Top-Form Pattern** - Form above table
 
-4. **Top-Form Pattern**
-   - Formular permanent über der Tabelle
-   - Collapsible für mehr Platz
-   - Beispiel: Quick-Add für häufige Aktionen
+#### Modals only for
 
-#### Was ist noch erlaubt für Modals?
+- ❌ Delete confirmations
+- ⚠️ Critical warnings
+- ℹ️ Info dialogs
+- 🔒 Session timeouts
 
-Modals NUR noch für:
+## START TRIGGER
 
-- ❌ Lösch-Bestätigungen ("Wirklich löschen?")
-- ⚠️ Kritische Warnungen (Datenverlust-Warnung)
-- ℹ️ Info-Dialoge (Hilfe, About)
-- 🔒 Session-Timeouts
-- NIEMALS für Dateneingabe!
+### "continue with Assixx" (Normal Mode)
 
-#### Migration bestehender Modals
+Complete mandatory checklist WITH dev-status.sh
 
-Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden:
+### "continue with Assixx and skip" (Skip Mode)
 
-- Priority 1: Häufig genutzte Features (Mitarbeiter, Shifts, Calendar)
-- Priority 2: Admin-Features (Areas, Departments, Teams)
-- Priority 3: Seltene Features (Settings, Profile)
+Complete mandatory checklist WITHOUT dev-status.sh
 
-## **Use MCP Tools Before Everything:**
+**ONLY DIFFERENCE:** With "skip" dev-status.sh is skipped!
 
-– Before modifying files (understand history)
-– When tests fail (check recent changes)
-– Finding related code (git grep)
-– Understanding features (follow evolution)
-– Checking workflows (CI/CD issues)
+## DOCKER & DEVELOPMENT
 
-## The Twelve Universal Commandments
-
-1. **Thou shalt ALWAYS use MCP tools before coding**
-2. **Thou shalt NEVER assume; always question**
-3. **Thou shalt write code that's clear and obvious**
-4. **Thou shalt be BRUTALLY HONEST in assessments**
-5. **Thou shalt PRESERVE CONTEXT, not delete it**
-6. **Thou shalt make atomic, descriptive commits**
-7. **Thou shalt document the WHY, not just the WHAT**
-8. **Thou shalt test before declaring done**
-9. **Thou shalt handle errors explicitly**
-10. **Thou shalt treat user data as sacred**
-11. **Thou shalt consider performance implications early**
-12. **Thou shalt embrace code reviews and pair programming**
-
-## START-TRIGGER
-
-### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
-
-- **Aktion:** Vollständige Pflicht-Checkliste durchführen MIT dev-status.sh
-- **Prozess:** Alle Starttasks, TodoWrite mit 10+ Punkten, komplette Checks inklusive dev-status.sh
-- **Ziel:** Sicherstellen, dass alles korrekt läuft
-
-### Trigger 2: "weitermachen mit Assixx und skip" (Skip-Modus)
-
-- **Aktion:** Vollständige Pflicht-Checkliste durchführen OHNE dev-status.sh
-- **Prozess:** Alle Starttasks, TodoWrite mit 10+ Punkten, komplette Checks aber dev-status.sh wird übersprungen
-- **Ziel:** Schnellerer Start ohne System-Status-Check
-- **UNTERSCHIED:** Einziger Unterschied zu Trigger 1 ist das Überspringen von dev-status.sh
-
-## DOCKER QUICK-CHECK
-
-**Bei "weitermachen mit Assixx" (Normal-Modus) IMMER ausführen:**
-**Bei "weitermachen mit Assixx und skip" (Skip-Modus) ÜBERSPRINGEN!**
+### Quick Status Check (only in Normal Mode)
 
 ```bash
-# Working Directory ist WICHTIG!
 cd /home/scs/projects/Assixx/docker
-
-# Alles in einem Befehl:
 docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
-# ODER nutze das neue Status-Script (empfohlen):
-# ACHTUNG: Bei "und skip" wird dev-status.sh NICHT ausgeführt!
+# Or use the status script:
 /home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
-## HÄUFIGE TASKS
+### Common Development Tasks
 
-### Frontend-Änderung
+**Frontend Change:**
 
-1. docker exec assixx-backend pnpm run build
-2. Browser Cache leeren (Ctrl+Shift+R)
-3. Testen auf <http://localhost:3000>
+```bash
+docker exec assixx-backend pnpm run build
+# Clear Browser Cache (Ctrl+Shift+R)
+# Test on http://localhost:3000
+```
 
-### Backend API-Änderung
+**Backend API Change:**
 
-1. docker exec assixx-backend pnpm run type-check
-2. docker-compose restart backend
-3. Logs prüfen: docker logs -f assixx-backend
+```bash
+docker exec assixx-backend pnpm run type-check
+docker-compose restart backend
+docker logs -f assixx-backend
+```
 
-### Datenbank-Migration
+**Fix TypeScript Errors:**
 
-1. Backup: bash scripts/quick-backup.sh "before_migration"
-2. Migration kopieren: docker cp migration.sql assixx-mysql:/tmp/
-3. Ausführen: docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main < /tmp/migration.sql
+```bash
+docker exec assixx-backend pnpm run lint:fix
+docker exec assixx-backend pnpm run format
+docker exec assixx-backend pnpm run type-check
+```
 
-### TypeScript Fehler beheben
+**Database Migration:**
 
-1. docker exec assixx-backend pnpm run lint:fix
-2. docker exec assixx-backend pnpm run format
-3. docker exec assixx-backend pnpm run type-check
+```bash
+bash scripts/quick-backup.sh "before_migration"
+docker cp migration.sql assixx-mysql:/tmp/
+docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main < /tmp/migration.sql
+```
 
-**Workflow-Struktur:**
-
-1. Discover Tests (findet alle Test-Dateien)
-2. Matrix Tests (jeder Test als eigener Job)
-3. Coverage Aggregation
-4. Code Analysis (TypeScript, ESLint)
-5. Docker Build Tests
-6. Code Quality Checks
-
-**WICHTIG - Test-Datenbank Schema:**
-
-- Tests nutzen ECHTE MySQL-Datenbank (keine Mocks)
-- Schema aus `database/current-schema-*.sql` (neueste Datei)
-- Bei DB-Änderungen: `./scripts/export-current-schema.sh` ausführen
-- Schema-Vergleich: `./scripts/compare-db-schema.sh`
-- Migrations in `/database/migrations/` können VERALTET sein!
-- Test-DB hat immer das aktuelle Produktions-Schema
-
-## WENN-DANN ANWEISUNGEN
-
-**WENN User fragt nach Feature-Status**
-
-- TODO.md prüfen, dann FEATURES.md
-
-**WENN TypeScript Error bei Route Handler**
-
-- typed.auth oder typed.body wrapper verwenden
-- Siehe docs/TYPESCRIPT-STANDARDS.md
-
-**WENN User will committen/pushen**
-
-- IMMER nachfragen: "Soll ich die Änderungen committen?"
-- NIE automatisch committen
-
-**WENN Neue Datei erstellen**
-
-- STOPP! Erst prüfen ob existierende Datei bearbeitet werden kann
-
-**WENN Database Error**
-
-- Foreign Key Constraints prüfen
-- Siehe DATABASE-MIGRATION-GUIDE.md
-
-**WENN Docker Container nicht startet**
-
-- docker-compose down && docker-compose up -d
-- Logs prüfen: docker-compose logs
-
-## BEKANNTE ISSUES
-
-- TypeScript Test-Fehler (56 errors) - ignorieren, betrifft nur Tests
-- SMTP Warnings beim Start - optional, ignorieren
-- Port 3000 belegt - lsof -i :3000 && kill -9 PID
-
-## PFLICHT-CHECKLISTE (TodoWrite mit 10+ Punkten)
-
-1. Docker-Check (bei "und skip": OHNE dev-status.sh)
-2. TODO.md (AKTUELLE PHASE + FORTSCHRITTS-TRACKING!)
-3. CLAUDE.md
-4. TypeScript-Standards
-5. Design Standards
-6. TypeScript Standards
-7. README.md
-8. Database Migration Guide
-9. BEFORE-STARTING-DEV befolgen (Anleitung lesen und Befehle durchführen)!!!!
-10. DAILY-PROGRESS.md lesen
-11. Lies API-V2-MIGRATION-MASTERPLAN.md
-12. Lies API-V2-MASTERPLAN-CHECKLIST.md
-13. Lies API-V2-MIGRATION-EXECUTIVE-SUMMARY.md
-14. Lies API-V2-FRONTEND-MIGRATION-DETAILS.md
-15. Lies workshop-decisions.md
-16. Lies API-DESIGN-WORKSHOP-PLAN.md
-17. Entwicklung beginnen
-
-## 📊 FORTSCHRITTS-DOKUMENTATION (NEU! WICHTIG!)
-
-**TÄGLICH AKTUALISIEREN:**
-
-- `/docs/DAILY-PROGRESS.md` - Täglicher Fortschritt mit Metriken
-- `/docs/api/API-V2-PROGRESS-LOG.md` - API v2 spezifische Details
-- `TODO.md` - Fortschritts-Tracking Section ganz oben!
-
-**Bei jedem Arbeitstag:**
-
-1. DAILY-PROGRESS.md mit Tagesübersicht updaten
-2. Bei API-Arbeit: API-V2-PROGRESS-LOG.md erweitern
-3. TODO.md Fortschritts-Section aktualisieren
-4. Erfolge und Probleme dokumentieren
-5. Metriken erfassen (Zeit, TODOs, Commits)
-
-**Warum wichtig:**
-
-- Zeigt kontinuierlichen Fortschritt
-- Hilft bei Retrospektiven
-- Dokumentiert Lösungen für wiederkehrende Probleme
-- Motiviert durch sichtbare Erfolge
-
-## ZENTRALE DOKUMENTATION
-
-**KERN-DOKUMENTE (Täglich relevant):**
-
-- docs/PROJEKTSTRUKTUR.md - Vollständige Verzeichnisstruktur
-- docs/TYPESCRIPT-STANDARDS.md - TypeScript Patterns (PFLICHT bei Backend)
-- docs/DATABASE-MIGRATION-GUIDE.md - DB Änderungen (PFLICHT bei Migrationen)
-- docs/DESIGN-STANDARDS.md - Glassmorphismus UI/UX
-
-**ARBEITS-DOKUMENTE:**
-
-- TODO.md - Aktuelle Aufgaben und Status
-- docs/BEFORE-STARTING-DEV.md - Tägliche Dev Checks
-- docs/FEATURES.md - Feature-Liste mit Preisen
-- docs/DATABASE-SETUP-README.md - DB Schema Referenz
-
-**REFERENZ (Bei Bedarf):**
-
-- docs/ARCHITECTURE.md - System-Übersicht
-- docs/ROADMAP.md - Zukünftige Features
-- CLAUDE.local.md - Lokale Notizen
-
-## CODE-STANDARDS
-
-- Kommentiere WARUM, nicht WAS
-- Jede Funktion braucht JSDoc
-- Komplexe Logik erklären
-- TypeScript statt any verwenden
-- Siehe TYPESCRIPT-STANDARDS.md für Details
-
-## WORKFLOW
-
-### Bei "weitermachen mit Assixx" (Normal-Modus)
-
-1. TodoWrite mit 10+ Punkten erstellen (siehe PFLICHT-CHECKLISTE)
-2. Alle Checks durchführen INKLUSIVE dev-status.sh
-3. Zusammenfassung erstellen
-
-### Bei "weitermachen mit Assixx und skip" (Skip-Modus)
-
-1. TodoWrite mit 10+ Punkten erstellen (siehe PFLICHT-CHECKLISTE)
-2. Alle Checks durchführen OHNE dev-status.sh
-3. Zusammenfassung erstellen
-
-**MERKE:** Der einzige Unterschied ist das Überspringen von dev-status.sh bei "und skip"
-
-### Dokumentation aktualisieren bei
-
-- DB-Änderungen: DATABASE-SETUP-README.md
-- Neue Features: FEATURES.md
-- UI-Änderungen: DESIGN-STANDARDS.md
-- Struktur-Änderungen: PROJEKTSTRUKTUR.md
-
-## MERGE-STRATEGIE FÜR MASTER BRANCH
-
-**WICHTIG: Keine Fast-Forward Merges in master!**
-
-Wenn ein Branch in master gemerged werden soll:
-
-1. **IMMER mit --no-ff mergen:**
-
-   ```bash
-   git merge --no-ff <branch-name>
-   ```
-
-2. **VOR dem Merge alle Änderungen prüfen:**
-
-   ```bash
-   # Alle geänderten Dateien anzeigen
-   git diff master..<branch-name> --name-status
-
-   # Wichtige Dateien einzeln prüfen
-   git diff master..<branch-name> -- CLAUDE.md
-   git diff master..<branch-name> -- TODO.md
-   git diff master..<branch-name> -- README.md
-   ```
-
-3. **Bei Unsicherheiten nachfragen:**
-   - "Soll ich einen Merge-Commit erstellen?"
-   - "Hast du die Änderungen in [Dateiname] gesehen?"
-
-**Warum kein Fast-Forward:**
-
-- Merge-Historie bleibt sichtbar
-- Einfacheres Rollback bei Problemen
-- Verhindert versehentliche Änderungen
-
-## QUICK COMMANDS
-
-### Docker
+### Docker Commands
 
 ```bash
 cd /home/scs/projects/Assixx/docker
@@ -370,110 +124,109 @@ docker-compose ps
 docker-compose up -d
 docker-compose down
 docker-compose restart backend
-docker logs -f assixx-backend
 ```
 
-### TypeScript
+## MANDATORY CHECKLIST (TodoWrite with 10+ items)
+
+1. Docker Check (with "skip": WITHOUT dev-status.sh)
+2. TODO.md (CURRENT PHASE + PROGRESS TRACKING!)
+3. CLAUDE.md
+4. TypeScript Standards (MANDATORY for Backend)
+5. Design Standards
+6. README.md
+7. Database Migration Guide
+8. Follow BEFORE-STARTING-DEV
+9. Read DAILY-PROGRESS.md
+10. API-V2-MIGRATION-MASTERPLAN.md
+11. API-V2-MASTERPLAN-CHECKLIST.md
+12. API-V2-MIGRATION-EXECUTIVE-SUMMARY.md
+13. API-V2-FRONTEND-MIGRATION-DETAILS.md
+14. workshop-decisions.md
+15. API-DESIGN-WORKSHOP-PLAN.md
+
+## 📊 PROGRESS DOCUMENTATION
+
+**Update Daily:**
+
+- `/docs/DAILY-PROGRESS.md` - Daily progress with metrics
+- `/docs/api/API-V2-PROGRESS-LOG.md` - API v2 specific details
+- `TODO.md` - Progress tracking section at the top
+
+**Why Important:** Continuous progress, retrospectives, solution documentation, motivation
+
+## CENTRAL DOCUMENTATION
+
+**Core Documents (daily relevant):**
+
+- docs/PROJEKTSTRUKTUR.md - Complete directory structure
+- docs/TYPESCRIPT-STANDARDS.md - TypeScript Patterns (MANDATORY for Backend)
+- docs/DATABASE-MIGRATION-GUIDE.md - DB Changes (MANDATORY for migrations)
+- docs/DESIGN-STANDARDS.md - Glassmorphism UI/UX
+
+**Work Documents:**
+
+- TODO.md - Current tasks and status
+- docs/BEFORE-STARTING-DEV.md - Daily Dev Checks
+- docs/FEATURES.md - Feature list with prices
+- docs/DATABASE-SETUP-README.md - DB Schema Reference
+
+## MERGE STRATEGY FOR MASTER BRANCH
+
+**IMPORTANT: No Fast-Forward Merges!**
 
 ```bash
-docker exec assixx-backend pnpm run type-check
-docker exec assixx-backend pnpm run lint:fix
-docker exec assixx-backend pnpm run format
-docker exec assixx-backend pnpm run build
+# ALWAYS merge with --no-ff:
+git merge --no-ff <branch-name>
+
+# Check BEFORE merge:
+git diff master..<branch-name> --name-status
+git diff master..<branch-name> -- CLAUDE.md
+git diff master..<branch-name> -- TODO.md
 ```
 
-### Git
+**Why no Fast-Forward:**
 
-```bash
-git status
-git log --oneline -5
-git diff --stat
-git merge --no-ff branch-name
-```
+- Merge history remains visible
+- Easier rollback on problems
+- Prevents accidental changes
 
-## GOLDENE REGELN
+## IF-THEN INSTRUCTIONS
 
-**DO WHAT'S ASKED** - Nicht mehr, nicht weniger
-**EDIT > CREATE** - Vorhandene Dateien bearbeiten statt neue erstellen
-**ASK BEFORE COMMIT** - Niemals automatisch committen/pushen
-**THINK LONG-TERM** - Keine Hacks die später Probleme machen
-**BE CAREFUL** - Behutsam vorgehen, besonders bei kritischen Änderungen
+- **IF User asks about feature status:** Check TODO.md, then FEATURES.md
+- **IF TypeScript Error in Route Handler:** Use typed.auth or typed.body wrapper
+- **IF User wants to commit/push:** ALWAYS ask: "Should I commit the changes?"
+- **IF Creating new file:** STOP! First check if existing file can be edited
+- **IF Database Error:** Check Foreign Key Constraints
+- **IF Docker Container won't start:** docker-compose down && docker-compose up -d
 
-**NIEMALS:**
+## KNOWN ISSUES
 
-- Unnötige Dateien erstellen
-- Proaktiv Dokumentation schreiben
-- Mehr tun als angefragt
-- Committen ohne Erlaubnis
-- Fast-Forward merge (immer --no-ff)
-- Redundanten Code/Dateien erstellen
+- TypeScript Test Errors (56 errors) - ignore, affects only tests
+- SMTP Warnings on start - optional, ignore
+- Port 3000 occupied - lsof -i :3000 && kill -9 PID
 
-**IMMER:**
+## WORKFLOW AFTER START TRIGGER
 
-- Existierende Dateien nutzen
-- Bei DB-Änderungen DATABASE-SETUP-README.md und DATABASE-MIGRATION-GUIDE.md updaten
-- Temporäre Dateien aufräumen
-- TypeScript types verwenden (kein any)
-- Im Zweifel nachfragen
-- Langfristige Wartbarkeit bedenken
+1. Create TodoWrite with 10+ items (see MANDATORY CHECKLIST)
+2. Perform all checks (with/without dev-status.sh depending on mode)
+3. Create summary
+4. Begin development
 
-## Truth Hierarchy
+**For Documentation Updates:**
 
-1. **Codebase** (ultimate source of truth)
-2. **Documentation** (current state)
-3. **Training data** (historical reference)
+- DB Changes: DATABASE-SETUP-README.md
+- New Features: FEATURES.md
+- UI Changes: DESIGN-STANDARDS.md
+- Structure Changes: PROJEKTSTRUKTUR.md
 
-## Core Philosophy
+## CODE STANDARDS
 
-**Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear.**
+- Comment WHY, not WHAT
+- Every function needs JSDoc
+- Explain complex logic
+- Use TypeScript instead of any
+- See TYPESCRIPT-STANDARDS.md for details
 
-**Remember:** Future you, debugging at 3 AM, will thank present you for that extra comment explaining the non-obvious business logic.
+**MySQL Password:** AssixxP@ss2025!
 
-weitere Notes:
-
-## 🎯 START-TRIGGER QUICK REFERENCE (23.08.2025)
-
-- **"weitermachen mit Assixx"** → Normal-Modus mit allen Checks INKLUSIVE dev-status.sh
-- **"weitermachen mit Assixx und skip"** → Skip-Modus mit allen Checks OHNE dev-status.sh
-- **EINZIGER UNTERSCHIED:** Bei "und skip" wird dev-status.sh übersprungen!
-
-## Aktuelle Notizen (26.06.2025)
-
-- **WICHTIG:** TypeScript-Standards.md PFLICHTLEKTÜRE für Backend-Entwicklung
-- **NEU:** docs/TYPESCRIPT-STANDARDS.md muss IMMER beachtet werden
-- TypeScript Migration abgeschlossen: 426 → 0 Errors
-- Shift Planning Design wurde in FEATURES.md integriert
-- Reminder für Sub-Features wurde in TODO.md aufgenommen
-- **NEU:** Version 0.1.0 Strategie - Stabilität vor Features
-- **NEU:** Docker ist jetzt Standard-Entwicklungsumgebung
-- **NEU:** Automatisches Backup-System läuft täglich um 02:00 Uhr
-- **NEU:** Multi-Tenant Isolation Bug wurde behoben
-- Nach compact oder auto-compact immer deutsch sprechen
-- donnt commit oder push without permission from user
-
-## TypeScript Architecture (26.06.2025)
-
-**PFLICHT bei Backend-Entwicklung:**
-
-```bash
-cat /home/scs/projects/Assixx/docs/TYPESCRIPT-STANDARDS.md
-``
-Diese Dokumentation enthält:
-
-- Typed Route Handlers Pattern
-- Security Middleware Stacks
-- Request/Response Types
-- Migration Guidelines
-- Common Patterns und Troubleshooting
-
-## MySQL Password
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SHOW TABLES;"'
-```
-
-siehe DATABASE-MIGRATION-GUIDE.md
-
-### wichtige dokumente und prüfen ob schon vorher eine doc gibt
-
-in Assixx/docs
-
-Für aktuelle Aufgaben siehe [TODO.md](./TODO.md)
+**Core Philosophy:** Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear.

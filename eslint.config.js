@@ -455,7 +455,7 @@ export default [
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
-      'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
+      'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',
