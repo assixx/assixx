@@ -3,6 +3,7 @@
  * Business logic for shift rotation patterns
  */
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import type { PoolConnection } from 'mysql2/promise';
 
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery, getConnection } from '../../../utils/db.js';
@@ -343,21 +344,47 @@ export async function generateRotationShifts(
   // Generate shifts for each assignment
   for (const assignment of assignments) {
     const shifts = generateShiftsForAssignment(assignment, pattern, data.start_date, data.end_date);
-
     generatedShifts.push(...shifts);
+  }
 
-    // If not preview mode, save to database
-    if (!data.preview) {
-      for (const shift of shifts) {
-        await saveGeneratedShift(
-          shift,
-          pattern.id ?? data.pattern_id,
-          assignment.id,
-          tenantId,
-          assignment.team_id,
-          _generatedBy,
+  // If not preview mode, save ALL shifts in a transaction
+  // This ensures if ONE shift has overlap, ALL shifts are rejected
+  if (!data.preview && generatedShifts.length > 0) {
+    const connection = await getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Save all shifts in the transaction
+      for (const assignment of assignments) {
+        const shifts = generateShiftsForAssignment(
+          assignment,
+          pattern,
+          data.start_date,
+          data.end_date,
         );
+        for (const shift of shifts) {
+          await saveGeneratedShiftInTransaction(
+            connection,
+            shift,
+            pattern.id ?? data.pattern_id,
+            assignment.id,
+            tenantId,
+            assignment.team_id,
+            _generatedBy,
+          );
+        }
       }
+
+      // If we get here, all shifts were saved successfully
+      await connection.commit();
+      console.info('[ROTATION GENERATE] Transaction committed successfully');
+    } catch (error) {
+      // Rollback on ANY error (including overlap trigger errors)
+      await connection.rollback();
+      console.error('[GENERATE ERROR] Transaction rolled back due to error:', error);
+      throw error; // Re-throw to propagate error to caller
+    } finally {
+      connection.release();
     }
   }
 
@@ -426,9 +453,12 @@ function generateShiftsForAssignment(
           shiftType = cycleWeek === 0 ? 'F' : 'S';
         } else if (assignment.shift_group === 'S') {
           shiftType = cycleWeek === 0 ? 'S' : 'F';
+        } else if (assignment.shift_group === 'N') {
+          // WICHTIG: Bei ignoreNightShift bleiben N-Mitarbeiter IMMER in Nachtschicht!
+          shiftType = 'N';
         } else {
-          // For 'N' or any other value, default to F/S alternation starting with F
-          shiftType = cycleWeek === 0 ? 'F' : 'S';
+          // Fallback for any unexpected values
+          shiftType = 'F';
         }
       } else {
         // Original 3-shift rotation (F -> S -> N)
@@ -457,9 +487,10 @@ function generateShiftsForAssignment(
 }
 
 /**
- * Helper: Save generated shift to history
+ * Helper: Save generated shift to history (with transaction support)
  */
-async function saveGeneratedShift(
+async function saveGeneratedShiftInTransaction(
+  connection: PoolConnection,
   shift: { user_id: number; date: string; shift_type: 'F' | 'S' | 'N' },
   patternId: number,
   assignmentId: number,
@@ -472,8 +503,7 @@ async function saveGeneratedShift(
     SELECT id FROM shift_rotation_history
     WHERE tenant_id = ? AND user_id = ? AND shift_date = ?
   `;
-
-  const [existing] = await executeQuery<RowDataPacket[]>(checkQuery, [
+  const [existing] = await connection.query<RowDataPacket[]>(checkQuery, [
     tenantId,
     shift.user_id,
     shift.date,
@@ -494,7 +524,7 @@ async function saveGeneratedShift(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'generated')
     `;
 
-    await executeQuery(insertQuery, [
+    await connection.query(insertQuery, [
       tenantId,
       patternId,
       assignmentId,
@@ -504,6 +534,12 @@ async function saveGeneratedShift(
       shift.shift_type,
       weekNumber,
     ]);
+
+    console.info(
+      `[DB SAVE] Saved shift for user ${shift.user_id} on ${shift.date} (${shift.shift_type}) in transaction`,
+    );
+  } else {
+    console.info(`[DB SKIP] Shift already exists for user ${shift.user_id} on ${shift.date}`);
   }
 }
 

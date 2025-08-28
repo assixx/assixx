@@ -2798,9 +2798,18 @@ class ShiftPlanningSystem {
             // Note: Backend uses camelCase due to dbToApi conversion
             const shifts = data.data.history.map((h) => {
               const employee = this.employees.find((e) => e.id === h.userId);
+              // Convert shift type from DB format (F/S/N) to frontend format (early/late/night)
+              let shiftType = h.shiftType;
+              if (shiftType === 'F') {
+                shiftType = 'early';
+              } else if (shiftType === 'S') {
+                shiftType = 'late';
+              } else if (shiftType === 'N') {
+                shiftType = 'night';
+              }
               return {
                 date: h.shiftDate,
-                shift_type: h.shiftType,
+                shift_type: shiftType,
                 employee_id: h.userId,
                 first_name: employee?.first_name ?? '',
                 last_name: employee?.last_name ?? '',
@@ -4391,6 +4400,15 @@ class ShiftPlanningSystem {
       });
 
       if (!generateResponse.ok) {
+        // Check if it's an overlap error
+        const errorData = (await generateResponse.json()) as { error?: { message?: string } };
+        const errorMessage = errorData.error?.message ?? '';
+
+        if (errorMessage.includes('Überlappung') || errorMessage.includes('existiert bereits')) {
+          throw new Error(
+            '⚠️ ÜBERLAPPUNG ERKANNT: Es existieren bereits Schichten für dieses Team in diesem Zeitraum! Bitte löschen Sie zuerst die bestehenden Schichten oder wählen Sie einen anderen Zeitraum.',
+          );
+        }
         throw new Error('Fehler beim Generieren der Schichten');
       }
 
@@ -4930,10 +4948,19 @@ class ShiftPlanningSystem {
         } catch (error) {
           console.error('[SHIFTS PLAN DEBUG] Failed to create shift plan:', error);
 
-          // Fallback auf alten Modus falls Plan-Endpoint nicht verfügbar
-          if (error instanceof Error && error.message.includes('404')) {
-            console.warn('[SHIFTS PLAN DEBUG] Plan endpoint not available, falling back to individual creation');
-            showErrorAlert('Plan-basierte Speicherung noch nicht verfügbar. Bitte Backend aktualisieren.');
+          // Check if it's an overlap error from the database trigger
+          if (error instanceof Error) {
+            const errorMessage = error.message;
+            if (errorMessage.includes('Überlappung') || errorMessage.includes('existiert bereits')) {
+              showErrorAlert(
+                '⚠️ ÜBERLAPPUNG ERKANNT: Es existiert bereits eine Rotation für dieses Team und diesen Zeitraum! Bitte deaktivieren Sie zuerst die Rotation oder wählen Sie einen anderen Zeitraum.',
+              );
+            } else if (errorMessage.includes('404')) {
+              console.warn('[SHIFTS PLAN DEBUG] Plan endpoint not available, falling back to individual creation');
+              showErrorAlert('Plan-basierte Speicherung noch nicht verfügbar. Bitte Backend aktualisieren.');
+            } else {
+              showErrorAlert('Fehler beim Speichern des Schichtplans: ' + errorMessage);
+            }
           } else {
             showErrorAlert('Fehler beim Speichern des Schichtplans');
           }

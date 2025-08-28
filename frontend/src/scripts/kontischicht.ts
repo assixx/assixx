@@ -1307,7 +1307,19 @@ class KontischichtManager {
       this.showSuccessMessage('Kontischicht Muster erfolgreich gespeichert!');
     } catch (error) {
       console.error('❌ Error saving Kontischicht pattern:', error);
-      this.showErrorMessage('Fehler beim Speichern des Kontischicht Musters. Bitte versuchen Sie es erneut.');
+      // Check if it's an overlap error from the database trigger
+      if (error instanceof Error) {
+        const errorMessage = error.message;
+        if (errorMessage.includes('Überlappung') || errorMessage.includes('existiert bereits')) {
+          this.showErrorMessage(
+            '⚠️ ÜBERLAPPUNG ERKANNT: Es existieren bereits Schichten für dieses Team in diesem Zeitraum! Bitte löschen Sie zuerst die bestehenden Schichten oder wählen Sie einen anderen Zeitraum.',
+          );
+        } else {
+          this.showErrorMessage('Fehler beim Speichern des Kontischicht Musters: ' + errorMessage);
+        }
+      } else {
+        this.showErrorMessage('Fehler beim Speichern des Kontischicht Musters. Bitte versuchen Sie es erneut.');
+      }
     }
   }
 
