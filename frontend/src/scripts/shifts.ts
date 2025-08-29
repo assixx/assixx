@@ -1711,9 +1711,9 @@ class ShiftPlanningSystem {
    */
   private convertShiftTypeForAPI(frontendType: string): string {
     const typeMap: Record<string, string> = {
-      'early': 'F',  // Frühschicht
-      'late': 'S',   // Spätschicht
-      'night': 'N',  // Nachtschicht
+      early: 'F', // Frühschicht
+      late: 'S', // Spätschicht
+      night: 'N', // Nachtschicht
     };
     return typeMap[frontendType] ?? frontendType;
   }

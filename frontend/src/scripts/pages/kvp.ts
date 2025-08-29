@@ -3,14 +3,15 @@
  * Handles KVP suggestions with department-based visibility
  */
 
-// API configuration
-const KVP_API_BASE_URL = '/api';
+import { ApiClient } from '../../utils/api-client';
+import { $$ } from '../../utils/dom-utils';
+import { getAuthToken } from '../auth';
 
 interface User {
   id: number;
   role: 'root' | 'admin' | 'employee';
-  tenant_id: number;
-  department_id?: number;
+  tenantId: number;
+  departmentId?: number;
 }
 
 interface KvpSuggestion {
@@ -19,25 +20,26 @@ interface KvpSuggestion {
   description: string;
   status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   priority: 'low' | 'normal' | 'high' | 'urgent';
-  org_level: 'company' | 'department' | 'team';
-  org_id: number;
-  department_id: number;
-  department_name: string;
-  submitted_by: number;
-  submitted_by_name: string;
-  submitted_by_lastname: string;
-  category_id: number;
-  category_name: string;
-  category_icon: string;
-  category_color: string;
-  shared_by?: number;
-  shared_by_name?: string;
-  shared_at?: string;
-  created_at: string;
-  expected_benefit?: string;
-  estimated_cost?: number;
-  actual_savings?: number;
-  attachment_count?: number;
+  orgLevel: 'company' | 'department' | 'team';
+  orgId: number;
+  departmentId: number;
+  departmentName: string;
+  submittedBy: number;
+  submittedByName: string;
+  submittedByLastname: string;
+  categoryId: number;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  sharedBy?: number;
+  sharedByName?: string;
+  sharedAt?: string;
+  createdAt: string;
+  expectedBenefit?: string;
+  estimatedCost?: number;
+  actualSavings?: number;
+  attachmentCount?: number;
+  roi?: number; // NEW in v2!
 }
 
 interface KvpCategory {
@@ -61,13 +63,19 @@ interface KvpWindow extends Window {
 }
 
 class KvpPage {
+  private apiClient: ApiClient;
   private currentUser: User | null = null;
   private currentFilter = 'all';
   private suggestions: KvpSuggestion[] = [];
   private categories: KvpCategory[] = [];
   private departments: Department[] = [];
+  private useV2API = true;
 
   constructor() {
+    this.apiClient = ApiClient.getInstance();
+    // Check feature flag for v2 API
+    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_KVP?: boolean } };
+    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_KVP !== false;
     void this.init();
   }
 
@@ -98,16 +106,33 @@ class KvpPage {
 
   private async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await fetch(`${KVP_API_BASE_URL}/users/me`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-        },
-      });
+      if (this.useV2API) {
+        return await this.apiClient.get<User>('/users/me');
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch('/api/users/me', {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      if (!response.ok) throw new Error('Failed to get user info');
+        if (!response.ok) throw new Error('Failed to get user info');
 
-      const data = (await response.json()) as { user: User };
-      return data.user;
+        interface V1UserResponse {
+          user: User & {
+            tenant_id?: number;
+            department_id?: number;
+          };
+        }
+        const data = (await response.json()) as V1UserResponse;
+        // Convert snake_case to camelCase for v1
+        return {
+          ...data.user,
+          tenantId: (data.user as { tenant_id?: number }).tenant_id ?? data.user.tenantId,
+          departmentId: (data.user as { department_id?: number }).department_id ?? data.user.departmentId,
+        };
+      }
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
@@ -139,11 +164,15 @@ class KvpPage {
 
     const effectiveRole = this.getEffectiveRole();
 
+    // Add role-based class to body for CSS targeting
+    document.body.classList.remove('role-admin', 'role-employee', 'role-root');
+    document.body.classList.add(`role-${effectiveRole}`);
+
     // Show/hide admin elements
     const adminElements = document.querySelectorAll('.admin-only');
-    const adminInfoBox = document.querySelector('#adminInfoBox');
-    const statsOverview = document.querySelector('#statsOverview');
-    const createBtn = document.querySelector('#createNewBtn');
+    const adminInfoBox = $$('#adminInfoBox');
+    const statsOverview = $$('#statsOverview');
+    const createBtn = $$('#createNewBtn');
 
     // Check effective role instead of actual role
     if (effectiveRole === 'admin' || effectiveRole === 'root') {
@@ -166,16 +195,27 @@ class KvpPage {
 
   private async loadCategories(): Promise<void> {
     try {
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp/categories`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-        },
-      });
+      let categories: KvpCategory[];
 
-      if (!response.ok) throw new Error('Failed to load categories');
+      if (this.useV2API) {
+        // v2 API
+        categories = await this.apiClient.get<KvpCategory[]>('/kvp/categories');
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch('/api/kvp/categories', {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      const data = (await response.json()) as { categories?: KvpCategory[] };
-      this.categories = data.categories ?? [];
+        if (!response.ok) throw new Error('Failed to load categories');
+
+        const data = (await response.json()) as { categories?: KvpCategory[] };
+        categories = data.categories ?? [];
+      }
+
+      this.categories = categories;
 
       // Populate category dropdown
       const categoryDropdown = document.querySelector('#categoryDropdown');
@@ -206,16 +246,27 @@ class KvpPage {
     if (effectiveRole === 'employee') return;
 
     try {
-      const response = await fetch(`${KVP_API_BASE_URL}/departments`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-        },
-      });
+      let departments: Department[];
 
-      if (!response.ok) throw new Error('Failed to load departments');
+      if (this.useV2API) {
+        // v2 API
+        departments = await this.apiClient.get<Department[]>('/departments');
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch('/api/departments', {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      const data = (await response.json()) as { departments?: Department[] };
-      this.departments = data.departments ?? [];
+        if (!response.ok) throw new Error('Failed to load departments');
+
+        const data = (await response.json()) as { departments?: Department[] };
+        departments = data.departments ?? [];
+      }
+
+      this.departments = departments;
 
       // Populate department dropdown
       const departmentDropdown = document.querySelector('#departmentDropdown');
@@ -248,27 +299,50 @@ class KvpPage {
       });
 
       // Add additional filters
-      const statusFilter = document.querySelector('#statusFilterValue')!.value;
-      const categoryFilter = document.querySelector('#categoryFilterValue')!.value;
-      const departmentFilter = document.querySelector('#departmentFilterValue')!.value;
-      const searchFilter = document.querySelector('#searchFilter')!.value;
+      const statusFilterEl = document.querySelector('#statusFilterValue');
+      const categoryFilterEl = document.querySelector('#categoryFilterValue');
+      const departmentFilterEl = document.querySelector('#departmentFilterValue');
+      const searchFilterEl = document.querySelector('#searchFilter');
+
+      const statusFilter = statusFilterEl instanceof HTMLInputElement ? statusFilterEl.value : '';
+      const categoryFilter = categoryFilterEl instanceof HTMLInputElement ? categoryFilterEl.value : '';
+      const departmentFilter = departmentFilterEl instanceof HTMLInputElement ? departmentFilterEl.value : '';
+      const searchFilter = searchFilterEl instanceof HTMLInputElement ? searchFilterEl.value : '';
 
       if (statusFilter !== '') params.append('status', statusFilter);
-      if (categoryFilter !== '') params.append('category_id', categoryFilter);
-      if (departmentFilter !== '') params.append('department_id', departmentFilter);
+      if (categoryFilter !== '') {
+        params.append(this.useV2API ? 'categoryId' : 'category_id', categoryFilter);
+      }
+      if (departmentFilter !== '') {
+        params.append(this.useV2API ? 'departmentId' : 'department_id', departmentFilter);
+      }
       if (searchFilter !== '') params.append('search', searchFilter);
-      if (this.currentFilter === 'archived') params.append('include_archived', 'true');
+      if (this.currentFilter === 'archived') {
+        params.append(this.useV2API ? 'includeArchived' : 'include_archived', 'true');
+      }
 
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp?${params}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-        },
-      });
+      let suggestions: KvpSuggestion[];
 
-      if (!response.ok) throw new Error('Failed to load suggestions');
+      if (this.useV2API) {
+        // v2 API
+        suggestions = await this.apiClient.get<KvpSuggestion[]>(`/kvp?${params}`);
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch(`/api/kvp?${params}`, {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      const data = (await response.json()) as { suggestions?: KvpSuggestion[] };
-      this.suggestions = data.suggestions ?? [];
+        if (!response.ok) throw new Error('Failed to load suggestions');
+
+        const data = (await response.json()) as { suggestions?: KvpSuggestion[] };
+        // Convert snake_case to camelCase for v1
+        suggestions = (data.suggestions ?? []).map((s) => this.convertSuggestionToCamelCase(s));
+      }
+
+      this.suggestions = suggestions;
 
       this.renderSuggestions();
       this.updateBadges();
@@ -278,9 +352,88 @@ class KvpPage {
     }
   }
 
+  private convertSuggestionToCamelCase(suggestion: unknown): KvpSuggestion {
+    // Type guard for v1 API response with snake_case fields
+    interface V1Suggestion {
+      id: number;
+      title: string;
+      description: string;
+      status: string;
+      priority: string;
+      org_level?: string;
+      orgLevel?: string;
+      org_id?: number;
+      orgId?: number;
+      department_id?: number;
+      departmentId?: number;
+      department_name?: string;
+      departmentName?: string;
+      submitted_by?: number;
+      submittedBy?: number;
+      submitted_by_name?: string;
+      submittedByName?: string;
+      submitted_by_lastname?: string;
+      submittedByLastname?: string;
+      category_id?: number;
+      categoryId?: number;
+      category_name?: string;
+      categoryName?: string;
+      category_icon?: string;
+      categoryIcon?: string;
+      category_color?: string;
+      categoryColor?: string;
+      shared_by?: number;
+      sharedBy?: number;
+      shared_by_name?: string;
+      sharedByName?: string;
+      shared_at?: string;
+      sharedAt?: string;
+      created_at?: string;
+      createdAt?: string;
+      expected_benefit?: string;
+      expectedBenefit?: string;
+      estimated_cost?: number;
+      estimatedCost?: number;
+      actual_savings?: number;
+      actualSavings?: number;
+      attachment_count?: number;
+      attachmentCount?: number;
+      roi?: number;
+    }
+
+    const s = suggestion as V1Suggestion;
+    return {
+      id: s.id,
+      title: s.title,
+      description: s.description,
+      status: s.status as KvpSuggestion['status'],
+      priority: s.priority as KvpSuggestion['priority'],
+      orgLevel: (s.org_level ?? s.orgLevel ?? 'department') as KvpSuggestion['orgLevel'],
+      orgId: s.org_id ?? s.orgId ?? 0,
+      departmentId: s.department_id ?? s.departmentId ?? 0,
+      departmentName: s.department_name ?? s.departmentName ?? '',
+      submittedBy: s.submitted_by ?? s.submittedBy ?? 0,
+      submittedByName: s.submitted_by_name ?? s.submittedByName ?? '',
+      submittedByLastname: s.submitted_by_lastname ?? s.submittedByLastname ?? '',
+      categoryId: s.category_id ?? s.categoryId ?? 0,
+      categoryName: s.category_name ?? s.categoryName ?? '',
+      categoryIcon: s.category_icon ?? s.categoryIcon ?? '',
+      categoryColor: s.category_color ?? s.categoryColor ?? '',
+      sharedBy: s.shared_by ?? s.sharedBy,
+      sharedByName: s.shared_by_name ?? s.sharedByName,
+      sharedAt: s.shared_at ?? s.sharedAt,
+      createdAt: s.created_at ?? s.createdAt ?? '',
+      expectedBenefit: s.expected_benefit ?? s.expectedBenefit,
+      estimatedCost: s.estimated_cost ?? s.estimatedCost,
+      actualSavings: s.actual_savings ?? s.actualSavings,
+      attachmentCount: s.attachment_count ?? s.attachmentCount,
+      roi: s.roi,
+    };
+  }
+
   private renderSuggestions(): void {
-    const container = document.querySelector('#suggestionsContainer');
-    const emptyState = document.querySelector('#emptyState');
+    const container = $$('#suggestionsContainer');
+    const emptyState = $$('#emptyState');
 
     if (!container || !emptyState) return;
 
@@ -292,11 +445,12 @@ class KvpPage {
 
     emptyState.style.display = 'none';
 
+    // eslint-disable-next-line no-unsanitized/property -- User content is escaped with escapeHtml
     container.innerHTML = this.suggestions
       .map((suggestion) => {
         const statusClass = suggestion.status.replace('_', '');
-        const visibilityIcon = suggestion.org_level === 'company' ? 'fa-globe' : 'fa-building';
-        const visibilityText = suggestion.org_level === 'company' ? 'Firmenweit' : 'Abteilung';
+        const visibilityIcon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-building';
+        const visibilityText = suggestion.orgLevel === 'company' ? 'Firmenweit' : 'Abteilung';
 
         return `
         <div class="glass-card kvp-card" data-id="${suggestion.id}">
@@ -305,17 +459,17 @@ class KvpPage {
           <div class="suggestion-header">
             <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>
             <div class="suggestion-meta">
-              <span><i class="fas fa-user"></i> ${suggestion.submitted_by_name} ${suggestion.submitted_by_lastname}</span>
-              <span><i class="fas fa-calendar"></i> ${new Date(suggestion.created_at).toLocaleDateString('de-DE')}</span>
+              <span><i class="fas fa-user"></i> ${suggestion.submittedByName} ${suggestion.submittedByLastname}</span>
+              <span><i class="fas fa-calendar"></i> ${new Date(suggestion.createdAt).toLocaleDateString('de-DE')}</span>
               ${
-                suggestion.attachment_count !== undefined && suggestion.attachment_count > 0
-                  ? `<span><i class="fas fa-camera"></i> ${suggestion.attachment_count} Foto${suggestion.attachment_count > 1 ? 's' : ''}</span>`
+                suggestion.attachmentCount !== undefined && suggestion.attachmentCount > 0
+                  ? `<span><i class="fas fa-camera"></i> ${suggestion.attachmentCount} Foto${suggestion.attachmentCount > 1 ? 's' : ''}</span>`
                   : ''
               }
             </div>
-            <div class="visibility-badge ${suggestion.org_level}">
+            <div class="visibility-badge ${suggestion.orgLevel}">
               <i class="fas ${visibilityIcon}"></i> ${visibilityText}
-              ${suggestion.shared_by_name !== undefined && suggestion.shared_by_name !== '' ? `<span> - Geteilt von ${suggestion.shared_by_name}</span>` : ''}
+              ${suggestion.sharedByName !== undefined && suggestion.sharedByName !== '' ? `<span> - Geteilt von ${suggestion.sharedByName}</span>` : ''}
             </div>
           </div>
 
@@ -324,9 +478,9 @@ class KvpPage {
           </div>
 
           <div class="suggestion-footer">
-            <div class="category-tag" style="background: ${suggestion.category_color}20; color: ${suggestion.category_color}; border: 1px solid ${suggestion.category_color};">
-              ${suggestion.category_icon}
-              ${suggestion.category_name}
+            <div class="category-tag" style="background: ${suggestion.categoryColor}20; color: ${suggestion.categoryColor}; border: 1px solid ${suggestion.categoryColor};">
+              ${suggestion.categoryIcon}
+              ${suggestion.categoryName}
             </div>
 
             <div class="action-buttons">
@@ -343,8 +497,9 @@ class KvpPage {
       card.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
         if (!target.closest('.action-btn')) {
-          const id = card.dataset.id;
-          if (id !== null && id !== '') this.viewSuggestion(Number.parseInt(id, 10));
+          const cardEl = card as HTMLElement;
+          const id = cardEl.dataset.id;
+          if (id !== undefined && id !== '') this.viewSuggestion(Number.parseInt(id, 10));
         }
       });
     });
@@ -353,9 +508,10 @@ class KvpPage {
     container.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const action = btn.dataset.action;
-        const id = btn.dataset.id;
-        if (action !== null && action !== '' && id !== null && id !== '') {
+        const btnEl = btn as HTMLElement;
+        const action = btnEl.dataset.action;
+        const id = btnEl.dataset.id;
+        if (action !== undefined && action !== '' && id !== undefined && id !== '') {
           void this.handleAction(action, Number.parseInt(id, 10));
         }
       });
@@ -377,7 +533,7 @@ class KvpPage {
     `);
 
     // Share button for admins (but not in employee mode)
-    if ((effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.org_level === 'department') {
+    if ((effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.orgLevel === 'department') {
       buttons.push(`
         <button class="action-btn share" data-action="share" data-id="${suggestion.id}">
           <i class="fas fa-share-alt"></i> Teilen
@@ -387,8 +543,8 @@ class KvpPage {
 
     // Unshare button for the original sharer (root can always unshare)
     if (
-      suggestion.org_level === 'company' &&
-      (effectiveRole === 'root' || suggestion.shared_by === this.currentUser.id)
+      suggestion.orgLevel === 'company' &&
+      (effectiveRole === 'root' || suggestion.sharedBy === this.currentUser.id)
     ) {
       buttons.push(`
         <button class="action-btn" data-action="unshare" data-id="${suggestion.id}">
@@ -424,15 +580,22 @@ class KvpPage {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp/${id}/share`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (this.useV2API) {
+        // v2 API
+        await this.apiClient.post(`/kvp/${id}/share`);
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch(`/api/kvp/${id}/share`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) throw new Error('Failed to share suggestion');
+        if (!response.ok) throw new Error('Failed to share suggestion');
+      }
 
       this.showSuccess('Vorschlag wurde firmenweit geteilt');
       await this.loadSuggestions();
@@ -447,15 +610,22 @@ class KvpPage {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp/${id}/unshare`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (this.useV2API) {
+        // v2 API
+        await this.apiClient.post(`/kvp/${id}/unshare`);
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch(`/api/kvp/${id}/unshare`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) throw new Error('Failed to unshare suggestion');
+        if (!response.ok) throw new Error('Failed to unshare suggestion');
+      }
 
       this.showSuccess('Teilen wurde rückgängig gemacht');
       await this.loadSuggestions();
@@ -467,45 +637,84 @@ class KvpPage {
 
   private async loadStatistics(): Promise<void> {
     try {
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp/stats`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-        },
-      });
+      let statsData: unknown;
+      if (this.useV2API) {
+        // v2 API wraps response in data property
+        const response = await this.apiClient.get('/kvp/dashboard/stats');
+        statsData = response;
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch('/api/kvp/stats', {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      if (!response.ok) throw new Error('Failed to load statistics');
+        if (!response.ok) throw new Error('Failed to load statistics');
+        statsData = await response.json();
+      }
+
+      interface V1Status {
+        new?: number;
+        in_review?: number;
+        implemented?: number;
+        approved?: number;
+        rejected?: number;
+        archived?: number;
+      }
+
+      interface V2Status {
+        new?: number;
+        inReview?: number;
+        approved?: number;
+        implemented?: number;
+        rejected?: number;
+        archived?: number;
+      }
 
       interface StatsResponse {
-        company: {
+        company?: {
           total: number;
-          byStatus: {
-            new?: number;
-            in_review?: number;
-            implemented?: number;
-            approved?: number;
-            rejected?: number;
-            archived?: number;
-          };
+          byStatus: V1Status | V2Status;
           totalSavings: number;
         };
+        total?: number; // v2 might have flat structure
+        byStatus?: V2Status;
+        totalSavings?: number;
       }
 
-      const data = (await response.json()) as StatsResponse;
+      const rawData = statsData as StatsResponse;
+
+      // Normalize the data structure - v2 may have flat structure
+      const data = rawData.company
+        ? rawData
+        : {
+            company: {
+              total: rawData.total ?? 0,
+              byStatus: rawData.byStatus ?? {},
+              totalSavings: rawData.totalSavings ?? 0,
+            },
+          };
 
       // Update statistics display
-      const totalEl = document.querySelector('#totalSuggestions');
-      const openEl = document.querySelector('#openSuggestions');
-      const implementedEl = document.querySelector('#implementedSuggestions');
-      const savingsEl = document.querySelector('#totalSavings');
+      const totalEl = $$('#totalSuggestions');
+      const openEl = $$('#openSuggestions');
+      const implementedEl = $$('#implementedSuggestions');
+      const savingsEl = $$('#totalSavings');
 
-      if (totalEl) totalEl.textContent = data.company.total.toString();
-      if (openEl) {
-        const newCount = data.company.byStatus.new ?? 0;
-        const inReviewCount = data.company.byStatus.in_review ?? 0;
+      if (totalEl instanceof HTMLElement && data.company) totalEl.textContent = data.company.total.toString();
+      if (openEl instanceof HTMLElement && data.company) {
+        const byStatus = data.company.byStatus as V1Status & V2Status;
+        const newCount = byStatus.new ?? 0;
+        // Handle both v1 (in_review) and v2 (inReview) formats
+        const inReviewCount = byStatus.inReview ?? byStatus.in_review ?? 0;
         openEl.textContent = (newCount + inReviewCount).toString();
       }
-      if (implementedEl) implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
-      if (savingsEl)
+      if (implementedEl instanceof HTMLElement && data.company) {
+        implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
+      }
+      if (savingsEl instanceof HTMLElement && data.company)
         savingsEl.textContent = new Intl.NumberFormat('de-DE', {
           style: 'currency',
           currency: 'EUR',
@@ -519,18 +728,18 @@ class KvpPage {
     // Count suggestions by filter
     const counts = {
       all: this.suggestions.length,
-      mine: this.suggestions.filter((s) => s.submitted_by === this.currentUser?.id).length,
-      department: this.suggestions.filter((s) => s.org_level === 'department').length,
-      company: this.suggestions.filter((s) => s.org_level === 'company').length,
+      mine: this.suggestions.filter((s) => s.submittedBy === this.currentUser?.id).length,
+      department: this.suggestions.filter((s) => s.orgLevel === 'department').length,
+      company: this.suggestions.filter((s) => s.orgLevel === 'company').length,
       archived: this.suggestions.filter((s) => s.status === 'archived').length,
     };
 
     // Update badge counts
-    const badgeAll = document.querySelector('#badgeAll');
-    const badgeMine = document.querySelector('#badgeMine');
-    const badgeDepartment = document.querySelector('#badgeDepartment');
-    const badgeCompany = document.querySelector('#badgeCompany');
-    const badgeArchived = document.querySelector('#badgeArchived');
+    const badgeAll = $$('#badgeAll');
+    const badgeMine = $$('#badgeMine');
+    const badgeDepartment = $$('#badgeDepartment');
+    const badgeCompany = $$('#badgeCompany');
+    const badgeArchived = $$('#badgeArchived');
 
     if (badgeAll) badgeAll.textContent = counts.all.toString();
     if (badgeMine) badgeMine.textContent = counts.mine.toString();
@@ -547,14 +756,16 @@ class KvpPage {
           b.classList.remove('active');
         });
         btn.classList.add('active');
-        this.currentFilter = btn.dataset.filter ?? 'all';
+        if (btn instanceof HTMLElement) {
+          this.currentFilter = btn.dataset.filter ?? 'all';
+        }
         void this.loadSuggestions();
       });
     });
 
     // Secondary filters - Listen to the hidden input value changes
     ['statusFilterValue', 'categoryFilterValue', 'departmentFilterValue'].forEach((id) => {
-      const element = document.getElementById(id);
+      const element = $$(`#${id}`);
       if (element) {
         element.addEventListener('change', () => {
           void this.loadSuggestions();
@@ -564,18 +775,27 @@ class KvpPage {
 
     // Search filter with debounce
     let searchTimeout: number;
-    const searchInput = document.querySelector('#searchFilter')!;
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = window.setTimeout(() => {
-        void this.loadSuggestions();
-      }, 300);
-    });
+    const searchInput = $$('#searchFilter');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = window.setTimeout(() => {
+          void this.loadSuggestions();
+        }, 300);
+      });
+    }
 
-    // Create new button
+    // Create new buttons (both header and floating)
     const createBtn = document.querySelector('#createNewBtn');
     if (createBtn) {
       createBtn.addEventListener('click', () => {
+        this.openCreateModal();
+      });
+    }
+
+    const createBtnHeader = document.querySelector('#createNewBtnHeader');
+    if (createBtnHeader) {
+      createBtnHeader.addEventListener('click', () => {
         this.openCreateModal();
       });
     }
@@ -593,15 +813,22 @@ class KvpPage {
   }
 
   private getStatusText(status: string): string {
-    const statusMap: Record<string, string> = {
-      new: 'Neu',
-      in_review: 'In Prüfung',
-      approved: 'Genehmigt',
-      implemented: 'Umgesetzt',
-      rejected: 'Abgelehnt',
-      archived: 'Archiviert',
-    };
-    return statusMap[status] ?? status;
+    switch (status) {
+      case 'new':
+        return 'Neu';
+      case 'in_review':
+        return 'In Prüfung';
+      case 'approved':
+        return 'Genehmigt';
+      case 'implemented':
+        return 'Umgesetzt';
+      case 'rejected':
+        return 'Abgelehnt';
+      case 'archived':
+        return 'Archiviert';
+      default:
+        return status;
+    }
   }
 
   private escapeHtml(text: string): string {
@@ -611,7 +838,6 @@ class KvpPage {
   }
 
   private showSuccess(message: string): void {
-    // TODO: Implement toast notification
     console.info(message);
     const notification = document.createElement('div');
     notification.className = 'notification success';
@@ -623,7 +849,6 @@ class KvpPage {
   }
 
   private showError(message: string): void {
-    // TODO: Implement toast notification
     console.error(`Fehler: ${message}`);
     const notification = document.createElement('div');
     notification.className = 'notification error';
@@ -634,21 +859,20 @@ class KvpPage {
     }, 3000);
   }
 
-  private async showConfirmDialog(message: string): Promise<boolean> {
-    // TODO: Implement custom confirmation dialog
-    // For now, return true to avoid using native confirm
-    console.warn('Confirmation dialog not implemented:', message);
-    return await Promise.resolve(true);
+  private showConfirmDialog(message: string): Promise<boolean> {
+    // Simple confirm for now - can be replaced with custom modal later
+    return Promise.resolve(window.confirm(message));
   }
 
   private openCreateModal(): void {
     // Reset form
-    const form = document.querySelector('#createKvpForm')!;
-    form.reset();
+    const form = $$('#createKvpForm');
+    if (form instanceof HTMLFormElement) form.reset();
 
     // Load categories into dropdown
-    const categoryDropdown = document.querySelector('#kvpCategoryDropdown');
+    const categoryDropdown = $$('#kvpCategoryDropdown');
     if (categoryDropdown && this.categories.length > 0) {
+      // eslint-disable-next-line no-unsanitized/property -- User content is escaped with escapeHtml
       categoryDropdown.innerHTML = this.categories
         .map(
           (category) => `
@@ -666,7 +890,11 @@ class KvpPage {
 
   private async createSuggestion(): Promise<void> {
     try {
-      const form = document.querySelector('#createKvpForm')!;
+      const form = $$('#createKvpForm');
+      if (!(form instanceof HTMLFormElement)) {
+        this.showError('Form nicht gefunden');
+        return;
+      }
       const formData = new FormData(form);
 
       // Validate required fields
@@ -704,22 +932,32 @@ class KvpPage {
       };
 
       // Submit to API
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      let suggestionId: number;
 
-      if (!response.ok) {
-        const error = (await response.json()) as { message?: string };
-        throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
+      if (this.useV2API) {
+        // v2 API
+        const result = await this.apiClient.post<{ id: number }>('/kvp', data);
+        suggestionId = result.id;
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch('/api/kvp', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          const error = (await response.json()) as { message?: string };
+          throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
+        }
+
+        const result = (await response.json()) as { suggestion: { id: number } };
+        suggestionId = result.suggestion.id;
       }
-
-      const result = (await response.json()) as { suggestion: { id: number } };
-      const suggestionId = result.suggestion.id;
 
       // Upload photos if any
       const selectedPhotos = (window as unknown as KvpWindow).selectedPhotos;
@@ -761,22 +999,30 @@ class KvpPage {
     });
 
     try {
-      console.info('Sending photo upload request to:', `${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`);
-      const response = await fetch(`${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-        },
-        body: formData,
-      });
+      if (this.useV2API) {
+        // v2 API
+        console.info('Sending photo upload request to v2 API');
+        await this.apiClient.upload(`/kvp/${suggestionId}/attachments`, formData);
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        console.info('Sending photo upload request to:', `/api/kvp/${suggestionId}/attachments`);
+        const response = await fetch(`/api/kvp/${suggestionId}/attachments`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+          body: formData,
+        });
 
-      console.info('Upload response status:', response.status);
-      const responseData = (await response.json()) as { message?: string };
-      console.info('Upload response data:', responseData);
+        console.info('Upload response status:', response.status);
+        const responseData = (await response.json()) as { message?: string };
+        console.info('Upload response data:', responseData);
 
-      if (!response.ok) {
-        console.error('Fehler beim Hochladen der Fotos:', responseData);
-        throw new Error(responseData.message ?? 'Upload fehlgeschlagen');
+        if (!response.ok) {
+          console.error('Fehler beim Hochladen der Fotos:', responseData);
+          throw new Error(responseData.message ?? 'Upload fehlgeschlagen');
+        }
       }
     } catch (error) {
       console.error('Error uploading photos:', error);

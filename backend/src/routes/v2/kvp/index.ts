@@ -20,14 +20,18 @@ const router = Router();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
   destination(_req, _file, cb) {
     const uploadDir = getUploadDirectory('kvp');
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
     cb(null, uploadDir);
   },
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
   filename(_req, file, cb) {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
     cb(null, uniqueSuffix + ext);
   },
 });
@@ -35,6 +39,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
   fileFilter: (_req, file, cb) => {
     const allowedTypes = [
       'image/jpeg',
@@ -45,8 +50,10 @@ const upload = multer({
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (allowedTypes.includes(file.mimetype)) {
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
       cb(null, true);
     } else {
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
       cb(new Error('Only JPG, PNG, PDF, DOC and DOCX files are allowed'));
     }
   },
@@ -202,7 +209,7 @@ router.post(
 
 /**
  * @swagger
- * /api/v2/kvp/points/user/{userId}:
+ * /api/v2/kvp/points/user/\{userId\}:
  *   get:
  *     summary: Get user points summary
  *     description: Get points summary for a specific user
@@ -360,7 +367,7 @@ router.get(
 router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.listSuggestions));
 /**
  * @swagger
- * /api/v2/kvp/{id}:
+ * /api/v2/kvp/\{id\}:
  *   get:
  *     summary: Get KVP suggestion by ID
  *     description: Retrieve a specific KVP suggestion with all details
@@ -465,7 +472,7 @@ router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.
 
 /**
  * @swagger
- * /api/v2/kvp/{id}:
+ * /api/v2/kvp/\{id\}:
  *   put:
  *     summary: Update KVP suggestion
  *     description: Update an existing KVP suggestion
@@ -550,7 +557,7 @@ router.put(
 
 /**
  * @swagger
- * /api/v2/kvp/{id}:
+ * /api/v2/kvp/\{id\}:
  *   delete:
  *     summary: Delete KVP suggestion
  *     description: Delete a KVP suggestion (only own suggestions or admin)
@@ -595,7 +602,7 @@ router.delete(
 
 /**
  * @swagger
- * /api/v2/kvp/{id}/comments:
+ * /api/v2/kvp/\{id\}/comments:
  *   get:
  *     summary: Get comments for KVP suggestion
  *     description: Retrieve all comments for a specific KVP suggestion
@@ -638,7 +645,7 @@ router.get(
 
 /**
  * @swagger
- * /api/v2/kvp/{id}/comments:
+ * /api/v2/kvp/\{id\}/comments:
  *   post:
  *     summary: Add comment to KVP suggestion
  *     description: Add a new comment to a specific KVP suggestion
@@ -696,7 +703,7 @@ router.post(
 
 /**
  * @swagger
- * /api/v2/kvp/{id}/attachments:
+ * /api/v2/kvp/\{id\}/attachments:
  *   get:
  *     summary: Get attachments for KVP suggestion
  *     description: Retrieve all attachments for a specific KVP suggestion
@@ -739,7 +746,7 @@ router.get(
 
 /**
  * @swagger
- * /api/v2/kvp/{id}/attachments:
+ * /api/v2/kvp/\{id\}/attachments:
  *   post:
  *     summary: Upload attachments to KVP suggestion
  *     description: Upload up to 5 attachments to a specific KVP suggestion
@@ -810,7 +817,7 @@ router.post(
 
 /**
  * @swagger
- * /api/v2/kvp/attachments/{attachmentId}/download:
+ * /api/v2/kvp/attachments/\{attachmentId\}/download:
  *   get:
  *     summary: Download KVP attachment
  *     description: Download a specific attachment file

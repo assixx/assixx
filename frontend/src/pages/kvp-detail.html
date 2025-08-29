@@ -16,6 +16,9 @@
       })();
     </script>
 
+    <!-- Feature Flags for API v2 Migration -->
+    <script src="/feature-flags.js"></script>
+
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -46,10 +49,8 @@
 
       /* Detail Container */
       .detail-container {
-        max-width: 1200px;
-        margin: 0 auto;
         display: grid;
-        grid-template-columns: 1fr 400px;
+        grid-template-columns: 1fr 475px;
         gap: var(--spacing-lg);
         position: relative;
         z-index: 1;
@@ -546,7 +547,7 @@
     </style>
   </head>
 
-  <body>
+  <body class="kvp-detail-page">
     <!-- Navigation Container -->
     <div id="navigation-container"></div>
 
@@ -766,6 +767,7 @@
     <script type="module" src="/scripts/auth.ts"></script>
     <script type="module" src="/scripts/pages/kvp-detail.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
 
     <script>
       function openLightbox(src) {

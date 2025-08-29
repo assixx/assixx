@@ -66,7 +66,6 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 .breadcrumb-link {
   color: var(--text-secondary);
   text-decoration: none;
-  transition: all 0.3s ease;
   padding: 4px 8px;
   border-radius: 6px;
 }

@@ -820,8 +820,6 @@
   color: var(--text-secondary);
 
   background: rgb(255 255 255 / 5%);
-
-  transition: all 0.2s ease;
 }
 
 .zoom-btn:hover {
@@ -1627,8 +1625,6 @@ select.big-input:disabled {
   border-radius: 8px;
 
   background: rgb(255 255 255 / 5%);
-
-  transition: all 0.3s ease;
 }
 
 .unread-event-item:hover {
@@ -1678,8 +1674,6 @@ select.big-input:disabled {
   appearance: none;
   appearance: none;
   background-color: rgb(255 255 255 / 10%);
-
-  transition: all 0.3s ease;
 }
 
 .form-switch .form-check-input::before {
@@ -1694,8 +1688,6 @@ select.big-input:disabled {
   border-radius: 50%;
 
   background: white;
-
-  transition: all 0.3s ease;
 }
 
 .form-switch .form-check-input:checked {

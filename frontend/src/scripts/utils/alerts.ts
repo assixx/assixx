@@ -73,7 +73,7 @@ export async function showConfirm(message: string): Promise<boolean> {
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
+
       }
       .btn-confirm-yes {
         background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);

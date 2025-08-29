@@ -47,9 +47,15 @@ body[data-page="blackboard"] #breadcrumb-container + * {
   margin-top: -15px !important;
 }
 
-/* KVP page - benötigt großen negativen Abstand */
-.kvp-page #breadcrumb-container + * {
+/* KVP page - benötigt großen negativen Abstand nur für Admin/Root */
+.kvp-page.role-admin #breadcrumb-container + *,
+.kvp-page.role-root #breadcrumb-container + * {
   margin-top: -61px !important;
+}
+
+/* KVP page - normaler Abstand für Employees */
+.kvp-page.role-employee #breadcrumb-container + * {
+  margin-top: 0;
 }
 
 /* ========================================

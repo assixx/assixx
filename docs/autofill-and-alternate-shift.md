@@ -148,7 +148,6 @@ AND us.category = 'shifts';
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
   margin-bottom: 8px;
 }
 

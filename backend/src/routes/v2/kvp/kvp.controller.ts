@@ -4,7 +4,7 @@
  */
 import { Response } from 'express';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
@@ -170,7 +170,7 @@ export async function createSuggestion(req: AuthenticatedRequest, res: Response)
     const suggestion = await kvpService.createSuggestion(data, req.user.tenant_id, req.user.id);
 
     // Log KVP suggestion creation
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'create',
@@ -243,13 +243,13 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
     );
 
     // Log KVP suggestion update
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'update',
       entity_type: 'kvp_suggestion',
       entity_id: suggestionId,
-      details: `Aktualisiert: ${data.title}`,
+      details: `Aktualisiert: ${data.title ?? 'KVP-Vorschlag'}`,
       old_values: {
         title: (oldSuggestion as KVPSuggestion | null)?.title,
         description: (oldSuggestion as KVPSuggestion | null)?.description,
@@ -305,7 +305,7 @@ export async function deleteSuggestion(req: AuthenticatedRequest, res: Response)
     await kvpService.deleteSuggestion(suggestionId, req.user.tenant_id, req.user.id, req.user.role);
 
     // Log KVP suggestion deletion
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'delete',
@@ -387,7 +387,7 @@ export async function addComment(req: AuthenticatedRequest, res: Response): Prom
     );
 
     // Log comment addition
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'add_comment',
@@ -481,7 +481,7 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
     );
 
     // Log attachment upload
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'upload_attachment',
@@ -564,7 +564,7 @@ export async function awardPoints(req: AuthenticatedRequest, res: Response): Pro
     );
 
     // Log points awarding
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'award_points',

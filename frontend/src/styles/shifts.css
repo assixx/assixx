@@ -85,7 +85,6 @@
   font-size: 20px;
   color: var(--text-secondary, rgb(255 255 255 / 60%));
   background: transparent;
-  transition: all 0.3s ease;
 }
 
 #rotation-setup-modal .modal-close:hover {
@@ -1297,7 +1296,7 @@
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
+
   font-size: 0.875rem;
   font-weight: 500;
 }

@@ -884,7 +884,9 @@ export async function getMyCalendarShifts(req: AuthenticatedRequest, res: Respon
     const endDate = req.query.endDate as string;
 
     if (!startDate || !endDate) {
-      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));
+      res
+        .status(400)
+        .json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));
       return;
     }
 
@@ -893,7 +895,7 @@ export async function getMyCalendarShifts(req: AuthenticatedRequest, res: Respon
       req.user.id,
       req.user.tenant_id,
       startDate,
-      endDate
+      endDate,
     );
 
     res.json(successResponse(shifts, 'User shifts retrieved successfully'));

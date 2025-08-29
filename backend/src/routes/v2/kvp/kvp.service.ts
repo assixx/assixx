@@ -2,7 +2,7 @@
  * KVP API v2 Service Layer
  * Business logic for Continuous Improvement Process (Kontinuierlicher Verbesserungsprozess)
  */
-import KVPModel from '../../../models/kvp.js';
+import kvpModel from '../../../models/kvp.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 
@@ -124,7 +124,7 @@ export class KVPService {
    */
   async getCategories(_tenantId: number): Promise<unknown[]> {
     try {
-      const categories = await KVPModel.getCategories();
+      const categories = await kvpModel.getCategories();
       return categories.map((category) => dbToApi(category));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get categories', error);
@@ -155,7 +155,7 @@ export class KVPService {
     try {
       const offset = ((filters.page ?? 1) - 1) * (filters.limit ?? 20);
 
-      const suggestions = await KVPModel.getSuggestions(tenantId, userId, userRole, {
+      const suggestions = await kvpModel.getSuggestions(tenantId, userId, userRole, {
         status: filters.status,
         category_id: filters.categoryId,
         priority: filters.priority,
@@ -206,7 +206,7 @@ export class KVPService {
     userId: number,
     userRole: string,
   ): Promise<KVPSuggestion> {
-    const suggestion = await KVPModel.getSuggestionById(id, tenantId, userId, userRole);
+    const suggestion = await kvpModel.getSuggestionById(id, tenantId, userId, userRole);
 
     if (!suggestion) {
       throw new ServiceError('NOT_FOUND', 'Suggestion not found');
@@ -240,10 +240,10 @@ export class KVPService {
         estimated_cost: data.estimatedCost,
       };
 
-      const result = await KVPModel.createSuggestion(suggestionData);
+      const result = await kvpModel.createSuggestion(suggestionData);
 
       // Fetch the created suggestion with all details
-      const suggestion = await KVPModel.getSuggestionById(
+      const suggestion = await kvpModel.getSuggestionById(
         result.id,
         tenantId,
         userId,
@@ -291,7 +291,7 @@ export class KVPService {
     try {
       // If status is being updated, use the special method
       if (data.status) {
-        await KVPModel.updateSuggestionStatus(
+        await kvpModel.updateSuggestionStatus(
           id,
           tenantId,
           data.status,
@@ -311,7 +311,7 @@ export class KVPService {
       if (data.actualSavings !== undefined) updateFields.actual_savings = data.actualSavings;
 
       if (Object.keys(updateFields).length > 0) {
-        await KVPModel.updateSuggestion(id, tenantId, updateFields);
+        await kvpModel.updateSuggestion(id, tenantId, updateFields);
       }
 
       // Return the updated suggestion
@@ -343,7 +343,7 @@ export class KVPService {
     }
 
     try {
-      const result = await KVPModel.deleteSuggestion(id, tenantId, userId);
+      const result = await kvpModel.deleteSuggestion(id, tenantId, userId);
       if (!result) {
         throw new ServiceError('SERVER_ERROR', 'Failed to delete suggestion');
       }
@@ -370,7 +370,7 @@ export class KVPService {
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
     try {
-      const comments = await KVPModel.getComments(suggestionId, userRole);
+      const comments = await kvpModel.getComments(suggestionId, userRole);
       return comments.map((comment) => dbToApi(comment));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get comments', error);
@@ -396,7 +396,7 @@ export class KVPService {
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
     try {
-      const commentId = await KVPModel.addComment(
+      const commentId = await kvpModel.addComment(
         suggestionId,
         tenantId,
         userId,
@@ -432,7 +432,7 @@ export class KVPService {
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
     try {
-      const attachments = await KVPModel.getAttachments(suggestionId);
+      const attachments = await kvpModel.getAttachments(suggestionId);
       return attachments.map((attachment) => dbToApi(attachment));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get attachments', error);
@@ -458,7 +458,7 @@ export class KVPService {
     await this.getSuggestionById(suggestionId, tenantId, userId, userRole);
 
     try {
-      const result = await KVPModel.addAttachment(suggestionId, {
+      const result = await kvpModel.addAttachment(suggestionId, {
         file_name: attachmentData.fileName,
         file_path: attachmentData.filePath,
         file_type: attachmentData.fileType,
@@ -485,7 +485,7 @@ export class KVPService {
     userId: number,
     userRole: string,
   ): Promise<unknown> {
-    const attachment = await KVPModel.getAttachment(attachmentId, tenantId, userId, userRole);
+    const attachment = await kvpModel.getAttachment(attachmentId, tenantId, userId, userRole);
 
     if (!attachment) {
       throw new ServiceError('NOT_FOUND', 'Attachment not found');
@@ -513,7 +513,7 @@ export class KVPService {
     }
 
     try {
-      const pointId = await KVPModel.awardPoints(
+      const pointId = await kvpModel.awardPoints(
         tenantId,
         data.userId,
         data.suggestionId,
@@ -543,7 +543,7 @@ export class KVPService {
    */
   async getUserPoints(tenantId: number, userId: number): Promise<unknown> {
     try {
-      const points = await KVPModel.getUserPoints(tenantId, userId);
+      const points = await kvpModel.getUserPoints(tenantId, userId);
       return dbToApi(points) as unknown;
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get user points', error);
@@ -556,7 +556,7 @@ export class KVPService {
    */
   async getDashboardStats(tenantId: number): Promise<unknown> {
     try {
-      const stats = await KVPModel.getDashboardStats(tenantId);
+      const stats = await kvpModel.getDashboardStats(tenantId);
       return dbToApi(stats) as unknown;
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get dashboard stats', error);

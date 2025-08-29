@@ -18,14 +18,18 @@ const router: Router = express.Router();
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
   destination(_req, _file, cb) {
     const uploadDir = getUploadDirectory('kvp');
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
     cb(null, uploadDir);
   },
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
   filename(_req, file, cb) {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
     cb(null, uniqueSuffix + ext);
   },
 });
@@ -33,11 +37,14 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
   fileFilter: (_req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
       cb(null, true);
     } else {
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback style
       cb(new Error('Nur JPG, JPEG und PNG Dateien sind erlaubt!'));
     }
   },
@@ -214,7 +221,7 @@ router.get('/stats', async (req, res) => {
 
 /**
  * @swagger
- * /kvp/{id}:
+ * /kvp/\{id\}:
  *   get:
  *     summary: Get KVP suggestion by ID
  *     description: Retrieve a specific KVP suggestion with all details
@@ -347,7 +354,7 @@ router.post('/:id/unshare', async (req, res) => {
 
 /**
  * @swagger
- * /kvp/{id}/comments:
+ * /kvp/\{id\}/comments:
  *   get:
  *     summary: Get comments for KVP suggestion
  *     description: Retrieve all comments for a specific KVP suggestion
@@ -402,7 +409,7 @@ router.post('/:id/unshare', async (req, res) => {
  */
 /**
  * @swagger
- * /kvp/{id}/comments:
+ * /kvp/\{id\}/comments:
  *   post:
  *     summary: Add comment to KVP suggestion
  *     description: Add a new comment to a specific KVP suggestion

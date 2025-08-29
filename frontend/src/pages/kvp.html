@@ -142,6 +142,38 @@
         font-size: 1.5rem;
       }
 
+      /* Unified Card Style - consistent across all pages */
+      .card {
+        backdrop-filter: blur(20px) saturate(180%);
+        background: hsla(0, 0%, 100%, 0.02);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .card-body {
+        padding: var(--spacing-lg);
+      }
+
+      .card-title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .text-secondary {
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 0.25rem;
+      }
+
       /* KVP Suggestions Grid */
       .kvp-suggestions-grid {
         display: grid;
@@ -439,9 +471,6 @@
       .dropdown-display:hover {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .dropdown-display svg {
       }
 
       .dropdown-display.active svg {
@@ -848,109 +877,124 @@
             </div>
           </div>
 
-          <!-- Filter Bar -->
-          <div class="kvp-filter-bar">
-            <button class="filter-btn active" data-filter="all">
-              <i class="fas fa-list"></i>
-              Alle
-              <span class="badge" id="badgeAll">0</span>
-            </button>
-            <button class="filter-btn" data-filter="mine">
-              <i class="fas fa-user"></i>
-              Meine
-              <span class="badge" id="badgeMine">0</span>
-            </button>
-            <button class="filter-btn" data-filter="department">
-              <i class="fas fa-building"></i>
-              Abteilung
-              <span class="badge" id="badgeDepartment">0</span>
-            </button>
-            <button class="filter-btn" data-filter="company">
-              <i class="fas fa-globe"></i>
-              Firmenweit
-              <span class="badge" id="badgeCompany">0</span>
-            </button>
-            <button class="filter-btn admin-only" data-filter="manage" class="u-hidden">
-              <i class="fas fa-tasks"></i>
-              Verwalten
-            </button>
-            <button class="filter-btn admin-only" data-filter="archived" class="u-hidden">
-              <i class="fas fa-archive"></i>
-              Archiv
-              <span class="badge" id="badgeArchived">0</span>
-            </button>
-          </div>
-
-          <!-- Secondary Filters -->
-          <div class="secondary-filters">
-            <!-- Status Filter Dropdown -->
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
-                <span>Alle Status</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+          <!-- Main Card Container -->
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">KVP-Vorschläge</h2>
+                <p class="text-secondary">Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere Abläufe</p>
               </div>
-              <div class="dropdown-options" id="statusDropdown">
-                <div class="dropdown-option" onclick="selectStatus('', 'Alle Status')">Alle Status</div>
-                <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
-                <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
-                <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
-                <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
-                <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
-              </div>
-              <input type="hidden" name="statusFilter" id="statusFilterValue" />
+              <button class="btn btn-primary" id="createNewBtnHeader" title="Neuen Vorschlag erstellen">
+                <i class="fas fa-plus"></i>
+                Neuer Vorschlag
+              </button>
             </div>
-
-            <!-- Category Filter Dropdown -->
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
-                <span>Alle Kategorien</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+            <div class="card-body">
+              <!-- Filter Bar -->
+              <div class="kvp-filter-bar">
+                <button class="filter-btn active" data-filter="all">
+                  <i class="fas fa-list"></i>
+                  Alle
+                  <span class="badge" id="badgeAll">0</span>
+                </button>
+                <button class="filter-btn" data-filter="mine">
+                  <i class="fas fa-user"></i>
+                  Meine
+                  <span class="badge" id="badgeMine">0</span>
+                </button>
+                <button class="filter-btn" data-filter="department">
+                  <i class="fas fa-building"></i>
+                  Abteilung
+                  <span class="badge" id="badgeDepartment">0</span>
+                </button>
+                <button class="filter-btn" data-filter="company">
+                  <i class="fas fa-globe"></i>
+                  Firmenweit
+                  <span class="badge" id="badgeCompany">0</span>
+                </button>
+                <button class="filter-btn admin-only" data-filter="manage" class="u-hidden">
+                  <i class="fas fa-tasks"></i>
+                  Verwalten
+                </button>
+                <button class="filter-btn admin-only" data-filter="archived" class="u-hidden">
+                  <i class="fas fa-archive"></i>
+                  Archiv
+                  <span class="badge" id="badgeArchived">0</span>
+                </button>
               </div>
-              <div class="dropdown-options" id="categoryDropdown">
-                <div class="dropdown-option" onclick="selectCategory('', 'Alle Kategorien')">Alle Kategorien</div>
+
+              <!-- Secondary Filters -->
+              <div class="secondary-filters">
+                <!-- Status Filter Dropdown -->
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+                    <span>Alle Status</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="statusDropdown">
+                    <div class="dropdown-option" onclick="selectStatus('', 'Alle Status')">Alle Status</div>
+                    <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
+                    <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
+                    <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
+                    <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
+                    <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+                  </div>
+                  <input type="hidden" name="statusFilter" id="statusFilterValue" />
+                </div>
+
+                <!-- Category Filter Dropdown -->
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
+                    <span>Alle Kategorien</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="categoryDropdown">
+                    <div class="dropdown-option" onclick="selectCategory('', 'Alle Kategorien')">Alle Kategorien</div>
+                    <!-- Dynamisch geladen -->
+                  </div>
+                  <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
+                </div>
+
+                <!-- Department Filter Dropdown -->
+                <div class="custom-dropdown admin-only" class="u-hidden">
+                  <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+                    <span>Alle Abteilungen</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="departmentDropdown">
+                    <div class="dropdown-option" onclick="selectDepartment('', 'Alle Abteilungen')">Alle Abteilungen</div>
+                    <!-- Dynamisch geladen für Admins -->
+                  </div>
+                  <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
+                </div>
+
+                <input type="text" id="searchFilter" placeholder="Suchen..." />
+              </div>
+
+              <!-- Suggestions Container -->
+              <div class="kvp-suggestions-grid" id="suggestionsContainer">
                 <!-- Dynamisch geladen -->
               </div>
-              <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
-            </div>
 
-            <!-- Department Filter Dropdown -->
-            <div class="custom-dropdown admin-only" class="u-hidden">
-              <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
-                <span>Alle Abteilungen</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+              <!-- Empty State -->
+              <div class="empty-state" id="emptyState" class="u-hidden">
+                <i class="fas fa-inbox"></i>
+                <h3>Keine Vorschläge gefunden</h3>
+                <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
               </div>
-              <div class="dropdown-options" id="departmentDropdown">
-                <div class="dropdown-option" onclick="selectDepartment('', 'Alle Abteilungen')">Alle Abteilungen</div>
-                <!-- Dynamisch geladen für Admins -->
-              </div>
-              <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
+
+              <!-- Create New Button -->
+              <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">
+                <i class="fas fa-plus"></i>
+              </button>
             </div>
-
-            <input type="text" id="searchFilter" placeholder="Suchen..." />
           </div>
-
-          <!-- Suggestions Container -->
-          <div class="kvp-suggestions-grid" id="suggestionsContainer">
-            <!-- Dynamisch geladen -->
-          </div>
-
-          <!-- Empty State -->
-          <div class="empty-state" id="emptyState" class="u-hidden">
-            <i class="fas fa-inbox"></i>
-            <h3>Keine Vorschläge gefunden</h3>
-            <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
-          </div>
-
-          <!-- Create New Button -->
-          <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">
-            <i class="fas fa-plus"></i>
-          </button>
         </div>
       </main>
     </div>

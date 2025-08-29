@@ -9,7 +9,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import KVPModel from '../models/kvp';
+import kvpModel from '../models/kvp';
 
 // Import the actual KVP model methods
 // Destructured methods are unused - commented out to fix TypeScript errors
@@ -28,7 +28,7 @@ import KVPModel from '../models/kvp';
 //   getDashboardStats,
 //   deleteSuggestion,
 //   getAttachment
-// } = KVPModel;
+// } = kvpModel;
 
 // Interfaces - these would typically match the KVP model interfaces
 interface KvpEntry {
@@ -211,7 +211,7 @@ class KvpService {
   async getCategories(tenantId: number): Promise<Category[]> {
     try {
       // Categories are global, no tenant filtering needed
-      const categories = await KVPModel.getCategories();
+      const categories = await kvpModel.getCategories();
       // Add tenant_id to match the Category interface expectation
       return categories.map((cat) => ({ ...cat, tenant_id: tenantId }));
     } catch (error: unknown) {
@@ -234,7 +234,7 @@ class KvpService {
     filters: KvpFilters = {},
   ): Promise<Suggestion[]> {
     try {
-      return await KVPModel.getSuggestions(tenantId, userId, userRole, filters);
+      return await kvpModel.getSuggestions(tenantId, userId, userRole, filters);
     } catch (error: unknown) {
       console.error('Error in KvpService.getSuggestions:', error);
       throw error;
@@ -247,9 +247,9 @@ class KvpService {
    */
   async createSuggestion(data: KvpCreateData): Promise<Suggestion> {
     try {
-      const created = await KVPModel.createSuggestion(data);
+      const created = await kvpModel.createSuggestion(data);
       // Get the full suggestion with all fields
-      const suggestion = await KVPModel.getSuggestionById(
+      const suggestion = await kvpModel.getSuggestionById(
         created.id,
         data.tenant_id,
         data.submitted_by, // Using submitted_by as userId
@@ -282,7 +282,7 @@ class KvpService {
     }[];
   }> {
     try {
-      const stats = await KVPModel.getDashboardStats(tenantId);
+      const stats = await kvpModel.getDashboardStats(tenantId);
 
       // Transform DbDashboardStats to expected format
       return {

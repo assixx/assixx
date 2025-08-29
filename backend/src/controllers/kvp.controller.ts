@@ -97,14 +97,20 @@ class KvpController {
       }
 
       const { id: userId, role, tenant_id: tenantId } = req.user;
-      const { filter, status, include_archived, page = '1', limit = '20' } = req.query;
+      const {
+        filter,
+        status,
+        include_archived: includeArchived,
+        page = '1',
+        limit = '20',
+      } = req.query;
 
       // Build visibility query
       const { whereClause, queryParams } = await kvpPermissionService.buildVisibilityQuery({
         userId,
         role,
         tenantId,
-        includeArchived: include_archived === 'true',
+        includeArchived: includeArchived === 'true',
         statusFilter: status,
         departmentFilter:
           req.query.department_id != null && req.query.department_id !== '' ?
@@ -251,7 +257,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -423,7 +429,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -557,7 +563,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -614,7 +620,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -704,7 +710,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -908,7 +914,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -979,12 +985,12 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
-      const { comment, is_internal } = req.body as {
+      const { comment, is_internal: isInternal } = req.body as {
         comment: unknown;
         is_internal?: boolean;
       };
@@ -1008,12 +1014,12 @@ class KvpController {
       }
 
       // Only admins can add internal comments
-      const isInternal =
-        Boolean(is_internal) && (req.user.role === 'admin' || req.user.role === 'root');
+      const isInternalComment =
+        Boolean(isInternal) && (req.user.role === 'admin' || req.user.role === 'root');
 
       const [result] = await executeQuery<ResultSetHeader>(
         'INSERT INTO kvp_comments (suggestion_id, user_id, comment, is_internal) VALUES (?, ?, ?, ?)',
-        [id, req.user.id, comment.trim(), isInternal ? 1 : 0],
+        [id, req.user.id, comment.trim(), isInternalComment ? 1 : 0],
       );
 
       res.status(201).json({
@@ -1044,7 +1050,7 @@ class KvpController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }

@@ -214,7 +214,7 @@ if (kontischichtManager.isActive()) {
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
+
 }
 
 .week-slide-btn.active {

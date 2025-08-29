@@ -313,7 +313,7 @@ class KontischichtManager {
             <div class="rotation-box pattern-template-card" data-pattern-id="${this.escapeHtml(template.id)}" style="
               margin-bottom: 15px;
               cursor: pointer;
-              transition: all 0.2s ease;
+
             ">
               <h4 style="color: #4299e1; margin-bottom: 10px;">
                 ${this.escapeHtml(template.name)}
@@ -562,7 +562,7 @@ class KontischichtManager {
           padding: 8px 16px;
           border-radius: 6px;
           cursor: pointer;
-          transition: all 0.2s ease;
+
         ">Muster ändern</button>
       </div>
     `;

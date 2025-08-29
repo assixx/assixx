@@ -4,7 +4,12 @@
 
 /* Ensure all elements in blackboard use Outfit font */
 .blackboard-page {
-  font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-family:
+    "Outfit",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif !important;
 }
 
 .blackboard-page .btn,
@@ -12,7 +17,12 @@
 .blackboard-page input,
 .blackboard-page textarea,
 .blackboard-page select {
-  font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-family:
+    "Outfit",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif !important;
 }
 
 /* Main content padding - für Pinnwand-Layout */

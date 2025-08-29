@@ -44,7 +44,7 @@ export function getAuthToken(): string | null {
 export function getUserId(): number | null {
   const userStr = localStorage.getItem('user');
   if (!userStr) return null;
-  
+
   try {
     const user = JSON.parse(userStr) as { id: number };
     return user.id ?? null;

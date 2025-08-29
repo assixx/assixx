@@ -276,7 +276,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   border: 1px solid hsla(0,0%,100%,.1);
   border-radius: var(--radius-sm);
   color: #fff;
-  transition: all 0.3s ease;
 
 
 .form-control:focus,
@@ -372,7 +371,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   border-radius: var(--radius-sm);
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
+
 }
 
 .dropdown-display:hover {
@@ -401,7 +400,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   opacity: 0%;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
+
   z-index: 1001;
 }
 
@@ -415,7 +414,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 10px 12px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 ```
@@ -438,7 +437,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+
   border: none;
   display: inline-flex;
   align-items: center;
@@ -461,7 +460,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+
   border: none;
   display: inline-flex;
   align-items: center;
@@ -532,7 +531,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
     font-weight: 500;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.3s ease;
+
     border: none;
     display: inline-flex;
     align-items: center;
@@ -559,7 +558,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   border-radius: var(--radius-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+
 }
 
 .btn-secondary:hover {
@@ -580,7 +579,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 0.375rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
+
   backdrop-filter: blur(10px);
   cursor: pointer;
 }
@@ -601,7 +600,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 0.375rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
+
   backdrop-filter: blur(10px);
   cursor: pointer;
 }
@@ -625,7 +624,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 0.375rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
+
   cursor: pointer;
 }
 
@@ -719,7 +718,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: all 0.3s ease;
+
 }
 
 .modal-close:hover {
@@ -773,7 +772,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -791,7 +790,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .compact-card {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -966,10 +965,10 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 
 ```css
 /* Standard Transition */
-transition: all 0.3s ease;
+
 
 /* Schnelle Interaktionen */
-transition: all 0.2s ease;
+
 
 /* Langsame, smooth Animationen */
 transition: all 0.6s ease-out;
@@ -1156,7 +1155,7 @@ function showSuccessMessage() {
   letter-spacing: 0.8px;
   font-weight: 700;
   width: fit-content;
-  transition: all 0.2s ease;
+
 }
 
 .badge-success {
@@ -1265,7 +1264,7 @@ function showSuccessMessage() {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+
   position: relative;
   overflow: hidden;
 }
@@ -1579,7 +1578,7 @@ document.addEventListener('click', function (e) {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   padding: var(--spacing-lg);
   animation: fadeInUp 0.6s ease-out;
-  transition: all 0.3s ease;
+
 }
 
 .glass-card:hover {
