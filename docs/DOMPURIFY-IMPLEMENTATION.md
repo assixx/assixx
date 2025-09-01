@@ -1,6 +1,7 @@
 # DOMPurify Implementation Guide
 
 ## Was ist DOMPurify?
+
 - **Zweck:** Säubert HTML-Strings von gefährlichem JavaScript (XSS-Schutz)
 - **Wo:** NUR im **Frontend** (Browser) - NICHT im Backend!
 - **Dateien:** In `.ts` Dateien im `/frontend/src/scripts/` Ordner
@@ -9,9 +10,11 @@
 - **Ersetzt NICHT:** `dom-utils.ts` - das bleibt! DOMPurify ist nur eine Ergänzung
 
 ## Warum DOMPurify?
+
 Verhindert XSS-Angriffe beim Verwenden von `innerHTML` mit Nutzerdaten.
 
 ## Installation ✅ BEREITS ERLEDIGT (25.08.2025)
+
 ```bash
 cd frontend
 pnpm add dompurify        # ✅ Installiert
@@ -22,19 +25,22 @@ pnpm add dompurify        # ✅ Installiert
 ## Implementation Steps
 
 ### 1. Import hinzufügen
+
 ```typescript
 import DOMPurify from 'dompurify';
 ```
 
 ### 2. innerHTML ersetzen
 
-#### Vorher (unsicher):
+#### Vorher (unsicher)
+
 ```typescript
 element.innerHTML = userContent;
 element.innerHTML = `<div>${userData.name}</div>`;
 ```
 
-#### Nachher (sicher):
+#### Nachher (sicher)
+
 ```typescript
 element.innerHTML = DOMPurify.sanitize(userContent);
 element.innerHTML = DOMPurify.sanitize(`<div>${userData.name}</div>`);
@@ -43,25 +49,29 @@ element.innerHTML = DOMPurify.sanitize(`<div>${userData.name}</div>`);
 ## Wo implementieren?
 
 ### Priorität 1 - Nutzerdaten
+
 - `/frontend/src/scripts/shifts.ts` - Mitarbeiternamen in Modals
 - `/frontend/src/scripts/blackboard.ts` - User-generierte Inhalte
 - `/frontend/src/scripts/chat.ts` - Nachrichten von Nutzern
 
 ### Priorität 2 - Template-Strings mit Variablen
+
 - `/frontend/src/scripts/calendar.ts` - Event-Beschreibungen
 - `/frontend/src/scripts/documents.ts` - Dateinamen
 
 ### Priorität 3 - Statische Templates (optional)
+
 - `/frontend/src/scripts/utils/modal-manager.ts` - Interne Templates
 
 ## Zusammenspiel mit dom-utils.ts
 
 **dom-utils.ts behält seine Funktionen:**
+
 ```typescript
 import { $$, createElement } from '../utils/dom-utils';
 
 // dom-utils für DOM-Manipulation
-const button = createElement('button', { 
+const button = createElement('button', {
   className: 'btn',
   textContent: 'Click me'  // Sicher!
 });
@@ -75,7 +85,7 @@ element.innerHTML = DOMPurify.sanitize(htmlWithUserData);
 
 1. **IMMER sanitizen bei:**
    - Nutzereingaben
-   - Datenbank-Inhalten  
+   - Datenbank-Inhalten
    - API-Responses
 
 2. **NICHT nötig bei:**
@@ -83,10 +93,11 @@ element.innerHTML = DOMPurify.sanitize(htmlWithUserData);
    - Framework-generiertem HTML (React/Vue)
 
 3. **Alternative zu innerHTML:**
+
    ```typescript
    // Statt innerHTML für Text:
    element.textContent = userData.name; // Automatisch sicher!
-   
+
    // Oder mit dom-utils:
    createElement('div', { textContent: userData.name }); // Auch sicher!
    ```
@@ -100,7 +111,9 @@ element.innerHTML = DOMPurify.sanitize(htmlWithUserData);
 | **escapeHtml()** | Text escapen | Wenn man HTML als Text anzeigen will |
 
 ## Testing
+
 Nach Implementation prüfen mit:
+
 ```javascript
 // Test-String mit XSS
 const evil = '<img src=x onerror="alert(1)">';

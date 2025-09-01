@@ -5,7 +5,7 @@
 import type { User, JWTPayload } from '../types/api.types';
 import { apiClient, ApiError } from '../utils/api-client';
 import { BrowserFingerprint } from './utils/browser-fingerprint';
-import SessionManager from './utils/session-manager';
+import { SessionManager } from './utils/session-manager';
 
 // Extend window for auth functions
 declare global {
@@ -43,10 +43,10 @@ export function getAuthToken(): string | null {
 // Get current user's ID
 export function getUserId(): number | null {
   const userStr = localStorage.getItem('user');
-  if (!userStr) return null;
+  if (userStr === null || userStr === '') return null;
 
   try {
-    const user = JSON.parse(userStr) as { id: number };
+    const user = JSON.parse(userStr) as { id?: number };
     return user.id ?? null;
   } catch {
     return null;
@@ -125,12 +125,13 @@ export function parseJwt(token: string): JWTPayload | null {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
-        .join(''),
-    );
+    const decodedBase64 = atob(base64);
+    let percentEncoded = '';
+    for (let i = 0; i < decodedBase64.length; i++) {
+      const charCode = decodedBase64.charCodeAt(i);
+      percentEncoded += `%${('00' + charCode.toString(16)).slice(-2)}`;
+    }
+    const jsonPayload = decodeURIComponent(percentEncoded);
     return JSON.parse(jsonPayload) as JWTPayload;
   } catch (error) {
     console.error('Error parsing JWT:', error);
@@ -257,7 +258,8 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     // Handle authentication errors
     if (response.status === 401) {
       removeAuthToken();
-      window.location.href = '/login';
+      // Use location.assign to avoid race condition warning
+      window.location.assign('/login');
       throw new Error('Unauthorized');
     }
 
@@ -280,7 +282,8 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
       }
 
       console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
-      window.location.href = redirectUrl;
+      // Use location.assign to avoid race condition warning
+      window.location.assign(redirectUrl);
       throw new Error('Forbidden - insufficient permissions');
     }
 
@@ -599,46 +602,52 @@ export function showInfo(message: string): void {
 
 // Initialize authentication on page load
 document.addEventListener('DOMContentLoaded', () => {
-  const token = getAuthToken();
-  const userRole = localStorage.getItem('userRole');
-  const activeRole = localStorage.getItem('activeRole');
+  // Use IIFE to handle async operations
+  void (async () => {
+    const token = getAuthToken();
+    const userRole = localStorage.getItem('userRole');
+    const activeRole = localStorage.getItem('activeRole');
 
-  console.info('[AUTH] Initialization:', {
-    token: token !== null && token.length > 0,
-    userRole,
-    activeRole,
-    path: window.location.pathname,
-    isEmployeeDashboard: window.location.pathname.includes('employee-dashboard'),
-  });
-
-  // Check if user is authenticated
-  if (!isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.info('[AUTH] No authentication token found, redirecting to login');
-    window.location.href = '/login';
-    return;
-  }
-
-  // Load user info if on authenticated page
-  if (isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.info('[AUTH] Loading user info...');
-    loadUserInfo().catch((error: unknown) => {
-      console.error('Failed to load user info:', error);
-      // Don't redirect immediately, let the user see the error
+    console.info('[AUTH] Initialization:', {
+      token: token !== null && token.length > 0,
+      userRole,
+      activeRole,
+      path: window.location.pathname,
+      isEmployeeDashboard: window.location.pathname.includes('employee-dashboard'),
     });
 
-    // Initialize session manager for authenticated users
-    SessionManager.getInstance();
-    console.info('[AUTH] Session manager initialized');
-
-    // Enforce page access based on role - use UnifiedNavigation if available
-    if (typeof window.unifiedNav.enforcePageAccess === 'function') {
-      window.unifiedNav.enforcePageAccess();
-      console.info('[AUTH] Page access enforced via UnifiedNavigation');
-    } else {
-      // UnifiedNavigation will handle this when it initializes
-      console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
+    // Check if user is authenticated
+    if (!isAuthenticated() && !window.location.pathname.includes('login')) {
+      console.info('[AUTH] No authentication token found, redirecting to login');
+      window.location.href = '/login';
+      return;
     }
-  }
+
+    // Load user info if on authenticated page
+    if (isAuthenticated() && !window.location.pathname.includes('login')) {
+      console.info('[AUTH] Loading user info...');
+      try {
+        await loadUserInfo();
+      } catch (error: unknown) {
+        console.error('Failed to load user info:', error);
+        // Don't redirect immediately, let the user see the error
+      }
+
+      // Initialize session manager for authenticated users
+      const sessionManager = SessionManager.getInstance();
+      sessionManager.setRemoveAuthTokenCallback(removeAuthToken);
+      console.info('[AUTH] Session manager initialized');
+
+      // Enforce page access based on role - use UnifiedNavigation if available
+      if (window.unifiedNav && typeof window.unifiedNav.enforcePageAccess === 'function') {
+        window.unifiedNav.enforcePageAccess();
+        console.info('[AUTH] Page access enforced via UnifiedNavigation');
+      } else {
+        // UnifiedNavigation will handle this when it initializes
+        console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
+      }
+    }
+  })();
 });
 
 // Export functions to window for backwards compatibility

@@ -50,7 +50,7 @@ export class ShiftCalendarIntegration {
 
     // If shifts should be shown, fetch them
     if (this.showShifts) {
-      const checkbox = $$id<HTMLInputElement>('showShiftsCheckbox');
+      const checkbox = $$id('showShiftsCheckbox') as HTMLInputElement | null;
       if (checkbox) {
         checkbox.checked = true;
       }

@@ -11,7 +11,7 @@ import path from 'path';
 import { security } from '../middleware/security';
 import { apiLimiter, uploadLimiter } from '../middleware/security-enhanced';
 import { createValidation, validationSchemas } from '../middleware/validation';
-import User, { DbUser } from '../models/user';
+import user, { DbUser } from '../models/user';
 import type { AuthenticatedRequest } from '../types/request.types';
 import { errorResponse, successResponse } from '../types/response.types';
 import { getErrorMessage } from '../utils/errorHandler';
@@ -90,12 +90,12 @@ router.get(
       // Different logic based on user role
       if (req.user.role === 'admin' || req.user.role === 'root') {
         // Admins see all users
-        users = await User.findAllByTenant(req.user.tenant_id);
+        users = await user.findAllByTenant(req.user.tenant_id);
       } else if (req.user.role === 'employee') {
         // Employees only see users from their department
-        const currentUser = await User.findById(req.user.id, req.user.tenant_id);
+        const currentUser = await user.findById(req.user.id, req.user.tenant_id);
         if (currentUser?.department_id != null && currentUser.department_id !== 0) {
-          const allUsers = await User.findAllByTenant(req.user.tenant_id);
+          const allUsers = await user.findAllByTenant(req.user.tenant_id);
           users = allUsers.filter((u) => u.department_id === currentUser.department_id);
         }
       } else {
@@ -111,7 +111,7 @@ router.get(
       // Apply limit if specified
       if (limit != null && limit !== '' && typeof limit === 'string') {
         const limitNum = Number.parseInt(limit, 10);
-        if (!isNaN(limitNum) && limitNum > 0) {
+        if (!Number.isNaN(limitNum) && limitNum > 0) {
           users = users.slice(0, limitNum);
         }
       }
@@ -170,14 +170,15 @@ router.get(
 
       logger.info(`Fetching user ${userId} from tenant ${tenantId}`);
 
-      const user = await User.findById(userId, tenantId);
-      if (!user) {
+      const foundUser = await user.findById(userId, tenantId);
+      if (!foundUser) {
         res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Remove password from response
-      const { password: _password, ...userProfile } = user;
+      const { password: removedPassword, ...userProfile } = foundUser;
+      void removedPassword; // Unused variable
 
       logger.info(`User ${userId} retrieved their profile via /me endpoint`);
 
@@ -200,15 +201,16 @@ router.get(
       // Security middleware already checked admin/root role
 
       const userId = Number.parseInt(req.params.id);
-      const user = await User.findById(userId, req.user.tenant_id);
+      const foundUser = await user.findById(userId, req.user.tenant_id);
 
-      if (!user) {
+      if (!foundUser) {
         res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Remove password from response
-      const { password: _password, ...userProfile } = user;
+      const { password: removedPassword, ...userProfile } = foundUser;
+      void removedPassword; // Unused variable
       res.json(userProfile);
     } catch (error: unknown) {
       logger.error(`Error fetching user ${req.params.id}: ${getErrorMessage(error)}`);
@@ -246,15 +248,19 @@ router.put(
       const userId = Number.parseInt(req.params.id);
       // Create a copy and filter out protected fields
       const {
-        id: _id,
-        tenant_id: _tenant_id,
-        created_at: _created_at,
-        updated_at: _updated_at,
+        id: removedId,
+        tenant_id: removedTenantId,
+        created_at: removedCreatedAt,
+        updated_at: removedUpdatedAt,
         ...updateData
       } = req.body as Record<string, unknown>;
+      void removedId;
+      void removedTenantId;
+      void removedCreatedAt;
+      void removedUpdatedAt;
 
       // Verify user belongs to tenant before updating
-      const existingUser = await User.findById(userId, req.user.tenant_id);
+      const existingUser = await user.findById(userId, req.user.tenant_id);
       if (!existingUser) {
         res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
@@ -272,7 +278,7 @@ router.put(
       }
 
       // Update user
-      const success = await User.update(userId, updateData, req.user.tenant_id);
+      const success = await user.update(userId, updateData, req.user.tenant_id);
 
       if (!success) {
         res.status(500).json({ message: 'Aktualisierung fehlgeschlagen' });
@@ -306,13 +312,13 @@ router.delete(
       }
 
       // Verify user belongs to tenant before deleting
-      const existingUser = await User.findById(userId, req.user.tenant_id);
+      const existingUser = await user.findById(userId, req.user.tenant_id);
       if (!existingUser) {
         res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
-      const success = await User.delete(userId);
+      const success = await user.delete(userId);
 
       if (!success) {
         res.status(500).json(errorResponse('Löschen fehlgeschlagen', 500));
@@ -329,31 +335,9 @@ router.delete(
 );
 
 /**
- * @swagger
- * /api/users/profile:
- *   get:
- *     summary: Get current user profile
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: User profile retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *       401:
- *         description: Not authenticated
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
+ * Get current user profile
+ * GET /api/users/profile
+ * Returns the profile data of the currently authenticated user
  */
 // Get logged-in user's profile data
 router.get(
@@ -379,14 +363,15 @@ router.get(
 
       console.info('[DEBUG] Parsed userId:', userId, 'tenantId:', tenantId);
 
-      const user = await User.findById(userId, tenantId);
-      if (!user) {
+      const foundUser = await user.findById(userId, tenantId);
+      if (!foundUser) {
         res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Remove password from response
-      const { password: _password, ...userProfile } = user;
+      const { password: removedPassword, ...userProfile } = foundUser;
+      void removedPassword; // Unused variable
 
       logger.info(`User ${userId} retrieved their profile`);
       res.json(successResponse(userProfile));
@@ -398,6 +383,7 @@ router.get(
 );
 
 // Configure multer for profile picture uploads
+/* eslint-disable promise/prefer-await-to-callbacks */
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
     cb(null, 'uploads/profile_pictures/');
@@ -417,6 +403,7 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
     cb(new Error('Nur Bildformate sind erlaubt!'));
   }
 };
+/* eslint-enable promise/prefer-await-to-callbacks */
 
 const upload = multer({
   storage,
@@ -464,7 +451,7 @@ router.put(
         }
       }
 
-      const success = await User.update(userId, updateData, req.user.tenant_id);
+      const success = await user.update(userId, updateData, req.user.tenant_id);
 
       if (success) {
         logger.info(`User ${userId} updated their profile`);
@@ -498,7 +485,7 @@ router.post(
       const filePath = `/uploads/profile_pictures/${fileName}`;
 
       // Update user's profile picture URL in database
-      const success = await User.update(
+      const success = await user.update(
         userId,
         {
           profile_picture: filePath,
@@ -551,21 +538,21 @@ router.delete(
       const userId = req.user.id;
 
       // Get current user to find existing profile picture
-      const user = await User.findById(userId, req.user.tenant_id);
-      if (!user) {
+      const foundUser = await user.findById(userId, req.user.tenant_id);
+      if (!foundUser) {
         res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Delete old profile picture file if it exists
-      if (user.profile_picture_url != null && user.profile_picture_url !== '') {
+      if (foundUser.profile_picture_url != null && foundUser.profile_picture_url !== '') {
         const oldFilePath = path.join(
           __dirname,
           '..',
           '..',
-          typeof user.profile_picture_url === 'string' ?
-            user.profile_picture_url
-          : String(user.profile_picture_url),
+          typeof foundUser.profile_picture_url === 'string' ?
+            foundUser.profile_picture_url
+          : String(foundUser.profile_picture_url),
         );
 
         try {
@@ -576,7 +563,7 @@ router.delete(
       }
 
       // Remove profile picture URL from database
-      const success = await User.update(userId, { profile_picture: undefined }, req.user.tenant_id);
+      const success = await user.update(userId, { profile_picture: undefined }, req.user.tenant_id);
 
       if (success) {
         logger.info(`User ${userId} deleted their profile picture`);
@@ -607,7 +594,7 @@ router.put(
       const userId = req.user.id;
 
       // Verify current password and update to new password
-      const result = await User.changePassword(
+      const result = await user.changePassword(
         userId,
         req.user.tenant_id,
         currentPassword,
@@ -635,21 +622,25 @@ router.put(
   typed.paramsBody<{ id: string }, AvailabilityUpdateBody>(async (req, res) => {
     try {
       const employeeId = Number.parseInt(req.params.id);
-      const { availability_status, availability_start, availability_end, availability_notes } =
-        req.body;
+      const {
+        availability_status: availabilityStatus,
+        availability_start: availabilityStart,
+        availability_end: availabilityEnd,
+        availability_notes: availabilityNotes,
+      } = req.body;
 
       // Validation is now handled by middleware
-      if (availability_status == null || availability_status === '') {
+      if (availabilityStatus == null || availabilityStatus === '') {
         res.status(400).json(errorResponse('Availability status is required', 400));
         return;
       }
 
       // Update user availability
-      const success = await User.updateAvailability(employeeId, req.user.tenant_id, {
-        availability_status,
-        availability_start,
-        availability_end,
-        availability_notes,
+      const success = await user.updateAvailability(employeeId, req.user.tenant_id, {
+        availability_status: availabilityStatus,
+        availability_start: availabilityStart,
+        availability_end: availabilityEnd,
+        availability_notes: availabilityNotes,
       });
 
       if (success) {
@@ -668,22 +659,22 @@ router.put(
 );
 
 /**
- * @route PATCH /api/users/me
- * @desc Update current user's employee number (for root users on first login)
- * @access Private
+ * Update current user's employee number (for root users on first login)
+ * Route: PATCH /api/users/me
+ * Access: Private
  */
 router.patch(
   '/me',
   ...security.user(),
-  typed.body<{ employee_number: string }>(async (req, res) => {
+  typed.body<{ employeeNumber: string }>(async (req, res) => {
     try {
       const userId = req.user.id;
       const tenantId = req.user.tenant_id;
 
       // Extract and validate employee number
-      const { employee_number } = req.body;
+      const { employeeNumber: employeeNumber } = req.body;
 
-      if (!employee_number) {
+      if (!employeeNumber) {
         res.status(400).json(errorResponse('Personalnummer ist erforderlich', 400));
         return;
       }
@@ -691,7 +682,7 @@ router.patch(
       // Validate employee number format: max 10 chars, alphanumeric + hyphens allowed
       // Allow formats like "ABC-123", "2025-001", "EMP001", etc.
       const employeeNumberRegex = /^[-0-9A-Za-z]{1,10}$/;
-      if (!employeeNumberRegex.test(employee_number)) {
+      if (!employeeNumberRegex.test(employeeNumber)) {
         res
           .status(400)
           .json(
@@ -704,11 +695,11 @@ router.patch(
       }
 
       // Update user's employee number
-      const success = await User.update(userId, { employee_number }, tenantId);
+      const success = await user.update(userId, { employee_number: employeeNumber }, tenantId);
 
       if (success) {
         logger.info(`User ${userId} updated their employee number`);
-        res.json(successResponse({ employee_number }, 'Personalnummer erfolgreich aktualisiert'));
+        res.json(successResponse({ employeeNumber }, 'Personalnummer erfolgreich aktualisiert'));
       } else {
         res.status(500).json(errorResponse('Fehler beim Aktualisieren der Personalnummer', 500));
       }

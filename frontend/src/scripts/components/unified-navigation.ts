@@ -8,7 +8,7 @@ import type { User, Tenant, Document } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
-import { $$ } from '../../utils/dom-utils';
+import { $$, setHTML } from '../../utils/dom-utils';
 import { switchRoleForRoot, switchRoleForAdmin } from '../role-switch';
 import { SSEClient } from '../utils/sse-client';
 // import { loadUserInfo as loadUserInfoFromAuth } from '../auth'; // Currently unused
@@ -73,10 +73,20 @@ interface UserProfileResponse extends User {
 
 // Removed unused interfaces
 
+// Dashboard URL constants
+const EMPLOYEE_DASHBOARD_URL = '/employee-dashboard';
+const ADMIN_DASHBOARD_URL = '/admin-dashboard';
+const ROOT_DASHBOARD_URL = '/root-dashboard';
+
+// CSS selector constants
+const SIDEBAR_ITEM_SELECTOR = '.sidebar-item';
+const SIDEBAR_COLLAPSED_CLASS = 'sidebar-collapsed';
+const DISPLAY_INLINE_BLOCK = 'inline-block';
+
 // Access Control Map - Definiert welche Rollen auf welche Seiten zugreifen dürfen
-const accessControlMap: Record<string, ('root' | 'admin' | 'employee')[]> = {
+const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   // Root-only pages
-  '/root-dashboard': ['root'],
+  [ROOT_DASHBOARD_URL]: ['root'],
   '/pages/root-dashboard': ['root'],
   '/manage-root-users': ['root'],
   '/pages/manage-root-users': ['root'],
@@ -92,7 +102,7 @@ const accessControlMap: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/logs': ['root'],
 
   // Admin and Root pages
-  '/admin-dashboard': ['admin', 'root'],
+  [ADMIN_DASHBOARD_URL]: ['admin', 'root'],
   '/pages/admin-dashboard': ['admin', 'root'],
   '/manage-admins': ['admin', 'root'],
   '/pages/manage-admins': ['admin', 'root'],
@@ -128,7 +138,7 @@ const accessControlMap: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/admin-profile': ['admin', 'root'],
 
   // Employee pages (accessible by all)
-  '/employee-dashboard': ['employee', 'admin', 'root'],
+  [EMPLOYEE_DASHBOARD_URL]: ['employee', 'admin', 'root'],
   '/pages/employee-dashboard': ['employee', 'admin', 'root'],
   '/profile': ['employee', 'admin', 'root'],
   '/pages/profile': ['employee', 'admin', 'root'],
@@ -168,6 +178,9 @@ const accessControlMap: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/account-settings': ['employee', 'admin', 'root'],
 };
 
+// Convert to Map for safer access (prevents object injection)
+const accessControlMap = new Map<string, ('root' | 'admin' | 'employee')[]>(Object.entries(accessControlData));
+
 class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
   private currentRole: 'admin' | 'employee' | 'root' | null = null;
@@ -195,9 +208,9 @@ class UnifiedNavigation {
     // Normalisiere den Pfad (entferne Query-Parameter und Hash)
     const normalizedPath = path.split('?')[0].split('#')[0];
 
-    // Prüfe ob der Pfad in der Map existiert
-    if (normalizedPath in accessControlMap) {
-      const allowedRoles = accessControlMap[normalizedPath];
+    // Prüfe ob der Pfad in der Map existiert (Map ist sicher gegen Object Injection)
+    const allowedRoles = accessControlMap.get(normalizedPath);
+    if (allowedRoles) {
       return allowedRoles.includes(role);
     }
 
@@ -212,13 +225,13 @@ class UnifiedNavigation {
   public getDashboardForRole(role: 'admin' | 'employee' | 'root'): string {
     switch (role) {
       case 'root':
-        return '/root-dashboard';
+        return ROOT_DASHBOARD_URL;
       case 'admin':
-        return '/admin-dashboard';
+        return ADMIN_DASHBOARD_URL;
       case 'employee':
-        return '/employee-dashboard';
+        return EMPLOYEE_DASHBOARD_URL;
       default:
-        return '/employee-dashboard';
+        return EMPLOYEE_DASHBOARD_URL;
     }
   }
 
@@ -343,11 +356,11 @@ class UnifiedNavigation {
           const getDashboardPath = (role: string | null): string => {
             switch (role) {
               case 'root':
-                return '/root-dashboard';
+                return ROOT_DASHBOARD_URL;
               case 'admin':
-                return '/admin-dashboard';
+                return ADMIN_DASHBOARD_URL;
               case 'employee':
-                return '/employee-dashboard';
+                return EMPLOYEE_DASHBOARD_URL;
               default:
                 return '/';
             }
@@ -381,7 +394,7 @@ class UnifiedNavigation {
   private loadUserInfo(): void {
     // User-Info aus Token oder Session laden
     const token = localStorage.getItem('token');
-    if (token !== null) {
+    if (token !== null && token !== '') {
       try {
         const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload & {
           activeRole?: string;
@@ -394,19 +407,19 @@ class UnifiedNavigation {
         const storedUserRole = localStorage.getItem('userRole');
 
         // If we're on a specific dashboard, that determines the active role
-        if (currentPath.includes('/root-dashboard')) {
+        if (currentPath.includes(ROOT_DASHBOARD_URL)) {
           this.currentRole = 'root';
           // Only root users can access root dashboard
           if (storedUserRole === 'root') {
             localStorage.setItem('activeRole', 'root');
           }
-        } else if (currentPath.includes('/admin-dashboard')) {
+        } else if (currentPath.includes(ADMIN_DASHBOARD_URL)) {
           this.currentRole = 'admin';
           // Root or admin can access admin dashboard
           if (storedUserRole === 'root' || storedUserRole === 'admin') {
             localStorage.setItem('activeRole', 'admin');
           }
-        } else if (currentPath.includes('/employee-dashboard')) {
+        } else if (currentPath.includes(EMPLOYEE_DASHBOARD_URL)) {
           this.currentRole = 'employee';
           localStorage.setItem('activeRole', 'employee');
         } else {
@@ -791,7 +804,7 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Dashboard',
-          url: '/employee-dashboard',
+          url: EMPLOYEE_DASHBOARD_URL,
         },
         {
           id: 'documents',
@@ -921,7 +934,7 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Root Dashboard',
-          url: '/root-dashboard',
+          url: ROOT_DASHBOARD_URL,
         },
         {
           id: 'root-users',
@@ -998,7 +1011,7 @@ class UnifiedNavigation {
   }
 
   private getSVGIcon(name: string): string {
-    const icons: Record<string, string> = {
+    const iconsData: Record<string, string> = {
       home: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
       users:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
@@ -1047,12 +1060,23 @@ class UnifiedNavigation {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2C5.9 2 5 2.9 5 4V6H4C2.9 6 2 6.9 2 8V20H4V21C4 21.55 4.45 22 5 22H6C6.55 22 7 21.55 7 21V20H17V21C17 21.55 17.45 22 18 22H19C19.55 22 20 21.55 20 21V20H22V8C22 6.9 21.11 6 20 6H19V4C19 2.9 18.11 2 17 2H7M14 10V8H20V10H14M14 14V12H20V14H14M7 4H17V6H7V4M7 8V12H9L6 18V14H4L7 8Z"/></svg>',
       cog: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>',
     };
-    return icons[name] ?? icons.home;
+    const icons = new Map(Object.entries(iconsData));
+    return icons.get(name) ?? icons.get('home') ?? '';
   }
 
   private getNavigationForRole(role: 'admin' | 'employee' | 'root' | null): NavItem[] {
     if (role === null) return [];
-    return this.navigationItems[role];
+    // Safe access - role is typed to known values only
+    switch (role) {
+      case 'admin':
+        return this.navigationItems.admin;
+      case 'employee':
+        return this.navigationItems.employee;
+      case 'root':
+        return this.navigationItems.root;
+      default:
+        return [];
+    }
   }
 
   private getInitials(firstName?: string, lastName?: string): string {
@@ -1069,7 +1093,7 @@ class UnifiedNavigation {
     lastName?: string,
   ): void {
     // Clear existing content
-    element.innerHTML = '';
+    element.textContent = '';
 
     if (profilePicUrl !== null && profilePicUrl !== '') {
       // Show profile picture
@@ -1098,7 +1122,7 @@ class UnifiedNavigation {
     if (navigationContainer) {
       // Create full navigation structure with header and sidebar
       const fullNavigation = this.createFullNavigationStructure();
-      navigationContainer.innerHTML = fullNavigation;
+      setHTML(navigationContainer as HTMLElement, fullNavigation);
 
       // Re-attach event listeners after inserting HTML
       setTimeout(() => {
@@ -1119,7 +1143,7 @@ class UnifiedNavigation {
     // Suche nach bestehender Sidebar und ersetze sie
     const existingSidebar = document.querySelector('.sidebar');
     if (existingSidebar) {
-      existingSidebar.innerHTML = navigation;
+      setHTML(existingSidebar as HTMLElement, navigation);
     } else {
       // Erstelle neue Sidebar falls keine existiert
       this.createSidebarStructure();
@@ -1293,14 +1317,14 @@ class UnifiedNavigation {
   }
 
   private escapeHtml(text: string): string {
-    const map: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;',
-    };
-    return text.replace(/["&'<>]/g, (m) => map[m]);
+    const escapeMap = new Map([
+      ['&', '&amp;'],
+      ['<', '&lt;'],
+      ['>', '&gt;'],
+      ['"', '&quot;'],
+      ["'", '&#039;'],
+    ]);
+    return text.replace(/["&'<>]/g, (m) => escapeMap.get(m) ?? m);
   }
 
   private createSidebarStructure(): void {
@@ -1317,7 +1341,7 @@ class UnifiedNavigation {
 
       const sidebar = document.createElement('aside');
       sidebar.className = 'sidebar';
-      sidebar.innerHTML = this.createNavigationHTML();
+      setHTML(sidebar, this.createNavigationHTML());
 
       const mainContent = document.createElement('main');
       mainContent.className = 'main-content';
@@ -1508,7 +1532,7 @@ class UnifiedNavigation {
     }
 
     // Create and store the new handler
-    this.documentClickHandler = (e: MouseEvent) => {
+    this.documentClickHandler = (e: MouseEvent): void => {
       const navLink = (e.target as HTMLElement).closest('.sidebar-link:not([onclick])');
       if (navLink) {
         this.handleNavigationClick(navLink as HTMLElement, e);
@@ -1519,7 +1543,7 @@ class UnifiedNavigation {
       if (submenuLink instanceof HTMLElement) {
         // Store the parent submenu state
         const parentSubmenu = submenuLink.closest('.submenu');
-        const parentItem = parentSubmenu?.closest('.sidebar-item');
+        const parentItem = parentSubmenu?.closest(SIDEBAR_ITEM_SELECTOR);
         if (parentItem) {
           const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
           if (parentId !== null && parentId !== undefined) {
@@ -1541,11 +1565,15 @@ class UnifiedNavigation {
       if (logoutBtn) {
         e.preventDefault();
         e.stopPropagation(); // Stop event from bubbling
-        this.handleLogout().catch((error: unknown) => {
-          console.error('Logout error:', error);
-          // Fallback: redirect to login even if logout fails
-          window.location.href = '/login';
-        });
+        void (async () => {
+          try {
+            await this.handleLogout();
+          } catch (error: unknown) {
+            console.error('Logout error:', error);
+            // Fallback: redirect to login even if logout fails
+            window.location.href = '/login';
+          }
+        })();
       }
     };
 
@@ -1556,13 +1584,17 @@ class UnifiedNavigation {
     // Add direct listener as fallback for logout button
     const logoutBtnCheck = $$('#logout-btn');
     if (logoutBtnCheck) {
-      logoutBtnCheck.onclick = (e: MouseEvent) => {
+      logoutBtnCheck.onclick = (e: MouseEvent): void => {
         e.preventDefault();
         e.stopPropagation();
-        this.handleLogout().catch((error: unknown) => {
-          console.error('Logout error from direct listener:', error);
-          window.location.href = '/login';
-        });
+        void (async () => {
+          try {
+            await this.handleLogout();
+          } catch (error: unknown) {
+            console.error('Logout error from direct listener:', error);
+            window.location.href = '/login';
+          }
+        })();
       };
     }
 
@@ -1609,9 +1641,9 @@ class UnifiedNavigation {
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
-      mainContent?.classList.add('sidebar-collapsed');
-      chatMain?.classList.add('sidebar-collapsed');
-      chatSidebar?.classList.add('sidebar-collapsed');
+      mainContent?.classList.add(SIDEBAR_COLLAPSED_CLASS);
+      chatMain?.classList.add(SIDEBAR_COLLAPSED_CLASS);
+      chatSidebar?.classList.add(SIDEBAR_COLLAPSED_CLASS);
       sidebar.style.setProperty('width', '68px', 'important');
       this.updateToggleIcon();
     } else {
@@ -1631,9 +1663,9 @@ class UnifiedNavigation {
       const newState = !isCurrentlyCollapsed;
 
       sidebar.classList.toggle('collapsed');
-      mainContent?.classList.toggle('sidebar-collapsed');
-      chatMain?.classList.toggle('sidebar-collapsed');
-      chatSidebar?.classList.toggle('sidebar-collapsed');
+      mainContent?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
+      chatMain?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
+      chatSidebar?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
 
       // Set width directly as inline style to override any CSS
       console.info('[UnifiedNav] Setting width for collapsed state:', newState);
@@ -1662,7 +1694,7 @@ class UnifiedNavigation {
       this.updateToggleIcon();
 
       // Update logo based on collapsed state
-      const headerLogo = $$<HTMLImageElement>('#header-logo');
+      const headerLogo = $$('#header-logo') as HTMLImageElement | null;
       if (headerLogo !== null) {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
@@ -1755,8 +1787,8 @@ class UnifiedNavigation {
       modal.classList.add('active');
 
       // Setup modal event handlers
-      const confirmBtn = $$<HTMLButtonElement>('#confirmLogout');
-      const cancelBtn = $$<HTMLButtonElement>('#cancelLogout');
+      const confirmBtn = $$('#confirmLogout');
+      const cancelBtn = $$('#cancelLogout');
       const overlay = modal.querySelector('.modal-overlay');
 
       const closeModal = () => {
@@ -1858,7 +1890,7 @@ class UnifiedNavigation {
               dropdownOptions.classList.remove('active');
 
               // Update hidden input
-              const hiddenInput = $$<HTMLInputElement>('#role-switch-value');
+              const hiddenInput = $$('#role-switch-value') as HTMLInputElement | null;
               if (hiddenInput !== null) {
                 hiddenInput.value = selectedRole;
               }
@@ -1957,10 +1989,10 @@ class UnifiedNavigation {
     }
 
     // Update active state
-    document.querySelectorAll('.sidebar-item').forEach((item) => {
+    document.querySelectorAll(SIDEBAR_ITEM_SELECTOR).forEach((item) => {
       item.classList.remove('active');
     });
-    link.closest('.sidebar-item')?.classList.add('active');
+    link.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
 
     // Store active navigation
     const navId = link.dataset.navId;
@@ -1974,9 +2006,13 @@ class UnifiedNavigation {
 
       // If admin/root clicked on KVP, reset the badge
       if (navId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
-        this.resetKvpBadge().catch((error: unknown) => {
-          console.error('Error resetting KVP badge:', error);
-        });
+        void (async () => {
+          try {
+            await this.resetKvpBadge();
+          } catch (error: unknown) {
+            console.error('Error resetting KVP badge:', error);
+          }
+        })();
       }
     }
 
@@ -1989,7 +2025,7 @@ class UnifiedNavigation {
     const currentPath = window.location.pathname;
 
     // Remove all active states
-    document.querySelectorAll('.sidebar-item').forEach((item) => {
+    document.querySelectorAll(SIDEBAR_ITEM_SELECTOR).forEach((item) => {
       item.classList.remove('active');
     });
 
@@ -2008,13 +2044,13 @@ class UnifiedNavigation {
         // Use hash to determine active section
         const hashLink = document.querySelector(`[data-nav-id="${currentHash}"]`);
         if (hashLink) {
-          hashLink.closest('.sidebar-item')?.classList.add('active');
+          hashLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
         }
       } else if (activeNav === null || activeNav === '' || activeNav === 'dashboard') {
         // Default to overview only if no hash and no stored nav
         const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
         if (dashboardLink) {
-          dashboardLink.closest('.sidebar-item')?.classList.add('active');
+          dashboardLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
         }
         // Clear any stored navigation to prevent last selected from being active
         localStorage.removeItem('activeNavigation');
@@ -2028,13 +2064,13 @@ class UnifiedNavigation {
         if (activeNav !== null && activeNav !== '' && activeNav !== 'dashboard') {
           const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
           if (activeLink) {
-            activeLink.closest('.sidebar-item')?.classList.add('active');
+            activeLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
           }
         } else {
           // If no match found and no stored nav, default to dashboard
           const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
           if (dashboardLink) {
-            dashboardLink.closest('.sidebar-item')?.classList.add('active');
+            dashboardLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
           }
         }
       } else {
@@ -2057,7 +2093,7 @@ class UnifiedNavigation {
     document.querySelectorAll('.submenu').forEach((submenu) => {
       const submenuElement = submenu as HTMLElement;
       submenuElement.style.display = 'none';
-      submenu.closest('.sidebar-item')?.classList.remove('open');
+      submenu.closest(SIDEBAR_ITEM_SELECTOR)?.classList.remove('open');
     });
 
     // Remove active class from all submenu items
@@ -2082,10 +2118,10 @@ class UnifiedNavigation {
         (menuItem.hasSubmenu === true || (menuItem.children !== undefined && menuItem.children.length > 0))
       ) {
         // Open the submenu for this section
-        const submenu = document.getElementById(`submenu-${section}`);
+        const submenu = document.querySelector(`#submenu-${section}`);
         const parentItem = submenu?.closest('.sidebar-item.has-submenu');
 
-        if (submenu && parentItem) {
+        if (submenu instanceof HTMLElement && parentItem) {
           submenu.style.display = 'block';
           parentItem.classList.add('open');
           localStorage.setItem('openSubmenu', section);
@@ -2156,15 +2192,13 @@ class UnifiedNavigation {
     // Restore previously open submenu if we're still on the same parent section
     const storedSubmenu = localStorage.getItem('openSubmenu');
     if (storedSubmenu !== null && storedSubmenu !== '' && !foundActiveSubmenu) {
-      const submenu = document.getElementById(`submenu-${storedSubmenu}`);
+      const submenu = document.querySelector(`#submenu-${storedSubmenu}`);
       const parentItem = submenu?.closest('.sidebar-item.has-submenu');
 
-      if (submenu && parentItem) {
+      if (submenu instanceof HTMLElement && parentItem?.classList.contains('active') === true) {
         // Only restore if the parent item is active
-        if (parentItem.classList.contains('active')) {
-          submenu.style.display = 'block';
-          parentItem.classList.add('open');
-        }
+        submenu.style.display = 'block';
+        parentItem.classList.add('open');
       }
     }
   }
@@ -2176,20 +2210,24 @@ class UnifiedNavigation {
     for (const item of menuItems) {
       if (item.children !== undefined && item.children.length > 0) {
         for (const child of item.children) {
-          if (child.url !== undefined && child.url !== '' && !child.url.startsWith('#')) {
+          if (
+            child.url !== undefined &&
+            child.url !== '' &&
+            !child.url.startsWith('#') &&
+            child.url.startsWith('/') &&
+            currentPath === child.url
+          ) {
             // For absolute URLs like /manage-employees, check if current path matches
-            if (child.url.startsWith('/') && currentPath === child.url) {
-              // Mark the parent item as active
-              const parentLink = document.querySelector(`[data-nav-id="${item.id}"]`);
-              if (parentLink) {
-                parentLink.closest('.sidebar-item')?.classList.add('active');
-                // Also mark the child as active if it has a link element
-                const childLink = document.querySelector(`[data-nav-id="${child.id}"]`);
-                if (childLink) {
-                  childLink.closest('.submenu-item')?.classList.add('active');
-                }
-                return true;
+            // Mark the parent item as active
+            const parentLink = document.querySelector(`[data-nav-id="${item.id}"]`);
+            if (parentLink) {
+              parentLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
+              // Also mark the child as active if it has a link element
+              const childLink = document.querySelector(`[data-nav-id="${child.id}"]`);
+              if (childLink) {
+                childLink.closest('.submenu-item')?.classList.add('active');
               }
+              return true;
             }
           }
         }
@@ -2210,7 +2248,7 @@ class UnifiedNavigation {
     if (matchingItem) {
       const link = document.querySelector(`[data-nav-id="${matchingItem.id}"]`);
       if (link) {
-        link.closest('.sidebar-item')?.classList.add('active');
+        link.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
         return true;
       }
     }
@@ -2242,7 +2280,7 @@ class UnifiedNavigation {
     if (navigationContainer) {
       // Clear and recreate entire navigation structure
       const fullNavigation = this.createFullNavigationStructure();
-      navigationContainer.innerHTML = fullNavigation;
+      setHTML(navigationContainer as HTMLElement, fullNavigation);
 
       // Re-attach event listeners after DOM update
       setTimeout(() => {
@@ -2263,7 +2301,7 @@ class UnifiedNavigation {
           const sidebar = navigationContainer.querySelector('.sidebar');
           const mainContent = document.querySelector('.main-content');
           sidebar?.classList.add('collapsed');
-          mainContent?.classList.add('sidebar-collapsed');
+          mainContent?.classList.add(SIDEBAR_COLLAPSED_CLASS);
         }
       }, 100);
     } else {
@@ -2303,7 +2341,7 @@ class UnifiedNavigation {
         const count = data.totalUnread;
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count.toString();
-          badge.style.display = 'inline-block';
+          badge.style.display = DISPLAY_INLINE_BLOCK;
         } else {
           badge.style.display = 'none';
         }
@@ -2335,7 +2373,7 @@ class UnifiedNavigation {
         const count = data.totalUnread;
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count.toString();
-          badge.style.display = 'inline-block';
+          badge.style.display = DISPLAY_INLINE_BLOCK;
         } else {
           badge.style.display = 'none';
         }
@@ -2378,7 +2416,7 @@ class UnifiedNavigation {
         // 2. Either the user has never clicked on KVP OR the count has increased since last click
         if (currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount)) {
           badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
-          badge.style.display = 'inline-block';
+          badge.style.display = DISPLAY_INLINE_BLOCK;
           console.info('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
         } else {
           badge.style.display = 'none';
@@ -2427,7 +2465,7 @@ class UnifiedNavigation {
       if (badge) {
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count.toString();
-          badge.style.display = 'inline-block';
+          badge.style.display = DISPLAY_INLINE_BLOCK;
           console.info('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
         } else {
           badge.style.display = 'none';
@@ -2439,7 +2477,7 @@ class UnifiedNavigation {
       if (parentBadge) {
         if (count > 0) {
           parentBadge.textContent = count > 99 ? '99+' : count.toString();
-          parentBadge.style.display = 'inline-block';
+          parentBadge.style.display = DISPLAY_INLINE_BLOCK;
           console.info('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
         } else {
           parentBadge.style.display = 'none';
@@ -2510,7 +2548,7 @@ class UnifiedNavigation {
         if (mainBadge) {
           if (unreadCounts.total > 0) {
             mainBadge.textContent = unreadCounts.total > 99 ? '99+' : unreadCounts.total.toString();
-            mainBadge.style.display = 'inline-block';
+            mainBadge.style.display = DISPLAY_INLINE_BLOCK;
           } else {
             mainBadge.style.display = 'none';
           }
@@ -2518,11 +2556,11 @@ class UnifiedNavigation {
 
         // Update individual category badges
         const updateBadge = (badgeId: string, count: number) => {
-          const badge = document.getElementById(badgeId);
-          if (badge) {
+          const badge = document.querySelector(`#${badgeId}`);
+          if (badge instanceof HTMLElement) {
             if (count > 0) {
               badge.textContent = count > 99 ? '99+' : count.toString();
-              badge.style.display = 'inline-block';
+              badge.style.display = DISPLAY_INLINE_BLOCK;
             } else {
               badge.style.display = 'none';
             }
@@ -2597,7 +2635,7 @@ class UnifiedNavigation {
   // Fix logo navigation based on user role
   private initializeSSE(): void {
     const token = localStorage.getItem('token');
-    if (!token || token === 'test-mode') {
+    if (token === null || token === '' || token === 'test-mode') {
       console.info('[UnifiedNav] SSE not initialized - no valid token');
       return;
     }
@@ -2773,9 +2811,16 @@ class UnifiedNavigation {
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 GB';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    const sizesMap = new Map([
+      [0, 'B'],
+      [1, 'KB'],
+      [2, 'MB'],
+      [3, 'GB'],
+      [4, 'TB'],
+    ]);
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), 4);
+    const size = sizesMap.get(i) ?? 'B';
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${size}`;
   }
 
   // Toast notification helper - Removed as it was unused
@@ -3281,7 +3326,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 73px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
+        margin-top: 72px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
     }
 
 
@@ -3416,15 +3461,7 @@ const unifiedNavigationCSS = `
         z-index: 1;
     }
 
-    .user-info-card:hover {
-        background: rgba(255, 255, 255, 0.03);
-        /*transform: translateY(-5px);*/
-        border-color: rgba(33, 150, 243, 0.3);
-        box-shadow:
-            0 12px 40px rgba(0, 0, 0, 0.5),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15),
-            0 0 40px rgba(33, 150, 243, 0.1);
-    }
+
 
     /* Avatar Styles - Ohne Border */
     #sidebar-user-avatar,
@@ -3472,11 +3509,6 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .user-avatar,
     .sidebar.collapsed .user-info-card .user-avatar {
         margin-left: -13.5px !important;
-    }
-
-    .user-info-card:hover .user-avatar {
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .user-details {
@@ -3554,45 +3586,26 @@ const unifiedNavigationCSS = `
     /* Role-specific badge colors - Exact match from logs */
     .role-badge.root {
         background: rgba(156, 39, 176, 0.15);
-        color: #9C27B0;
-        border: 1px solid rgba(156, 39, 176, 0.9);
+        /* color: #9C27B0; */
+        /* border: 1px solid rgba(156, 39, 176, 0.9); */
         margin-left: -2px;
+        box-shadow: 0px 0px 1px rgba(255, 0, 230, 1);
     }
 
     .role-badge.admin {
         background: rgba(3, 169, 244, 0.15);
-        color: #03A9F4;
-        border: 1px solid rgba(3, 169, 244, 0.9);
+        /* color: #03A9F4; */
+        /* border: 1px solid rgba(3, 169, 244, 0.9); */
         margin-left: -2px;
+        box-shadow: 0px 0px 1px rgb(0, 190, 255);
     }
 
     .role-badge.employee {
         background: rgba(96, 125, 139, 0.15);
-        color: #607D8B;
-        border: 1px solid rgba(96, 125, 139, 0.9);
+        /* color: #607D8B; */
+        /* border: 1px solid rgba(96, 125, 139, 0.9); */
         margin-left: -2px;
-    }
-
-    /* Hover effects for role badges */
-    .user-info-card:hover .role-badge.root {
-        background: rgba(156, 39, 176, 0.2);
-        border-color: rgba(156, 39, 176, 0.4);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.25);
-    }
-
-    .user-info-card:hover .role-badge.admin {
-        background: rgba(3, 169, 244, 0.2);
-        border-color: rgba(3, 169, 244, 0.4);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(3, 169, 244, 0.25);
-    }
-
-    .user-info-card:hover .role-badge.employee {
-        background: rgba(96, 125, 139, 0.2);
-        border-color: rgba(96, 125, 139, 0.4);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(96, 125, 139, 0.25);
+        box-shadow: 0px 0px 1px rgba(100, 116, 122, 1);
     }
 
     /* Role Switch Dropdown - Using styles from dashboard-theme.css */
@@ -3955,17 +3968,17 @@ interface NavigationWindow extends Window {
   event.preventDefault();
   event.stopPropagation();
 
-  const submenu = document.getElementById(`submenu-${itemId}`);
-  const parentItem = submenu?.closest('.sidebar-item');
+  const submenu = document.querySelector(`#submenu-${itemId}`);
+  const parentItem = submenu?.closest(SIDEBAR_ITEM_SELECTOR);
 
-  if (submenu && parentItem) {
+  if (submenu instanceof HTMLElement && parentItem) {
     const isOpen = submenu.style.display === 'block';
 
     // Close all other submenus
     document.querySelectorAll('.submenu').forEach((menu) => {
       if (menu !== submenu) {
         (menu as HTMLElement).style.display = 'none';
-        menu.closest('.sidebar-item')?.classList.remove('open');
+        menu.closest(SIDEBAR_ITEM_SELECTOR)?.classList.remove('open');
       }
     });
 

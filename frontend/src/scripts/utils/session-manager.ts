@@ -2,8 +2,6 @@
  * Session Manager - Handles user session timeout and activity tracking
  */
 
-import { removeAuthToken } from '../auth';
-
 export class SessionManager {
   private static instance: SessionManager | undefined;
   private lastActivityTime: number;
@@ -12,6 +10,7 @@ export class SessionManager {
   private readonly CHECK_INTERVAL = 60 * 1000; // Check every minute
   private readonly WARNING_TIME = 5 * 60 * 1000; // Show warning 5 minutes before timeout
   private warningShown = false;
+  private removeAuthTokenCallback?: () => void;
 
   private constructor() {
     this.lastActivityTime = Date.now();
@@ -22,6 +21,10 @@ export class SessionManager {
   static getInstance(): SessionManager {
     SessionManager.instance ??= new SessionManager();
     return SessionManager.instance;
+  }
+
+  public setRemoveAuthTokenCallback(removeTokenFn: () => void): void {
+    this.removeAuthTokenCallback = removeTokenFn;
   }
 
   private setupActivityListeners(): void {
@@ -173,7 +176,13 @@ export class SessionManager {
 
   public logout(isTimeout = false): void {
     // Clear session data
-    removeAuthToken();
+    if (this.removeAuthTokenCallback) {
+      this.removeAuthTokenCallback();
+    } else {
+      // Fallback: directly clear the token if callback not set
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+    }
     localStorage.removeItem('userRole');
     localStorage.removeItem('activeRole');
     localStorage.removeItem('lastActivity');

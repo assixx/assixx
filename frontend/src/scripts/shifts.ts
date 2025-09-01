@@ -449,7 +449,7 @@ class ShiftPlanningSystem {
           if (value === null) return;
 
           // Set the hidden input value
-          const hiddenInput = $$id<HTMLInputElement>(selectId);
+          const hiddenInput = $$id(selectId) as HTMLInputElement | null;
           if (hiddenInput !== null) {
             hiddenInput.value = String(value);
           }
@@ -1387,7 +1387,7 @@ class ShiftPlanningSystem {
     if (teamDisplay) teamDisplay.textContent = 'Team wählen...';
 
     // Clear hidden input
-    const teamSelect = $$id<HTMLInputElement>('teamSelect');
+    const teamSelect = $$id('teamSelect') as HTMLInputElement | null;
     if (teamSelect !== null) {
       teamSelect.value = '';
     }
@@ -1710,12 +1710,17 @@ class ShiftPlanningSystem {
    * Database expects: F, S, N
    */
   private convertShiftTypeForAPI(frontendType: string): string {
-    const typeMap: Record<string, string> = {
-      early: 'F', // Frühschicht
-      late: 'S', // Spätschicht
-      night: 'N', // Nachtschicht
-    };
-    return typeMap[frontendType] ?? frontendType;
+    // Use switch to avoid object injection vulnerability
+    switch (frontendType) {
+      case 'early':
+        return 'F'; // Frühschicht
+      case 'late':
+        return 'S'; // Spätschicht
+      case 'night':
+        return 'N'; // Nachtschicht
+      default:
+        return frontendType;
+    }
   }
 
   async assignUserToShift(userId: number, date: string, shiftType: string, cellElement: HTMLElement): Promise<void> {
@@ -2871,7 +2876,7 @@ class ShiftPlanningSystem {
               this.currentPlanId = null; // Clear plan ID
 
               // Clear notes textarea when no fallback and no rotation data
-              const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+              const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
               if (notesTextarea) {
                 notesTextarea.value = '';
                 // Clear any info bar message
@@ -2997,7 +3002,7 @@ class ShiftPlanningSystem {
             };
 
             // Check if we have a plan or just shifts
-            const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+            const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
 
             if (planData.plan) {
               console.info('[SHIFTS PLAN DEBUG] Plan loaded:', planData.plan);
@@ -3055,7 +3060,7 @@ class ShiftPlanningSystem {
             this.currentPlanId = null;
 
             // Clear the notes textarea when no plan exists
-            const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+            const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
             if (notesTextarea !== null) {
               notesTextarea.value = '';
             }
@@ -3070,7 +3075,7 @@ class ShiftPlanningSystem {
           this.currentPlanId = null;
 
           // Clear the notes textarea on error
-          const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+          const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
           if (notesTextarea !== null) {
             notesTextarea.value = '';
           }
@@ -3274,8 +3279,8 @@ class ShiftPlanningSystem {
       void this.loadUserPreferencesFromDatabase();
     }
 
-    const autofillCheckbox = $$<HTMLInputElement>('#shift-autofill');
-    const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+    const autofillCheckbox = $$('#shift-autofill') as HTMLInputElement | null;
+    const rotationCheckbox = $$('#shift-rotation') as HTMLInputElement | null;
 
     if (autofillCheckbox) {
       autofillCheckbox.addEventListener('change', (e) => {
@@ -3366,7 +3371,7 @@ class ShiftPlanningSystem {
     }
 
     // Setup fallback checkbox
-    const fallbackCheckbox = $$<HTMLInputElement>('#shift-fallback');
+    const fallbackCheckbox = $$('#shift-fallback') as HTMLInputElement | null;
     if (fallbackCheckbox) {
       fallbackCheckbox.addEventListener('change', (e) => {
         this.fallbackConfig.enabled = (e.target as HTMLInputElement).checked;
@@ -3384,7 +3389,7 @@ class ShiftPlanningSystem {
     }
 
     // Setup edit rotation button listener
-    const editRotationBtn = $$id<HTMLButtonElement>('edit-rotation-btn');
+    const editRotationBtn = $$id('edit-rotation-btn') as HTMLButtonElement | null;
     if (editRotationBtn) {
       editRotationBtn.addEventListener('click', () => {
         console.info('[SHIFTS DEBUG] Edit rotation button clicked');
@@ -3520,7 +3525,7 @@ class ShiftPlanningSystem {
     const dropZones = ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'];
 
     dropZones.forEach((zoneId) => {
-      const dropZone = $$id<HTMLDivElement>(zoneId);
+      const dropZone = $$id(zoneId) as HTMLDivElement | null;
       if (!dropZone) {
         console.error('[ROTATION SETUP] Drop zone not found:', zoneId);
         return;
@@ -3740,7 +3745,7 @@ class ShiftPlanningSystem {
           case 'shift_autofill_enabled': {
             // settingValue is already a boolean from API v2
             this.autofillConfig.enabled = setting.settingValue === true;
-            const autofillCheckbox = $$<HTMLInputElement>('#shift-autofill');
+            const autofillCheckbox = $$('#shift-autofill') as HTMLInputElement | null;
             if (autofillCheckbox) {
               autofillCheckbox.checked = this.autofillConfig.enabled;
             }
@@ -3758,7 +3763,7 @@ class ShiftPlanningSystem {
             // Only enable rotation if both DB setting is true AND pattern exists
             this.rotationConfig.enabled = dbEnabled && patternExists;
 
-            const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+            const rotationCheckbox = $$('#shift-rotation') as HTMLInputElement | null;
             if (rotationCheckbox) {
               rotationCheckbox.checked = this.rotationConfig.enabled;
             }
@@ -3772,7 +3777,7 @@ class ShiftPlanningSystem {
           case 'shift_fallback_enabled': {
             // settingValue is already a boolean from API v2
             this.fallbackConfig.enabled = setting.settingValue === true;
-            const fallbackCheckbox = $$<HTMLInputElement>('#shift-fallback');
+            const fallbackCheckbox = $$('#shift-fallback') as HTMLInputElement | null;
             if (fallbackCheckbox) {
               fallbackCheckbox.checked = this.fallbackConfig.enabled;
             }
@@ -3830,7 +3835,7 @@ class ShiftPlanningSystem {
     });
 
     // Populate available employees list
-    const availableContainer = $$id<HTMLDivElement>('rotation-available-employees');
+    const availableContainer = $$id('rotation-available-employees') as HTMLDivElement | null;
     if (availableContainer) {
       console.info('[ROTATION SETUP] Found available employees container, adding', teamEmployees.length, 'employees');
       // Clear existing content
@@ -3889,8 +3894,8 @@ class ShiftPlanningSystem {
     }
 
     // Set default start date and end date constraints
-    const startDateInput = $$id<HTMLInputElement>('rotation-start-date');
-    const endDateInput = $$id<HTMLInputElement>('rotation-end-date');
+    const startDateInput = $$id('rotation-start-date') as HTMLInputElement | null;
+    const endDateInput = $$id('rotation-end-date') as HTMLInputElement | null;
     const today = new Date();
     const currentYear = today.getFullYear();
     const maxDate = `${currentYear}-12-31`;
@@ -3956,9 +3961,9 @@ class ShiftPlanningSystem {
     }
 
     // Show/hide custom pattern config and night shift ignore option
-    const patternSelect = $$id<HTMLSelectElement>('rotation-pattern');
-    const customConfig = $$id<HTMLDivElement>('custom-pattern-config');
-    const ignoreNightGroup = $$id<HTMLDivElement>('ignore-night-shift-group');
+    const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+    const customConfig = $$id('custom-pattern-config') as HTMLDivElement | null;
+    const ignoreNightGroup = $$id('ignore-night-shift-group') as HTMLDivElement | null;
 
     if (patternSelect) {
       patternSelect.addEventListener('change', () => {
@@ -3976,7 +3981,7 @@ class ShiftPlanningSystem {
     }
 
     // Update modal title based on mode
-    const modal = $$id<HTMLDivElement>('rotation-setup-modal');
+    const modal = $$id('rotation-setup-modal') as HTMLDivElement | null;
     if (modal) {
       const modalHeader = modal.querySelector('.modal-header h2');
       if (modalHeader) {
@@ -3989,11 +3994,11 @@ class ShiftPlanningSystem {
 
     // If editing, populate form with existing data
     if (this.editMode && existingPattern !== undefined) {
-      const rotationStartInput = $$id<HTMLInputElement>('rotation-start-date');
-      const rotationEndInput = $$id<HTMLInputElement>('rotation-end-date');
-      const rotationPatternSelect = $$id<HTMLSelectElement>('rotation-pattern');
-      const skipWeekendsInput = $$id<HTMLInputElement>('rotation-skip-weekends');
-      const ignoreNightInput = $$id<HTMLInputElement>('rotation-ignore-night');
+      const rotationStartInput = $$id('rotation-start-date') as HTMLInputElement | null;
+      const rotationEndInput = $$id('rotation-end-date') as HTMLInputElement | null;
+      const rotationPatternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+      const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
+      const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
 
       if (rotationPatternSelect) {
         // Map patternType to select value based on pattern_type and pattern_config
@@ -4046,7 +4051,7 @@ class ShiftPlanningSystem {
 
         // Clear all drop zones first
         ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'].forEach((zoneId) => {
-          const zone = $$id<HTMLDivElement>(zoneId);
+          const zone = $$id(zoneId) as HTMLDivElement | null;
           if (zone) {
             while (zone.firstChild) {
               zone.firstChild.remove();
@@ -4066,7 +4071,7 @@ class ShiftPlanningSystem {
             if (shiftType === 'S') targetZoneId = 'drop-zone-s';
             else if (shiftType === 'N') targetZoneId = 'drop-zone-n';
 
-            const targetZone = $$id<HTMLDivElement>(targetZoneId);
+            const targetZone = $$id(targetZoneId) as HTMLDivElement | null;
             if (targetZone !== null) {
               // Create employee element in drop zone
               const employeeDiv = document.createElement('div');
@@ -4110,7 +4115,7 @@ class ShiftPlanningSystem {
     }
 
     // Setup event handlers
-    const saveBtn = $$id<HTMLButtonElement>('save-rotation-btn');
+    const saveBtn = $$id('save-rotation-btn') as HTMLButtonElement | null;
     if (saveBtn) {
       // Update button text based on mode
       saveBtn.textContent = this.editMode ? 'Änderungen speichern' : 'Rotation erstellen';
@@ -4149,14 +4154,14 @@ class ShiftPlanningSystem {
   }
 
   private closeRotationModal(): void {
-    const modal = $$id<HTMLDivElement>('rotation-setup-modal');
+    const modal = $$id('rotation-setup-modal') as HTMLDivElement | null;
     if (modal) {
       modal.classList.remove('show');
       console.info('[SHIFTS DEBUG] Closed rotation setup modal');
     }
 
     // Reset checkbox if modal was closed without saving
-    const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+    const rotationCheckbox = $$('#shift-rotation') as HTMLInputElement | null;
     if (rotationCheckbox && !this.rotationConfig.enabled) {
       rotationCheckbox.checked = false;
     }
@@ -4238,11 +4243,11 @@ class ShiftPlanningSystem {
       }
 
       // Get form values from new modal structure
-      const patternSelect = $$id<HTMLSelectElement>('rotation-pattern');
-      const startInput = $$id<HTMLInputElement>('rotation-start-date');
-      const endInput = $$id<HTMLInputElement>('rotation-end-date');
-      const skipWeekendsInput = $$id<HTMLInputElement>('rotation-skip-weekends');
-      const ignoreNightInput = $$id<HTMLInputElement>('rotation-ignore-night');
+      const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+      const startInput = $$id('rotation-start-date') as HTMLInputElement | null;
+      const endInput = $$id('rotation-end-date') as HTMLInputElement | null;
+      const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
+      const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
 
       const pattern = patternSelect?.value;
       const startDate = startInput?.value;
@@ -4286,7 +4291,7 @@ class ShiftPlanningSystem {
       const selectedEmployees: number[] = [];
 
       // Get employees from F column
-      const fZone = $$id<HTMLDivElement>('drop-zone-f');
+      const fZone = $$id('drop-zone-f') as HTMLDivElement | null;
       if (fZone) {
         const fEmployees = fZone.querySelectorAll<HTMLDivElement>('.employee-item');
         fEmployees.forEach((emp) => {
@@ -4299,7 +4304,7 @@ class ShiftPlanningSystem {
       }
 
       // Get employees from S column
-      const sZone = $$id<HTMLDivElement>('drop-zone-s');
+      const sZone = $$id('drop-zone-s') as HTMLDivElement | null;
       if (sZone) {
         const sEmployees = sZone.querySelectorAll<HTMLDivElement>('.employee-item');
         sEmployees.forEach((emp) => {
@@ -4312,7 +4317,7 @@ class ShiftPlanningSystem {
       }
 
       // Get employees from N column
-      const nZone = $$id<HTMLDivElement>('drop-zone-n');
+      const nZone = $$id('drop-zone-n') as HTMLDivElement | null;
       if (nZone) {
         const nEmployees = nZone.querySelectorAll<HTMLDivElement>('.employee-item');
         nEmployees.forEach((emp) => {
@@ -4440,7 +4445,7 @@ class ShiftPlanningSystem {
 
       // Keep the checkbox checked since we successfully created a rotation pattern
       this.rotationConfig.enabled = true;
-      const rotationCheckbox = $$<HTMLInputElement>('#shift-rotation');
+      const rotationCheckbox = $$('#shift-rotation') as HTMLInputElement | null;
       if (rotationCheckbox) {
         rotationCheckbox.checked = true;
       }
@@ -4455,7 +4460,7 @@ class ShiftPlanningSystem {
   }
 
   private showEditRotationButton(show: boolean): void {
-    const editBtn = $$id<HTMLButtonElement>('edit-rotation-btn');
+    const editBtn = $$id('edit-rotation-btn') as HTMLButtonElement | null;
     if (editBtn) {
       editBtn.style.display = show ? 'inline-block' : 'none';
       console.info('[SHIFTS DEBUG] Edit rotation button visibility:', show);
@@ -4476,11 +4481,11 @@ class ShiftPlanningSystem {
       }
 
       // Get form values
-      const patternSelect = $$id<HTMLSelectElement>('rotation-pattern');
-      const startInput = $$id<HTMLInputElement>('rotation-start-date');
-      const endInput = $$id<HTMLInputElement>('rotation-end-date');
-      const skipWeekendsInput = $$id<HTMLInputElement>('rotation-skip-weekends');
-      const ignoreNightInput = $$id<HTMLInputElement>('rotation-ignore-night');
+      const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+      const startInput = $$id('rotation-start-date') as HTMLInputElement | null;
+      const endInput = $$id('rotation-end-date') as HTMLInputElement | null;
+      const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
+      const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
 
       const pattern = patternSelect?.value;
       const startDate = startInput?.value;
@@ -4743,7 +4748,7 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Get notes from textarea
-      const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+      const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
       if (!this.useV2API) {
@@ -5043,7 +5048,7 @@ class ShiftPlanningSystem {
       this.currentPlanId = null;
 
       // Clear notes
-      const notesTextarea = $$id<HTMLTextAreaElement>('weeklyNotes');
+      const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
       if (notesTextarea) {
         notesTextarea.value = '';
       }
@@ -5088,8 +5093,8 @@ class ShiftPlanningSystem {
    * Update button visibility based on plan state and edit mode
    */
   updateButtonVisibility(): void {
-    const saveBtn = $$id<HTMLButtonElement>('saveScheduleBtn');
-    const resetBtn = $$id<HTMLButtonElement>('resetScheduleBtn');
+    const saveBtn = $$id('saveScheduleBtn') as HTMLButtonElement | null;
+    const resetBtn = $$id('resetScheduleBtn') as HTMLButtonElement | null;
     const adminActions = $$id('adminActions');
 
     if (!adminActions || !this.isAdmin) return;
@@ -5617,7 +5622,7 @@ class ShiftPlanningSystem {
       // 1. Set and load Area
       console.info('[LOADFAVORITE] Setting area:', favorite.areaId, favorite.areaName);
       this.selectedContext.areaId = favorite.areaId;
-      const areaSelect = $$id<HTMLInputElement>('areaSelect');
+      const areaSelect = $$id('areaSelect') as HTMLInputElement | null;
       if (areaSelect) {
         areaSelect.value = String(favorite.areaId);
         console.info('[LOADFAVORITE] Area select value set to:', areaSelect.value);
@@ -5641,7 +5646,7 @@ class ShiftPlanningSystem {
       // 2. Set and load Department
       console.info('[LOADFAVORITE] Setting department:', favorite.departmentId, favorite.departmentName);
       this.selectedContext.departmentId = favorite.departmentId;
-      const departmentSelect = $$id<HTMLInputElement>('departmentSelect');
+      const departmentSelect = $$id('departmentSelect') as HTMLInputElement | null;
       if (departmentSelect) {
         departmentSelect.value = String(favorite.departmentId);
         console.info('[LOADFAVORITE] Department select value set to:', departmentSelect.value);
@@ -5663,7 +5668,7 @@ class ShiftPlanningSystem {
 
       // 3. Set and load Machine
       this.selectedContext.machineId = favorite.machineId;
-      const machineSelect = $$id<HTMLInputElement>('machineSelect');
+      const machineSelect = $$id('machineSelect') as HTMLInputElement | null;
       if (machineSelect) machineSelect.value = String(favorite.machineId);
 
       const machineDisplay = document.querySelector('#machineDisplay span');
@@ -5675,7 +5680,7 @@ class ShiftPlanningSystem {
       await this.onMachineSelected(favorite.machineId);
       // Restore team ID after onMachineSelected resets it
       this.selectedContext.teamId = savedTeamId;
-      const teamSelect = $$id<HTMLInputElement>('teamSelect');
+      const teamSelect = $$id('teamSelect') as HTMLInputElement | null;
       if (teamSelect) teamSelect.value = String(favorite.teamId);
 
       const teamDisplay = document.querySelector('#teamDisplay span');

@@ -896,7 +896,7 @@ class EmployeeModalUI {
     }
 
     // Reset form
-    const form = $$<HTMLFormElement>('#create-employee-form');
+    const form = $$('#create-employee-form') as HTMLFormElement | null;
     if (form !== null) {
       form.reset();
       this.resetErrorMessages();
@@ -968,7 +968,7 @@ class EmployeeModalUI {
 
   private selectDepartment(id: number, name: string): void {
     // Update hidden input
-    const input = $$<HTMLInputElement>('#department_id');
+    const input = $$('#department_id') as HTMLInputElement | null;
     if (input !== null) {
       input.value = id.toString();
     }
@@ -987,12 +987,12 @@ class EmployeeModalUI {
   }
 
   setupValidation(): void {
-    const emailInput = $$<HTMLInputElement>('#email');
-    const emailConfirm = $$<HTMLInputElement>('#email_confirm');
+    const emailInput = $$('#email') as HTMLInputElement | null;
+    const emailConfirm = $$('#email_confirm') as HTMLInputElement | null;
     const emailError = $$id('email-error');
 
-    const passwordInput = $$<HTMLInputElement>('#password');
-    const passwordConfirm = $$<HTMLInputElement>('#password_confirm');
+    const passwordInput = $$('#password') as HTMLInputElement | null;
+    const passwordConfirm = $$('#password_confirm') as HTMLInputElement | null;
     const passwordError = $$id('password-error');
 
     // Email validation
@@ -1083,7 +1083,7 @@ class AdminDashboard {
 
   private setupEventListeners(): void {
     // Employee form submission
-    const createEmployeeForm = $$<HTMLFormElement>('#create-employee-form');
+    const createEmployeeForm = $$('#create-employee-form') as HTMLFormElement | null;
     if (createEmployeeForm !== null) {
       createEmployeeForm.addEventListener('submit', (e) => {
         void this.handleEmployeeSubmit(e);
@@ -1091,7 +1091,7 @@ class AdminDashboard {
     }
 
     // Department form submission
-    const departmentForm = $$<HTMLFormElement>('#department-form');
+    const departmentForm = $$('#department-form') as HTMLFormElement | null;
     if (departmentForm !== null) {
       departmentForm.addEventListener('submit', (e) => {
         void this.handleDepartmentSubmit(e);
@@ -1099,7 +1099,7 @@ class AdminDashboard {
     }
 
     // Team form submission
-    const teamForm = $$<HTMLFormElement>('#team-form');
+    const teamForm = $$('#team-form') as HTMLFormElement | null;
     if (teamForm !== null) {
       teamForm.addEventListener('submit', (e) => {
         void this.handleTeamSubmit(e);
@@ -1402,7 +1402,7 @@ if (typeof window !== 'undefined') {
   window.selectDropdownOption = (dropdownName: string, value: string, label: string): void => {
     console.info('selectDropdownOption', dropdownName, value, label);
     // Implementation for dropdown selection
-    const input = $$<HTMLInputElement>(`#${dropdownName}_id`);
+    const input = $$(`#${dropdownName}_id`) as HTMLInputElement | null;
     if (input !== null) {
       input.value = value;
     }

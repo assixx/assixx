@@ -1,6 +1,7 @@
 // Areas Management Module
 import { apiClient } from '../utils/api-client.js';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts.js';
+import { setHTML } from '../utils/dom-utils.js';
 
 // Types
 interface Area {
@@ -61,10 +62,10 @@ async function initializePage(): Promise<void> {
 
 // Initialize DOM elements
 function initializeDOMElements(): void {
-  addAreaBtn = document.querySelector('#add-area-btn')!;
+  addAreaBtn = document.querySelector<HTMLButtonElement>('#add-area-btn');
   areaModal = document.querySelector('#area-modal');
   deleteModal = document.querySelector('#delete-area-modal');
-  areaForm = document.querySelector('#area-form')!;
+  areaForm = document.querySelector<HTMLFormElement>('#area-form');
   areasTableBody = document.querySelector('#areas-table-body');
   loadingDiv = document.querySelector('#areas-loading');
   emptyDiv = document.querySelector('#areas-empty');
@@ -92,7 +93,7 @@ function attachEventListeners(): void {
 
   // Delete confirmation
   document.querySelector('#confirm-delete-area')?.addEventListener('click', () => {
-    const deleteInput = document.querySelector('#delete-area-id');
+    const deleteInput = document.querySelector<HTMLInputElement>('#delete-area-id');
     if (deleteInput !== null && deleteInput.value !== '') {
       void deleteArea(Number.parseInt(deleteInput.value, 10));
     }
@@ -185,7 +186,7 @@ function renderAreas(): void {
   areasTable?.classList.remove('u-hidden');
   emptyDiv?.classList.add('u-hidden');
 
-  areasTableBody.innerHTML = filteredAreas
+  const html = filteredAreas
     .map(
       (area) => `
     <tr>
@@ -210,29 +211,44 @@ function renderAreas(): void {
   `,
     )
     .join('');
+
+  setHTML(areasTableBody, html);
 }
 
 // Get type label
 function getTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    building: 'Gebäude',
-    warehouse: 'Lager',
-    office: 'Büro',
-    production: 'Produktion',
-    outdoor: 'Außenbereich',
-    other: 'Sonstiges',
-  };
-  return labels[type] ?? type;
+  // Use switch statement to avoid object injection vulnerability
+  switch (type) {
+    case 'building':
+      return 'Gebäude';
+    case 'warehouse':
+      return 'Lager';
+    case 'office':
+      return 'Büro';
+    case 'production':
+      return 'Produktion';
+    case 'outdoor':
+      return 'Außenbereich';
+    case 'other':
+      return 'Sonstiges';
+    default:
+      return type;
+  }
 }
 
 // Get status label
 function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    active: 'Aktiv',
-    inactive: 'Inaktiv',
-    maintenance: 'Wartung',
-  };
-  return labels[status] ?? status;
+  // Use switch statement to avoid object injection vulnerability
+  switch (status) {
+    case 'active':
+      return 'Aktiv';
+    case 'inactive':
+      return 'Inaktiv';
+    case 'maintenance':
+      return 'Wartung';
+    default:
+      return status;
+  }
 }
 
 // Get status badge class
@@ -263,19 +279,29 @@ function openAreaModal(areaId?: number): void {
     // Load area data for editing
     const area = areas.find((a) => a.id === areaId);
     if (area) {
-      document.querySelector('#area-id')!.value = area.id.toString();
-      document.querySelector('#area-name')!.value = area.name;
-      document.querySelector('#area-description')!.value = area.description ?? '';
-      document.querySelector('#area-type')!.value = area.type;
-      document.querySelector('#area-capacity')!.value = area.capacity?.toString() ?? '';
-      document.querySelector('#area-address')!.value = area.address ?? '';
-      document.querySelector('#area-parent')!.value = area.parent_id?.toString() ?? '';
-      document.querySelector('#area-status')!.value = area.is_active === 1 ? 'active' : 'inactive';
+      const areaIdInput = document.querySelector<HTMLInputElement>('#area-id');
+      const areaNameInput = document.querySelector<HTMLInputElement>('#area-name');
+      const areaDescriptionInput = document.querySelector<HTMLTextAreaElement>('#area-description');
+      const areaTypeSelect = document.querySelector<HTMLSelectElement>('#area-type');
+      const areaCapacityInput = document.querySelector<HTMLInputElement>('#area-capacity');
+      const areaAddressInput = document.querySelector<HTMLInputElement>('#area-address');
+      const areaParentSelect = document.querySelector<HTMLSelectElement>('#area-parent');
+      const areaStatusSelect = document.querySelector<HTMLSelectElement>('#area-status');
+
+      if (areaIdInput) areaIdInput.value = area.id.toString();
+      if (areaNameInput) areaNameInput.value = area.name;
+      if (areaDescriptionInput) areaDescriptionInput.value = area.description ?? '';
+      if (areaTypeSelect) areaTypeSelect.value = area.type;
+      if (areaCapacityInput) areaCapacityInput.value = area.capacity?.toString() ?? '';
+      if (areaAddressInput) areaAddressInput.value = area.address ?? '';
+      if (areaParentSelect) areaParentSelect.value = area.parent_id?.toString() ?? '';
+      if (areaStatusSelect) areaStatusSelect.value = area.is_active === 1 ? 'active' : 'inactive';
     }
   } else {
     // Reset form for new area
     areaForm?.reset();
-    document.querySelector('#area-id')!.value = '';
+    const areaIdInput = document.querySelector<HTMLInputElement>('#area-id');
+    if (areaIdInput) areaIdInput.value = '';
   }
 
   areaModal?.classList.add('active');
@@ -283,7 +309,7 @@ function openAreaModal(areaId?: number): void {
 
 // Load parent areas for dropdown
 function loadParentAreas(excludeId?: number): void {
-  const parentSelect = document.querySelector('#area-parent');
+  const parentSelect = document.querySelector<HTMLSelectElement>('#area-parent');
   if (parentSelect === null) return;
 
   // Keep first option
@@ -355,14 +381,16 @@ function confirmDelete(areaId: number): void {
   const area = areas.find((a) => a.id === areaId);
   if (!area) return;
 
-  document.querySelector('#delete-area-id')!.value = areaId.toString();
+  const deleteAreaIdInput = document.querySelector<HTMLInputElement>('#delete-area-id');
+  if (deleteAreaIdInput) deleteAreaIdInput.value = areaId.toString();
   deleteModal?.classList.add('active');
 }
 
 // Close delete modal
 function closeDeleteModal(): void {
   deleteModal?.classList.remove('active');
-  document.querySelector('#delete-area-id')!.value = '';
+  const deleteAreaIdInput = document.querySelector<HTMLInputElement>('#delete-area-id');
+  if (deleteAreaIdInput) deleteAreaIdInput.value = '';
 }
 
 // Delete area

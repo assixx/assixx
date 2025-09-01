@@ -40,6 +40,11 @@ interface FullCalendarApi {
   addEvent(event: FullCalendarEventInput): FullCalendarEvent;
   unselect(): void;
   changeView(viewName: string): void;
+  view: {
+    activeStart: Date;
+    activeEnd: Date;
+  };
+  on(eventName: string, callback: (info: { start: Date; end: Date }) => void): void;
 }
 
 interface FullCalendarEvent {
@@ -268,7 +273,7 @@ let calendarView = 'dayGridMonth'; // Default view
  */
 function selectOrgId(id: number, name: string): void {
   const selectedOrgIdElement = $$('#selectedOrgId');
-  const eventOrgIdElement = $$<HTMLInputElement>('#eventOrgId');
+  const eventOrgIdElement = $$('#eventOrgId') as HTMLInputElement | null;
 
   if (selectedOrgIdElement) {
     selectedOrgIdElement.textContent = name;
@@ -750,7 +755,7 @@ function initializeCalendar(): void {
  */
 function setupEventListeners(): void {
   // Filter by level using tab buttons (Gesamt/Firma/Abteilung/Team/Meine)
-  const levelFilterButtons = $all<HTMLButtonElement>('#levelFilter button.tab-btn');
+  const levelFilterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
   levelFilterButtons.forEach((button) => {
     // Set initial active state based on saved filter
     if (button.dataset.value === currentFilter) {
@@ -840,7 +845,7 @@ function setupEventListeners(): void {
 
   // Search button
   const searchButton = $$('#searchButton');
-  const searchInput = $$<HTMLInputElement>('#searchInput');
+  const searchInput = $$('#searchInput') as HTMLInputElement | null;
 
   if (searchButton !== null && searchInput !== null) {
     searchButton.addEventListener('click', () => {
@@ -939,9 +944,9 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const eventOrgLevel = $$<HTMLSelectElement>('#eventOrgLevel');
+  const eventOrgLevel = $$('#eventOrgLevel') as HTMLInputElement | null;
   if (eventOrgLevel !== null) {
-    eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
+    eventOrgLevel.addEventListener('change', function (this: HTMLInputElement) {
       updateOrgIdDropdown(this.value);
     });
   }
@@ -949,10 +954,10 @@ function setupEventListeners(): void {
   // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
-  const allDayCheckbox = $$<HTMLInputElement>('#eventAllDay');
+  const allDayCheckbox = $$('#eventAllDay');
   if (allDayCheckbox !== null) {
     allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
-      const timeInputs = $all<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
         if (this.checked) {
@@ -967,7 +972,7 @@ function setupEventListeners(): void {
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
       // Only open modal if button is visible (for personal events)
-      const orgLevelInput = $$<HTMLInputElement>('#orgLevelInput');
+      const orgLevelInput = $$('#orgLevelInput') as HTMLInputElement | null;
       if (orgLevelInput !== null && orgLevelInput.value === 'personal') {
         modalManager.show('attendeesModal');
         void loadEmployeesForAttendees();
@@ -1091,7 +1096,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
         currentFilter = 'personal';
         localStorage.setItem('calendarFilter', currentFilter);
         // Update UI to reflect filter change
-        const filterButtons = $all<HTMLButtonElement>('#levelFilter button.tab-btn');
+        const filterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
         filterButtons.forEach((btn) => {
           if (btn.dataset.value === 'personal') {
             btn.classList.add('active');
@@ -1822,7 +1827,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   }
 
   // Reset form
-  const form = $$<HTMLFormElement>('#eventForm');
+  const form = $$('#eventForm') as HTMLFormElement | null;
   if (form) {
     form.reset();
   }
@@ -1836,7 +1841,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   selectedAttendees = [];
 
   // Set default org level and show info message
-  const orgLevelInput = $$<HTMLSelectElement>('#eventOrgLevel');
+  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
   const selectedOrgLevelSpan = $$('#selectedOrgLevel');
 
   if (eventId === undefined || eventId === null) {
@@ -1887,8 +1892,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
     // New event
     if (startDate) {
-      const startInput = $$<HTMLInputElement>('#eventStartDate');
-      const startTimeInput = $$<HTMLInputElement>('#eventStartTime');
+      const startInput = $$('#eventStartDate') as HTMLInputElement | null;
+      const startTimeInput = $$('#eventStartTime') as HTMLInputElement | null;
 
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
@@ -1900,8 +1905,8 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
 
     if (endDate) {
-      const endInput = $$<HTMLInputElement>('#eventEndDate');
-      const endTimeInput = $$<HTMLInputElement>('#eventEndTime');
+      const endInput = $$('#eventEndDate') as HTMLInputElement | null;
+      const endTimeInput = $$('#eventEndTime') as HTMLInputElement | null;
 
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
@@ -1912,10 +1917,10 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
       }
     }
 
-    const allDayCheckbox = $$<HTMLInputElement>('#eventAllDay');
+    const allDayCheckbox = $$('#eventAllDay') as HTMLInputElement | null;
     if (allDayCheckbox && allDay !== undefined) {
       allDayCheckbox.checked = allDay;
-      const timeInputs = $all<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = allDay;
       });
@@ -1952,11 +1957,11 @@ function formatTimeForInput(date: Date): string {
 function updateOrgIdDropdown(level: string): void {
   // Handle department dropdown
   const departmentGroup = $$('#departmentGroup');
-  const departmentDropdown = $$<HTMLSelectElement>('#departmentDropdown');
+  const departmentDropdown = $$('#departmentDropdown');
 
   // Handle team dropdown
   const teamGroup = $$('#teamGroup');
-  const teamDropdown = $$<HTMLSelectElement>('#teamDropdown');
+  const teamDropdown = $$('#teamDropdown');
 
   // Handle attendees section
   const attendeesGroup = $$('#attendeesGroup');
@@ -2074,7 +2079,7 @@ function updateOrgIdDropdown(level: string): void {
  */
 function selectDepartment(departmentId: number, departmentName: string): void {
   const selectedElement = $$('#selectedDepartment');
-  const inputElement = $$<HTMLInputElement>('#eventDepartmentId');
+  const inputElement = $$('#eventDepartmentId') as HTMLInputElement | null;
 
   if (selectedElement) selectedElement.textContent = departmentName;
   if (inputElement) inputElement.value = departmentId.toString();
@@ -2085,7 +2090,7 @@ function selectDepartment(departmentId: number, departmentName: string): void {
  */
 function selectTeam(teamId: number, teamName: string): void {
   const selectedElement = $$('#selectedTeam');
-  const inputElement = $$<HTMLInputElement>('#eventTeamId');
+  const inputElement = $$('#eventTeamId') as HTMLInputElement | null;
 
   if (selectedElement) selectedElement.textContent = teamName;
   if (inputElement) inputElement.value = teamId.toString();
@@ -2123,7 +2128,7 @@ function loadTeamsForDepartment(departmentId: number): void {
   // Reset team selection
   const selectedTeam = $$('#selectedTeam');
   if (selectedTeam) selectedTeam.textContent = '-- Team wählen --';
-  const teamInput = $$<HTMLInputElement>('#eventTeamId');
+  const teamInput = $$('#eventTeamId') as HTMLInputElement | null;
   if (teamInput) teamInput.value = '';
 }
 
@@ -2133,7 +2138,7 @@ function loadTeamsForDepartment(departmentId: number): void {
 async function saveEvent(): Promise<void> {
   console.info('saveEvent called');
 
-  const form = $$<HTMLFormElement>('#eventForm');
+  const form = $$('#eventForm');
   if (form === null) {
     console.error('Form not found');
     return;
@@ -2146,19 +2151,19 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get form values directly from elements
-  const titleInput = $$<HTMLInputElement>('#eventTitle');
-  const descriptionInput = $$<HTMLTextAreaElement>('#eventDescription');
-  const startDateInput = $$<HTMLInputElement>('#eventStartDate');
-  const startTimeInput = $$<HTMLInputElement>('#eventStartTime');
-  const endDateInput = $$<HTMLInputElement>('#eventEndDate');
-  const endTimeInput = $$<HTMLInputElement>('#eventEndTime');
-  const allDayInput = $$<HTMLInputElement>('#eventAllDay');
-  const locationInput = $$<HTMLInputElement>('#eventLocation');
-  const orgLevelInput = $$<HTMLSelectElement>('#eventOrgLevel');
-  const departmentIdInput = $$<HTMLInputElement>('#eventDepartmentId');
-  const teamIdInput = $$<HTMLInputElement>('#eventTeamId');
-  const reminderTimeInput = $$<HTMLSelectElement>('#eventReminderTime');
-  const eventIdInput = $$<HTMLInputElement>('#eventId');
+  const titleInput = $$('#eventTitle') as HTMLInputElement | null;
+  const descriptionInput = $$('#eventDescription') as HTMLTextAreaElement | null;
+  const startDateInput = $$('#eventStartDate') as HTMLInputElement | null;
+  const startTimeInput = $$('#eventStartTime') as HTMLInputElement | null;
+  const endDateInput = $$('#eventEndDate') as HTMLInputElement | null;
+  const endTimeInput = $$('#eventEndTime') as HTMLInputElement | null;
+  const allDayInput = $$('#eventAllDay') as HTMLInputElement | null;
+  const locationInput = $$('#eventLocation') as HTMLInputElement | null;
+  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
+  const departmentIdInput = $$('#eventDepartmentId') as HTMLInputElement | null;
+  const teamIdInput = $$('#eventTeamId') as HTMLInputElement | null;
+  const reminderTimeInput = $$('#eventReminderTime') as HTMLInputElement | null;
+  const eventIdInput = $$('#eventId') as HTMLInputElement | null;
 
   // Validate required fields
   if (titleInput?.value === undefined || titleInput.value === '') {
@@ -2230,16 +2235,16 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get recurrence data
-  const recurrenceTypeElement = $$<HTMLSelectElement>('#eventRecurrence');
+  const recurrenceTypeElement = $$('#eventRecurrence') as HTMLInputElement | null;
   const recurrenceType = recurrenceTypeElement?.value;
   let recurrenceRule = '';
 
   if (recurrenceType !== undefined && recurrenceType !== '') {
     // Build recurrence rule based on selection
     const recurrenceEnd = $$('#selectedRecurrenceEnd')?.textContent;
-    const recurrenceCountElement = $$<HTMLInputElement>('#recurrenceCount');
+    const recurrenceCountElement = $$('#recurrenceCount') as HTMLInputElement | null;
     const recurrenceCount = recurrenceCountElement?.value;
-    const recurrenceEndDateElement = $$<HTMLInputElement>('#recurrenceEndDate');
+    const recurrenceEndDateElement = $$('#recurrenceEndDate') as HTMLInputElement | null;
     const recurrenceEndDate = recurrenceEndDateElement?.value;
 
     // Build simplified recurrence rule
@@ -2279,7 +2284,7 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get requires response checkbox
-  const requiresResponseInput = $$<HTMLInputElement>('#eventRequiresResponse');
+  const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
   const requiresResponse = requiresResponseInput?.checked ?? false;
 
   const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
@@ -2463,7 +2468,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Fill form with event data
-      const form = $$<HTMLFormElement>('#eventForm');
+      const form = $$('#eventForm') as HTMLFormElement | null;
       if (form === null) return;
 
       // Set event ID
@@ -2524,7 +2529,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
 
       // Update time inputs disabled state
-      const timeInputs = $all<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = Boolean(event.all_day);
       });
@@ -2539,13 +2544,13 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
-      const reminderSelect = $$<HTMLSelectElement>('#eventReminderTime');
+      const reminderSelect = $$('#eventReminderTime') as HTMLSelectElement | null;
       if (reminderSelect !== null && event.reminder_time !== undefined) {
         reminderSelect.value = event.reminder_time.toString();
       }
 
       // Set requires response checkbox
-      const requiresResponseInput = $$<HTMLInputElement>('#eventRequiresResponse');
+      const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
       if (requiresResponseInput !== null) {
         // Check both camelCase and snake_case fields
         const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
@@ -2724,7 +2729,7 @@ function addAttendee(userId: number, _name: string): void {
     updateSelectedAttendees();
 
     // Clear search
-    const searchInput = $$<HTMLInputElement>('#attendeeSearch');
+    const searchInput = $$('#attendeeSearch') as HTMLInputElement | null;
     const searchResults = $$('#attendeeSearchResults');
     if (searchInput !== null) searchInput.value = '';
     if (searchResults !== null) searchResults.innerHTML = '';
@@ -2981,13 +2986,13 @@ function setupModalEventListeners(): void {
   }
 
   // All day checkbox
-  const allDayCheckbox = $$<HTMLInputElement>('#eventAllDay');
+  const allDayCheckbox = $$('#eventAllDay');
   if (allDayCheckbox !== null) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
 
     newCheckbox.addEventListener('change', function (this: HTMLInputElement) {
-      const timeInputs = $all<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
         if (this.checked) {
@@ -3020,7 +3025,7 @@ function toggleOrgLevelDropdown(): void {
 
 function selectOrgLevel(value: string, text: string): void {
   const selectedElement = $$('#selectedOrgLevel');
-  const inputElement = $$<HTMLInputElement>('#eventOrgLevel');
+  const inputElement = $$('#eventOrgLevel') as HTMLInputElement | null;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   if (inputElement !== null) inputElement.value = value;
@@ -3065,7 +3070,7 @@ function toggleReminderDropdown(): void {
 
 function selectReminder(value: string, text: string): void {
   const selectedElement = $$('#selectedReminder');
-  const inputElement = $$<HTMLSelectElement>('#eventReminderTime');
+  const inputElement = $$('#eventReminderTime') as HTMLInputElement | null;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   if (inputElement !== null) inputElement.value = value;
@@ -3122,7 +3127,7 @@ function toggleTeamDropdown(): void {
 
 function selectRecurrence(value: string, text: string): void {
   const selectedElement = $$('#selectedRecurrence');
-  const inputElement = $$<HTMLInputElement>('#eventRecurrence');
+  const inputElement = $$('#eventRecurrence') as HTMLInputElement | null;
 
   if (selectedElement !== null) selectedElement.textContent = text;
   if (inputElement !== null) inputElement.value = value;
@@ -3307,7 +3312,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
 
         newButton.addEventListener('click', () => {
           console.info('Add selected attendees button clicked');
-          const checkboxes = $all<HTMLInputElement>('#attendeesList input[type="checkbox"]:checked');
+          const checkboxes = $all('#attendeesList input[type="checkbox"]:checked') as NodeListOf<HTMLInputElement>;
           console.info('Found checked boxes:', checkboxes.length);
 
           checkboxes.forEach((checkbox) => {
@@ -3324,7 +3329,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
       }
 
       // Also re-attach the search functionality
-      const attendeeSearch = $$<HTMLInputElement>('#attendeeSearch');
+      const attendeeSearch = $$('#attendeeSearch');
       if (attendeeSearch !== null) {
         const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
         attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);
@@ -3890,7 +3895,7 @@ function getConfirmationModalTemplate(): string {
  * Setup fullscreen controls for the calendar
  */
 function setupFullscreenControls(): void {
-  const fullscreenBtn = $$<HTMLButtonElement>('#fullscreenBtn');
+  const fullscreenBtn = $$('#fullscreenBtn');
   const calendarContainer = $$('#calendarContainer');
 
   if (!fullscreenBtn || !calendarContainer) {

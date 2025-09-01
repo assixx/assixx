@@ -59,7 +59,19 @@ export class ApiClient {
   async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
     // Check feature flags to determine version
     const featureKey = `USE_API_V2_${this.extractApiName(endpoint).toUpperCase()}`;
-    const version = window.FEATURE_FLAGS?.[featureKey] === true ? 'v2' : (config.version ?? this.version);
+    // Use a safe method to check feature flag
+    let useV2 = false;
+    if (window.FEATURE_FLAGS !== undefined && typeof window.FEATURE_FLAGS === 'object') {
+      const flags = window.FEATURE_FLAGS as Record<string, unknown>;
+      // Use Object.entries to safely iterate
+      for (const [key, value] of Object.entries(flags)) {
+        if (key === featureKey && value === true) {
+          useV2 = true;
+          break;
+        }
+      }
+    }
+    const version = useV2 ? 'v2' : (config.version ?? this.version);
 
     const baseApiPath = version === 'v2' ? '/api/v2' : '/api';
     const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
@@ -69,9 +81,11 @@ export class ApiClient {
     // Copy existing headers if they exist
     if (options.headers !== undefined) {
       const h = options.headers as Record<string, string>;
-      Object.keys(h).forEach((key) => {
-        headers[key] = h[key];
-      });
+      // Use Object.entries to safely copy headers
+      for (const [key, value] of Object.entries(h)) {
+        // eslint-disable-next-line security/detect-object-injection
+        headers[key] = value; // Safe: key comes from Object.entries()
+      }
     }
 
     // Only set Content-Type for requests with body

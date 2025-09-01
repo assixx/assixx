@@ -6,8 +6,8 @@ import bcryptjs from 'bcryptjs';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import RootLog from '../../../models/rootLog';
-import User from '../../../models/user';
+import rootLog from '../../../models/rootLog';
+import user from '../../../models/user';
 import type { AuthenticatedRequest } from '../../../types/request.types';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { dbToApi } from '../../../utils/fieldMapping';
@@ -30,7 +30,12 @@ const REFRESH_TOKEN_EXPIRES = '7d';
  * @param role - The role parameter
  * @param email - The email parameter
  */
-function generateTokens(userId: number, tenantId: number, role: string, email: string) {
+function generateTokens(
+  userId: number,
+  tenantId: number,
+  role: string,
+  email: string,
+): { accessToken: string; refreshToken: string } {
   const payload = {
     id: userId,
     email,
@@ -65,7 +70,7 @@ function generateTokens(userId: number, tenantId: number, role: string, email: s
  */
 export async function login(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body as { email: string; password: string };
 
     // Validate required fields
     if (!email || !password) {
@@ -74,37 +79,37 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     // Find user by email
-    const user = await User.findByEmail(email);
-    if (!user) {
+    const foundUser = await user.findByEmail(email);
+    if (!foundUser) {
       res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
       return;
     }
 
     // Check if user is active
-    if (user.status !== 'active') {
+    if (foundUser.status !== 'active') {
       res.status(403).json(errorResponse('ACCOUNT_INACTIVE', 'Your account is not active'));
       return;
     }
 
     // Verify password
-    const isValidPassword = await bcryptjs.compare(password, user.password);
+    const isValidPassword = await bcryptjs.compare(password, foundUser.password);
     if (!isValidPassword) {
       res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
       return;
     }
 
     // Ensure tenant_id exists
-    if (!user.tenant_id) {
+    if (!foundUser.tenant_id) {
       res.status(500).json(errorResponse('TENANT_ERROR', 'User has no tenant association'));
       return;
     }
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(
-      user.id,
-      user.tenant_id,
-      user.role,
-      user.email,
+      foundUser.id,
+      foundUser.tenant_id,
+      foundUser.role,
+      foundUser.email,
     );
 
     // TODO: Update last login - need to add updateLastLogin method to User model
@@ -112,27 +117,27 @@ export async function login(req: Request, res: Response): Promise<void> {
     // Log successful login to both log systems
     // 1. Log to activity_logs for frontend display
     await createLog(
-      user.id,
-      user.tenant_id,
+      foundUser.id,
+      foundUser.tenant_id,
       'login',
       'user',
-      user.id,
-      `Angemeldet als ${user.role}`,
+      foundUser.id,
+      `Angemeldet als ${foundUser.role}`,
       req.ip ?? req.socket.remoteAddress,
       req.get('user-agent'),
     );
 
     // 2. Log to root_logs for detailed audit
-    await RootLog.create({
-      tenant_id: user.tenant_id,
-      user_id: user.id,
+    await rootLog.create({
+      tenant_id: foundUser.tenant_id,
+      user_id: foundUser.id,
       action: 'login',
       entity_type: 'auth',
-      entity_id: user.id,
-      details: `Angemeldet als ${user.role}`,
+      entity_id: foundUser.id,
+      details: `Angemeldet als ${foundUser.role}`,
       new_values: {
-        email: user.email,
-        role: user.role,
+        email: foundUser.email,
+        role: foundUser.role,
         login_method: 'password',
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
@@ -142,11 +147,14 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // Remove sensitive data - create new object without password
     const {
-      password: _password,
-      reset_token: _resetToken,
-      reset_token_expires: _resetTokenExpires,
+      password: removedPassword,
+      reset_token: removedResetToken,
+      reset_token_expires: removedResetTokenExpires,
       ...safeUser
-    } = user;
+    } = foundUser;
+    void removedPassword;
+    void removedResetToken;
+    void removedResetTokenExpires;
 
     // Convert to camelCase for API response
     const userApi = dbToApi(safeUser);
@@ -184,12 +192,8 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
       lastName: string;
       role?: string;
     };
-    const user = req.user;
-    if (!user) {
-      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-      return;
-    }
-    const { tenant_id: tenantId, role: currentUserRole } = user;
+    const authUser = req.user;
+    const { tenant_id: tenantId, role: currentUserRole } = authUser;
 
     // Only admins can create users
     if (currentUserRole !== 'admin' && currentUserRole !== 'root') {
@@ -198,7 +202,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
     }
 
     // Check if email already exists
-    const existingUser = await User.findByEmail(email);
+    const existingUser = await user.findByEmail(email);
     if (existingUser) {
       res.status(409).json(errorResponse('EMAIL_EXISTS', 'A user with this email already exists'));
       return;
@@ -209,7 +213,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
 
     // Create user - username is email without domain for backwards compatibility
     const username = email.split('@')[0];
-    const userId = await User.create({
+    const userId = await user.create({
       tenant_id: tenantId,
       username,
       email,
@@ -221,7 +225,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
     });
 
     // Get created user
-    const newUser = await User.findById(userId, tenantId);
+    const newUser = await user.findById(userId, tenantId);
     if (!newUser) {
       throw new Error('Failed to retrieve created user');
     }
@@ -229,7 +233,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
     // Log user creation to both log systems
     // 1. Log to activity_logs for frontend display
     await createLog(
-      user.id,
+      authUser.id,
       tenantId,
       'create_user',
       'user',
@@ -240,9 +244,9 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
     );
 
     // 2. Log to root_logs for detailed audit
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
-      user_id: user.id, // Admin who created the user
+      user_id: authUser.id, // Admin who created the user
       action: 'create',
       entity_type: 'user',
       entity_id: userId,
@@ -253,7 +257,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
         first_name: firstName,
         last_name: lastName,
         role,
-        created_by: user.email,
+        created_by: authUser.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
       user_agent: req.get('user-agent'),
@@ -261,7 +265,8 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
     });
 
     // Remove sensitive data - create new object without password
-    const { password: _password, ...safeUser } = newUser;
+    const { password: userPassword, ...safeUser } = newUser;
+    void userPassword; // Unused variable
 
     // Convert to camelCase
     const userApi = dbToApi(safeUser);
@@ -285,37 +290,35 @@ export async function logout(req: AuthenticatedRequest, res: Response): Promise<
     // 2. Clear refresh token from database
     // 3. Clear any server-side sessions
 
-    // Log logout if user is authenticated
-    if (req.user) {
-      // 1. Log to activity_logs for frontend display
-      await createLog(
-        req.user.id,
-        req.user.tenant_id,
-        'logout',
-        'user',
-        req.user.id,
-        'Abgemeldet',
-        req.ip ?? req.socket.remoteAddress,
-        req.get('user-agent'),
-      );
+    // Log logout
+    // 1. Log to activity_logs for frontend display
+    await createLog(
+      req.user.id,
+      req.user.tenant_id,
+      'logout',
+      'user',
+      req.user.id,
+      'Abgemeldet',
+      req.ip ?? req.socket.remoteAddress,
+      req.get('user-agent'),
+    );
 
-      // 2. Log to root_logs for detailed audit
-      await RootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'logout',
-        entity_type: 'auth',
-        entity_id: req.user.id,
-        details: 'Abgemeldet',
-        new_values: {
-          email: req.user.email,
-          role: req.user.role,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
-        was_role_switched: false,
-      });
-    }
+    // 2. Log to root_logs for detailed audit
+    await rootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: 'logout',
+      entity_type: 'auth',
+      entity_id: req.user.id,
+      details: 'Abgemeldet',
+      new_values: {
+        email: req.user.email,
+        role: req.user.role,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get('user-agent'),
+      was_role_switched: false,
+    });
 
     res.json(
       successResponse({
@@ -333,9 +336,9 @@ export async function logout(req: AuthenticatedRequest, res: Response): Promise<
  * @param req - The request object
  * @param res - The response object
  */
-export async function refresh(req: Request, res: Response): Promise<void> {
+export function refresh(req: Request, res: Response): void {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.body as { refreshToken: string };
 
     if (!refreshToken) {
       res.status(400).json(errorResponse('MISSING_TOKEN', 'Refresh token is required'));
@@ -354,11 +357,11 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     // Generate new access token
     const accessToken = jwt.sign(
       {
-        id: decoded.id,
-        email: decoded.email,
-        tenantId: decoded.tenantId,
-        role: decoded.role,
-        type: 'access',
+        id: decoded.id as number,
+        email: decoded.email as string,
+        tenantId: decoded.tenantId as number,
+        role: decoded.role as string,
+        type: 'access' as const,
       },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRES },
@@ -385,21 +388,17 @@ export async function refresh(req: Request, res: Response): Promise<void> {
  * @param req - The request object
  * @param res - The response object
  */
-export async function verify(req: AuthenticatedRequest, res: Response): Promise<void> {
+export function verify(req: AuthenticatedRequest, res: Response): void {
   try {
-    const user = req.user;
-    if (!user) {
-      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-      return;
-    }
+    const authUser = req.user;
     res.json(
       successResponse({
         valid: true,
         user: {
-          id: user.id,
-          email: user.email,
-          tenantId: user.tenant_id,
-          role: user.role,
+          id: authUser.id,
+          email: authUser.email,
+          tenantId: authUser.tenant_id,
+          role: authUser.role,
         },
       }),
     );
@@ -417,25 +416,24 @@ export async function verify(req: AuthenticatedRequest, res: Response): Promise<
 export async function getCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const authUser = req.user;
-    if (!authUser) {
-      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-      return;
-    }
     const { userId, tenant_id: tenantId } = authUser;
 
-    const user = await User.findById(userId, tenantId);
-    if (!user) {
+    const foundUser = await user.findById(userId, tenantId);
+    if (!foundUser) {
       res.status(404).json(errorResponse('USER_NOT_FOUND', 'User not found'));
       return;
     }
 
     // Remove sensitive data - create new object without password
     const {
-      password: _password,
-      reset_token: _resetToken,
-      reset_token_expires: _resetTokenExpires,
+      password: removedPassword,
+      reset_token: removedResetToken,
+      reset_token_expires: removedResetTokenExpires,
       ...safeUser
-    } = user;
+    } = foundUser;
+    void removedPassword;
+    void removedResetToken;
+    void removedResetTokenExpires;
 
     // Convert to camelCase
     const userApi = dbToApi(safeUser);

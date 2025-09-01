@@ -20,7 +20,7 @@
 2. **DANACH:** Mit DEAL-BREAKER Features fortfahren (siehe unten)
 
 ---
-
+dompurify überall implementieren (domutils ersetzen?)
 ## 🔥 DEAL-BREAKER Features
 
 ### Urlaubsverwaltung System (20h)

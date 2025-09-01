@@ -600,7 +600,7 @@ class EmployeesManager {
 
           // Restore department selection if provided
           if (departmentId !== undefined) {
-            const deptSelect = $$<HTMLSelectElement>('#employee-department-select');
+            const deptSelect = $$('#employee-department-select') as HTMLSelectElement | null;
             if (deptSelect !== null) {
               console.info('[showEmployeeModal] Restoring department selection:', departmentId);
               deptSelect.value = String(departmentId);
@@ -612,7 +612,7 @@ class EmployeesManager {
 
           // Restore team selection if provided
           if (teamId !== undefined) {
-            const teamSelect = $$<HTMLSelectElement>('#employee-team-select');
+            const teamSelect = $$('#employee-team-select') as HTMLSelectElement | null;
             if (teamSelect !== null) {
               console.info('[showEmployeeModal] Restoring team selection:', teamId);
               teamSelect.value = String(teamId);
@@ -893,25 +893,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Fill form with employee data - using $$ for null-safe access like manage-admins
         // Fill basic required fields
-        $<HTMLInputElement>('input[name="firstName"]').value = employee.firstName ?? '';
-        $<HTMLInputElement>('input[name="lastName"]').value = employee.lastName ?? '';
-        $<HTMLInputElement>('input[name="email"]').value = employee.email;
-        $<HTMLInputElement>('input[name="emailConfirm"]').value = employee.email;
+        ($('input[name="firstName"]') as HTMLInputElement).value = employee.firstName ?? '';
+        ($('input[name="lastName"]') as HTMLInputElement).value = employee.lastName ?? '';
+        ($('input[name="email"]') as HTMLInputElement).value = employee.email;
+        ($('input[name="emailConfirm"]') as HTMLInputElement).value = employee.email;
 
         // Optional fields - using $$ for null-safe access
-        const phone = $$<HTMLInputElement>('input[name="phone"]');
+        const phone = $$('input[name="phone"]') as HTMLInputElement | null;
         if (phone) phone.value = employee.phone ?? '';
 
-        const position = $$<HTMLInputElement>('input[name="position"]');
+        const position = $$('input[name="position"]') as HTMLInputElement | null;
         if (position) position.value = employee.position ?? '';
 
-        const employeeNumber = $$<HTMLInputElement>('input[name="employeeNumber"]');
+        const employeeNumber = $$('input[name="employeeNumber"]') as HTMLInputElement | null;
         if (employeeNumber) {
           console.info('Setting employeeNumber field to:', employee.employeeNumber);
           employeeNumber.value = employee.employeeNumber ?? '';
         }
 
-        const birthday = $$<HTMLInputElement>('input[name="birthday"]');
+        const birthday = $$('input[name="birthday"]') as HTMLInputElement | null;
         if (birthday && employee.birthdate !== undefined && employee.birthdate !== '') {
           const date = new Date(employee.birthdate);
           birthday.value = date.toISOString().split('T')[0];
@@ -922,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const teamId = employee.teamId;
 
         // Load availability fields
-        const availabilityStatus = $$<HTMLSelectElement>('#availability-status-select');
+        const availabilityStatus = $$('#availability-status-select') as HTMLSelectElement | null;
         if (availabilityStatus) {
           // Handle both camelCase and snake_case
           const status = employee.availabilityStatus ?? employee.availability_status ?? 'available';
@@ -930,26 +930,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Load availability dates
-        const availabilityStart = $$<HTMLInputElement>('input[name="availabilityStart"]');
+        const availabilityStart = $$('input[name="availabilityStart"]') as HTMLInputElement | null;
         if (availabilityStart) {
           const startDate = employee.availabilityStart ?? employee.availability_start ?? '';
           availabilityStart.value = startDate;
         }
 
-        const availabilityEnd = $$<HTMLInputElement>('input[name="availabilityEnd"]');
+        const availabilityEnd = $$('input[name="availabilityEnd"]') as HTMLInputElement | null;
         if (availabilityEnd) {
           const endDate = employee.availabilityEnd ?? employee.availability_end ?? '';
           availabilityEnd.value = endDate;
         }
 
         // Load availability notes - THIS IS THE FIX FOR BUG 2
-        const availabilityNotes = $$<HTMLTextAreaElement>('textarea[name="availabilityNotes"]');
+        const availabilityNotes = $$('textarea[name="availabilityNotes"]') as HTMLTextAreaElement | null;
         if (availabilityNotes) {
           const notes = employee.availabilityNotes ?? employee.availability_notes ?? '';
           availabilityNotes.value = notes;
         }
 
-        const isActiveSelect = $$<HTMLSelectElement>('select[name="isActive"]');
+        const isActiveSelect = $$('select[name="isActive"]') as HTMLSelectElement | null;
         if (isActiveSelect) {
           console.info(
             'Setting isActive to:',
@@ -961,8 +961,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Clear password fields for edit mode
-        const passwordField = $$<HTMLInputElement>('input[name="password"]');
-        const passwordConfirmField = $$<HTMLInputElement>('input[name="passwordConfirm"]');
+        const passwordField = $$('input[name="password"]') as HTMLInputElement | null;
+        const passwordConfirmField = $$('input[name="passwordConfirm"]') as HTMLInputElement | null;
         if (passwordField) passwordField.value = '';
         if (passwordConfirmField) passwordConfirmField.value = '';
 
@@ -999,12 +999,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modalTitle) {
         modalTitle.textContent = 'Neuen Mitarbeiter anlegen';
       }
-      const form = $$<HTMLFormElement>('#employee-form');
+      const form = $$('#employee-form') as HTMLFormElement | null;
       if (form) {
         form.reset();
       }
       // Set default status to Active for new employees
-      const isActiveSelect = $$<HTMLSelectElement>('select[name="isActive"]');
+      const isActiveSelect = $$('select[name="isActive"]') as HTMLSelectElement | null;
       if (isActiveSelect) {
         isActiveSelect.value = '1'; // Default to Active
       }

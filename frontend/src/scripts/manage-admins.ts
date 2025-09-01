@@ -237,7 +237,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
   // Tenant Dropdown aktualisieren
   function updateTenantDropdown() {
-    const select = $$<HTMLSelectElement>('#adminTenant');
+    const select = $$('#adminTenant') as HTMLSelectElement | null;
     if (select === null) {
       console.info('Tenant dropdown not found - skipping update');
       return;
@@ -367,14 +367,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     if (title) title.textContent = 'Admin bearbeiten';
 
     // Formular mit Admin-Daten füllen
-    $<HTMLInputElement>('#adminFirstName').value = admin.firstName;
-    $<HTMLInputElement>('#adminLastName').value = admin.lastName;
-    $<HTMLInputElement>('#adminEmail').value = admin.email;
-    $<HTMLInputElement>('#adminEmailConfirm').value = admin.email;
+    ($('#adminFirstName') as HTMLInputElement).value = admin.firstName;
+    ($('#adminLastName') as HTMLInputElement).value = admin.lastName;
+    ($('#adminEmail') as HTMLInputElement).value = admin.email;
+    ($('#adminEmailConfirm') as HTMLInputElement).value = admin.email;
 
     // Custom dropdown for position
     const positionValue = admin.position ?? '';
-    $<HTMLInputElement>(SELECTORS.POSITION_DROPDOWN_VALUE).value = positionValue;
+    ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = positionValue;
     const displayText = positionValue !== '' ? getPositionDisplay(positionValue) : 'Position auswählen...';
     const positionDropdown = $$('#positionDropdownDisplay');
     if (positionDropdown) {
@@ -382,13 +382,13 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       if (span) span.textContent = displayText;
     }
 
-    $<HTMLTextAreaElement>('#adminNotes').value = admin.notes ?? '';
+    ($('#adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
 
     // Show active status checkbox when editing
     const activeStatusGroup = $$('#activeStatusGroup');
     if (activeStatusGroup) activeStatusGroup.style.display = 'block';
 
-    const isActiveCheckbox = $<HTMLInputElement>('#adminIsActive');
+    const isActiveCheckbox = $('#adminIsActive') as HTMLInputElement;
     const isActive = admin.isActive;
     console.info('Setting checkbox for edit - admin.isActive:', admin.isActive, 'checkbox will be:', isActive);
     isActiveCheckbox.checked = isActive;
@@ -442,7 +442,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
           await loadAndPopulateDepartments();
 
           // Select current departments
-          const deptSelect = $$<HTMLSelectElement>(SELECTORS.DEPARTMENT_SELECT);
+          const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
           if (deptSelect !== null) {
             // Clear all selections first
             [...deptSelect.options].forEach((option) => (option.selected = false));
@@ -467,13 +467,13 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     }
 
     // Passwort-Felder und E-Mail-Bestätigung als optional setzen beim Bearbeiten
-    const emailConfirmField = $$<HTMLInputElement>('#adminEmailConfirm');
+    const emailConfirmField = $$('#adminEmailConfirm') as HTMLInputElement | null;
     if (emailConfirmField !== null) {
       emailConfirmField.required = false;
     }
 
-    const passwordField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
-    const passwordConfirmField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
+    const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+    const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
     if (passwordField !== null) {
       passwordField.required = false;
       passwordField.value = '';
@@ -575,13 +575,13 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     currentAdminId = null;
     const modal = $$(SELECTORS.ADMIN_MODAL);
     const title = $$(SELECTORS.MODAL_TITLE);
-    const form = $$<HTMLFormElement>('#adminForm');
+    const form = $$('#adminForm') as HTMLFormElement | null;
 
     if (title !== null) title.textContent = 'Admin hinzufügen';
     if (form !== null) form.reset();
 
     // Reset custom dropdown
-    const positionValue = $$<HTMLInputElement>(SELECTORS.POSITION_DROPDOWN_VALUE);
+    const positionValue = $$(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement | null;
     if (positionValue !== null) positionValue.value = '';
     const positionDropdown = $$('#positionDropdownDisplay');
     if (positionDropdown) {
@@ -594,11 +594,11 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
     // Passwort-Felder und E-Mail-Bestätigung als required setzen für neue Admins
-    const emailConfirmField = $$<HTMLInputElement>('#adminEmailConfirm');
+    const emailConfirmField = $$('#adminEmailConfirm') as HTMLInputElement | null;
     if (emailConfirmField !== null) emailConfirmField.required = true;
 
-    const passwordField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
-    const passwordConfirmField = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
+    const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+    const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
     if (passwordField !== null) passwordField.required = true;
     if (passwordConfirmField !== null) passwordConfirmField.required = true;
 
@@ -879,8 +879,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       // Set permission levels
       if (currentPerms.departments.length > 0) {
         const firstDept = currentPerms.departments[0];
-        const canWriteEl = $$<HTMLInputElement>('#permCanWrite');
-        const canDeleteEl = $$<HTMLInputElement>('#permCanDelete');
+        const canWriteEl = $$('#permCanWrite') as HTMLInputElement | null;
+        const canDeleteEl = $$('#permCanDelete') as HTMLInputElement | null;
         if (canWriteEl !== null) canWriteEl.checked = firstDept.can_write ?? false;
         if (canDeleteEl !== null) canDeleteEl.checked = firstDept.can_delete ?? false;
       }
@@ -918,8 +918,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       console.info('Selected groups:', selectedGroups);
 
       // Get permission levels
-      const canWriteEl = $$<HTMLInputElement>('#permCanWrite');
-      const canDeleteEl = $$<HTMLInputElement>('#permCanDelete');
+      const canWriteEl = $$('#permCanWrite') as HTMLInputElement | null;
+      const canDeleteEl = $$('#permCanDelete') as HTMLInputElement | null;
       const permissions = {
         canRead: true,
         canWrite: canWriteEl !== null ? canWriteEl.checked : false,
@@ -988,8 +988,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       e.preventDefault();
 
       // Validate email match
-      const emailEl = $$<HTMLInputElement>('#adminEmail');
-      const emailConfirmEl = $$<HTMLInputElement>('#adminEmailConfirm');
+      const emailEl = $$('#adminEmail') as HTMLInputElement | null;
+      const emailConfirmEl = $$('#adminEmailConfirm') as HTMLInputElement | null;
       const email = emailEl !== null ? emailEl.value : '';
       const emailConfirm = emailConfirmEl !== null ? emailConfirmEl.value : '';
       const emailError = $$('#email-error');
@@ -1003,8 +1003,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       }
 
       // Validate password match (only for new admins or if password is being changed)
-      const passwordEl = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
-      const passwordConfirmEl = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
+      const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+      const passwordConfirmEl = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
       const password = passwordEl !== null ? passwordEl.value : '';
       const passwordConfirm = passwordConfirmEl !== null ? passwordConfirmEl.value : '';
       const passwordError = $$('#password-error');
@@ -1030,11 +1030,11 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         employeeNumber?: string; // camelCase für API!
       }
 
-      const firstNameEl = $$<HTMLInputElement>('#adminFirstName');
-      const lastNameEl = $$<HTMLInputElement>('#adminLastName');
-      const positionEl = $$<HTMLInputElement>(SELECTORS.POSITION_DROPDOWN_VALUE);
+      const firstNameEl = $$('#adminFirstName') as HTMLInputElement | null;
+      const lastNameEl = $$('#adminLastName') as HTMLInputElement | null;
+      const positionEl = $$(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement | null;
 
-      const employeeNumberEl = $$<HTMLInputElement>('#adminEmployeeNumber');
+      const employeeNumberEl = $$('#adminEmployeeNumber') as HTMLInputElement | null;
       const formData: AdminFormData = {
         firstName: firstNameEl !== null ? firstNameEl.value : '',
         lastName: lastNameEl !== null ? lastNameEl.value : '',
@@ -1042,14 +1042,14 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
         username: email, // Use email as username
         password,
         position: positionEl !== null ? positionEl.value : '',
-        notes: $<HTMLTextAreaElement>('#adminNotes').value,
+        notes: ($('#adminNotes') as HTMLTextAreaElement).value,
         role: 'admin',
         employeeNumber: employeeNumberEl !== null ? employeeNumberEl.value : '', // camelCase für API!
       };
 
       // Include isActive only when updating
       if (currentAdminId !== null && currentAdminId !== 0) {
-        const checkbox = $<HTMLInputElement>('#adminIsActive');
+        const checkbox = $('#adminIsActive') as HTMLInputElement;
         console.info('Checkbox element:', checkbox);
         console.info('Checkbox checked state:', checkbox.checked);
         formData.isActive = checkbox.checked;
@@ -1097,7 +1097,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
             let groupIds: number[] = [];
 
             if (permissionType === 'specific') {
-              const select = $$<HTMLSelectElement>(SELECTORS.DEPARTMENT_SELECT);
+              const select = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
               if (select !== null) {
                 departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
               }
@@ -1221,10 +1221,10 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       });
 
       // Real-time validation for email confirmation
-      const emailConfirmInput = $$<HTMLInputElement>('#adminEmailConfirm');
+      const emailConfirmInput = $$('#adminEmailConfirm') as HTMLInputElement | null;
       if (emailConfirmInput) {
         emailConfirmInput.addEventListener('input', () => {
-          const emailEl = $$<HTMLInputElement>('#adminEmail');
+          const emailEl = $$('#adminEmail') as HTMLInputElement | null;
           const email = emailEl !== null ? emailEl.value : '';
           const emailConfirm = emailConfirmInput.value;
           const emailError = $$('#email-error');
@@ -1238,10 +1238,10 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       }
 
       // Real-time validation for password confirmation
-      const passwordConfirmInput = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD_CONFIRM);
+      const passwordConfirmInput = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
       if (passwordConfirmInput) {
         passwordConfirmInput.addEventListener('input', () => {
-          const passwordEl = $$<HTMLInputElement>(SELECTORS.ADMIN_PASSWORD);
+          const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
           const password = passwordEl !== null ? passwordEl.value : '';
           const passwordConfirm = passwordConfirmInput.value;
           const passwordError = $$('#password-error');

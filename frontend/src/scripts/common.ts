@@ -8,6 +8,7 @@ import { apiClient } from '../utils/api-client';
 import { ResponseAdapter } from '../utils/response-adapter';
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
+import { setHTML } from '../utils/dom-utils';
 
 // Extend window interface
 declare global {
@@ -47,7 +48,7 @@ function setupEventListeners(): void {
 async function loadNavigation(): Promise<void> {
   try {
     const navPlaceholder = document.querySelector('#navigation-placeholder');
-    if (!navPlaceholder) return;
+    if (!navPlaceholder || !(navPlaceholder instanceof HTMLElement)) return;
 
     const token = getAuthToken();
     let userRole: string | null = null;
@@ -76,25 +77,25 @@ async function loadNavigation(): Promise<void> {
             userData = (await userResponse.json()) as User;
             userRole = userData.role;
           } else {
-            navPlaceholder.innerHTML = createGuestNavigation();
+            setHTML(navPlaceholder, createGuestNavigation());
             return;
           }
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
-        navPlaceholder.innerHTML = createGuestNavigation();
+        setHTML(navPlaceholder, createGuestNavigation());
         return;
       }
     } else {
-      navPlaceholder.innerHTML = createGuestNavigation();
+      setHTML(navPlaceholder, createGuestNavigation());
       return;
     }
 
     // Load proper navigation based on role
     if (userRole === 'admin' || userRole === 'root') {
-      navPlaceholder.innerHTML = createAdminNavigation(userData);
+      setHTML(navPlaceholder, createAdminNavigation(userData));
     } else {
-      navPlaceholder.innerHTML = createEmployeeNavigation(userData);
+      setHTML(navPlaceholder, createEmployeeNavigation(userData));
     }
 
     // Initialize Bootstrap components
@@ -307,7 +308,7 @@ async function checkUnreadNotifications(): Promise<void> {
  */
 function updateNotificationBadge(count: number): void {
   const badge = document.querySelector('#notificationCount');
-  if (badge) {
+  if (badge instanceof HTMLElement) {
     if (count > 0) {
       badge.textContent = count.toString();
       badge.style.display = 'inline-block';
@@ -421,16 +422,18 @@ export async function loadBlackboardPreview(): Promise<void> {
  */
 function displayBlackboardItems(entries: BlackboardEntry[]): void {
   const container = document.querySelector('#blackboard-items');
-  if (!container) return;
+  if (!container || !(container instanceof HTMLElement)) return;
 
   if (entries.length === 0) {
-    container.innerHTML = '<p class="text-muted">Keine Einträge vorhanden.</p>';
+    setHTML(container, '<p class="text-muted">Keine Einträge vorhanden.</p>');
     return;
   }
 
-  container.innerHTML = entries
-    .map(
-      (entry) => `
+  setHTML(
+    container,
+    entries
+      .map(
+        (entry) => `
         <a href="/pages/blackboard.html#entry-${entry.id}" class="list-group-item list-group-item-action">
           <div class="d-flex w-100 justify-content-between">
             <h6 class="mb-1">${escapeHtml(entry.title)}</h6>
@@ -440,8 +443,9 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
           <small class="text-muted">von ${entry.created_by_name ?? 'Unbekannt'}</small>
         </a>
       `,
-    )
-    .join('');
+      )
+      .join(''),
+  );
 }
 
 /**
@@ -512,8 +516,8 @@ export function showSection(sectionId: string): void {
   });
 
   // Show selected section
-  const selectedSection = document.getElementById(sectionId);
-  if (selectedSection) {
+  const selectedSection = document.querySelector(`#${sectionId}`);
+  if (selectedSection instanceof HTMLElement) {
     selectedSection.style.display = 'block';
   }
 

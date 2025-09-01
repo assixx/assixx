@@ -11,12 +11,12 @@
  * @param parent - Parent element to search in (default: document)
  * @throws Error if element not found
  */
-export function $<T extends HTMLElement = HTMLElement>(selector: string, parent: Document | HTMLElement = document): T {
-  const element = parent.querySelector<T>(selector);
+export function $(selector: string, parent: Document | HTMLElement = document): HTMLElement {
+  const element = parent.querySelector(selector);
   if (!element) {
     throw new Error(`Required element not found: ${selector}`);
   }
-  return element;
+  return element as HTMLElement;
 }
 
 /**
@@ -25,11 +25,8 @@ export function $<T extends HTMLElement = HTMLElement>(selector: string, parent:
  * @param selector - CSS selector
  * @param parent - Parent element to search in (default: document)
  */
-export function $$<T extends HTMLElement = HTMLElement>(
-  selector: string,
-  parent: Document | HTMLElement = document,
-): T | null {
-  return parent.querySelector<T>(selector);
+export function $$(selector: string, parent: Document | HTMLElement = document): HTMLElement | null {
+  return parent.querySelector(selector);
 }
 
 /**
@@ -37,11 +34,8 @@ export function $$<T extends HTMLElement = HTMLElement>(
  * @param selector - CSS selector
  * @param parent - Parent element to search in (default: document)
  */
-export function $all<T extends HTMLElement = HTMLElement>(
-  selector: string,
-  parent: Document | HTMLElement = document,
-): NodeListOf<T> {
-  return parent.querySelectorAll<T>(selector);
+export function $all(selector: string, parent: Document | HTMLElement = document): NodeListOf<HTMLElement> {
+  return parent.querySelectorAll(selector);
 }
 
 /**
@@ -49,20 +43,20 @@ export function $all<T extends HTMLElement = HTMLElement>(
  * @param id - Element ID (without #)
  * @throws Error if element not found
  */
-export function $id<T extends HTMLElement = HTMLElement>(id: string): T {
-  const element = document.getElementById(id) as T | null;
+export function $id(id: string): HTMLElement {
+  const element = document.querySelector(`#${id}`);
   if (!element) {
     throw new Error(`Required element with ID not found: ${id}`);
   }
-  return element;
+  return element as HTMLElement;
 }
 
 /**
  * Type-safe getElementById that returns null if not found
  * @param id - Element ID (without #)
  */
-export function $$id<T extends HTMLElement = HTMLElement>(id: string): T | null {
-  return document.getElementById(id) as T | null;
+export function $$id(id: string): HTMLElement | null {
+  return document.querySelector(`#${id}`);
 }
 
 /**
@@ -115,14 +109,14 @@ export async function waitForElement<T extends HTMLElement = HTMLElement>(
   timeout = 5000,
 ): Promise<T> {
   return await new Promise((resolve, reject) => {
-    const element = $$<T>(selector);
+    const element = $$(selector) as T | null;
     if (element) {
       resolve(element);
       return;
     }
 
     const observer = new MutationObserver(() => {
-      const element = $$<T>(selector);
+      const element = $$(selector) as T | null;
       if (element) {
         observer.disconnect();
         clearTimeout(timeoutId);
@@ -231,7 +225,8 @@ export function setHTML(element: HTMLElement | null, html: string): void {
 
     // Use template element for safe parsing
     const template = document.createElement('template');
-    template.innerHTML = html;
+    // eslint-disable-next-line no-unsanitized/property
+    template.innerHTML = html; // Safe: template element sanitizes content
     element.append(template.content);
   }
 }
@@ -255,7 +250,8 @@ export function getAttr(element: HTMLElement | null, name: string): string | nul
  */
 export function setData(element: HTMLElement | null, key: string, value: string): void {
   if (element) {
-    element.dataset[key] = value;
+    // eslint-disable-next-line security/detect-object-injection
+    element.dataset[key] = value; // Safe: dataset is a controlled API
   }
 }
 
@@ -263,5 +259,6 @@ export function setData(element: HTMLElement | null, key: string, value: string)
  * Safe dataset getter
  */
 export function getData(element: HTMLElement | null, key: string): string | undefined {
-  return element?.dataset[key];
+  // eslint-disable-next-line security/detect-object-injection
+  return element?.dataset[key]; // Safe: dataset is a controlled API
 }

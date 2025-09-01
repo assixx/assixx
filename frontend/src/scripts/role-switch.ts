@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../utils/api-client';
+import { $$ } from '../utils/dom-utils';
 
 // Check if user is admin or root
 const userRole = localStorage.getItem('userRole');
@@ -11,8 +12,8 @@ let currentView = localStorage.getItem('activeRole') ?? userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
-  const switchBtn = document.querySelector('#role-switch-btn');
-  const roleIndicator = document.querySelector('#role-indicator');
+  const switchBtn = $$('#role-switch-btn') as HTMLButtonElement | null;
+  const roleIndicator = $$('#role-indicator');
 
   if (switchBtn === null || roleIndicator === null) return;
 
@@ -21,16 +22,16 @@ async function switchRole(): Promise<void> {
   switchBtn.style.opacity = '0.5';
 
   try {
-    // Update currentView from localStorage in case it changed
-    currentView = localStorage.getItem('activeRole') ?? userRole;
+    // Get current active role from localStorage
+    const currentActiveRole = localStorage.getItem('activeRole') ?? userRole;
 
     // Determine the endpoint based on current view and original role
     let endpoint = '';
-    const isCurrentlyEmployee = currentView === 'employee';
+    const isCurrentlyEmployee = currentActiveRole === 'employee';
 
     if (userRole === 'root') {
       // Root switching logic
-      if (currentView === 'employee' || currentView === 'admin') {
+      if (currentActiveRole === 'employee' || currentActiveRole === 'admin') {
         endpoint = '/api/role-switch/to-original'; // Back to Root
       } else {
         // Root can switch to admin or employee (handled by dropdown)
@@ -109,8 +110,8 @@ async function switchRole(): Promise<void> {
 
 // Update UI based on current role
 function updateRoleUI(): void {
-  const roleIndicator = document.querySelector('#role-indicator');
-  const switchBtn = document.querySelector('#role-switch-btn');
+  const roleIndicator = $$('#role-indicator');
+  const switchBtn = $$('#role-switch-btn') as HTMLButtonElement | null;
   const switchText = switchBtn !== null ? switchBtn.querySelector('.role-switch-text') : null;
 
   if (roleIndicator === null || switchBtn === null) return;
@@ -248,7 +249,7 @@ if (!document.querySelector('#toast-animations')) {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   // Handle for admins
-  const switchBtn = document.querySelector('#role-switch-btn');
+  const switchBtn = $$('#role-switch-btn') as HTMLButtonElement | null;
 
   if (userRole === 'admin' && switchBtn !== null) {
     switchBtn.style.display = 'flex';
@@ -262,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Handle for root users with dropdown
-  const switchSelect = document.querySelector('#role-switch-select');
+  const switchSelect = $$('#role-switch-select') as HTMLSelectElement | null;
 
   if (userRole === 'root' && switchSelect !== null) {
     switchSelect.style.display = 'block';
@@ -288,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Handle role switch for root with dropdown
 export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee'): Promise<void> {
   // For custom dropdown, we'll update the display element instead
-  const dropdownDisplay = document.querySelector('#roleSwitchDisplay');
+  const dropdownDisplay = $$('#roleSwitchDisplay');
 
   if (dropdownDisplay) {
     // Disable dropdown during switch
@@ -297,9 +298,6 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
   }
 
   try {
-    // Update currentView
-    currentView = localStorage.getItem('activeRole') ?? userRole;
-
     // Detailliertes Logging für Debugging
     const originalRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole');
@@ -307,7 +305,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     console.info('[RoleSwitch] Original Role (userRole):', originalRole);
     console.info('[RoleSwitch] Current Active Role:', activeRole);
     console.info('[RoleSwitch] Target Role (selected):', targetRole);
-    console.info('[RoleSwitch] Current View before switch:', currentView);
+    console.info('[RoleSwitch] Current View before switch:', activeRole ?? originalRole);
 
     // Wichtig: Wir müssen activeRole berücksichtigen, nicht nur targetRole!
     const currentActiveRole = activeRole ?? originalRole;
@@ -436,7 +434,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
 
 // Handle role switch for admin users
 export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Promise<void> {
-  const dropdownDisplay = document.querySelector('#roleSwitchDisplay');
+  const dropdownDisplay = $$('#roleSwitchDisplay');
 
   if (dropdownDisplay) {
     dropdownDisplay.style.pointerEvents = 'none';
@@ -444,8 +442,6 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
   }
 
   try {
-    currentView = localStorage.getItem('activeRole') ?? userRole;
-
     // Detailliertes Logging
     const originalRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole');
