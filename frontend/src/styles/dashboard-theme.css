@@ -589,11 +589,11 @@ body {
 /* Animations */
 /* @keyframes fadeIn {
   from {
-    opacity: 0%;
+    opacity: 0;
     transform: translateY(10px);
   }
   to {
-    opacity: 100%;
+    opacity: 1;
     transform: translateY(0);
   }
 } */
@@ -1005,7 +1005,7 @@ body {
   border-radius: var(--radius-lg);
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   background: rgb(18 18 18 / 90%);
   backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -1022,7 +1022,7 @@ body {
   margin-right: -15px;
 
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 .role-switch-dropdown .dropdown-option {

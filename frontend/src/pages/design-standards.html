@@ -207,13 +207,13 @@
         right: 0;
         height: 3px;
         background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        opacity: 0%;
+        opacity: 0;
         transition: opacity 0.3s ease;
       }
 
       .card:hover::before,
       .demo-card:hover::before {
-        opacity: 100%;
+        opacity: 1;
       }
 
       .card:hover,
@@ -597,7 +597,7 @@
         box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
-        opacity: 0%;
+        opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
 
@@ -605,7 +605,7 @@
       }
 
       .dropdown-options.active {
-        opacity: 100%;
+        opacity: 1;
         visibility: visible;
         transform: translateY(0);
       }
@@ -651,11 +651,11 @@
       /* Animations */
       @keyframes fadeInUp {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(20px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }

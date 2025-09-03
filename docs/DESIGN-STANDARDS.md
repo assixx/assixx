@@ -328,7 +328,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .form-control:-ms-input-placeholder,
 .form-input:-ms-input-placeholder {
   color: var(--text-secondary);
-  opacity: 0%.6;
+  opacity: 0.6;
 }
 ```
 
@@ -397,7 +397,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   max-height: 200px;
   overflow-y: auto;
-  opacity: 0%;
+  opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
 
@@ -405,7 +405,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .dropdown-options.active {
-  opacity: 100%;
+  opacity: 1;
   visibility: visible;
   transform: translateY(0);
 }
@@ -804,12 +804,12 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   right: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-  opacity: 0%;
+  opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .compact-card:hover::before {
-  opacity: 100%;
+  opacity: 1;
 }
 
 .compact-card:hover {
@@ -882,11 +882,11 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 /* Fade In Up */
 @keyframes fadeInUp {
   from {
-    opacity: 0%;
+    opacity: 0;
     transform: translateY(30px);
   }
   to {
-    opacity: 100%;
+    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -894,10 +894,10 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 /* Fade In (Success Overlay) */
 @keyframes fadeIn {
   from {
-    opacity: 0%;
+    opacity: 0;
   }
   to {
-    opacity: 100%;
+    opacity: 1;
   }
 }
 
@@ -905,11 +905,11 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 @keyframes scaleIn {
   from {
     transform: scale(0.8);
-    opacity: 0%;
+    opacity: 0;
   }
   to {
     transform: scale(1);
-    opacity: 100%;
+    opacity: 1;
   }
 }
 
@@ -930,11 +930,11 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 @keyframes subtle-pulse {
   0%,
   100% {
-    opacity: 100%;
+    opacity: 1;
     transform: scale(1);
   }
   50% {
-    opacity: 0%.95;
+    opacity: 0.95;
     transform: scale(1.02);
   }
 }

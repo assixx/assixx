@@ -197,7 +197,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
                 right: 0;
                 bottom: 0;
                 background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
-                opacity: 0%.9;
+                opacity: 0.9;
                 z-index: -1;
               }
 
@@ -226,8 +226,8 @@ export const authenticateToken: AuthenticationMiddleware = async function (
               }
 
               @keyframes fadeInUp {
-                from { opacity: 0%; transform: translateY(30px); }
-                to { opacity: 100%; transform: translateY(0); }
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
               }
 
               .icon {

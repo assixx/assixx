@@ -235,12 +235,12 @@ if (!document.querySelector('#toast-animations')) {
   style.id = 'toast-animations';
   style.textContent = `
     @keyframes slideInRight {
-      from { transform: translateX(100%); opacity: 0%; }
-      to { transform: translateX(0); opacity: 100%; }
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
     @keyframes slideOutRight {
-      from { transform: translateX(0); opacity: 100%; }
-      to { transform: translateX(100%); opacity: 0%; }
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
     }
   `;
   document.head.append(style);

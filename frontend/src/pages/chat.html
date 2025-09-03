@@ -440,11 +440,11 @@
         min-height: 0; /* Wichtig für Firefox */
         max-height: 100%;
         scroll-behavior: auto; /* Disable smooth scrolling for instant positioning */
-        opacity: 0%;
+        opacity: 0;
       }
 
       .messages-container.loaded {
-        opacity: 100%;
+        opacity: 1;
       }
 
       .message {
@@ -540,7 +540,7 @@
 
       .message-time {
         font-size: 0.7rem;
-        opacity: 0%.7;
+        opacity: 0.7;
         margin-left: auto;
       }
 
@@ -598,7 +598,7 @@
       }
 
       .message-time {
-        opacity: 0%.7;
+        opacity: 0.7;
       }
 
       .message-status {
@@ -658,7 +658,7 @@
       }
 
       .message.archived {
-        opacity: 0%.5;
+        opacity: 0.5;
       }
 
       /* Message Input Area */
@@ -706,7 +706,7 @@
 
       .message-input::placeholder {
         color: var(--text-secondary);
-        opacity: 0%.7;
+        opacity: 0.7;
       }
 
       .input-actions {
@@ -755,7 +755,7 @@
       }
 
       .send-btn:disabled {
-        opacity: 0%.5;
+        opacity: 0.5;
         cursor: not-allowed;
         transform: none;
       }
@@ -829,7 +829,7 @@
 
       .dropdown-arrow {
         font-size: 0.6rem;
-        opacity: 0%.6;
+        opacity: 0.6;
       }
 
       .custom-delivery-select.active .dropdown-arrow {
@@ -847,7 +847,7 @@
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: 12px;
         overflow: hidden;
-        opacity: 0%;
+        opacity: 0;
         visibility: hidden;
         transform: translateY(10px);
         z-index: 1000;
@@ -857,7 +857,7 @@
       }
 
       .custom-delivery-select.active .delivery-dropdown {
-        opacity: 100%;
+        opacity: 1;
         visibility: visible;
         transform: translateY(0);
       }
@@ -903,7 +903,7 @@
       .empty-chat-icon {
         font-size: 4rem;
         margin-bottom: var(--spacing-lg);
-        opacity: 0%.5;
+        opacity: 0.5;
       }
 
       .empty-chat h3 {
@@ -920,11 +920,11 @@
       /* Animations */
       @keyframes messageSlideIn {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(20px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }
@@ -1125,7 +1125,7 @@
       }
 
       .user-role {
-        opacity: 0%.7;
+        opacity: 0.7;
         font-size: 0.85rem;
       }
 
@@ -1181,11 +1181,11 @@
 
       @keyframes slideUp {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(20px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }
@@ -1281,21 +1281,21 @@
         60%,
         100% {
           transform: translateY(0);
-          opacity: 0%.4;
+          opacity: 0.4;
         }
         30% {
           transform: translateY(-10px);
-          opacity: 100%;
+          opacity: 1;
         }
       }
 
       @keyframes fadeIn {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(10px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }
@@ -1523,14 +1523,14 @@
         box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
-        opacity: 0%;
+        opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
         z-index: 1001;
       }
 
       .dropdown-options.active {
-        opacity: 100%;
+        opacity: 1;
         visibility: visible;
         transform: translateY(0);
       }
@@ -1599,11 +1599,11 @@
         cursor: pointer;
         padding: 0;
         font-size: 1rem;
-        opacity: 0%.8;
+        opacity: 0.8;
       }
 
       .selected-recipient-chip button:hover {
-        opacity: 100%;
+        opacity: 1;
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />

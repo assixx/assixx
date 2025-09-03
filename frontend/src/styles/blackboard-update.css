@@ -22,7 +22,7 @@
   padding: 40px 20px;
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   background-color: rgb(0 0 0 / 70%);
   backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
@@ -30,7 +30,7 @@
 
 .modal.active {
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 /* Form Controls gemäß Design Standards */
@@ -117,7 +117,7 @@ select.form-control {
   border-radius: var(--radius-sm);
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   background: rgb(18 18 18 / 95%);
   backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -129,7 +129,7 @@ select.form-control {
 .dropdown-options.active {
   transform: translateY(0);
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 .dropdown-option {

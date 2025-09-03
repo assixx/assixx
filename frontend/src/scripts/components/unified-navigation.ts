@@ -290,7 +290,6 @@ class UnifiedNavigation {
     // Initial badge updates (once after 1 second)
     setTimeout(() => {
       void this.updateUnreadMessages();
-      void this.updatePendingSurveys();
       void this.updateUnreadDocuments();
       void this.updateNewKvpSuggestions();
       void this.updateUnreadCalendarEvents();
@@ -1131,7 +1130,6 @@ class UnifiedNavigation {
           this.attachEventListeners();
         }
         void this.updateUnreadMessages();
-        void this.updatePendingSurveys();
         void this.updateUnreadDocuments();
         void this.updateNewKvpSuggestions();
         void this.updateUnreadCalendarEvents();
@@ -2290,7 +2288,6 @@ class UnifiedNavigation {
         }
         this.updateActiveNavigation();
         void this.updateUnreadMessages();
-        void this.updatePendingSurveys();
         void this.updateUnreadDocuments();
         void this.updateNewKvpSuggestions();
         void this.updateUnreadCalendarEvents();
@@ -2435,64 +2432,6 @@ class UnifiedNavigation {
   }
 
   // Offene Umfragen aktualisieren
-  public async updatePendingSurveys(): Promise<void> {
-    try {
-      const token = localStorage.getItem('token');
-      console.info('[UnifiedNav] updatePendingSurveys - Token exists:', token !== null && token !== '');
-      if (token === null || token === '' || token === 'test-mode') return;
-
-      // Nur für Employees
-      const role = localStorage.getItem('userRole');
-      console.info('[UnifiedNav] updatePendingSurveys - User role:', role);
-      if (role !== 'employee') {
-        console.info('[UnifiedNav] updatePendingSurveys - Skipping, not an employee');
-        return;
-      }
-
-      console.info('[UnifiedNav] updatePendingSurveys - Fetching pending count...');
-      // Auf allen Seiten ausführen, da Badge in Sidebar immer sichtbar ist
-
-      const data = await apiClient.get<{ pendingCount: number }>('/surveys/pending-count');
-      console.info('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
-      const badge = $$('#surveys-pending-badge');
-      const parentBadge = $$('#lean-management-badge');
-      console.info('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
-      console.info('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
-
-      const count = data.pendingCount;
-
-      // Update child badge (in submenu)
-      if (badge) {
-        if (count > 0) {
-          badge.textContent = count > 99 ? '99+' : count.toString();
-          badge.style.display = DISPLAY_INLINE_BLOCK;
-          console.info('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
-        } else {
-          badge.style.display = 'none';
-          console.info('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
-        }
-      }
-
-      // Update parent badge (on LEAN-Management)
-      if (parentBadge) {
-        if (count > 0) {
-          parentBadge.textContent = count > 99 ? '99+' : count.toString();
-          parentBadge.style.display = DISPLAY_INLINE_BLOCK;
-          console.info('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
-        } else {
-          parentBadge.style.display = 'none';
-          console.info('[UnifiedNav] updatePendingSurveys - Parent badge hidden, count is 0');
-        }
-      }
-    } catch (error) {
-      console.error('[UnifiedNav] updatePendingSurveys - Exception:', error);
-      // Silently handle errors for pending surveys
-      const badge = $$('#surveys-pending-badge');
-      if (badge) {
-        badge.style.display = 'none';
-      }
-    }
-  }
 
   // Ungelesene Dokumente aktualisieren
   public async updateUnreadDocuments(): Promise<void> {
@@ -3055,11 +2994,11 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-title:hover .pin-head {
-        opacity: 0%;
+        opacity: 0;
     }
 
     .sidebar-title:hover .pin-needle {
-        opacity: 100%;
+        opacity: 1;
         top: -18px;
     }
 
@@ -3107,7 +3046,7 @@ const unifiedNavigationCSS = `
         top: -10px;
         left: 50%;
         transform: translateX(-50%);
-        opacity: 0%;
+        opacity: 0;
         /*  */
         z-index: 2;
     }
@@ -3185,7 +3124,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-toggle:hover .toggle-icon {
-        opacity: 0%.8;
+        opacity: 0.8;
     }
 
     .toggle-icon {
@@ -3217,7 +3156,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .title-text {
-        opacity: 0%;
+        opacity: 0;
         width: 0;
         display: none;
     }
@@ -3374,13 +3313,13 @@ const unifiedNavigationCSS = `
         white-space: nowrap;
         z-index: 1000;
         pointer-events: none;
-        opacity: 0%;
+        opacity: 0;
         /*animation: tooltipFadeIn 0.3s ease forwards;*/
     }
 
     @keyframes tooltipFadeIn {
         to {
-            opacity: 100%;
+            opacity: 1;
         }
     }
 
@@ -3440,7 +3379,7 @@ const unifiedNavigationCSS = `
         background:
             radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
             radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-        opacity: 100%;
+        opacity: 1;
         z-index: 0;
     }
 
@@ -3700,7 +3639,7 @@ const unifiedNavigationCSS = `
         to {
             width: 200px;
             height: 200px;
-            opacity: 0%;
+            opacity: 0;
         }
     }
 
@@ -3717,7 +3656,7 @@ const unifiedNavigationCSS = `
     .submenu-arrow {
         margin-left: auto;
         /* transition: transform 0.3s ease; */
-        opacity: 0%.6;
+        opacity: 0.6;
     }
 
     .sidebar-item.has-submenu.open .submenu-arrow {

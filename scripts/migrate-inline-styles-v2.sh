@@ -37,7 +37,7 @@ declare -A replacements=(
     ['style="margin: 0"']='class="u-m-0"'
     ['style="font-weight: 600"']='class="u-fw-600"'
     ['style="font-size: 1.5rem; margin-bottom: var(--spacing-sm)"']='class="u-fs-xl u-mb-sm"'
-    ['style="font-size: 0.9rem; opacity: 0%.8"']='class="u-fs-09rem u-opacity-80"'
+    ['style="font-size: 0.9rem; opacity: 0.8"']='class="u-fs-09rem u-opacity-80"'
     ['style="display: block; margin-bottom: 12px; cursor: pointer"']='class="u-block u-mb-12 u-cursor-pointer"'
 
     # Additional patterns

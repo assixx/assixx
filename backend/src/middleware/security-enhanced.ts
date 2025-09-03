@@ -244,7 +244,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
               right: 0;
               bottom: 0;
               background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
-              opacity: 0%.9;
+              opacity: 0.9;
               z-index: -1;
             }
 
@@ -273,8 +273,8 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
             }
 
             @keyframes fadeInUp {
-              from { opacity: 0%; transform: translateY(30px); }
-              to { opacity: 100%; transform: translateY(0); }
+              from { opacity: 0; transform: translateY(30px); }
+              to { opacity: 1; transform: translateY(0); }
             }
 
             .icon {
@@ -285,8 +285,8 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
             }
 
             @keyframes pulse {
-              0%, 100% { transform: scale(1); opacity: 100%; }
-              50% { transform: scale(1.1); opacity: 0%.8; }
+              0%, 100% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.1); opacity: 0.8; }
             }
 
             h1 {

@@ -396,7 +396,7 @@ main.container.main-content.sidebar-collapsed {
   font-size: 48px;
   color: #fff;
   text-shadow: 0 2px 8px rgb(0 0 0 / 50%);
-  opacity: 0%;
+  opacity: 0;
 }
 
 .pdf-overlay:hover {
@@ -404,7 +404,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 .pdf-overlay:hover i {
-  opacity: 100%;
+  opacity: 1;
 }
 
 /* Red Pushpin */
@@ -565,13 +565,13 @@ main.container.main-content.sidebar-collapsed {
   justify-content: center;
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   background-color: rgb(0 0 0 / 70%);
 }
 
 .modal-overlay.active {
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 .modal-container {
@@ -1827,11 +1827,11 @@ main.container.main-content.sidebar-collapsed {
 /* Modal Animation */
 /* @keyframes fadeInUp {
   from {
-    opacity: 0%;
+    opacity: 0;
     transform: translateY(20px);
   }
   to {
-    opacity: 100%;
+    opacity: 1;
     transform: translateY(0);
   }
 } */

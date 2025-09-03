@@ -112,12 +112,12 @@
         right: 0;
         height: 3px;
         background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        opacity: 0%;
+        opacity: 0;
         transition: opacity 0.3s ease;
       }
 
       .compact-card:hover::before {
-        opacity: 100%;
+        opacity: 1;
       }
 
       .compact-card:hover {
@@ -410,11 +410,11 @@
       /* Animation Keyframes */
       @keyframes fadeInUp {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(30px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }

@@ -393,11 +393,11 @@
 
 /* @keyframes fadeInUp {
   from {
-    opacity: 0%;
+    opacity: 0;
     transform: translateY(30px);
   }
   to {
-    opacity: 100%;
+    opacity: 1;
     transform: translateY(0);
   }
 } */
@@ -440,14 +440,14 @@
   padding: 24px;
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
 .modal-overlay.active {
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 .modal-container {
@@ -881,11 +881,11 @@
 
 /* @keyframes fadeIn {
   from {
-    opacity: 0%;
+    opacity: 0;
     transform: translateY(10px);
   }
   to {
-    opacity: 100%;
+    opacity: 1;
     transform: translateY(0);
   }
 } */
@@ -1041,7 +1041,7 @@ textarea.form-control {
 
 .dropdown-display.disabled {
   cursor: not-allowed;
-  opacity: 50%;
+  opacity: 0.5;
 }
 
 .dropdown-options {
@@ -1059,7 +1059,7 @@ textarea.form-control {
   border-radius: var(--radius-sm);
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   background: rgb(18 18 18 / 80%);
   backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -1071,7 +1071,7 @@ textarea.form-control {
 .dropdown-options.active {
   transform: translateY(0);
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 .dropdown-option {
@@ -1352,7 +1352,7 @@ select.big-input:focus {
 /* Disabled Select */
 select.big-input:disabled {
   cursor: not-allowed;
-  opacity: 50%;
+  opacity: 0.5;
   background: rgb(255 255 255 / 2%);
   background-image: none;
 }

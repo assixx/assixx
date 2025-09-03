@@ -22,6 +22,7 @@ interface CreateSuggestionBody {
   title: string;
   description: string;
   categoryId: number;
+  departmentId?: number | null;
   orgLevel: 'company' | 'department' | 'team';
   orgId: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
@@ -161,6 +162,7 @@ export async function createSuggestion(req: AuthenticatedRequest, res: Response)
       title: body.title,
       description: body.description,
       categoryId: body.categoryId,
+      departmentId: body.departmentId, // Add departmentId from request body
       orgLevel: body.orgLevel,
       orgId: body.orgId,
       priority: body.priority,

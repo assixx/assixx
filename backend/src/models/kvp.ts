@@ -111,9 +111,11 @@ interface SuggestionCreateData {
   title: string;
   description: string;
   category_id: number;
+  department_id?: number | null;
   org_level: 'company' | 'department' | 'team';
   org_id: number;
   submitted_by: number;
+  team_id?: number | null;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
   estimated_cost?: number;
@@ -163,24 +165,32 @@ export async function createKvpSuggestion(
 ): Promise<SuggestionCreateData & { id: number }> {
   const connection = await getConnection();
   try {
+    console.info('[KVP Model] Received data:', JSON.stringify(data));
+    console.info('[KVP Model] department_id value:', data.department_id);
+
+    const values = [
+      data.tenant_id,
+      data.title,
+      data.description,
+      data.category_id,
+      data.department_id ?? null,
+      data.org_level,
+      data.org_id,
+      data.submitted_by,
+      data.team_id ?? null,
+      data.priority ?? 'normal',
+      data.expected_benefit ?? null,
+      data.estimated_cost ?? null,
+    ];
+
+    console.info('[KVP Model] SQL VALUES:', values);
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_suggestions
-        (tenant_id, title, description, category_id, org_level, org_id, submitted_by, priority, expected_benefit, estimated_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (tenant_id, title, description, category_id, department_id, org_level, org_id, submitted_by, team_id, priority, expected_benefit, estimated_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [
-        data.tenant_id,
-        data.title,
-        data.description,
-        data.category_id,
-        data.org_level,
-        data.org_id,
-        data.submitted_by,
-        data.priority ?? 'normal',
-        data.expected_benefit ?? null,
-        data.estimated_cost ?? null,
-      ],
+      values,
     );
 
     return { id: result.insertId, ...data };
@@ -204,6 +214,7 @@ export async function getKvpSuggestions(
           c.name as category_name,
           c.color as category_color,
           c.icon as category_icon,
+          d.name as department_name,
           u.first_name as submitted_by_name,
           u.last_name as submitted_by_lastname,
           admin.first_name as assigned_to_name,
@@ -213,6 +224,7 @@ export async function getKvpSuggestions(
           (SELECT AVG(rating) FROM kvp_ratings WHERE suggestion_id = s.id) as avg_rating
         FROM kvp_suggestions s
         LEFT JOIN kvp_categories c ON s.category_id = c.id
+        LEFT JOIN departments d ON s.department_id = d.id
         LEFT JOIN users u ON s.submitted_by = u.id
         LEFT JOIN users admin ON s.assigned_to = admin.id
         WHERE s.tenant_id = ?
@@ -271,6 +283,7 @@ export async function getKvpSuggestionById(
           c.name as category_name,
           c.color as category_color,
           c.icon as category_icon,
+          d.name as department_name,
           u.first_name as submitted_by_name,
           u.last_name as submitted_by_lastname,
           u.email as submitted_by_email,
@@ -278,6 +291,7 @@ export async function getKvpSuggestionById(
           admin.last_name as assigned_to_lastname
         FROM kvp_suggestions s
         LEFT JOIN kvp_categories c ON s.category_id = c.id
+        LEFT JOIN departments d ON s.department_id = d.id
         LEFT JOIN users u ON s.submitted_by = u.id
         LEFT JOIN users admin ON s.assigned_to = admin.id
         WHERE s.id = ? AND s.tenant_id = ?

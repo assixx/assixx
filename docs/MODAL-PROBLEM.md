@@ -24,7 +24,7 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
    ```css
    /* Critical CSS - Modal verstecken bevor externes CSS lädt */
    .modal-overlay {
-     opacity: 0% !important;
+     opacity: 0 !important;
      visibility: hidden !important;
    }
    ```
@@ -71,11 +71,11 @@ Entfernung der interferierenden CSS-Regeln:
 ```diff
 - /* Critical CSS - Modal verstecken bevor externes CSS lädt */
 - .modal-overlay {
--   opacity: 0% !important;
+-   opacity: 0 !important;
 -   visibility: hidden !important;
 - }
 - .modal-overlay.active {
--   opacity: 100% !important;
+-   opacity: 1 !important;
 -   visibility: visible !important;
 - }
 ```
@@ -168,7 +168,7 @@ Nach der Implementierung erfolgreich getestet:
 - Animation läuft korrekt ab
 - Computed styles zeigen korrekte Werte:
   - `visibility: visible`
-  - `opacity: 0%.0388969` (während Animation)
+  - `opacity: 0.0388969` (während Animation)
   - `display: flex`
 
 ## Präventionsmaßnahmen

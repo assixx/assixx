@@ -48,7 +48,7 @@
         right: 0;
         bottom: 0;
         /*background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);*/
-        opacity: 0%.9;
+        opacity: 0.9;
         z-index: -1;
       }
 
@@ -79,11 +79,11 @@
 
       @keyframes fadeInUp {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(30px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }
@@ -119,7 +119,7 @@
         color: var(--text-secondary);
         font-size: 14px;
         margin: 0;
-        opacity: 0%.7;
+        opacity: 0.7;
       }
 
       /* Kompakte Pricing Info */
@@ -185,7 +185,7 @@
 
       .form-control::placeholder {
         color: var(--text-secondary);
-        opacity: 0%.4;
+        opacity: 0.4;
         font-size: 13px;
       }
 
@@ -244,7 +244,7 @@
 
       .country-display svg {
         margin-left: auto;
-        opacity: 0%.6;
+        opacity: 0.6;
       }
 
       .country-display.active svg {
@@ -264,14 +264,14 @@
         box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
-        opacity: 0%;
+        opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
         z-index: 1000;
       }
 
       .country-dropdown.active {
-        opacity: 100%;
+        opacity: 1;
         visibility: visible;
         transform: translateY(0);
       }
@@ -346,7 +346,7 @@
       }
 
       .plan-display svg {
-        opacity: 0%.6;
+        opacity: 0.6;
       }
 
       .plan-display.active svg {
@@ -364,14 +364,14 @@
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-sm);
-        opacity: 0%;
+        opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
         z-index: 1000;
       }
 
       .plan-dropdown.active {
-        opacity: 100%;
+        opacity: 1;
         visibility: visible;
         transform: translateY(0);
       }
@@ -494,7 +494,7 @@
       }
 
       .submit-button:disabled {
-        opacity: 0%.6;
+        opacity: 0.6;
         cursor: not-allowed;
         transform: none;
       }
@@ -622,7 +622,7 @@
       /* Edge Legacy */
       .form-control:-ms-input-placeholder {
         color: var(--text-secondary);
-        opacity: 0%.6;
+        opacity: 0.6;
       }
 
       /* Phone input specific autofill */
@@ -914,11 +914,11 @@
       @keyframes subtle-pulse {
         0%,
         100% {
-          opacity: 100%;
+          opacity: 1;
           transform: scale(1);
         }
         50% {
-          opacity: 0%.95;
+          opacity: 0.95;
           transform: scale(1.02);
         }
       }

@@ -464,7 +464,7 @@
   border-radius: 8px;
 
   visibility: hidden;
-  opacity: 0%;
+  opacity: 0;
   background: rgb(18 18 18 / 90%);
   backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -474,7 +474,7 @@
 .dropdown-options.active {
   transform: translateY(0);
   visibility: visible;
-  opacity: 100%;
+  opacity: 1;
 }
 
 .dropdown-option {

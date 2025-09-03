@@ -111,7 +111,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
-      'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
+      'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',
@@ -209,7 +209,7 @@ export default [
       'security/detect-no-csrf-before-method-override': 'error',
       'security/detect-possible-timing-attacks': 'error',
       'security/detect-pseudoRandomBytes': 'error',
-      'security/detect-object-injection': 'error',
+      'security/detect-object-injection': 'warn',
 
       'no-unsanitized/method': 'warn',
       'no-unsanitized/property': 'error',

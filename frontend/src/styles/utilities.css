@@ -230,7 +230,7 @@
 }
 
 .u-opacity-100 {
-  opacity: 100% !important;
+  opacity: 1 !important;
 }
 
 /* === Additional Margin Utilities === */
@@ -272,7 +272,7 @@
 .empty-state-icon {
   font-size: 64px;
   margin-bottom: 20px;
-  opacity: 0%.5;
+  opacity: 0.5;
 }
 
 .empty-state-text {

@@ -6,12 +6,13 @@
 import { ApiClient } from '../../utils/api-client';
 import { $$ } from '../../utils/dom-utils';
 import { getAuthToken } from '../auth';
+import notificationService from '../services/notification.service';
 
 interface User {
   id: number;
   role: 'root' | 'admin' | 'employee';
   tenantId: number;
-  departmentId?: number;
+  departmentId: number | null; // Make it explicitly nullable but always present
 }
 
 interface KvpSuggestion {
@@ -70,6 +71,7 @@ class KvpPage {
   private categories: KvpCategory[] = [];
   private departments: Department[] = [];
   private useV2API = true;
+  private currentTeamId: number | null = null;
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
@@ -107,7 +109,10 @@ class KvpPage {
   private async getCurrentUser(): Promise<User | null> {
     try {
       if (this.useV2API) {
-        return await this.apiClient.get<User>('/users/me');
+        // Get full user data including departmentId
+        const userData = await this.apiClient.get<User & { departmentId?: number }>('/users/me');
+        console.log('User data from /users/me:', userData);
+        return userData;
       } else {
         // v1 fallback
         const token = getAuthToken();
@@ -789,14 +794,14 @@ class KvpPage {
     const createBtn = document.querySelector('#createNewBtn');
     if (createBtn) {
       createBtn.addEventListener('click', () => {
-        this.openCreateModal();
+        void this.openCreateModal();
       });
     }
 
     const createBtnHeader = document.querySelector('#createNewBtnHeader');
     if (createBtnHeader) {
       createBtnHeader.addEventListener('click', () => {
-        this.openCreateModal();
+        void this.openCreateModal();
       });
     }
 
@@ -849,14 +854,8 @@ class KvpPage {
   }
 
   private showError(message: string): void {
-    console.error(`Fehler: ${message}`);
-    const notification = document.createElement('div');
-    notification.className = 'notification error';
-    notification.textContent = `Fehler: ${message}`;
-    document.body.append(notification);
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
+    // Use notification service instead of custom implementation
+    notificationService.error('Fehler', message, 4000);
   }
 
   private showConfirmDialog(message: string): Promise<boolean> {
@@ -864,7 +863,103 @@ class KvpPage {
     return Promise.resolve(window.confirm(message));
   }
 
-  private openCreateModal(): void {
+  private async openCreateModal(): Promise<void> {
+    // Check if employee needs team validation - ALL employees need this check!
+    const effectiveRole = this.getEffectiveRole();
+
+    if (effectiveRole === 'employee') {
+      // Try to get team info from employee-accessible endpoint
+      try {
+        // Use /api/v2/users/me endpoint which is accessible by employees and returns team info
+        interface UserMeResponse {
+          id?: number;
+          teamId?: number;
+          team_id?: number;
+          teamName?: string;
+          team?: { id: number };
+          teams?: { id: number; team_id?: number }[];
+        }
+
+        const userInfo = await this.apiClient.get<UserMeResponse>('/users/me');
+        console.log('User /me response:', userInfo);
+
+        // Check various possible field names for team ID
+        const teamId =
+          userInfo.teamId ??
+          userInfo.team_id ??
+          userInfo.team?.id ??
+          userInfo.teams?.[0]?.id ??
+          userInfo.teams?.[0]?.team_id;
+
+        if (teamId !== undefined && teamId > 0) {
+          this.currentTeamId = teamId;
+        } else {
+          // No team found - check if user is a team lead
+          // This happens when an admin/root role-switches to employee but is a team_lead_id
+          const originalRole = localStorage.getItem('userRole');
+
+          if (originalRole === 'admin' || originalRole === 'root') {
+            try {
+              // Check if user is a team lead
+              const teamsResponse = await this.apiClient.get<
+                {
+                  id: number;
+                  team_lead_id?: number;
+                  teamLeadId?: number;
+                  leaderId?: number;
+                }[]
+              >('/teams');
+
+              console.log('Checking if user is team lead. User ID:', userInfo.id);
+              console.log('Teams response:', teamsResponse);
+
+              const userTeam = teamsResponse.find(
+                (team) =>
+                  team.team_lead_id === userInfo.id || team.teamLeadId === userInfo.id || team.leaderId === userInfo.id,
+              );
+
+              if (userTeam) {
+                console.log('User is team lead of team:', userTeam.id);
+                this.currentTeamId = userTeam.id;
+              } else {
+                // Not a team lead either
+                notificationService.error(
+                  'Kein Team zugeordnet',
+                  'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+                  5000,
+                );
+                return;
+              }
+            } catch (error) {
+              console.error('Could not check team lead status:', error);
+              notificationService.error(
+                'Kein Team zugeordnet',
+                'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+                5000,
+              );
+              return;
+            }
+          } else {
+            // Regular employee without team
+            notificationService.error(
+              'Kein Team zugeordnet',
+              'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+              5000,
+            );
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Could not get employee team info:', error);
+        // For now, show error - backend needs to provide team info for employees
+        notificationService.error(
+          'Fehler',
+          'Team-Information konnte nicht abgerufen werden. Bitte versuchen Sie es später erneut.',
+          5000,
+        );
+        return;
+      }
+    }
     // Reset form
     const form = $$('#createKvpForm');
     if (form instanceof HTMLFormElement) form.reset();
@@ -902,34 +997,51 @@ class KvpPage {
       const description = formData.get('description');
       const categoryId = formData.get('category_id');
 
-      if (
-        title === null ||
-        title === '' ||
-        description === null ||
-        description === '' ||
-        categoryId === null ||
-        categoryId === ''
-      ) {
-        this.showError('Bitte füllen Sie alle Pflichtfelder aus');
+      if (title === null || title === '' || description === null || description === '') {
+        this.showError('Bitte füllen Sie Titel und Beschreibung aus');
         return;
       }
 
       // Prepare data - cast to string since we validated they're not null
       const titleStr = title as string;
       const descStr = description as string;
-      const catIdStr = categoryId as string;
+      const catIdStr = categoryId as string | null;
       const priorityValue = formData.get('priority');
       const benefitValue = formData.get('expected_benefit');
       const costValue = formData.get('estimated_cost');
 
+      // Add organization level and ID based on role
+      const effectiveRole = this.getEffectiveRole();
+      let orgLevel = 'team';
+      let orgId = 0;
+
+      if (effectiveRole === 'employee' && this.currentTeamId !== null && this.currentTeamId > 0) {
+        orgLevel = 'team';
+        orgId = this.currentTeamId;
+      } else if (effectiveRole === 'admin' || effectiveRole === 'root') {
+        // For admin/root, default to company level (can be changed later)
+        orgLevel = 'company';
+        orgId = this.currentUser?.tenantId ?? 0;
+      }
+
       const data = {
         title: titleStr.trim(),
         description: descStr.trim(),
-        category_id: Number.parseInt(catIdStr, 10),
+        category_id: catIdStr !== null && catIdStr !== '' ? Number.parseInt(catIdStr, 10) : null,
+        categoryId: catIdStr !== null && catIdStr !== '' ? Number.parseInt(catIdStr, 10) : null, // API v2 expects camelCase
         priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
         expected_benefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null,
         estimated_cost: costValue !== null && costValue !== '' ? Number.parseFloat(costValue as string) : null,
+        orgLevel: orgLevel,
+        orgId: orgId,
+        departmentId: this.currentUser?.departmentId ?? null, // Add department_id from current user
       };
+
+      // Debug: Log what we're sending
+      console.log('Current user object:', this.currentUser);
+      console.log('Current user departmentId:', this.currentUser?.departmentId);
+      console.log('Sending KVP data to API:', data);
+      console.log('Data.departmentId being sent:', data.departmentId);
 
       // Submit to API
       let suggestionId: number;
@@ -985,7 +1097,32 @@ class KvpPage {
       await this.loadSuggestions();
     } catch (error) {
       console.error('Error creating suggestion:', error);
-      this.showError(error instanceof Error ? error.message : 'Fehler beim Erstellen des Vorschlags');
+
+      // Handle validation errors specifically
+      if (error instanceof Error && error.message === 'Validation failed') {
+        interface ValidationError extends Error {
+          details?: {
+            field: string;
+            message: string;
+          }[];
+        }
+        const apiError = error as ValidationError;
+        if (apiError.details !== undefined && Array.isArray(apiError.details)) {
+          const errorMessages = apiError.details.map((detail) => {
+            if (detail.field === 'title') {
+              return 'Titel: Muss zwischen 3 und 255 Zeichen lang sein';
+            } else if (detail.field === 'description') {
+              return 'Beschreibung: Muss zwischen 10 und 5000 Zeichen lang sein';
+            }
+            return detail.message;
+          });
+          this.showError('Bitte korrigieren Sie folgende Eingaben:\n' + errorMessages.join('\n'));
+        } else {
+          this.showError('Validierungsfehler: Bitte überprüfen Sie Ihre Eingaben');
+        }
+      } else {
+        this.showError(error instanceof Error ? error.message : 'Fehler beim Erstellen des Vorschlags');
+      }
     }
   }
 
@@ -995,7 +1132,7 @@ class KvpPage {
     const formData = new FormData();
     photos.forEach((photo, index) => {
       console.info(`Adding photo ${index}:`, photo.name, photo.size, photo.type);
-      formData.append('photos', photo);
+      formData.append('files', photo);
     });
 
     try {

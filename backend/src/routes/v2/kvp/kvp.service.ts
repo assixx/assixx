@@ -20,6 +20,7 @@ export interface KVPCreateData {
   title: string;
   description: string;
   categoryId: number;
+  departmentId?: number | null;
   orgLevel: 'company' | 'department' | 'team';
   orgId: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
@@ -227,18 +228,31 @@ export class KVPService {
     userId: number,
   ): Promise<KVPSuggestion> {
     try {
+      // Debug logging
+      console.info('[KVP Service] Incoming data:', JSON.stringify(data));
+      console.info('[KVP Service] departmentId from data:', data.departmentId);
+      // When orgLevel is 'team', orgId is the team_id
+      const teamId = data.orgLevel === 'team' ? data.orgId : null;
+
       const suggestionData = {
         tenant_id: tenantId,
         title: data.title,
         description: data.description,
         category_id: data.categoryId,
+        department_id: data.departmentId, // Add department_id from request
         org_level: data.orgLevel,
         org_id: data.orgId,
         submitted_by: userId,
+        team_id: teamId, // Store team_id explicitly
         priority: data.priority,
         expected_benefit: data.expectedBenefit,
         estimated_cost: data.estimatedCost,
       };
+
+      console.info(
+        '[KVP Service] suggestionData being sent to model:',
+        JSON.stringify(suggestionData),
+      );
 
       const result = await kvpModel.createSuggestion(suggestionData);
 

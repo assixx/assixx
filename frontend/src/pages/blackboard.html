@@ -201,11 +201,11 @@
       /* Animationen */
       @keyframes fadeInUp {
         from {
-          opacity: 0%;
+          opacity: 0;
           transform: translateY(30px);
         }
         to {
-          opacity: 100%;
+          opacity: 1;
           transform: translateY(0);
         }
       }
@@ -269,7 +269,7 @@
         font-weight: 500;
         min-width: 45px;
         text-align: center;
-        opacity: 0%.8;
+        opacity: 0.8;
       }
 
       /* Remove transform transition since we're using CSS zoom */
@@ -518,7 +518,7 @@
               <div class="pinboard-item">
                 <div class="pinboard-sticky color-yellow text-center">
                   <div class="pushpin pushpin-red"></div>
-                  <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0%.5; color: #000"></i>
+                  <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0.5; color: #000"></i>
                   <h4 style="color: #000">Noch keine Einträge</h4>
                   <p style="color: #000">Das Schwarze Brett ist noch leer.</p>
                   <button id="retryLoadBtn" class="btn btn-sm btn-outline-dark mt-3">
@@ -713,7 +713,7 @@
                 class="attachment-dropzone text-center p-4"
                 style="border: 2px dashed rgba(255, 255, 255, 0.3); border-radius: var(--radius-md); cursor: pointer"
               >
-                <i class="fas fa-cloud-upload-alt" style="font-size: 48px; opacity: 0%.5; margin-bottom: 16px"></i>
+                <i class="fas fa-cloud-upload-alt" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px"></i>
                 <p class="mb-2">Datei hier ablegen oder klicken zum Auswählen</p>
                 <p class="text-secondary mb-0" style="font-size: 0.85rem">Unterstützt: JPG, PNG, PDF (max. 10 MB)</p>
                 <input type="file" id="directAttachInput" accept="image/jpeg,image/jpg,image/png,application/pdf" class="u-hidden" />

@@ -225,7 +225,7 @@
 .blackboard-widget-empty i {
   margin-bottom: 0.5rem;
   font-size: 2rem;
-  opacity: 50%;
+  opacity: 0.5;
 }
 
 /* Loading State */
