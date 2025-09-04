@@ -76,9 +76,9 @@ export const kvpValidation = {
       .withMessage('Expected benefit cannot exceed 500 characters'),
     body('estimatedCost')
       .optional()
-      .isNumeric()
-      .custom((value) => Number.parseFloat(String(value)) >= 0)
-      .withMessage('Estimated cost must be a non-negative number'),
+      .trim()
+      .isLength({ max: 100 })
+      .withMessage('Estimated cost cannot exceed 100 characters'),
     handleValidationErrors,
   ],
 
@@ -116,9 +116,9 @@ export const kvpValidation = {
       .withMessage('Expected benefit cannot exceed 500 characters'),
     body('estimatedCost')
       .optional()
-      .isNumeric()
-      .custom((value) => Number.parseFloat(String(value)) >= 0)
-      .withMessage('Estimated cost must be a non-negative number'),
+      .trim()
+      .isLength({ max: 100 })
+      .withMessage('Estimated cost cannot exceed 100 characters'),
     body('actualSavings')
       .optional()
       .isNumeric()
@@ -187,6 +187,18 @@ export const kvpValidation = {
    */
   attachmentId: [
     param('attachmentId').isInt({ min: 1 }).withMessage('Attachment ID must be a positive integer'),
+    handleValidationErrors,
+  ],
+
+  /**
+   * Validation for sharing a suggestion
+   */
+  share: [
+    param('id').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
+    body('orgLevel')
+      .isIn(['company', 'department', 'team'])
+      .withMessage('Organization level must be company, department, or team'),
+    body('orgId').isInt({ min: 0 }).withMessage('Organization ID must be a non-negative integer'),
     handleValidationErrors,
   ],
 };

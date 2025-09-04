@@ -602,6 +602,113 @@ router.delete(
 
 /**
  * @swagger
+ * /api/v2/kvp/\{id\}/share:
+ *   put:
+ *     summary: Share KVP suggestion
+ *     description: Share a KVP suggestion at specified organization level (admin/root only)
+ *     tags: [KVP v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Suggestion ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orgLevel
+ *               - orgId
+ *             properties:
+ *               orgLevel:
+ *                 type: string
+ *                 enum: [company, department, team]
+ *                 description: Organization level to share at
+ *               orgId:
+ *                 type: integer
+ *                 description: Organization ID (team_id, department_id, or tenant_id)
+ *     responses:
+ *       200:
+ *         description: Suggestion shared successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put(
+  '/:id/share',
+  authenticateV2,
+  kvpValidation.share,
+  typed.auth(kvpController.shareSuggestion),
+);
+
+/**
+ * @swagger
+ * /api/v2/kvp/\{id\}/unshare:
+ *   post:
+ *     summary: Unshare KVP suggestion
+ *     description: Reset a KVP suggestion back to team level (admin/root only)
+ *     tags: [KVP v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Suggestion ID
+ *     responses:
+ *       200:
+ *         description: Suggestion unshared successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.post(
+  '/:id/unshare',
+  authenticateV2,
+  kvpValidation.getById,
+  typed.auth(kvpController.unshareSuggestion),
+);
+
+/**
+ * @swagger
  * /api/v2/kvp/\{id\}/comments:
  *   get:
  *     summary: Get comments for KVP suggestion

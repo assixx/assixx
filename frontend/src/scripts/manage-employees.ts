@@ -6,7 +6,7 @@
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
 import { mapUsers, type UserAPIResponse } from '../utils/api-mappers';
-import { showSuccessAlert, showErrorAlert } from './utils/alerts';
+import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 import { $, $$, $$id, setHTML } from '../utils/dom-utils';
 
 interface Employee extends User {
@@ -95,47 +95,8 @@ class EmployeesManager {
   }
 
   private async showConfirmDialog(message: string): Promise<boolean> {
-    return await new Promise<boolean>((resolve) => {
-      const modal = document.createElement('div');
-      modal.className = 'modal active';
-      const modalHTML = `
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title">Bestätigung erforderlich</h3>
-          </div>
-          <div class="modal-body">
-            <p>${message}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-primary" id="confirm-action">Bestätigen</button>
-            <button class="btn btn-secondary" id="cancel-action">Abbrechen</button>
-          </div>
-        </div>
-      `;
-      // eslint-disable-next-line no-unsanitized/property -- Safe: We control the message content
-      modal.innerHTML = modalHTML;
-      document.body.append(modal);
-
-      const confirmBtn = modal.querySelector('#confirm-action');
-      const cancelBtn = modal.querySelector('#cancel-action');
-
-      confirmBtn?.addEventListener('click', () => {
-        modal.remove();
-        resolve(true);
-      });
-
-      cancelBtn?.addEventListener('click', () => {
-        modal.remove();
-        resolve(false);
-      });
-
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          modal.remove();
-          resolve(false);
-        }
-      });
-    });
+    // Use the consistent confirm dialog from alerts.ts
+    return await showConfirm(message);
   }
 
   private initializeEventListeners() {
@@ -1153,10 +1114,42 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error('Error saving employee:', error);
 
-        // Check if error has a message property (works for both ApiError and Error)
-        const errorObj = error as { message?: string; code?: string; name?: string };
+        // Check if error has details array (validation errors from API v2)
+        const errorObj = error as {
+          message?: string;
+          code?: string;
+          name?: string;
+          details?: { field: string; message: string }[];
+        };
 
-        if (errorObj.message !== undefined) {
+        // First check for validation errors with details
+        if (errorObj.code === 'VALIDATION_ERROR' && errorObj.details !== undefined && errorObj.details.length > 0) {
+          // Build a user-friendly error message from validation details
+          const validationMessages = errorObj.details.map((detail) => {
+            if (detail.field === 'employeeNumber') {
+              if (detail.message.includes('max 10 characters')) {
+                return 'Personalnummer: Maximal 10 Zeichen (Buchstaben, Zahlen, Bindestrich)';
+              }
+              return 'Personalnummer ist ein Pflichtfeld und darf nicht leer sein';
+            }
+            if (detail.field === 'email') {
+              return 'E-Mail-Adresse ist ungültig oder fehlt';
+            }
+            if (detail.field === 'firstName') {
+              return 'Vorname ist ein Pflichtfeld';
+            }
+            if (detail.field === 'lastName') {
+              return 'Nachname ist ein Pflichtfeld';
+            }
+            if (detail.field === 'password') {
+              return 'Passwort muss mindestens 8 Zeichen lang sein';
+            }
+            // Default: Show the original message
+            return `${detail.field}: ${detail.message}`;
+          });
+
+          showErrorAlert('Bitte korrigieren Sie folgende Eingaben:\n' + validationMessages.join('\n'));
+        } else if (errorObj.message !== undefined) {
           const errorMessage = errorObj.message.toLowerCase();
           console.error('Error message to check:', errorObj.message);
 
@@ -1171,8 +1164,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showErrorAlert('Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen Benutzernamen.');
           } else if (errorMessage.includes('duplicate') || errorMessage.includes('duplikat')) {
             showErrorAlert('Ein Mitarbeiter mit diesen Daten existiert bereits.');
-          } else if (errorMessage.includes('validation')) {
-            showErrorAlert(`Validierungsfehler: ${errorObj.message}`);
+          } else if (errorMessage.includes('invalid input')) {
+            showErrorAlert('Bitte überprüfen Sie Ihre Eingaben. Alle Pflichtfelder müssen ausgefüllt sein.');
           } else {
             // Show the actual error message from backend
             showErrorAlert(errorObj.message);

@@ -140,10 +140,13 @@ export class RootService {
    */
   async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
     try {
+      // Hash password before passing to model
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+
       const adminData = {
         username: data.username,
         email: data.email,
-        password: data.password,
+        password: hashedPassword,
         first_name: data.firstName ?? '',
         last_name: data.lastName ?? '',
         role: 'admin' as const,

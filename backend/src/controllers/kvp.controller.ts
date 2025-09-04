@@ -728,9 +728,9 @@ class KvpController {
 
       const suggestion = suggestions[0];
 
-      // Check if already department level
-      if (suggestion.org_level !== 'company') {
-        res.status(400).json({ error: 'Vorschlag ist nicht firmenweit geteilt' });
+      // Check if suggestion is shared (not at team level)
+      if (suggestion.org_level === 'team') {
+        res.status(400).json({ error: 'Vorschlag ist bereits auf Team-Ebene' });
         return;
       }
 
@@ -742,11 +742,11 @@ class KvpController {
         return;
       }
 
-      // Revert to department level
+      // Revert to team level (using the original team_id)
       await executeQuery<ResultSetHeader>(
         `UPDATE kvp_suggestions
-         SET org_level = 'department',
-             org_id = department_id,
+         SET org_level = 'team',
+             org_id = team_id,
              shared_by = NULL,
              shared_at = NULL
          WHERE id = ?`,

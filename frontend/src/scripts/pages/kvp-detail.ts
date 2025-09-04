@@ -6,7 +6,7 @@
 import { ApiClient } from '../../utils/api-client';
 import { $$, setHTML, getData } from '../../utils/dom-utils';
 import { getAuthToken } from '../auth';
-import { showSuccessAlert, showErrorAlert } from '../utils/alerts';
+import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
 
 interface User {
   id: number;
@@ -24,6 +24,8 @@ interface KvpSuggestion {
   orgId: number;
   departmentId: number;
   departmentName: string;
+  teamId?: number;
+  teamName?: string;
   submittedBy: number;
   submittedByName: string;
   submittedByLastname: string;
@@ -196,6 +198,10 @@ class KvpDetailPage {
       departmentId?: number;
       department_name?: string;
       departmentName?: string;
+      team_id?: number;
+      teamId?: number;
+      team_name?: string;
+      teamName?: string;
       submitted_by?: number;
       submittedBy?: number;
       submitted_by_name?: string;
@@ -245,6 +251,8 @@ class KvpDetailPage {
       orgId: s.org_id ?? s.orgId ?? 0,
       departmentId: s.department_id ?? s.departmentId ?? 0,
       departmentName: s.department_name ?? s.departmentName ?? '',
+      teamId: s.team_id ?? s.teamId,
+      teamName: s.team_name ?? s.teamName,
       submittedBy: s.submitted_by ?? s.submittedBy ?? 0,
       submittedByName: s.submitted_by_name ?? s.submittedByName ?? '',
       submittedByLastname: s.submitted_by_lastname ?? s.submittedByLastname ?? '',
@@ -294,6 +302,29 @@ class KvpDetailPage {
       priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
     }
 
+    // Visibility Badge
+    const visibilityBadge = $$('#visibilityBadge');
+    const visibilityText = $$('#visibilityText');
+    if (visibilityBadge && visibilityText) {
+      const orgLevel = this.suggestion.orgLevel;
+      visibilityBadge.className = `visibility-badge ${orgLevel}`;
+
+      // Set icon and text based on org level
+      const icon = visibilityBadge.querySelector('i');
+      if (icon) {
+        if (orgLevel === 'team') {
+          icon.className = 'fas fa-users';
+          visibilityText.textContent = this.suggestion.teamName ?? 'Team';
+        } else if (orgLevel === 'department') {
+          icon.className = 'fas fa-building';
+          visibilityText.textContent = this.suggestion.departmentName;
+        } else {
+          icon.className = 'fas fa-globe';
+          visibilityText.textContent = 'Firmenweit';
+        }
+      }
+    }
+
     // Visibility info
     const visibilityInfo = $$('#visibilityInfo');
     if (!visibilityInfo) return;
@@ -309,14 +340,14 @@ class KvpDetailPage {
           }
         </div>`,
       );
-    } else {
-      setHTML(
-        visibilityInfo,
-        `<div class="visibility-badge department">
-          <i class="fas fa-building"></i> Abteilung: ${this.suggestion.departmentName}
-        </div>`,
-      );
-    }
+    } // else {
+    // setHTML(
+    // visibilityInfo,
+    //`<div class="visibility-badge department">
+    //<i class="fas fa-building"></i> Abteilung: ${this.suggestion.departmentName}
+    //</div>`,
+    //);
+    //}
 
     // Description
     const descriptionEl = document.querySelector('#description');
@@ -400,12 +431,20 @@ class KvpDetailPage {
       // TODO: Load assigned user name
     }
 
-    if (this.suggestion.implementationDate !== undefined && this.suggestion.implementationDate !== '') {
+    // Check for valid implementation date (not undefined, null, or empty string)
+    if (
+      this.suggestion.implementationDate !== undefined &&
+      this.suggestion.implementationDate !== '' &&
+      // Type assertion needed because API can return null even though type says string | undefined
+      (this.suggestion.implementationDate as string | null) !== null
+    ) {
       const implementationItem = document.querySelector('#implementationItem');
       const implementationDate = document.querySelector('#implementationDate');
       if (implementationItem instanceof HTMLElement) implementationItem.style.display = '';
       if (implementationDate) {
-        implementationDate.textContent = new Date(this.suggestion.implementationDate).toLocaleDateString('de-DE');
+        // Store in a const to avoid type issues
+        const dateValue = this.suggestion.implementationDate;
+        implementationDate.textContent = new Date(dateValue).toLocaleDateString('de-DE');
       }
     }
 
@@ -420,9 +459,20 @@ class KvpDetailPage {
   private setupRoleBasedUI(): void {
     if (!this.currentUser || !this.suggestion) return;
 
-    // Show/hide admin elements
+    // Check if user is admin/root OR the author of the suggestion
+    const isAdminOrRoot = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
+    const isAuthor = this.currentUser.id === this.suggestion.submittedBy;
+    const canComment = isAdminOrRoot || isAuthor;
+
+    // Show/hide comment form based on permissions
+    const commentForm = document.querySelector('#commentForm');
+    if (commentForm instanceof HTMLElement) {
+      commentForm.style.display = canComment ? '' : 'none';
+    }
+
+    // Show/hide admin elements (only for admin/root, NOT for employee authors)
     const adminElements = document.querySelectorAll('.admin-only');
-    if (this.currentUser.role === 'admin' || this.currentUser.role === 'root') {
+    if (isAdminOrRoot) {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
 
       // Show actions card
@@ -450,27 +500,48 @@ class KvpDetailPage {
         }
       }
 
-      if (this.suggestion.orgLevel === 'department') {
+      // Handle share/unshare button visibility based on org level
+      if (this.suggestion.orgLevel === 'team') {
+        // Team level: can share but not unshare (it's already at lowest level)
         if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
         if (unshareBtn instanceof HTMLElement) unshareBtn.style.display = 'none';
-      } else if (this.suggestion.orgLevel === 'company') {
+      } else if (this.suggestion.orgLevel === 'department') {
+        // Department level: can share to company or unshare to team
+        if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
+        if (
+          (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id) &&
+          unshareBtn instanceof HTMLElement
+        ) {
+          unshareBtn.style.display = '';
+        } else if (unshareBtn instanceof HTMLElement) {
+          unshareBtn.style.display = 'none';
+        }
+      } else {
+        // Company level: can only unshare (already at highest level)
         if (shareBtn instanceof HTMLElement) shareBtn.style.display = 'none';
         if (
           (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id) &&
           unshareBtn instanceof HTMLElement
         ) {
           unshareBtn.style.display = '';
+        } else if (unshareBtn instanceof HTMLElement) {
+          unshareBtn.style.display = 'none';
         }
       }
     } else {
+      // For employees (including authors), hide admin-only elements
       adminElements.forEach((el) => ((el as HTMLElement).style.display = 'none'));
+
+      // Hide actions card for employees
+      const actionsCard = document.querySelector('#actionsCard');
+      if (actionsCard instanceof HTMLElement) actionsCard.style.display = 'none';
     }
   }
 
   private async loadComments(): Promise<void> {
     try {
       const comments = await this.apiClient.get<Comment[]>(`/kvp/${this.suggestionId}/comments`);
-      this.renderComments(comments ?? []);
+      this.renderComments(comments);
     } catch (error) {
       console.error('Error loading comments:', error);
     }
@@ -496,7 +567,7 @@ class KvpDetailPage {
         <div class="${commentClass}">
           <div class="comment-header">
             <div class="comment-author">
-              <div class="comment-avatar">${initials}</div>
+              <div class="user-avatar avatar-initials">${initials}</div>
               <div>
                 <strong>${comment.firstName} ${comment.lastName}</strong>
                 ${comment.isInternal ? '<span class="internal-badge">Intern</span>' : ''}
@@ -525,7 +596,7 @@ class KvpDetailPage {
   private async loadAttachments(): Promise<void> {
     try {
       const attachments = await this.apiClient.get<Attachment[]>(`/kvp/${this.suggestionId}/attachments`);
-      this.renderAttachments(attachments ?? []);
+      this.renderAttachments(attachments);
     } catch (error) {
       console.error('Error loading attachments:', error);
     }
@@ -547,13 +618,15 @@ class KvpDetailPage {
       if (photoSection instanceof HTMLElement) photoSection.style.display = '';
       if (!photoGallery) return;
 
+      const token = getAuthToken();
+      const tokenParam = token !== null && token !== '' ? token : '';
       setHTML(
         photoGallery as HTMLElement,
         photos
           .map(
             (photo, index) => `
-        <div class="photo-thumbnail" onclick="window.openLightbox('/api/v2/kvp/attachments/${photo.id}/download')">
-          <img src="/api/v2/kvp/attachments/${photo.id}/download"
+        <div class="photo-thumbnail" onclick="window.openLightbox('/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}')">
+          <img src="/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}"
                alt="${this.escapeHtml(photo.fileName)}"
                loading="lazy">
           ${index === 0 && photos.length > 1 ? `<span class="photo-count">${photos.length} Fotos</span>` : ''}
@@ -609,7 +682,13 @@ class KvpDetailPage {
 
   private downloadAttachment(attachmentId: number): void {
     try {
-      window.open(`/api/v2/kvp/attachments/${attachmentId}/download`, '_blank');
+      const token = getAuthToken();
+      if (token === null || token === '') {
+        this.showError('Nicht authentifiziert');
+        return;
+      }
+      // Add token as query parameter for authentication
+      window.open(`/api/v2/kvp/attachments/${attachmentId}/download?token=${encodeURIComponent(token)}`, '_blank');
     } catch (error) {
       console.error('Error downloading attachment:', error);
       this.showError('Fehler beim Download');
@@ -636,9 +715,23 @@ class KvpDetailPage {
     });
 
     document.querySelector('#shareBtn')?.addEventListener('click', () => {
-      void (async () => {
-        await this.shareSuggestion();
-      })();
+      this.openShareModal();
+    });
+
+    // Listen for share event from modal
+    window.addEventListener('shareKvp', (event: Event) => {
+      const customEvent = event as CustomEvent;
+      interface ShareDetail {
+        orgLevel: 'company' | 'department' | 'team';
+        orgId: number | null;
+      }
+      const detail = customEvent.detail as ShareDetail;
+      void this.shareSuggestion(detail.orgLevel, detail.orgId);
+    });
+
+    // Listen for load organization data event
+    window.addEventListener('loadOrgData', () => {
+      void this.loadOrganizations();
     });
 
     document.querySelector('#unshareBtn')?.addEventListener('click', () => {
@@ -671,21 +764,18 @@ class KvpDetailPage {
 
   private async addComment(): Promise<void> {
     const input = document.querySelector('#commentInput');
-    const internalCheckbox = document.querySelector('#internalComment');
 
-    if (!(input instanceof HTMLTextAreaElement) || !(internalCheckbox instanceof HTMLInputElement)) return;
+    if (!(input instanceof HTMLTextAreaElement)) return;
     const comment = input.value.trim();
     if (comment === '') return;
 
     try {
       await this.apiClient.post(`/kvp/${this.suggestionId}/comments`, {
         comment,
-        is_internal: internalCheckbox.checked,
       });
 
       // Clear form
       input.value = '';
-      internalCheckbox.checked = false;
 
       // Reload comments
       await this.loadComments();
@@ -697,26 +787,120 @@ class KvpDetailPage {
     }
   }
 
-  private async shareSuggestion(): Promise<void> {
-    const confirmed = await this.showConfirmDialog('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?');
-    if (!confirmed) return;
+  private openShareModal(): void {
+    // Load organizations first
+    void this.loadOrganizations();
 
+    // Pre-select current organization level
+    if (this.suggestion !== null) {
+      const { orgLevel, departmentId, teamId } = this.suggestion;
+
+      // Select the radio button
+      const radioBtn = document.querySelector<HTMLInputElement>(
+        `#share${orgLevel.charAt(0).toUpperCase() + orgLevel.slice(1)}`,
+      );
+      if (radioBtn !== null) {
+        radioBtn.checked = true;
+
+        // Show the appropriate select and pre-select value
+        if (orgLevel === 'team' && teamId !== undefined) {
+          const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
+          if (teamSelect !== null) {
+            teamSelect.style.display = 'block';
+            // Value will be selected after teams are loaded
+            teamSelect.dataset.preselect = String(teamId);
+          }
+        } else if (orgLevel === 'department') {
+          const deptSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
+          if (deptSelect !== null) {
+            deptSelect.style.display = 'block';
+            // Value will be selected after departments are loaded
+            deptSelect.dataset.preselect = String(departmentId);
+          }
+        }
+      }
+    }
+
+    // Open modal using global function
+    const w = window as Window & { openShareModal?: () => void };
+    if (w.openShareModal !== undefined) {
+      w.openShareModal();
+    }
+  }
+
+  private async loadOrganizations(): Promise<void> {
     try {
-      const response = await fetch(`/api/kvp/${this.suggestionId}/share`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-          'Content-Type': 'application/json',
-        },
+      // Load teams
+      const teams = await this.apiClient.get<{ id: number; name: string }[]>('/teams');
+      const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
+      if (teamSelect !== null && Array.isArray(teams)) {
+        teamSelect.innerHTML = '<option value="">Team auswählen...</option>';
+        teams.forEach((team) => {
+          const option = document.createElement('option');
+          option.value = String(team.id);
+          option.textContent = team.name;
+          teamSelect.append(option);
+        });
+
+        // Pre-select if needed
+        const preselect = teamSelect.dataset.preselect;
+        if (preselect !== undefined) {
+          teamSelect.value = preselect;
+          delete teamSelect.dataset.preselect;
+        }
+      }
+
+      // Load departments
+      const departments = await this.apiClient.get<{ id: number; name: string }[]>('/departments');
+      const deptSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
+      if (deptSelect !== null && Array.isArray(departments)) {
+        deptSelect.innerHTML = '<option value="">Abteilung auswählen...</option>';
+        departments.forEach((dept) => {
+          const option = document.createElement('option');
+          option.value = String(dept.id);
+          option.textContent = dept.name;
+          deptSelect.append(option);
+        });
+
+        // Pre-select if needed
+        const preselect = deptSelect.dataset.preselect;
+        if (preselect !== undefined) {
+          deptSelect.value = preselect;
+          delete deptSelect.dataset.preselect;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    }
+  }
+
+  private async shareSuggestion(orgLevel: 'company' | 'department' | 'team', orgId: number | null): Promise<void> {
+    try {
+      // Determine the correct orgId based on level
+      let finalOrgId = orgId;
+      if (orgLevel === 'company' && this.currentUser !== null) {
+        finalOrgId = this.currentUser.tenantId;
+      }
+
+      if (finalOrgId === null) {
+        this.showError('Ungültige Organisation ausgewählt');
+        return;
+      }
+
+      // Use v2 API with PUT method
+      const result = await this.apiClient.put(`/kvp/${this.suggestionId}/share`, {
+        orgLevel,
+        orgId: finalOrgId,
       });
 
-      if (!response.ok) throw new Error('Failed to share suggestion');
-
-      this.showSuccess('Vorschlag wurde firmenweit geteilt');
-
-      // Reload page to update UI
-      await this.loadSuggestion();
-      this.setupRoleBasedUI();
+      if (result !== null && result !== undefined) {
+        this.showSuccess(
+          `Vorschlag wurde auf ${orgLevel === 'company' ? 'Firmenebene' : orgLevel === 'department' ? 'Abteilungsebene' : 'Teamebene'} geteilt`,
+        );
+        // Reload page to update UI
+        await this.loadSuggestion();
+        this.setupRoleBasedUI();
+      }
     } catch (error) {
       console.error('Error sharing suggestion:', error);
       this.showError('Fehler beim Teilen des Vorschlags');
@@ -930,10 +1114,8 @@ class KvpDetailPage {
   }
 
   private async showConfirmDialog(message: string): Promise<boolean> {
-    // TODO: Implement custom confirmation dialog
-    // For now, return true to avoid using native confirm
-    console.warn('Confirmation dialog not implemented:', message);
-    return await Promise.resolve(true);
+    // Use the consistent confirm dialog from alerts.ts
+    return await showConfirm(message);
   }
 
   private async showPromptDialog(message: string): Promise<string | null> {

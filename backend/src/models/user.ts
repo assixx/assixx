@@ -138,7 +138,8 @@ export async function createUser(userData: UserCreateData): Promise<number> {
   // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
   const iban = userData.iban ?? '';
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  // Password is already hashed in the service layer
+  const hashedPassword = password;
 
   // Generate employee_id if not provided
   let finalEmployeeId = employeeId;

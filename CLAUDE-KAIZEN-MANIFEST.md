@@ -24,8 +24,21 @@
 3. **User sagt "streng dich an"** → STOPP! Komplett neu anfangen!
 4. **Schnelle Antwort parat** → LANGSAMER! Erst denken!
 5. **"Ich verstehe"** → Wirklich? Wiederhole es erst!
+6. **`// TODO:` tippen wollen** → STOPP! SOFORT implementieren statt aufschieben!
 
 ## 📅 FEHLER-ARCHIV (Chronologisch)
+
+### 04.09.2025 - TODO-Kommentare VERBOTEN!
+
+**FEHLER: TODO-Kommentare statt Implementierung**
+
+- **Was:** `// TODO:` in Code geschrieben statt direkt zu implementieren
+- **Warum:** Faul, aufgeschoben statt gemacht
+- **Richtig:** SOFORT implementieren! Keine Ausreden!
+- **NEUE REGEL:** TODO-Kommentare sind VERBOTEN - ich MUSS es direkt machen!
+- **WENN ICH TODO SEHE:** SOFORT implementieren und TODO-Kommentar ENTFERNEN!
+- **NUR LÖSCHEN WENN:** Feature komplett implementiert ist!
+- **SHAME COUNTER:** 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴
 
 ### 23.08.2025 - Die Tenant-Trial Katastrophe
 

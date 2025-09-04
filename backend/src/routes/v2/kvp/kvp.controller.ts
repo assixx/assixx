@@ -27,7 +27,7 @@ interface CreateSuggestionBody {
   orgId: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
-  estimatedCost?: number;
+  estimatedCost?: string;
 }
 
 interface UpdateSuggestionBody {
@@ -36,7 +36,7 @@ interface UpdateSuggestionBody {
   categoryId?: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
-  estimatedCost?: number;
+  estimatedCost?: string;
   actualSavings?: number;
   status?: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assignedTo?: number;
@@ -83,6 +83,7 @@ export async function getCategories(req: AuthenticatedRequest, res: Response): P
 export async function listSuggestions(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const filters = {
+      filter: req.query.filter as string, // Add filter parameter for 'mine' vs 'all'
       status: req.query.status as string,
       categoryId:
         req.query.categoryId !== undefined ?
@@ -628,6 +629,81 @@ export async function getUserPoints(req: AuthenticatedRequest, res: Response): P
 }
 
 /**
+ * Unshare a KVP suggestion (reset to team level)
+ * @param req - The request object
+ * @param res - The response object
+ */
+export async function unshareSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    // Only admin and root can unshare suggestions
+    if (req.user.role === 'employee') {
+      res
+        .status(403)
+        .json(errorResponse('FORBIDDEN', 'Nur Admins und Root können Teilen rückgängig machen'));
+      return;
+    }
+
+    const suggestionId = Number.parseInt(req.params.id, 10);
+
+    // Get the suggestion to verify it exists and get its team_id
+    const suggestion = await kvpService.getSuggestionById(
+      suggestionId,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
+
+    // Check if suggestion has a team_id to revert to
+    const teamId = Number(suggestion.teamId);
+    if (!teamId || Number.isNaN(teamId)) {
+      res
+        .status(400)
+        .json(errorResponse('BAD_REQUEST', 'Dieser Vorschlag hat kein Team zugeordnet'));
+      return;
+    }
+
+    // Reset to team level
+    await kvpService.shareSuggestion(suggestionId, req.user.tenant_id, req.user.id, 'team', teamId);
+
+    // Log the unsharing action
+    await rootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: 'unshare',
+      entity_type: 'kvp_suggestion',
+      entity_id: suggestionId,
+      details: 'Teilen rückgängig gemacht - zurück auf Teamebene',
+      old_values: {
+        orgLevel: suggestion.orgLevel,
+        orgId: suggestion.orgId,
+      },
+      new_values: {
+        orgLevel: 'team',
+        orgId: suggestion.teamId,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get('user-agent'),
+      was_role_switched: false,
+    });
+
+    res.json(
+      successResponse({
+        message: 'Teilen wurde rückgängig gemacht',
+      }),
+    );
+  } catch (error: unknown) {
+    if (error instanceof Error && 'code' in error) {
+      const serviceError = error as ServiceError;
+      res
+        .status(serviceError.statusCode)
+        .json(errorResponse(serviceError.code, serviceError.message));
+    } else {
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to unshare suggestion'));
+    }
+  }
+}
+
+/**
  * Get KVP dashboard statistics
  * @param req - The request object
  * @param res - The response object
@@ -644,6 +720,87 @@ export async function getDashboardStats(req: AuthenticatedRequest, res: Response
         .json(errorResponse(serviceError.code, serviceError.message));
     } else {
       res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get dashboard stats'));
+    }
+  }
+}
+
+/**
+ * Share a KVP suggestion at specified organization level
+ * @param req - The request object
+ * @param res - The response object
+ */
+export async function shareSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    // Only admin and root can share suggestions
+    if (req.user.role === 'employee') {
+      res
+        .status(403)
+        .json(errorResponse('FORBIDDEN', 'Nur Admins und Root können Vorschläge teilen'));
+      return;
+    }
+
+    const suggestionId = Number.parseInt(req.params.id, 10);
+    const { orgLevel, orgId } = req.body as {
+      orgLevel: 'company' | 'department' | 'team';
+      orgId: number;
+    };
+
+    // Validate that admin has access to the suggestion
+    // This will throw if the suggestion doesn't exist or user doesn't have access
+    const suggestion = await kvpService.getSuggestionById(
+      suggestionId,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
+
+    // Update the suggestion's organization level
+    await kvpService.shareSuggestion(
+      suggestionId,
+      req.user.tenant_id,
+      req.user.id,
+      orgLevel,
+      orgId,
+    );
+
+    // Log the sharing action
+    await rootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: 'share',
+      entity_type: 'kvp_suggestion',
+      entity_id: suggestionId,
+      details: `Geteilt auf Ebene: ${orgLevel} (ID: ${orgId})`,
+      old_values: {
+        orgLevel: suggestion.orgLevel,
+        orgId: suggestion.orgId,
+      },
+      new_values: {
+        orgLevel,
+        orgId,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get('user-agent'),
+      was_role_switched: false,
+    });
+
+    res.json(
+      successResponse({
+        message: `Vorschlag wurde auf ${
+          orgLevel === 'company' ? 'Firmenebene'
+          : orgLevel === 'department' ? 'Abteilungsebene'
+          : 'Teamebene'
+        } geteilt`,
+      }),
+    );
+  } catch (error: unknown) {
+    if (error instanceof Error && 'code' in error) {
+      const serviceError = error as ServiceError;
+      res
+        .status(serviceError.statusCode)
+        .json(errorResponse(serviceError.code, serviceError.message));
+    } else {
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to share suggestion'));
     }
   }
 }

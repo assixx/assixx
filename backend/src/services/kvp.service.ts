@@ -68,7 +68,7 @@ interface KvpCreateData {
   submitted_by: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
-  estimated_cost?: number;
+  estimated_cost?: string;
 }
 
 interface KvpUpdateData {
@@ -102,7 +102,7 @@ interface Suggestion {
   submitted_by: number;
   priority: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
-  estimated_cost?: number;
+  estimated_cost?: string;
   status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assigned_to?: number;
   actual_savings?: number;

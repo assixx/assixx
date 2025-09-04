@@ -7,6 +7,7 @@ import { ServiceError } from '../../../utils/ServiceError.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export interface KVPFilters {
+  filter?: string; // 'mine' | 'all' | 'archived' | etc.
   status?: string;
   categoryId?: number;
   priority?: string;
@@ -25,7 +26,7 @@ export interface KVPCreateData {
   orgId: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
-  estimatedCost?: number;
+  estimatedCost?: string;
 }
 
 // API Response types
@@ -36,11 +37,13 @@ export interface KVPSuggestion {
   categoryId: number;
   orgLevel: string;
   orgId: number;
+  departmentId?: number;
+  teamId?: number;
   submittedBy: number;
   status: string;
   priority: string;
   expectedBenefit?: string;
-  estimatedCost?: number;
+  estimatedCost?: string;
   actualSavings?: number;
   implementedDate?: string;
   rejectionReason?: string;
@@ -89,7 +92,7 @@ export interface KVPUpdateData {
   categoryId?: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
-  estimatedCost?: number;
+  estimatedCost?: string;
   actualSavings?: number;
   status?: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assignedTo?: number;
@@ -173,6 +176,19 @@ export class KVPService {
             s.description.toLowerCase().includes(searchLower),
         );
       }
+
+      // Apply specific filters based on 'filter' parameter
+      if (filters.filter === 'mine') {
+        // Only show user's own suggestions
+        filteredSuggestions = filteredSuggestions.filter((s) => s.submitted_by === userId);
+      } else if (filters.filter === 'team') {
+        // Only show team suggestions
+        filteredSuggestions = filteredSuggestions.filter((s) => s.org_level === 'team');
+      } else if (filters.filter === 'department') {
+        // Only show department suggestions
+        filteredSuggestions = filteredSuggestions.filter((s) => s.org_level === 'department');
+      }
+      // Note: 'all' shows everything the user has access to (default behavior)
 
       // Apply pagination
       const paginatedSuggestions = filteredSuggestions.slice(
@@ -574,6 +590,28 @@ export class KVPService {
       return dbToApi(stats) as unknown;
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get dashboard stats', error);
+    }
+  }
+
+  /**
+   * Share a suggestion at specified organization level
+   * @param suggestionId - The suggestion ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID performing the share
+   * @param orgLevel - The organization level (company, department, team)
+   * @param orgId - The organization ID
+   */
+  async shareSuggestion(
+    suggestionId: number,
+    tenantId: number,
+    userId: number,
+    orgLevel: 'company' | 'department' | 'team',
+    orgId: number,
+  ): Promise<void> {
+    try {
+      await kvpModel.updateSuggestionOrgLevel(suggestionId, tenantId, orgLevel, orgId, userId);
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to share suggestion', error);
     }
   }
 }

@@ -7,6 +7,7 @@ import { ApiClient } from '../../utils/api-client';
 import { $$ } from '../../utils/dom-utils';
 import { getAuthToken } from '../auth';
 import notificationService from '../services/notification.service';
+import { showConfirm } from '../utils/alerts';
 
 interface User {
   id: number;
@@ -25,6 +26,8 @@ interface KvpSuggestion {
   orgId: number;
   departmentId: number;
   departmentName: string;
+  teamId?: number;
+  teamName?: string;
   submittedBy: number;
   submittedByName: string;
   submittedByLastname: string;
@@ -454,8 +457,15 @@ class KvpPage {
     container.innerHTML = this.suggestions
       .map((suggestion) => {
         const statusClass = suggestion.status.replace('_', '');
-        const visibilityIcon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-building';
-        const visibilityText = suggestion.orgLevel === 'company' ? 'Firmenweit' : 'Abteilung';
+        const visibilityIcon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-users';
+        const visibilityText =
+          suggestion.orgLevel === 'company'
+            ? 'Firmenweit'
+            : suggestion.orgLevel === 'department' && suggestion.departmentName !== ''
+              ? suggestion.departmentName
+              : suggestion.teamName !== undefined && suggestion.teamName !== ''
+                ? suggestion.teamName
+                : 'Team';
 
         return `
         <div class="glass-card kvp-card" data-id="${suggestion.id}">
@@ -587,7 +597,7 @@ class KvpPage {
     try {
       if (this.useV2API) {
         // v2 API
-        await this.apiClient.post(`/kvp/${id}/share`);
+        await this.apiClient.post(`/kvp/${id}/share`, {});
       } else {
         // v1 fallback
         const token = getAuthToken();
@@ -611,13 +621,15 @@ class KvpPage {
   }
 
   private async unshareSuggestion(id: number): Promise<void> {
-    const confirmed = await this.showConfirmDialog('Möchten Sie das Teilen wirklich rückgängig machen?');
+    const confirmed = await this.showConfirmDialog(
+      'Möchten Sie das Teilen wirklich rückgängig machen? Der Vorschlag wird wieder nur für das ursprüngliche Team sichtbar sein.',
+    );
     if (!confirmed) return;
 
     try {
       if (this.useV2API) {
         // v2 API
-        await this.apiClient.post(`/kvp/${id}/unshare`);
+        await this.apiClient.post(`/kvp/${id}/unshare`, {});
       } else {
         // v1 fallback
         const token = getAuthToken();
@@ -859,8 +871,8 @@ class KvpPage {
   }
 
   private showConfirmDialog(message: string): Promise<boolean> {
-    // Simple confirm for now - can be replaced with custom modal later
-    return Promise.resolve(window.confirm(message));
+    // Use the consistent confirm dialog from alerts.ts
+    return showConfirm(message);
   }
 
   private async openCreateModal(): Promise<void> {
@@ -1027,11 +1039,10 @@ class KvpPage {
       const data = {
         title: titleStr.trim(),
         description: descStr.trim(),
-        category_id: catIdStr !== null && catIdStr !== '' ? Number.parseInt(catIdStr, 10) : null,
         categoryId: catIdStr !== null && catIdStr !== '' ? Number.parseInt(catIdStr, 10) : null, // API v2 expects camelCase
         priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
-        expected_benefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null,
-        estimated_cost: costValue !== null && costValue !== '' ? Number.parseFloat(costValue as string) : null,
+        expectedBenefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null, // API v2 expects camelCase
+        estimatedCost: costValue !== null && costValue !== '' ? (costValue as string) : null, // API v2 now accepts text with currency symbols
         orgLevel: orgLevel,
         orgId: orgId,
         departmentId: this.currentUser?.departmentId ?? null, // Add department_id from current user

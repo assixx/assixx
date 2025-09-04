@@ -196,6 +196,35 @@
         border: 1px solid rgba(158, 158, 158, 0.5);
       }
 
+      /* Visibility Badge */
+      .visibility-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .visibility-badge.team {
+        background: rgba(255, 159, 67, 0.2);
+        color: #ff9f43;
+        border: 1px solid rgba(255, 159, 67, 0.5);
+      }
+
+      .visibility-badge.department {
+        background: rgba(78, 205, 196, 0.2);
+        color: #4ecdc4;
+        border: 1px solid rgba(78, 205, 196, 0.5);
+      }
+
+      .visibility-badge.company {
+        background: rgba(102, 126, 234, 0.2);
+        color: #667eea;
+        border: 1px solid rgba(102, 126, 234, 0.5);
+      }
+
       /* Content Sections */
       .content-section {
         margin-bottom: var(--spacing-xl);
@@ -292,16 +321,23 @@
         gap: var(--spacing-sm);
       }
 
-      .comment-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        font-weight: 600;
+      /* Use same avatar styling as header/sidebar */
+      .comment-author .user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50% !important;
+        object-fit: cover !important;
+      }
+
+      .comment-author .user-avatar.avatar-initials {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        color: #fff !important;
+        background-color: #1b8e01 !important;
       }
 
       .comment-internal {
@@ -507,19 +543,19 @@
 
       /* Action Buttons */
       .action-buttons {
-        display: flex;
+        display: grid;
         gap: var(--spacing-md);
         margin-top: var(--spacing-lg);
       }
 
       .btn {
-        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         font-weight: 500;
         cursor: pointer;
+        max-width: 200px;
       }
 
       .btn:hover {
@@ -582,6 +618,10 @@
                 <div class="status-priority">
                   <span class="priority-badge" id="priorityBadge"></span>
                   <span class="status-badge" id="statusBadge"></span>
+                  <span class="visibility-badge" id="visibilityBadge">
+                    <i class="fas fa-users"></i>
+                    <span id="visibilityText">Team</span>
+                  </span>
                 </div>
               </div>
 
@@ -691,14 +731,10 @@
                   Kommentare
                 </h3>
 
-                <!-- Comment Form -->
-                <form class="comment-form" id="commentForm">
+                <!-- Comment Form (only visible for admin/root users) -->
+                <form class="comment-form" id="commentForm" style="display: none">
                   <textarea class="comment-input" id="commentInput" placeholder="Kommentar hinzufügen..." required></textarea>
                   <div>
-                    <label class="admin-only" class="u-hidden">
-                      <input type="checkbox" id="internalComment" />
-                      Interner Kommentar
-                    </label>
                     <button type="submit" class="btn btn-primary">
                       <i class="fas fa-paper-plane"></i>
                       Senden
@@ -828,6 +864,320 @@
         }
       });
     </script>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 500px">
+        <div class="modal-header">
+          <h2>Vorschlag teilen</h2>
+          <button type="button" class="close-btn" onclick="closeShareModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag teilen möchten:</p>
+
+          <div class="org-level-selector" style="margin-top: 20px">
+            <label class="org-level-option">
+              <input type="radio" name="orgLevel" value="team" id="shareTeam" />
+              <div class="org-level-card">
+                <h3>Team</h3>
+                <p>Nur für Ihr Team sichtbar</p>
+                <select id="teamSelect" class="org-select" style="margin-top: 10px; display: none">
+                  <option value="">Team auswählen...</option>
+                </select>
+              </div>
+            </label>
+
+            <label class="org-level-option">
+              <input type="radio" name="orgLevel" value="department" id="shareDepartment" />
+              <div class="org-level-card">
+                <h3>Abteilung</h3>
+                <p>Für Ihre gesamte Abteilung sichtbar</p>
+                <select id="departmentSelect" class="org-select" style="margin-top: 10px; display: none">
+                  <option value="">Abteilung auswählen...</option>
+                </select>
+              </div>
+            </label>
+
+            <label class="org-level-option">
+              <input type="radio" name="orgLevel" value="company" id="shareCompany" />
+              <div class="org-level-card">
+                <h3>Firma</h3>
+                <p>Für die gesamte Firma sichtbar</p>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeShareModal()">Abbrechen</button>
+          <button type="button" class="btn btn-primary" onclick="confirmShare()">Teilen</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* Modal Styles - Matching Create KVP Modal Design */
+      .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .modal-content {
+        background: hsla(0, 0%, 8.2%, 0.84);
+        backdrop-filter: blur(20px) saturate(500%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-header {
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.6);
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s;
+      }
+
+      .close-btn:hover {
+        color: #ffffff;
+      }
+
+      .modal-body {
+        padding: 24px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .modal-body p {
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 20px;
+      }
+
+      .modal-footer {
+        padding: 20px 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+
+      .org-level-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .org-level-option {
+        display: block;
+        cursor: pointer;
+      }
+
+      .org-level-card {
+        padding: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        transition: all 0.3s;
+      }
+
+      .org-level-option input[type='radio'] {
+        display: none;
+      }
+
+      .org-level-option input[type='radio']:checked + .org-level-card {
+        border-color: #00d4ff;
+        background: rgba(0, 212, 255, 0.1);
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+      }
+
+      .org-level-card h3 {
+        margin: 0 0 5px 0;
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .org-level-card p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+      }
+
+      .org-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+        transition: all 0.2s;
+      }
+
+      .org-select:focus {
+        outline: none;
+        border-color: #00d4ff;
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .org-select option {
+        background: #1a1a1a;
+        color: #ffffff;
+      }
+
+      /* Button Styles matching Create KVP Modal */
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+    </style>
+
+    <script>
+      // Share Modal Functions
+      function openShareModal() {
+        document.getElementById('shareModal').style.display = 'flex';
+        // Trigger load of teams and departments if needed
+        window.dispatchEvent(new CustomEvent('loadOrgData'));
+      }
+
+      function closeShareModal() {
+        document.getElementById('shareModal').style.display = 'none';
+        // Reset selections
+        document.querySelectorAll('input[name="orgLevel"]').forEach((input) => (input.checked = false));
+        document.getElementById('teamSelect').style.display = 'none';
+        document.getElementById('departmentSelect').style.display = 'none';
+      }
+
+      function confirmShare() {
+        const selectedLevel = document.querySelector('input[name="orgLevel"]:checked');
+        if (!selectedLevel) {
+          alert('Bitte wählen Sie eine Organisationsebene aus.');
+          return;
+        }
+
+        let orgId = null;
+        const level = selectedLevel.value;
+
+        if (level === 'team') {
+          orgId = document.getElementById('teamSelect').value;
+          if (!orgId) {
+            alert('Bitte wählen Sie ein Team aus.');
+            return;
+          }
+        } else if (level === 'department') {
+          orgId = document.getElementById('departmentSelect').value;
+          if (!orgId) {
+            alert('Bitte wählen Sie eine Abteilung aus.');
+            return;
+          }
+        }
+
+        // Dispatch share event with data
+        window.dispatchEvent(
+          new CustomEvent('shareKvp', {
+            detail: { orgLevel: level, orgId: orgId },
+          }),
+        );
+
+        closeShareModal();
+      }
+
+      // Show/hide selects based on radio selection
+      document.querySelectorAll('input[name="orgLevel"]').forEach((input) => {
+        input.addEventListener('change', (e) => {
+          document.getElementById('teamSelect').style.display = 'none';
+          document.getElementById('departmentSelect').style.display = 'none';
+
+          if (e.target.value === 'team') {
+            document.getElementById('teamSelect').style.display = 'block';
+          } else if (e.target.value === 'department') {
+            document.getElementById('departmentSelect').style.display = 'block';
+          }
+        });
+      });
+    </script>
+
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>
