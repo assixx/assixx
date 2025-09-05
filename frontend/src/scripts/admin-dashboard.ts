@@ -1151,15 +1151,19 @@ class AdminDashboard {
     try {
       console.info('[Admin Dashboard] Loading initial data...');
 
-      // Load all data in parallel
+      // Load Blackboard FIRST (most visible widget) - ALONE without competition
+      await Promise.all([this.loadBlackboardWidget(), this.loadBlackboardPreview()]);
+
+      // Give browser time to render Blackboard before loading other data
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // ONLY AFTER Blackboard is rendered, start loading other data
       await Promise.all([
-        this.loadDashboardStats(),
         this.loadRecentEmployees(),
+        this.loadDashboardStats(),
         this.loadRecentDocuments(),
         this.loadDepartments(),
         this.loadTeams(),
-        this.loadBlackboardPreview(),
-        this.loadBlackboardWidget(),
       ]);
 
       console.info('[Admin Dashboard] Initial data loaded successfully');

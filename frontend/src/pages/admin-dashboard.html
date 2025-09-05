@@ -633,7 +633,26 @@
             </div>
 
             <!-- Blackboard Widget -->
-            <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading"></div>
+            <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading">
+              <!-- Loading placeholder with same styles as final widget -->
+              <div class="blackboard-widget" style="animation: subtle-pulse 2s ease-in-out infinite;">
+                <div class="blackboard-widget-header">
+                  <h3 class="blackboard-widget-title">
+                    <i class="fas fa-thumbtack"></i>
+                    Schwarzes Brett
+                  </h3>
+                  <a href="/blackboard" class="blackboard-widget-link" style="opacity: 0.5;">
+                    Alle anzeigen <i class="fas fa-arrow-right"></i>
+                  </a>
+                </div>
+                <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                  <div style="text-align: center; color: var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Lade Einträge...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- Main Grid Container -->
             <div class="admin-grid">
@@ -1169,7 +1188,6 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/show-section.ts"></script>
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
-    <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
 
     <!-- Breadcrumb Component -->
@@ -1560,10 +1578,8 @@
 
         // Direkter Link für Sidebar-Links
         document.querySelectorAll('.sidebar-link').forEach((link) => {
-          console.info('Found sidebar link:', link.textContent);
           link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
-            console.info('Sidebar link clicked:', href);
 
             if (href === '#departments') {
               e.preventDefault();
@@ -2052,17 +2068,7 @@
 
       // OLD editEmployeeAsync - REMOVED (replaced by new editEmployee function above)
 
-      // Mitarbeiter löschen
-      async function deleteEmployeeWrapper(employeeId) {
-        // This function is now handled by employee-deletion.ts
-        // Call the enhanced delete dialog from employee-deletion.ts
-        if (window.deleteEmployee) {
-          window.deleteEmployee(employeeId);
-        } else {
-          console.error('Delete employee function not loaded from employee-deletion.ts');
-          showError('Löschfunktion nicht verfügbar. Bitte laden Sie die Seite neu.');
-        }
-      }
+      // Mitarbeiter löschen - moved to manage-employees.ts
 
       // Mitarbeiterstatus ändern
       async function toggleEmployeeStatus(employeeId, currentStatus) {
@@ -2148,9 +2154,21 @@
       // REMOVED: Duplicate dropdown functions - using the ones defined earlier (line 2011)
 
       // Lade Abteilungen für Employee Modal
+      // Cache for departments to prevent multiple API calls
+      let departmentsCache = null;
+      let departmentsCacheTime = 0;
+      const CACHE_DURATION = 30000; // 30 seconds
+
       async function loadDepartmentsForEmployeeSelect() {
         try {
-          console.info('[loadDepartmentsForEmployeeSelect] Starting...');
+          // Check cache first
+          if (departmentsCache && Date.now() - departmentsCacheTime < CACHE_DURATION) {
+            const dropdown = document.getElementById('employeeDepartment-dropdown');
+            if (dropdown && departmentsCache) {
+              updateDepartmentDropdown(dropdown, departmentsCache);
+            }
+            return;
+          }
 
           // Ensure ApiClient is available and create instance
           if (typeof ApiClient === 'undefined') {
@@ -2160,16 +2178,26 @@
 
           const apiClient = new ApiClient();
           const response = await apiClient.get('/departments');
-          console.info('[loadDepartmentsForEmployeeSelect] API response:', response);
 
           // API v2 returns { success: true, data: [...] }
           const departments = response.data || response;
-          console.info('[loadDepartmentsForEmployeeSelect] Departments:', departments);
+          
+          // Store in cache
+          departmentsCache = departments;
+          departmentsCacheTime = Date.now();
 
           const dropdown = document.getElementById('employeeDepartment-dropdown');
-          console.info('[loadDepartmentsForEmployeeSelect] Dropdown element:', dropdown);
 
           if (dropdown && departments) {
+            updateDepartmentDropdown(dropdown, departments);
+          }
+        } catch (error) {
+          console.error('Error loading departments:', error);
+        }
+      }
+
+      function updateDepartmentDropdown(dropdown, departments) {
+        if (dropdown && departments) {
             // Clear existing options and add default
             dropdown.innerHTML = `
               <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employeeDepartment', '', 'Keine Abteilung')">
@@ -2214,15 +2242,8 @@
             console.error('Dropdown:', dropdown);
             console.error('Departments:', departments);
 
-            // Debug: Alle Elemente mit "employeeDepartment" im Namen suchen
-            const allElements = document.querySelectorAll('[id*="employeeDepartment"]');
-            console.info('Found elements with "employeeDepartment" in ID:', allElements.length);
-            allElements.forEach((el) => console.info('  -', el.id, el.tagName));
           }
-        } catch (error) {
-          console.error('Error loading departments:', error);
         }
-      }
 
       // Lade Teams für Employee Modal
       async function loadTeamsForEmployeeSelect() {
@@ -2547,9 +2568,9 @@
                 <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
                   <i class="fas fa-edit"></i> Bearbeiten
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})">
-                  <i class="fas fa-trash"></i> Löschen
-                </button>
+                <a href="/manage-employees" class="btn btn-sm btn-danger">
+                  <i class="fas fa-users-cog"></i> Verwalten
+                </a>
               </td>
             `;
             tableBody.appendChild(row);
@@ -2571,7 +2592,7 @@
       document.addEventListener('DOMContentLoaded', () => {
         window.loadEmployeesTable = loadEmployeesTable;
         window.editEmployee = editEmployee;
-        window.deleteEmployee = deleteEmployee;
+        // deleteEmployee moved to manage-employees.ts
         window.loadDocumentsTable = loadDocumentsTable || (() => console.info('loadDocumentsTable not implemented'));
         // loadPayslipsTable removed - now using documents-payroll.html
         // loadEmployeesForPayslipSelect removed - now using documents-payroll.html
@@ -2713,43 +2734,7 @@
         }
       }
 
-      // Delete employee
-      async function deleteEmployee(employeeId) {
-        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?')) {
-          return;
-        }
-
-        const token = localStorage.getItem('token');
-
-        try {
-          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? fetch(`/api/v2/users/${employeeId}`, {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                },
-              })
-            : fetch(`/api/users/${employeeId}`, {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }));
-
-          if (response.ok) {
-            alert('Mitarbeiter erfolgreich gelöscht');
-            loadEmployeesTable(); // Reload the table
-            loadRecentEmployees(); // Update recent employees
-            loadDashboardStats(); // Update statistics
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
-          }
-        } catch (error) {
-          console.error('Error deleting employee:', error);
-          alert('Ein Fehler ist aufgetreten');
-        }
-      }
+      // Delete employee functionality moved to manage-employees.ts
 
       function showAllDocuments() {
         console.info('Show all documents');

@@ -1129,10 +1129,7 @@ class UnifiedNavigation {
         if (!this.isEventListenerAttached) {
           this.attachEventListeners();
         }
-        void this.updateUnreadMessages();
-        void this.updateUnreadDocuments();
-        void this.updateNewKvpSuggestions();
-        void this.updateUnreadCalendarEvents();
+        // Badge updates removed - handled by initial load after 1 second
       }, 100);
 
       return;
@@ -2287,10 +2284,7 @@ class UnifiedNavigation {
           this.attachEventListeners();
         }
         this.updateActiveNavigation();
-        void this.updateUnreadMessages();
-        void this.updateUnreadDocuments();
-        void this.updateNewKvpSuggestions();
-        void this.updateUnreadCalendarEvents();
+        // Badge updates removed - handled by initial load after 1 second
 
         // Restore sidebar state
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';

@@ -109,8 +109,6 @@
 
 - [x] manage-admins.ts ✅
 - [x] manage-admins.html ✅ (admin-permissions API migriert)
-- [ ] admin-employee-search.ts
-- [ ] employee-deletion.ts
 
 #### Organization Management
 
