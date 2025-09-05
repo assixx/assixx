@@ -13,7 +13,7 @@ import { NotificationData, NotificationPreferences } from './types.js';
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications:
  *   get:
  *     summary: List notifications for the authenticated user
@@ -91,7 +91,7 @@ export const listNotifications = async (req: AuthenticatedRequest, res: Response
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications:
  *   post:
  *     summary: Create a new notification (admin only)
@@ -146,7 +146,7 @@ export const createNotification = async (req: AuthenticatedRequest, res: Respons
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/{id}/read:
  *   put:
  *     summary: Mark notification as read
@@ -188,7 +188,7 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/mark-all-read:
  *   put:
  *     summary: Mark all notifications as read
@@ -233,7 +233,7 @@ export const markAllAsRead = async (req: AuthenticatedRequest, res: Response) =>
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/{id}:
  *   delete:
  *     summary: Delete notification
@@ -282,7 +282,7 @@ export const deleteNotification = async (req: AuthenticatedRequest, res: Respons
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/preferences:
  *   get:
  *     summary: Get notification preferences for authenticated user
@@ -318,7 +318,7 @@ export const getPreferences = async (req: AuthenticatedRequest, res: Response) =
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/preferences:
  *   put:
  *     summary: Update notification preferences
@@ -362,7 +362,7 @@ export const updatePreferences = async (req: AuthenticatedRequest, res: Response
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/stats:
  *   get:
  *     summary: Get notification statistics (admin only)
@@ -405,7 +405,7 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response) =>
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/stats/me:
  *   get:
  *     summary: Get personal notification statistics
@@ -441,7 +441,7 @@ export const getPersonalStats = async (req: AuthenticatedRequest, res: Response)
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/subscribe:
  *   post:
  *     summary: Subscribe to push notifications
@@ -493,7 +493,7 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/subscribe/{id}:
  *   delete:
  *     summary: Unsubscribe from push notifications
@@ -531,7 +531,7 @@ export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/templates:
  *   get:
  *     summary: Get notification templates (admin only)
@@ -574,7 +574,7 @@ export const getTemplates = async (req: AuthenticatedRequest, res: Response) => 
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/notifications/from-template:
  *   post:
  *     summary: Create notification from template (admin only)

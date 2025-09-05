@@ -1,7 +1,7 @@
 /**
  * KVP API v2 Routes
  * Route definitions for Continuous Improvement Process
- * @swagger
+
  * tags:
  *   - name: KVP v2
  *     description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess) API v2
@@ -63,7 +63,7 @@ const upload = multer({
 // Authentication is applied per route for better control
 
 /**
- * @swagger
+
  * /api/v2/kvp/categories:
  *   get:
  *     summary: Get KVP categories
@@ -103,7 +103,7 @@ const upload = multer({
 router.get('/categories', authenticateV2, typed.auth(kvpController.getCategories));
 
 /**
- * @swagger
+
  * /api/v2/kvp/dashboard/stats:
  *   get:
  *     summary: Get KVP dashboard statistics
@@ -144,7 +144,7 @@ router.get('/categories', authenticateV2, typed.auth(kvpController.getCategories
 router.get('/dashboard/stats', authenticateV2, typed.auth(kvpController.getDashboardStats));
 
 /**
- * @swagger
+
  * /api/v2/kvp/points/award:
  *   post:
  *     summary: Award points to user
@@ -208,7 +208,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/points/user/\{userId\}:
  *   get:
  *     summary: Get user points summary
@@ -261,7 +261,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/points/user:
  *   get:
  *     summary: Get current user points summary
@@ -303,7 +303,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp:
  *   get:
  *     summary: List KVP suggestions
@@ -366,7 +366,7 @@ router.get(
 // Suggestions CRUD endpoints
 router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.listSuggestions));
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}:
  *   get:
  *     summary: Get KVP suggestion by ID
@@ -405,7 +405,7 @@ router.get(
   typed.auth(kvpController.getSuggestionById),
 );
 /**
- * @swagger
+
  * /api/v2/kvp:
  *   post:
  *     summary: Create KVP suggestion
@@ -471,7 +471,7 @@ router.get(
 router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.createSuggestion));
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}:
  *   put:
  *     summary: Update KVP suggestion
@@ -556,7 +556,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}:
  *   delete:
  *     summary: Delete KVP suggestion
@@ -601,7 +601,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}/share:
  *   put:
  *     summary: Share KVP suggestion
@@ -663,7 +663,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}/unshare:
  *   post:
  *     summary: Unshare KVP suggestion
@@ -708,7 +708,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}/comments:
  *   get:
  *     summary: Get comments for KVP suggestion
@@ -751,7 +751,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}/comments:
  *   post:
  *     summary: Add comment to KVP suggestion
@@ -809,7 +809,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}/attachments:
  *   get:
  *     summary: Get attachments for KVP suggestion
@@ -852,7 +852,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/\{id\}/attachments:
  *   post:
  *     summary: Upload attachments to KVP suggestion
@@ -923,7 +923,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/kvp/attachments/\{attachmentId\}/download:
  *   get:
  *     summary: Download KVP attachment

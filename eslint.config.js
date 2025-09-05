@@ -784,6 +784,7 @@ export default [
       'build/**',
       '*.min.js',
       'backend/dist/**',
+      'backend/src/routes/v1/**',
       'frontend/dist/**',
       'coverage/**',
       '*.log',

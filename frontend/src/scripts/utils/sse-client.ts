@@ -3,13 +3,29 @@
  * Replaces polling with push-based updates
  */
 
-import type UnifiedNavigation from '../components/unified-navigation';
+import type unifiedNavigation from '../components/unified-navigation';
+
+// SSE Message types
+interface SSEMessage {
+  type: string;
+  user?: unknown;
+  survey?: {
+    title?: string;
+  };
+  kvp?: {
+    title?: string;
+  };
+  document?: {
+    filename?: string;
+  };
+  message?: string;
+}
 
 // Extend the Window interface with additional properties
 // unifiedNav is already declared in unified-navigation.ts
 declare global {
   interface Window {
-    unifiedNav?: UnifiedNavigation;
+    unifiedNav?: unifiedNavigation;
     showErrorAlert?: (message: string) => void;
     showSuccessAlert?: (message: string) => void;
     showInfoAlert?: (message: string) => void;
@@ -35,7 +51,7 @@ export class SSEClient {
     }
 
     const token = localStorage.getItem('token');
-    if (!token || token === 'test-mode') {
+    if (token === null || token === '' || token === 'test-mode') {
       console.warn('[SSE] No valid token available');
       return;
     }
@@ -55,9 +71,9 @@ export class SSEClient {
       this.isConnecting = false;
     };
 
-    this.eventSource.onmessage = (event) => {
+    this.eventSource.onmessage = (event: MessageEvent<string>) => {
       try {
-        const data = JSON.parse(event.data);
+        const data = JSON.parse(event.data) as SSEMessage;
         this.handleMessage(data);
       } catch (error) {
         console.error('[SSE] Failed to parse message:', error);
@@ -79,7 +95,7 @@ export class SSEClient {
     };
   }
 
-  private handleMessage(data: any): void {
+  private handleMessage(data: SSEMessage): void {
     console.info('[SSE] Received:', data.type, data);
 
     switch (data.type) {
@@ -92,12 +108,13 @@ export class SSEClient {
         console.info('[SSE] New survey notification received');
 
         // Update survey badge immediately
-        if (window.unifiedNav?.updatePendingSurveys) {
-          void window.unifiedNav.updatePendingSurveys();
+        if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          void (window.unifiedNav as any).updatePendingSurveys();
         }
 
         // Show toast notification
-        if (data.survey?.title) {
+        if (data.survey?.title !== undefined && data.survey.title !== '') {
           this.showToast(`Neue Umfrage: ${data.survey.title}`, 'info');
         }
         break;
@@ -106,8 +123,9 @@ export class SSEClient {
         console.info('[SSE] Survey updated notification received');
 
         // Refresh survey badge
-        if (window.unifiedNav?.updatePendingSurveys) {
-          void window.unifiedNav.updatePendingSurveys();
+        if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          void (window.unifiedNav as any).updatePendingSurveys();
         }
         break;
 
@@ -115,7 +133,7 @@ export class SSEClient {
         // Admin notification when they create a survey
         console.info('[SSE] Admin: New survey created');
 
-        if (data.survey?.title) {
+        if (data.survey?.title !== undefined && data.survey.title !== '') {
           this.showToast(`Umfrage erstellt: ${data.survey.title}`, 'success');
         }
         break;
@@ -128,7 +146,7 @@ export class SSEClient {
           void window.unifiedNav.updateUnreadDocuments();
         }
 
-        if (data.document?.filename) {
+        if (data.document?.filename !== undefined && data.document.filename !== '') {
           this.showToast(`Neues Dokument: ${data.document.filename}`, 'info');
         }
         break;
@@ -141,7 +159,7 @@ export class SSEClient {
           void window.unifiedNav.updateNewKvpSuggestions();
         }
 
-        if (data.kvp?.title) {
+        if (data.kvp?.title !== undefined && data.kvp.title !== '') {
           this.showToast(`Neuer KVP-Vorschlag: ${data.kvp.title}`, 'info');
         }
         break;

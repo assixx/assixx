@@ -2,7 +2,7 @@
  * Blackboard API v2 Service Layer
  * Business logic for company announcements and bulletin board
  */
-import Blackboard, {
+import blackboard, {
   DbBlackboardEntry,
   EntryCreateData,
   EntryQueryOptions,
@@ -109,7 +109,7 @@ export class BlackboardService {
         requiresConfirmation: filters.requiresConfirmation,
       };
 
-      const result = (await Blackboard.getAllEntries(tenantId, userId, options)) as {
+      const result = (await blackboard.getAllEntries(tenantId, userId, options)) as {
         entries: unknown[];
         pagination: {
           total: number;
@@ -134,8 +134,8 @@ export class BlackboardService {
    * @param tenantId - The tenant ID
    * @param userId - The user ID
    */
-  async getEntryById(id: number, tenantId: number, userId: number) {
-    const entry = await Blackboard.getEntryById(id, tenantId, userId);
+  async getEntryById(id: number, tenantId: number, userId: number): Promise<BlackboardEntry> {
+    const entry = await blackboard.getEntryById(id, tenantId, userId);
     if (!entry) {
       throw new ServiceError('NOT_FOUND', 'Entry not found');
     }
@@ -148,7 +148,11 @@ export class BlackboardService {
    * @param tenantId - The tenant ID
    * @param authorId - The authorId parameter
    */
-  async createEntry(data: BlackboardCreateData, tenantId: number, authorId: number) {
+  async createEntry(
+    data: BlackboardCreateData,
+    tenantId: number,
+    authorId: number,
+  ): Promise<BlackboardEntry> {
     // Validate org_id requirement
     if (data.orgLevel !== 'company' && !data.orgId) {
       throw new ServiceError(
@@ -171,7 +175,7 @@ export class BlackboardService {
       requires_confirmation: data.requiresConfirmation,
     };
 
-    const entry = await Blackboard.createEntry(entryData);
+    const entry = await blackboard.createEntry(entryData);
     if (!entry) {
       throw new ServiceError('SERVER_ERROR', 'Failed to create entry');
     }
@@ -186,9 +190,14 @@ export class BlackboardService {
    * @param tenantId - The tenant ID
    * @param userId - The user ID
    */
-  async updateEntry(id: number, data: BlackboardUpdateData, tenantId: number, userId: number) {
+  async updateEntry(
+    id: number,
+    data: BlackboardUpdateData,
+    tenantId: number,
+    userId: number,
+  ): Promise<BlackboardEntry> {
     // Check if entry exists and user has access
-    const existingEntry = await Blackboard.getEntryById(id, tenantId, userId);
+    const existingEntry = await blackboard.getEntryById(id, tenantId, userId);
     if (!existingEntry) {
       throw new ServiceError('NOT_FOUND', 'Entry not found');
     }
@@ -207,7 +216,7 @@ export class BlackboardService {
       author_id: userId,
     };
 
-    const entry = await Blackboard.updateEntry(id, updateData, tenantId);
+    const entry = await blackboard.updateEntry(id, updateData, tenantId);
     if (!entry) {
       throw new ServiceError('SERVER_ERROR', 'Failed to update entry');
     }
@@ -221,14 +230,14 @@ export class BlackboardService {
    * @param tenantId - The tenant ID
    * @param userId - The user ID
    */
-  async deleteEntry(id: number, tenantId: number, userId: number) {
+  async deleteEntry(id: number, tenantId: number, userId: number): Promise<{ message: string }> {
     // Check if entry exists and user has access
-    const entry = await Blackboard.getEntryById(id, tenantId, userId);
+    const entry = await blackboard.getEntryById(id, tenantId, userId);
     if (!entry) {
       throw new ServiceError('NOT_FOUND', 'Entry not found');
     }
 
-    const success = await Blackboard.deleteEntry(id, tenantId);
+    const success = await blackboard.deleteEntry(id, tenantId);
     if (!success) {
       throw new ServiceError('SERVER_ERROR', 'Failed to delete entry');
     }
@@ -242,7 +251,7 @@ export class BlackboardService {
    * @param tenantId - The tenant ID
    * @param userId - The user ID
    */
-  async archiveEntry(id: number, tenantId: number, userId: number) {
+  async archiveEntry(id: number, tenantId: number, userId: number): Promise<BlackboardEntry> {
     return await this.updateEntry(id, { status: 'archived' }, tenantId, userId);
   }
 
@@ -252,7 +261,7 @@ export class BlackboardService {
    * @param tenantId - The tenant ID
    * @param userId - The user ID
    */
-  async unarchiveEntry(id: number, tenantId: number, userId: number) {
+  async unarchiveEntry(id: number, tenantId: number, userId: number): Promise<BlackboardEntry> {
     return await this.updateEntry(id, { status: 'active' }, tenantId, userId);
   }
 
@@ -261,8 +270,8 @@ export class BlackboardService {
    * @param entryId - The entryId parameter
    * @param userId - The user ID
    */
-  async confirmEntry(entryId: number, userId: number) {
-    const success = await Blackboard.confirmEntry(entryId, userId);
+  async confirmEntry(entryId: number, userId: number): Promise<{ message: string }> {
+    const success = await blackboard.confirmEntry(entryId, userId);
     if (!success) {
       throw new ServiceError(
         'BAD_REQUEST',
@@ -277,8 +286,11 @@ export class BlackboardService {
    * @param entryId - The entryId parameter
    * @param tenantId - The tenant ID
    */
-  async getConfirmationStatus(entryId: number, tenantId: number) {
-    const users = await Blackboard.getConfirmationStatus(entryId, tenantId);
+  async getConfirmationStatus(
+    entryId: number,
+    tenantId: number,
+  ): Promise<Record<string, unknown>[]> {
+    const users = await blackboard.getConfirmationStatus(entryId, tenantId);
     return users.map((user) => dbToApi(user));
   }
 
@@ -288,8 +300,12 @@ export class BlackboardService {
    * @param userId - The user ID
    * @param limit - The result limit
    */
-  async getDashboardEntries(tenantId: number, userId: number, limit = 3) {
-    const entries = await Blackboard.getDashboardEntries(tenantId, userId, limit);
+  async getDashboardEntries(
+    tenantId: number,
+    userId: number,
+    limit = 3,
+  ): Promise<BlackboardEntry[]> {
+    const entries = await blackboard.getDashboardEntries(tenantId, userId, limit);
     return entries.map((entry) => this.transformEntry(entry));
   }
 
@@ -297,8 +313,8 @@ export class BlackboardService {
    * Get all available tags
    * @param tenantId - The tenant ID
    */
-  async getAllTags(tenantId: number) {
-    const tags = await Blackboard.getAllTags(tenantId);
+  async getAllTags(tenantId: number): Promise<Record<string, unknown>[]> {
+    const tags = await blackboard.getAllTags(tenantId);
     return tags.map((tag) => dbToApi(tag));
   }
 
@@ -306,8 +322,8 @@ export class BlackboardService {
    * Get tags for a specific entry
    * @param entryId - The entryId parameter
    */
-  async getEntryTags(entryId: number) {
-    const tags = await Blackboard.getEntryTags(entryId);
+  async getEntryTags(entryId: number): Promise<string[]> {
+    const tags = await blackboard.getEntryTags(entryId);
     // Return just the tag names as string array for backward compatibility
     return tags.map((tag) => tag.name);
   }
@@ -317,8 +333,11 @@ export class BlackboardService {
    * @param entryId - The entryId parameter
    * @param attachment - The attachment parameter
    */
-  async addAttachment(entryId: number, attachment: AttachmentData) {
-    const attachmentId = await Blackboard.addAttachment(entryId, {
+  async addAttachment(
+    entryId: number,
+    attachment: AttachmentData,
+  ): Promise<{ id: number; message: string }> {
+    const attachmentId = await blackboard.addAttachment(entryId, {
       filename: attachment.filename,
       originalName: attachment.originalName,
       fileSize: attachment.fileSize,
@@ -334,8 +353,8 @@ export class BlackboardService {
    * Get attachments for an entry
    * @param entryId - The entryId parameter
    */
-  async getEntryAttachments(entryId: number) {
-    const attachments = await Blackboard.getEntryAttachments(entryId);
+  async getEntryAttachments(entryId: number): Promise<Record<string, unknown>[]> {
+    const attachments = await blackboard.getEntryAttachments(entryId);
     return attachments.map((attachment) => dbToApi(attachment));
   }
 
@@ -344,8 +363,11 @@ export class BlackboardService {
    * @param attachmentId - The attachmentId parameter
    * @param tenantId - The tenant ID
    */
-  async getAttachmentById(attachmentId: number, tenantId: number) {
-    const attachment = await Blackboard.getAttachmentById(attachmentId, tenantId);
+  async getAttachmentById(
+    attachmentId: number,
+    tenantId: number,
+  ): Promise<Record<string, unknown>> {
+    const attachment = await blackboard.getAttachmentById(attachmentId, tenantId);
     if (!attachment) {
       throw new ServiceError('NOT_FOUND', 'Attachment not found');
     }
@@ -357,8 +379,8 @@ export class BlackboardService {
    * @param attachmentId - The attachmentId parameter
    * @param tenantId - The tenant ID
    */
-  async deleteAttachment(attachmentId: number, tenantId: number) {
-    const success = await Blackboard.deleteAttachment(attachmentId, tenantId);
+  async deleteAttachment(attachmentId: number, tenantId: number): Promise<{ message: string }> {
+    const success = await blackboard.deleteAttachment(attachmentId, tenantId);
     if (!success) {
       throw new ServiceError('NOT_FOUND', 'Attachment not found');
     }
@@ -390,9 +412,7 @@ export class BlackboardService {
     // Transform tags from objects to string array if present
     if (entry.tags && Array.isArray(entry.tags)) {
       transformed.tags = entry.tags.map((tag: unknown) =>
-        typeof tag === 'string' ?
-          tag !== null && tag !== undefined
-        : (tag as { name: string }).name,
+        typeof tag === 'string' ? tag : (tag as { name: string }).name,
       );
     }
 

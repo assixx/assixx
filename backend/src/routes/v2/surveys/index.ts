@@ -1,7 +1,7 @@
 /**
  * Surveys API v2 Routes
  * Route definitions for survey management
- * @swagger
+
  * tags:
  *   - name: Surveys v2
  *     description: Survey management API v2
@@ -18,7 +18,7 @@ const router = Router();
 // All routes require authentication
 
 /**
- * @swagger
+
  * /api/v2/surveys:
  *   get:
  *     summary: List surveys based on user role and permissions
@@ -77,7 +77,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/templates:
  *   get:
  *     summary: Get available survey templates
@@ -110,7 +110,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/templates/{templateId}:
  *   post:
  *     summary: Create survey from template
@@ -156,7 +156,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/{id}:
  *   get:
  *     summary: Get survey by ID
@@ -198,7 +198,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys:
  *   post:
  *     summary: Create a new survey
@@ -239,7 +239,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/{id}:
  *   put:
  *     summary: Update a survey
@@ -295,7 +295,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/{id}:
  *   delete:
  *     summary: Delete a survey
@@ -346,7 +346,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/{id}/statistics:
  *   get:
  *     summary: Get survey statistics and response analytics

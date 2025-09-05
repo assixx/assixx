@@ -1,7 +1,7 @@
 /**
  * Machines API v2 Routes
  * Industrial machine management system
- * @swagger
+
  * tags:
  *   name: Machines v2
  *   description: Industrial machine management API v2
@@ -16,7 +16,7 @@ import { machineValidation } from './validation';
 const router: Router = express.Router();
 
 /**
- * @swagger
+
  * /api/v2/machines:
  *   get:
  *     summary: List all machines
@@ -89,7 +89,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/statistics:
  *   get:
  *     summary: Get machine statistics
@@ -141,7 +141,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/categories:
  *   get:
  *     summary: Get machine categories
@@ -186,7 +186,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/upcoming-maintenance:
  *   get:
  *     summary: Get upcoming maintenance
@@ -231,7 +231,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/maintenance:
  *   post:
  *     summary: Add maintenance record
@@ -327,7 +327,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/{id}:
  *   get:
  *     summary: Get machine by ID
@@ -367,7 +367,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/{id}/maintenance:
  *   get:
  *     summary: Get maintenance history
@@ -411,7 +411,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines:
  *   post:
  *     summary: Create new machine
@@ -551,7 +551,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/{id}:
  *   put:
  *     summary: Update machine
@@ -688,7 +688,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/{id}:
  *   delete:
  *     summary: Delete machine
@@ -735,7 +735,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/{id}/deactivate:
  *   put:
  *     summary: Deactivate machine
@@ -782,7 +782,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/{id}/activate:
  *   put:
  *     summary: Activate machine

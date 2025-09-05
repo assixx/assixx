@@ -25,7 +25,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/admins:
    *   get:
    *     summary: Get all admin users
@@ -62,7 +62,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/admins/{id}:
    *   get:
    *     summary: Get admin user by ID
@@ -109,7 +109,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/admins:
    *   post:
    *     summary: Create new admin user
@@ -160,7 +160,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/admins/{id}:
    *   put:
    *     summary: Update admin user
@@ -212,7 +212,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/admins/{id}:
    *   delete:
    *     summary: Delete admin user
@@ -258,7 +258,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/admins/{id}/logs:
    *   get:
    *     summary: Get admin activity logs
@@ -314,7 +314,7 @@ export class RootController {
   /**
    * @param _req - The _req parameter
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/tenants:
    *   get:
    *     summary: Get all tenants (super admin only)
@@ -342,7 +342,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/users:
    *   get:
    *     summary: Get all root users
@@ -369,7 +369,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/users/{id}:
    *   get:
    *     summary: Get root user by ID
@@ -416,7 +416,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/users:
    *   post:
    *     summary: Create new root user
@@ -442,7 +442,7 @@ export class RootController {
 
       // Log the action
       await execute(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           req.user.tenant_id,
@@ -485,7 +485,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/users/{id}:
    *   put:
    *     summary: Update root user
@@ -517,7 +517,7 @@ export class RootController {
 
       // Log the action
       await execute(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
           req.user.tenant_id,
@@ -555,7 +555,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/users/{id}:
    *   delete:
    *     summary: Delete root user
@@ -625,7 +625,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/dashboard:
    *   get:
    *     summary: Get dashboard statistics
@@ -652,7 +652,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/storage:
    *   get:
    *     summary: Get storage information
@@ -684,7 +684,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/tenant/deletion:
    *   post:
    *     summary: Request tenant deletion
@@ -745,7 +745,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/tenant/deletion-status:
    *   get:
    *     summary: Get current tenant deletion status
@@ -783,7 +783,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/tenant/cancel-deletion:
    *   post:
    *     summary: Cancel tenant deletion
@@ -813,7 +813,7 @@ export class RootController {
   /**
    * @param _req - The _req parameter
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/deletion-approvals:
    *   get:
    *     summary: Get all deletion requests
@@ -840,7 +840,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/deletion-approvals/pending:
    *   get:
    *     summary: Get pending deletion approvals
@@ -867,7 +867,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/deletion-approvals/{queueId}/approve:
    *   post:
    *     summary: Approve deletion request
@@ -912,7 +912,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/deletion-approvals/{queueId}/reject:
    *   post:
    *     summary: Reject deletion request
@@ -970,7 +970,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/deletion-queue/{queueId}/emergency-stop:
    *   post:
    *     summary: Emergency stop deletion
@@ -1008,7 +1008,7 @@ export class RootController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/root/tenant/deletion-dry-run:
    *   post:
    *     summary: Perform deletion dry run

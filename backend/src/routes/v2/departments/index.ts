@@ -17,7 +17,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/departments:
  *   get:
  *     summary: Get all departments
@@ -53,7 +53,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments/stats:
  *   get:
  *     summary: Get department statistics
@@ -81,7 +81,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments/{id}:
  *   get:
  *     summary: Get department by ID
@@ -121,7 +121,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments:
  *   post:
  *     summary: Create a new department
@@ -160,7 +160,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments/{id}:
  *   put:
  *     summary: Update a department
@@ -208,7 +208,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments/{id}:
  *   delete:
  *     summary: Delete a department
@@ -250,7 +250,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments/{id}/members:
  *   get:
  *     summary: Get department members

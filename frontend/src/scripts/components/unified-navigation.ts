@@ -1543,7 +1543,7 @@ class UnifiedNavigation {
         const parentSubmenu = submenuLink.closest('.submenu');
         const parentItem = parentSubmenu?.closest(SIDEBAR_ITEM_SELECTOR);
         if (parentItem) {
-          const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
+          const parentId = parentItem.querySelector('.sidebar-link')?.dataset.navId;
           if (parentId !== null && parentId !== undefined) {
             localStorage.setItem('openSubmenu', parentId);
           }
@@ -2169,7 +2169,7 @@ class UnifiedNavigation {
               parentItem.classList.add('active');
 
               // Store the open submenu state
-              const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
+              const parentId = parentItem.querySelector('.sidebar-link')?.dataset.navId;
               if (parentId !== null && parentId !== undefined && parentId !== '') {
                 localStorage.setItem('openSubmenu', parentId);
               }

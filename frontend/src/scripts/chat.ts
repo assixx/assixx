@@ -5,7 +5,7 @@
 
 import type { User, JWTPayload } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
-import { $$, $all, show, hide } from '../utils/dom-utils';
+import { $$, $all, show, hide, setHTML } from '../utils/dom-utils';
 import { getAuthToken } from './auth';
 
 // Extended window interface for chat-specific properties
@@ -1263,7 +1263,7 @@ class ChatClient {
 
     // Play notification sound if from another user
     if (message.sender_id !== this.currentUserId) {
-      this.playNotificationSound();
+      void this.playNotificationSound();
 
       // Update the unread messages badge in the sidebar
       if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
@@ -1486,7 +1486,7 @@ class ChatClient {
       const createdAt = message.createdAt ?? message.created_at;
 
       // Check if we need to add a date separator
-      if (!createdAt || createdAt === '') {
+      if (createdAt === '') {
         console.warn('Message without created date:', message);
         this.displayMessage(message);
         return;
@@ -1495,7 +1495,7 @@ class ChatClient {
       const parsedDate = new Date(createdAt);
 
       // Check if date is valid
-      if (isNaN(parsedDate.getTime())) {
+      if (Number.isNaN(parsedDate.getTime())) {
         console.warn('Invalid date for message:', createdAt, message);
         this.displayMessage(message);
         return;
@@ -1528,14 +1528,14 @@ class ChatClient {
 
     // Handle both camelCase and snake_case for created_at/createdAt
     const createdAt = message.createdAt ?? message.created_at;
-    if (!createdAt || createdAt === '') {
+    if (createdAt === '') {
       console.warn('Message without created date:', message);
       return;
     }
 
     // Check if we need to add a date separator
     const parsedDate = new Date(createdAt);
-    if (isNaN(parsedDate.getTime())) {
+    if (Number.isNaN(parsedDate.getTime())) {
       console.error('Invalid date for message:', createdAt, message);
       return;
     }
@@ -1558,7 +1558,7 @@ class ChatClient {
     if (!separatorExists) {
       if (messages.length > 0) {
         const lastMessageDate = lastMessage.dataset.date;
-        if (lastMessageDate !== null && lastMessageDate !== '' && lastMessageDate !== messageDate) {
+        if (lastMessageDate !== '' && lastMessageDate !== messageDate) {
           this.addDateSeparator(messageDate, messagesContainer);
         }
       } else {
@@ -1568,7 +1568,7 @@ class ChatClient {
     }
 
     // Handle both snake_case and camelCase for sender_id/senderId
-    const senderId = message.sender_id;
+    const senderId = message.senderId ?? message.sender_id;
     const isOwnMessage = senderId === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
@@ -1594,7 +1594,7 @@ class ChatClient {
     // Use innerHTML for linkified content since we control the linkify function
     // and it only creates safe anchor tags with escaped URLs
     // lgtm[js/xss] - Content is escaped before linkification, URLs are escaped in linkify()
-    messageTextDiv.innerHTML = this.linkify(messageContent);
+    setHTML(messageTextDiv, this.linkify(messageContent));
     messageContentDiv.append(messageTextDiv);
 
     // Add attachments if present
@@ -1624,7 +1624,7 @@ class ChatClient {
 
   addDateSeparator(dateString: string, container: HTMLElement): void {
     // Check if a separator for this date already exists
-    const existingSeparators = container.querySelectorAll('.date-separator');
+    const existingSeparators = container.querySelectorAll<HTMLElement>('.date-separator');
     const separatorExists = [...existingSeparators].some((separator) => {
       return separator.dataset.date === dateString;
     });
@@ -1650,7 +1650,7 @@ class ChatClient {
     }
 
     // Check if date is valid
-    if (isNaN(messageDate.getTime())) {
+    if (Number.isNaN(messageDate.getTime())) {
       console.error('Invalid date for separator:', dateString);
       return;
     }
@@ -1677,7 +1677,10 @@ class ChatClient {
     const separator = document.createElement('div');
     separator.className = 'date-separator';
     separator.dataset.date = dateString;
-    separator.innerHTML = `<span>${displayDate}</span>`;
+    // Use safe setText from dom-utils instead of innerHTML
+    const span = document.createElement('span');
+    span.textContent = displayDate;
+    separator.append(span);
     container.append(separator);
   }
 
@@ -1752,7 +1755,7 @@ class ChatClient {
 
   async sendMessage(content?: string): Promise<void> {
     console.info('sendMessage called');
-    const messageInput = $$<HTMLTextAreaElement>('#messageInput');
+    const messageInput = $$('#messageInput') as HTMLTextAreaElement | null;
     const messageContent = content ?? messageInput?.value.trim();
 
     console.info('Message content:', messageContent);
@@ -1987,11 +1990,11 @@ class ChatClient {
   }
 
   insertEmoji(emoji: string): void {
-    const messageInput = $$<HTMLTextAreaElement>('#messageInput');
+    const messageInput = $$('#messageInput') as HTMLTextAreaElement | null;
     if (!messageInput) return;
 
-    const start = messageInput.selectionStart ?? 0;
-    const end = messageInput.selectionEnd ?? 0;
+    const start = messageInput.selectionStart;
+    const end = messageInput.selectionEnd;
     const text = messageInput.value;
 
     messageInput.value = text.substring(0, start) + emoji + text.substring(end);
@@ -2047,11 +2050,6 @@ class ChatClient {
 
       const lastMessageTime = conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
 
-      const unreadBadge =
-        conversation.unread_count !== undefined && conversation.unread_count > 0
-          ? `<span class="unread-count">${conversation.unread_count}</span>`
-          : '';
-
       // Get avatar HTML
       let avatarHtml = '';
       if (!conversation.is_group) {
@@ -2085,19 +2083,52 @@ class ChatClient {
         avatarHtml = '<i class="fas fa-users"></i>';
       }
 
-      item.innerHTML = `
-        <div class="conversation-avatar">
-          ${avatarHtml}
-        </div>
-        <div class="conversation-info">
-          <div class="conversation-name">${this.escapeHtml(displayName)}</div>
-          <div class="conversation-last-message">${this.escapeHtml(lastMessageText)}</div>
-        </div>
-        <div class="conversation-meta">
-          <div class="conversation-time">${lastMessageTime}</div>
-          ${unreadBadge}
-        </div>
-      `;
+      // Clear existing content
+      while (item.firstChild) {
+        item.firstChild.remove();
+      }
+
+      // Build conversation item with DOM methods
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'conversation-avatar';
+      // Create icon element instead of using innerHTML
+      const iconElement = document.createElement('i');
+      if (avatarHtml.includes('fa-users')) {
+        iconElement.className = 'fas fa-users';
+      } else {
+        iconElement.className = 'fas fa-user';
+      }
+      avatarDiv.append(iconElement);
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'conversation-info';
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'conversation-name';
+      nameDiv.textContent = displayName;
+
+      const lastMessageDiv = document.createElement('div');
+      lastMessageDiv.className = 'conversation-last-message';
+      lastMessageDiv.textContent = lastMessageText;
+
+      infoDiv.append(nameDiv, lastMessageDiv);
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'conversation-meta';
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'conversation-time';
+      timeDiv.textContent = lastMessageTime;
+
+      metaDiv.append(timeDiv);
+      if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
+        const badgeSpan = document.createElement('span');
+        badgeSpan.className = 'unread-count';
+        badgeSpan.textContent = conversation.unread_count.toString();
+        metaDiv.append(badgeSpan);
+      }
+
+      item.append(avatarDiv, infoDiv, metaDiv);
 
       item.addEventListener('click', () => {
         void this.selectConversation(conversation.id);
@@ -2138,7 +2169,16 @@ class ChatClient {
           ) {
             const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? null;
             if (imgUrl !== null && imgUrl !== '') {
-              chatAvatar.innerHTML = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+              // Clear existing content
+              while (chatAvatar.firstChild) {
+                chatAvatar.firstChild.remove();
+              }
+              // Create image element safely
+              const img = document.createElement('img');
+              img.src = imgUrl;
+              img.alt = displayName;
+              img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+              chatAvatar.append(img);
             } else {
               // Show initials as fallback
               const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
@@ -2194,7 +2234,7 @@ class ChatClient {
     const canDelete = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
     // Re-attach delete button listener only for admins and root users
     if (canDelete) {
-      const deleteBtn = $$<HTMLButtonElement>('#deleteConversationBtn');
+      const deleteBtn = $$('#deleteConversationBtn') as HTMLButtonElement | null;
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
           void this.deleteCurrentConversation();
@@ -2352,7 +2392,7 @@ class ChatClient {
           method: 'GET',
         });
 
-        const dropdown = $$<HTMLSelectElement>('#departmentDropdown');
+        const dropdown = $$('#departmentDropdown') as HTMLSelectElement | null;
 
         if (dropdown) {
           dropdown.innerHTML = '';
@@ -2368,11 +2408,14 @@ class ChatClient {
                 window.selectChatDropdownOption('department', dept.id, dept.name);
               }
             };
-            option.innerHTML = `
-              <div class="option-info">
-                <div class="option-name">${this.escapeHtml(dept.name)}</div>
-              </div>
-            `;
+            // Build option content with DOM methods
+            const optionInfo = document.createElement('div');
+            optionInfo.className = 'option-info';
+            const optionName = document.createElement('div');
+            optionName.className = 'option-name';
+            optionName.textContent = dept.name;
+            optionInfo.append(optionName);
+            option.append(optionInfo);
             dropdown.append(option);
           });
         }
@@ -2386,7 +2429,7 @@ class ChatClient {
 
         if (response.ok) {
           const departments = (await response.json()) as { id: number; name: string }[];
-          const dropdown = $$<HTMLSelectElement>('#departmentDropdown');
+          const dropdown = $$('#departmentDropdown') as HTMLSelectElement | null;
 
           if (dropdown) {
             dropdown.innerHTML = '';
@@ -2399,11 +2442,14 @@ class ChatClient {
                   window.selectChatDropdownOption('department', dept.id, dept.name);
                 }
               };
-              option.innerHTML = `
-                <div class="option-info">
-                  <div class="option-name">${this.escapeHtml(dept.name)}</div>
-                </div>
-              `;
+              // Build option content with DOM methods
+              const optionInfo = document.createElement('div');
+              optionInfo.className = 'option-info';
+              const optionName = document.createElement('div');
+              optionName.className = 'option-name';
+              optionName.textContent = dept.name;
+              optionInfo.append(optionName);
+              option.append(optionInfo);
               dropdown.append(option);
             });
           }
@@ -2423,7 +2469,7 @@ class ChatClient {
         (user) => user.role === 'employee' && user.department_id?.toString() === departmentId,
       );
 
-      const dropdown = $$<HTMLSelectElement>('#employeeDropdown');
+      const dropdown = $$('#employeeDropdown') as HTMLSelectElement | null;
 
       if (dropdown) {
         dropdown.innerHTML = '';
@@ -2443,17 +2489,21 @@ class ChatClient {
               window.selectChatDropdownOption('employee', employee.id, name, employee.department ?? '');
             }
           };
-          option.innerHTML = `
-            <div class="option-info">
-              <div class="option-name">${this.escapeHtml(
-                (() => {
-                  const n = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
-                  return n !== '' ? n : employee.username;
-                })(),
-              )}</div>
-              <div class="option-meta">${this.escapeHtml(employee.position ?? 'Mitarbeiter')}</div>
-            </div>
-          `;
+          // Build option content with DOM methods
+          const optionInfo = document.createElement('div');
+          optionInfo.className = 'option-info';
+
+          const optionName = document.createElement('div');
+          optionName.className = 'option-name';
+          const n = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+          optionName.textContent = n !== '' ? n : employee.username;
+
+          const optionMeta = document.createElement('div');
+          optionMeta.className = 'option-meta';
+          optionMeta.textContent = employee.position ?? 'Mitarbeiter';
+
+          optionInfo.append(optionName, optionMeta);
+          option.append(optionInfo);
           dropdown.append(option);
         });
       }
@@ -2465,7 +2515,7 @@ class ChatClient {
   private loadAdmins(): void {
     const admins = this.availableUsers.filter((user) => user.role === 'admin' || user.role === 'root');
 
-    const dropdown = $$<HTMLSelectElement>('#adminDropdown');
+    const dropdown = $$('#adminDropdown') as HTMLSelectElement | null;
 
     if (dropdown) {
       dropdown.innerHTML = '';
@@ -2480,24 +2530,28 @@ class ChatClient {
             window.selectChatDropdownOption('admin', admin.id, name, admin.role);
           }
         };
-        option.innerHTML = `
-          <div class="option-info">
-            <div class="option-name">${this.escapeHtml(
-              (() => {
-                const n = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim();
-                return n !== '' ? n : admin.username;
-              })(),
-            )}</div>
-            <div class="option-meta">${this.escapeHtml(admin.role === 'root' ? 'Root Administrator' : 'Administrator')}</div>
-          </div>
-        `;
+        // Build option content with DOM methods
+        const optionInfo = document.createElement('div');
+        optionInfo.className = 'option-info';
+
+        const optionName = document.createElement('div');
+        optionName.className = 'option-name';
+        const n = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim();
+        optionName.textContent = n !== '' ? n : admin.username;
+
+        const optionMeta = document.createElement('div');
+        optionMeta.className = 'option-meta';
+        optionMeta.textContent = admin.role === 'root' ? 'Root Administrator' : 'Administrator';
+
+        optionInfo.append(optionName, optionMeta);
+        option.append(optionInfo);
         dropdown.append(option);
       });
     }
   }
 
   closeModal(modalId: string): void {
-    const modal = document.getElementById(modalId);
+    const modal = document.querySelector<HTMLElement>(`#${modalId}`);
     if (modal) {
       modal.style.display = 'none';
       modal.classList.add('u-hidden');
@@ -2521,13 +2575,13 @@ class ChatClient {
       let selectedUserId: number | null = null;
 
       if (tabType === 'employee') {
-        const employeeInput = $$<HTMLInputElement>('#selectedEmployee');
+        const employeeInput = $$('#selectedEmployee') as HTMLInputElement | null;
         selectedUserId =
           employeeInput?.value !== undefined && employeeInput.value !== ''
             ? Number.parseInt(employeeInput.value, 10)
             : null;
       } else if (tabType === 'admin') {
-        const adminInput = $$<HTMLInputElement>('#selectedAdmin');
+        const adminInput = $$('#selectedAdmin') as HTMLInputElement | null;
         selectedUserId =
           adminInput?.value !== undefined && adminInput.value !== '' ? Number.parseInt(adminInput.value, 10) : null;
       }
@@ -2540,7 +2594,7 @@ class ChatClient {
 
       // For now, we only support 1:1 chats
       const isGroup = false;
-      const groupNameInput = $$<HTMLInputElement>('#groupChatName');
+      const groupNameInput = $$('#groupChatName') as HTMLInputElement | null;
       const groupName = groupNameInput?.value.trim() ?? null;
       const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
         participantIds: [selectedUserId],
@@ -2674,7 +2728,7 @@ class ChatClient {
 
   initializeEventListeners(): void {
     // Message input
-    const messageInput = $$<HTMLTextAreaElement>('#messageInput');
+    const messageInput = $$('#messageInput') as HTMLTextAreaElement | null;
     if (messageInput) {
       // Enter key to send
       messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
@@ -2692,7 +2746,7 @@ class ChatClient {
     }
 
     // Send button
-    const sendBtn = $$<HTMLButtonElement>('#sendButton');
+    const sendBtn = $$('#sendButton') as HTMLButtonElement | null;
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
         console.info('Send button clicked');
@@ -2703,8 +2757,8 @@ class ChatClient {
     }
 
     // File upload handler
-    const fileInput = $$<HTMLInputElement>('#fileInput');
-    const attachmentBtn = $$<HTMLButtonElement>('#attachmentBtn');
+    const fileInput = $$('#fileInput') as HTMLInputElement | null;
+    const attachmentBtn = $$('#attachmentBtn') as HTMLButtonElement | null;
 
     if (attachmentBtn && fileInput) {
       attachmentBtn.addEventListener('click', (e) => {
@@ -2725,7 +2779,7 @@ class ChatClient {
     }
 
     // Emoji picker handler
-    const emojiBtn = $$<HTMLButtonElement>('#emojiBtn');
+    const emojiBtn = $$('#emojiBtn') as HTMLButtonElement | null;
     if (emojiBtn) {
       emojiBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2767,7 +2821,7 @@ class ChatClient {
     });
 
     // New conversation button
-    const newConvBtn = $$<HTMLButtonElement>('#newConversationBtn');
+    const newConvBtn = $$('#newConversationBtn') as HTMLButtonElement | null;
     if (newConvBtn) {
       newConvBtn.addEventListener('click', () => {
         this.showNewConversationModal();
@@ -2775,7 +2829,7 @@ class ChatClient {
     }
 
     // Create conversation button
-    const createConvBtn = $$<HTMLButtonElement>('#createConversationBtn');
+    const createConvBtn = $$('#createConversationBtn') as HTMLButtonElement | null;
     if (createConvBtn) {
       createConvBtn.addEventListener('click', () => {
         void this.createConversation();
@@ -2783,8 +2837,8 @@ class ChatClient {
     }
 
     // Modal close buttons
-    const closeModalBtn = $$<HTMLButtonElement>('#closeModalBtn');
-    const cancelModalBtn = $$<HTMLButtonElement>('#cancelModalBtn');
+    const closeModalBtn = $$('#closeModalBtn') as HTMLButtonElement | null;
+    const cancelModalBtn = $$('#cancelModalBtn') as HTMLButtonElement | null;
 
     if (closeModalBtn) {
       closeModalBtn.addEventListener('click', () => {
@@ -2801,7 +2855,7 @@ class ChatClient {
     // Delete conversation button (only for admin and root)
     const canDelete = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
     if (canDelete) {
-      const deleteBtn = $$<HTMLButtonElement>('#deleteConversationBtn');
+      const deleteBtn = $$('#deleteConversationBtn') as HTMLButtonElement | null;
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
           console.info('Delete button clicked');
@@ -2909,7 +2963,7 @@ class ChatClient {
   }
 
   resizeTextarea(): void {
-    const textarea = $$<HTMLTextAreaElement>('#messageInput');
+    const textarea = $$('#messageInput') as HTMLTextAreaElement | null;
     if (!textarea) return;
 
     textarea.style.height = 'auto';
@@ -2924,11 +2978,13 @@ class ChatClient {
     }
   }
 
-  playNotificationSound(): void {
+  async playNotificationSound(): Promise<void> {
     const audio = new Audio('/sounds/notification.mp3');
-    audio.play().catch((error: unknown) => {
+    try {
+      await audio.play();
+    } catch (error) {
       console.info('Could not play notification sound:', error);
-    });
+    }
   }
 
   showDesktopNotification(message: Message): void {
@@ -2966,7 +3022,7 @@ class ChatClient {
     let typingTimer: NodeJS.Timeout | null = null;
     let isTyping = false;
 
-    const messageInput = $$<HTMLInputElement>('#message-input');
+    const messageInput = $$('#message-input') as HTMLInputElement | null;
     if (!messageInput) return;
 
     messageInput.addEventListener('input', () => {
@@ -3065,13 +3121,28 @@ class ChatClient {
       dialog.className = 'confirm-dialog';
       dialog.style.cssText = 'background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;';
 
-      dialog.innerHTML = `
-        <p style="margin: 0 0 20px; color: #333;">${this.escapeHtml(message)}</p>
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button id="confirmCancel" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">Abbrechen</button>
-          <button id="confirmOk" style="padding: 8px 16px; border: none; background: #dc3545; color: #fff; border-radius: 4px; cursor: pointer;">Löschen</button>
-        </div>
-      `;
+      // Build dialog content with DOM methods
+      const p = document.createElement('p');
+      p.style.cssText = 'margin: 0 0 20px; color: #333;';
+      p.textContent = message;
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.cssText = 'display: flex; justify-content: flex-end; gap: 10px;';
+
+      const cancelButton = document.createElement('button');
+      cancelButton.id = 'confirmCancel';
+      cancelButton.style.cssText =
+        'padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;';
+      cancelButton.textContent = 'Abbrechen';
+
+      const okButton = document.createElement('button');
+      okButton.id = 'confirmOk';
+      okButton.style.cssText =
+        'padding: 8px 16px; border: none; background: #dc3545; color: #fff; border-radius: 4px; cursor: pointer;';
+      okButton.textContent = 'Löschen';
+
+      buttonContainer.append(cancelButton, okButton);
+      dialog.append(p, buttonContainer);
 
       modal.append(dialog);
       document.body.append(modal);

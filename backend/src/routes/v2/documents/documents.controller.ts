@@ -1,7 +1,7 @@
 /**
  * Documents v2 Controller
  * Handles HTTP requests and responses for document management
- * @swagger
+
  * tags:
  *   name: Documents v2
  *   description: Document management API v2
@@ -47,7 +47,7 @@ export const uploadMiddleware = upload.single('document');
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents:
  *   get:
  *     summary: List documents with filters
@@ -167,7 +167,7 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}:
  *   get:
  *     summary: Get document by ID
@@ -221,7 +221,7 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response) 
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents:
  *   post:
  *     summary: Upload a new document
@@ -358,7 +358,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}:
  *   put:
  *     summary: Update document metadata
@@ -458,7 +458,7 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}:
  *   delete:
  *     summary: Delete a document
@@ -548,7 +548,7 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}/archive:
  *   post:
  *     summary: Archive a document
@@ -612,7 +612,7 @@ export async function archiveDocument(req: AuthenticatedRequest, res: Response) 
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}/unarchive:
  *   post:
  *     summary: Unarchive a document
@@ -675,7 +675,7 @@ export async function unarchiveDocument(req: AuthenticatedRequest, res: Response
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}/download:
  *   get:
  *     summary: Download a document file
@@ -736,7 +736,7 @@ export async function downloadDocument(req: AuthenticatedRequest, res: Response)
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/{id}/preview:
  *   get:
  *     summary: Preview a document inline
@@ -797,7 +797,7 @@ export async function previewDocument(req: AuthenticatedRequest, res: Response) 
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/documents/stats:
  *   get:
  *     summary: Get document statistics

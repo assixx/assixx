@@ -120,14 +120,14 @@ app.use(
 // backend/src/routes/auth.ts
 
 /**
- * @swagger
+
  * tags:
  *   name: Authentication
  *   description: User authentication and authorization
  */
 
 /**
- * @swagger
+
  * /auth/login:
  *   post:
  *     summary: User login
@@ -171,7 +171,7 @@ app.use(
 router.post('/login', authLimiter, authController.login);
 
 /**
- * @swagger
+
  * /auth/logout:
  *   post:
  *     summary: User logout
@@ -193,7 +193,7 @@ router.post('/logout', authenticateToken, authController.logout);
 // backend/src/models/user.ts
 
 /**
- * @swagger
+
  * components:
  *   schemas:
  *     User:
@@ -243,7 +243,7 @@ router.post('/logout', authenticateToken, authController.logout);
 
 ```typescript
 /**
- * @swagger
+
  * /admin/dashboard-stats:
  *   get:
  *     summary: Get admin dashboard statistics
@@ -283,7 +283,7 @@ router.post('/logout', authenticateToken, authController.logout);
 
 ```typescript
 /**
- * @swagger
+
  * /documents:
  *   post:
  *     summary: Upload a new document
@@ -320,7 +320,7 @@ router.post('/logout', authenticateToken, authController.logout);
 
 ```typescript
 /**
- * @swagger
+
  * components:
  *   schemas:
  *     Error:
@@ -473,6 +473,6 @@ jobs:
 
 ---
 
-**Erstellt:** 23.06.2025  
-**Status:** Bereit zur Implementierung  
+**Erstellt:** 23.06.2025
+**Status:** Bereit zur Implementierung
 **Verantwortlich:** Development Team

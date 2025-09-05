@@ -12,7 +12,7 @@ import { checkSubdomainValidation, signupValidation } from './validation.js';
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/signup:
  *   post:
  *     summary: Register a new tenant
@@ -152,7 +152,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/signup/check-subdomain/{subdomain}:
  *   get:
  *     summary: Check subdomain availability

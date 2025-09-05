@@ -9,6 +9,9 @@ frontend/dist/
 *.min.js
 *.min.css
 
+# Legacy v1 Routes (deprecated)
+backend/src/routes/v1/
+
 # Logs
 logs/
 *.log

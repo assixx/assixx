@@ -11,7 +11,7 @@ import type { UpdateAddonsRequest, UpgradePlanRequest } from './types';
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/plans:
  *   get:
  *     summary: Get all available plans
@@ -90,7 +90,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/current:
  *   get:
  *     summary: Get current tenant plan
@@ -144,7 +144,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/addons:
  *   get:
  *     summary: Get tenant addons
@@ -191,7 +191,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/addons:
  *   put:
  *     summary: Update tenant addons
@@ -265,7 +265,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/costs:
  *   get:
  *     summary: Calculate tenant costs
@@ -324,7 +324,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/{id}:
  *   get:
  *     summary: Get plan by ID
@@ -391,7 +391,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/{id}/features:
  *   get:
  *     summary: Get plan features
@@ -451,7 +451,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/{id}/upgrade:
  *   put:
  *     summary: Upgrade or downgrade plan

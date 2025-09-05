@@ -4,7 +4,7 @@
  */
 import { Response } from 'express';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
@@ -142,7 +142,7 @@ export async function getEntryById(req: AuthenticatedRequest, res: Response): Pr
  * @param req - The request object
  * @param res - The response object
  */
-export async function createEntry(req: AuthenticatedRequest, res: Response) {
+export async function createEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const body = req.body as CreateEntryBody;
     const entryData = {
@@ -160,7 +160,7 @@ export async function createEntry(req: AuthenticatedRequest, res: Response) {
     const entry = await blackboardService.createEntry(entryData, req.user.tenant_id, req.user.id);
 
     // Log blackboard entry creation
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'create',
@@ -198,7 +198,7 @@ export async function createEntry(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function updateEntry(req: AuthenticatedRequest, res: Response) {
+export async function updateEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
     const body = req.body as UpdateEntryBody;
@@ -226,13 +226,13 @@ export async function updateEntry(req: AuthenticatedRequest, res: Response) {
     );
 
     // Log blackboard entry update
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'update',
       entity_type: 'blackboard_entry',
       entity_id: entryId,
-      details: `Aktualisiert: ${updateData.title}`,
+      details: `Aktualisiert: ${updateData.title ?? 'Blackboard Eintrag'}`,
       old_values: {
         title: (oldEntry as BlackboardEntry).title,
         content: (oldEntry as BlackboardEntry).content,
@@ -267,7 +267,7 @@ export async function updateEntry(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
+export async function deleteEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
 
@@ -281,13 +281,13 @@ export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
     const result = await blackboardService.deleteEntry(entryId, req.user.tenant_id, req.user.id);
 
     // Log blackboard entry deletion
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'delete',
       entity_type: 'blackboard_entry',
       entity_id: entryId,
-      details: `Gelöscht: ${String((deletedEntry as BlackboardEntry).title)}`,
+      details: `Gelöscht: ${(deletedEntry as BlackboardEntry).title}`,
       old_values: {
         title: (deletedEntry as BlackboardEntry).title,
         content: (deletedEntry as BlackboardEntry).content,
@@ -316,13 +316,13 @@ export async function deleteEntry(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
+export async function archiveEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
     const entry = await blackboardService.archiveEntry(entryId, req.user.tenant_id, req.user.id);
 
     // Log blackboard entry archiving
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'archive',
@@ -354,7 +354,7 @@ export async function archiveEntry(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function unarchiveEntry(req: AuthenticatedRequest, res: Response) {
+export async function unarchiveEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
     const entry = await blackboardService.unarchiveEntry(entryId, req.user.tenant_id, req.user.id);
@@ -375,7 +375,7 @@ export async function unarchiveEntry(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function confirmEntry(req: AuthenticatedRequest, res: Response) {
+export async function confirmEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
     const result = await blackboardService.confirmEntry(entryId, req.user.id);
@@ -396,7 +396,10 @@ export async function confirmEntry(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function getConfirmationStatus(req: AuthenticatedRequest, res: Response) {
+export async function getConfirmationStatus(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
     const users = await blackboardService.getConfirmationStatus(entryId, req.user.tenant_id);
@@ -417,7 +420,7 @@ export async function getConfirmationStatus(req: AuthenticatedRequest, res: Resp
  * @param req - The request object
  * @param res - The response object
  */
-export async function getDashboardEntries(req: AuthenticatedRequest, res: Response) {
+export async function getDashboardEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const limit = req.query.limit ? Number.parseInt(req.query.limit as string, 10) : 3;
     const entries = await blackboardService.getDashboardEntries(
@@ -442,7 +445,7 @@ export async function getDashboardEntries(req: AuthenticatedRequest, res: Respon
  * @param req - The request object
  * @param res - The response object
  */
-export async function getAllTags(req: AuthenticatedRequest, res: Response) {
+export async function getAllTags(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const tags = await blackboardService.getAllTags(req.user.tenant_id);
     res.json(successResponse(tags));
@@ -499,7 +502,7 @@ export async function uploadAttachment(req: AuthenticatedRequest, res: Response)
  * @param req - The request object
  * @param res - The response object
  */
-export async function getAttachments(req: AuthenticatedRequest, res: Response) {
+export async function getAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const entryId = Number.parseInt(req.params.id, 10);
 
@@ -523,7 +526,7 @@ export async function getAttachments(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
  */
-export async function downloadAttachment(req: AuthenticatedRequest, res: Response) {
+export async function downloadAttachment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const attachmentId = Number.parseInt(req.params.attachmentId, 10);
     const attachment = (await blackboardService.getAttachmentById(
@@ -548,7 +551,7 @@ export async function downloadAttachment(req: AuthenticatedRequest, res: Respons
  * @param req - The request object
  * @param res - The response object
  */
-export async function deleteAttachment(req: AuthenticatedRequest, res: Response) {
+export async function deleteAttachment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const attachmentId = Number.parseInt(req.params.attachmentId, 10);
     const result = await blackboardService.deleteAttachment(attachmentId, req.user.tenant_id);

@@ -12,7 +12,7 @@ import { SurveyCreateData, SurveyUpdateData, surveysService } from './surveys.se
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys:
  *   get:
  *     summary: List surveys based on user role and permissions
@@ -81,7 +81,7 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys/{id}:
  *   get:
  *     summary: Get survey by ID
@@ -126,7 +126,7 @@ export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys:
  *   post:
  *     summary: Create a new survey
@@ -170,7 +170,7 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys/{id}:
  *   put:
  *     summary: Update a survey
@@ -224,7 +224,7 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys/{id}:
  *   delete:
  *     summary: Delete a survey
@@ -271,7 +271,7 @@ export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys/templates:
  *   get:
  *     summary: Get available survey templates
@@ -296,7 +296,7 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response) {
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys/templates/{templateId}:
  *   post:
  *     summary: Create survey from template
@@ -342,7 +342,7 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
 /**
  * @param req - The request object
  * @param res - The response object
- * @swagger
+
  * /api/v2/surveys/{id}/statistics:
  *   get:
  *     summary: Get survey statistics and response analytics

@@ -28,10 +28,10 @@ import {
   validateCSRFToken,
 } from './middleware/security-enhanced';
 import { checkTenantStatus } from './middleware/tenantStatus';
-import routes from './routes';
-import htmlRoutes from './routes/html.routes';
-import legacyRoutes from './routes/legacy.routes';
-import roleSwitchRoutes from './routes/role-switch';
+import routes from './routes/v1';
+import htmlRoutes from './routes/v1/html.routes';
+import legacyRoutes from './routes/v1/legacy.routes';
+import roleSwitchRoutes from './routes/v1/role-switch';
 import { getCurrentDirPath } from './utils/getCurrentDir.js';
 
 /**

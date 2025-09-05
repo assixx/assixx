@@ -12,7 +12,7 @@ import type { AuthenticatedRequest } from '../../../types/request.types';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { dbToApi } from '../../../utils/fieldMapping';
 import { logger } from '../../../utils/logger';
-import { createLog } from '../../logs';
+import { createLog } from '../../v1/logs';
 
 // Get secrets from environment variables
 const JWT_SECRET = process.env.JWT_SECRET ?? 'default-jwt-secret';

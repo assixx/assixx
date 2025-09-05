@@ -1,7 +1,7 @@
 /**
  * Audit Trail API v2 Routes
  * Complete audit logging and compliance reporting system
- * @swagger
+
  * tags:
  *   name: Audit Trail v2
  *   description: Audit logging and compliance API v2
@@ -24,7 +24,7 @@ const adminAuth = [
 const rootAuth = [authenticateV2 as RequestHandler, requireRoleV2(['root']) as RequestHandler];
 
 /**
- * @swagger
+
  * /api/v2/audit-trail:
  *   get:
  *     summary: Get audit entries
@@ -137,7 +137,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/stats:
  *   get:
  *     summary: Get audit statistics
@@ -183,7 +183,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/reports:
  *   post:
  *     summary: Generate compliance report
@@ -243,7 +243,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/export:
  *   get:
  *     summary: Export audit entries
@@ -294,7 +294,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/retention:
  *   delete:
  *     summary: Delete old audit entries
@@ -354,7 +354,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/{id}:
  *   get:
  *     summary: Get specific audit entry

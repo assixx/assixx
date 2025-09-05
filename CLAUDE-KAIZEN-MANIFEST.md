@@ -28,7 +28,7 @@
 
 ## 📅 FEHLER-ARCHIV (Chronologisch)
 
-### 04.09.2025 - TODO-Kommentare VERBOTEN!
+### 04.09.2025 - TODO-Kommentare VERBOTEN
 
 **FEHLER: TODO-Kommentare statt Implementierung**
 

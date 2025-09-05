@@ -16,7 +16,7 @@ const router: Router = express.Router();
 router.use(rateLimiter.api);
 
 /**
- * @swagger
+
  * /api/v2/users:
  *   get:
  *     summary: List all users
@@ -87,7 +87,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me:
  *   get:
  *     summary: Get current user
@@ -114,7 +114,7 @@ router.get(
 router.get('/me', authenticateV2 as RequestHandler, typed.auth(usersController.getCurrentUser));
 
 /**
- * @swagger
+
  * /api/v2/users/{id}:
  *   get:
  *     summary: Get user by ID
@@ -158,7 +158,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/users:
  *   post:
  *     summary: Create new user
@@ -269,7 +269,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/{id}:
  *   put:
  *     summary: Update user
@@ -348,7 +348,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me/profile:
  *   put:
  *     summary: Update profile
@@ -409,7 +409,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me:
  *   patch:
  *     summary: Update current user (partial)
@@ -457,7 +457,7 @@ router.patch(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me/password:
  *   put:
  *     summary: Change password
@@ -518,7 +518,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/{id}:
  *   delete:
  *     summary: Delete user
@@ -571,7 +571,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/{id}/archive:
  *   post:
  *     summary: Archive user
@@ -617,7 +617,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/{id}/unarchive:
  *   post:
  *     summary: Unarchive user
@@ -663,7 +663,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me/profile-picture:
  *   get:
  *     summary: Get profile picture
@@ -700,7 +700,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me/profile-picture:
  *   post:
  *     summary: Upload profile picture
@@ -752,7 +752,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/me/profile-picture:
  *   delete:
  *     summary: Delete profile picture
@@ -791,7 +791,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/users/{id}/availability:
  *   put:
  *     summary: Update availability

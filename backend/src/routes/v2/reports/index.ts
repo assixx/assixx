@@ -1,7 +1,7 @@
 /**
  * Reports/Analytics API v2 Routes
  * Route definitions for reporting and analytics
- * @swagger
+
  * tags:
  *   - name: Reports v2
  *     description: Reporting and analytics API v2 - aggregated data and insights
@@ -18,7 +18,7 @@ const router = Router();
 // All routes require authentication
 
 /**
- * @swagger
+
  * /api/v2/reports/overview:
  *   get:
  *     summary: Get company overview report
@@ -106,7 +106,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/employees:
  *   get:
  *     summary: Get employee analytics report
@@ -185,7 +185,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/departments:
  *   get:
  *     summary: Get department analytics report
@@ -247,7 +247,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/shifts:
  *   get:
  *     summary: Get shift analytics report
@@ -329,7 +329,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/kvp:
  *   get:
  *     summary: Get KVP ROI report
@@ -418,7 +418,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/attendance:
  *   get:
  *     summary: Get attendance report
@@ -509,7 +509,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/compliance:
  *   get:
  *     summary: Get compliance report
@@ -589,7 +589,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/custom:
  *   post:
  *     summary: Generate custom report
@@ -678,7 +678,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/reports/export/{type}:
  *   get:
  *     summary: Export report

@@ -1,6 +1,7 @@
 // Logs page functionality
 import { showError, showSuccess } from '../scripts/auth';
 import { ApiClient } from '../utils/api-client';
+import { $$, setHTML } from '../utils/dom-utils';
 
 (() => {
   // Initialize API client
@@ -90,9 +91,9 @@ import { ApiClient } from '../utils/api-client';
     const filterInputs = ['filter-user', 'filter-action', 'filter-entity', 'filter-timerange'];
 
     filterInputs.forEach((id) => {
-      const element = document.getElementById(id);
+      const element = $$(`#${id}`);
       if (element) {
-        element.addEventListener('keypress', (e) => {
+        element.addEventListener('keypress', (e: KeyboardEvent) => {
           if (e.key === 'Enter') {
             applyFilters();
           }
@@ -103,15 +104,18 @@ import { ApiClient } from '../utils/api-client';
 
   // Load logs
   async function loadLogs() {
-    const container = document.querySelector('#logs-table-container');
+    const container = $$('#logs-table-container');
     if (!container) return;
 
-    container.innerHTML = `
+    setHTML(
+      container,
+      `
     <div class="loading">
       <div class="loading-spinner"></div>
       <p>Logs werden geladen...</p>
     </div>
-  `;
+  `,
+    );
 
     try {
       // Build query params
@@ -167,7 +171,7 @@ import { ApiClient } from '../utils/api-client';
         params.append('endDate', endDate);
       }
 
-      // Use apiClient which will automatically use v2 if feature flag is enabled
+      // Use apiClient - it automatically handles v2 endpoints
       try {
         const result: LogsResponse = await apiClient.request(`/logs?${params}`);
 
@@ -175,42 +179,53 @@ import { ApiClient } from '../utils/api-client';
         updatePagination(result.pagination);
       } catch (error) {
         console.error('Error loading logs:', error);
-        container.innerHTML = `
+        setHTML(
+          container,
+          `
         <div class="empty-state">
           <div class="empty-state-icon">⚠️</div>
           <div class="empty-state-text">Fehler beim Laden der Logs</div>
         </div>
-      `;
+      `,
+        );
       }
     } catch (error) {
       console.error('Error loading logs:', error);
-      container.innerHTML = `
+      setHTML(
+        container,
+        `
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
         <div class="empty-state-text">Netzwerkfehler</div>
         <div class="empty-state-subtext">Bitte versuchen Sie es später erneut</div>
       </div>
-    `;
+    `,
+      );
     }
   }
 
   // Display logs in table
   function displayLogs(logs: LogEntry[]) {
-    const container = document.querySelector('#logs-table-container');
+    const container = $$('#logs-table-container');
     if (!container) return;
 
     if (logs.length === 0) {
-      container.innerHTML = `
+      setHTML(
+        container,
+        `
       <div class="empty-state">
         <div class="empty-state-icon">📋</div>
         <div class="empty-state-text">Keine Logs gefunden</div>
         <div class="empty-state-subtext">Versuchen Sie andere Filtereinstellungen</div>
       </div>
-    `;
+    `,
+      );
       return;
     }
 
-    container.innerHTML = `
+    setHTML(
+      container,
+      `
     <table class="table">
       <thead>
         <tr>
@@ -318,7 +333,8 @@ import { ApiClient } from '../utils/api-client';
           .join('')}
       </tbody>
     </table>
-  `;
+  `,
+    );
   }
 
   // Update pagination
@@ -330,10 +346,10 @@ import { ApiClient } from '../utils/api-client';
   }
 
   function updatePagination(pagination: Pagination) {
-    const container = document.querySelector('#pagination-container');
-    const prevBtn = document.querySelector('#prev-btn');
-    const nextBtn = document.querySelector('#next-btn');
-    const info = document.querySelector('#pagination-info');
+    const container = $$('#pagination-container');
+    const prevBtn = $$('#prev-btn') as HTMLButtonElement | null;
+    const nextBtn = $$('#next-btn') as HTMLButtonElement | null;
+    const info = $$('#pagination-info');
 
     if (!container) return;
 
@@ -357,10 +373,10 @@ import { ApiClient } from '../utils/api-client';
 
   // Apply filters
   function applyFilters() {
-    const userFilter = document.querySelector('#filter-user')?.value;
-    const actionFilter = document.querySelector('#filter-action')?.value;
-    const entityFilter = document.querySelector('#filter-entity')?.value;
-    const timerangeFilter = document.querySelector('#filter-timerange')?.value;
+    const userFilter = ($$('#filter-user') as HTMLInputElement | null)?.value;
+    const actionFilter = ($$('#filter-action') as HTMLSelectElement | null)?.value;
+    const entityFilter = ($$('#filter-entity') as HTMLSelectElement | null)?.value;
+    const timerangeFilter = ($$('#filter-timerange') as HTMLSelectElement | null)?.value;
 
     console.info('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
 
@@ -384,10 +400,10 @@ import { ApiClient } from '../utils/api-client';
 
   // Reset filters
   function resetFilters() {
-    const userInput = document.querySelector('#filter-user');
-    const actionInput = document.querySelector('#filter-action');
-    const entityInput = document.querySelector('#filter-entity');
-    const timerangeInput = document.querySelector('#filter-timerange');
+    const userInput = $$('#filter-user') as HTMLInputElement | null;
+    const actionInput = $$('#filter-action') as HTMLSelectElement | null;
+    const entityInput = $$('#filter-entity') as HTMLSelectElement | null;
+    const timerangeInput = $$('#filter-timerange') as HTMLSelectElement | null;
 
     if (userInput !== null) userInput.value = '';
     if (actionInput !== null) actionInput.value = 'all';
@@ -395,9 +411,9 @@ import { ApiClient } from '../utils/api-client';
     if (timerangeInput !== null) timerangeInput.value = 'all';
 
     // Reset dropdown displays
-    const actionDisplay = document.querySelector('#actionDisplay');
-    const entityDisplay = document.querySelector('#entityDisplay');
-    const timerangeDisplay = document.querySelector('#timerangeDisplay');
+    const actionDisplay = $$('#actionDisplay');
+    const entityDisplay = $$('#entityDisplay');
+    const timerangeDisplay = $$('#timerangeDisplay');
 
     if (actionDisplay) {
       const span = actionDisplay.querySelector('span');
@@ -438,8 +454,8 @@ import { ApiClient } from '../utils/api-client';
     }
 
     // Show delete confirmation modal
-    const modal = document.querySelector('#deleteLogsModal');
-    const activeFiltersDisplay = document.querySelector('#activeFiltersDisplay');
+    const modal = $$('#deleteLogsModal');
+    const activeFiltersDisplay = $$('#activeFiltersDisplay');
 
     if (modal && activeFiltersDisplay) {
       // Build filter display
@@ -483,15 +499,15 @@ import { ApiClient } from '../utils/api-client';
       }
 
       filterHTML += '</ul>';
-      activeFiltersDisplay.innerHTML = filterHTML;
+      setHTML(activeFiltersDisplay, filterHTML);
 
       // Show modal
       modal.classList.add('active');
 
       // Reset confirmation input
-      const confirmInput = document.querySelector('#deleteLogsConfirmation');
-      const passwordSection = document.querySelector('#passwordConfirmSection');
-      const passwordInput = document.querySelector('#deleteLogsPassword');
+      const confirmInput = $$('#deleteLogsConfirmation') as HTMLInputElement | null;
+      const passwordSection = $$('#passwordConfirmSection');
+      const passwordInput = $$('#deleteLogsPassword') as HTMLInputElement | null;
 
       if (confirmInput !== null) {
         confirmInput.value = '';
@@ -509,8 +525,8 @@ import { ApiClient } from '../utils/api-client';
 
   // Confirm delete logs (called from modal)
   async function confirmDeleteLogs() {
-    const confirmBtn = document.querySelector('#confirmDeleteLogsBtn');
-    const passwordInput = document.querySelector('#deleteLogsPassword');
+    const confirmBtn = $$('#confirmDeleteLogsBtn') as HTMLButtonElement | null;
+    const passwordInput = $$('#deleteLogsPassword') as HTMLInputElement | null;
 
     // v2 API requires password for ALL delete operations
     if (passwordInput === null || passwordInput.value === '') {
@@ -520,7 +536,7 @@ import { ApiClient } from '../utils/api-client';
 
     if (confirmBtn !== null) {
       confirmBtn.disabled = true;
-      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
+      setHTML(confirmBtn, '<i class="fas fa-spinner fa-spin"></i> Lösche...');
     }
 
     try {
@@ -624,7 +640,7 @@ import { ApiClient } from '../utils/api-client';
         const result = await apiClient.request<{ deletedCount: number }>('/logs', requestOptions);
 
         // Close modal
-        const modal = document.querySelector('#deleteLogsModal');
+        const modal = $$('#deleteLogsModal');
         if (modal) {
           modal.classList.remove('active');
         }
@@ -663,7 +679,7 @@ import { ApiClient } from '../utils/api-client';
       // Reset button state
       if (confirmBtn !== null) {
         confirmBtn.disabled = false;
-        confirmBtn.innerHTML = '<i class="fas fa-trash"></i> Logs löschen';
+        setHTML(confirmBtn, '<i class="fas fa-trash"></i> Logs löschen');
       }
     }
   }
@@ -698,7 +714,12 @@ import { ApiClient } from '../utils/api-client';
       kvp_created: 'KVP Erstellt',
       kvp_shared: 'KVP Geteilt',
     };
-    return actionLabels[action] ?? action;
+    // Validate action is a key in actionLabels to avoid object injection
+    if (Object.prototype.hasOwnProperty.call(actionLabels, action)) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: finite set of known keys
+      return actionLabels[action];
+    }
+    return action;
   }
 
   // Helper function to get readable role labels
@@ -708,7 +729,12 @@ import { ApiClient } from '../utils/api-client';
       admin: 'Admin',
       employee: 'Mitarbeiter',
     };
-    return roleLabels[role] ?? role;
+    // Validate role is a key in roleLabels to avoid object injection
+    if (Object.prototype.hasOwnProperty.call(roleLabels, role)) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: finite set of known keys
+      return roleLabels[role];
+    }
+    return role;
   }
 
   // Show full details in a modal or alert
@@ -721,7 +747,9 @@ import { ApiClient } from '../utils/api-client';
       // Create a modal to show the full details
       const modal = document.createElement('div');
       modal.className = 'modal active';
-      modal.innerHTML = `
+      setHTML(
+        modal,
+        `
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Log Details</h3>
@@ -731,7 +759,8 @@ import { ApiClient } from '../utils/api-client';
           <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${formatted}</pre>
         </div>
       </div>
-    `;
+    `,
+      );
       document.body.append(modal);
 
       // Close modal on outside click
@@ -745,7 +774,9 @@ import { ApiClient } from '../utils/api-client';
       const decodedText = atob(encodedDetails);
       const modal = document.createElement('div');
       modal.className = 'modal active';
-      modal.innerHTML = `
+      setHTML(
+        modal,
+        `
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Log Details</h3>
@@ -755,7 +786,8 @@ import { ApiClient } from '../utils/api-client';
           <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${decodedText}</pre>
         </div>
       </div>
-    `;
+    `,
+      );
       document.body.append(modal);
     }
   }

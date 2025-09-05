@@ -3,7 +3,7 @@
  * Logs to both activity_logs (for frontend) and root_logs (for audit)
  */
 import RootLog from '../models/rootLog';
-import { createLog } from '../routes/logs';
+import { createLog } from '../routes/v1/logs';
 
 interface DualLogOptions {
   // Common fields

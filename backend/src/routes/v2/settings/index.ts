@@ -17,7 +17,7 @@ router.use(authenticateV2);
 // ==================== SYSTEM SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/system:
  *   get:
  *     summary: Get all system settings
@@ -52,7 +52,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/system/{key}:
  *   get:
  *     summary: Get single system setting
@@ -79,7 +79,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/system:
  *   post:
  *     summary: Create system setting
@@ -123,7 +123,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/system/{key}:
  *   put:
  *     summary: Update system setting
@@ -170,7 +170,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/system/{key}:
  *   delete:
  *     summary: Delete system setting
@@ -201,7 +201,7 @@ router.delete(
 // ==================== TENANT SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant:
  *   get:
  *     summary: Get all tenant settings
@@ -230,7 +230,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant/{key}:
  *   get:
  *     summary: Get single tenant setting
@@ -257,7 +257,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant:
  *   post:
  *     summary: Create tenant setting
@@ -297,7 +297,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant/{key}:
  *   put:
  *     summary: Update tenant setting
@@ -340,7 +340,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant/{key}:
  *   delete:
  *     summary: Delete tenant setting
@@ -371,7 +371,7 @@ router.delete(
 // ==================== USER SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/user:
  *   get:
  *     summary: Get all user settings
@@ -400,7 +400,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/user/{key}:
  *   get:
  *     summary: Get single user setting
@@ -427,7 +427,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/user:
  *   post:
  *     summary: Create user setting
@@ -465,7 +465,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/user/{key}:
  *   put:
  *     summary: Update user setting
@@ -506,7 +506,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/user/{key}:
  *   delete:
  *     summary: Delete user setting
@@ -535,7 +535,7 @@ router.delete(
 // ==================== ADMIN USER SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/admin/users/{userId}:
  *   get:
  *     summary: Get another user's settings
@@ -566,7 +566,7 @@ router.get(
 // ==================== COMMON ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/categories:
  *   get:
  *     summary: Get settings categories
@@ -581,7 +581,7 @@ router.get(
 router.get('/categories', typed.auth(settingsController.getCategories));
 
 /**
- * @swagger
+
  * /api/v2/settings/bulk:
  *   put:
  *     summary: Bulk update settings

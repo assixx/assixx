@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import { JwtPayload } from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { createLog } from '../routes/logs.js';
+import { createLog } from '../routes/v1/logs';
 import authService from '../services/auth.service';
 import userService from '../services/user.service';
 import type { AuthenticatedRequest } from '../types/request.types';

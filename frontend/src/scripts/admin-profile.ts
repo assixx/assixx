@@ -3,8 +3,13 @@
  * Handles admin profile functionality with limited edit capabilities
  */
 
-import { apiClient } from '../utils/api-client';
-import { getAuthToken, showError } from './auth';
+import { ApiClient } from '../utils/api-client';
+import { showError } from './auth';
+import { $$ } from '../utils/dom-utils';
+import { showSuccessAlert } from './utils/alerts';
+
+// Initialize API client
+const apiClient = ApiClient.getInstance();
 
 interface UserProfile {
   id: number;
@@ -49,10 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
     console.info('Admin profile script loaded');
 
     // Check authentication
-    const token = getAuthToken();
+    const token = localStorage.getItem('token');
     const userRole = localStorage.getItem('userRole');
 
-    if (token === null || token.length === 0 || userRole !== 'admin') {
+    if (token === null || token === '' || userRole !== 'admin') {
       window.location.href = '/login';
       return;
     }
@@ -77,28 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadUserProfile(): Promise<void> {
   try {
-    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
-    let profile: UserProfile;
-
-    if (useV2Users === true) {
-      // Use API v2 with apiClient - use /me endpoint
-      profile = await apiClient.get<UserProfile>('/users/me');
-    } else {
-      // Use API v1 with fetch
-      const token = getAuthToken();
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token ?? ''}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load profile');
-      }
-
-      const data = (await response.json()) as { data?: UserProfile; user?: UserProfile } & UserProfile;
-      profile = data.data ?? data.user ?? data;
-    }
+    // Always use API v2 with apiClient - use /me endpoint
+    const profile = await apiClient.get<UserProfile>('/users/me');
 
     populateProfileForm(profile);
 
@@ -137,16 +122,33 @@ function populateProfileForm(profile: UserProfile): void {
   const companyName = extProfile.companyName ?? profile.company_name;
 
   // Editable fields
-  document.querySelector('#first_name')!.value = firstName ?? '';
-  document.querySelector('#last_name')!.value = lastName ?? '';
+  const firstNameInput = $$('#first_name');
+  if (firstNameInput instanceof HTMLInputElement) {
+    firstNameInput.value = firstName ?? '';
+  }
+
+  const lastNameInput = $$('#last_name');
+  if (lastNameInput instanceof HTMLInputElement) {
+    lastNameInput.value = lastName ?? '';
+  }
 
   // Read-only fields
-  document.querySelector('#email')!.value = profile.email;
-  document.querySelector('#position')!.value =
-    profile.position !== undefined && profile.position.length > 0
-      ? (positionMap[profile.position] ?? profile.position)
-      : '-';
-  document.querySelector('#company')!.value = companyName ?? '-';
+  const emailInput = $$('#email');
+  if (emailInput instanceof HTMLInputElement) {
+    emailInput.value = profile.email;
+  }
+  const positionInput = $$('#position');
+  if (positionInput instanceof HTMLInputElement) {
+    positionInput.value =
+      profile.position !== undefined && profile.position.length > 0
+        ? (positionMap[profile.position] ?? profile.position)
+        : '-';
+  }
+
+  const companyInput = $$('#company');
+  if (companyInput instanceof HTMLInputElement) {
+    companyInput.value = companyName ?? '-';
+  }
 }
 
 /**
@@ -179,9 +181,11 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
     img.onerror = () => {
       console.error('Failed to load profile picture:', url);
       // Show initials on error
-      showInitials(display, firstName, lastName);
+      if (display instanceof HTMLElement) {
+        showInitials(display, firstName, lastName);
+      }
       // Hide remove button on error
-      if (removeBtn) {
+      if (removeBtn instanceof HTMLElement) {
         removeBtn.style.display = 'none';
       }
     };
@@ -189,15 +193,17 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
     display.append(img);
 
     // Show remove button when picture exists
-    if (removeBtn) {
+    if (removeBtn instanceof HTMLElement) {
       removeBtn.style.display = 'inline-block';
       console.info('Remove button shown for picture:', url);
     }
   } else {
     // Show initials instead of icon
-    showInitials(display, firstName, lastName);
+    if (display instanceof HTMLElement) {
+      showInitials(display, firstName, lastName);
+    }
     // Hide remove button when no picture
-    if (removeBtn) {
+    if (removeBtn instanceof HTMLElement) {
       removeBtn.style.display = 'none';
       console.info('Remove button hidden - no picture');
     }
@@ -213,7 +219,7 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
   const initials = firstInitial.length > 0 || lastInitial.length > 0 ? `${firstInitial}${lastInitial}` : 'U';
 
   display.classList.add('avatar-initials');
-  display.innerHTML = initials;
+  display.textContent = initials;
 }
 
 /**
@@ -221,16 +227,20 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
  */
 function setupFormHandlers(): void {
   // Profile form
-  const profileForm = document.querySelector('#profile-form')!;
-  profileForm.addEventListener('submit', (e) => {
-    void handleProfileUpdate(e);
-  });
+  const profileForm = $$('#profile-form');
+  if (profileForm !== null) {
+    profileForm.addEventListener('submit', (e) => {
+      void handleProfileUpdate(e);
+    });
+  }
 
   // Password form
-  const passwordForm = document.querySelector('#password-form')!;
-  passwordForm.addEventListener('submit', (e) => {
-    void handlePasswordChange(e);
-  });
+  const passwordForm = $$('#password-form');
+  if (passwordForm !== null) {
+    passwordForm.addEventListener('submit', (e) => {
+      void handlePasswordChange(e);
+    });
+  }
 
   // Logout button
   const logoutBtn = document.querySelector('#logout-btn');
@@ -261,25 +271,27 @@ function setupFormHandlers(): void {
  * Setup profile picture handlers
  */
 function setupProfilePictureHandlers(): void {
-  const fileInput = document.querySelector('#profile-picture-input')!;
+  const fileInput = $$('#profile-picture-input');
   const removeBtn = document.querySelector('#remove-picture-btn');
 
   // File upload
-  fileInput.addEventListener('change', (e) => {
-    void (async () => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
+  if (fileInput !== null) {
+    fileInput.addEventListener('change', (e) => {
+      void (async () => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0];
 
-      if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-          showMessage('Datei zu groß (max. 5MB)', 'error');
-          return;
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+            showMessage('Datei zu groß (max. 5MB)', 'error');
+            return;
+          }
+
+          await uploadProfilePicture(file);
         }
-
-        await uploadProfilePicture(file);
-      }
-    })();
-  });
+      })();
+    });
+  }
 
   // Remove picture
   removeBtn?.addEventListener('click', () => {
@@ -312,45 +324,19 @@ async function handleProfileUpdate(event: Event): Promise<void> {
   };
 
   try {
-    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+    // Always use API v2 with apiClient
+    // Convert to camelCase for v2
+    const v2UpdateData = {
+      firstName: updateData.first_name,
+      lastName: updateData.last_name,
+    };
 
-    if (useV2Users === true) {
-      // Use API v2 with apiClient
-      // Convert to camelCase for v2
-      const v2UpdateData = {
-        firstName: updateData.first_name,
-        lastName: updateData.last_name,
-      };
-
-      await apiClient.put('/users/me/profile', v2UpdateData);
-      showMessage('Profil erfolgreich aktualisiert', 'success');
-      // Reload to update header info
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } else {
-      // Use API v1 with fetch
-      const token = getAuthToken();
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token ?? ''}`,
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (response.ok) {
-        showMessage('Profil erfolgreich aktualisiert', 'success');
-        // Reload to update header info
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      } else {
-        const error = (await response.json()) as { message?: string };
-        showMessage(error.message ?? 'Fehler beim Aktualisieren des Profils', 'error');
-      }
-    }
+    await apiClient.put('/users/me/profile', v2UpdateData);
+    showMessage('Profil erfolgreich aktualisiert', 'success');
+    // Reload to update header info
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   } catch (error) {
     console.error('Error updating profile:', error);
     showMessage('Netzwerkfehler beim Aktualisieren', 'error');
@@ -364,9 +350,13 @@ async function handlePasswordChange(event: Event): Promise<void> {
   event.preventDefault();
 
   const form = event.target as HTMLFormElement;
-  const currentPassword = document.querySelector('#current_password')!.value;
-  const newPassword = document.querySelector('#new_password')!.value;
-  const confirmPassword = document.querySelector('#confirm_password')!.value;
+  const currentPasswordInput = $$('#current_password');
+  const newPasswordInput = $$('#new_password');
+  const confirmPasswordInput = $$('#confirm_password');
+
+  const currentPassword = currentPasswordInput instanceof HTMLInputElement ? currentPasswordInput.value : '';
+  const newPassword = newPasswordInput instanceof HTMLInputElement ? newPasswordInput.value : '';
+  const confirmPassword = confirmPasswordInput instanceof HTMLInputElement ? confirmPasswordInput.value : '';
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
@@ -381,27 +371,15 @@ async function handlePasswordChange(event: Event): Promise<void> {
   }
 
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/users/profile/password', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token ?? ''}`,
-      },
-      body: JSON.stringify({
-        currentPassword,
-        newPassword,
-      }),
+    // Use API v2 with apiClient
+    await apiClient.put('/users/me/password', {
+      currentPassword,
+      newPassword,
     });
 
-    if (response.ok) {
-      showMessage('Passwort erfolgreich geändert', 'success');
-      showSuccessOverlay('Passwort erfolgreich geändert!');
-      form.reset();
-    } else {
-      const error = (await response.json()) as { message?: string };
-      showMessage(error.message ?? 'Fehler beim Ändern des Passworts', 'error');
-    }
+    showMessage('Passwort erfolgreich geändert', 'success');
+    showSuccessAlert('Passwort erfolgreich geändert!');
+    form.reset();
   } catch (error) {
     console.error('Error changing password:', error);
     showMessage('Netzwerkfehler beim Ändern des Passworts', 'error');
@@ -413,75 +391,28 @@ async function handlePasswordChange(event: Event): Promise<void> {
  */
 async function uploadProfilePicture(file: File): Promise<void> {
   const formData = new FormData();
-  formData.append('profilePicture', file);
+  formData.append('profilePicture', file); // v2 uses camelCase
 
   try {
-    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+    // Always use API v2 with apiClient
+    // Note: apiClient.post supports FormData
+    const result = await apiClient.post<{ profilePictureUrl?: string }>('/users/me/profile-picture', formData);
 
-    if (useV2Users === true) {
-      // Use API v2 - Note: apiClient doesn't support FormData directly, use fetch
-      const token = getAuthToken();
-      const response = await fetch('/api/v2/users/me/profile-picture', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token ?? ''}`,
-        },
-        body: formData,
-      });
+    const pictureUrl = result.profilePictureUrl;
+    console.info('Upload response:', result);
 
-      if (response.ok) {
-        const result = (await response.json()) as {
-          data?: { profilePictureUrl?: string; profilePicture?: string; profile_picture?: string };
-        };
-        // API v2 returns the user object with profilePictureUrl field
-        const pictureUrl =
-          result.data?.profilePictureUrl ?? result.data?.profilePicture ?? result.data?.profile_picture;
-        console.info('Upload response:', result);
-        const firstName = document.querySelector('#first_name')!.value;
-        const lastName = document.querySelector('#last_name')!.value;
-        updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
-        showMessage('Profilbild erfolgreich hochgeladen', 'success');
-        // Reload page to update header
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      } else {
-        const error = (await response.json()) as { error?: { message?: string } };
-        showMessage(error.error?.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
-      }
-    } else {
-      // Use API v1 with fetch
-      const token = getAuthToken();
-      const response = await fetch('/api/user/profile-picture', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token ?? ''}`,
-        },
-        body: formData,
-      });
+    const firstNameInput = $$('#first_name');
+    const lastNameInput = $$('#last_name');
+    const firstName = firstNameInput instanceof HTMLInputElement ? firstNameInput.value : '';
+    const lastName = lastNameInput instanceof HTMLInputElement ? lastNameInput.value : '';
 
-      if (response.ok) {
-        const result = (await response.json()) as {
-          profilePictureUrl?: string;
-          profile_picture_url?: string;
-          url?: string;
-          data?: { profile_picture_url?: string };
-        };
-        const pictureUrl =
-          result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
-        const firstName = document.querySelector('#first_name')!.value;
-        const lastName = document.querySelector('#last_name')!.value;
-        updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
-        showMessage('Profilbild erfolgreich hochgeladen', 'success');
-        // Reload page to update header
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        const error = (await response.json()) as { message?: string };
-        showMessage(error.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
-      }
-    }
+    updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
+    showMessage('Profilbild erfolgreich hochgeladen', 'success');
+
+    // Reload page to update header
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     showMessage('Netzwerkfehler beim Hochladen', 'error');
@@ -497,39 +428,23 @@ async function uploadProfilePicture(file: File): Promise<void> {
 function showMessage(message: string, type: 'success' | 'error'): void {
   const container = document.querySelector('#message-container');
   if (!container) return;
-  container.innerHTML = `
-    <div class="alert alert-${type}">
-      <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-      ${message}
-    </div>
-  `;
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type}`;
+
+  const icon = document.createElement('i');
+  icon.className = `fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}`;
+
+  alertDiv.append(icon);
+  alertDiv.append(document.createTextNode(' ' + message));
+
+  container.textContent = '';
+  container.append(alertDiv);
 
   // Auto-hide after 5 seconds
   setTimeout(() => {
-    container.innerHTML = '';
+    container.textContent = '';
   }, 5000);
 }
 
-/**
- * Show success overlay animation
- */
-function showSuccessOverlay(text = 'Erfolgreich!'): void {
-  const overlay = document.createElement('div');
-  overlay.className = 'success-overlay';
-  overlay.innerHTML = `
-    <div class="success-message">
-      <div class="success-icon">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <div class="success-text">
-        ${text}
-      </div>
-    </div>
-  `;
-  document.body.append(overlay);
-
-  // Remove after animation
-  setTimeout(() => {
-    overlay.remove();
-  }, 2000);
-}
+// showSuccessOverlay removed - use showSuccessAlert from alerts.ts instead

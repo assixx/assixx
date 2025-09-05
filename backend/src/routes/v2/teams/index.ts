@@ -2,7 +2,7 @@
  * Teams v2 API Routes
  * RESTful endpoints for team management
  *
- * @swagger
+
  * tags:
  *   name: Teams v2
  *   description: Team management API v2
@@ -17,7 +17,7 @@ import { teamsValidation } from './teams.validation.js';
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/teams:
  *   get:
  *     summary: List all teams
@@ -60,7 +60,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}:
  *   get:
  *     summary: Get team by ID
@@ -94,7 +94,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams:
  *   post:
  *     summary: Create new team
@@ -130,7 +130,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}:
  *   put:
  *     summary: Update team
@@ -173,7 +173,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}:
  *   delete:
  *     summary: Delete team
@@ -212,7 +212,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}/members:
  *   get:
  *     summary: Get team members
@@ -246,7 +246,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}/members:
  *   post:
  *     summary: Add member to team
@@ -297,7 +297,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}/members/{userId}:
  *   delete:
  *     summary: Remove member from team
@@ -342,7 +342,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}/machines:
  *   get:
  *     summary: Get team machines
@@ -393,7 +393,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}/machines:
  *   post:
  *     summary: Add machine to team
@@ -444,7 +444,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/teams/{id}/machines/{machineId}:
  *   delete:
  *     summary: Remove machine from team

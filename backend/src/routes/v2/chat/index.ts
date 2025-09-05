@@ -122,7 +122,7 @@ const upload = multer({
 });
 
 /**
- * @swagger
+
  * /api/v2/chat/users:
  *   get:
  *     summary: Get available chat users
@@ -152,7 +152,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations:
  *   get:
  *     summary: Get user's conversations
@@ -186,7 +186,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations:
  *   post:
  *     summary: Create a new conversation
@@ -226,7 +226,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}:
  *   get:
  *     summary: Get conversation details
@@ -253,7 +253,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}:
  *   put:
  *     summary: Update conversation
@@ -288,7 +288,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}:
  *   delete:
  *     summary: Delete conversation
@@ -314,7 +314,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}/messages:
  *   get:
  *     summary: Get messages from conversation
@@ -357,7 +357,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}/messages:
  *   post:
  *     summary: Send message to conversation
@@ -406,7 +406,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/messages/{id}:
  *   put:
  *     summary: Edit a message
@@ -442,7 +442,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/messages/{id}:
  *   delete:
  *     summary: Delete a message
@@ -467,7 +467,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}/read:
  *   post:
  *     summary: Mark conversation as read
@@ -493,7 +493,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/unread-count:
  *   get:
  *     summary: Get unread message count
@@ -512,7 +512,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/attachments/{filename}:
  *   get:
  *     summary: Download chat attachment
@@ -548,7 +548,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}/participants:
  *   post:
  *     summary: Add participants to conversation
@@ -587,7 +587,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}/participants/{userId}:
  *   delete:
  *     summary: Remove participant from conversation
@@ -617,7 +617,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/conversations/{id}/leave:
  *   post:
  *     summary: Leave conversation
@@ -643,7 +643,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/chat/search:
  *   get:
  *     summary: Search messages across all conversations

@@ -14,7 +14,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features:
    *   get:
    *     summary: Get all available features
@@ -70,7 +70,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/categories:
    *   get:
    *     summary: Get features grouped by category
@@ -109,7 +109,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/{code}:
    *   get:
    *     summary: Get feature by code
@@ -158,7 +158,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/tenant/{tenantId}:
    *   get:
    *     summary: Get features for a specific tenant
@@ -210,7 +210,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/my-features:
    *   get:
    *     summary: Get features for authenticated user's tenant
@@ -244,7 +244,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/tenant/{tenantId}/summary:
    *   get:
    *     summary: Get tenant features summary
@@ -296,7 +296,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/activate:
    *   post:
    *     summary: Activate a feature for a tenant
@@ -350,7 +350,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/deactivate:
    *   post:
    *     summary: Deactivate a feature for a tenant
@@ -402,7 +402,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/usage/{featureCode}:
    *   get:
    *     summary: Get feature usage statistics
@@ -481,7 +481,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/test/{featureCode}:
    *   get:
    *     summary: Test feature access
@@ -543,7 +543,7 @@ export class FeaturesController {
   /**
    * @param req - The request object
    * @param res - The response object
-   * @swagger
+
    * /api/v2/features/all-tenants:
    *   get:
    *     summary: Get all tenants with their features

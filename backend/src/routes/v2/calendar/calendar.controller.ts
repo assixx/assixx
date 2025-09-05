@@ -1,7 +1,7 @@
 /**
  * Calendar v2 Controller
  * Handles HTTP requests for calendar endpoints
- * @swagger
+
  * tags:
  *   name: Calendar v2
  *   description: Calendar event management (API v2)
@@ -21,7 +21,7 @@ import type { CalendarEventData, CalendarEventUpdateData } from './calendar.serv
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
- * @swagger
+
  * /api/v2/calendar/events:
  *   get:
  *     summary: Get calendar events
@@ -126,7 +126,7 @@ export async function listEvents(
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
- * @swagger
+
  * /api/v2/calendar/events/{id}:
  *   get:
  *     summary: Get event by ID
@@ -179,7 +179,7 @@ export async function getEvent(
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
- * @swagger
+
  * /api/v2/calendar/events:
  *   post:
  *     summary: Create a new event
@@ -295,7 +295,7 @@ export async function createEvent(
  * @param req - The request object
  * @param res - The response object
  * @param next - The next middleware function
- * @swagger
+
  * /api/v2/calendar/events/{id}:
  *   put:
  *     summary: Update an event
@@ -449,7 +449,7 @@ export async function updateEvent(
  * @param req - The request object
  * @param res - The response object
  * @param next - The next middleware function
- * @swagger
+
  * /api/v2/calendar/events/{id}:
  *   delete:
  *     summary: Delete an event
@@ -550,7 +550,7 @@ export async function deleteEvent(
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
- * @swagger
+
  * /api/v2/calendar/events/{id}/attendees/response:
  *   put:
  *     summary: Update attendee response
@@ -630,7 +630,7 @@ export async function updateAttendeeResponse(
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
- * @swagger
+
  * /api/v2/calendar/export:
  *   get:
  *     summary: Export calendar events
@@ -690,7 +690,7 @@ export async function exportEvents(
  * @param req - The request object
  * @param res - The response object
  * @param next - The next middleware function
- * @swagger
+
  * /api/v2/calendar/dashboard:
  *   get:
  *     summary: Get upcoming events for dashboard
@@ -754,7 +754,7 @@ export async function getDashboardEvents(
  * @param req - The request object
  * @param res - The response object
  * @param next - The next middleware function
- * @swagger
+
  * /api/v2/calendar/unread-events:
  *   get:
  *     summary: Get unread calendar events (events requiring response)

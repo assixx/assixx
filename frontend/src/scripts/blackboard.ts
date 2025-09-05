@@ -5,9 +5,18 @@
 
 import type { User } from '../types/api.types';
 import { ApiClient } from '../utils/api-client';
-import { getAuthToken, showSuccess, showError } from './auth';
+import { $$id, $$, setHTML } from '../utils/dom-utils';
+import { showSuccess, showError } from './auth';
 import { escapeHtml } from './common';
 import { closeModal as dashboardCloseModal } from './dashboard-scripts';
+
+// Declare DOMPurify for sanitization
+declare const DOMPurify: {
+  sanitize: (dirty: string) => string;
+};
+
+// Initialize API client
+const apiClient = ApiClient.getInstance();
 
 /**
  * Escapes a string for safe use in JavaScript string literals
@@ -78,7 +87,7 @@ interface PaginationInfo {
 
 interface BlackboardResponse {
   entries: BlackboardEntry[];
-  pagination: PaginationInfo;
+  pagination?: PaginationInfo;
 }
 
 interface UserData extends User {
@@ -111,7 +120,7 @@ const directAttachHandlers: {
 
 // Modal helper functions to handle different implementations
 function openModal(modalId: string): void {
-  const modal = document.getElementById(modalId);
+  const modal = $$id(modalId);
   if (!modal) return;
 
   // Check if it's the new modal style (class="modal")
@@ -141,7 +150,7 @@ function openModal(modalId: string): void {
 }
 
 function closeModal(modalId: string): void {
-  const modal = document.getElementById(modalId);
+  const modal = $$id(modalId);
   if (!modal) return;
 
   // Check if it's the new modal style (class="modal")
@@ -170,10 +179,33 @@ function closeModal(modalId: string): void {
 // Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
 let entriesLoadingEnabled = false;
 
+/**
+ * Check if user is logged in
+ */
+async function checkLoggedIn(): Promise<void> {
+  try {
+    // Use v2 API endpoint
+    await apiClient.get('/users/me');
+  } catch {
+    throw new Error('Invalid token');
+  }
+}
+
+// Helper function to set admin status
+function setAdminStatus(role: string): void {
+  const adminRoles = ['admin', 'root'];
+  isAdmin = adminRoles.includes(role);
+}
+
+// Helper function to set entries loading state
+function setEntriesLoadingEnabled(enabled: boolean): void {
+  entriesLoadingEnabled = enabled;
+}
+
 // Function to initialize blackboard
 function initializeBlackboard() {
   // Aktiviere das automatische Laden der Einträge
-  entriesLoadingEnabled = true;
+  setEntriesLoadingEnabled(true);
 
   // Alle Schließen-Buttons einrichten
   setupCloseButtons();
@@ -184,24 +216,26 @@ function initializeBlackboard() {
   console.info('[Blackboard] Script loaded at:', new Date().toISOString());
 
   // Check if user is logged in
-  checkLoggedIn()
-    .then(() => {
+  void (async () => {
+    try {
+      await checkLoggedIn();
       // Header user info is now handled by unified navigation
 
-      // Get user data from localStorage instead of fetching again
+      // Try to get user data from localStorage first (if available)
       const storedUser = localStorage.getItem('currentUser');
       if (storedUser !== null && storedUser.length > 0) {
         try {
           const userData = JSON.parse(storedUser) as UserData;
           currentUserId = userData.id;
-          isAdmin = userData.role === 'admin' || userData.role === 'root';
+          // Use setter function to avoid race condition
+          setAdminStatus(userData.role);
 
           console.info('[Blackboard] User data from localStorage:', userData);
           console.info('[Blackboard] isAdmin:', isAdmin);
           console.info('[Blackboard] User role:', userData.role);
 
           // Show/hide "New Entry" button based on permissions
-          const newEntryBtn = document.querySelector('#newEntryBtn');
+          const newEntryBtn = $$('#newEntryBtn');
           if (newEntryBtn) {
             console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
             newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -214,101 +248,101 @@ function initializeBlackboard() {
         } catch (error) {
           console.error('[Blackboard] Error parsing stored user data:', error);
           // Fallback: fetch user data if localStorage is corrupted
-          fetchUserData()
-            .then((userData: UserData) => {
-              currentUserId = userData.id;
-              isAdmin = userData.role === 'admin' || userData.role === 'root';
+          try {
+            const userData = await fetchUserData();
+            currentUserId = userData.id;
+            // Use setter function to avoid race condition
+            setAdminStatus(userData.role);
 
-              console.info('[Blackboard] User data from API:', userData);
-              console.info('[Blackboard] isAdmin after API call:', isAdmin);
-              console.info('[Blackboard] User role from API:', userData.role);
+            console.info('[Blackboard] User data from API:', userData);
+            console.info('[Blackboard] isAdmin after API call:', isAdmin);
+            console.info('[Blackboard] User role from API:', userData.role);
 
-              const newEntryBtn = document.querySelector('#newEntryBtn');
-              if (newEntryBtn) {
-                console.info('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
-                newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
-              } else {
-                console.info('[Blackboard] newEntryBtn not found after API call!');
-              }
-              void loadDepartmentsAndTeams();
-            })
-            .catch((error_: unknown) => {
-              console.error('[Blackboard] Error loading user data:', error_);
-              showError('Fehler beim Laden der Benutzerdaten');
-            });
+            const newEntryBtn = $$('#newEntryBtn');
+            if (newEntryBtn !== null) {
+              console.info('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
+              newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            } else {
+              console.info('[Blackboard] newEntryBtn not found after API call!');
+            }
+            void loadDepartmentsAndTeams();
+          } catch (fetchError) {
+            console.error('[Blackboard] Error loading user data:', fetchError);
+            showError('Fehler beim Laden der Benutzerdaten');
+          }
         }
       } else {
         // No stored user data, fetch it
-        fetchUserData()
-          .then((userData: UserData) => {
-            currentUserId = userData.id;
-            isAdmin = userData.role === 'admin' || userData.role === 'root';
+        try {
+          const userData = await fetchUserData();
+          const userId = userData.id;
+          const isUserAdmin = userData.role === 'admin' || userData.role === 'root';
 
-            console.info('[Blackboard] No localStorage - User data from API:', userData);
-            console.info('[Blackboard] No localStorage - isAdmin:', isAdmin);
-            console.info('[Blackboard] No localStorage - User role:', userData.role);
+          // Set global variables after calculation to avoid race condition
+          currentUserId = userId;
+          isAdmin = isUserAdmin;
 
-            const newEntryBtn = document.querySelector('#newEntryBtn');
-            if (newEntryBtn) {
-              console.info(
-                '[Blackboard] No localStorage - Setting newEntryBtn display:',
-                isAdmin ? 'inline-flex' : 'none',
-              );
-              newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
-            } else {
-              console.info('[Blackboard] No localStorage - newEntryBtn not found!');
-            }
-            void loadDepartmentsAndTeams();
-          })
-          .catch((error: unknown) => {
-            console.error('[Blackboard] Error loading user data:', error);
-            showError('Fehler beim Laden der Benutzerdaten');
-          });
+          console.info('[Blackboard] User data from API:', userData);
+          console.info('[Blackboard] isAdmin:', isAdmin);
+          console.info('[Blackboard] User role:', userData.role);
+
+          const newEntryBtn = $$('#newEntryBtn');
+          if (newEntryBtn !== null) {
+            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
+            newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+          } else {
+            console.info('[Blackboard] newEntryBtn not found!');
+          }
+          void loadDepartmentsAndTeams();
+        } catch (error) {
+          console.error('[Blackboard] Error loading user data:', error);
+          showError('Fehler beim Laden der Benutzerdaten');
+        }
       }
 
       // Always load entries on page load
-      entriesLoadingEnabled = true;
-      void loadEntries().then(() => {
-        // Check if we have an entry parameter in the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const entryId = urlParams.get('entry');
+      setEntriesLoadingEnabled(true);
+      await loadEntries();
 
-        if (entryId !== null && entryId.length > 0) {
-          // If we have an entry ID, scroll to the specific one
-          const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
-          if (entryElement) {
-            entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Add a highlight effect
-            entryElement.classList.add('highlight-entry');
-            setTimeout(() => {
-              entryElement.classList.remove('highlight-entry');
-            }, 3000);
-          }
+      // Check if we have an entry parameter in the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const entryId = urlParams.get('entry');
+
+      if (entryId !== null && entryId.length > 0) {
+        // If we have an entry ID, scroll to the specific one
+        const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
+        if (entryElement) {
+          entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add a highlight effect
+          entryElement.classList.add('highlight-entry');
+          setTimeout(() => {
+            entryElement.classList.remove('highlight-entry');
+          }, 3000);
         }
-      });
+      }
 
       // Hide the load entries button since entries are loaded automatically
-      const loadEntriesBtn = document.querySelector('#loadEntriesBtn');
+      const loadEntriesBtn = $$('#loadEntriesBtn');
       if (loadEntriesBtn) {
         loadEntriesBtn.style.display = 'none';
       }
 
       // Retry-Button Ereignisbehandlung
-      const retryLoadBtn = document.querySelector('#retryLoadBtn');
+      const retryLoadBtn = $$id('retryLoadBtn');
       if (retryLoadBtn) {
         retryLoadBtn.addEventListener('click', () => {
-          entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
+          setEntriesLoadingEnabled(true); // Erlaube das Laden nur nach Klick
           void loadEntries();
         });
       }
 
       // Setup event listeners
       setupEventListeners();
-    })
-    .catch((error: unknown) => {
+    } catch (error) {
       console.error('Error checking login:', error);
       window.location.href = '/login';
-    });
+    }
+  })();
 }
 
 // Initialize when DOM is ready or immediately if already ready
@@ -372,7 +406,7 @@ function setupEventListeners(): void {
   });
 
   // Sort entries
-  const sortFilter = document.querySelector('#sortFilter');
+  const sortFilter = $$id('sortFilter') as HTMLSelectElement | null;
   if (sortFilter) {
     sortFilter.addEventListener('change', function (this: HTMLSelectElement) {
       currentSort = this.value;
@@ -387,8 +421,8 @@ function setupEventListeners(): void {
   }
 
   // Search button
-  const searchButton = document.querySelector('#searchButton');
-  const searchInput = document.querySelector('#searchInput');
+  const searchButton = $$id('searchButton');
+  const searchInput = $$('#searchInput') as HTMLInputElement | null;
 
   if (searchButton && searchInput) {
     searchButton.addEventListener('click', () => {
@@ -417,7 +451,7 @@ function setupEventListeners(): void {
   }
 
   // New entry button
-  const newEntryBtn = document.querySelector('#newEntryBtn');
+  const newEntryBtn = $$id('newEntryBtn');
   if (newEntryBtn) {
     newEntryBtn.addEventListener('click', () => {
       openEntryForm();
@@ -427,7 +461,7 @@ function setupEventListeners(): void {
   }
 
   // Direct attachment button
-  const directAttachBtn = document.querySelector('#directAttachBtn');
+  const directAttachBtn = $$id('directAttachBtn');
   if (directAttachBtn) {
     directAttachBtn.addEventListener('click', () => {
       openDirectAttachModal();
@@ -437,7 +471,7 @@ function setupEventListeners(): void {
   }
 
   // Save entry button
-  const saveEntryBtn = document.querySelector('#saveEntryBtn');
+  const saveEntryBtn = $$id('saveEntryBtn');
   if (saveEntryBtn) {
     saveEntryBtn.addEventListener('click', () => {
       void saveEntry();
@@ -447,7 +481,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const entryOrgLevel = document.querySelector('#entryOrgLevel');
+  const entryOrgLevel = $$id('entryOrgLevel') as HTMLSelectElement | null;
   if (entryOrgLevel) {
     entryOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -482,8 +516,8 @@ function setupEventListeners(): void {
  * Setup file upload handlers for attachments
  */
 function setupFileUploadHandlers(): void {
-  const dropZone = document.querySelector('#attachmentDropZone');
-  const fileInput = document.querySelector('#attachmentInput');
+  const dropZone = $$('#attachmentDropZone');
+  const fileInput = $$('#attachmentInput') as HTMLInputElement | null;
 
   if (!dropZone || !fileInput) return;
 
@@ -558,8 +592,8 @@ function handleFileSelection(files: File[]): void {
  * Update attachment preview display
  */
 function updateAttachmentPreview(): void {
-  const preview = document.querySelector('#attachmentPreview');
-  const list = document.querySelector('#attachmentList');
+  const preview = $$('#attachmentPreview');
+  const list = $$('#attachmentList');
 
   if (!preview || !list) return;
 
@@ -578,19 +612,47 @@ function updateAttachmentPreview(): void {
     const icon = file.type === 'application/pdf' ? 'fa-file-pdf pdf' : 'fa-file-image image';
     const size = formatFileSize(file.size);
 
-    item.innerHTML = `
-      <div class="attachment-info">
-        <i class="fas ${icon} attachment-icon"></i>
-        <div class="attachment-details">
-          <div class="attachment-name">${escapeHtml(file.name)}</div>
-          <div class="attachment-size">${size}</div>
-        </div>
-      </div>
-      <button type="button" class="attachment-remove" onclick="removeAttachment(${index})">
-        <i class="fas fa-times"></i> Entfernen
-      </button>
-    `;
+    // Create attachment info wrapper
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'attachment-info';
 
+    // Create icon
+    const iconElement = document.createElement('i');
+    iconElement.className = `fas ${icon} attachment-icon`;
+    infoDiv.append(iconElement);
+
+    // Create details container
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'attachment-details';
+
+    // Create name element
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'attachment-name';
+    nameDiv.textContent = file.name;
+    detailsDiv.append(nameDiv);
+
+    // Create size element
+    const sizeDiv = document.createElement('div');
+    sizeDiv.className = 'attachment-size';
+    sizeDiv.textContent = size;
+    detailsDiv.append(sizeDiv);
+
+    infoDiv.append(detailsDiv);
+    item.append(infoDiv);
+
+    // Create remove button
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'attachment-remove';
+    removeButton.onclick = () => {
+      removeAttachment(index);
+    };
+
+    const removeIcon = document.createElement('i');
+    removeIcon.className = 'fas fa-times';
+    removeButton.append(removeIcon, ' Entfernen');
+
+    item.append(removeButton);
     list.append(item);
   });
 }
@@ -603,7 +665,7 @@ function removeAttachment(index: number): void {
   updateAttachmentPreview();
 
   // Reset file input
-  const fileInput = document.querySelector('#attachmentInput');
+  const fileInput = $$('#attachmentInput') as HTMLInputElement | null;
   if (fileInput) {
     fileInput.value = '';
   }
@@ -633,137 +695,97 @@ async function loadEntries(): Promise<void> {
 
   try {
     // Verstecke die Lade-Button-Karte
-    const loadEntriesCard = document.querySelector('#loadEntriesCard');
+    const loadEntriesCard = $$id('loadEntriesCard');
     if (loadEntriesCard) loadEntriesCard.classList.add('d-none');
 
     // Zeige den Ladeindikator
-    const loadingIndicator = document.querySelector('#loadingIndicator');
+    const loadingIndicator = $$id('loadingIndicator');
     if (loadingIndicator) loadingIndicator.classList.remove('d-none');
 
     // Verstecke vorherige Ergebnisse oder Fehlermeldungen
-    const blackboardEntries = document.querySelector('#blackboardEntries');
+    const blackboardEntries = $$id('blackboardEntries');
     if (blackboardEntries) blackboardEntries.classList.add('d-none');
 
-    const noEntriesMessage = document.querySelector('#noEntriesMessage');
+    const noEntriesMessage = $$id('noEntriesMessage');
     if (noEntriesMessage) noEntriesMessage.classList.add('d-none');
 
     // Parse sort option
     const [sortBy, sortDir] = currentSort.split('|');
 
-    // Get token from localStorage
-    const token = getAuthToken();
-    if (token === null || token.length === 0) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
-    // Use API client for v2 migration
-    const apiClient = ApiClient.getInstance();
     // v2 API uses /blackboard/entries instead of /blackboard
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2
-      ? `/blackboard/entries?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`
-      : `/blackboard?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`;
+    const endpoint = `/blackboard/entries?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`;
 
-    // Check feature flag
-    let response: Response | { ok: boolean; status: number; json: () => Promise<unknown> };
-
-    if (useV2) {
-      try {
-        const data = await apiClient.request(endpoint, { method: 'GET' }, { version: 'v2' });
-        // Create a mock response for v2 to match v1 interface
-        response = {
-          ok: true,
-          status: 200,
-          json: async () => await Promise.resolve(data),
-        };
-      } catch (error) {
-        response = {
-          ok: false,
-          status: (error as { status?: number }).status ?? 500,
-          json: async () => await Promise.resolve(error),
-        };
-      }
-    } else {
-      response = await fetch(`/api${endpoint}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    }
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Redirect to login if unauthorized
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Failed to load entries');
-    }
-
-    const responseData = (await response.json()) as { data?: BlackboardResponse } & BlackboardResponse;
-    const data: BlackboardResponse = responseData.data ?? responseData;
-
-    // Update pagination
-    updatePagination(data.pagination);
-
-    // Display entries
-    displayEntries(data.entries);
-
-    // Erfolgreiche Anfrage - deaktiviere weitere automatische API-Aufrufe
-    entriesLoadingEnabled = false;
-  } catch (error) {
-    console.error('Error loading entries:', error);
-    showError('Fehler beim Laden der Einträge.');
-
-    // Bei einem Fehler, zeige die "Keine Einträge" Nachricht mit Wiederholungs-Button
-    const noEntriesMessage = document.querySelector('#noEntriesMessage');
-    if (noEntriesMessage) {
-      noEntriesMessage.classList.remove('d-none');
-    }
-
-    // Zeige die Lade-Button-Karte wieder an
-    const loadEntriesCard = document.querySelector('#loadEntriesCard');
-    if (loadEntriesCard) loadEntriesCard.classList.remove('d-none');
-  } finally {
-    // Verstecke den Ladeindikator
-    const loadingIndicator = document.querySelector('#loadingIndicator');
-    if (loadingIndicator) loadingIndicator.classList.add('d-none');
-  }
-}
-
-/**
- * Check if user is logged in
- */
-async function checkLoggedIn(): Promise<void> {
-  const token = getAuthToken();
-  if (token === null || token.length === 0) {
-    throw new Error('No authentication token found');
-  }
-
-  // Use API client for v2 migration
-  const apiClient = ApiClient.getInstance();
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS ?? false;
-  const endpoint = useV2 ? '/users/me' : '/user/profile';
-
-  let response: Response | { ok: boolean };
-  if (useV2) {
     try {
-      await apiClient.request(endpoint, { method: 'GET' }, { version: 'v2' });
-      response = { ok: true };
-    } catch {
-      response = { ok: false };
-    }
-  } else {
-    response = await fetch(`/api${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
+      const data = await apiClient.get<BlackboardResponse>(endpoint);
 
-  if (!response.ok) {
-    throw new Error('Invalid token');
+      // Log the response to debug
+      console.log('[Blackboard] API Response:', data);
+
+      // Handle different response formats
+      let entries: BlackboardEntry[] = [];
+
+      if (Array.isArray(data)) {
+        // API returns just an array of entries
+        entries = data;
+        // Create default pagination for array response
+        updatePagination({
+          currentPage: 1,
+          totalPages: 1,
+          totalEntries: entries.length,
+          entriesPerPage: entries.length > 0 ? entries.length : 10,
+        });
+      } else {
+        // API returns object with entries and pagination
+        entries = data.entries;
+
+        // Update pagination - check if pagination exists
+        if (data.pagination) {
+          updatePagination(data.pagination);
+        } else {
+          // Create default pagination
+          updatePagination({
+            currentPage: 1,
+            totalPages: 1,
+            totalEntries: entries.length,
+            entriesPerPage: 10,
+          });
+        }
+      }
+
+      // Display entries
+      displayEntries(entries);
+
+      if (entries.length === 0) {
+        const noEntriesMessage = $$id('noEntriesMessage');
+        if (noEntriesMessage) noEntriesMessage.classList.remove('d-none');
+      }
+
+      // Erfolgreiche Anfrage - deaktiviere weitere automatische API-Aufrufe
+      setEntriesLoadingEnabled(false);
+    } catch (error) {
+      console.error('Error loading entries:', error);
+      showError('Fehler beim Laden der Einträge.');
+
+      // Bei einem Fehler, zeige die "Keine Einträge" Nachricht mit Wiederholungs-Button
+      const noEntriesMessage = $$id('noEntriesMessage');
+      if (noEntriesMessage) {
+        noEntriesMessage.classList.remove('d-none');
+      }
+
+      // Zeige die Lade-Button-Karte wieder an
+      const loadEntriesCard = $$id('loadEntriesCard');
+      if (loadEntriesCard) loadEntriesCard.classList.remove('d-none');
+    } finally {
+      // Verstecke den Ladeindikator
+      const loadingIndicator = $$id('loadingIndicator');
+      if (loadingIndicator) loadingIndicator.classList.add('d-none');
+    }
+  } catch (error) {
+    // Catch for outer try block
+    console.error('Unexpected error in loadBlackboardEntries:', error);
+    // Hide loading indicator in case of outer error
+    const loadingIndicator = $$id('loadingIndicator');
+    if (loadingIndicator) loadingIndicator.classList.add('d-none');
   }
 }
 
@@ -771,32 +793,8 @@ async function checkLoggedIn(): Promise<void> {
  * Fetch user data
  */
 async function fetchUserData(): Promise<UserData> {
-  const token = getAuthToken();
-  if (token === null || token.length === 0) {
-    throw new Error('No authentication token found');
-  }
-
-  const apiClient = ApiClient.getInstance();
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS ?? false;
-  const endpoint = useV2 ? '/users/me' : '/user/profile';
-
-  if (useV2) {
-    return await apiClient.request<UserData>(endpoint, { method: 'GET' }, { version: 'v2' });
-  } else {
-    const response = await fetch(`/api${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch user data');
-    }
-
-    const result = (await response.json()) as { data?: UserData } & UserData;
-    // API returns { success: true, data: {...} }, we need just the data
-    return result.data ?? result;
-  }
+  // Use v2 API endpoint
+  return await apiClient.get<UserData>('/users/me');
 }
 
 // loadHeaderUserInfo function removed - now handled by unified navigation
@@ -805,50 +803,23 @@ async function fetchUserData(): Promise<UserData> {
  * Load departments and teams
  */
 async function loadDepartmentsAndTeams(): Promise<void> {
-  const token = getAuthToken();
-  if (token === null || token.length === 0) return;
-
   try {
-    const apiClient = ApiClient.getInstance();
-    const useDeptV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS ?? false;
-    const useTeamV2 = window.FEATURE_FLAGS?.USE_API_V2_TEAMS ?? false;
+    // Load departments and teams using v2 API
+    const [deptResult, teamResult] = await Promise.allSettled([
+      apiClient.get<Department[]>('/departments'),
+      apiClient.get<Team[]>('/teams'),
+    ]);
 
-    // Load departments
-    if (useDeptV2) {
-      try {
-        departments = await apiClient.request<Department[]>('/departments', { method: 'GET' }, { version: 'v2' });
-      } catch (error) {
-        console.error('Error loading departments v2:', error);
-      }
+    if (deptResult.status === 'fulfilled') {
+      departments = deptResult.value;
     } else {
-      const deptResponse = await fetch('/api/departments', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (deptResponse.ok) {
-        departments = (await deptResponse.json()) as Department[];
-      }
+      console.error('Error loading departments:', deptResult.reason);
     }
 
-    // Load teams
-    if (useTeamV2) {
-      try {
-        teams = await apiClient.request<Team[]>('/teams', { method: 'GET' }, { version: 'v2' });
-      } catch (error) {
-        console.error('Error loading teams v2:', error);
-      }
+    if (teamResult.status === 'fulfilled') {
+      teams = teamResult.value;
     } else {
-      const teamResponse = await fetch('/api/teams', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (teamResponse.ok) {
-        teams = (await teamResponse.json()) as Team[];
-      }
+      console.error('Error loading teams:', teamResult.reason);
     }
   } catch (error) {
     console.error('Error loading departments and teams:', error);
@@ -859,14 +830,14 @@ async function loadDepartmentsAndTeams(): Promise<void> {
  * Display blackboard entries
  */
 function displayEntries(entries: BlackboardEntry[]): void {
-  const container = document.querySelector('#blackboardEntries');
+  const container = $$id('blackboardEntries');
   if (!container) return;
 
   container.innerHTML = '';
   container.classList.remove('d-none');
 
   if (entries.length === 0) {
-    const noEntriesMessage = document.querySelector('#noEntriesMessage');
+    const noEntriesMessage = $$id('noEntriesMessage');
     if (noEntriesMessage) {
       noEntriesMessage.classList.remove('d-none');
     }
@@ -988,7 +959,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     `;
   }
 
-  container.innerHTML = `
+  const htmlContent = `
     <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
       <div class="pushpin ${randomPushpin}"></div>
 
@@ -1034,6 +1005,9 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       }
     </div>
   `;
+
+  // eslint-disable-next-line no-unsanitized/property
+  container.innerHTML = DOMPurify.sanitize(htmlContent); // Safe: content is sanitized with DOMPurify
 
   // Show actions on hover
   if (canEdit) {
@@ -1123,7 +1097,7 @@ function updatePagination(pagination: PaginationInfo): void {
  */
 function changePage(page: number): void {
   currentPage = page;
-  entriesLoadingEnabled = true;
+  setEntriesLoadingEnabled(true);
   void loadEntries();
 }
 
@@ -1135,7 +1109,7 @@ function openEntryForm(entryId?: number): void {
   if (!modal) return;
 
   // Reset form
-  const form = document.querySelector('#entryForm');
+  const form = $$('#entryForm') as HTMLFormElement | null;
   if (form) form.reset();
 
   // Reset color selection
@@ -1147,7 +1121,7 @@ function openEntryForm(entryId?: number): void {
   // Reset file selection
   selectedFiles = [];
   updateAttachmentPreview();
-  const fileInput = document.querySelector('#attachmentInput');
+  const fileInput = $$('#attachmentInput') as HTMLInputElement | null;
   if (fileInput) {
     fileInput.value = '';
   }
@@ -1158,7 +1132,7 @@ function openEntryForm(entryId?: number): void {
   } else {
     // New entry - reset org dropdown
     updateOrgIdDropdown('all');
-    const entryOrgLevel = document.querySelector('#entryOrgLevel');
+    const entryOrgLevel = $$id('entryOrgLevel') as HTMLSelectElement | null;
     if (entryOrgLevel) {
       entryOrgLevel.value = 'company';
       updateOrgIdDropdown('company');
@@ -1173,12 +1147,12 @@ function openEntryForm(entryId?: number): void {
  * Update organization ID dropdown based on level
  */
 function updateOrgIdDropdown(level: string): void {
-  const orgIdContainer = document.querySelector('#orgIdContainer');
-  const orgIdSelect = document.querySelector('#entryOrgId');
+  const orgIdContainer = $$id('orgIdContainer');
+  const orgIdSelect = $$id('entryOrgId') as HTMLSelectElement | null;
 
   if (!orgIdContainer || !orgIdSelect) return;
 
-  orgIdSelect.innerHTML = '';
+  orgIdSelect.innerHTML = ''; // Safe: clearing select options
 
   if (level === 'all') {
     orgIdContainer.style.display = 'none';
@@ -1211,12 +1185,10 @@ function updateOrgIdDropdown(level: string): void {
  * Save entry
  */
 async function saveEntry(): Promise<void> {
-  const form = document.querySelector('#entryForm');
+  const form = $$id('entryForm') as HTMLFormElement | null;
   if (!form) return;
 
   const formData = new FormData(form);
-  const token = getAuthToken();
-  if (token === null || token.length === 0) return;
 
   // Get selected color
   const selectedColor = document.querySelector<HTMLElement>('.color-option.active');
@@ -1232,67 +1204,38 @@ async function saveEntry(): Promise<void> {
   };
 
   try {
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
     const entryId = formData.get('entry_id') as string;
-    const endpoint = useV2
-      ? entryId.length > 0
-        ? `/blackboard/entries/${entryId}`
-        : '/blackboard/entries'
-      : entryId.length > 0
-        ? `/blackboard/${entryId}`
-        : '/blackboard';
+    const endpoint = entryId.length > 0 ? `/blackboard/entries/${entryId}` : '/blackboard/entries';
     const method = entryId.length > 0 ? 'PUT' : 'POST';
 
-    let response: { ok: boolean; json: () => Promise<unknown> };
-    if (useV2) {
-      try {
-        const data = await apiClient.request(
-          endpoint,
-          {
-            method,
-            body: JSON.stringify(entryData),
-          },
-          { version: 'v2' },
-        );
-        response = { ok: true, json: async () => await Promise.resolve(data) };
-      } catch (error) {
-        response = { ok: false, json: async () => await Promise.resolve(error) };
-      }
-    } else {
-      const url = entryId.length > 0 ? `/api/blackboard/${entryId}` : '/api/blackboard';
-      response = await fetch(url, {
+    const savedEntry = await apiClient.request<{ id: number }>(
+      endpoint,
+      {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(entryData),
-      });
+      },
+      { version: 'v2' },
+    );
+
+    // Upload attachments if any
+    const hasFiles = selectedFiles.length > 0;
+
+    // Clear selected files before await to avoid race condition
+    selectedFiles = [];
+
+    if (hasFiles && entryId.length === 0) {
+      // Only upload attachments for new entries
+      await uploadAttachments(savedEntry.id);
     }
 
-    if (response.ok) {
-      const savedEntry = (await response.json()) as { id: number };
+    showSuccess(entryId.length > 0 ? 'Eintrag erfolgreich aktualisiert!' : 'Eintrag erfolgreich erstellt!');
+    closeModal('entryFormModal');
 
-      // Upload attachments if any
-      if (selectedFiles.length > 0 && entryId.length === 0) {
-        // Only upload attachments for new entries
-        await uploadAttachments(savedEntry.id);
-      }
+    // Update preview after clearing
+    updateAttachmentPreview();
 
-      showSuccess(entryId.length > 0 ? 'Eintrag erfolgreich aktualisiert!' : 'Eintrag erfolgreich erstellt!');
-      closeModal('entryFormModal');
-
-      // Clear selected files
-      selectedFiles = [];
-      updateAttachmentPreview();
-
-      entriesLoadingEnabled = true;
-      void loadEntries();
-    } else {
-      const error = (await response.json()) as { message?: string };
-      showError(error.message ?? 'Fehler beim Speichern des Eintrags');
-    }
+    setEntriesLoadingEnabled(true);
+    void loadEntries();
   } catch (error) {
     console.error('Error saving entry:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -1303,33 +1246,12 @@ async function saveEntry(): Promise<void> {
  * Load entry for editing
  */
 async function loadEntryForEdit(entryId: number): Promise<void> {
-  const token = getAuthToken();
-  if (token === null || token.length === 0) return;
-
   try {
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2 ? `/blackboard/entries/${entryId}` : `/blackboard/${entryId}`;
-
-    let entry: BlackboardEntry;
-    if (useV2) {
-      entry = await apiClient.request<BlackboardEntry>(endpoint, { method: 'GET' }, { version: 'v2' });
-    } else {
-      const response = await fetch(`/api${endpoint}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        showError('Fehler beim Laden des Eintrags');
-        return;
-      }
-      entry = (await response.json()) as BlackboardEntry;
-    }
+    const endpoint = `/blackboard/entries/${entryId}`;
+    const entry = await apiClient.request<BlackboardEntry>(endpoint, { method: 'GET' }, { version: 'v2' });
 
     // Fill form with entry data
-    const form = document.querySelector('#entryForm');
+    const form = $$id('entryForm') as HTMLFormElement | null;
     if (!form) return;
 
     (form.elements.namedItem('entry_id') as HTMLInputElement).value = entry.id.toString();
@@ -1364,48 +1286,21 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
 async function uploadAttachments(entryId: number): Promise<void> {
   if (selectedFiles.length === 0) return;
 
-  const token = getAuthToken();
-  if (token === null || token.length === 0) return;
-
   const formData = new FormData();
   selectedFiles.forEach((file) => {
     formData.append('attachments', file);
   });
 
   try {
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2 ? `/blackboard/entries/${entryId}/attachments` : `/blackboard/${entryId}/attachments`;
-
-    let response: { ok: boolean; json: () => Promise<unknown> };
-    if (useV2) {
-      try {
-        await apiClient.request(
-          endpoint,
-          {
-            method: 'POST',
-            body: formData,
-          },
-          { version: 'v2', contentType: '' },
-        );
-        response = { ok: true, json: async () => await Promise.resolve({}) };
-      } catch (error) {
-        response = { ok: false, json: async () => await Promise.resolve(error) };
-      }
-    } else {
-      response = await fetch(`/api${endpoint}`, {
+    const endpoint = `/blackboard/entries/${entryId}/attachments`;
+    await apiClient.request(
+      endpoint,
+      {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
-      });
-    }
-
-    if (!response.ok) {
-      const error = (await response.json()) as { message?: string };
-      showError(error.message ?? 'Fehler beim Hochladen der Anhänge');
-    }
+      },
+      { version: 'v2', contentType: '' },
+    );
   } catch (error) {
     console.error('Error uploading attachments:', error);
     showError('Fehler beim Hochladen der Anhänge');
@@ -1416,29 +1311,9 @@ async function uploadAttachments(entryId: number): Promise<void> {
  * Load attachments for an entry
  */
 async function loadAttachments(entryId: number): Promise<BlackboardAttachment[]> {
-  const token = getAuthToken();
-  if (token === null || token === '') {
-    return [];
-  }
-
   try {
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2 ? `/blackboard/entries/${entryId}/attachments` : `/blackboard/${entryId}/attachments`;
-
-    if (useV2) {
-      return await apiClient.request<BlackboardAttachment[]>(endpoint, { method: 'GET' }, { version: 'v2' });
-    } else {
-      const response = await fetch(`/api${endpoint}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        return (await response.json()) as BlackboardAttachment[];
-      }
-    }
+    const endpoint = `/blackboard/entries/${entryId}/attachments`;
+    return await apiClient.request<BlackboardAttachment[]>(endpoint, { method: 'GET' }, { version: 'v2' });
   } catch (error) {
     console.error('Error loading attachments:', error);
   }
@@ -1478,7 +1353,7 @@ function showDeleteConfirmation(entryId: number): void {
   }
 
   // Set up the confirm button
-  const confirmBtn = document.querySelector('#confirmDeleteBtn');
+  const confirmBtn = $$id('confirmDeleteBtn') as HTMLButtonElement | null;
   if (confirmBtn) {
     confirmBtn.onclick = async () => {
       closeModal('deleteConfirmModal');
@@ -1501,39 +1376,13 @@ function deleteEntry(entryId: number): void {
  * Perform the actual deletion
  */
 async function performDelete(entryId: number): Promise<void> {
-  const token = getAuthToken();
-  if (token === null || token.length === 0) return;
-
   try {
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2 ? `/blackboard/entries/${entryId}` : `/blackboard/${entryId}`;
+    const endpoint = `/blackboard/entries/${entryId}`;
+    await apiClient.request(endpoint, { method: 'DELETE' }, { version: 'v2' });
 
-    let response: { ok: boolean; json: () => Promise<unknown> };
-    if (useV2) {
-      try {
-        await apiClient.request(endpoint, { method: 'DELETE' }, { version: 'v2' });
-        response = { ok: true, json: async () => await Promise.resolve({}) };
-      } catch (error) {
-        response = { ok: false, json: async () => await Promise.resolve(error) };
-      }
-    } else {
-      response = await fetch(`/api${endpoint}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    }
-
-    if (response.ok) {
-      showSuccess('Eintrag erfolgreich gelöscht!');
-      entriesLoadingEnabled = true;
-      void loadEntries();
-    } else {
-      const error = (await response.json()) as { message?: string };
-      showError(error.message ?? 'Fehler beim Löschen des Eintrags');
-    }
+    showSuccess('Eintrag erfolgreich gelöscht!');
+    setEntriesLoadingEnabled(true);
+    void loadEntries();
   } catch (error) {
     console.error('Error deleting entry:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -1559,39 +1408,12 @@ function formatDate(dateString: string): string {
  */
 async function viewEntry(entryId: number): Promise<void> {
   console.info(`[Blackboard] viewEntry called for entry ${entryId}`);
-  const token = getAuthToken();
-  if (token === null || token.length === 0) return;
 
   try {
     console.info(`[Blackboard] Fetching entry ${entryId}...`);
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2 ? `/blackboard/entries/${entryId}` : `/blackboard/${entryId}`;
-
-    let entry: BlackboardEntry;
-    if (useV2) {
-      try {
-        entry = await apiClient.request(endpoint, { method: 'GET' }, { version: 'v2' });
-        console.info(`[Blackboard] Entry ${entryId} loaded (v2):`, entry);
-      } catch (error) {
-        console.error('[Blackboard] Error loading entry:', error);
-        showError('Fehler beim Laden des Eintrags');
-        return;
-      }
-    } else {
-      const response = await fetch(`/api${endpoint}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        showError('Fehler beim Laden des Eintrags');
-        return;
-      }
-      entry = (await response.json()) as BlackboardEntry;
-      console.info(`[Blackboard] Entry ${entryId} loaded (v1):`, entry);
-    }
+    const endpoint = `/blackboard/entries/${entryId}`;
+    const entry = await apiClient.request<BlackboardEntry>(endpoint, { method: 'GET' }, { version: 'v2' });
+    console.info(`[Blackboard] Entry ${entryId} loaded (v2):`, entry);
 
     // Load attachments FIRST
     console.info(`[Blackboard] Loading attachments for entry ${entryId}...`);
@@ -1604,7 +1426,8 @@ async function viewEntry(entryId: number): Promise<void> {
       const priorityIcon = getPriorityIcon(entry.priority_level);
       const canEdit = isAdmin || entry.created_by === currentUserId;
 
-      detailContent.innerHTML = `
+      // eslint-disable-next-line no-unsanitized/property
+      detailContent.innerHTML = DOMPurify.sanitize(`
           <div class="entry-detail-header">
             <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
             <div class="entry-detail-meta">
@@ -1658,12 +1481,13 @@ async function viewEntry(entryId: number): Promise<void> {
           `
               : ''
           }
-        `;
+        `);
 
       // Update footer buttons BEFORE showing modal
       const footer = document.querySelector('#entryDetailFooter');
       if (footer && canEdit) {
-        footer.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property
+        footer.innerHTML = DOMPurify.sanitize(`
             <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
             <button type="button" class="btn btn-primary" onclick="editEntry(${entryId})">
               <i class="fas fa-edit"></i> Bearbeiten
@@ -1671,7 +1495,7 @@ async function viewEntry(entryId: number): Promise<void> {
             <button type="button" class="btn btn-danger" onclick="deleteEntry(${entryId})">
               <i class="fas fa-trash"></i> Löschen
             </button>
-          `;
+          `);
       }
     }
 
@@ -1695,7 +1519,7 @@ async function viewEntry(entryId: number): Promise<void> {
     // NOW add click handlers for attachments AFTER modal is visible
     if (attachments.length > 0) {
       setTimeout(() => {
-        const attachmentList = document.getElementById(`attachment-list-${entryId}`);
+        const attachmentList = document.querySelector(`#attachment-list-${entryId}`);
         console.info(`[Blackboard] Attachment list element:`, attachmentList);
 
         if (!attachmentList) {
@@ -1776,7 +1600,7 @@ async function viewEntry(entryId: number): Promise<void> {
         });
 
         // Check if modal is blocking
-        const modal = document.querySelector('#entryDetailModal');
+        const modal = document.querySelector<HTMLElement>('#entryDetailModal');
         if (modal) {
           const modalStyle = window.getComputedStyle(modal);
           console.info('[Blackboard] Modal computed styles:', {
@@ -1836,11 +1660,6 @@ async function viewEntry(entryId: number): Promise<void> {
  */
 async function previewAttachment(attachmentId: number, mimeType: string, fileName: string): Promise<void> {
   console.info(`[Blackboard] previewAttachment called:`, { attachmentId, mimeType, fileName });
-  const token = getAuthToken();
-  if (token === null || token.length === 0) {
-    console.error('[Blackboard] No auth token for preview');
-    return;
-  }
 
   // Create preview modal if it doesn't exist
   let previewModal = document.querySelector('#attachmentPreviewModal');
@@ -1874,17 +1693,17 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
 
   // Show modal using the same approach as other modals
   console.info('[Blackboard] Showing preview modal');
-  previewModal.style.display = 'flex';
+  (previewModal as HTMLElement).style.display = 'flex';
   previewModal.classList.add('active');
-  previewModal.style.opacity = '1';
-  previewModal.style.visibility = 'visible';
+  (previewModal as HTMLElement).style.opacity = '1';
+  (previewModal as HTMLElement).style.visibility = 'visible';
 
   // Update title
   const titleElement = document.querySelector('#previewTitle');
   if (titleElement) titleElement.textContent = `Vorschau: ${fileName}`;
 
   // Update download link
-  const downloadLink = document.querySelector('#downloadLink');
+  const downloadLink = $$id('downloadLink') as HTMLAnchorElement | null;
   if (downloadLink) {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
     const endpoint = `/blackboard/attachments/${attachmentId}?download=true`;
@@ -1892,24 +1711,14 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
     downloadLink.href = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
     downloadLink.setAttribute('download', fileName);
     // Add click handler to download with auth token
-    downloadLink.onclick = async (e) => {
+    downloadLink.onclick = async (e: Event) => {
       e.preventDefault();
       try {
         let response: Response;
-        if (useV2) {
-          // For v2, use fetch directly for blob download
-          response = await fetch(`/api/v2${endpoint}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        } else {
-          response = await fetch(`/api${endpoint}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        }
+        // Use v2 endpoint directly
+        response = await fetch(`/api/v2${endpoint}`, {
+          credentials: 'same-origin',
+        });
 
         if (!response.ok) throw new Error('Download failed');
 
@@ -1930,7 +1739,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
   }
 
   // Load preview content
-  const previewContent = document.querySelector('#previewContent');
+  const previewContent = document.querySelector<HTMLElement>('#previewContent');
   if (!previewContent) return;
 
   try {
@@ -1940,10 +1749,8 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
 
     if (mimeType.startsWith('image/')) {
       // Fetch image with authorization header and convert to blob URL
-      const response = await fetch(attachmentUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await fetch(`/api/v2${endpoint}`, {
+        credentials: 'same-origin',
       });
 
       if (!response.ok) throw new Error('Failed to load image');
@@ -1975,10 +1782,8 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       });
     } else if (mimeType === 'application/pdf') {
       // For PDFs, use object tag instead of iframe to avoid CSP issues
-      const response = await fetch(attachmentUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await fetch(`/api/v2${endpoint}`, {
+        credentials: 'same-origin',
       });
 
       if (!response.ok) throw new Error('Failed to load PDF');
@@ -1987,23 +1792,26 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       const blobUrl = URL.createObjectURL(blob);
 
       // Display PDF with gray background to hide gaps
-      previewContent.innerHTML = `
-        <div style="width: 100%; height: 100%; background: #525659; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-          <iframe src="${blobUrl}#zoom=100"
-                  style="width: calc(100% + 40px); height: 100%; border: none; display: block; margin-left: -20px;"
-                  allowfullscreen>
-          </iframe>
-        </div>
-      `;
+      setHTML(
+        previewContent,
+        DOMPurify.sanitize(`
+          <div style="width: 100%; height: 100%; background: #525659; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+            <iframe src="${blobUrl}#zoom=100"
+                    style="width: calc(100% + 40px); height: 100%; border: none; display: block; margin-left: -20px;"
+                    allowfullscreen>
+            </iframe>
+          </div>
+        `),
+      );
 
       // Add click handler for "open in new tab" button
       setTimeout(() => {
-        const openButton = document.querySelector('#openPdfNewTab');
+        const openButton = $$id('openPdfNewTab') as HTMLButtonElement | null;
         if (openButton) {
           openButton.onclick = async () => {
             try {
               const resp = await fetch(attachmentUrl, {
-                headers: { Authorization: `Bearer ${token}` },
+                credentials: 'same-origin',
               });
               const fileBlob = await resp.blob();
               const url = URL.createObjectURL(fileBlob);
@@ -2114,11 +1922,11 @@ function openDirectAttachModal(): void {
   if (!modal) return;
 
   // Reset form
-  const form = document.querySelector('#directAttachForm');
+  const form = $$id('directAttachForm') as HTMLFormElement | null;
   if (form) form.reset();
 
   // Reset file input and global file
-  const fileInput = document.querySelector('#directAttachInput');
+  const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
   if (fileInput) {
     console.info('[DirectAttach] Resetting file input');
     fileInput.value = '';
@@ -2153,9 +1961,9 @@ function openDirectAttachModal(): void {
  */
 function setupDirectAttachHandlers(): void {
   console.info('[DirectAttach] Setting up handlers');
-  const dropZone = document.querySelector('#directAttachDropZone');
-  const fileInput = document.querySelector('#directAttachInput');
-  const saveBtn = document.querySelector('#saveDirectAttachBtn');
+  const dropZone = $$id('directAttachDropZone');
+  const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
+  const saveBtn = $$id('saveDirectAttachBtn') as HTMLButtonElement | null;
 
   if (!dropZone || !fileInput) {
     console.error('[DirectAttach] Missing required elements');
@@ -2278,7 +2086,7 @@ function handleDirectAttachFile(file: File): void {
   fileSize.textContent = formatFileSize(file.size);
 
   // Set title from filename if empty
-  const titleInput = document.querySelector('#directAttachTitle');
+  const titleInput = $$id('directAttachTitle') as HTMLInputElement | null;
   if (titleInput && titleInput.value.length === 0) {
     titleInput.value = file.name.replace(/\.[^./]+$/, ''); // Remove extension
   }
@@ -2306,7 +2114,7 @@ function handleDirectAttachFile(file: File): void {
  */
 function clearDirectAttachment(): void {
   console.info('[DirectAttach] Clearing attachment');
-  const fileInput = document.querySelector('#directAttachInput');
+  const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
   const preview = document.querySelector('#directAttachPreview');
 
   if (fileInput) fileInput.value = '';
@@ -2323,9 +2131,9 @@ async function saveDirectAttachment(): Promise<void> {
   console.info('[DirectAttach] saveDirectAttachment called');
   console.info('[DirectAttach] Global file:', directAttachmentFile?.name ?? 'none');
 
-  const titleInput = document.querySelector('#directAttachTitle');
-  const orgLevelSelect = document.querySelector('#directAttachOrgLevel');
-  const prioritySelect = document.querySelector('#directAttachPriority');
+  const titleInput = $$id('directAttachTitle') as HTMLInputElement | null;
+  const orgLevelSelect = $$id('directAttachOrgLevel') as HTMLSelectElement | null;
+  const prioritySelect = $$id('directAttachPriority') as HTMLSelectElement | null;
   const sizeOption = document.querySelector('.size-option.active');
 
   console.info('[DirectAttach] Elements found:', {
@@ -2333,7 +2141,7 @@ async function saveDirectAttachment(): Promise<void> {
     titleInput: !!titleInput,
     orgLevelSelect: !!orgLevelSelect,
     prioritySelect: !!prioritySelect,
-    sizeOption: sizeOption?.getAttribute('data-size') ?? 'none',
+    sizeOption: sizeOption?.dataset.size ?? 'none',
   });
 
   if (!directAttachmentFile) {
@@ -2344,7 +2152,7 @@ async function saveDirectAttachment(): Promise<void> {
 
   const file = directAttachmentFile;
   const title = titleInput?.value ?? file.name.replace(/\.[^./]+$/, '');
-  const size = sizeOption?.getAttribute('data-size') ?? 'medium';
+  const size = sizeOption?.dataset.size ?? 'medium';
 
   // Create FormData
   const formData = new FormData();
@@ -2356,6 +2164,9 @@ async function saveDirectAttachment(): Promise<void> {
   formData.append('color', 'white'); // White background for images
   formData.append('tags', 'attachment,image');
   formData.append('attachment', file);
+
+  // Clear before async operation to avoid race condition
+  directAttachmentFile = null;
 
   try {
     const token = localStorage.getItem('token');
@@ -2399,21 +2210,18 @@ async function saveDirectAttachment(): Promise<void> {
     showSuccess('Datei erfolgreich angeheftet!');
     closeModal('directAttachModal');
 
-    // Clear global file after successful upload
-    directAttachmentFile = null;
-
     // Reset the form and file input for next use
-    const form = document.querySelector('#directAttachForm');
+    const form = $$id('directAttachForm') as HTMLFormElement | null;
     if (form) form.reset();
 
-    const fileInput = document.querySelector('#directAttachInput');
+    const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
     if (fileInput) fileInput.value = '';
 
-    const preview = document.querySelector('#directAttachPreview');
+    const preview = $$id('directAttachPreview');
     if (preview) preview.classList.add('d-none');
 
     // Reload entries
-    entriesLoadingEnabled = true;
+    setEntriesLoadingEnabled(true);
     void loadEntries();
   } catch (error) {
     console.error('Error saving direct attachment:', error);
@@ -2432,7 +2240,7 @@ function setupZoomControls(): void {
   const zoomInBtn = document.querySelector('#zoomInBtn');
   const zoomOutBtn = document.querySelector('#zoomOutBtn');
   const zoomLevelDisplay = document.querySelector('#zoomLevel');
-  const blackboardContainer = document.querySelector('#blackboardContainer');
+  const blackboardContainer = document.querySelector<HTMLElement>('#blackboardContainer');
 
   if (!zoomInBtn || !zoomOutBtn || !zoomLevelDisplay || !blackboardContainer) {
     console.error('[Zoom] Required elements not found');

@@ -91,15 +91,15 @@
 #### Planning & Organization
 
 - [x] calendar.ts ✅ Erfolgreich migriert (28.07.2025) - inkl. Badge-System & Statusanfragen
-- [ ] shifts.ts
-- [ ] shifts.html
+- [x] shifts.ts ✅
+- [x] shifts.html ✅
 
 #### KVP (Vorschlagswesen)
 
-- [ ] kvp.ts
-- [ ] kvp.html
-- [ ] kvp-detail.ts
-- [ ] kvp-detail.html
+- [x] kvp.ts ✅
+- [x] kvp.html ✅
+- [x] kvp-detail.ts ✅
+- [x] kvp-detail.html ✅
 
 ### PHASE 8: Admin Functions
 
@@ -107,8 +107,8 @@
 
 #### User Management
 
-- [ ] manage-admins.ts
-- [ ] manage-admins.html (admin-permissions API)
+- [x] manage-admins.ts ✅
+- [x] manage-admins.html ✅ (admin-permissions API migriert)
 - [ ] admin-employee-search.ts
 - [ ] employee-deletion.ts
 
@@ -120,7 +120,6 @@
 
 #### System Administration
 
-- [ ] admin-config.ts
 - [x] logs.ts
 - [x] logs.html
 
@@ -146,7 +145,7 @@
 
 ---
 
-## ✅ Fortschritt: 29/64 Files (45.3% abgeschlossen)
+## ✅ Fortschritt: 36/63 Files (57.1% abgeschlossen)
 
 ### ⚠️ WICHTIGE NOTIZEN
 

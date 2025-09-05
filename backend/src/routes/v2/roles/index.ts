@@ -16,7 +16,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/roles:
  *   get:
  *     summary: Get all available roles
@@ -70,7 +70,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/hierarchy:
  *   get:
  *     summary: Get role hierarchy
@@ -116,7 +116,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/assignable:
  *   get:
  *     summary: Get assignable roles
@@ -151,7 +151,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/{id}:
  *   get:
  *     summary: Get a specific role
@@ -197,7 +197,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/check:
  *   post:
  *     summary: Check user role

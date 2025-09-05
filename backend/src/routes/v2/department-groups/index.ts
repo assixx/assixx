@@ -24,7 +24,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/department-groups:
  *   get:
  *     summary: Get all department groups
@@ -94,7 +94,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups/{id}:
  *   get:
  *     summary: Get a department group by ID
@@ -137,7 +137,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups:
  *   post:
  *     summary: Create a new department group
@@ -207,7 +207,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups/{id}:
  *   put:
  *     summary: Update a department group
@@ -273,7 +273,7 @@ router.put(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups/{id}:
  *   delete:
  *     summary: Delete a department group
@@ -320,7 +320,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups/{id}/departments:
  *   post:
  *     summary: Add departments to a group
@@ -382,7 +382,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups/{id}/departments/{departmentId}:
  *   delete:
  *     summary: Remove a department from a group
@@ -433,7 +433,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups/{id}/departments:
  *   get:
  *     summary: Get departments in a group

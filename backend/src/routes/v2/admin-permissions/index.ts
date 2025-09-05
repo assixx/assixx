@@ -20,7 +20,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions/my:
  *   get:
  *     summary: Get current admin's permissions
@@ -96,7 +96,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions/{adminId}:
  *   get:
  *     summary: Get permissions for a specific admin
@@ -132,7 +132,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions:
  *   post:
  *     summary: Set permissions for an admin
@@ -197,7 +197,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions/{adminId}/departments/{departmentId}:
  *   delete:
  *     summary: Remove department permission
@@ -241,7 +241,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions/{adminId}/groups/{groupId}:
  *   delete:
  *     summary: Remove group permission
@@ -285,7 +285,7 @@ router.delete(
 );
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions/bulk:
  *   post:
  *     summary: Bulk update permissions
@@ -373,7 +373,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/admin-permissions/{adminId}/check/{departmentId}/{permissionLevel}:
  *   get:
  *     summary: Check admin access

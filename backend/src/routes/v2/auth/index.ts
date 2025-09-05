@@ -1,6 +1,6 @@
 /**
  * Auth API v2 Routes
- * @swagger
+
  * tags:
  *   name: Auth v2
  *   description: Authentication API v2 with improved standards
@@ -16,7 +16,7 @@ import { authValidation } from './auth.validation';
 const router: Router = express.Router();
 
 /**
- * @swagger
+
  * /api/v2/auth/login:
  *   post:
  *     summary: User login
@@ -75,7 +75,7 @@ const router: Router = express.Router();
 router.post('/login', rateLimiter.auth, authValidation.login, typed.body(authController.login));
 
 /**
- * @swagger
+
  * /api/v2/auth/register:
  *   post:
  *     summary: Register new user
@@ -118,7 +118,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/auth/logout:
  *   post:
  *     summary: User logout
@@ -133,7 +133,7 @@ router.post(
 router.post('/logout', authenticateV2, typed.auth(authController.logout));
 
 /**
- * @swagger
+
  * /api/v2/auth/refresh:
  *   post:
  *     summary: Refresh access token
@@ -162,7 +162,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/auth/verify:
  *   get:
  *     summary: Verify current token
@@ -177,7 +177,7 @@ router.post(
 router.get('/verify', authenticateV2, typed.auth(authController.verify));
 
 /**
- * @swagger
+
  * /api/v2/auth/me:
  *   get:
  *     summary: Get current user

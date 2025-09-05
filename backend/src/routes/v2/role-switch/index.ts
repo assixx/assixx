@@ -11,7 +11,7 @@ import { RoleSwitchController } from './role-switch.controller.js';
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/role-switch/to-employee:
  *   post:
  *     summary: Switch to employee view
@@ -32,7 +32,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/role-switch/to-original:
  *   post:
  *     summary: Switch back to original role
@@ -53,7 +53,7 @@ router.post(
 );
 
 /**
- * @swagger
+
  * /api/v2/role-switch/root-to-admin:
  *   post:
  *     summary: Switch root to admin view
@@ -70,7 +70,7 @@ router.post(
 router.post('/root-to-admin', ...securityV2.user(), typed.auth(RoleSwitchController.rootToAdmin));
 
 /**
- * @swagger
+
  * /api/v2/role-switch/status:
  *   get:
  *     summary: Get role switch status
