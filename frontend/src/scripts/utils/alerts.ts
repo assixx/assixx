@@ -5,7 +5,7 @@
  */
 
 import notificationService from '../services/notification.service';
-import { setHTML } from '../../utils/dom-utils';
+import { setHTML, $$ } from '../../utils/dom-utils';
 
 /**
  * Show an alert message
@@ -114,8 +114,8 @@ export async function showConfirm(message: string): Promise<boolean> {
 
     document.body.append(confirmDiv);
 
-    const yesBtn = confirmDiv.querySelector('.btn-confirm-yes');
-    const noBtn = confirmDiv.querySelector('.btn-confirm-no');
+    const yesBtn = $$('.btn-confirm-yes', confirmDiv) as HTMLButtonElement | null;
+    const noBtn = $$('.btn-confirm-no', confirmDiv) as HTMLButtonElement | null;
 
     yesBtn?.addEventListener('click', () => {
       confirmDiv.remove();

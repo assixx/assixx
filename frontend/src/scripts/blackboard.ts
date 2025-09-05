@@ -2134,7 +2134,7 @@ async function saveDirectAttachment(): Promise<void> {
   const titleInput = $$id('directAttachTitle') as HTMLInputElement | null;
   const orgLevelSelect = $$id('directAttachOrgLevel') as HTMLSelectElement | null;
   const prioritySelect = $$id('directAttachPriority') as HTMLSelectElement | null;
-  const sizeOption = document.querySelector('.size-option.active');
+  const sizeOption = document.querySelector<HTMLElement>('.size-option.active');
 
   console.info('[DirectAttach] Elements found:', {
     globalFile: directAttachmentFile?.name ?? 'none',

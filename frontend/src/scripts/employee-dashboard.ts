@@ -7,6 +7,7 @@ import type { User, Document } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
 import { getAuthToken, showError } from './auth';
 import { formatDate, escapeHtml } from './common';
+import { $$id, setHTML } from '../utils/dom-utils';
 
 interface EmployeeInfo extends User {
   department?: string;
@@ -68,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show role indicator for admins
   if (isAdminAsEmployee) {
-    const roleIndicator = document.querySelector('#role-indicator');
-    const switchBtn = document.querySelector('#role-switch-btn');
+    const roleIndicator = $$id('role-indicator');
+    const switchBtn = $$id('role-switch-btn');
 
     if (roleIndicator) {
       roleIndicator.style.display = 'inline-flex';
@@ -80,10 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // DOM elements
-  const documentTableBody = document.querySelector('#recent-documents');
-  const logoutBtn = document.querySelector('#logout-btn');
-  const searchForm = document.querySelector('#search-form');
-  const searchInput = document.querySelector('#search-input');
+  const documentTableBody = $$id('recent-documents');
+  const logoutBtn = $$id('logout-btn') as HTMLButtonElement | null;
+  const searchForm = $$id('search-form') as HTMLFormElement | null;
+  const searchInput = $$id('search-input') as HTMLInputElement | null;
 
   // Search functionality - only add if search form exists
   if (searchForm !== null && searchInput !== null) {
@@ -169,15 +170,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Update employee details if container exists
-      const employeeDetails = document.querySelector('#employee-details');
+      const employeeDetails = $$id('employee-details');
       if (employeeDetails) {
-        employeeDetails.innerHTML = `
+        setHTML(
+          employeeDetails,
+          `
           <p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name ?? '')}</p>
           <p><strong>E-Mail:</strong> ${escapeHtml(info.email)}</p>
           ${info.department !== undefined && info.department !== '' ? `<p><strong>Abteilung:</strong> ${escapeHtml(info.department)}</p>` : ''}
           ${info.team !== undefined && info.team !== '' ? `<p><strong>Team:</strong> ${escapeHtml(info.team)}</p>` : ''}
           ${info.position !== undefined && info.position !== '' ? `<p><strong>Position:</strong> ${escapeHtml(info.position)}</p>` : ''}
-        `;
+        `,
+        );
       }
 
       // Update document count if exists
@@ -217,12 +221,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    documentTableBody.innerHTML = documents
-      .map((doc) => {
-        const uploadDate = formatDate(doc.created_at);
-        const fileSize = formatFileSize(doc.file_size);
+    setHTML(
+      documentTableBody,
+      documents
+        .map((doc) => {
+          const uploadDate = formatDate(doc.created_at);
+          const fileSize = formatFileSize(doc.file_size);
 
-        return `
+          return `
           <tr>
             <td>${escapeHtml(doc.file_name)}</td>
             <td>${escapeHtml(doc.category)}</td>
@@ -235,8 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
           </tr>
         `;
-      })
-      .join('');
+        })
+        .join(''),
+    );
   }
 
   /**
@@ -248,8 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const sizeIndex = Math.min(i, sizes.length - 1);
 
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2))} ${sizes[sizeIndex]}`;
   }
 });
 

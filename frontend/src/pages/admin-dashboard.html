@@ -635,19 +635,20 @@
             <!-- Blackboard Widget -->
             <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading">
               <!-- Loading placeholder with same styles as final widget -->
-              <div class="blackboard-widget" style="animation: subtle-pulse 2s ease-in-out infinite;">
+              <div class="blackboard-widget" style="animation: subtle-pulse 2s ease-in-out infinite">
                 <div class="blackboard-widget-header">
                   <h3 class="blackboard-widget-title">
                     <i class="fas fa-thumbtack"></i>
                     Schwarzes Brett
                   </h3>
-                  <a href="/blackboard" class="blackboard-widget-link" style="opacity: 0.5;">
-                    Alle anzeigen <i class="fas fa-arrow-right"></i>
+                  <a href="/blackboard" class="blackboard-widget-link" style="opacity: 0.5">
+                    Alle anzeigen
+                    <i class="fas fa-arrow-right"></i>
                   </a>
                 </div>
-                <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
-                  <div style="text-align: center; color: var(--text-muted);">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center">
+                  <div style="text-align: center; color: var(--text-muted)">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem"></i>
                     <p>Lade Einträge...</p>
                   </div>
                 </div>
@@ -2181,7 +2182,7 @@
 
           // API v2 returns { success: true, data: [...] }
           const departments = response.data || response;
-          
+
           // Store in cache
           departmentsCache = departments;
           departmentsCacheTime = Date.now();
@@ -2198,52 +2199,51 @@
 
       function updateDepartmentDropdown(dropdown, departments) {
         if (dropdown && departments) {
-            // Clear existing options and add default
-            dropdown.innerHTML = `
+          // Clear existing options and add default
+          dropdown.innerHTML = `
               <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employeeDepartment', '', 'Keine Abteilung')">
                 <i class="fas fa-times-circle"></i> Keine Abteilung
               </div>
             `;
 
-            // Add department options
-            departments.forEach((dept) => {
-              const optionDiv = document.createElement('div');
-              optionDiv.className = 'dropdown-option';
-              optionDiv.setAttribute('data-value', dept.id.toString());
-              optionDiv.setAttribute('data-text', dept.name);
-              // Escape HTML to prevent XSS
-              const textNode = document.createTextNode(dept.name);
-              const iconElement = document.createElement('i');
-              iconElement.className = 'fas fa-building';
-              optionDiv.appendChild(iconElement);
-              optionDiv.appendChild(document.createTextNode(' '));
-              optionDiv.appendChild(textNode);
-              dropdown.appendChild(optionDiv);
+          // Add department options
+          departments.forEach((dept) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'dropdown-option';
+            optionDiv.setAttribute('data-value', dept.id.toString());
+            optionDiv.setAttribute('data-text', dept.name);
+            // Escape HTML to prevent XSS
+            const textNode = document.createTextNode(dept.name);
+            const iconElement = document.createElement('i');
+            iconElement.className = 'fas fa-building';
+            optionDiv.appendChild(iconElement);
+            optionDiv.appendChild(document.createTextNode(' '));
+            optionDiv.appendChild(textNode);
+            dropdown.appendChild(optionDiv);
+          });
+
+          // Setup event delegation for dropdown clicks
+          const dropdownEl = document.getElementById('employee-department-dropdown');
+          if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
+            dropdownEl.setAttribute('data-listener-attached', 'true');
+            dropdownEl.addEventListener('click', (event) => {
+              const target = event.target;
+              const option = target.closest('.dropdown-option');
+              if (option) {
+                const value = option.getAttribute('data-value') || '';
+                const text = option.getAttribute('data-text') || '';
+                selectDropdownOption('employeeDepartment', value, text);
+              }
             });
-
-            // Setup event delegation for dropdown clicks
-            const dropdownEl = document.getElementById('employee-department-dropdown');
-            if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
-              dropdownEl.setAttribute('data-listener-attached', 'true');
-              dropdownEl.addEventListener('click', (event) => {
-                const target = event.target;
-                const option = target.closest('.dropdown-option');
-                if (option) {
-                  const value = option.getAttribute('data-value') || '';
-                  const text = option.getAttribute('data-text') || '';
-                  selectDropdownOption('employeeDepartment', value, text);
-                }
-              });
-            }
-
-            console.info('Loaded departments for employee select:', departments.length);
-          } else {
-            console.error('[loadDepartmentsForEmployeeSelect] Missing dropdown or departments!');
-            console.error('Dropdown:', dropdown);
-            console.error('Departments:', departments);
-
           }
+
+          console.info('Loaded departments for employee select:', departments.length);
+        } else {
+          console.error('[loadDepartmentsForEmployeeSelect] Missing dropdown or departments!');
+          console.error('Dropdown:', dropdown);
+          console.error('Departments:', departments);
         }
+      }
 
       // Lade Teams für Employee Modal
       async function loadTeamsForEmployeeSelect() {
