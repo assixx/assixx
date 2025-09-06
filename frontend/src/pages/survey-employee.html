@@ -20,6 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -703,30 +704,34 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div class="survey-container">
-            <div class="survey-header">
-              <p class="survey-subtitle">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
-            </div>
-
-            <!-- Pending Surveys -->
-            <div class="surveys-section">
-              <h2 class="section-title">
-                <i class="fas fa-clock"></i>
-                Offene Umfragen
-              </h2>
-              <div id="pendingSurveys" class="surveys-grid">
-                <!-- Surveys will be loaded here -->
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Mitarbeiterumfragen</h2>
+                <p class="text-secondary">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
               </div>
             </div>
+            <div class="card-body">
+              <!-- Pending Surveys -->
+              <div class="surveys-section">
+                <h2 class="section-title">
+                  <i class="fas fa-clock"></i>
+                  Offene Umfragen
+                </h2>
+                <div id="pendingSurveys" class="surveys-grid">
+                  <!-- Surveys will be loaded here -->
+                </div>
+              </div>
 
-            <!-- Completed Surveys -->
-            <div class="surveys-section">
-              <h2 class="section-title">
-                <i class="fas fa-check-circle"></i>
-                Abgeschlossene Umfragen
-              </h2>
-              <div id="completedSurveys" class="surveys-grid">
-                <!-- Completed surveys will be loaded here -->
+              <!-- Completed Surveys -->
+              <div class="surveys-section">
+                <h2 class="section-title">
+                  <i class="fas fa-check-circle"></i>
+                  Abgeschlossene Umfragen
+                </h2>
+                <div id="completedSurveys" class="surveys-grid">
+                  <!-- Completed surveys will be loaded here -->
+                </div>
               </div>
             </div>
           </div>
@@ -765,9 +770,12 @@
       </div>
     </div>
 
+    <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
-    <script>
+    <script type="module">
+      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+      
       let currentSurvey = null;
       let answers = {};
 
@@ -779,8 +787,11 @@
       // Load available surveys
       async function loadSurveys() {
         try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? '/api/v2/surveys' : '/api/surveys';
+
           // Get all surveys (not just active ones, so we can show completed ones too)
-          const response = await fetch('/api/surveys', {
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -788,7 +799,8 @@
 
           if (response.ok) {
             const result = await response.json();
-            const surveys = result.data || result.surveys || result;
+            // Handle v2 API response structure
+            const surveys = useV2 && result.success ? result.data : result.data || result.surveys || result;
             // Ensure surveys is an array
             if (Array.isArray(surveys)) {
               // Filter only active and closed surveys (not draft or archived)
@@ -840,6 +852,8 @@
         if (completedContainer.innerHTML === '') {
           completedContainer.innerHTML = `
                     <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <h3 class="empty-state-title">Keine abgeschlossenen Umfragen</h3>
                         <p>Sie haben noch an keinen Umfragen teilgenommen.</p>
                     </div>
                 `;
@@ -849,7 +863,10 @@
       // Check if user has responded to survey
       async function checkUserResponse(surveyId) {
         try {
-          const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}/my-response` : `/api/surveys/${surveyId}/my-response`;
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -917,8 +934,11 @@
       // Start survey
       async function startSurvey(surveyId) {
         try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
           // Load survey details
-          const response = await fetch(`/api/surveys/${surveyId}`, {
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -926,13 +946,14 @@
 
           if (response.ok) {
             const result = await response.json();
-            currentSurvey = result.data || result.survey || result;
+            // Handle v2 API response structure
+            currentSurvey = useV2 && result.success ? result.data : result.data || result.survey || result;
             answers = {};
             displaySurveyForm();
           }
         } catch (error) {
           console.error('Error loading survey:', error);
-          alert('Fehler beim Laden der Umfrage');
+          showErrorAlert('Fehler beim Laden der Umfrage');
         }
       }
 
@@ -1193,7 +1214,10 @@
         });
 
         try {
-          const response = await fetch(`/api/surveys/${currentSurvey.id}/responses`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${currentSurvey.id}/responses` : `/api/surveys/${currentSurvey.id}/responses`;
+
+          const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -1217,33 +1241,38 @@
             }, 2000);
           } else {
             const error = await response.json();
-            alert('Fehler: ' + error.error);
+            showErrorAlert('Fehler: ' + error.error);
           }
         } catch (error) {
           console.error('Error submitting survey:', error);
-          alert('Fehler beim Absenden der Antworten');
+          showErrorAlert('Fehler beim Absenden der Antworten');
         }
       });
 
       // View response (for completed surveys)
       async function viewResponse(surveyId) {
         try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const surveyEndpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
           // First get the survey details
-          const surveyResponse = await fetch(`/api/surveys/${surveyId}`, {
+          const surveyResponse = await fetch(surveyEndpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
           });
 
           if (!surveyResponse.ok) {
-            alert('Fehler beim Abrufen der Umfrage-Details');
+            showErrorAlert('Fehler beim Abrufen der Umfrage-Details');
             return;
           }
 
-          const survey = await surveyResponse.json();
+          const surveyResult = await surveyResponse.json();
+          const survey = useV2 && surveyResult.success ? surveyResult.data : surveyResult;
 
           // Then get the user's response
-          const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
+          const myResponseEndpoint = useV2 ? `/api/v2/surveys/${surveyId}/my-response` : `/api/surveys/${surveyId}/my-response`;
+          const response = await fetch(myResponseEndpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -1255,12 +1284,12 @@
               // Show response in a modal
               showResponseModal(survey, data.response);
             } else {
-              alert('Keine Antworten für diese Umfrage gefunden.');
+              showAlert('Keine Antworten für diese Umfrage gefunden.');
             }
           }
         } catch (error) {
           console.error('Error viewing response:', error);
-          alert('Fehler beim Abrufen Ihrer Antworten');
+          showErrorAlert('Fehler beim Abrufen Ihrer Antworten');
         }
       }
 

@@ -315,6 +315,9 @@
         z-index: 1000;
         align-items: center;
         justify-content: center;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
       }
 
       .modal-overlay.active {
@@ -688,7 +691,10 @@
             <p style="color: var(--text-primary); margin-bottom: 12px">
               Sie sind dabei, alle Logs zu löschen, die den folgenden Filtern entsprechen:
             </p>
-            <div id="activeFiltersDisplay" style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 6px; margin-bottom: 16px">
+            <div
+              id="activeFiltersDisplay"
+              style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px"
+            >
               <!-- Aktive Filter werden hier angezeigt -->
             </div>
             <p style="color: var(--text-primary); font-weight: bold">Diese Aktion kann NICHT rückgängig gemacht werden!</p>

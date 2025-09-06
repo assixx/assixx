@@ -307,8 +307,8 @@ export async function getAllSurveysByTenantForEmployee(
     return [];
   }
 
-  const { department_id } = userInfo[0];
-  const team_id: number | null = null; // No team_id in users table currently
+  const { department_id: departmentId } = userInfo[0];
+  const teamId: number | null = null; // No team_id in users table currently
 
   let query = `
       SELECT DISTINCT
@@ -337,7 +337,7 @@ export async function getAllSurveysByTenantForEmployee(
       )
     `;
 
-  const params: unknown[] = [tenantId, department_id, team_id, employeeUserId];
+  const params: unknown[] = [tenantId, departmentId, teamId, employeeUserId];
 
   if (status) {
     query += ' AND s.status = ?';

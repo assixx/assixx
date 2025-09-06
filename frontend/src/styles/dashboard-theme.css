@@ -275,7 +275,7 @@ body {
 }
 
 .admin-table td {
-  padding: 12px;
+  padding: 5px;
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -299,7 +299,7 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 .employee-table td {
-  padding: 12px;
+  padding: 5px;
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -1193,6 +1193,7 @@ body {
   z-index: 1000; /* Ensure overlay is above page content */
   top: 0;
   left: 0;
+  transition: opacity .3s ease,visibility .3s ease;
 
   width: 100%;
   height: 100%;

@@ -223,6 +223,7 @@
         z-index: 1000;
         justify-content: center;
         align-items: center;
+        transition: opacity .3s ease,visibility .3s ease;
       }
 
       .modal-overlay {
@@ -241,17 +242,16 @@
 
       .modal-content,
       .modal-container {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px) saturate(500%);
+        background: hsla(0,0%,8%,.84);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
-        width: 90%;
-        max-width: 800px;
         max-height: 90vh;
+        max-width: 900px;
         overflow-y: auto;
-        /* animation: fadeInUp 0.3s ease-out; */
-        padding: 0;
+        padding: 24px;
+        width: 90%;
       }
 
       .modal-header {
@@ -679,6 +679,34 @@
       .dropdown-options::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.3);
       }
+
+      /* Floating Add Button */
+      .add-survey-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: rgba(33, 150, 243, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+        z-index: 100;
+        transition: all 0.3s ease;
+      }
+
+      .add-survey-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -693,17 +721,14 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div class="survey-container">
-            <div class="survey-header">
-              <div class="survey-title">
-                <i class="fas fa-poll"></i>
-                Umfrage-Verwaltung
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Umfrage-Verwaltung</h2>
+                <p class="text-secondary">Erstellen und verwalten Sie Mitarbeiterumfragen</p>
               </div>
-              <button class="btn btn-primary" onclick="showCreateModal()">
-                <i class="fas fa-plus"></i>
-                Neue Umfrage
-              </button>
             </div>
+            <div class="card-body">
 
             <!-- Active Surveys -->
             <h2>Aktive Umfragen</h2>
@@ -725,6 +750,7 @@
               <div id="surveyTemplates" class="template-grid">
                 <!-- Templates will be loaded here -->
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -840,6 +866,10 @@
       </div>
     </div>
 
+    <!-- Floating Add Button -->
+    <button class="add-survey-btn" onclick="showCreateModal()">+</button>
+
+    <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb -->
@@ -865,7 +895,9 @@
         }
       });
     </script>
-    <script>
+    <script type="module">
+      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+
       let currentSurveyId = null;
       let questionCounter = 0;
 
@@ -909,14 +941,14 @@
         display.classList.toggle('active');
       };
 
-      function selectAssignmentOption(value, text) {
+      window.selectAssignmentOption = function(value, text) {
         document.getElementById('assignmentType').value = value;
         document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
         document.getElementById('assignmentDropdownDropdown').classList.remove('active');
         document.getElementById('assignmentDropdownDisplay').classList.remove('active');
       }
 
-      function selectQuestionType(questionId, type, text) {
+      window.selectQuestionType = function(questionId, type, text) {
         document.getElementById(questionId + '_typeValue').value = type;
         document.getElementById(questionId + '_typeDisplay').querySelector('span').textContent = text;
         document.getElementById(questionId + '_typeDropdown').classList.remove('active');
@@ -1055,7 +1087,10 @@
       // Load surveys
       window.loadSurveys = async function () {
         try {
-          const response = await fetch('/api/surveys', {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? '/api/v2/surveys' : '/api/surveys';
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -1063,7 +1098,8 @@
 
           if (response.ok) {
             const result = await response.json();
-            const surveys = result.data || result.surveys || result;
+            // Handle v2 API response structure
+            const surveys = useV2 && result.success ? result.data : result.data || result.surveys || result;
             // Ensure surveys is an array
             if (Array.isArray(surveys)) {
               displaySurveys(surveys);
@@ -1088,12 +1124,20 @@
         activeContainer.innerHTML =
           activeSurveys.length > 0
             ? activeSurveys.map((survey) => createSurveyCard(survey)).join('')
-            : '<div class="empty-state"><p>Keine aktiven Umfragen</p></div>';
+            : `<div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3 class="empty-state-title">Keine aktiven Umfragen</h3>
+                <p>Es gibt aktuell keine aktiven Umfragen. Erstellen Sie eine neue Umfrage über den Plus-Button.</p>
+              </div>`;
 
         draftContainer.innerHTML =
           draftSurveys.length > 0
             ? draftSurveys.map((survey) => createSurveyCard(survey)).join('')
-            : '<div class="empty-state"><p>Keine Entwürfe vorhanden</p></div>';
+            : `<div class="empty-state">
+                <div class="empty-state-icon">📄</div>
+                <h3 class="empty-state-title">Keine Entwürfe</h3>
+                <p>Es gibt aktuell keine Umfrage-Entwürfe.</p>
+              </div>`;
       }
 
       // Helper function to convert Buffer to text
@@ -1152,7 +1196,10 @@
       // Load templates
       window.loadTemplates = async function () {
         try {
-          const response = await fetch('/api/surveys/templates', {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? '/api/v2/surveys/templates' : '/api/surveys/templates';
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -1160,7 +1207,8 @@
 
           if (response.ok) {
             const result = await response.json();
-            const templates = result.data || result.templates || result;
+            // Handle v2 API response structure
+            const templates = useV2 && result.success ? result.data : result.data || result.templates || result;
             // Ensure templates is an array
             if (Array.isArray(templates)) {
               displayTemplates(templates);
@@ -1177,23 +1225,33 @@
       // Display templates
       function displayTemplates(templates) {
         const container = document.getElementById('surveyTemplates');
-        container.innerHTML = templates
-          .map(
-            (template) => `
-                <div class="template-card" onclick="createFromTemplate(${template.id})">
-                    <h4 class="template-name">${template.name}</h4>
-                    <p class="template-description">${template.description}</p>
-                </div>
-            `,
-          )
-          .join('');
+        container.innerHTML = templates && templates.length > 0
+          ? templates
+              .map(
+                (template) => `
+                    <div class="template-card" onclick="createFromTemplate(${template.id})">
+                        <h4 class="template-name">${template.name}</h4>
+                        <p class="template-description">${template.description}</p>
+                    </div>
+                `,
+              )
+              .join('')
+          : `<div class="empty-state">
+                <div class="empty-state-icon">📑</div>
+                <h3 class="empty-state-title">Keine Vorlagen</h3>
+                <p>Es sind noch keine Umfrage-Vorlagen verfügbar.</p>
+              </div>`;
       }
 
       // Create from template
       window.createFromTemplate = async function (templateId) {
         if (confirm('Möchten Sie eine neue Umfrage basierend auf dieser Vorlage erstellen?')) {
           try {
-            const response = await fetch(`/api/surveys/from-template/${templateId}`, {
+            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+            // v2 uses different endpoint structure
+            const endpoint = useV2 ? `/api/v2/surveys/templates/${templateId}` : `/api/surveys/from-template/${templateId}`;
+
+            const response = await fetch(endpoint, {
               method: 'POST',
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -1202,12 +1260,12 @@
 
             if (response.ok) {
               const result = await response.json();
-              alert('Umfrage wurde aus Vorlage erstellt');
+              showSuccessAlert('Umfrage wurde aus Vorlage erstellt');
               loadSurveys();
             }
           } catch (error) {
             console.error('Error creating from template:', error);
-            alert('Fehler beim Erstellen der Umfrage');
+            showErrorAlert('Fehler beim Erstellen der Umfrage');
           }
         }
       };
@@ -1258,7 +1316,7 @@
       };
 
       // Add question
-      function addQuestion() {
+      window.addQuestion = function() {
         questionCounter++;
         const questionId = `question_${questionCounter}`;
         const questionHtml = `
@@ -1373,7 +1431,7 @@
       };
 
       // Save survey
-      async function saveSurvey(status) {
+      window.saveSurvey = async function(status) {
         const assignmentType = document.getElementById('assignmentType').value;
         const assignments = [];
 
@@ -1386,7 +1444,7 @@
           const selectedDepts = Array.from(select.selectedOptions).map((option) => parseInt(option.value));
 
           if (selectedDepts.length === 0) {
-            alert('Bitte wählen Sie mindestens eine Abteilung aus');
+            showAlert('Bitte wählen Sie mindestens eine Abteilung aus');
             return;
           }
 
@@ -1397,14 +1455,14 @@
             });
           });
         } else if (assignmentType === 'team') {
-          alert('Team-Zuweisung wird in einer späteren Version verfügbar sein');
+          showAlert('Team-Zuweisung wird in einer späteren Version verfügbar sein');
           return;
         }
 
         // Validate survey title
         const title = document.getElementById('surveyTitle').value.trim();
         if (title.length < 3 || title.length > 255) {
-          alert('Der Umfragetitel muss zwischen 3 und 255 Zeichen lang sein');
+          showAlert('Der Umfragetitel muss zwischen 3 und 255 Zeichen lang sein');
           return;
         }
 
@@ -1422,7 +1480,7 @@
 
         // Validate questions
         if (surveyData.questions.length === 0) {
-          alert('Bitte fügen Sie mindestens eine Frage hinzu');
+          showAlert('Bitte fügen Sie mindestens eine Frage hinzu');
           return;
         }
 
@@ -1430,21 +1488,28 @@
         for (let i = 0; i < surveyData.questions.length; i++) {
           const question = surveyData.questions[i];
           if (question.question_text.length < 5 || question.question_text.length > 500) {
-            alert(`Frage ${i + 1}: Der Fragetext muss zwischen 5 und 500 Zeichen lang sein`);
+            showAlert(`Frage ${i + 1}: Der Fragetext muss zwischen 5 und 500 Zeichen lang sein`);
             return;
           }
 
           // Validate options for choice questions
           if (question.question_type === 'single_choice' || question.question_type === 'multiple_choice') {
             if (!question.options || question.options.length < 2) {
-              alert(`Frage ${i + 1}: Auswahlfragen benötigen mindestens 2 Optionen`);
+              showAlert(`Frage ${i + 1}: Auswahlfragen benötigen mindestens 2 Optionen`);
               return;
             }
           }
         }
 
         try {
-          const url = currentSurveyId ? `/api/surveys/${currentSurveyId}` : '/api/surveys';
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const url = currentSurveyId
+            ? useV2
+              ? `/api/v2/surveys/${currentSurveyId}`
+              : `/api/surveys/${currentSurveyId}`
+            : useV2
+              ? '/api/v2/surveys'
+              : '/api/surveys';
           const method = currentSurveyId ? 'PUT' : 'POST';
 
           const response = await fetch(url, {
@@ -1457,7 +1522,7 @@
           });
 
           if (response.ok) {
-            alert('Umfrage erfolgreich gespeichert');
+            showSuccessAlert('Umfrage erfolgreich gespeichert');
             closeModal();
             loadSurveys();
           } else {
@@ -1465,13 +1530,13 @@
             // Handle different error response formats
             const errorMessage = error.message || error.error || 'Unbekannter Fehler';
             console.error('Server error:', error);
-            alert('Fehler: ' + errorMessage);
+            showErrorAlert('Fehler: ' + errorMessage);
           }
         } catch (error) {
           console.error('Error saving survey:', error);
-          alert('Fehler beim Speichern der Umfrage');
+          showErrorAlert('Fehler beim Speichern der Umfrage');
         }
-      }
+      };
 
       // Get questions data
       window.getQuestionsData = function () {
@@ -1528,7 +1593,10 @@
       window.editSurvey = async function (surveyId) {
         // Load survey data and populate form
         try {
-          const response = await fetch(`/api/surveys/${surveyId}`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -1536,7 +1604,8 @@
 
           if (response.ok) {
             const result = await response.json();
-            const survey = result.data || result.survey || result;
+            // Handle v2 API response structure
+            const survey = useV2 && result.success ? result.data : result.data || result.survey || result;
             currentSurveyId = surveyId;
 
             // Show modal using modal manager
@@ -1549,7 +1618,7 @@
           }
         } catch (error) {
           console.error('Error loading survey:', error);
-          alert('Fehler beim Laden der Umfrage');
+          showErrorAlert('Fehler beim Laden der Umfrage');
         }
       };
 
@@ -1560,9 +1629,12 @@
 
       // Delete survey
       window.deleteSurvey = async function (surveyId) {
-        if (confirm('Möchten Sie diese Umfrage wirklich löschen?')) {
+        if (await showConfirm('Möchten Sie diese Umfrage wirklich löschen?')) {
           try {
-            const response = await fetch(`/api/surveys/${surveyId}`, {
+            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+            const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
+            const response = await fetch(endpoint, {
               method: 'DELETE',
               headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -1570,12 +1642,12 @@
             });
 
             if (response.ok) {
-              alert('Umfrage erfolgreich gelöscht');
+              showSuccessAlert('Umfrage erfolgreich gelöscht');
               loadSurveys();
             }
           } catch (error) {
             console.error('Error deleting survey:', error);
-            alert('Fehler beim Löschen der Umfrage');
+            showErrorAlert('Fehler beim Löschen der Umfrage');
           }
         }
       };

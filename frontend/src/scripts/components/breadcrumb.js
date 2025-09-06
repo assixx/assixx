@@ -175,7 +175,7 @@ function injectStyles() {
         text-decoration: none;
         /*  */
         padding: 4px 8px;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
       }
 
       .breadcrumb-link:hover {
@@ -189,7 +189,7 @@ function injectStyles() {
       }
 
       .breadcrumb-current {
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         color: var(--text-primary);
         font-weight: 600;
         padding: 4px 8px;

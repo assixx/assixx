@@ -69,7 +69,7 @@ export async function showConfirm(message: string): Promise<boolean> {
       .confirm-buttons button {
         padding: 10px 20px;
         border: none;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;

@@ -2958,7 +2958,7 @@
         color: rgba(76, 175, 80, 0.9);
         background: rgba(76, 175, 80, 0.1);
         padding: 3px 8px;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         text-transform: uppercase;
         letter-spacing: 0.8px;
         font-weight: 700;
@@ -2973,7 +2973,7 @@
         color: rgba(244, 67, 54, 0.9);
         background: rgba(244, 67, 54, 0.1);
         padding: 3px 8px;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         text-transform: uppercase;
         letter-spacing: 0.8px;
         font-weight: 700;
@@ -2998,7 +2998,7 @@
         color: rgba(255, 152, 0, 0.9);
         background: rgba(255, 152, 0, 0.1);
         padding: 3px 8px;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         text-transform: uppercase;
         letter-spacing: 0.8px;
         font-weight: 700;
@@ -3068,6 +3068,9 @@
         align-items: center;
         justify-content: center;
         z-index: 9999;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
       }
 
       .modal-overlay.active {
@@ -3288,6 +3291,88 @@
 
       .btn-secondary:hover {
         background: rgba(255, 255, 255, 0.15);
+      }
+
+      /* Compact Item Styles - Übersichtlich aber kompakt */
+      .compact-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        margin-bottom: 6px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        cursor: default;
+      }
+
+      .compact-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .compact-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+      }
+
+      .compact-item-name {
+        font-weight: 500;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-right: 12px;
+      }
+
+      .compact-item-count {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 3px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Farbige Badges für verschiedene Status */
+      .compact-item-count.badge-success {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4caf50;
+      }
+
+      .compact-item-count.badge-warning {
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+      }
+
+      .compact-item-count.badge-info {
+        background: rgba(33, 150, 243, 0.15);
+        color: #2196f3;
+      }
+
+      /* Mini-Divider zwischen Items für bessere Trennung */
+      .compact-item + .compact-item {
+        position: relative;
+      }
+
+      /* Responsive für kleine Cards */
+      @media (max-width: 400px) {
+        .compact-item {
+          padding: 8px 10px;
+        }
+
+        .compact-item-name {
+          font-size: 0.9rem;
+        }
+
+        .compact-item-count {
+          font-size: 0.8rem;
+          padding: 2px 8px;
+        }
       }
     </style>
 

@@ -560,7 +560,7 @@ class KontischichtManager {
           color: #4299e1;
           border: 1px solid rgba(66, 153, 225, 0.4);
           padding: 8px 16px;
-          border-radius: 6px;
+          border-radius: var(--radius-md);
           cursor: pointer;
 
         ">Muster ändern</button>

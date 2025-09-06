@@ -1150,7 +1150,7 @@ function showSuccessMessage() {
   align-items: center;
   font-size: 11px;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   font-weight: 700;

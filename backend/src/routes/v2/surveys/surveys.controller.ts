@@ -42,14 +42,14 @@ import { SurveyCreateData, SurveyUpdateData, surveysService } from './surveys.se
  *           default: 20
  *         description: Items per page
  */
-export async function listSurveys(req: AuthenticatedRequest, res: Response) {
+export async function listSurveys(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { status, page = 1, limit = 20 } = req.query;
 
     const filters = {
       status: status as 'draft' | 'active' | 'closed' | undefined,
-      page: Number.parseInt(page as string, 10) ?? 1,
-      limit: Number.parseInt(limit as string, 10) ?? 20,
+      page: Number.parseInt(page as string, 10) || 1,
+      limit: Number.parseInt(limit as string, 10) || 20,
     };
 
     const surveys = await surveysService.listSurveys(
@@ -82,7 +82,7 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/surveys/{id}:
+ * /api/v2/surveys/\{id\}:
  *   get:
  *     summary: Get survey by ID
  *     tags: [Surveys v2]
@@ -96,11 +96,11 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response) {
  *           type: integer
  *         description: Survey ID
  */
-export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
+export async function getSurveyById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const surveyId = Number.parseInt(req.params.id, 10);
 
-    if (isNaN(surveyId)) {
+    if (Number.isNaN(surveyId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
       return;
     }
@@ -140,7 +140,7 @@ export async function getSurveyById(req: AuthenticatedRequest, res: Response) {
  *           schema:
  *             $ref: '#/components/schemas/SurveyCreateRequest'
  */
-export async function createSurvey(req: AuthenticatedRequest, res: Response) {
+export async function createSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // Check role - only admin and root can create surveys
     if (req.user.role === 'employee') {
@@ -171,7 +171,7 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/surveys/{id}:
+ * /api/v2/surveys/\{id\}:
  *   put:
  *     summary: Update a survey
  *     tags: [Surveys v2]
@@ -191,11 +191,11 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response) {
  *           schema:
  *             $ref: '#/components/schemas/SurveyUpdateRequest'
  */
-export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
+export async function updateSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const surveyId = Number.parseInt(req.params.id, 10);
 
-    if (isNaN(surveyId)) {
+    if (Number.isNaN(surveyId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
       return;
     }
@@ -225,7 +225,7 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/surveys/{id}:
+ * /api/v2/surveys/\{id\}:
  *   delete:
  *     summary: Delete a survey
  *     tags: [Surveys v2]
@@ -239,11 +239,11 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response) {
  *           type: integer
  *         description: Survey ID
  */
-export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
+export async function deleteSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const surveyId = Number.parseInt(req.params.id, 10);
 
-    if (isNaN(surveyId)) {
+    if (Number.isNaN(surveyId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
       return;
     }
@@ -279,7 +279,7 @@ export async function deleteSurvey(req: AuthenticatedRequest, res: Response) {
  *     security:
  *       - bearerAuth: []
  */
-export async function getTemplates(req: AuthenticatedRequest, res: Response) {
+export async function getTemplates(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const templates = await surveysService.getSurveyTemplates(req.user.tenant_id);
     res.json(successResponse(templates));
@@ -297,7 +297,7 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response) {
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/surveys/templates/{templateId}:
+ * /api/v2/surveys/templates/\{templateId\}:
  *   post:
  *     summary: Create survey from template
  *     tags: [Surveys v2]
@@ -311,11 +311,11 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response) {
  *           type: integer
  *         description: Template ID
  */
-export async function createFromTemplate(req: AuthenticatedRequest, res: Response) {
+export async function createFromTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const templateId = Number.parseInt(req.params.templateId, 10);
 
-    if (isNaN(templateId)) {
+    if (Number.isNaN(templateId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid template ID'));
       return;
     }
@@ -343,7 +343,7 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/surveys/{id}/statistics:
+ * /api/v2/surveys/\{id\}/statistics:
  *   get:
  *     summary: Get survey statistics and response analytics
  *     tags: [Surveys v2]
@@ -357,11 +357,11 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
  *           type: integer
  *         description: Survey ID
  */
-export async function getStatistics(req: AuthenticatedRequest, res: Response) {
+export async function getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const surveyId = Number.parseInt(req.params.id, 10);
 
-    if (isNaN(surveyId)) {
+    if (Number.isNaN(surveyId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
       return;
     }

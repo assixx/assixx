@@ -20,6 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -316,17 +317,27 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div id="content-area">
-            <div class="loading">
-              <div class="spinner"></div>
-              <p>Lade Umfrage-Details...</p>
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Umfrage-Details</h2>
+                <p class="text-secondary">Detaillierte Ansicht der Umfrage</p>
+              </div>
+            </div>
+            <div class="card-body" id="content-area">
+              <div class="loading">
+                <div class="spinner"></div>
+                <p>Lade Umfrage-Details...</p>
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
 
-    <script>
+    <script type="module">
+      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+      
       let surveyId = null;
       let surveyData = null;
 
@@ -351,8 +362,10 @@
       async function loadSurveyDetails() {
         try {
           const token = localStorage.getItem('token');
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
 
-          const response = await fetch(`/api/surveys/${surveyId}`, {
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -363,7 +376,8 @@
           }
 
           const result = await response.json();
-          surveyData = result.data;
+          // Handle v2 API response structure
+          surveyData = useV2 && result.success ? result.data : result.data || result;
 
           renderDetails();
         } catch (error) {
@@ -543,28 +557,31 @@
 
       function editSurvey() {
         // Placeholder - sollte zum Bearbeitungsmodus führen
-        alert('Bearbeitungsfunktion wird implementiert...');
+        showAlert('Bearbeitungsfunktion wird implementiert...');
       }
 
       function viewResults(id) {
         window.location.href = `/survey-results?id=${encodeURIComponent(id || surveyId)}`;
       }
 
-      function duplicateSurvey() {
-        if (confirm('Möchten Sie diese Umfrage duplizieren?')) {
+      async function duplicateSurvey() {
+        if (await showConfirm('Möchten Sie diese Umfrage duplizieren?')) {
           // Placeholder für Duplizierung
-          alert('Duplizierungsfunktion wird implementiert...');
+          showAlert('Duplizierungsfunktion wird implementiert...');
         }
       }
 
       async function deleteSurvey() {
-        if (!confirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        if (!await showConfirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
           return;
         }
 
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`/api/surveys/${surveyId}`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
+          const response = await fetch(endpoint, {
             method: 'DELETE',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -572,19 +589,20 @@
           });
 
           if (response.ok) {
-            alert('Umfrage wurde erfolgreich gelöscht');
+            showSuccessAlert('Umfrage wurde erfolgreich gelöscht');
             window.location.href = '/survey-admin';
           } else {
             throw new Error('Fehler beim Löschen der Umfrage');
           }
         } catch (error) {
           console.error('Error:', error);
-          alert(error.message);
+          showErrorAlert(error.message);
         }
       }
     </script>
 
     <!-- Unified Navigation -->
+    <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

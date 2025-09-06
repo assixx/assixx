@@ -67,7 +67,7 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
   color: var(--text-secondary);
   text-decoration: none;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .breadcrumb-link:hover {
@@ -83,7 +83,7 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 
 /* Aktuelle Seite (nicht klickbar) */
 .breadcrumb-current {
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-weight: 600;
   padding: 4px 8px;

@@ -2940,7 +2940,7 @@ const unifiedNavigationCSS = `
         font-size: 0.825rem;
         font-weight: 600;
         color: #ffffffff;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-sm);
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
         border: 1.3px solid rgba(255, 255, 255, 1);
@@ -3304,7 +3304,7 @@ const unifiedNavigationCSS = `
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.9);
         color: #fff;
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         font-size: 14px;
         white-space: nowrap;
         z-index: 1000;
@@ -3826,7 +3826,7 @@ const unifiedNavigationCSS = `
 
     .storage-upgrade-btn {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
         color: #fff;
         border: none;

@@ -20,6 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <style>
@@ -92,11 +93,6 @@
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: var(--spacing-lg);
         margin-bottom: var(--spacing-xl);
-      }
-
-      .stat-card {
-        /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
-        /* Additional card styles can be added here if needed */
       }
 
       .stat-value {
@@ -303,33 +299,38 @@
     </style>
   </head>
   <body>
-    <!-- Navigation Container -->
+    <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
-    <!-- Layout Wrapper für Sidebar -->
-    <div class="layout-wrapper">
-      <!-- Main Layout -->
-      <div class="layout-container">
-        <!-- Main Content Area -->
-        <main class="main-content">
-          <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
-          <div id="breadcrumb-container"></div>
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
 
-          <div class="container">
-            <div class="survey-results-container">
-              <div id="content-area">
-                <div class="loading">
-                  <div class="spinner"></div>
-                  <p>Lade Umfrage-Ergebnisse...</p>
-                </div>
+        <div class="container">
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Umfrage-Ergebnisse</h2>
+                <p class="text-secondary">Auswertung und Statistiken der Umfrage</p>
+              </div>
+            </div>
+            <div class="card-body" id="content-area">
+              <div class="loading">
+                <div class="spinner"></div>
+                <p>Lade Umfrage-Ergebnisse...</p>
               </div>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
 
-    <script>
+    <script type="module">
+      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+      
       let surveyId = null;
       let surveyData = null;
       let statistics = null;
@@ -353,9 +354,11 @@
       async function loadSurveyResults() {
         try {
           const token = localStorage.getItem('token');
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
 
           // Umfrage-Details laden
-          const surveyResponse = await fetch(`/api/surveys/${surveyId}`, {
+          const surveyEndpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+          const surveyResponse = await fetch(surveyEndpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -366,10 +369,12 @@
           }
 
           const surveyResult = await surveyResponse.json();
-          surveyData = surveyResult; // API returns data directly, not wrapped
+          // Handle v2 API response structure
+          surveyData = useV2 && surveyResult.success ? surveyResult.data : surveyResult;
 
           // Statistiken laden
-          const statsResponse = await fetch(`/api/surveys/${surveyId}/statistics`, {
+          const statsEndpoint = useV2 ? `/api/v2/surveys/${surveyId}/statistics` : `/api/surveys/${surveyId}/statistics`;
+          const statsResponse = await fetch(statsEndpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -380,7 +385,8 @@
           }
 
           const statsResult = await statsResponse.json();
-          statistics = statsResult; // API returns data directly, not wrapped
+          // Handle v2 API response structure
+          statistics = useV2 && statsResult.success ? statsResult.data : statsResult;
 
           renderResults();
         } catch (error) {
@@ -674,7 +680,10 @@
       async function exportToExcel() {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`/api/surveys/${surveyId}/export?format=excel`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}/export?format=excel` : `/api/surveys/${surveyId}/export?format=excel`;
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -696,17 +705,18 @@
           document.body.removeChild(a);
         } catch (error) {
           console.error('Export error:', error);
-          alert('Fehler beim Exportieren: ' + error.message);
+          showErrorAlert('Fehler beim Exportieren: ' + error.message);
         }
       }
 
       async function exportToPDF() {
         // Placeholder für PDF-Export
-        alert('PDF-Export wird implementiert...');
+        showAlert('PDF-Export wird implementiert...');
       }
     </script>
 
     <!-- Unified Navigation -->
+    <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>
