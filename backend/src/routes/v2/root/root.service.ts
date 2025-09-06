@@ -21,6 +21,7 @@ import {
   DashboardStats,
   DeletionApproval,
   DeletionDryRunReport,
+  MySQLError,
   RootUser,
   StorageInfo,
   Tenant,
@@ -28,6 +29,19 @@ import {
   UpdateAdminRequest,
   UpdateRootUserRequest,
 } from './types.js';
+
+// Type guard for MySQL errors
+function isMySQLError(error: unknown): error is MySQLError {
+  return (
+    error !== null &&
+    error !== undefined &&
+    typeof error === 'object' &&
+    'message' in error &&
+    (('code' in error && typeof (error as MySQLError).code === 'string') ||
+      ('sqlMessage' in error && typeof (error as MySQLError).sqlMessage === 'string') ||
+      ('sql' in error && typeof (error as MySQLError).sql === 'string'))
+  );
+}
 
 interface TenantRow extends RowDataPacket {
   id: number;
@@ -76,7 +90,7 @@ export class RootService {
             lastName: admin.last_name || '',
             company: admin.company,
             notes: admin.notes,
-            isActive: admin.is_active ?? false,
+            isActive: Boolean(admin.is_active),
             tenantId: admin.tenant_id ?? 0,
             tenantName,
             createdAt: admin.created_at ?? new Date(),
@@ -121,7 +135,7 @@ export class RootService {
         lastName: admin.last_name || '',
         company: admin.company,
         notes: admin.notes,
-        isActive: admin.is_active ?? false,
+        isActive: Boolean(admin.is_active),
         tenantId: admin.tenant_id ?? 0,
         tenantName,
         createdAt: admin.created_at ?? new Date(),
@@ -343,7 +357,7 @@ export class RootService {
       const [users] = await execute<RowDataPacket[]>(
         `SELECT
           id, username, email, first_name, last_name,
-          position, notes, is_active, employee_id, created_at, updated_at
+          position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
         FROM users
         WHERE role = 'root' AND tenant_id = ?
         ORDER BY created_at DESC`,
@@ -358,7 +372,9 @@ export class RootService {
         lastName: user.last_name as string,
         position: (user.position as string | null) ?? undefined,
         notes: (user.notes as string | null) ?? undefined,
-        isActive: user.is_active as boolean,
+        employeeNumber: (user.employee_number as string | null) ?? undefined,
+        departmentId: (user.department_id as number | null) ?? undefined,
+        isActive: Boolean(user.is_active),
         employeeId: user.employee_id as string,
         createdAt: user.created_at as Date,
         updatedAt: user.updated_at as Date,
@@ -378,7 +394,7 @@ export class RootService {
       const [users] = await execute<RowDataPacket[]>(
         `SELECT
           id, username, email, first_name, last_name,
-          position, notes, is_active, employee_id, created_at, updated_at
+          position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
         FROM users
         WHERE id = ? AND role = 'root' AND tenant_id = ?`,
         [id, tenantId],
@@ -397,7 +413,9 @@ export class RootService {
         lastName: user.last_name as string,
         position: (user.position as string | null) ?? undefined,
         notes: (user.notes as string | null) ?? undefined,
-        isActive: user.is_active as boolean,
+        employeeNumber: (user.employee_number as string | null) ?? undefined,
+        departmentId: (user.department_id as number | null) ?? undefined,
+        isActive: Boolean(user.is_active),
         employeeId: user.employee_id as string,
         createdAt: user.created_at as Date,
         updatedAt: user.updated_at as Date,
@@ -414,6 +432,15 @@ export class RootService {
    */
   async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
     try {
+      logger.info('[RootService.createRootUser] Starting with data:', {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        employeeNumber: data.employeeNumber,
+        departmentId: data.departmentId,
+        tenantId,
+      });
+
       // Check if email already exists
       const [existing] = await execute<RowDataPacket[]>(
         'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
@@ -435,12 +462,25 @@ export class RootService {
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
+      logger.info('[RootService.createRootUser] Executing INSERT with values:', {
+        username: data.username || data.email,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        position: data.position,
+        notes: data.notes,
+        employeeNumber: data.employeeNumber ?? null,
+        departmentId: data.departmentId ?? null,
+        isActive: data.isActive ?? true,
+        tenantId,
+      });
+
       // Create root user
       const [result] = await execute<ResultSetHeader>(
         `INSERT INTO users (
           username, email, password, first_name, last_name,
-          role, position, notes, is_active, tenant_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, NOW(), NOW())`,
+          role, position, notes, employee_number, department_id, is_active, tenant_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           data.username || data.email,
           data.email,
@@ -449,18 +489,45 @@ export class RootService {
           data.lastName,
           data.position,
           data.notes,
+          data.employeeNumber ?? null,
+          data.departmentId ?? null,
           data.isActive ?? true,
           tenantId,
         ],
       );
 
+      console.log('[RootService.createRootUser] INSERT result:', {
+        insertId: result.insertId,
+        affectedRows: result.affectedRows,
+        resultType: typeof result.insertId,
+      });
+
       // Generate and update employee_id
       const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
+      console.log('[RootService.createRootUser] Generated employeeId:', employeeId);
 
       await execute('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, result.insertId]);
+      console.log('[RootService.createRootUser] UPDATE completed for ID:', result.insertId);
 
+      logger.info(
+        '[RootService.createRootUser] User created successfully with ID:',
+        result.insertId,
+      );
       return result.insertId;
     } catch (error: unknown) {
+      logger.error('[RootService.createRootUser] Error creating root user:', error);
+      logger.error('[RootService.createRootUser] Error type:', typeof error);
+
+      if (isMySQLError(error)) {
+        logger.error('[RootService.createRootUser] Error constructor:', error.constructor.name);
+        logger.error('[RootService.createRootUser] MySQL Error Code:', error.code);
+        logger.error('[RootService.createRootUser] MySQL Error Message:', error.sqlMessage);
+        logger.error('[RootService.createRootUser] MySQL Error SQL:', error.sql);
+      } else if (error instanceof Error) {
+        logger.error('[RootService.createRootUser] Error name:', error.name);
+        logger.error('[RootService.createRootUser] Error message:', error.message);
+      }
+
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to create root user', error);
     }
@@ -502,6 +569,14 @@ export class RootService {
       if (data.notes !== undefined) {
         fields.push('notes = ?');
         values.push(data.notes);
+      }
+      if (data.employeeNumber !== undefined) {
+        fields.push('employee_number = ?');
+        values.push(data.employeeNumber);
+      }
+      if (data.departmentId !== undefined) {
+        fields.push('department_id = ?');
+        values.push(data.departmentId);
       }
       if (data.isActive !== undefined) {
         fields.push('is_active = ?');

@@ -125,8 +125,8 @@
 
 **Warum:** Nur für Root-User relevant
 
-- [ ] manage-root-users.ts
-- [ ] manage-root-users.html
+- [x] manage-root-users.ts ✅ (06.09.2025 - API v2 Migration abgeschlossen)
+- [x] manage-root-users.html ✅ (06.09.2025 - Keine direkten API Calls)
 - [ ] root-features.html
 - [ ] feature-management.html (features API)
 - [ ] tenant-deletion-status.html
@@ -143,7 +143,7 @@
 
 ---
 
-## ✅ Fortschritt: 36/63 Files (57.1% abgeschlossen)
+## ✅ Fortschritt: 48/58 Files (82.7% abgeschlossen)
 
 ### ⚠️ WICHTIGE NOTIZEN
 

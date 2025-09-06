@@ -13,14 +13,18 @@ import { rootController } from './root.controller.js';
 const router = Router();
 
 // Admin Management Routes
-router.get('/admins', ...security.root(), typed.auth(rootController.getAdmins));
+router.get(
+  '/admins',
+  ...security.root(),
+  typed.auth(rootController.getAdmins.bind(rootController)),
+);
 
 router.get(
   '/admins/:id',
   ...security.root(
     createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid admin ID')]),
   ),
-  typed.params<{ id: string }>(rootController.getAdminById),
+  typed.params<{ id: string }>(rootController.getAdminById.bind(rootController)),
 );
 
 router.post(
@@ -36,7 +40,7 @@ router.post(
       body('notes').optional().isString(),
     ]),
   ),
-  typed.body(rootController.createAdmin),
+  typed.body(rootController.createAdmin.bind(rootController)),
 );
 
 router.put(
@@ -54,7 +58,7 @@ router.put(
       body('isActive').optional().isBoolean(),
     ]),
   ),
-  typed.paramsBody<{ id: string }>(rootController.updateAdmin),
+  typed.paramsBody<{ id: string }>(rootController.updateAdmin.bind(rootController)),
 );
 
 router.delete(
@@ -62,7 +66,7 @@ router.delete(
   ...security.root(
     createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid admin ID')]),
   ),
-  typed.params<{ id: string }>(rootController.deleteAdmin),
+  typed.params<{ id: string }>(rootController.deleteAdmin.bind(rootController)),
 );
 
 router.get(
@@ -70,21 +74,29 @@ router.get(
   ...security.root(
     createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid admin ID')]),
   ),
-  typed.params<{ id: string }>(rootController.getAdminLogs),
+  typed.params<{ id: string }>(rootController.getAdminLogs.bind(rootController)),
 );
 
 // Tenant Management Routes
-router.get('/tenants', ...security.root(), typed.auth(rootController.getTenants));
+router.get(
+  '/tenants',
+  ...security.root(),
+  typed.auth(rootController.getTenants.bind(rootController)),
+);
 
 // Root User Management Routes
-router.get('/users', ...security.root(), typed.auth(rootController.getRootUsers));
+router.get(
+  '/users',
+  ...security.root(),
+  typed.auth(rootController.getRootUsers.bind(rootController)),
+);
 
 router.get(
   '/users/:id',
   ...security.root(
     createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid user ID')]),
   ),
-  typed.params<{ id: string }>(rootController.getRootUserById),
+  typed.params<{ id: string }>(rootController.getRootUserById.bind(rootController)),
 );
 
 router.post(
@@ -98,10 +110,12 @@ router.post(
       body('lastName').isString().notEmpty(),
       body('position').optional().isString(),
       body('notes').optional().isString(),
+      body('employeeNumber').optional().isString(),
+      body('departmentId').optional().isNumeric(),
       body('isActive').optional().isBoolean(),
     ]),
   ),
-  typed.body(rootController.createRootUser),
+  typed.body(rootController.createRootUser.bind(rootController)),
 );
 
 router.put(
@@ -114,10 +128,12 @@ router.put(
       body('email').optional().isEmail(),
       body('position').optional().isString(),
       body('notes').optional().isString(),
+      body('employeeNumber').optional().isString(),
+      body('departmentId').optional().isNumeric(),
       body('isActive').optional().isBoolean(),
     ]),
   ),
-  typed.paramsBody<{ id: string }>(rootController.updateRootUser),
+  typed.paramsBody<{ id: string }>(rootController.updateRootUser.bind(rootController)),
 );
 
 router.delete(
@@ -125,50 +141,58 @@ router.delete(
   ...security.root(
     createValidation([param('id').isInt({ min: 1 }).withMessage('Invalid user ID')]),
   ),
-  typed.params<{ id: string }>(rootController.deleteRootUser),
+  typed.params<{ id: string }>(rootController.deleteRootUser.bind(rootController)),
 );
 
 // Dashboard & System Info Routes
-router.get('/dashboard', ...security.root(), typed.auth(rootController.getDashboard));
+router.get(
+  '/dashboard',
+  ...security.root(),
+  typed.auth(rootController.getDashboard.bind(rootController)),
+);
 
-router.get('/storage', ...security.root(), typed.auth(rootController.getStorageInfo));
+router.get(
+  '/storage',
+  ...security.root(),
+  typed.auth(rootController.getStorageInfo.bind(rootController)),
+);
 
 // Tenant Deletion Routes
 router.post(
   '/tenant/deletion',
   ...security.root(createValidation([body('reason').optional().isString()])),
-  typed.body(rootController.requestTenantDeletion),
+  typed.body(rootController.requestTenantDeletion.bind(rootController)),
 );
 
 router.get(
   '/tenant/deletion-status',
   ...security.root(),
-  typed.auth(rootController.getDeletionStatus),
+  typed.auth(rootController.getDeletionStatus.bind(rootController)),
 );
 
 router.post(
   '/tenant/cancel-deletion',
   ...security.root(),
-  typed.auth(rootController.cancelDeletion),
+  typed.auth(rootController.cancelDeletion.bind(rootController)),
 );
 
 router.post(
   '/tenant/deletion-dry-run',
   ...security.root(),
-  typed.auth(rootController.deletionDryRun),
+  typed.auth(rootController.deletionDryRun.bind(rootController)),
 );
 
 // Deletion Approval Routes
 router.get(
   '/deletion-approvals',
   ...security.root(),
-  typed.auth(rootController.getAllDeletionRequests),
+  typed.auth(rootController.getAllDeletionRequests.bind(rootController)),
 );
 
 router.get(
   '/deletion-approvals/pending',
   ...security.root(),
-  typed.auth(rootController.getPendingApprovals),
+  typed.auth(rootController.getPendingApprovals.bind(rootController)),
 );
 
 router.post(
@@ -176,7 +200,9 @@ router.post(
   ...security.root(
     createValidation([param('queueId').isInt({ min: 1 }), body('comment').optional().isString()]),
   ),
-  typed.paramsBody<{ queueId: string }, { comment?: string }>(rootController.approveDeletion),
+  typed.paramsBody<{ queueId: string }, { comment?: string }>(
+    rootController.approveDeletion.bind(rootController),
+  ),
 );
 
 router.post(
@@ -184,13 +210,15 @@ router.post(
   ...security.root(
     createValidation([param('queueId').isInt({ min: 1 }), body('reason').isString().notEmpty()]),
   ),
-  typed.paramsBody<{ queueId: string }, { reason: string }>(rootController.rejectDeletion),
+  typed.paramsBody<{ queueId: string }, { reason: string }>(
+    rootController.rejectDeletion.bind(rootController),
+  ),
 );
 
 router.post(
   '/deletion-queue/:queueId/emergency-stop',
   ...security.root(createValidation([param('queueId').isInt({ min: 1 })])),
-  typed.params<{ queueId: string }>(rootController.emergencyStop),
+  typed.params<{ queueId: string }>(rootController.emergencyStop.bind(rootController)),
 );
 
 export default router;

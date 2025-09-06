@@ -1499,7 +1499,7 @@ main.container.main-content.sidebar-collapsed {
 
   box-sizing: border-box;
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-sm);
 

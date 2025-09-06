@@ -54,6 +54,8 @@ export interface RootUser {
   lastName: string;
   position?: string;
   notes?: string;
+  employeeNumber?: string;
+  departmentId?: number;
   isActive: boolean;
   employeeId?: string;
   createdAt: Date;
@@ -68,6 +70,8 @@ export interface CreateRootUserRequest {
   lastName: string;
   position?: string;
   notes?: string;
+  employeeNumber?: string;
+  departmentId?: number;
   isActive?: boolean;
 }
 
@@ -77,6 +81,8 @@ export interface UpdateRootUserRequest {
   email?: string;
   position?: string;
   notes?: string;
+  employeeNumber?: string;
+  departmentId?: number;
   isActive?: boolean;
 }
 
@@ -209,4 +215,16 @@ export interface DeletionDryRunReport {
   storageToFree: number;
   warnings: string[];
   canProceed: boolean;
+}
+
+// MySQL Error Type
+export interface MySQLError extends Error {
+  code?: string;
+  errno?: number;
+  sql?: string;
+  sqlState?: string;
+  sqlMessage?: string;
+  fieldCount?: number;
+  affectedRows?: number;
+  insertId?: number;
 }

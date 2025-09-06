@@ -242,11 +242,6 @@ export function requireRoleV2(allowedRoles: string | string[]) {
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-      return;
-    }
-
     // When role-switched, use activeRole for permission checks
     const currentRole = req.user.activeRole ?? req.user.role;
 
@@ -275,7 +270,7 @@ export function requireRoleV2(allowedRoles: string | string[]) {
 /**
  * Verify refresh token for token refresh endpoint
  */
-export async function verifyRefreshToken(token: string): Promise<JWTPayload | null> {
+export function verifyRefreshToken(token: string): JWTPayload | null {
   try {
     const decoded = jwt.verify(token, JWT_REFRESH_SECRET || JWT_SECRET) as JWTPayload;
 

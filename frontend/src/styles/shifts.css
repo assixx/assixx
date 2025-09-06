@@ -1277,7 +1277,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   margin-bottom: var(--spacing-sm);
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);

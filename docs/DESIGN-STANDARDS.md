@@ -270,7 +270,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .form-control,
 .form-input
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   border: 1px solid hsla(0,0%,100%,.1);

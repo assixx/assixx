@@ -38,7 +38,7 @@
 .form-input,
 .big-input {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-sm);
 
@@ -82,7 +82,7 @@ select.form-control {
   justify-content: space-between;
 
   /*height: 42px;*/
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-sm);
 

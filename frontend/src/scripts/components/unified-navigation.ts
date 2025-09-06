@@ -2939,11 +2939,11 @@ const unifiedNavigationCSS = `
         justify-content: center;
         font-size: 0.825rem;
         font-weight: 600;
-        color: #ffd83e;
+        color: #ffffffff;
         padding: var(--spacing-sm) var(--spacing-md);
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
-        border: 1.3px solid rgb(255, 203, 0);
+        border: 1.3px solid rgba(255, 255, 255, 1);
         /*  */
         cursor: pointer;
         width: 98%;
@@ -3146,7 +3146,7 @@ const unifiedNavigationCSS = `
         width: calc(100% - 8px);
         font-size: 0;
         transform: rotate(-2deg);
-        background: #e6b800;
+        background: #e6b80000;
         min-height: 25px;
         margin-left: 4px;
     }

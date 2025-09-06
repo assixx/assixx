@@ -7,7 +7,6 @@ import { Request, Response } from 'express';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
-import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { rootService } from './root.service.js';
 import {
@@ -60,26 +59,9 @@ export class RootController {
   }
 
   /**
+   * Get admin user by ID
    * @param req - The request object
    * @param res - The response object
-
-   * /api/v2/root/admins/{id}:
-   *   get:
-   *     summary: Get admin user by ID
-   *     tags: [Root]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
-   *     responses:
-   *       200:
-   *         description: Admin user details
-   *       404:
-   *         description: Admin not found
    */
   async getAdminById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -161,7 +143,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/admins/{id}:
+   * /api/v2/root/admins/\{id\}:
    *   put:
    *     summary: Update admin user
    *     tags: [Root]
@@ -213,7 +195,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/admins/{id}:
+   * /api/v2/root/admins/\{id\}:
    *   delete:
    *     summary: Delete admin user
    *     tags: [Root]
@@ -259,7 +241,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/admins/{id}/logs:
+   * /api/v2/root/admins/\{id\}/logs:
    *   get:
    *     summary: Get admin activity logs
    *     tags: [Root]
@@ -370,7 +352,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/users/{id}:
+   * /api/v2/root/users/\{id\}:
    *   get:
    *     summary: Get root user by ID
    *     tags: [Root]
@@ -437,26 +419,11 @@ export class RootController {
    */
   async createRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      logger.info('[RootController.createRootUser] Starting with tenant_id:', req.user.tenant_id);
+      logger.info('[RootController.createRootUser] Request body:', req.body);
+
       const data = req.body as CreateRootUserRequest;
       const userId = await rootService.createRootUser(data, req.user.tenant_id);
-
-      // Log the action
-      await execute(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          req.user.tenant_id,
-          req.user.id,
-          'root_user_created',
-          'user',
-          userId,
-          JSON.stringify({
-            email: data.email,
-            created_by: req.user.email,
-          }),
-          req.ip,
-        ],
-      );
 
       logger.warn(`Root user created: ${data.email} by ${req.user.email}`);
 
@@ -465,7 +432,11 @@ export class RootController {
         userId,
       });
     } catch (error: unknown) {
-      logger.error('Error creating root user:', error);
+      logger.error('[RootController.createRootUser] Error caught in controller:', error);
+      logger.error('[RootController.createRootUser] Error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+      });
 
       if ((error as { code: string }).code === 'DUPLICATE_EMAIL') {
         res.status(400).json({
@@ -486,7 +457,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/users/{id}:
+   * /api/v2/root/users/\{id\}:
    *   put:
    *     summary: Update root user
    *     tags: [Root]
@@ -515,24 +486,6 @@ export class RootController {
       const data = req.body as UpdateRootUserRequest;
       await rootService.updateRootUser(Number.parseInt(req.params.id), data, req.user.tenant_id);
 
-      // Log the action
-      await execute(
-        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          req.user.tenant_id,
-          req.user.id,
-          'root_user_updated',
-          'user',
-          req.params.id,
-          JSON.stringify({
-            updated_by: req.user.email,
-            changes: data,
-          }),
-          req.ip,
-        ],
-      );
-
       res.json({ message: 'Root user updated successfully' });
     } catch (error: unknown) {
       logger.error('Error updating root user:', error);
@@ -556,7 +509,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/users/{id}:
+   * /api/v2/root/users/\{id\}:
    *   delete:
    *     summary: Delete root user
    *     tags: [Root]
@@ -868,7 +821,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/deletion-approvals/{queueId}/approve:
+   * /api/v2/root/deletion-approvals/\{queueId\}/approve:
    *   post:
    *     summary: Approve deletion request
    *     tags: [Root]
@@ -913,7 +866,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/deletion-approvals/{queueId}/reject:
+   * /api/v2/root/deletion-approvals/\{queueId\}/reject:
    *   post:
    *     summary: Reject deletion request
    *     tags: [Root]
@@ -971,7 +924,7 @@ export class RootController {
    * @param req - The request object
    * @param res - The response object
 
-   * /api/v2/root/deletion-queue/{queueId}/emergency-stop:
+   * /api/v2/root/deletion-queue/\{queueId\}/emergency-stop:
    *   post:
    *     summary: Emergency stop deletion
    *     tags: [Root]

@@ -286,7 +286,6 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       <thead>
         <tr>
           <th>ID</th>
-          <th>Benutzername</th>
           <th>Name</th>
           <th>E-Mail</th>
           <th>Position</th>
@@ -305,7 +304,6 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
             return `
           <tr>
             <td>${String(admin.id)}</td>
-            <td>${admin.username}</td>
             <td>${displayName}</td>
             <td>${admin.email !== '' ? admin.email : '-'}</td>
             <td>${admin.position !== undefined && admin.position !== '' ? getPositionDisplay(admin.position) : '-'}</td>

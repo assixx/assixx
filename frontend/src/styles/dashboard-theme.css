@@ -316,7 +316,7 @@ body {
   align-items: center;
 
   min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   border: none;
   border-radius: var(--radius-sm);
 
@@ -738,7 +738,7 @@ body {
   cursor: pointer;
 
   margin-bottom: -2px;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   border: none;
   border-bottom: 2px solid transparent;
 

@@ -180,16 +180,19 @@
       }
 
       .modal-content {
-        background: rgba(255, 255, 255, 0.02);
+        overflow-y: auto;
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #121212c4;
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
+        box-shadow:
+          0 8px 32px #0006,
+          inset 0 1px #ffffff1a;
+        display: flex;
+        flex-direction: column;
         width: 90%;
         max-width: 500px;
         max-height: 90vh;
-        overflow-y: auto;
-        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       @keyframes fadeInUp {
@@ -255,7 +258,7 @@
 
       .form-control {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -301,8 +304,7 @@
         border-color: rgba(255, 255, 255, 0.2);
       }
 
-      .dropdown-display svg {
-      }
+
 
       .dropdown-display.active svg {
         transform: rotate(180deg);
@@ -405,12 +407,14 @@
         background: rgba(76, 175, 80, 0.2);
         color: #4caf50;
         border: 1px solid rgba(76, 175, 80, 0.3);
+        text-align: center;
       }
 
       .status-badge.inactive {
         background: rgba(255, 152, 0, 0.2);
         color: #ff9800;
         border: 1px solid rgba(255, 152, 0, 0.3);
+        text-align: center;
       }
 
       /* Empty State */
@@ -452,6 +456,28 @@
       .approval-badge i {
         font-size: 10px;
       }
+
+      /* Form Validation Styles */
+      .text-danger {
+        color: #ef4444;
+        font-size: 12px;
+        margin-top: 4px;
+        display: block;
+      }
+
+      .text-secondary {
+        color: var(--text-secondary);
+        font-size: 12px;
+        margin-top: 4px;
+        display: block;
+      }
+
+      .form-text {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -478,8 +504,7 @@
                 <i class="fas fa-shield-alt"></i>
                 <div class="security-warning-text">
                   <strong>Sicherheitshinweis:</strong>
-                  Root-Benutzer haben vollständigen Systemzugriff. Das Zwei-Personen-Prinzip ist für kritische Operationen wie
-                  Tenant-Löschung aktiv. Erstellen Sie Root-Benutzer nur für vertrauenswürdige Administratoren.
+                  Vollzugriff auf System. Kritische Aktionen benötigen Zwei-Personen-Genehmigung.
                 </div>
               </div>
 
@@ -503,7 +528,7 @@
           <h3 class="modal-title" id="modalTitle">Root User hinzufügen</h3>
           <button class="modal-close" onclick="closeRootModal()">&times;</button>
         </div>
-        <form id="rootForm">
+        <form id="rootForm" style="padding: 20px">
           <div class="form-group">
             <label class="form-label">Vorname *</label>
             <input type="text" id="rootFirstName" class="form-control" required />
@@ -515,25 +540,25 @@
           <div class="form-group">
             <label class="form-label">E-Mail *</label>
             <input type="email" id="rootEmail" class="form-control" required />
+            <small class="text-secondary">Wird auch als Benutzername verwendet</small>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="emailConfirmGroup">
             <label class="form-label">E-Mail wiederholen *</label>
             <input type="email" id="rootEmailConfirm" class="form-control" required />
+            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
+            <small class="text-danger" id="emailMismatchError" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
           </div>
           <div class="form-group">
-            <label class="form-label">Personalnummer *</label>
+            <label class="form-label">Personalnummer</label>
             <input
               type="text"
               id="rootEmployeeNumber"
               class="form-control"
-              placeholder="z.B. ABC-123 oder 2025-001"
+              placeholder="z.B. ABC-123 oder 2025-001 (optional, max 10 Zeichen)"
               maxlength="10"
               pattern="[A-Za-z0-9\-]{1,10}"
-              required
+              title="Max 10 Zeichen: Buchstaben, Zahlen, Bindestrich"
             />
-            <small class="form-text" style="color: var(--text-secondary); font-size: 12px">
-              Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)
-            </small>
           </div>
           <div class="form-group" id="passwordGroup">
             <label class="form-label">Passwort *</label>
@@ -542,6 +567,15 @@
           <div class="form-group" id="passwordConfirmGroup">
             <label class="form-label">Passwort wiederholen *</label>
             <input type="password" id="rootPasswordConfirm" class="form-control" />
+            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
+            <small class="text-danger" id="passwordMismatchError" style="display: none">Passwörter stimmen nicht überein</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Abteilung</label>
+            <select id="rootDepartmentId" class="form-control">
+              <option value="">Keine Abteilung zuweisen</option>
+            </select>
+            <small class="text-secondary">Optional: Abteilung für den Root-User</small>
           </div>
           <div class="form-group">
             <label class="form-label">Position *</label>
@@ -575,7 +609,7 @@
             <textarea id="rootNotes" class="form-control" rows="3"></textarea>
           </div>
 
-          <div class="form-group" id="activeStatusGroup" class="u-hidden">
+          <div class="form-group" id="activeStatusGroup" style="display: none">
             <label class="form-label">
               <input type="checkbox" id="rootIsActive" />
               <span style="margin-left: 8px">Aktiv</span>
@@ -585,9 +619,9 @@
             </div>
           </div>
 
-          <div class="button-group">
-            <button type="button" class="btn btn-secondary" onclick="closeRootModal()">Abbrechen</button>
+          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
             <button type="submit" class="btn btn-primary">Speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="closeRootModal()">Abbrechen</button>
           </div>
         </form>
       </div>
