@@ -19,9 +19,6 @@
 1. **ZUERST:** Die Checkliste abarbeiten → `API-V2-MASTERPLAN-CHECKLIST.md` (Stand: 20.08.2025)
 2. **DANACH:** Mit DEAL-BREAKER Features fortfahren (siehe unten)
 
----
-dompurify überall implementieren (domutils ersetzen? wenn geht oder wenn nötig)
-
 ## 🔥 DEAL-BREAKER Features
 
 ### Urlaubsverwaltung System (20h)

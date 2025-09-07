@@ -1,5 +1,11 @@
 // Department Groups Management
+import domPurify from 'dompurify';
+// import { $id } from '../utils/dom-utils'; // Currently not used
+
 (() => {
+  // Constants
+  const CREATE_GROUP_MODAL_SELECTOR = '#createGroupModal';
+
   // Auth check
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
@@ -91,7 +97,8 @@
       return;
     }
 
-    container.innerHTML = renderGroupItems(groups);
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    container.innerHTML = domPurify.sanitize(renderGroupItems(groups));
   }
 
   // Render group items recursively
@@ -153,7 +160,8 @@
     const container = document.querySelector('#groupDetails');
     if (!container) return;
 
-    container.innerHTML = `
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    container.innerHTML = domPurify.sanitize(`
     <div class="detail-section">
       <h3>${group.name}</h3>
       ${group.description !== undefined && group.description !== '' ? `<p class="text-secondary">${group.description}</p>` : ''}
@@ -190,7 +198,7 @@
         <i class="fas fa-trash"></i> Löschen
       </button>
     </div>
-  `;
+  `);
   }
 
   // Find group by ID recursively
@@ -207,7 +215,7 @@
 
   // Close modal
   function closeModal() {
-    const modal = document.querySelector('#createGroupModal');
+    const modal = document.querySelector(CREATE_GROUP_MODAL_SELECTOR);
     if (modal) {
       modal.classList.remove('show');
     }
@@ -221,7 +229,7 @@
     const modalTitle = document.querySelector('#modalTitle');
     if (modalTitle) modalTitle.textContent = 'Neue Abteilungsgruppe erstellen';
     const form = document.querySelector('#createGroupForm');
-    if (form !== null) {
+    if (form instanceof HTMLFormElement) {
       form.reset();
     }
 
@@ -231,7 +239,7 @@
     // Load departments
     updateDepartmentChecklist([]);
 
-    document.querySelector('#createGroupModal')?.classList.add('active');
+    document.querySelector(CREATE_GROUP_MODAL_SELECTOR)?.classList.add('active');
   };
 
   // Edit group
@@ -244,21 +252,32 @@
     if (modalTitle) modalTitle.textContent = 'Gruppe bearbeiten';
 
     // Fill form
-    document.querySelector('#groupName')!.value = group.name;
-    document.querySelector('#groupDescription')!.value = group.description ?? '';
-    document.querySelector('#parentGroup')!.value = group.parent_group_id?.toString() ?? '';
+    const groupNameInput = document.querySelector('#groupName');
+    if (groupNameInput instanceof HTMLInputElement) {
+      groupNameInput.value = group.name;
+    }
+
+    const groupDescInput = document.querySelector('#groupDescription');
+    if (groupDescInput instanceof HTMLTextAreaElement) {
+      groupDescInput.value = group.description ?? '';
+    }
+
+    const parentGroupSelect = document.querySelector('#parentGroup');
+    if (parentGroupSelect instanceof HTMLSelectElement) {
+      parentGroupSelect.value = group.parent_group_id?.toString() ?? '';
+    }
 
     // Update selects
     updateParentGroupSelect(groupId);
     updateDepartmentChecklist(group.departments?.map((d) => d.id) ?? []);
 
-    document.querySelector('#createGroupModal')?.classList.add('active');
+    document.querySelector(CREATE_GROUP_MODAL_SELECTOR)?.classList.add('active');
   };
 
   // Update parent group select
   function updateParentGroupSelect(excludeId?: number) {
     const select = document.querySelector('#parentGroup');
-    if (select === null) return;
+    if (!(select instanceof HTMLSelectElement)) return;
 
     select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
 
@@ -285,22 +304,25 @@
     const container = document.querySelector('#departmentChecklist');
     if (!container) return;
 
-    container.innerHTML = departments
-      .map(
-        (dept) => `
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    container.innerHTML = domPurify.sanitize(
+      departments
+        .map(
+          (dept) => `
     <label class="department-checkbox">
       <input type="checkbox" name="department" value="${dept.id}"
              ${selectedIds.includes(dept.id) ? 'checked' : ''} />
       <span>${dept.name}</span>
     </label>
   `,
-      )
-      .join('');
+        )
+        .join(''),
+    );
   }
 
   // Close modal
   (window as unknown as ManageDeptGroupsWindow).closeModal = function () {
-    document.querySelector('#createGroupModal')?.classList.remove('active');
+    document.querySelector(CREATE_GROUP_MODAL_SELECTOR)?.classList.remove('active');
     editingGroupId = null;
   };
 
@@ -309,11 +331,24 @@
     void (async () => {
       e.preventDefault();
 
+      const groupNameInput = document.querySelector('#groupName');
+      const groupDescInput = document.querySelector('#groupDescription');
+      const parentGroupSelect = document.querySelector('#parentGroup');
+
+      if (
+        !(groupNameInput instanceof HTMLInputElement) ||
+        !(groupDescInput instanceof HTMLTextAreaElement) ||
+        !(parentGroupSelect instanceof HTMLSelectElement)
+      ) {
+        showError('Formularfelder nicht gefunden');
+        return;
+      }
+
       const formData = {
-        name: document.querySelector('#groupName')!.value,
-        description: document.querySelector('#groupDescription')!.value,
-        parentGroupId:
-          document.querySelector('#parentGroup')!.value !== '' ? document.querySelector('#parentGroup')!.value : null,
+        name: groupNameInput.value,
+        description: groupDescInput.value,
+        parentGroupId: parentGroupSelect.value !== '' ? parentGroupSelect.value : null,
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- map is synchronous, not async callback
         departmentIds: [...document.querySelectorAll('input[name="department"]:checked')].map((cb) =>
           Number.parseInt((cb as HTMLInputElement).value, 10),
         ),
@@ -446,7 +481,7 @@
 
   // Close modal on outside click
   window.addEventListener('click', (e) => {
-    const modal = document.querySelector('#createGroupModal');
+    const modal = document.querySelector(CREATE_GROUP_MODAL_SELECTOR);
     if (e.target === modal) {
       closeModal();
     }

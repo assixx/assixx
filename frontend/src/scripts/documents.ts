@@ -3,8 +3,10 @@
  * Central document management with smart filters
  */
 
+import domPurify from 'dompurify';
 import type { Document } from '../types/api.types';
 import { fetchWithAuth, showError, showSuccess } from './auth';
+import { $$id } from '../utils/dom-utils';
 
 // Document scope type
 type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
@@ -136,7 +138,7 @@ function updateCounts(): void {
  * Update count element
  */
 function updateCount(elementId: string, count: number): void {
-  const element = document.getElementById(elementId);
+  const element = $$id(elementId);
   if (element) {
     element.textContent = count.toString();
   }
@@ -274,7 +276,9 @@ function createDocumentCard(doc: Document): HTMLElement {
   const icon = getFileIcon(doc.mime_type ?? doc.file_name);
   const readBadge = doc.is_read !== true ? '<span class="document-badge unread">NEU</span>' : '';
 
-  card.innerHTML = `
+  // Use domPurify for complex HTML with user data
+  // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+  card.innerHTML = domPurify.sanitize(`
     ${readBadge}
     <div class="document-icon">
       <i class="${icon}"></i>
@@ -306,7 +310,7 @@ function createDocumentCard(doc: Document): HTMLElement {
         <span>${getScopeLabel(doc.scope)}</span>
       </div>
     </div>
-  `;
+  `);
 
   return card;
 }
@@ -369,14 +373,17 @@ function viewDocument(documentId: number): void {
     const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
     const endpoint =
       useV2Documents === true ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
-    fetchWithAuth(endpoint, { method: 'POST' })
-      .then(() => {
+    void (async () => {
+      try {
+        await fetchWithAuth(endpoint, { method: 'POST' });
         // Update local state
         doc.is_read = true;
         updateStats();
         renderDocuments();
-      })
-      .catch(console.error);
+      } catch (error) {
+        console.error(error);
+      }
+    })();
 
     // Show modal with document info
     showDocumentModal(doc);
@@ -405,7 +412,7 @@ function showDocumentModal(doc: Document): void {
   const previewFrame = document.querySelector('#documentPreviewFrame');
   const previewError = document.querySelector('#previewError');
 
-  if (previewFrame !== null && previewError !== null) {
+  if (previewFrame instanceof HTMLIFrameElement && previewError instanceof HTMLElement) {
     // Create preview URL with authentication token
     const token = localStorage.getItem('token');
     if (token === null || token === '') {
@@ -421,12 +428,12 @@ function showDocumentModal(doc: Document): void {
 
     // For iframe, we need to handle authentication differently
     // First, try to fetch the document
-    fetchWithAuth(previewUrl)
-      .then(async (response) => {
+    void (async () => {
+      try {
+        const response = await fetchWithAuth(previewUrl);
         if (!response.ok) throw new Error('Preview failed');
-        return await response.blob();
-      })
-      .then((blob) => {
+        const blob = await response.blob();
+
         // Create object URL from blob
         const blobUrl = URL.createObjectURL(blob);
         previewFrame.src = blobUrl;
@@ -435,22 +442,24 @@ function showDocumentModal(doc: Document): void {
 
         // Clean up blob URL when modal closes
         previewFrame.dataset.blobUrl = blobUrl;
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         console.error('Preview error:', error);
         previewFrame.style.display = 'none';
         previewError.style.display = 'block';
-      });
+      }
+    })();
   }
 
   // Store document ID for download
   const downloadBtn = document.querySelector('#downloadButton');
-  if (downloadBtn) {
+  if (downloadBtn instanceof HTMLElement) {
     downloadBtn.dataset.documentId = doc.id.toString();
   }
 
   // Show modal
-  modal.style.display = 'flex';
+  if (modal instanceof HTMLElement) {
+    modal.style.display = 'flex';
+  }
 }
 
 /**
@@ -458,12 +467,12 @@ function showDocumentModal(doc: Document): void {
  */
 function closeDocumentModal(): void {
   const modal = document.querySelector('#documentPreviewModal');
-  if (modal) {
+  if (modal instanceof HTMLElement) {
     modal.style.display = 'none';
 
     // Clear iframe and clean up blob URL
     const previewFrame = document.querySelector('#documentPreviewFrame');
-    if (previewFrame !== null) {
+    if (previewFrame instanceof HTMLIFrameElement) {
       // Clean up blob URL if exists
       const blobUrl = previewFrame.dataset.blobUrl;
       if (blobUrl !== undefined && blobUrl !== '') {
@@ -489,13 +498,13 @@ async function downloadDocument(docId?: string | number): Promise<void> {
   } else {
     // Called without parameter from documents page
     const downloadBtn = document.querySelector('#downloadButton');
-    if (!downloadBtn) {
+    if (!(downloadBtn instanceof HTMLElement)) {
       console.error('Download button not found');
       return;
     }
 
     const dataId = downloadBtn.dataset.documentId;
-    if (dataId === null || dataId === '') {
+    if (dataId === undefined || dataId === '') {
       console.error('No document ID found');
       return;
     }
@@ -567,7 +576,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
  * Update element text content
  */
 function updateElement(id: string, value: string | number): void {
-  const element = document.getElementById(id);
+  const element = $$id(id);
   if (element) {
     element.textContent = value.toString();
   }
@@ -577,8 +586,8 @@ function updateElement(id: string, value: string | number): void {
  * Toggle dropdown
  */
 window.toggleDropdown = function (type: string): void {
-  const display = document.getElementById(`${type}Display`);
-  const dropdown = document.getElementById(`${type}Dropdown`);
+  const display = document.querySelector(`#${type}Display`);
+  const dropdown = document.querySelector(`#${type}Dropdown`);
 
   if (!display || !dropdown) return;
 
@@ -599,7 +608,7 @@ window.selectSort = function (value: SortOption, text: string): void {
   const dropdown = document.querySelector('#sortDropdown');
   const input = document.querySelector('#sortValue');
 
-  if (display !== null && dropdown !== null && input !== null) {
+  if (display !== null && dropdown !== null && input instanceof HTMLInputElement) {
     const span = display.querySelector('span');
     if (span) {
       span.textContent = text;

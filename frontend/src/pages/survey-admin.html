@@ -223,7 +223,9 @@
         z-index: 1000;
         justify-content: center;
         align-items: center;
-        transition: opacity .3s ease,visibility .3s ease;
+        transition:
+          opacity 0.1s ease,
+          visibility 0.1s ease;
       }
 
       .modal-overlay {
@@ -231,8 +233,8 @@
         opacity: 0;
         visibility: hidden;
         transition:
-          opacity 0.3s ease,
-          visibility 0.3s ease;
+          opacity 0.1s ease,
+          visibility 0.1s ease;
       }
 
       .modal-overlay.active {
@@ -243,8 +245,8 @@
       .modal-content,
       .modal-container {
         backdrop-filter: blur(20px) saturate(500%);
-        background: hsla(0,0%,8%,.84);
-        border: 1px solid hsla(0,0%,100%,.1);
+        background: hsla(0, 0%, 8%, 0.84);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
         max-height: 90vh;
@@ -523,7 +525,7 @@
       }
 
       .empty-state-icon {
-        font-size: 64px;
+        font-size: 40px;
         margin-bottom: 20px;
         opacity: 0.5;
       }
@@ -563,8 +565,9 @@
 
       .template-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: var(--spacing-md);
+        gap: var(--spacing-lg);
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        margin-bottom: var(--spacing-xl);
       }
 
       .template-card {
@@ -729,28 +732,27 @@
               </div>
             </div>
             <div class="card-body">
-
-            <!-- Active Surveys -->
-            <h2>Aktive Umfragen</h2>
-            <div id="activeSurveys" class="surveys-grid">
-              <!-- Surveys will be loaded here -->
-            </div>
-
-            <!-- Draft Surveys -->
-            <h2 style="margin-top: var(--spacing-xl)">Entwürfe</h2>
-            <div id="draftSurveys" class="surveys-grid">
-              <!-- Draft surveys will be loaded here -->
-            </div>
-
-            <!-- Templates Section -->
-            <div class="templates-section">
-              <div class="templates-header">
-                <h2 class="templates-title">Vorlagen</h2>
+              <!-- Active Surveys -->
+              <h2>Aktive Umfragen</h2>
+              <div id="activeSurveys" class="surveys-grid">
+                <!-- Surveys will be loaded here -->
               </div>
-              <div id="surveyTemplates" class="template-grid">
-                <!-- Templates will be loaded here -->
+
+              <!-- Draft Surveys -->
+              <h2 style="margin-top: var(--spacing-xl)">Entwürfe</h2>
+              <div id="draftSurveys" class="surveys-grid">
+                <!-- Draft surveys will be loaded here -->
               </div>
-            </div>
+
+              <!-- Templates Section -->
+              <div class="templates-section">
+                <div class="templates-header">
+                  <h2 class="templates-title">Vorlagen</h2>
+                </div>
+                <div id="surveyTemplates" class="template-grid">
+                  <!-- Templates will be loaded here -->
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -941,20 +943,20 @@
         display.classList.toggle('active');
       };
 
-      window.selectAssignmentOption = function(value, text) {
+      window.selectAssignmentOption = function (value, text) {
         document.getElementById('assignmentType').value = value;
         document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
         document.getElementById('assignmentDropdownDropdown').classList.remove('active');
         document.getElementById('assignmentDropdownDisplay').classList.remove('active');
-      }
+      };
 
-      window.selectQuestionType = function(questionId, type, text) {
+      window.selectQuestionType = function (questionId, type, text) {
         document.getElementById(questionId + '_typeValue').value = type;
         document.getElementById(questionId + '_typeDisplay').querySelector('span').textContent = text;
         document.getElementById(questionId + '_typeDropdown').classList.remove('active');
         document.getElementById(questionId + '_typeDisplay').classList.remove('active');
         handleQuestionTypeChange(questionId, type);
-      }
+      };
 
       // Select assignment option (target group)
       window.selectAssignmentOption = async function (type, text) {
@@ -1225,18 +1227,19 @@
       // Display templates
       function displayTemplates(templates) {
         const container = document.getElementById('surveyTemplates');
-        container.innerHTML = templates && templates.length > 0
-          ? templates
-              .map(
-                (template) => `
+        container.innerHTML =
+          templates && templates.length > 0
+            ? templates
+                .map(
+                  (template) => `
                     <div class="template-card" onclick="createFromTemplate(${template.id})">
                         <h4 class="template-name">${template.name}</h4>
                         <p class="template-description">${template.description}</p>
                     </div>
                 `,
-              )
-              .join('')
-          : `<div class="empty-state">
+                )
+                .join('')
+            : `<div class="empty-state">
                 <div class="empty-state-icon">📑</div>
                 <h3 class="empty-state-title">Keine Vorlagen</h3>
                 <p>Es sind noch keine Umfrage-Vorlagen verfügbar.</p>
@@ -1316,7 +1319,7 @@
       };
 
       // Add question
-      window.addQuestion = function() {
+      window.addQuestion = function () {
         questionCounter++;
         const questionId = `question_${questionCounter}`;
         const questionHtml = `
@@ -1362,7 +1365,7 @@
                 </div>
             `;
         document.getElementById('questionsList').insertAdjacentHTML('beforeend', questionHtml);
-      }
+      };
 
       // Handle question type change
       function handleQuestionTypeChange(questionId, type) {
@@ -1431,7 +1434,7 @@
       };
 
       // Save survey
-      window.saveSurvey = async function(status) {
+      window.saveSurvey = async function (status) {
         const assignmentType = document.getElementById('assignmentType').value;
         const assignments = [];
 

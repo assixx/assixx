@@ -337,7 +337,7 @@
 
     <script type="module">
       import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
-      
+
       let surveyId = null;
       let surveyData = null;
 
@@ -572,7 +572,7 @@
       }
 
       async function deleteSurvey() {
-        if (!await showConfirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        if (!(await showConfirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'))) {
           return;
         }
 

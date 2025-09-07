@@ -41,9 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.querySelector('#file-input');
   const fileNameSpan = document.querySelector('#file-name');
 
-  if (fileInput !== null && fileNameSpan !== null) {
+  if (fileInput instanceof HTMLInputElement && fileNameSpan !== null) {
     fileInput.addEventListener('change', () => {
-      if (fileInput.files && fileInput.files.length > 0) {
+      if (fileInput.files !== null && fileInput.files.length > 0) {
         fileNameSpan.textContent = fileInput.files[0].name;
       } else {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
@@ -136,8 +136,8 @@ async function uploadDocument(e: Event): Promise<void> {
   const errorElem = document.querySelector('#upload-error');
 
   // Hide previous messages
-  if (successElem) successElem.style.display = 'none';
-  if (errorElem) errorElem.style.display = 'none';
+  if (successElem instanceof HTMLElement) successElem.style.display = 'none';
+  if (errorElem instanceof HTMLElement) errorElem.style.display = 'none';
 
   // Show loading state
   const submitButton = form.querySelector('button[type="submit"]');
@@ -165,7 +165,7 @@ async function uploadDocument(e: Event): Promise<void> {
       console.info('Upload successful:', result);
 
       // Show success message
-      if (successElem) {
+      if (successElem instanceof HTMLElement) {
         successElem.textContent = result.message ?? 'Dokument erfolgreich hochgeladen!';
         successElem.style.display = 'block';
       }
@@ -189,14 +189,14 @@ async function uploadDocument(e: Event): Promise<void> {
       }
     } else {
       console.error('Upload failed:', result);
-      if (errorElem) {
+      if (errorElem instanceof HTMLElement) {
         errorElem.textContent = result.error ?? 'Fehler beim Hochladen des Dokuments';
         errorElem.style.display = 'block';
       }
     }
   } catch (error) {
     console.error('Error uploading document:', error);
-    if (errorElem) {
+    if (errorElem instanceof HTMLElement) {
       errorElem.textContent = 'Netzwerkfehler beim Hochladen des Dokuments';
       errorElem.style.display = 'block';
     }

@@ -3,8 +3,10 @@
  * Shared functionality for all document category pages
  */
 
+import domPurify from 'dompurify';
 import type { Document } from '../types/api.types';
 import { fetchWithAuth, showError, showSuccess } from './auth';
+import { $$id } from '../utils/dom-utils';
 
 // Document scope type
 export type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
@@ -66,7 +68,7 @@ export class DocumentBase {
     }
 
     // Hide/show search based on page type
-    const searchContainer = document.querySelector('#search-container');
+    const searchContainer = $$id('search-container');
     if (searchContainer) {
       searchContainer.style.display = this.showSearch ? 'block' : 'none';
     }
@@ -82,21 +84,21 @@ export class DocumentBase {
     const toggleContainer = document.createElement('div');
     toggleContainer.className = 'view-mode-toggle';
     toggleContainer.innerHTML = `
-      <button class="toggle-btn active" data-mode="active" onclick="window.documentBase?.setViewMode('active')">
+      <button class="toggle-btn view-mode-btn active" data-mode="active">
         <i class="fas fa-folder"></i> Aktive
       </button>
-      <button class="toggle-btn" data-mode="archived" onclick="window.documentBase?.setViewMode('archived')">
+      <button class="toggle-btn view-mode-btn" data-mode="archived">
         <i class="fas fa-archive"></i> Archiviert
       </button>
-      <button class="toggle-btn" data-mode="all" onclick="window.documentBase?.setViewMode('all')">
+      <button class="toggle-btn view-mode-btn" data-mode="all">
         <i class="fas fa-folder-open"></i> Alle
       </button>
     `;
 
     controlLeft.append(toggleContainer);
 
-    // Make instance available globally for onclick handlers
-    window.documentBase = this;
+    // Event delegation instead of global window object
+    this.setupEventDelegation();
   }
 
   /**
@@ -106,7 +108,7 @@ export class DocumentBase {
     // Search input (only for search page)
     if (this.currentScope === 'all') {
       const searchInput = document.querySelector('#searchInput');
-      if (searchInput) {
+      if (searchInput instanceof HTMLInputElement) {
         searchInput.addEventListener('input', (e: Event) => {
           const target = e.target as HTMLInputElement | null;
           if (target) {
@@ -170,6 +172,36 @@ export class DocumentBase {
       console.error('Error loading documents:', error);
       throw error;
     }
+  }
+
+  /**
+   * Set up event delegation for dynamic elements
+   */
+  protected setupEventDelegation(): void {
+    // Delegate click events for favorite buttons
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const favoriteBtn = target.closest('.favorite-btn');
+
+      if (favoriteBtn instanceof HTMLElement) {
+        e.stopPropagation();
+        const docId = favoriteBtn.dataset.docId;
+        if (docId !== undefined && docId !== '') {
+          this.toggleFavorite(Number(docId));
+        }
+      }
+    });
+
+    // Delegate click events for view mode buttons
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('view-mode-btn')) {
+        const mode = target.dataset.mode as ViewMode | undefined;
+        if (mode !== undefined) {
+          this.setViewMode(mode);
+        }
+      }
+    });
   }
 
   /**
@@ -254,7 +286,7 @@ export class DocumentBase {
    * Update count element
    */
   protected updateCount(elementId: string, count: number): void {
-    const element = document.getElementById(elementId);
+    const element = document.querySelector(`#${elementId}`);
     if (element) {
       element.textContent = count.toString();
     }
@@ -293,13 +325,23 @@ export class DocumentBase {
           ? 'Keine Dokumente gefunden. Versuchen Sie eine andere Suche.'
           : 'Keine Dokumente in dieser Kategorie vorhanden.';
 
-      container.innerHTML = `
-        <div class="empty-state">
-          <i class="fas fa-folder-open"></i>
-          <h3>${this.currentScope === 'all' ? 'Suche starten' : 'Keine Dokumente'}</h3>
-          <p>${emptyMessage}</p>
-        </div>
-      `;
+      // Create empty state with DOM methods
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-folder-open';
+      emptyState.append(icon);
+
+      const heading = document.createElement('h3');
+      heading.textContent = this.currentScope === 'all' ? 'Suche starten' : 'Keine Dokumente';
+      emptyState.append(heading);
+
+      const paragraph = document.createElement('p');
+      paragraph.textContent = emptyMessage;
+      emptyState.append(paragraph);
+
+      container.append(emptyState);
       return;
     }
 
@@ -331,10 +373,12 @@ export class DocumentBase {
       this.currentScope === 'all' ? `<div class="document-scope">${this.getScopeLabel(doc.scope)}</div>` : '';
     const isFavorite = this.favoriteDocIds.has(doc.id);
 
-    card.innerHTML = `
+    // Use domPurify for complex HTML with user data
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    card.innerHTML = domPurify.sanitize(`
       ${readBadge}
       ${archivedBadge}
-      <button class="favorite-btn ${isFavorite ? 'active' : ''}" onclick="event.stopPropagation(); window.documentBase?.toggleFavorite(${doc.id})" title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
+      <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-doc-id="${doc.id}" title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
         <i class="${isFavorite ? 'fas' : 'far'} fa-star"></i>
       </button>
       <div class="document-icon">
@@ -364,7 +408,7 @@ export class DocumentBase {
             : ''
         }
       </div>
-    `;
+    `);
 
     return card;
   }
@@ -384,14 +428,17 @@ export class DocumentBase {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
       const endpoint =
         useV2Documents === true ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
-      fetchWithAuth(endpoint, { method: 'POST' })
-        .then(() => {
+      void (async () => {
+        try {
+          await fetchWithAuth(endpoint, { method: 'POST' });
           // Update local state
           doc.is_read = true;
           this.updateStats();
           this.renderDocuments();
-        })
-        .catch(console.error);
+        } catch (error) {
+          console.error(error);
+        }
+      })();
 
       // Show document preview modal
       this.showDocumentModal(doc);
@@ -423,33 +470,45 @@ export class DocumentBase {
       const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
       const endpoint =
         useV2Documents === true ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
-      fetchWithAuth(endpoint)
-        .then(async (response) => {
+      void (async () => {
+        try {
+          const response = await fetchWithAuth(endpoint);
           if (!response.ok) throw new Error('Preview failed');
-          return await response.blob();
-        })
-        .then((blob) => {
+          const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
-          previewFrame.src = blobUrl;
-          previewFrame.style.display = 'block';
-          previewError.style.display = 'none';
-          previewFrame.dataset.blobUrl = blobUrl;
-        })
-        .catch((error: unknown) => {
+
+          if (previewFrame instanceof HTMLIFrameElement) {
+            previewFrame.src = blobUrl;
+            previewFrame.style.display = 'block';
+          }
+          if (previewError instanceof HTMLElement) {
+            previewError.style.display = 'none';
+          }
+          if (previewFrame instanceof HTMLElement) {
+            previewFrame.dataset.blobUrl = blobUrl;
+          }
+        } catch (error) {
           console.error('Preview error:', error);
-          previewFrame.style.display = 'none';
-          previewError.style.display = 'block';
-        });
+          if (previewFrame instanceof HTMLElement) {
+            previewFrame.style.display = 'none';
+          }
+          if (previewError instanceof HTMLElement) {
+            previewError.style.display = 'block';
+          }
+        }
+      })();
     }
 
     // Store document ID for download
     const downloadBtn = document.querySelector('#downloadButton');
-    if (downloadBtn) {
+    if (downloadBtn instanceof HTMLElement) {
       downloadBtn.dataset.documentId = doc.id.toString();
     }
 
     // Show modal
-    modal.style.display = 'flex';
+    if (modal instanceof HTMLElement) {
+      modal.style.display = 'flex';
+    }
   }
 
   /**
@@ -512,7 +571,7 @@ export class DocumentBase {
   }
 
   protected updateElement(id: string, value: string | number): void {
-    const element = document.getElementById(id);
+    const element = document.querySelector(`#${id}`);
     if (element) {
       element.textContent = value.toString();
     }
@@ -545,7 +604,9 @@ export class DocumentBase {
 
     // Update toggle buttons
     document.querySelectorAll('.view-mode-toggle .toggle-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
+      if (btn instanceof HTMLElement) {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      }
     });
 
     // Re-filter and render
@@ -605,12 +666,12 @@ declare global {
 // Close document modal
 window.closeDocumentModal = function (): void {
   const modal = document.querySelector('#documentPreviewModal');
-  if (modal) {
+  if (modal instanceof HTMLElement) {
     modal.style.display = 'none';
 
     // Clean up blob URL
     const previewFrame = document.querySelector('#documentPreviewFrame');
-    if (previewFrame) {
+    if (previewFrame instanceof HTMLIFrameElement) {
       const blobUrl = previewFrame.dataset.blobUrl;
       if (blobUrl !== undefined && blobUrl !== '') {
         URL.revokeObjectURL(blobUrl);
@@ -630,12 +691,12 @@ window.downloadDocument = function (docId?: string | number): void {
       documentId = String(docId);
     } else {
       const downloadBtn = document.querySelector('#downloadButton');
-      if (!downloadBtn) {
+      if (!(downloadBtn instanceof HTMLElement)) {
         console.error('Download button not found');
         return;
       }
       const dataId = downloadBtn.dataset.documentId;
-      if (dataId === null || dataId === '') {
+      if (dataId === undefined || dataId === '') {
         console.error('No document ID found');
         return;
       }
@@ -676,8 +737,8 @@ window.downloadDocument = function (docId?: string | number): void {
 
 // Toggle dropdown
 window.toggleDropdown = function (type: string): void {
-  const display = document.getElementById(`${type}Display`);
-  const dropdown = document.getElementById(`${type}Dropdown`);
+  const display = document.querySelector(`#${type}Display`);
+  const dropdown = document.querySelector(`#${type}Dropdown`);
 
   if (!display || !dropdown) return;
 

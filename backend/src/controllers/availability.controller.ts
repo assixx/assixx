@@ -89,16 +89,16 @@ class AvailabilityController {
       }
       const tenantId = req.user.tenant_id;
 
-      const { start_date, end_date } = req.query;
-      if (start_date === undefined || end_date === undefined) {
+      const { start_date: startDate, end_date: endDate } = req.query;
+      if (startDate === undefined || endDate === undefined) {
         res.status(400).json({ error: 'Start- und Enddatum erforderlich' });
         return;
       }
 
       const summary = await availabilityService.getAvailabilitySummary(
         tenantId,
-        start_date as string,
-        end_date as string,
+        startDate as string,
+        endDate as string,
       );
       res.json({ summary });
     } catch (error: unknown) {
@@ -151,7 +151,14 @@ class AvailabilityController {
       const tenantId = req.user.tenant_id;
       const userId = req.user.id;
 
-      const { employee_id, status, start_date, end_date, reason, notes } = req.body as {
+      const {
+        employee_id: employeeId,
+        status,
+        start_date: startDate,
+        end_date: endDate,
+        reason,
+        notes,
+      } = req.body as {
         employee_id?: number;
         status?: string;
         start_date?: string;
@@ -162,13 +169,13 @@ class AvailabilityController {
 
       // Validate required fields
       if (
-        employee_id === undefined ||
+        employeeId === undefined ||
         status === undefined ||
         status === '' ||
-        start_date === undefined ||
-        start_date === '' ||
-        end_date === undefined ||
-        end_date === ''
+        startDate === undefined ||
+        startDate === '' ||
+        endDate === undefined ||
+        endDate === ''
       ) {
         res.status(400).json({
           error: 'Mitarbeiter, Status, Start- und Enddatum sind erforderlich',
@@ -177,8 +184,8 @@ class AvailabilityController {
       }
 
       // Validate dates
-      const start = new Date(start_date);
-      const end = new Date(end_date);
+      const start = new Date(startDate);
+      const end = new Date(endDate);
       if (end < start) {
         res.status(400).json({
           error: 'Enddatum muss nach oder gleich dem Startdatum sein',
@@ -187,7 +194,7 @@ class AvailabilityController {
       }
 
       // Check permission - only admin/root can create for others
-      if (req.user.role === 'employee' && employee_id !== userId) {
+      if (req.user.role === 'employee' && employeeId !== userId) {
         res.status(403).json({
           error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit ändern',
         });
@@ -195,11 +202,11 @@ class AvailabilityController {
       }
 
       const id = await availabilityService.create({
-        employeeId: employee_id,
+        employeeId,
         tenant_id: tenantId,
         status: status as 'available' | 'unavailable' | 'vacation' | 'sick' | 'other' | 'training',
-        startDate: start_date,
-        endDate: end_date,
+        startDate,
+        endDate,
         reason,
         notes,
         createdBy: userId,
