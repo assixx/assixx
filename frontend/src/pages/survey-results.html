@@ -296,6 +296,100 @@
         margin-bottom: var(--spacing-md);
         opacity: 0.5;
       }
+
+      /* Individual Responses Section */
+      .responses-section {
+        margin-top: var(--spacing-lg);
+      }
+
+      .responses-section h3 {
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .responses-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+      }
+
+      .response-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        transition: all 0.3s ease;
+      }
+
+      .response-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: var(--primary-color);
+      }
+
+      .response-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .response-header h4 {
+        margin: 0;
+        color: var(--text-primary);
+      }
+
+      .response-meta {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+
+      .status-badge {
+        padding: 4px 8px;
+        border-radius: var(--radius-xs);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .status-badge.completed {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+
+      .status-badge.pending {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+      }
+
+      .response-answers {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
+
+      .answer-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+
+      .answer-item strong {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+      }
+
+      .answer-item span {
+        color: var(--text-primary);
+        padding-left: var(--spacing-md);
+      }
     </style>
   </head>
   <body>
@@ -328,395 +422,10 @@
       </main>
     </div>
 
-    <script type="module">
-      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
-
-      let surveyId = null;
-      let surveyData = null;
-      let statistics = null;
-
-      document.addEventListener('DOMContentLoaded', () => {
-        console.info('Survey Results page loaded');
-
-        // URL-Parameter auslesen
-        const urlParams = new URLSearchParams(window.location.search);
-        surveyId = urlParams.get('id');
-
-        if (!surveyId) {
-          showError('Keine Umfrage-ID angegeben');
-          return;
-        }
-
-        // Umfrage-Daten laden
-        loadSurveyResults();
-      });
-
-      async function loadSurveyResults() {
-        try {
-          const token = localStorage.getItem('token');
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-
-          // Umfrage-Details laden
-          const surveyEndpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
-          const surveyResponse = await fetch(surveyEndpoint, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!surveyResponse.ok) {
-            throw new Error('Fehler beim Laden der Umfrage');
-          }
-
-          const surveyResult = await surveyResponse.json();
-          // Handle v2 API response structure
-          surveyData = useV2 && surveyResult.success ? surveyResult.data : surveyResult;
-
-          // Statistiken laden
-          const statsEndpoint = useV2 ? `/api/v2/surveys/${surveyId}/statistics` : `/api/surveys/${surveyId}/statistics`;
-          const statsResponse = await fetch(statsEndpoint, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!statsResponse.ok) {
-            throw new Error('Fehler beim Laden der Statistiken');
-          }
-
-          const statsResult = await statsResponse.json();
-          // Handle v2 API response structure
-          statistics = useV2 && statsResult.success ? statsResult.data : statsResult;
-
-          renderResults();
-        } catch (error) {
-          console.error('Error:', error);
-          showError(error.message);
-        }
-      }
-
-      // Helper function to convert Buffer to text
-      function getTextFromBuffer(value) {
-        if (typeof value === 'string') {
-          return value;
-        }
-        if (value && value.type === 'Buffer' && Array.isArray(value.data)) {
-          return String.fromCharCode.apply(null, value.data);
-        }
-        if (value && typeof value === 'object') {
-          return '';
-        }
-        return value || '';
-      }
-
-      function renderResults() {
-        const contentArea = document.getElementById('content-area');
-
-        if (!surveyData || !statistics) {
-          showError('Keine Daten verfügbar');
-          return;
-        }
-
-        contentArea.innerHTML = `
-                <div class="glass-card results-header">
-                    <h2 class="survey-title">${escapeHtml(getTextFromBuffer(surveyData.title))}</h2>
-                    <div class="survey-meta">
-                        <span><i class="fas fa-calendar"></i> Erstellt: ${formatDate(surveyData.created_at)}</span>
-                        <span><i class="fas fa-calendar-check"></i> Endet: ${formatDate(surveyData.end_date)}</span>
-                        <span><i class="fas fa-user-shield"></i> ${surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true ? 'Anonym' : 'Nicht anonym'}</span>
-                    </div>
-                </div>
-
-                <div class="export-actions">
-                    <button class="btn btn-primary" onclick="exportToExcel()">
-                        <i class="fas fa-file-excel"></i> Excel Export
-                    </button>
-                    <button class="btn btn-secondary" onclick="exportToPDF()">
-                        <i class="fas fa-file-pdf"></i> PDF Export
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.print()">
-                        <i class="fas fa-print"></i> Drucken
-                    </button>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3 class="stat-value">${statistics.total_responses || 0}</h3>
-                        <p class="stat-label">Antworten</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 class="stat-value">${statistics.completed_responses || 0}</h3>
-                        <p class="stat-label">Abgeschlossen</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 class="stat-value">${statistics.completion_rate || 0}%</h3>
-                        <p class="stat-label">Abschlussrate</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 class="stat-value">${surveyData.status === 'active' ? 'Aktiv' : 'Beendet'}</h3>
-                        <p class="stat-label">Status</p>
-                    </div>
-                </div>
-
-                <div id="questions-results">
-                    ${renderQuestionResults()}
-                </div>
-            `;
-      }
-
-      function renderQuestionResults() {
-        if (!statistics.questions || statistics.questions.length === 0) {
-          return '<div class="empty-state"><div class="empty-icon">📊</div><p>Noch keine Antworten vorhanden</p></div>';
-        }
-
-        return statistics.questions
-          .map((question) => {
-            let resultContent = '';
-
-            switch (question.question_type) {
-              case 'single_choice':
-              case 'multiple_choice':
-              case 'yes_no':
-                resultContent = renderChoiceResults(question);
-                break;
-              case 'rating':
-                resultContent = renderRatingResults(question);
-                break;
-              case 'text':
-                resultContent = renderTextResults(question);
-                break;
-              case 'number':
-                resultContent = renderNumberResults(question);
-                break;
-              case 'date':
-                resultContent = renderDateResults(question);
-                break;
-              default:
-                resultContent = '<p>Unbekannter Fragetyp</p>';
-            }
-
-            return `
-                    <div class="question-card">
-                        <div class="question-header">
-                            <h3 class="question-text">${escapeHtml(getTextFromBuffer(question.question_text))}</h3>
-                            <p class="question-type">Typ: ${getQuestionTypeLabel(question.question_type)}</p>
-                        </div>
-                        <div class="question-body">
-                            ${resultContent}
-                        </div>
-                    </div>
-                `;
-          })
-          .join('');
-      }
-
-      function renderChoiceResults(question) {
-        if (!question.options || question.options.length === 0) {
-          return '<p>Keine Optionen verfügbar</p>';
-        }
-
-        // Calculate total responses from all options
-        const totalResponses = question.options.reduce((sum, opt) => sum + (parseInt(opt.count) || 0), 0);
-
-        return question.options
-          .map((option) => {
-            const count = parseInt(option.count) || 0;
-            const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
-
-            return `
-                    <div class="option-result">
-                        <div class="option-header">
-                            <span class="option-text">${escapeHtml(getTextFromBuffer(option.option_text))}</span>
-                            <span class="option-count">${count} Stimmen</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${percentage}%">
-                                <span class="progress-percentage">${percentage}%</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-          })
-          .join('');
-      }
-
-      function renderRatingResults(question) {
-        const stats = question.statistics || {};
-        const avgRating = parseFloat(stats.average) || 0;
-        const maxRating = 5;
-        const count = parseInt(stats.count) || 0;
-
-        return `
-                <div class="u-text-center">
-                    <h4 style="font-size: 3rem; color: var(--primary-color); margin: 0;">
-                        ${avgRating.toFixed(1)}
-                    </h4>
-                    <p style="color: var(--text-secondary);">von ${maxRating} Sternen (${count} Bewertungen)</p>
-                    <div style="font-size: 2rem; color: #ffc107; margin: 20px 0;">
-                        ${renderStars(avgRating, maxRating)}
-                    </div>
-                    <div style="margin-top: 20px; font-size: 0.9rem; color: var(--text-secondary);">
-                        Min: ${stats.min || 0} | Max: ${stats.max || 0}
-                    </div>
-                </div>
-            `;
-      }
-
-      function renderStars(rating, maxRating) {
-        let stars = '';
-        for (let i = 1; i <= maxRating; i++) {
-          if (i <= rating) {
-            stars += '★';
-          } else if (i - 0.5 <= rating) {
-            stars += '☆';
-          } else {
-            stars += '☆';
-          }
-        }
-        return stars;
-      }
-
-      function renderTextResults(question) {
-        if (!question.responses || question.responses.length === 0) {
-          return '<p>Keine Textantworten vorhanden</p>';
-        }
-
-        const isAnonymous = surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true;
-
-        return `
-                <div class="text-responses">
-                    ${question.responses
-                      .map(
-                        (response) => `
-                        <div class="text-response">
-                            <p class="response-text">${escapeHtml(getTextFromBuffer(response.answer_text))}</p>
-                            ${
-                              !isAnonymous && response.user_id
-                                ? `
-                                <p class="response-meta">
-                                    <i class="fas fa-user"></i> ${escapeHtml(response.first_name || '')} ${escapeHtml(response.last_name || '')}
-                                </p>
-                            `
-                                : ''
-                            }
-                        </div>
-                    `,
-                      )
-                      .join('')}
-                </div>
-            `;
-      }
-
-      function renderNumberResults(question) {
-        const stats = question.statistics || {};
-        const average = parseFloat(stats.average) || 0;
-        const count = parseInt(stats.count) || 0;
-
-        return `
-                <div class="u-text-center">
-                    <h4 style="font-size: 2rem; color: var(--primary-color); margin: 0;">
-                        ${average.toFixed(2)}
-                    </h4>
-                    <p style="color: var(--text-secondary);">Durchschnittswert (${count} Antworten)</p>
-                    <div style="margin-top: 20px; font-size: 0.9rem; color: var(--text-secondary);">
-                        <strong>Min:</strong> ${stats.min || 0} | <strong>Max:</strong> ${stats.max || 0}
-                    </div>
-                </div>
-            `;
-      }
-
-      function renderDateResults(question) {
-        // Implementierung für Datums-Ergebnisse
-        return '<p>Datums-Auswertung wird noch implementiert</p>';
-      }
-
-      function getQuestionTypeLabel(type) {
-        const labels = {
-          text: 'Textantwort',
-          single_choice: 'Einzelauswahl',
-          multiple_choice: 'Mehrfachauswahl',
-          rating: 'Bewertung',
-          yes_no: 'Ja/Nein',
-          number: 'Zahl',
-          date: 'Datum',
-        };
-        return labels[type] || type;
-      }
-
-      function formatDate(dateString) {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('de-DE', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      }
-
-      // HTML escape function to prevent XSS
-      function escapeHtml(unsafe) {
-        if (typeof unsafe !== 'string') {
-          return '';
-        }
-        return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-      }
-
-      function showError(message) {
-        const contentArea = document.getElementById('content-area');
-        const safeMessage = escapeHtml(message);
-        contentArea.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">❌</div>
-                    <p>${safeMessage}</p>
-                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin'">
-                        Zurück zur Übersicht
-                    </button>
-                </div>
-            `;
-      }
-
-      async function exportToExcel() {
-        try {
-          const token = localStorage.getItem('token');
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}/export?format=excel` : `/api/surveys/${surveyId}/export?format=excel`;
-
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error('Fehler beim Exportieren');
-          }
-
-          // Blob erstellen und Download auslösen
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `umfrage_${surveyId}_export.xlsx`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        } catch (error) {
-          console.error('Export error:', error);
-          showErrorAlert('Fehler beim Exportieren: ' + error.message);
-        }
-      }
-
-      async function exportToPDF() {
-        // Placeholder für PDF-Export
-        showAlert('PDF-Export wird implementiert...');
-      }
-    </script>
-
-    <!-- Unified Navigation -->
-    <script type="module" src="/scripts/auth.js"></script>
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth.ts"></script>
+    <script type="module" src="/scripts/survey-results.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

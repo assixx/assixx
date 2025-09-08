@@ -31,13 +31,22 @@ const validatePermissions = createValidation([
 // Get departments for a specific admin
 router.get(
   '/:adminId',
-  ...security.root(
+  ...security.admin(
     createValidation([param('adminId').isInt({ min: 1 }).withMessage('Ungültige Admin-ID')]),
   ),
   typed.params<{ adminId: string }>(async (req, res) => {
     const adminId = Number.parseInt(req.params.adminId);
 
     try {
+      // Admins can only view their own permissions, root can view all
+      if (req.user.role !== 'root' && req.user.id !== adminId) {
+        res.status(403).json({
+          success: false,
+          error: 'Insufficient permissions - can only view own permissions',
+        });
+        return;
+      }
+
       // Get the tenant_id from the admin being queried
       const [adminRows] = await executeQuery<RowDataPacket[]>(
         'SELECT tenant_id FROM users WHERE id = ?',

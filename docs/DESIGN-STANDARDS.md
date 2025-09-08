@@ -10,12 +10,12 @@ Dieses Dokument definiert die verbindlichen Design-Standards für das Assixx-Pro
 
 ## 📋 Inhaltsverzeichnis
 
-1. [Grundprinzipien](#grundprinzipien)
-2. [Farbpalette & Variablen](#farbpalette--variablen)
-3. [Glassmorphismus Design](#glassmorphismus-design)
-4. [Komponenten-Standards](#komponenten-standards)
-5. [Animationen & Übergänge](#animationen--übergänge)
-6. [Responsive Design](#responsive-design)
+1. [Grundprinzipien](#-grundprinzipien)
+2. [Farbpalette & Variablen](#-farbpalette--variablen)
+3. [Glassmorphismus Design](#-glassmorphismus-design)
+4. [Komponenten-Standards](#-komponenten-standards)
+5. [Animationen & Übergänge](#animationen-und-uebergange)
+6. [Responsive Design](#-responsive-design)
 7. [Best Practices](#best-practices)
 
 ---
@@ -873,6 +873,8 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 ```
 
 ---
+
+<a id="animationen-und-uebergange"></a>
 
 ## 🎬 Animationen & Übergänge
 

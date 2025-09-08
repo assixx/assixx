@@ -108,7 +108,6 @@ const API_V1_TEAMS = '/api/teams';
 // UI Class Constants
 const CLASS_COMPACT_ITEM = 'compact-item';
 const CLASS_COMPACT_ITEM_NAME = 'compact-item-name';
-const CLASS_COMPACT_ITEM_COUNT = 'compact-item-count';
 
 // ============================================================================
 // SERVICE CLASSES - Business Logic
@@ -650,12 +649,7 @@ class DashboardUI {
     const items = employees.slice(0, 5).map((emp) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
       const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, emp.fullName);
-      const positionSpan = createElement(
-        'span',
-        { className: CLASS_COMPACT_ITEM_COUNT },
-        emp.position ?? 'Mitarbeiter',
-      );
-      item.append(nameSpan, positionSpan);
+      item.append(nameSpan);
       return item;
     });
 
@@ -677,12 +671,7 @@ class DashboardUI {
     const items = documents.slice(0, 5).map((doc) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
       const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, doc.file_name);
-      const dateSpan = createElement(
-        'span',
-        { className: 'compact-item-count' },
-        new Date(doc.created_at).toLocaleDateString('de-DE'),
-      );
-      item.append(nameSpan, dateSpan);
+      item.append(nameSpan);
       return item;
     });
 
@@ -704,8 +693,7 @@ class DashboardUI {
     const items = departments.slice(0, 5).map((dept) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
       const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, dept.name);
-      const descSpan = createElement('span', { className: CLASS_COMPACT_ITEM_COUNT }, dept.description ?? '');
-      item.append(nameSpan, descSpan);
+      item.append(nameSpan);
       return item;
     });
 
@@ -727,8 +715,7 @@ class DashboardUI {
     const items = teams.slice(0, 5).map((team) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
       const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, team.name);
-      const deptSpan = createElement('span', { className: CLASS_COMPACT_ITEM_COUNT }, team.departmentName ?? '');
-      item.append(nameSpan, deptSpan);
+      item.append(nameSpan);
       return item;
     });
 

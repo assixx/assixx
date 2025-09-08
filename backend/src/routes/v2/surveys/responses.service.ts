@@ -25,7 +25,7 @@ export interface SurveyResponse {
   user_id: number;
   started_at: string;
   completed_at: string | null;
-  is_complete: boolean;
+  status: 'in_progress' | 'completed' | 'abandoned';
   answers?: SurveyAnswer[];
 }
 
@@ -70,8 +70,8 @@ class ResponsesService {
     return await transaction(async (connection: PoolConnection) => {
       // Create response record
       const [responseResult] = await connection.query<ResultSetHeader>(
-        `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, is_complete)
-         VALUES (?, ?, ?, NOW(), NOW(), 1)`,
+        `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status)
+         VALUES (?, ?, ?, NOW(), NOW(), 'completed')`,
         [surveyId, userId, tenantId] as unknown[],
       );
 
@@ -98,14 +98,17 @@ class ResponsesService {
             [responseId, answer.question_id, answer.answer_date, tenantId] as unknown[],
           );
         } else if (answer.answer_options && answer.answer_options.length > 0) {
-          // For multiple choice questions
-          for (const optionId of answer.answer_options) {
-            await connection.query(
-              `INSERT INTO survey_answer_options (response_id, question_id, option_id, tenant_id)
-               VALUES (?, ?, ?, ?)`,
-              [responseId, answer.question_id, optionId, tenantId] as unknown[],
-            );
-          }
+          // For multiple choice questions - store as JSON
+          await connection.query(
+            `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id)
+             VALUES (?, ?, ?, ?)`,
+            [
+              responseId,
+              answer.question_id,
+              JSON.stringify(answer.answer_options),
+              tenantId,
+            ] as unknown[],
+          );
         }
       }
 
@@ -128,6 +131,18 @@ class ResponsesService {
       throw new ServiceError('FORBIDDEN', 'Keine Berechtigung');
     }
 
+    // Check if survey is anonymous
+    const [surveyInfo] = await query<RowDataPacket[]>(
+      `SELECT is_anonymous FROM surveys WHERE id = ? AND tenant_id = ?`,
+      [surveyId, tenantId] as unknown[],
+    );
+
+    if (surveyInfo.length === 0) {
+      throw new ServiceError('NOT_FOUND', 'Umfrage nicht gefunden');
+    }
+
+    const isAnonymous = Boolean(surveyInfo[0].is_anonymous);
+
     // Get total count
     const [countResult] = await query<RowDataPacket[]>(
       `SELECT COUNT(*) as total
@@ -139,19 +154,42 @@ class ResponsesService {
     const total = countResult[0].total as number;
     const offset = (options.page - 1) * options.limit;
 
-    // Get responses
+    // Get responses with user info (if not anonymous)
     const [responses] = await query<RowDataPacket[]>(
-      `SELECT sr.*, u.first_name, u.last_name, u.username
+      `SELECT sr.*,
+       ${isAnonymous ? 'NULL as first_name, NULL as last_name, NULL as username' : 'u.first_name, u.last_name, u.username'}
        FROM survey_responses sr
-       LEFT JOIN users u ON sr.user_id = u.id
+       ${!isAnonymous ? 'LEFT JOIN users u ON sr.user_id = u.id' : ''}
        WHERE sr.survey_id = ? AND sr.tenant_id = ?
        ORDER BY sr.completed_at DESC
        LIMIT ? OFFSET ?`,
       [surveyId, tenantId, options.limit, offset] as unknown[],
     );
 
+    // Fetch answers for each response
+    const responsesWithAnswers = await Promise.all(
+      responses.map(async (response) => {
+        const [answers] = await query<RowDataPacket[]>(
+          `SELECT sa.*, sq.question_type, sq.question_text
+           FROM survey_answers sa
+           JOIN survey_questions sq ON sa.question_id = sq.id
+           WHERE sa.response_id = ? AND sa.tenant_id = ?`,
+          [response.id, tenantId],
+        );
+
+        return {
+          ...response,
+          answers: answers.map((a) => ({
+            ...a,
+            answer_options:
+              a.answer_options ? (JSON.parse(a.answer_options as string) as number[]) : undefined,
+          })),
+        };
+      }),
+    );
+
     return {
-      responses: responses as SurveyResponse[],
+      responses: responsesWithAnswers as SurveyResponse[],
       total,
     };
   }
@@ -168,7 +206,7 @@ class ResponsesService {
       `SELECT sr.*
        FROM survey_responses sr
        WHERE sr.survey_id = ? AND sr.user_id = ? AND sr.tenant_id = ?
-       ORDER BY sr.created_at DESC
+       ORDER BY sr.started_at DESC
        LIMIT 1`,
       [surveyId, userId, tenantId] as unknown[],
     );
@@ -188,30 +226,14 @@ class ResponsesService {
       [response.id, tenantId] as unknown[],
     );
 
-    // Get selected options for choice questions
-    const [options] = await query<RowDataPacket[]>(
-      `SELECT sao.question_id, sao.option_id
-       FROM survey_answer_options sao
-       WHERE sao.response_id = ? AND sao.tenant_id = ?`,
-      [response.id, tenantId] as unknown[],
-    );
-
-    // Group options by question
-    const optionsByQuestion: Record<number, number[]> = {};
-    for (const opt of options) {
-      const questionId = opt.question_id as number;
-      // Initialize array if not exists
-      optionsByQuestion[questionId] = optionsByQuestion[questionId] ?? [];
-      optionsByQuestion[questionId].push(opt.option_id as number);
-    }
-
-    // Combine answers with options
+    // Map answers
     response.answers = answers.map((a) => ({
       question_id: a.question_id as number,
       answer_text: a.answer_text as string | undefined,
       answer_number: a.answer_number as number | undefined,
       answer_date: a.answer_date as string | undefined,
-      answer_options: optionsByQuestion[a.question_id as number],
+      answer_options:
+        a.answer_options ? (JSON.parse(a.answer_options as string) as number[]) : undefined,
     }));
 
     return response;
@@ -295,11 +317,6 @@ class ResponsesService {
         tenantId,
       ]);
 
-      await connection.query(
-        `DELETE FROM survey_answer_options WHERE response_id = ? AND tenant_id = ?`,
-        [responseId, tenantId] as unknown[],
-      );
-
       // Insert new answers (similar to submitResponse)
       for (const answer of answers) {
         if (answer.answer_text !== undefined && answer.answer_text !== '') {
@@ -308,14 +325,30 @@ class ResponsesService {
              VALUES (?, ?, ?, ?)`,
             [responseId, answer.question_id, answer.answer_text, tenantId] as unknown[],
           );
+        } else if (answer.answer_number !== undefined) {
+          await connection.query(
+            `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id)
+             VALUES (?, ?, ?, ?)`,
+            [responseId, answer.question_id, answer.answer_number, tenantId] as unknown[],
+          );
+        } else if (answer.answer_date !== undefined && answer.answer_date !== '') {
+          await connection.query(
+            `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id)
+             VALUES (?, ?, ?, ?)`,
+            [responseId, answer.question_id, answer.answer_date, tenantId] as unknown[],
+          );
         } else if (answer.answer_options && answer.answer_options.length > 0) {
-          for (const optionId of answer.answer_options) {
-            await connection.query(
-              `INSERT INTO survey_answer_options (response_id, question_id, option_id, tenant_id)
-               VALUES (?, ?, ?, ?)`,
-              [responseId, answer.question_id, optionId, tenantId] as unknown[],
-            );
-          }
+          // Store as JSON
+          await connection.query(
+            `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id)
+             VALUES (?, ?, ?, ?)`,
+            [
+              responseId,
+              answer.question_id,
+              JSON.stringify(answer.answer_options),
+              tenantId,
+            ] as unknown[],
+          );
         }
       }
 
@@ -366,15 +399,12 @@ class ResponsesService {
         sa.answer_text,
         sa.answer_number,
         sa.answer_date,
-        GROUP_CONCAT(sqo.option_text) as selected_options
+        sa.answer_options
        FROM survey_responses sr
        LEFT JOIN users u ON sr.user_id = u.id
        LEFT JOIN survey_questions sq ON sq.survey_id = sr.survey_id
        LEFT JOIN survey_answers sa ON sa.response_id = sr.id AND sa.question_id = sq.id
-       LEFT JOIN survey_answer_options sao ON sao.response_id = sr.id AND sao.question_id = sq.id
-       LEFT JOIN survey_question_options sqo ON sao.option_id = sqo.id
        WHERE sr.survey_id = ? AND sr.tenant_id = ?
-       GROUP BY sr.id, sq.id, sa.id
        ORDER BY sr.id, sq.order_position`,
       [surveyId, tenantId] as unknown[],
     );
@@ -396,7 +426,7 @@ class ResponsesService {
         String(row.username ?? ''),
       row.completed_at as string,
       row.question_text as string,
-      String(row.answer_text ?? row.answer_number ?? row.answer_date ?? row.selected_options ?? ''),
+      String(row.answer_text ?? row.answer_number ?? row.answer_date ?? row.answer_options ?? ''),
     ]);
 
     const csv = [

@@ -3,7 +3,7 @@
  * Business logic for survey management
  */
 import rootLog from '../../../models/rootLog';
-import survey from '../../../models/survey.js';
+import survey, { SurveyStatistics } from '../../../models/survey.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { eventBus } from '../../../utils/eventBus.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
@@ -27,6 +27,37 @@ export interface AssignmentCreateData {
   departmentId?: number | null;
   teamId?: number | null;
   userId?: number | null;
+}
+
+interface SurveyStatisticsResponse {
+  surveyId: number;
+  totalResponses: number;
+  completedResponses: number;
+  completionRate: number;
+  firstResponse?: Date | null;
+  lastResponse?: Date | null;
+  questions: {
+    id: number;
+    questionText: string;
+    questionType: string;
+    responses?: {
+      answerText?: string;
+      userId?: number | null;
+      firstName?: string | null;
+      lastName?: string | null;
+    }[];
+    options?: {
+      optionId: number;
+      optionText: string;
+      count: number;
+    }[];
+    statistics?: {
+      average: number | null;
+      min: number | null;
+      max: number | null;
+      totalResponses: number;
+    };
+  }[];
 }
 
 export interface SurveyCreateData {
@@ -463,7 +494,7 @@ export class SurveysService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ): Promise<unknown> {
+  ): Promise<SurveyStatisticsResponse> {
     try {
       // Check if survey exists and user has access
       await this.getSurveyById(surveyId, tenantId, userId, userRole);
@@ -472,10 +503,10 @@ export class SurveysService {
         throw new ServiceError('FORBIDDEN', 'Only admins can view survey statistics');
       }
 
-      const statistics = await survey.getStatistics(surveyId, tenantId);
+      const statistics: SurveyStatistics = await survey.getStatistics(surveyId, tenantId);
 
       // Transform to API format
-      return {
+      const response: SurveyStatisticsResponse = {
         surveyId: statistics.survey_id,
         totalResponses: statistics.total_responses,
         completedResponses: statistics.completed_responses,
@@ -486,7 +517,12 @@ export class SurveysService {
           id: q.id,
           questionText: q.question_text,
           questionType: q.question_type,
-          responses: q.responses,
+          responses: q.responses?.map((r) => ({
+            answerText: r.answer_text,
+            userId: r.user_id,
+            firstName: r.first_name,
+            lastName: r.last_name,
+          })),
           options: q.options?.map((opt) => ({
             optionId: opt.option_id,
             optionText: opt.option_text,
@@ -503,6 +539,8 @@ export class SurveysService {
             : undefined,
         })),
       };
+
+      return response;
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error('Error getting statistics:', error);

@@ -38,11 +38,14 @@ export const usersValidation = {
     body('lastName').isString().trim().notEmpty().withMessage('Last name required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('role').optional().isIn(['employee', 'admin']).withMessage('Invalid role'),
-    body('departmentId').optional().isInt().withMessage('Department ID must be integer'),
+    body('departmentId')
+      .optional({ nullable: true })
+      .custom((value) => value === null || value === undefined || Number.isInteger(value))
+      .withMessage('Department ID must be integer or null'),
     body('position').optional().isString().trim(),
     body('phone')
       .optional()
-      .custom((value) => !value || isValidPhoneNumber(value))
+      .custom((value: unknown) => !value || isValidPhoneNumber(value as string))
       .withMessage('Invalid phone number format (must start with + and contain 7-29 digits)'),
     body('address').optional().isString().trim(),
     body('employeeNumber')
@@ -68,11 +71,14 @@ export const usersValidation = {
       .notEmpty()
       .withMessage('Last name cannot be empty'),
     body('role').optional().isIn(['employee', 'admin']).withMessage('Invalid role'),
-    body('departmentId').optional().isInt().withMessage('Department ID must be integer'),
+    body('departmentId')
+      .optional({ nullable: true })
+      .custom((value) => value === null || value === undefined || Number.isInteger(value))
+      .withMessage('Department ID must be integer or null'),
     body('position').optional().isString().trim(),
     body('phone')
       .optional()
-      .custom((value) => !value || isValidPhoneNumber(value))
+      .custom((value: unknown) => !value || isValidPhoneNumber(value as string))
       .withMessage('Invalid phone number format (must start with + and contain 7-29 digits)'),
     body('address').optional().isString().trim(),
     body('isActive').optional().isBoolean().withMessage('isActive must be boolean'),
@@ -98,13 +104,13 @@ export const usersValidation = {
       .withMessage('Last name cannot be empty'),
     body('phone')
       .optional()
-      .custom((value) => !value || isValidPhoneNumber(value))
+      .custom((value: unknown) => !value || isValidPhoneNumber(value as string))
       .withMessage('Invalid phone number format (must start with + and contain 7-29 digits)'),
     body('address').optional().isString().trim(),
     body('emergencyContact').optional().isString().trim(),
     body('emergencyPhone')
       .optional()
-      .custom((value) => !value || isValidPhoneNumber(value))
+      .custom((value: unknown) => !value || isValidPhoneNumber(value as string))
       .withMessage(
         'Invalid emergency phone number format (must start with + and contain 7-29 digits)',
       ),
@@ -116,10 +122,15 @@ export const usersValidation = {
     body('newPassword')
       .isLength({ min: 8 })
       .withMessage('New password must be at least 8 characters')
-      .custom((value, { req }) => value !== req.body.currentPassword)
+      .custom(
+        (value: unknown, { req }) =>
+          value !== (req.body as { currentPassword?: string }).currentPassword,
+      )
       .withMessage('New password must be different from current password'),
     body('confirmPassword')
-      .custom((value, { req }) => value === req.body.newPassword)
+      .custom(
+        (value: unknown, { req }) => value === (req.body as { newPassword?: string }).newPassword,
+      )
       .withMessage('Passwords do not match'),
   ],
 

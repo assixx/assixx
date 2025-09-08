@@ -242,9 +242,8 @@ body {
 
 .card-header {
   margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-2sm);
   border-bottom: 1px solid var(--border-color);
-  border-radius: 10px;
 }
 
 .card-title {
@@ -275,7 +274,7 @@ body {
 }
 
 .admin-table td {
-  padding: 5px;
+  padding: 10px;
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -299,7 +298,7 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 .employee-table td {
-  padding: 5px;
+  padding: 10px;
   color: var(--text-secondary);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }

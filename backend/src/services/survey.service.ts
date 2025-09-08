@@ -4,7 +4,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import Survey from '../models/survey';
+import survey from '../models/survey';
 
 // Interfaces
 interface SurveyData {
@@ -49,7 +49,7 @@ interface SurveyQuestionOption {
 interface SurveyAssignment {
   id: number;
   survey_id: number;
-  assignment_type: 'company' | 'department' | 'team' | 'individual';
+  assignment_type: 'all_users' | 'department' | 'team' | 'user';
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -174,7 +174,7 @@ class SurveyService {
   getById(_tenantDb: Pool, _id: number): SurveyData | null {
     try {
       console.warn('SurveyService.getById: This method needs tenantId parameter');
-      // Survey.getById expects (surveyId, tenantId)
+      // survey.getById expects (surveyId, tenantId)
       throw new Error('Method needs refactoring - getById requires tenantId parameter');
     } catch (error: unknown) {
       console.error('Error in SurveyService.getById:', error);
@@ -184,7 +184,7 @@ class SurveyService {
 
   /**
    * Erstellt einen neuen Survey Eintrag
-   * NOTE: Survey.create expects (surveyData, tenantId, createdBy)
+   * NOTE: survey.create expects (surveyData, tenantId, createdBy)
    * @param _tenantDb - The _tenantDb parameter
    * @param _data - The _data parameter
    */
@@ -202,7 +202,7 @@ class SurveyService {
 
   /**
    * Aktualisiert einen Survey Eintrag
-   * NOTE: Survey.update expects (surveyId, surveyData, tenantId)
+   * NOTE: survey.update expects (surveyId, surveyData, tenantId)
    * @param _tenantDb - The _tenantDb parameter
    * @param _id - The _id parameter
    * @param _data - The _data parameter
@@ -219,7 +219,7 @@ class SurveyService {
 
   /**
    * Löscht einen Survey Eintrag
-   * NOTE: Survey.delete expects (surveyId, tenantId)
+   * NOTE: survey.delete expects (surveyId, tenantId)
    * @param _tenantDb - The _tenantDb parameter
    * @param _id - The _id parameter
    */
@@ -240,7 +240,7 @@ class SurveyService {
    */
   async getAllByTenant(tenantId: number, filters: SurveyFilters = {}): Promise<SurveyData[]> {
     try {
-      return await Survey.getAllByTenant(tenantId, filters);
+      return await survey.getAllByTenant(tenantId, filters);
     } catch (error: unknown) {
       console.error('Error in SurveyService.getAllByTenant:', error);
       throw error;
@@ -254,7 +254,7 @@ class SurveyService {
    */
   async getSurveyById(surveyId: number, tenantId: number): Promise<SurveyData | null> {
     try {
-      return await Survey.getById(surveyId, tenantId);
+      return await survey.getById(surveyId, tenantId);
     } catch (error: unknown) {
       console.error('Error in SurveyService.getSurveyById:', error);
       throw error;
@@ -273,7 +273,7 @@ class SurveyService {
     createdBy: number,
   ): Promise<number> {
     try {
-      return await Survey.create(surveyData, tenantId, createdBy);
+      return await survey.create(surveyData, tenantId, createdBy);
     } catch (error: unknown) {
       console.error('Error in SurveyService.createSurvey:', error);
       throw error;
@@ -292,7 +292,7 @@ class SurveyService {
     tenantId: number,
   ): Promise<boolean> {
     try {
-      return await Survey.update(surveyId, surveyData as SurveyCreateData, tenantId);
+      return await survey.update(surveyId, surveyData as SurveyCreateData, tenantId);
     } catch (error: unknown) {
       console.error('Error in SurveyService.updateSurvey:', error);
       throw error;
@@ -306,7 +306,7 @@ class SurveyService {
    */
   async deleteSurvey(surveyId: number, tenantId: number): Promise<boolean> {
     try {
-      return await Survey.delete(surveyId, tenantId);
+      return await survey.delete(surveyId, tenantId);
     } catch (error: unknown) {
       console.error('Error in SurveyService.deleteSurvey:', error);
       throw error;
@@ -319,7 +319,7 @@ class SurveyService {
    */
   async getTemplates(tenantId: number): Promise<SurveyTemplate[]> {
     try {
-      return await Survey.getTemplates(tenantId);
+      return await survey.getTemplates(tenantId);
     } catch (error: unknown) {
       console.error('Error in SurveyService.getTemplates:', error);
       throw error;
@@ -338,7 +338,7 @@ class SurveyService {
     createdBy: number,
   ): Promise<number> {
     try {
-      return await Survey.createFromTemplate(templateId, tenantId, createdBy);
+      return await survey.createFromTemplate(templateId, tenantId, createdBy);
     } catch (error: unknown) {
       console.error('Error in SurveyService.createFromTemplate:', error);
       throw error;
@@ -352,7 +352,7 @@ class SurveyService {
    */
   async getStatistics(surveyId: number, tenantId: number): Promise<SurveyStatistics> {
     try {
-      return await Survey.getStatistics(surveyId, tenantId);
+      return await survey.getStatistics(surveyId, tenantId);
     } catch (error: unknown) {
       console.error('Error in SurveyService.getStatistics:', error);
       throw error;

@@ -1006,6 +1006,10 @@ document.addEventListener('DOMContentLoaded', () => {
               if (value.length > 0) {
                 // eslint-disable-next-line security/detect-object-injection
                 data[key] = Number.parseInt(value, 10);
+              } else {
+                // Explicitly set to null when empty (no department/team selected)
+                // eslint-disable-next-line security/detect-object-injection
+                data[key] = null;
               }
               break;
             case 'email':

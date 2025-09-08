@@ -53,7 +53,7 @@ interface DbSurveyQuestionOption extends RowDataPacket {
 interface DbSurveyAssignment extends RowDataPacket {
   id: number;
   survey_id: number;
-  assignment_type: 'company' | 'department' | 'team' | 'individual';
+  assignment_type: 'all_users' | 'department' | 'team' | 'user';
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -115,7 +115,7 @@ interface SurveyFilters {
   limit?: number;
 }
 
-interface SurveyStatistics {
+export interface SurveyStatistics {
   survey_id: number;
   total_responses: number;
   completed_responses: number;
@@ -130,6 +130,9 @@ interface SurveyStatistics {
       answer_text?: string;
       selected_option_id?: number;
       rating?: number;
+      user_id?: number | null;
+      first_name?: string | null;
+      last_name?: string | null;
     }[];
     options?: {
       option_id: number;
@@ -752,6 +755,9 @@ export async function getSurveyStatistics(
         );
         questionStat.responses = textResponses.map((row) => ({
           answer_text: String(row.answer_text ?? ''),
+          user_id: row.user_id as number | null,
+          first_name: row.first_name as string | null,
+          last_name: row.last_name as string | null,
         }));
       } else if (question.question_type === 'rating') {
         // Get numeric statistics

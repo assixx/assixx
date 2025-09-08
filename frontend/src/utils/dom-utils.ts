@@ -5,6 +5,17 @@
  */
 
 /**
+ * Escape HTML special characters to prevent XSS
+ * @param text - Text to escape
+ * @returns Escaped HTML string
+ */
+export function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
  * Type-safe querySelector that throws if element not found
  * Use this when element MUST exist (critical UI elements)
  * @param selector - CSS selector

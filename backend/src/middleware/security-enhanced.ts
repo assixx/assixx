@@ -325,7 +325,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
 
             .btn-primary {
               display: inline-block;
-              padding: var(--spacing-md) var(--spacing-xl);
+            padding: var(--spacing-2sm);
               background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
               color: #fff;
               text-decoration: none;

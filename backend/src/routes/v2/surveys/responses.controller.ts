@@ -9,13 +9,35 @@ import { ServiceError } from '../../../utils/ServiceError';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { SurveyAnswer, responsesService } from './responses.service';
 
+interface FrontendAnswer {
+  questionId?: number;
+  question_id?: number;
+  answerText?: string;
+  answer_text?: string;
+  answerNumber?: number;
+  answer_number?: number;
+  answerDate?: string;
+  answer_date?: string;
+  answerOptions?: number[];
+  answer_options?: number[];
+}
+
 /**
  * Submit a response to a survey
  */
 export async function submitResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const surveyId = Number.parseInt(req.params.id, 10);
-    const { answers } = req.body as { answers: SurveyAnswer[] };
+    const { answers: rawAnswers } = req.body as { answers: FrontendAnswer[] };
+
+    // Transform camelCase from frontend to snake_case for service
+    const answers: SurveyAnswer[] = rawAnswers.map((answer) => ({
+      question_id: answer.questionId ?? answer.question_id ?? 0,
+      answer_text: answer.answerText ?? answer.answer_text,
+      answer_number: answer.answerNumber ?? answer.answer_number,
+      answer_date: answer.answerDate ?? answer.answer_date,
+      answer_options: answer.answerOptions ?? answer.answer_options,
+    }));
 
     const responseId = await responsesService.submitResponse(
       surveyId,

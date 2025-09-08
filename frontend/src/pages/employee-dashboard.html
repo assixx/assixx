@@ -809,6 +809,10 @@
               <div class="info-value" id="employee-department">-</div>
             </div>
             <div class="info-card">
+              <div class="info-label">Team</div>
+              <div class="info-value" id="employee-team">-</div>
+            </div>
+            <div class="info-card">
               <div class="info-label">Position</div>
               <div class="info-value" id="employee-position">Mitarbeiter</div>
             </div>
@@ -1014,7 +1018,12 @@
           // employee-id element was removed, skip it
           const deptElement = document.getElementById('employee-department');
           if (deptElement) {
-            deptElement.textContent = user.department || 'Nicht zugewiesen';
+            deptElement.textContent = user.departmentName || 'Nicht zugewiesen';
+          }
+
+          const teamElement = document.getElementById('employee-team');
+          if (teamElement) {
+            teamElement.textContent = user.teamName || user.team_name || 'Kein Team';
           }
 
           const posElement = document.getElementById('employee-position');

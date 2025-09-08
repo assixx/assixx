@@ -637,14 +637,16 @@
       }
 
       .btn {
-        padding: var(--spacing-md) var(--spacing-xl);
-        border-radius: var(--radius-md);
+        align-items: center;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
         border: none;
-        font-weight: 500;
+        border-radius: 25px;
+        color: #fff;
         cursor: pointer;
         display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
+        font-weight: 500;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-lg);
       }
 
       .btn-primary {
@@ -875,6 +877,11 @@
           if (response.ok) {
             const data = await response.json();
             console.info(`Response check for survey ${surveyId}:`, data);
+            // API v2 returns { success: true, data: { responded: bool, response: {} } }
+            // API v1 returns { responded: bool, response: {} }
+            if (useV2 && data.success && data.data) {
+              return data.data;
+            }
             return data;
           } else {
             console.error(`Failed to check response for survey ${surveyId}:`, response.status);
@@ -932,7 +939,7 @@
       }
 
       // Start survey
-      async function startSurvey(surveyId) {
+      window.startSurvey = async function startSurvey(surveyId) {
         try {
           const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
           const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
@@ -955,7 +962,7 @@
           console.error('Error loading survey:', error);
           showErrorAlert('Fehler beim Laden der Umfrage');
         }
-      }
+      };
 
       // Helper function to convert Buffer to text
       function getQuestionText(questionText) {
@@ -1005,8 +1012,8 @@
                 <div class="question-header">
                     <span class="question-number">${index + 1}</span>
                     <div class="question-text">
-                        ${getQuestionText(question.question_text)}
-                        ${question.is_required ? '<span class="required-indicator">*</span>' : ''}
+                        ${getQuestionText(question.questionText)}
+                        ${question.isRequired ? '<span class="required-indicator">*</span>' : ''}
                     </div>
                 </div>
                 <div class="answer-container">
@@ -1019,7 +1026,7 @@
 
       // Create answer input based on question type
       function createAnswerInput(question) {
-        switch (question.question_type) {
+        switch (question.questionType) {
           case 'text':
             return `<textarea class="form-control"
                                     data-question-id="${question.id}"
@@ -1030,7 +1037,7 @@
             return question.options
               .map((option, index) => {
                 // Handle both string array and object array formats
-                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionText = typeof option === 'string' ? option : option.optionText;
                 const optionId = typeof option === 'string' ? index : option.id;
                 return `
                         <div class="choice-option">
@@ -1050,7 +1057,7 @@
             return question.options
               .map((option, index) => {
                 // Handle both string array and object array formats
-                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionText = typeof option === 'string' ? option : option.optionText;
                 const optionId = typeof option === 'string' ? index : option.id;
                 return `
                         <div class="choice-option">
@@ -1121,42 +1128,42 @@
       }
 
       // Update answer
-      function updateAnswer(questionId, value, type) {
+      window.updateAnswer = function updateAnswer(questionId, value, type) {
         if (type === 'single') {
           // For single choice, store as array with one element
           answers[questionId] = {
-            question_id: questionId,
-            answer_options: [value],
+            questionId: questionId,
+            answerOptions: [value],
           };
         } else {
           answers[questionId] = {
-            question_id: questionId,
-            [`answer_${type === 'text' ? 'text' : type === 'number' ? 'number' : 'date'}`]: value,
+            questionId: questionId,
+            [`answer${type === 'text' ? 'Text' : type === 'number' ? 'Number' : 'Date'}`]: value,
           };
         }
         updateProgress();
-      }
+      };
 
       // Update multiple choice answer
-      function updateMultipleChoice(questionId, optionId, checked) {
+      window.updateMultipleChoice = function updateMultipleChoice(questionId, optionId, checked) {
         if (!answers[questionId]) {
           answers[questionId] = {
-            question_id: questionId,
-            selected_options: [],
+            questionId: questionId,
+            selectedOptions: [],
           };
         }
 
         if (checked) {
-          answers[questionId].selected_options.push(optionId);
+          answers[questionId].selectedOptions.push(optionId);
         } else {
-          answers[questionId].selected_options = answers[questionId].selected_options.filter((id) => id !== optionId);
+          answers[questionId].selectedOptions = answers[questionId].selectedOptions.filter((id) => id !== optionId);
         }
 
         updateProgress();
-      }
+      };
 
       // Select rating
-      function selectRating(questionId, value) {
+      window.selectRating = function selectRating(questionId, value) {
         // Clear previous selection
         for (let i = 1; i <= 5; i++) {
           document.getElementById(`rating_${questionId}_${i}`).classList.remove('selected');
@@ -1165,7 +1172,7 @@
         // Set new selection
         document.getElementById(`rating_${questionId}_${value}`).classList.add('selected');
         updateAnswer(questionId, value, 'number');
-      }
+      };
 
       // Update progress
       function updateProgress() {
@@ -1186,22 +1193,22 @@
         for (const questionId in answers) {
           const answer = answers[questionId];
 
-          if (answer.selected_options) {
+          if (answer.selectedOptions) {
             // Multiple choice - store as answer_options array
             answersArray.push({
-              question_id: parseInt(questionId),
-              answer_options: answer.selected_options,
+              questionId: parseInt(questionId),
+              answerOptions: answer.selectedOptions,
             });
-          } else if (answer.answer_options) {
+          } else if (answer.answerOptions) {
             // Single choice - already has answer_options array
             answersArray.push({
-              question_id: parseInt(questionId),
-              answer_options: answer.answer_options,
+              questionId: parseInt(questionId),
+              answerOptions: answer.answerOptions,
             });
           } else {
             // Other answer types (text, number, date)
             answersArray.push({
-              question_id: parseInt(questionId),
+              questionId: parseInt(questionId),
               ...answer,
             });
           }
@@ -1250,7 +1257,7 @@
       });
 
       // View response (for completed surveys)
-      async function viewResponse(surveyId) {
+      window.viewResponse = async function viewResponse(surveyId) {
         try {
           const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
           const surveyEndpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
@@ -1280,9 +1287,11 @@
 
           if (response.ok) {
             const data = await response.json();
-            if (data.responded && data.response) {
+            // Handle API v2 response structure
+            const responseData = useV2 && data.success && data.data ? data.data : data;
+            if (responseData.responded && responseData.response) {
               // Show response in a modal
-              showResponseModal(survey, data.response);
+              showResponseModal(survey, responseData.response);
             } else {
               showAlert('Keine Antworten für diese Umfrage gefunden.');
             }
@@ -1291,7 +1300,7 @@
           console.error('Error viewing response:', error);
           showErrorAlert('Fehler beim Abrufen Ihrer Antworten');
         }
-      }
+      };
 
       // Show response modal
       function showResponseModal(survey, response) {
@@ -1322,7 +1331,7 @@
                       console.info('Question:', question, 'Answer:', answer);
                       return `
                       <div class="response-question">
-                        <h4>${index + 1}. ${question.question_text}</h4>
+                        <h4>${index + 1}. ${question.questionText}</h4>
                         <div class="response-answer">
                           ${formatAnswer(question, answer)}
                         </div>
@@ -1344,7 +1353,7 @@
       function formatAnswer(question, answer) {
         if (!answer) return '<em>Keine Antwort</em>';
 
-        switch (question.question_type) {
+        switch (question.questionType) {
           case 'text':
             return `<p>${answer.answer_text || '<em>Keine Antwort</em>'}</p>`;
 
@@ -1384,7 +1393,7 @@
             return `<p>${answer.answer_number || '<em>Keine Antwort</em>'}</p>`;
 
           case 'date':
-            return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Keine Antwort</em>'}</p>`;
+            return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Kein Datum</em>'}</p>`;
 
           default:
             return '<em>Unbekannter Antworttyp</em>';
@@ -1392,19 +1401,19 @@
       }
 
       // Close response modal
-      function closeResponseModal() {
+      window.closeResponseModal = function () {
         const modal = document.getElementById('responseModal');
         if (modal) {
           modal.remove();
         }
-      }
+      };
 
       // Close modal
-      function closeModal() {
+      window.closeModal = function closeModal() {
         document.getElementById('surveyModal').style.display = 'none';
         currentSurvey = null;
         answers = {};
-      }
+      };
 
       // Show success message
       function showSuccessMessage() {
