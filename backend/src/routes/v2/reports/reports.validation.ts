@@ -7,13 +7,19 @@ import { body, param, query, validationResult } from 'express-validator';
 
 import { ServiceError } from '../../../utils/ServiceError.js';
 
+// Constants for validation messages
+const INVALID_DATE_FROM = 'Invalid dateFrom format';
+const INVALID_DATE_TO = 'Invalid dateTo format';
+const INVALID_DEPARTMENT_ID = 'Invalid department ID';
+const INVALID_TEAM_ID = 'Invalid team ID';
+
 /**
  * Validation middleware wrapper
  * @param req - The request object
  * @param _res - The _res parameter
  * @param next - The next middleware function
  */
-const validate = (req: Request, _res: Response, next: NextFunction) => {
+const validate = (req: Request, _res: Response, next: NextFunction): void => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw new ServiceError('VALIDATION_ERROR', 'Validation failed');
@@ -25,13 +31,13 @@ const validate = (req: Request, _res: Response, next: NextFunction) => {
  * Date range validation for most reports
  */
 export const dateRange = [
-  query('dateFrom').optional().isISO8601().withMessage('Invalid dateFrom format'),
+  query('dateFrom').optional().isISO8601().withMessage(INVALID_DATE_FROM),
   query('dateTo')
     .optional()
     .isISO8601()
-    .withMessage('Invalid dateTo format')
+    .withMessage(INVALID_DATE_TO)
     .custom((dateTo, { req }) => {
-      if (req.query?.dateFrom && dateTo < req.query.dateFrom) {
+      if (req.query.dateFrom && dateTo < req.query.dateFrom) {
         throw new Error('dateTo must be after dateFrom');
       }
       return true;
@@ -43,10 +49,10 @@ export const dateRange = [
  * Employee report validation
  */
 export const employeeReport = [
-  query('dateFrom').optional().isISO8601().withMessage('Invalid dateFrom format'),
-  query('dateTo').optional().isISO8601().withMessage('Invalid dateTo format'),
-  query('departmentId').optional().isInt({ min: 1 }).withMessage('Invalid department ID'),
-  query('teamId').optional().isInt({ min: 1 }).withMessage('Invalid team ID'),
+  query('dateFrom').optional().isISO8601().withMessage(INVALID_DATE_FROM),
+  query('dateTo').optional().isISO8601().withMessage(INVALID_DATE_TO),
+  query('departmentId').optional().isInt({ min: 1 }).withMessage(INVALID_DEPARTMENT_ID),
+  query('teamId').optional().isInt({ min: 1 }).withMessage(INVALID_TEAM_ID),
   validate,
 ];
 
@@ -54,10 +60,10 @@ export const employeeReport = [
  * Shift report validation
  */
 export const shiftReport = [
-  query('dateFrom').optional().isISO8601().withMessage('Invalid dateFrom format'),
-  query('dateTo').optional().isISO8601().withMessage('Invalid dateTo format'),
-  query('departmentId').optional().isInt({ min: 1 }).withMessage('Invalid department ID'),
-  query('teamId').optional().isInt({ min: 1 }).withMessage('Invalid team ID'),
+  query('dateFrom').optional().isISO8601().withMessage(INVALID_DATE_FROM),
+  query('dateTo').optional().isISO8601().withMessage(INVALID_DATE_TO),
+  query('departmentId').optional().isInt({ min: 1 }).withMessage(INVALID_DEPARTMENT_ID),
+  query('teamId').optional().isInt({ min: 1 }).withMessage(INVALID_TEAM_ID),
   validate,
 ];
 
@@ -65,8 +71,8 @@ export const shiftReport = [
  * KVP report validation
  */
 export const kvpReport = [
-  query('dateFrom').optional().isISO8601().withMessage('Invalid dateFrom format'),
-  query('dateTo').optional().isISO8601().withMessage('Invalid dateTo format'),
+  query('dateFrom').optional().isISO8601().withMessage(INVALID_DATE_FROM),
+  query('dateTo').optional().isISO8601().withMessage(INVALID_DATE_TO),
   query('categoryId').optional().isInt({ min: 1 }).withMessage('Invalid category ID'),
   validate,
 ];
@@ -84,20 +90,20 @@ export const attendanceReport = [
     .isISO8601()
     .withMessage('dateTo is required and must be a valid date')
     .custom((dateTo, { req }) => {
-      if (req.query?.dateFrom && dateTo < req.query.dateFrom) {
+      if (req.query.dateFrom && dateTo < req.query.dateFrom) {
         throw new Error('dateTo must be after dateFrom');
       }
       // Max 90 days range
       const daysDiff =
-        (new Date(dateTo).getTime() - new Date(req.query.dateFrom as string).getTime()) /
+        (new Date(dateTo as string).getTime() - new Date(req.query.dateFrom as string).getTime()) /
         (1000 * 60 * 60 * 24);
       if (daysDiff > 90) {
         throw new Error('Date range cannot exceed 90 days');
       }
       return true;
     }),
-  query('departmentId').optional().isInt({ min: 1 }).withMessage('Invalid department ID'),
-  query('teamId').optional().isInt({ min: 1 }).withMessage('Invalid team ID'),
+  query('departmentId').optional().isInt({ min: 1 }).withMessage(INVALID_DEPARTMENT_ID),
+  query('teamId').optional().isInt({ min: 1 }).withMessage(INVALID_TEAM_ID),
   validate,
 ];
 
@@ -128,7 +134,8 @@ export const customReport = [
     .isISO8601()
     .withMessage('dateTo is required and must be a valid date')
     .custom((dateTo, { req }) => {
-      if (dateTo < req.body.dateFrom) {
+      const reqBody = req.body as { dateFrom: string };
+      if (dateTo < reqBody.dateFrom) {
         throw new Error('dateTo must be after dateFrom');
       }
       return true;
@@ -155,10 +162,10 @@ export const exportReport = [
     .notEmpty()
     .isIn(['pdf', 'excel', 'csv'])
     .withMessage('Format must be pdf, excel, or csv'),
-  query('dateFrom').optional().isISO8601().withMessage('Invalid dateFrom format'),
-  query('dateTo').optional().isISO8601().withMessage('Invalid dateTo format'),
-  query('departmentId').optional().isInt({ min: 1 }).withMessage('Invalid department ID'),
-  query('teamId').optional().isInt({ min: 1 }).withMessage('Invalid team ID'),
+  query('dateFrom').optional().isISO8601().withMessage(INVALID_DATE_FROM),
+  query('dateTo').optional().isISO8601().withMessage(INVALID_DATE_TO),
+  query('departmentId').optional().isInt({ min: 1 }).withMessage(INVALID_DEPARTMENT_ID),
+  query('teamId').optional().isInt({ min: 1 }).withMessage(INVALID_TEAM_ID),
   validate,
 ];
 

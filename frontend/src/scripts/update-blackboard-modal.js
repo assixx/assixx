@@ -1,6 +1,10 @@
 // Update Script für Blackboard Modal Design Standards
 
-// HTML-Entities escapen
+// Constants
+const DROPDOWN_OPTION_CLASS = 'dropdown-option';
+
+// HTML-Entities escapen (kept for potential future use)
+// eslint-disable-next-line no-unused-vars
 function escapeHtml(unsafe) {
   if (unsafe === null || unsafe === undefined) {
     return '';
@@ -56,31 +60,72 @@ function createCustomDropdown(id, options, defaultText) {
   const dropdown = document.createElement('div');
   dropdown.className = 'custom-dropdown';
 
-  dropdown.innerHTML = `
-    <div class="dropdown-display" id="${id}Display" onclick="toggleDropdown('${id}')">
-      <span>${defaultText}</span>
-      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <div class="dropdown-options" id="${id}Dropdown">
-      ${options
-        .map(
-          (opt) =>
-            `<div class="dropdown-option" onclick="select${id.charAt(0).toUpperCase() + id.slice(1)}('${opt.value}', '${opt.text}')">${opt.text}</div>`,
-        )
-        .join('')}
-    </div>
-    <input type="hidden" name="${id === 'orgLevel' ? 'org_level' : 'priority_level'}" id="${id}Value" ${id === 'priority' ? 'value="medium"' : 'required'} />
-  `;
+  // Create dropdown display
+  const display = document.createElement('div');
+  display.className = 'dropdown-display';
+  display.id = `${id}Display`;
+
+  const span = document.createElement('span');
+  span.textContent = defaultText;
+  display.append(span);
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '12');
+  svg.setAttribute('height', '8');
+  svg.setAttribute('viewBox', '0 0 12 8');
+  svg.setAttribute('fill', 'none');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M1 1L6 6L11 1');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '2');
+  path.setAttribute('stroke-linecap', 'round');
+  svg.append(path);
+  display.append(svg);
+
+  // Add click listener
+  display.addEventListener('click', () => window.toggleDropdown(id));
+  dropdown.append(display);
+
+  // Create dropdown options
+  const dropdownOptions = document.createElement('div');
+  dropdownOptions.className = 'dropdown-options';
+  dropdownOptions.id = `${id}Dropdown`;
+
+  options.forEach((opt) => {
+    const option = document.createElement('div');
+    option.className = DROPDOWN_OPTION_CLASS;
+    option.textContent = opt.text;
+    // Use direct function calls instead of dynamic property access to avoid object injection
+    if (id === 'orgLevel') {
+      option.addEventListener('click', () => window.selectOrgLevel(opt.value, opt.text));
+    } else if (id === 'priority') {
+      option.addEventListener('click', () => window.selectPriority(opt.value, opt.text));
+    } else if (id === 'orgId') {
+      option.addEventListener('click', () => window.selectOrgId(opt.value, opt.text));
+    }
+    dropdownOptions.append(option);
+  });
+  dropdown.append(dropdownOptions);
+
+  // Create hidden input
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = id === 'orgLevel' ? 'org_level' : 'priority_level';
+  input.id = `${id}Value`;
+  if (id === 'priority') {
+    input.value = 'medium';
+  } else {
+    input.required = true;
+  }
+  dropdown.append(input);
 
   return dropdown;
 }
 
 // Dropdown Functions
 window.toggleDropdown = function (type) {
-  const display = document.getElementById(`${type}Display`);
-  const dropdown = document.getElementById(`${type}Dropdown`);
+  const display = document.querySelector(`#${type}Display`);
+  const dropdown = document.querySelector(`#${type}Dropdown`);
 
   // Close all other dropdowns
   document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -134,46 +179,85 @@ async function loadOrgOptions(type) {
     if (orgIdSelect) {
       const customDropdown = document.createElement('div');
       customDropdown.className = 'custom-dropdown';
-      customDropdown.innerHTML = `
-        <div class="dropdown-display" id="orgIdDisplay" onclick="toggleDropdown('orgId')">
-          <span>Bitte wählen</span>
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="dropdown-options" id="orgIdDropdown">
-          <div class="dropdown-option">Laden...</div>
-        </div>
-        <input type="hidden" name="org_id" id="orgIdValue" />
-      `;
+      // Create dropdown display
+      const dropdownDisplay = document.createElement('div');
+      dropdownDisplay.className = 'dropdown-display';
+      dropdownDisplay.id = 'orgIdDisplay';
+
+      const span = document.createElement('span');
+      span.textContent = 'Bitte wählen';
+      dropdownDisplay.append(span);
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '12');
+      svg.setAttribute('height', '8');
+      svg.setAttribute('viewBox', '0 0 12 8');
+      svg.setAttribute('fill', 'none');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M1 1L6 6L11 1');
+      path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('stroke-linecap', 'round');
+      svg.append(path);
+      dropdownDisplay.append(svg);
+      dropdownDisplay.addEventListener('click', () => window.toggleDropdown('orgId'));
+      customDropdown.append(dropdownDisplay);
+
+      // Create dropdown options
+      const dropdownOptionsEl = document.createElement('div');
+      dropdownOptionsEl.className = 'dropdown-options';
+      dropdownOptionsEl.id = 'orgIdDropdown';
+      const loadingOpt = document.createElement('div');
+      loadingOpt.className = DROPDOWN_OPTION_CLASS;
+      loadingOpt.textContent = 'Laden...';
+      dropdownOptionsEl.append(loadingOpt);
+      customDropdown.append(dropdownOptionsEl);
+
+      // Create hidden input
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = 'org_id';
+      hiddenInput.id = 'orgIdValue';
+      customDropdown.append(hiddenInput);
       orgIdSelect.parentNode.append(customDropdown);
       orgIdSelect.style.display = 'none';
     }
   }
 
   const dropdownOptions = document.querySelector('#orgIdDropdown');
-  dropdownOptions.innerHTML = '<div class="dropdown-option">Laden...</div>';
+  dropdownOptions.innerHTML = '';
+  const loadingOption = document.createElement('div');
+  loadingOption.className = DROPDOWN_OPTION_CLASS;
+  loadingOption.textContent = 'Laden...';
+  dropdownOptions.append(loadingOption);
 
   try {
     const endpoint = type === 'department' ? '/api/departments' : '/api/teams';
     const response = await fetch(endpoint);
     const items = await response.json();
 
-    dropdownOptions.innerHTML = items
-      .map(
-        (item) =>
-          `<div class="dropdown-option" onclick="selectOrgId('${escapeHtml(String(item.id))}', '${escapeHtml(item.name)}')">${escapeHtml(item.name)}</div>`,
-      )
-      .join('');
+    // Clear and rebuild dropdown options safely
+    dropdownOptions.innerHTML = '';
+    items.forEach((item) => {
+      const option = document.createElement('div');
+      option.className = DROPDOWN_OPTION_CLASS;
+      option.textContent = item.name;
+      option.addEventListener('click', () => window.selectOrgId(String(item.id), item.name));
+      dropdownOptions.append(option);
+    });
   } catch (error) {
     console.error('Error loading organization units:', error);
-    dropdownOptions.innerHTML = '<div class="dropdown-option">Fehler beim Laden</div>';
+    dropdownOptions.innerHTML = '';
+    const errorOption = document.createElement('div');
+    errorOption.className = DROPDOWN_OPTION_CLASS;
+    errorOption.textContent = 'Fehler beim Laden';
+    dropdownOptions.append(errorOption);
   }
 }
 
 // Update modal structure
 function updateModalStructure() {
-  const modal = document.querySelector('#entryFormModal');
+  const modal = document.querySelector('.entry-form-modal');
   if (modal && modal.classList.contains('modal-overlay')) {
     // Change class from modal-overlay to modal
     modal.className = 'modal';
@@ -194,7 +278,8 @@ function updateModalStructure() {
     // Update close button
     const closeBtn = modal.querySelector('.modal-close');
     if (closeBtn) {
-      closeBtn.setAttribute('onclick', "hideModal('entryFormModal')");
+      closeBtn.removeAttribute('onclick');
+      closeBtn.addEventListener('click', () => window.hideModal('entryFormModal'));
     }
 
     // Update form classes
@@ -243,7 +328,7 @@ function updateModalStructure() {
 
 // Modal functions
 window.showModal = function (modalId) {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector(`#${modalId}`);
   if (modal) {
     modal.style.display = 'flex';
     setTimeout(() => {
@@ -253,7 +338,7 @@ window.showModal = function (modalId) {
 };
 
 window.hideModal = function (modalId) {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector(`#${modalId}`);
   if (modal) {
     modal.classList.remove('active');
     setTimeout(() => {

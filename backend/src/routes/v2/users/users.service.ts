@@ -17,6 +17,9 @@ import {
   UserDbFields,
 } from './users.types';
 
+// Constants
+const USER_NOT_FOUND_MESSAGE = 'User not found';
+
 /**
  * Service Error class for consistent error handling
  */
@@ -131,7 +134,7 @@ export class UsersService {
     const user = await userModel.findById(userId, tenantId);
 
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     return dbToApi(sanitizeUser(user));
@@ -212,7 +215,7 @@ export class UsersService {
     // Check if user exists
     const user = await userModel.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     // Convert from camelCase to snake_case
@@ -371,7 +374,7 @@ export class UsersService {
     // Check if user exists
     const user = await userModel.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     // Prevent deleting yourself
@@ -393,7 +396,7 @@ export class UsersService {
     // Check if user exists
     const user = await userModel.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     // Archive user
@@ -410,7 +413,7 @@ export class UsersService {
     // Check if user exists (including archived)
     const user = await userModel.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     // Unarchive user
@@ -427,7 +430,7 @@ export class UsersService {
     const user = await userModel.findById(userId, tenantId);
 
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     if (user.profile_picture === undefined || user.profile_picture === '') {
@@ -481,7 +484,7 @@ export class UsersService {
     const user = await userModel.findById(userId, tenantId);
 
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     if (user.profile_picture === undefined || user.profile_picture === '') {
@@ -521,7 +524,7 @@ export class UsersService {
     // Check if user exists
     const user = await userModel.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError('NOT_FOUND', 'User not found', 404);
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
     }
 
     // Update availability

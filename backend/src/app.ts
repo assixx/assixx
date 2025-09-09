@@ -42,6 +42,12 @@ import { getCurrentDirPath } from './utils/getCurrentDir.js';
 // Get current directory path using helper function
 // This avoids import.meta issues with Jest
 const currentDirPath = getCurrentDirPath();
+
+// Constants
+const CONTENT_TYPE_HEADER = 'Content-Type';
+const MIME_TYPE_JAVASCRIPT = 'application/javascript';
+const X_CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
+
 // Security middleware
 // Page protection middleware
 // Routes
@@ -102,8 +108,8 @@ app.get('/feature-flags.js', rateLimiter.public, (_req: Request, res: Response):
     return;
   }
 
-  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader(CONTENT_TYPE_HEADER, `${MIME_TYPE_JAVASCRIPT}; charset=utf-8`);
+  res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
   res.sendFile(featureFlagsPath);
 });
 
@@ -141,16 +147,16 @@ const srcPath = path.join(currentDirPath, '../../frontend/src');
 app.use(
   express.static(distPath, {
     setHeaders: (res: Response, filePath: string): void => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
 
       // Set correct MIME types
       if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader(CONTENT_TYPE_HEADER, MIME_TYPE_JAVASCRIPT);
       } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
+        res.setHeader(CONTENT_TYPE_HEADER, 'text/css');
       } else if (filePath.endsWith('.html')) {
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader(CONTENT_TYPE_HEADER, 'text/html');
       }
     },
   }),
@@ -161,9 +167,9 @@ app.use(
   '/styles',
   express.static(path.join(srcPath, 'styles'), {
     setHeaders: (res: Response, filePath: string): void => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
       if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
+        res.setHeader(CONTENT_TYPE_HEADER, 'text/css');
       }
     },
   }),
@@ -174,9 +180,9 @@ app.use(
   '/scripts',
   express.static(path.join(srcPath, 'scripts'), {
     setHeaders: (res: Response, filePath: string): void => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
       if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader(CONTENT_TYPE_HEADER, MIME_TYPE_JAVASCRIPT);
       }
     },
   }),
@@ -187,7 +193,7 @@ app.use(
   '/assets',
   express.static(path.join(srcPath, 'assets'), {
     setHeaders: (res: Response): void => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
     },
   }),
 );
@@ -247,7 +253,7 @@ app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
     // Use try-catch for file existence check to avoid non-literal fs warning
     try {
       fs.accessSync(absoluteDistPath, fs.constants.R_OK);
-      res.type('application/javascript').sendFile(absoluteDistPath);
+      res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteDistPath);
       return;
     } catch {
       // File doesn't exist, continue to fallback
@@ -258,7 +264,7 @@ app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
   // Escape filename to prevent XSS
   const escapedFileName = jsFileName.replace(/["'\\]/g, '\\$&').replace(/[<>]/g, '');
   res
-    .type('application/javascript')
+    .type(MIME_TYPE_JAVASCRIPT)
     .send(
       `// Module ${escapedFileName} not found\nconsole.warn('Module ${escapedFileName} not found');`,
     );
@@ -297,7 +303,7 @@ app.use(
       try {
         fs.accessSync(absoluteJsPath, fs.constants.R_OK);
         console.info(`[DEBUG] Serving compiled JS instead of TS: ${absoluteJsPath}`);
-        res.type('application/javascript').sendFile(absoluteJsPath);
+        res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteJsPath);
         return;
       } catch {
         // File doesn't exist, continue
@@ -366,7 +372,7 @@ app.use(
           .replace(/from\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "from '$1.ts'")
           .replace(/import\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "import '$1.ts'");
 
-        res.type('application/javascript').send(transformedContent);
+        res.type(MIME_TYPE_JAVASCRIPT).send(transformedContent);
       } catch {
         // File doesn't exist or can't be read
         console.warn(`[DEBUG] TypeScript file not accessible: ${actualTsPath}`);
@@ -387,7 +393,7 @@ app.use(
         .replace(/>/g, '\\x3E');
 
       res
-        .type('application/javascript')
+        .type(MIME_TYPE_JAVASCRIPT)
         .send(
           `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`,
         );
@@ -399,18 +405,18 @@ app.use(
 app.use(
   express.static(srcPath, {
     setHeaders: (res: Response, filePath: string): void => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
 
       // Set correct MIME types
       if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader(CONTENT_TYPE_HEADER, MIME_TYPE_JAVASCRIPT);
       } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
+        res.setHeader(CONTENT_TYPE_HEADER, 'text/css');
       } else if (filePath.endsWith('.html')) {
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader(CONTENT_TYPE_HEADER, 'text/html');
       } else if (filePath.endsWith('.json')) {
-        res.setHeader('Content-Type', 'application/json');
+        res.setHeader(CONTENT_TYPE_HEADER, 'application/json');
       }
     },
   }),
@@ -429,7 +435,7 @@ app.use(deprecationMiddleware('v1', '2025-12-31'));
 app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
   // Validate Content-Type for POST/PUT requests
   if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-    const contentType = req.get('Content-Type');
+    const contentType = req.get(CONTENT_TYPE_HEADER);
     if (
       contentType === undefined ||
       (!contentType.includes('application/json') &&
@@ -579,13 +585,13 @@ console.info('[DEBUG] Mounting Swagger UI at /api-docs');
 
 // Serve OpenAPI JSON spec
 app.get('/api-docs/swagger.json', (_req: Request, res: Response): void => {
-  res.setHeader('Content-Type', 'application/json');
+  res.setHeader(CONTENT_TYPE_HEADER, 'application/json');
   res.send(swaggerSpec);
 });
 
 // Serve v2 OpenAPI JSON spec
 app.get('/api-docs/v2/swagger.json', (_req: Request, res: Response): void => {
-  res.setHeader('Content-Type', 'application/json');
+  res.setHeader(CONTENT_TYPE_HEADER, 'application/json');
   res.send(swaggerSpecV2);
 });
 

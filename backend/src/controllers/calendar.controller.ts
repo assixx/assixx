@@ -11,6 +11,8 @@ import { Pool } from 'mysql2/promise';
 
 import calendarService from '../services/calendar.service';
 
+const UNKNOWN_ERROR_MESSAGE = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -129,7 +131,7 @@ class CalendarController {
       console.error('Error in CalendarController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -171,7 +173,7 @@ class CalendarController {
       console.error('Error in CalendarController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -205,7 +207,7 @@ class CalendarController {
       console.error('Error in CalendarController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -247,7 +249,7 @@ class CalendarController {
       console.error('Error in CalendarController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -289,7 +291,7 @@ class CalendarController {
       console.error('Error in CalendarController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -314,7 +316,7 @@ class CalendarController {
       console.error('Error in CalendarController.getAllEvents:', error);
       res.status(500).json({
         error: 'Server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }

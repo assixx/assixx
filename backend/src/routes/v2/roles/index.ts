@@ -64,8 +64,8 @@ router.use(authenticateToken);
  */
 router.get(
   '/',
-  typed.auth(async (req, res) => {
-    await rolesController.getAllRoles(req, res);
+  typed.auth((req, res) => {
+    rolesController.getAllRoles(req, res);
   }),
 );
 
@@ -110,8 +110,8 @@ router.get(
  */
 router.get(
   '/hierarchy',
-  typed.auth(async (req, res) => {
-    await rolesController.getRoleHierarchy(req, res);
+  typed.auth((req, res) => {
+    rolesController.getRoleHierarchy(req, res);
   }),
 );
 
@@ -145,14 +145,13 @@ router.get(
  */
 router.get(
   '/assignable',
-  typed.auth(async (req, res) => {
-    await rolesController.getAssignableRoles(req, res);
+  typed.auth((req, res) => {
+    rolesController.getAssignableRoles(req, res);
   }),
 );
 
 /**
-
- * /api/v2/roles/{id}:
+ * /api/v2/roles/\{id\}:
  *   get:
  *     summary: Get a specific role
  *     description: Get details of a specific role by ID
@@ -191,8 +190,8 @@ router.get(
 router.get(
   '/:id',
   validate(getRoleValidation),
-  typed.auth(async (req, res) => {
-    await rolesController.getRoleById(req, res);
+  typed.auth((req, res) => {
+    rolesController.getRoleById(req, res);
   }),
 );
 

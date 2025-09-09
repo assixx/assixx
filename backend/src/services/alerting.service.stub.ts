@@ -91,6 +91,8 @@ export class AlertingService {
         title,
         message,
         fields: Object.entries(details).reduce<Record<string, string>>((acc, [key, value]) => {
+          // ESLint disable needed: Safe operation - we control the input from our own code
+          // eslint-disable-next-line security/detect-object-injection
           acc[key] = String(value);
           return acc;
         }, {}),

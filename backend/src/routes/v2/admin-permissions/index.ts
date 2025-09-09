@@ -97,7 +97,7 @@ router.get(
 
 /**
 
- * /api/v2/admin-permissions/{adminId}:
+ * /api/v2/admin-permissions/\{adminId\}:
  *   get:
  *     summary: Get permissions for a specific admin
  *     description: Get all department and group permissions for a specific admin (root only)
@@ -198,7 +198,7 @@ router.post(
 
 /**
 
- * /api/v2/admin-permissions/{adminId}/departments/{departmentId}:
+ * /api/v2/admin-permissions/\{adminId\}/departments/\{departmentId\}:
  *   delete:
  *     summary: Remove department permission
  *     description: Remove a specific department permission from an admin (root only)
@@ -242,7 +242,7 @@ router.delete(
 
 /**
 
- * /api/v2/admin-permissions/{adminId}/groups/{groupId}:
+ * /api/v2/admin-permissions/\{adminId\}/groups/\{groupId\}:
  *   delete:
  *     summary: Remove group permission
  *     description: Remove a specific group permission from an admin (root only)
@@ -374,7 +374,7 @@ router.post(
 
 /**
 
- * /api/v2/admin-permissions/{adminId}/check/{departmentId}/{permissionLevel}:
+ * /api/v2/admin-permissions/\{adminId\}/check/\{departmentId\}/\{permissionLevel\}:
  *   get:
  *     summary: Check admin access
  *     description: Check if an admin has specific access to a department (root only, for debugging)

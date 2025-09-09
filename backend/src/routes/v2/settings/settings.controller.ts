@@ -395,9 +395,9 @@ export const getAdminUserSettings = async (
  * @param _req - The _req parameter
  * @param res - The response object
  */
-export const getCategories = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getCategories = (_req: AuthenticatedRequest, res: Response): void => {
   try {
-    const categories = await settingsService.getSettingsCategories();
+    const categories = settingsService.getSettingsCategories();
     res.json(successResponse({ categories }));
   } catch {
     res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));

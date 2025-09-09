@@ -219,14 +219,6 @@ class ShiftService {
   /**
    * Create a new shift template
    * @param templateData - The templateData parameter
-   * @param templateData.tenant_id
-   * @param templateData.name
-   * @param templateData.description
-   * @param templateData.start_time
-   * @param templateData.end_time
-   * @param templateData.break_minutes
-   * @param templateData.color
-   * @param templateData.created_by
    * @returns Promise resolving to the created shift template
    */
   async createShiftTemplate(templateData: {
@@ -297,14 +289,6 @@ class ShiftService {
   /**
    * Create a new shift plan
    * @param planData - The planData parameter
-   * @param planData.tenant_id
-   * @param planData.name
-   * @param planData.description
-   * @param planData.start_date
-   * @param planData.end_date
-   * @param planData.department_id
-   * @param planData.team_id
-   * @param planData.created_by
    * @returns Promise resolving to the created shift plan
    */
   async createShiftPlan(planData: {
@@ -399,10 +383,6 @@ class ShiftService {
   /**
    * Assign employee to a shift
    * @param assignmentData - The assignmentData parameter
-   * @param assignmentData.shift_id
-   * @param assignmentData.employee_id
-   * @param assignmentData.tenant_id
-   * @param assignmentData.assigned_by
    * @returns Promise resolving to the shift assignment details
    */
   async assignEmployeeToShift(assignmentData: {

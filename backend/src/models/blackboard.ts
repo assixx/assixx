@@ -196,9 +196,11 @@ export async function getAllEntries(
 
     // Debug log when no entries found
     if (entries.length === 0 && status === 'active') {
-      logger.warn(`[Blackboard.getAllEntries] No entries found for user ${userId} (role: ${role})`);
+      logger.warn(
+        `[Blackboard.getAllEntries] No entries found for user ${userId} (role: ${String(role)})`,
+      );
       logger.debug(`Query params: tenant_id=${tenant_id}, status=${status}, filter=${filter}`);
-      logger.debug(`User access: departmentId=${departmentId}, teamId=${teamId}`);
+      logger.debug(`User access: departmentId=${String(departmentId)}, teamId=${String(teamId)}`);
     }
 
     // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries

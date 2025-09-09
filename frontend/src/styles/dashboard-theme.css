@@ -111,7 +111,7 @@
   --glass-form-bg: rgb(255 255 255 / 4%);
   --glass-form-bg-hover: rgb(255 255 255 / 6%);
   --glass-form-bg-focus: rgb(255 255 255 / 8%);
-  --glass-form-border: 1px solid hsla(0, 0%, 100%, 0.2);
+  --glass-form-border: 1px solid hsl(0deg 0% 100% / 20%);
   --glass-form-border-focus: 1px solid var(--primary-color);
   --glass-form-backdrop: blur(5px);
 
@@ -157,7 +157,7 @@
 
 body {
   font-family:
-    "Outfit",
+    Outfit,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
@@ -230,14 +230,16 @@ body {
 
 /* Cards */
 .card {
-  background: hsla(0, 0%, 100%, 0.02);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 24px;
   overflow: hidden;
+
+  margin-bottom: 24px;
   padding: var(--glass-card-padding);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: hsl(0deg 0% 100% / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
 }
 
 .card-header {
@@ -247,10 +249,10 @@ body {
 }
 
 .card-title {
-  font-size: 1.125rem; /* 18px */
-  color: var(--primary-color);
-  font-weight: 600;
   margin: 0;
+  font-size: 1.125rem; /* 18px */
+  font-weight: 600;
+  color: var(--primary-color);
 }
 
 /* table */
@@ -260,50 +262,57 @@ body {
 
 .admin-table {
   border-collapse: collapse;
-  margin-top: 20px;
   width: 100%;
+  margin-top: 20px;
 }
 
 .admin-table th {
-  background: rgba(33, 150, 243, 0.1);
   padding: 12px;
-  text-align: left;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+
   font-weight: 600;
   color: var(--text-primary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+
+  background: rgb(33 150 243 / 10%);
 }
 
 .admin-table td {
   padding: 10px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
   color: var(--text-secondary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .admin-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* Employee Table - Identische Styles wie admin-table */
 .employee-table {
   border-collapse: collapse;
-  margin-top: 20px;
   width: 100%;
+  margin-top: 20px;
 }
+
 .employee-table th {
-  background: rgba(33, 150, 243, 0.1);
   padding: 12px;
-  text-align: left;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+
   font-weight: 600;
   color: var(--text-primary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+
+  background: rgb(33 150 243 / 10%);
 }
+
 .employee-table td {
   padding: 10px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
   color: var(--text-secondary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .employee-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgb(255 255 255 / 2%);
 }
 
 /* Buttons */
@@ -365,7 +374,6 @@ body {
 
   background: rgb(255 152 0 / 15%);
   backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .btn-warning:hover {
@@ -403,11 +411,12 @@ body {
   padding: var(--spacing-2sm);
   border: var(--glass-form-border);
   border-radius: var(--radius-sm);
+
   font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
   color: var(--text-primary);
+
   background: var(--glass-form-bg);
-  backdrop-filter: var(--glass-form-backdrop);
   backdrop-filter: var(--glass-form-backdrop);
 }
 
@@ -533,20 +542,20 @@ body {
 
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
 }
 
 .stat-card:hover {
-  background: hsla(0, 0%, 100%, 0.03);
-  border-color: rgba(0, 142, 255, 0.5);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 hsla(0, 0%, 100%, 0.15);
-  transform: translateY(-8px);
-
   position: relative; /* Neuer stacking context */
   z-index: 1; /* Unter der Sidebar bleiben */
+  transform: translateY(-8px);
+
+  border-color: rgb(0 142 255 / 50%);
+
+  background: hsl(0deg 0% 100% / 3%);
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 50%),
+    inset 0 1px 0 hsl(0deg 0% 100% / 15%);
 }
 
 .stat-value {
@@ -607,7 +616,6 @@ body {
 
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
 }
 
@@ -625,7 +633,6 @@ body {
 
   background: var(--glass-card-bg);
   backdrop-filter: var(--glass-backdrop);
-  backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
 }
 
@@ -633,13 +640,11 @@ body {
   border: var(--glass-form-border);
   background: var(--glass-form-bg);
   backdrop-filter: var(--glass-form-backdrop);
-  backdrop-filter: var(--glass-form-backdrop);
 }
 
 .glass-subtle {
   border: var(--glass-border);
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop-subtle);
   backdrop-filter: var(--glass-backdrop-subtle);
 }
 
@@ -959,15 +964,15 @@ body {
   align-items: center;
   justify-content: space-between;
 
+  min-height: 0;
   padding: 6px 15px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
 
   font-size: 0.8rem;
   color: var(--text-primary);
-  min-height: 0;
+
   background: rgb(255 255 255 / 2.1%);
-  backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -1004,9 +1009,8 @@ body {
   border-radius: var(--radius-lg);
 
   visibility: hidden;
-  opacity: 0;
+  opacity: 0%;
   background: rgb(18 18 18 / 90%);
-  backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgb(0 0 0 / 40%),
@@ -1021,7 +1025,7 @@ body {
   margin-right: -15px;
 
   visibility: visible;
-  opacity: 1;
+  opacity: 100%;
 }
 
 .role-switch-dropdown .dropdown-option {
@@ -1192,51 +1196,57 @@ body {
   z-index: 1000; /* Ensure overlay is above page content */
   top: 0;
   left: 0;
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
 
   width: 100%;
   height: 100%;
 
   /* background-color: rgba(0, 0, 0, 0.7); */
   backdrop-filter: blur(10px);
+
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
 }
 
 #logoutModal .logout-modal {
+  position: absolute;
+  z-index: 1001;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
   display: flex;
   flex-direction: column;
-  left: 50%;
-  max-height: calc(100vh - 80px);
+
+  width: 100%;
   max-width: var(--alert-modal-max-width);
   min-height: var(--alert-modal-min-height);
-  position: absolute;
-  top: 35%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  z-index: 1001;
-  backdrop-filter: blur(20px) saturate(180%);
-  background: #121212c4;
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  max-height: calc(100vh - 80px);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
+
+  background: #121212c4;
+  backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px #0006,
     inset 0 1px #ffffff1a;
 }
 
 #logoutModal .logout-modal .logout-modal-header {
-  align-items: center;
-  background: #ffffff05;
   display: flex;
+  align-items: center;
   justify-content: space-between;
+
   padding: var(--spacing-lg);
+
+  background: #ffffff05;
 }
 
 #logoutModal .logout-modal .logout-modal-header h2 {
-  color: var(--primary-color);
+  margin: 0;
   font-size: 20px;
   font-weight: 600;
-  margin: 0;
+  color: var(--primary-color);
 }
 
 #logoutModal .logout-modal .logout-modal-body {
@@ -1273,14 +1283,16 @@ body {
 }
 
 #logoutModal .logout-modal .logout-modal-footer {
-  background: #ffffff05;
-  border-top: 0;
   display: flex;
   flex-shrink: 0;
   gap: var(--spacing-md);
   justify-content: center;
-  padding: var(--spacing-lg);
+
   margin: 0;
+  padding: var(--spacing-lg);
+  border-top: 0;
+
+  background: #ffffff05;
 }
 
 #logoutModal .logout-modal .btn {

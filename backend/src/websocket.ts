@@ -134,7 +134,11 @@ export class ChatWebSocketServer {
 
   private async handleMessage(ws: ExtendedWebSocket, data: WebSocketData): Promise<void> {
     try {
-      const message: WebSocketMessage = JSON.parse(data.toString());
+      const dataString =
+        typeof data === 'string' ? data
+        : Buffer.isBuffer(data) ? data.toString()
+        : JSON.stringify(data);
+      const message = JSON.parse(dataString) as WebSocketMessage;
 
       switch (message.type) {
         case 'send_message':
@@ -177,7 +181,7 @@ export class ChatWebSocketServer {
       conversationId,
       userId: ws.userId,
       tenantId: ws.tenantId,
-      contentLength: content?.length,
+      contentLength: content.length,
       hasAttachments: attachments.length > 0,
     });
 
@@ -241,9 +245,18 @@ export class ChatWebSocketServer {
         FROM users WHERE id = ?
       `;
       const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [ws.userId]);
-      const sender = senderInfo[0];
+      const sender = senderInfo[0] as
+        | {
+            id: number;
+            username: string;
+            first_name: string | null;
+            last_name: string | null;
+            profile_picture_url: string | null;
+          }
+        | undefined;
 
       // Nachricht-Objekt für Broadcast erstellen
+      const UNKNOWN_USER = 'Unbekannter Benutzer';
       const messageData = {
         id: messageId,
         conversation_id: conversationId,
@@ -251,10 +264,10 @@ export class ChatWebSocketServer {
         sender_id: ws.userId,
         sender_name:
           sender ?
-            (([sender.first_name, sender.last_name].filter((n: string) => n).join(' ') ||
-              sender.username) ??
-            'Unbekannter Benutzer')
-          : 'Unbekannter Benutzer',
+            [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
+            sender.username ||
+            UNKNOWN_USER
+          : UNKNOWN_USER,
         first_name: sender?.first_name ?? '',
         last_name: sender?.last_name ?? '',
         username: sender?.username ?? '',
@@ -262,7 +275,7 @@ export class ChatWebSocketServer {
         created_at: new Date().toISOString(),
         delivery_status: 'sent',
         is_read: false,
-        attachments: attachments ?? [],
+        attachments,
       };
 
       // Nachricht an alle Teilnehmer senden
@@ -317,7 +330,8 @@ export class ChatWebSocketServer {
 
       // Typing-Event an andere Teilnehmer senden
       for (const participant of participants) {
-        const clientWs = this.clients.get(participant.user_id);
+        const userId = participant.user_id as number;
+        const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: isTyping ? 'user_typing' : 'user_stopped_typing',
@@ -361,7 +375,7 @@ export class ChatWebSocketServer {
       const [messageInfo] = await query<RowDataPacket[]>(messageQuery, [messageId]);
 
       if (messageInfo.length > 0) {
-        const senderId = messageInfo[0].sender_id;
+        const senderId = messageInfo[0].sender_id as number;
         const senderWs = this.clients.get(senderId);
 
         if (senderWs && senderWs.readyState === WebSocket.OPEN) {
@@ -409,7 +423,8 @@ export class ChatWebSocketServer {
       ]);
 
       for (const participant of participants) {
-        const clientWs = this.clients.get(participant.user_id);
+        const userId = participant.user_id as number;
+        const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'user_joined_conversation',
@@ -463,7 +478,8 @@ export class ChatWebSocketServer {
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {
-        const clientWs = this.clients.get(user.user_id);
+        const userId = user.user_id as number;
+        const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'user_status_changed',
@@ -537,23 +553,32 @@ export class ChatWebSocketServer {
           FROM users WHERE id = ?
         `;
         const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [message.sender_id]);
-        const sender = senderInfo[0];
+        const sender = senderInfo[0] as
+          | {
+              id: number;
+              username: string;
+              first_name: string | null;
+              last_name: string | null;
+              profile_picture_url: string | null;
+            }
+          | undefined;
 
+        const UNKNOWN_USER_NAME = 'Unbekannter Benutzer';
         const messageData = {
-          id: message.id,
-          conversation_id: message.conversation_id,
-          content: message.content,
-          sender_id: message.sender_id,
+          id: message.id as number,
+          conversation_id: message.conversation_id as number,
+          content: message.content as string,
+          sender_id: message.sender_id as number,
           sender_name:
             sender ?
-              ([sender.first_name ?? '', sender.last_name ?? '']
-                .filter((n: string) => n)
-                .join(' ') ?? 'Unbekannter Benutzer')
-            : 'Unbekannter Benutzer',
+              [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
+              sender.username ||
+              UNKNOWN_USER_NAME
+            : UNKNOWN_USER_NAME,
           first_name: sender?.first_name ?? '',
           last_name: sender?.last_name ?? '',
           profile_picture_url: sender?.profile_picture_url ?? null,
-          created_at: message.created_at,
+          created_at: message.created_at as string,
           delivery_status: 'delivered',
           is_read: false,
           is_scheduled: true,
@@ -566,7 +591,8 @@ export class ChatWebSocketServer {
         };
 
         for (const participant of participants) {
-          const clientWs = this.clients.get(participant.user_id);
+          const userId = participant.user_id as number;
+          const clientWs = this.clients.get(userId);
           if (clientWs && clientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(clientWs, {
               type: 'scheduled_message_delivered',
@@ -623,17 +649,17 @@ export class ChatWebSocketServer {
 
           // Nachricht-Objekt erstellen
           const messageData = {
-            id: message.message_id,
-            conversation_id: message.conversation_id,
-            content: message.content,
-            sender_id: message.sender_id,
+            id: message.message_id as number,
+            conversation_id: message.conversation_id as number,
+            content: message.content as string,
+            sender_id: message.sender_id as number,
             sender_name:
-              `${message.first_name ?? ''} ${message.last_name ?? ''}`.trim() ||
+              `${String(message.first_name ?? '')} ${String(message.last_name ?? '')}`.trim() ||
               'Unbekannter Benutzer',
-            first_name: message.first_name ?? '',
-            last_name: message.last_name ?? '',
-            profile_picture_url: message.profile_picture_url ?? null,
-            created_at: message.created_at,
+            first_name: (message.first_name ?? '') as string,
+            last_name: (message.last_name ?? '') as string,
+            profile_picture_url: (message.profile_picture_url ?? null) as string | null,
+            created_at: message.created_at as string,
             delivery_status: 'delivered',
             is_read: false,
             attachments: [] as {
@@ -645,7 +671,8 @@ export class ChatWebSocketServer {
           };
 
           // An Empfänger senden wenn online
-          const recipientWs = this.clients.get(message.recipient_id);
+          const recipientId = message.recipient_id as number;
+          const recipientWs = this.clients.get(recipientId);
           if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(recipientWs, {
               type: 'new_message',
@@ -665,7 +692,7 @@ export class ChatWebSocketServer {
             [message.message_id],
           );
         } catch (error: unknown) {
-          logger.error(`Fehler beim Zustellen der Nachricht ${message.message_id}:`, error);
+          logger.error(`Fehler beim Zustellen der Nachricht ${String(message.message_id)}:`, error);
 
           // Bei Fehler als failed markieren wenn max attempts erreicht
           const [result] = await query<RowDataPacket[]>(

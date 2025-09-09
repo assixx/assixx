@@ -920,7 +920,7 @@ class ShiftPlanningSystem {
       areaSelect.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
         this.selectedContext.areaId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
-        void this.onAreaSelected();
+        void this.onAreaSelected(this.selectedContext.areaId ?? undefined);
       });
     }
 
@@ -5618,6 +5618,9 @@ class ShiftPlanningSystem {
    */
   private async loadFavorite(favorite: ShiftFavorite): Promise<void> {
     console.info('[LOADFAVORITE] Starting to load favorite:', favorite);
+    console.info('[LOADFAVORITE] Current favorites list:', this.favorites);
+    console.info('[LOADFAVORITE] Initial context:', this.selectedContext);
+
     try {
       // 1. Set and load Area
       console.info('[LOADFAVORITE] Setting area:', favorite.areaId, favorite.areaName);
@@ -5702,8 +5705,19 @@ class ShiftPlanningSystem {
       }
 
       // Update button visibility (should hide since we loaded a favorited combination)
+      console.info('[LOADFAVORITE] Final context before button update:', {
+        areaId: this.selectedContext.areaId,
+        departmentId: this.selectedContext.departmentId,
+        machineId: this.selectedContext.machineId,
+        teamId: this.selectedContext.teamId,
+        savedTeamId: savedTeamId,
+      });
       console.info('[LOADFAVORITE] Updating add favorite button visibility');
-      this.updateAddFavoriteButton();
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        console.info('[LOADFAVORITE] In timeout - context:', this.selectedContext);
+        this.updateAddFavoriteButton();
+      }, 100);
 
       console.info('[LOADFAVORITE] Successfully loaded favorite!');
       showSuccessAlert(`Favorit "${favorite.name}" wurde geladen`);
@@ -5796,8 +5810,12 @@ class ShiftPlanningSystem {
         } else {
           // Load the favorite
           const favId = button.dataset.favoriteId;
-          console.info('[FAVORITE DEBUG] Loading favorite with ID:', favId);
+          console.info('[FAVORITE DEBUG] Loading favorite with ID:', favId, 'Type:', typeof favId);
           console.info('[FAVORITE DEBUG] All favorites:', this.favorites);
+          console.info(
+            '[FAVORITE DEBUG] Favorite IDs in list:',
+            this.favorites.map((f) => ({ id: f.id, stringId: String(f.id), type: typeof f.id })),
+          );
           const favorite = this.favorites.find((f) => String(f.id) === favId);
           console.info('[FAVORITE DEBUG] Found favorite:', favorite);
           if (favorite) {
@@ -5826,16 +5844,34 @@ class ShiftPlanningSystem {
       this.selectedContext.machineId === null ||
       this.selectedContext.teamId === null
     ) {
+      console.info('[FAVORITE CHECK] Missing context values:', this.selectedContext);
       return false;
     }
 
-    return this.favorites.some(
-      (fav) =>
+    const result = this.favorites.some((fav) => {
+      const match =
         fav.areaId === this.selectedContext.areaId &&
         fav.departmentId === this.selectedContext.departmentId &&
         fav.machineId === this.selectedContext.machineId &&
-        fav.teamId === this.selectedContext.teamId,
-    );
+        fav.teamId === this.selectedContext.teamId;
+
+      if (match) {
+        console.info('[FAVORITE CHECK] Found matching favorite:', {
+          favorite: fav,
+          context: this.selectedContext,
+        });
+      }
+
+      return match;
+    });
+
+    console.info('[FAVORITE CHECK] Combination check result:', {
+      isFavorited: result,
+      currentContext: this.selectedContext,
+      totalFavorites: this.favorites.length,
+    });
+
+    return result;
   }
 
   /**
@@ -5849,10 +5885,12 @@ class ShiftPlanningSystem {
     const shouldShowButton = this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0 && !isFavorited;
 
     console.info('[FAVORITE BUTTON] Update button visibility:', {
+      fullContext: this.selectedContext,
       teamId: this.selectedContext.teamId,
       isFavorited,
       shouldShowButton,
       buttonExists: addBtn !== null,
+      favoritesCount: this.favorites.length,
     });
 
     if (shouldShowButton) {

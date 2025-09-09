@@ -3,16 +3,16 @@
 /* Generic Modal Overlay Class */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  z-index: 9999;
+  inset: 0;
+
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+
+  background: rgb(0 0 0 / 80%);
+  backdrop-filter: blur(5px);
+
   transition:
     opacity 0.3s ease,
     visibility 0.3s ease;
@@ -23,17 +23,17 @@
 /* Modal Background Overlay */
 #rotation-setup-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgb(0 0 0 / 70%);
+  z-index: 9999;
+  inset: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+
   visibility: hidden;
-  opacity: 0;
+  opacity: 0%;
+  background: rgb(0 0 0 / 70%);
+
   transition:
     opacity 0.3s ease,
     visibility 0.3s ease;
@@ -41,21 +41,24 @@
 
 #rotation-setup-modal.show {
   visibility: visible;
-  opacity: 1;
+  opacity: 100%;
 }
 
 /* Modal Content Container - Calendar Style */
 #rotation-setup-modal .modal-content {
-  overflow: auto;
-  background: hsla(0, 0%, 6.7%, 0.77);
-  max-height: 85vh !important;
   transform: translateY(0);
+
+  overflow: auto;
   display: flex;
   flex-direction: column;
+
   width: 90%;
   max-width: 900px;
+  max-height: 85vh !important;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-md, 16px);
+
+  background: hsl(0deg 0% 6.7% / 77%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgb(0 0 0 / 40%),
@@ -67,9 +70,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   padding: var(--spacing-lg, 1.5rem);
-  background: rgb(255 255 255 / 2%);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
+
+  background: rgb(255 255 255 / 2%);
 }
 
 #rotation-setup-modal .modal-header h2 {
@@ -82,24 +87,27 @@
 /* Modal Close Button - Calendar Style */
 #rotation-setup-modal .modal-close {
   cursor: pointer;
+
   padding: 10px;
   border: none;
   border-radius: var(--radius-sm, 8px);
+
   font-size: 20px;
   color: var(--text-secondary, rgb(255 255 255 / 60%));
+
   background: transparent;
 }
 
 #rotation-setup-modal .modal-close:hover {
+  transform: rotate(90deg);
   color: var(--primary-color, #3498db);
   background: rgb(255 255 255 / 5%);
-  transform: rotate(90deg);
 }
 
 /* Modal Body */
 #rotation-setup-modal .modal-body {
-  flex: 1;
   overflow-y: auto;
+  flex: 1;
   padding: var(--spacing-lg, 1.5rem);
 }
 
@@ -109,8 +117,10 @@
   gap: 10px;
   align-items: center;
   justify-content: flex-end;
+
   padding: var(--spacing-lg, 1.5rem);
   border-top: 1px solid rgb(255 255 255 / 10%);
+
   background: rgb(255 255 255 / 2%);
 }
 
@@ -122,8 +132,8 @@
 #rotation-setup-modal .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: rgb(255 255 255 / 80%);
   font-weight: 500;
+  color: rgb(255 255 255 / 80%);
 }
 
 #rotation-setup-modal .form-control {
@@ -131,14 +141,16 @@
   padding: 0.75rem;
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 0.5rem;
-  background: rgb(255 255 255 / 5%);
-  color: #fff;
+
   font-size: 1rem;
+  color: #fff;
+
+  background: rgb(255 255 255 / 5%);
 }
 
 #rotation-setup-modal .form-control:focus {
-  outline: none;
   border-color: var(--primary-color);
+  outline: none;
   box-shadow: 0 0 0 3px rgb(52 152 219 / 10%);
 }
 
@@ -151,11 +163,13 @@
 
 /* Checkbox and Pattern Builder Styles */
 .checkbox-group {
-  max-height: 200px;
   overflow-y: auto;
+
+  max-height: 200px;
+  padding: 10px;
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 8px;
-  padding: 10px;
+
   background: rgb(255 255 255 / 5%);
 }
 
@@ -167,17 +181,17 @@
 }
 
 .pattern-week {
+  padding: 15px;
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 8px;
-  padding: 15px;
   background: rgb(255 255 255 / 5%);
 }
 
 .pattern-week h4 {
   margin-top: 0;
   margin-bottom: 10px;
-  color: #fff;
   font-size: 1rem;
+  color: #fff;
 }
 
 .pattern-week label {
@@ -748,7 +762,7 @@
 }
 
 .calendar-day.other-month {
-  opacity: 0.5;
+  opacity: 50%;
 }
 
 .calendar-day.today {
@@ -1171,7 +1185,7 @@
 /* Read-Only / Edit Mode Styles */
 .employee-item.locked {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 70%;
   background: rgb(0 0 0 / 20%);
 }
 
@@ -1181,47 +1195,46 @@
 }
 
 .shift-cell.locked {
-  cursor: not-allowed;
   pointer-events: none;
+  cursor: not-allowed;
+  opacity: 80%;
   background: rgb(0 0 0 / 10%);
-  opacity: 0.8;
 }
 
 .shift-cell.locked::after {
+  pointer-events: none;
   content: "";
+
   position: absolute;
+  inset: 0;
+
   background: repeating-linear-gradient(
     45deg,
     #ffffff0a,
     #0000 10px,
-    hsla(0, 0%, 0%, 0.03) 0,
-    hsla(0, 0%, 100%, 0) 20px
+    hsl(0deg 0% 0% / 3%) 0,
+    hsl(0deg 0% 100% / 0%) 20px
   );
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
 }
 
 #weeklyNotes[readonly] {
-  background: rgb(0 0 0 / 20%);
   cursor: not-allowed;
-  opacity: 0.8;
+  opacity: 80%;
+  background: rgb(0 0 0 / 20%);
 }
 
 /* Edit Mode Button */
 #editScheduleBtn,
 #updateScheduleBtn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
   font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 #editScheduleBtn:hover,
 #updateScheduleBtn:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   transform: translateY(-2px);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
   box-shadow: 0 6px 20px rgb(102 126 234 / 40%);
 }
 
@@ -1231,83 +1244,93 @@
 
 /* When Kontischicht is active */
 .week-schedule.kontischicht-active {
+  position: relative;
+
   overflow-x: auto !important;
   overflow-y: hidden;
-  position: relative;
+
   max-width: 100%;
   padding-bottom: 15px; /* Space for scrollbar */
 }
 
 /* Horizontal Scroll Container for Schedule Header */
 .kontischicht-scroll-container {
-  overflow-x: auto !important;
-  overflow-y: hidden;
   scroll-behavior: smooth;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
+  scrollbar-color: rgb(52 152 219 / 50%) rgb(255 255 255 / 10%);
 
   /* Make scrollbar visible and styled */
   scrollbar-width: auto;
-  scrollbar-color: rgba(52, 152, 219, 0.5) rgba(255, 255, 255, 0.1);
+  scroll-snap-type: x proximity;
+
+  overflow-x: auto !important;
+  overflow-y: hidden;
+
+  -webkit-overflow-scrolling: touch;
 }
 
 .kontischicht-scroll-container::-webkit-scrollbar {
-  height: 12px !important;
   display: block !important;
+  height: 12px !important;
 }
 
 .kontischicht-scroll-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-md);
   margin: 0 10px;
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 10%);
 }
 
 .kontischicht-scroll-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.6), rgba(52, 152, 219, 0.4));
+  border: 2px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-md);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
   transition: background 0.3s ease;
 }
 
 .kontischicht-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.8), rgba(52, 152, 219, 0.6));
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: linear-gradient(90deg, rgb(52 152 219 / 80%), rgb(52 152 219 / 60%));
 }
 
 /* Scroll Navigation */
 .week-scroll-navigation {
   display: flex;
+  gap: var(--spacing-md);
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-2sm);
+
   margin-bottom: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
+
   animation: fadeInUp 0.4s ease-out;
 }
 
 .scroll-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: var(--text-primary);
-  border-radius: var(--radius-sm);
   cursor: pointer;
+
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+
+  padding: 8px 12px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-sm);
 
   font-size: 0.875rem;
   font-weight: 500;
+  color: var(--text-primary);
+
+  background: transparent;
 }
 
 .scroll-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
 }
 
 .scroll-nav-btn:active {
@@ -1325,113 +1348,127 @@
 
 /* Scroll Progress Indicator */
 .scroll-indicator {
+  position: relative;
+
+  overflow: hidden;
   flex: 1;
+
   max-width: 200px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
-  overflow: hidden;
-  position: relative;
+
+  background: rgb(255 255 255 / 10%);
 }
 
 .scroll-progress {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
-  border-radius: 2px;
-  transition: width 0.3s ease;
   width: 0%;
+  height: 100%;
+  border-radius: 2px;
+
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+
+  transition: width 0.3s ease;
 }
 
 /* Week 2 Headers Styling */
 .week-2-header {
-  background: rgba(255, 152, 0, 0.08);
-  border: 1px solid rgba(255, 152, 0, 0.15);
-  color: rgba(255, 152, 0, 0.9);
   position: relative;
+  border: 1px solid rgb(255 152 0 / 15%);
+  color: rgb(255 152 0 / 90%);
+  background: rgb(255 152 0 / 8%);
 }
 
 .week-2-header:hover {
-  background: rgba(255, 152, 0, 0.12);
-  border-color: rgba(255, 152, 0, 0.25);
+  border-color: rgb(255 152 0 / 25%);
+  background: rgb(255 152 0 / 12%);
 }
 
 .week-2-header::before {
   content: "";
+
   position: absolute;
   top: 0;
-  left: 0;
   right: 0;
+  left: 0;
+
   height: 2px;
 }
 
 /* Enhanced Week Headers Layout for 14-day View */
 .kontischicht-scroll-container .day-header {
-  min-width: 120px;
-  flex-shrink: 0;
   scroll-snap-align: start;
+  flex-shrink: 0;
+  min-width: 120px;
 }
 
 /* Make "Schicht" header same size as shift labels */
 .kontischicht-scroll-container .day-header:first-child {
   position: sticky;
-  left: 0;
   z-index: 10;
-  background: rgba(30, 39, 46, 0.95);
-  backdrop-filter: blur(10px);
-  min-width: 120px;
+  left: 0;
+
   width: 120px;
+  min-width: 120px;
+
+  background: rgb(30 39 46 / 95%);
+  backdrop-filter: blur(10px);
 }
 
 /* Apply horizontal scroll to shift rows when Kontischicht is active */
 .shift-row.kontischicht-scroll-container {
-  overflow-x: auto !important;
-  overflow-y: hidden;
   scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+  scrollbar-color: rgb(52 152 219 / 50%) rgb(255 255 255 / 10%);
 
   /* Make scrollbar visible and styled */
   scrollbar-width: auto;
-  scrollbar-color: rgba(52, 152, 219, 0.5) rgba(255, 255, 255, 0.1);
+
+  overflow-x: auto !important;
+  overflow-y: hidden;
+
+  -webkit-overflow-scrolling: touch;
 }
 
 .shift-row.kontischicht-scroll-container::-webkit-scrollbar {
-  height: 12px !important;
   display: block !important;
+  height: 12px !important;
 }
 
 .shift-row.kontischicht-scroll-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 10%);
 }
 
 .shift-row.kontischicht-scroll-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.6), rgba(52, 152, 219, 0.4));
+  border: 2px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-md);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
 }
 
 .shift-row.kontischicht-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, rgba(52, 152, 219, 0.8), rgba(52, 152, 219, 0.6));
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgb(255 255 255 / 20%);
+  background: linear-gradient(90deg, rgb(52 152 219 / 80%), rgb(52 152 219 / 60%));
 }
 
 /* Make shift label sticky like the Schicht header and same size */
 .shift-row.kontischicht-scroll-container .shift-label {
   position: sticky;
-  left: 0;
   z-index: 9;
-  background: rgba(30, 39, 46, 0.95);
-  backdrop-filter: blur(10px);
-  min-width: 120px;
-  width: 120px;
+  left: 0;
+
   flex-shrink: 0;
+
+  width: 120px;
+  min-width: 120px;
+
+  background: rgb(30 39 46 / 95%);
+  backdrop-filter: blur(10px);
 }
 
 /* Ensure shift cells have same width as headers */
 .shift-row.kontischicht-scroll-container .shift-cell {
-  min-width: 120px;
-  width: 120px;
   flex-shrink: 0;
+  width: 120px;
+  min-width: 120px;
 }
 
 /* Smooth scrolling enhancement */
@@ -1440,7 +1477,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .week-scroll-navigation {
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -1448,8 +1485,8 @@
   }
 
   .scroll-nav-btn {
-    width: 100%;
     justify-content: center;
+    width: 100%;
   }
 
   .scroll-indicator {

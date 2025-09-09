@@ -288,7 +288,7 @@ class KontischichtManager {
               </label>
               <input type="date" id="kontischicht-start-date" name="startDate"
                 class="form-control" required
-                style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white;"
+                style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;"
                 min="${new Date().toISOString().split('T')[0]}"
                 value="${new Date().toISOString().split('T')[0]}">
             </div>
@@ -298,7 +298,7 @@ class KontischichtManager {
               </label>
               <input type="date" id="kontischicht-end-date" name="endDate"
                 class="form-control" required
-                style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: white;">
+                style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;">
             </div>
           </div>
           <p style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 10px; margin-bottom: 0;">

@@ -150,16 +150,62 @@ export function generateToken(
 }
 
 /**
- * Middleware zur Token-Authentifizierung
+ * Helper function to handle auth errors based on request type
  */
-export async function authenticateToken(
+function handleAuthError(req: Request, res: Response, statusCode: number, message: string): void {
+  const acceptHeader = req.headers.accept ?? '';
+  if (acceptHeader.includes('text/html')) {
+    res.redirect(SESSION_EXPIRED_REDIRECT);
+  } else {
+    res.status(statusCode).json({ error: message });
+  }
+}
+
+/**
+ * Validate user session
+ */
+async function validateUserSession(
   req: Request,
   res: Response,
-  next: NextFunction,
-): Promise<void> {
-  const authHeader = req.headers.authorization;
+  user: TokenPayload & { activeRole?: string; isRoleSwitched?: boolean },
+): Promise<boolean> {
+  try {
+    // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
+    const requestFingerprint = req.headers['x-browser-fingerprint'] as string;
 
-  // Try to get token from Authorization header first
+    // Log Security-relevante Änderungen für Monitoring
+    if (user.fingerprint && requestFingerprint && requestFingerprint !== user.fingerprint) {
+      console.info(
+        `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
+      );
+      // Für jetzt: Nur loggen, nicht blockieren
+    }
+
+    // Optionally validate session in database
+    if (process.env.VALIDATE_SESSIONS === 'true') {
+      const [sessions] = await executeQuery<RowDataPacket[]>(
+        'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
+        [user.id, user.sessionId],
+      );
+
+      if (sessions.length === 0) {
+        handleAuthError(req, res, 403, 'Session expired or not found');
+        return false;
+      }
+    }
+    return true;
+  } catch (error: unknown) {
+    console.error('[AUTH] Session validation error:', error);
+    // Continue anyway in case of database issues
+    return true;
+  }
+}
+
+/**
+ * Extract token from request (header or cookie)
+ */
+function extractToken(req: Request): string | undefined {
+  const authHeader = req.headers.authorization;
   let token = authHeader?.split(' ')[1];
 
   // Cookie-Fallback für HTML-Seiten und Server-Side Rendering
@@ -170,7 +216,7 @@ export async function authenticateToken(
   // 3. Primär für direkte Seitenzugriffe gedacht (nicht API-Calls)
   // Siehe README.md für vollständige Sicherheitsdokumentation
   if (
-    (token === undefined || token === '') &&
+    !token &&
     'token' in req.cookies &&
     typeof req.cookies.token === 'string' &&
     req.cookies.token !== ''
@@ -178,22 +224,27 @@ export async function authenticateToken(
     token = req.cookies.token;
   }
 
+  return token;
+}
+
+/**
+ * Middleware zur Token-Authentifizierung
+ */
+export async function authenticateToken(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const token = extractToken(req);
+
   // Debug logging
   console.info('Auth check - Path:', req.path);
   console.info('Auth check - Headers:', req.headers);
   console.info('Auth check - Cookies:', req.cookies);
   console.info('Auth check - Token found:', token !== undefined && token !== '');
 
-  if (token === undefined || token === '') {
-    // Check if client expects HTML (browser page request) or JSON (API request)
-    const acceptHeader = req.headers.accept ?? '';
-    if (acceptHeader.includes('text/html')) {
-      // Browser request - redirect to login
-      res.redirect(SESSION_EXPIRED_REDIRECT);
-    } else {
-      // API request - return JSON error
-      res.status(401).json({ error: 'Authentication token required' });
-    }
+  if (!token) {
+    handleAuthError(req, res, 401, 'Authentication token required');
     return;
   }
 
@@ -216,52 +267,10 @@ export async function authenticateToken(
     };
 
     // Best Practice Session Security (wie Google, Facebook, etc.)
-    if (user.sessionId !== undefined && user.sessionId !== '') {
-      try {
-        // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
-        const requestFingerprint = req.headers['x-browser-fingerprint'] as string;
-        // const requestIP = req.ip  ?? req.connection.remoteAddress;
-        // const userAgent = req.headers['user-agent'];
-
-        // Log Security-relevante Änderungen für Monitoring
-        if (user.fingerprint && requestFingerprint && requestFingerprint !== user.fingerprint) {
-          console.info(
-            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
-          );
-
-          // Nur bei verdächtigen Mustern warnen/blockieren:
-          // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
-          // - Rapid fingerprint changes (> 10 pro Stunde)
-          // - Known malicious patterns
-
-          // Für jetzt: Nur loggen, nicht blockieren
-        }
-
-        // Optionally validate session in database
-        if (process.env.VALIDATE_SESSIONS === 'true') {
-          const [sessions] = await executeQuery<RowDataPacket[]>(
-            'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
-            [user.id, user.sessionId],
-          );
-
-          if (sessions.length === 0) {
-            // Check if client expects HTML (browser page request) or JSON (API request)
-            const acceptHeader = req.headers.accept ?? '';
-            if (acceptHeader.includes('text/html')) {
-              // Browser request - redirect to login with session expired message
-              res.redirect(SESSION_EXPIRED_REDIRECT);
-            } else {
-              // API request - return JSON error
-              res.status(403).json({
-                error: 'Session expired or not found',
-              });
-            }
-            return;
-          }
-        }
-      } catch (error: unknown) {
-        console.error('[AUTH] Session validation error:', error);
-        // Continue anyway in case of database issues
+    if (user.sessionId) {
+      const isValidSession = await validateUserSession(req, res, user);
+      if (!isValidSession) {
+        return;
       }
     }
 
@@ -293,19 +302,8 @@ export async function authenticateToken(
     // Set tenant_id directly on req for backwards compatibility
     (currentReq as Request & { tenant_id: number }).tenant_id = authenticatedUser.tenant_id;
     next();
-  } catch (error) {
-    // Check if client expects HTML (browser page request) or JSON (API request)
-    const acceptHeader = req.headers.accept ?? '';
-    if (acceptHeader.includes('text/html')) {
-      // Browser request - redirect to login with expired session message
-      res.redirect(SESSION_EXPIRED_REDIRECT);
-    } else {
-      // API request - return JSON error
-      res.status(403).json({
-        error: 'Invalid or expired token',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
+  } catch {
+    handleAuthError(req, res, 403, 'Invalid or expired token');
     return;
   }
 }

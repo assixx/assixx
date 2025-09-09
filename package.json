@@ -5,7 +5,8 @@
   "main": "backend/src/server.ts",
   "pnpm": {
     "overrides": {
-      "tmp": "^0.2.4"
+      "tmp": "^0.2.4",
+      "vite@>=7.1.0 <=7.1.4": ">=7.1.5"
     }
   },
   "scripts": {

@@ -64,10 +64,11 @@ export class AuditTrailService {
         [userId, tenantId],
       );
 
-      const user = userRows[0];
-      if (!user) {
+      if (userRows.length === 0) {
         throw new ServiceError('USER_NOT_FOUND', 'User not found');
       }
+
+      const user = userRows[0];
 
       const [result] = await connection.execute<ResultSetHeader>(
         `INSERT INTO audit_trail (
@@ -92,7 +93,7 @@ export class AuditTrailService {
         ],
       );
 
-      return this.getEntryById(result.insertId, tenantId);
+      return await this.getEntryById(result.insertId, tenantId);
     } finally {
       connection.release();
     }
@@ -128,11 +129,11 @@ export class AuditTrailService {
       conditions.push('user_id = ?');
       params.push(userId);
     }
-    if (action !== null && action !== undefined && action !== '') {
+    if (action) {
       conditions.push('action = ?');
       params.push(action);
     }
-    if (resourceType !== null && resourceType !== undefined && resourceType !== '') {
+    if (resourceType) {
       conditions.push('resource_type = ?');
       params.push(resourceType);
     }
@@ -144,15 +145,15 @@ export class AuditTrailService {
       conditions.push('status = ?');
       params.push(status);
     }
-    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== '') {
+    if (dateFrom) {
       conditions.push('created_at >= ?');
       params.push(dateFrom);
     }
-    if (dateTo !== null && dateTo !== undefined && dateTo !== '') {
+    if (dateTo) {
       conditions.push('created_at <= ?');
       params.push(dateTo);
     }
-    if (search !== null && search !== undefined && search !== '') {
+    if (search) {
       conditions.push('(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)');
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
@@ -165,12 +166,11 @@ export class AuditTrailService {
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
-    const total = countRows[0].total;
+    const total = countRows[0].total as number;
 
     // Get paginated entries
     const validSortFields = ['created_at', 'action', 'user_id', 'resource_type'];
-    const orderBy =
-      validSortFields.includes(sortBy) ? sortBy !== null && sortBy !== undefined : 'created_at';
+    const orderBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
     // Debug logging
@@ -223,11 +223,11 @@ export class AuditTrailService {
     const conditions: string[] = ['tenant_id = ?'];
     const params: (string | number | Date)[] = [tenantId];
 
-    if (dateFrom !== null && dateFrom !== undefined && dateFrom !== '') {
+    if (dateFrom) {
       conditions.push('created_at >= ?');
       params.push(dateFrom);
     }
-    if (dateTo !== null && dateTo !== undefined && dateTo !== '') {
+    if (dateTo) {
       conditions.push('created_at <= ?');
       params.push(dateTo);
     }
@@ -280,18 +280,18 @@ export class AuditTrailService {
 
     const byAction: Record<string, number> = {};
     actionRows.forEach((row) => {
-      byAction[row.action] = row.count;
+      byAction[row.action as string] = row.count as number;
     });
 
     const byResourceType: Record<string, number> = {};
     resourceRows.forEach((row) => {
-      byResourceType[row.resource_type] = row.count;
+      byResourceType[row.resource_type as string] = row.count as number;
     });
 
     const byUser = userRows.map((row) => ({
-      userId: row.user_id,
-      userName: row.user_name ?? 'Unknown',
-      count: row.count,
+      userId: row.user_id as number,
+      userName: row.user_name ? (row.user_name as string) : 'Unknown',
+      count: row.count as number,
     }));
 
     const byStatus = {
@@ -300,14 +300,14 @@ export class AuditTrailService {
     };
     statusRows.forEach((row) => {
       if (row.status === 'success') {
-        byStatus.success = row.count;
+        byStatus.success = row.count as number;
       } else if (row.status === 'failure') {
-        byStatus.failure = row.count;
+        byStatus.failure = row.count as number;
       }
     });
 
     return {
-      totalEntries: totalRows[0].total,
+      totalEntries: totalRows[0].total as number,
       byAction,
       byResourceType,
       byUser,
@@ -429,8 +429,8 @@ export class AuditTrailService {
       changes:
         row.changes ?
           typeof row.changes === 'string' ?
-            JSON.parse(row.changes)
-          : row.changes
+            (JSON.parse(row.changes) as Record<string, unknown>)
+          : (row.changes as Record<string, unknown>)
         : undefined,
       ipAddress: row.ip_address,
       userAgent: row.user_agent,

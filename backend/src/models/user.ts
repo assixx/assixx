@@ -745,8 +745,8 @@ export async function getUserDocumentCount(userId: number): Promise<number> {
 
 /**
  * Get user's department and team information
- * @param {number} userId - User ID
- * @returns {Promise<Object>} Object with role, departmentId, and teamId
+ * @param userId - User ID
+ * @returns Object with role, departmentId, and teamId
  */
 export async function getUserDepartmentAndTeam(userId: number): Promise<{
   role: string | null;

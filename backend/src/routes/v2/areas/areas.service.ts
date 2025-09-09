@@ -377,6 +377,8 @@ export async function getAreaStats(tenantId: number): Promise<{
   typeStats.forEach((row: RowDataPacket) => {
     const typeKey = row.type as string;
     const count = row.count as number;
+    // Safe: typeKey comes from database query results, not user input
+    // eslint-disable-next-line security/detect-object-injection
     byType[typeKey] = count;
   });
 

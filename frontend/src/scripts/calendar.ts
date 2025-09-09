@@ -684,6 +684,7 @@ function initializeCalendar(): void {
         successCallback: (events: FullCalendarEventInput[]) => void,
         failureCallback: (error: Error) => void,
       ) {
+        // eslint-disable-next-line promise/prefer-await-to-then -- FullCalendar expects callback-based API
         void loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
       },
       eventClick(info: FullCalendarEventClickInfo) {
@@ -1132,6 +1133,16 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
       // v2 API response: {success, data: {data: [...], pagination: {...}}}
       events = data.data.data;
       console.info('[CALENDAR] v2 events found:', events.length);
+    } else if (
+      'success' in data &&
+      'data' in data &&
+      typeof data.data === 'object' &&
+      'events' in data.data &&
+      Array.isArray(data.data.events)
+    ) {
+      // v2 API response: {success, data: {events: [...], pagination: {...}}}
+      events = data.data.events as CalendarEvent[];
+      console.info('[CALENDAR] v2 events (from data.events) found:', events.length);
     } else if ('events' in data && Array.isArray(data.events)) {
       // Paginated response with events array
       events = data.events;

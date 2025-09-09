@@ -14,17 +14,19 @@ import { DatabaseUser } from '../types/models';
 import { ResultSetHeader, execute } from '../utils/db';
 import { logger } from '../utils/logger';
 
+const INVALID_CREDENTIALS_MSG = 'Ungültige Anmeldedaten';
+
 /**
  *
  */
 class AuthService {
   /**
    * Authenticate user with username and password
-   * @param {string} username - Username
-   * @param {string} password - Plain text password
-   * @param {string} fingerprint - Browser fingerprint
-   * @param {string} tenantSubdomain - Tenant subdomain to validate against
-   * @returns {Promise<AuthResult>} Result with success status, token, and user data
+   * @param username - Username
+   * @param password - Plain text password
+   * @param fingerprint - Browser fingerprint
+   * @param tenantSubdomain - Tenant subdomain to validate against
+   * @returns Result with success status, token, and user data
    */
   async authenticateUser(
     username: string,
@@ -38,12 +40,12 @@ class AuthService {
 
       if (!result.user) {
         // Provide specific error messages based on error type
-        let message = 'Ungültige Anmeldedaten';
+        let message = INVALID_CREDENTIALS_MSG;
         if (result.error === 'USER_INACTIVE') {
           message =
             'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
         } else if (result.error === 'USER_NOT_FOUND' || result.error === 'INVALID_PASSWORD') {
-          message = 'Ungültige Anmeldedaten';
+          message = INVALID_CREDENTIALS_MSG;
         }
 
         return {
@@ -66,7 +68,7 @@ class AuthService {
           return {
             success: false,
             user: null,
-            message: 'Ungültige Anmeldedaten',
+            message: INVALID_CREDENTIALS_MSG,
           };
         }
 
@@ -75,12 +77,12 @@ class AuthService {
         // Check if user belongs to the specified tenant
         if (result.user.tenant_id !== tenantId) {
           logger.warn(
-            `User ${username} attempted to login to tenant ${String(tenantId)} but belongs to tenant ${result.user.tenant_id}`,
+            `User ${username} attempted to login to tenant ${String(tenantId)} but belongs to tenant ${String(result.user.tenant_id ?? 'none')}`,
           );
           return {
             success: false,
             user: null,
-            message: 'Ungültige Anmeldedaten',
+            message: INVALID_CREDENTIALS_MSG,
           };
         }
       }
@@ -131,15 +133,15 @@ class AuthService {
       return {
         success: false,
         user: null,
-        message: 'Ungültige Anmeldedaten',
+        message: INVALID_CREDENTIALS_MSG,
       };
     }
   }
 
   /**
    * Register a new user
-   * @param {UserRegistrationData} userData - User registration data
-   * @returns {Promise<AuthResult>} Result with success status and user data
+   * @param userData - User registration data
+   * @returns Result with success status and user data
    */
   async registerUser(userData: UserRegistrationData): Promise<AuthResult> {
     try {
@@ -222,8 +224,8 @@ class AuthService {
 
   /**
    * Verify JWT token
-   * @param {string} token - JWT token
-   * @returns {Promise<TokenValidationResult>} Decoded token data
+   * @param token - JWT token
+   * @returns Decoded token data
    */
   verifyToken(token: string): TokenValidationResult {
     try {
@@ -248,7 +250,7 @@ class AuthService {
   /**
    * Map database user format to application user format
    * @param dbUser - The dbUser parameter
-   * @private
+   * @internal
    */
   private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<DatabaseUser, 'password_hash'> & {
     firstName: string;
@@ -302,27 +304,7 @@ class AuthService {
   /**
    * Convert DbUser to DatabaseUser format
    * @param dbUser - The dbUser parameter
-   * @param dbUser.id
-   * @param dbUser.username
-   * @param dbUser.email
-   * @param dbUser.password
-   * @param dbUser.first_name
-   * @param dbUser.last_name
-   * @param dbUser.role
-   * @param dbUser.tenant_id
-   * @param dbUser.department_id
-   * @param dbUser.is_active
-   * @param dbUser.is_archived
-   * @param dbUser.profile_picture
-   * @param dbUser.phone
-   * @param dbUser.landline
-   * @param dbUser.employee_number
-   * @param dbUser.position
-   * @param dbUser.hire_date
-   * @param dbUser.birthday
-   * @param dbUser.created_at
-   * @param dbUser.updated_at
-   * @private
+   * @internal
    */
   private dbUserToDatabaseUser(dbUser: {
     id: number;
@@ -372,9 +354,9 @@ class AuthService {
 
   /**
    * Generate a refresh token for a user
-   * @param {number} userId - User ID
-   * @param {number} tenantId - Tenant ID
-   * @returns {Promise<string>} Refresh token
+   * @param userId - User ID
+   * @param tenantId - Tenant ID
+   * @returns Refresh token
    */
   async generateRefreshToken(userId: number, tenantId: number): Promise<string> {
     try {
@@ -413,8 +395,8 @@ class AuthService {
 
   /**
    * Refresh access token using refresh token
-   * @param {string} refreshToken - Refresh token
-   * @returns {Promise<{token: string, refreshToken: string} | null>} New tokens or null if invalid
+   * @param refreshToken - Refresh token
+   * @returns New tokens or null if invalid
    */
   async refreshAccessToken(refreshToken: string): Promise<{
     token: string;

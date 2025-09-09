@@ -4,7 +4,7 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute, getConnection } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
@@ -70,7 +70,7 @@ export class DepartmentGroupsService {
 
       // Create the group
       const [result] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by) 
+        `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by)
          VALUES (?, ?, ?, ?, ?)`,
         [tenantId, data.name, data.description ?? null, data.parentGroupId ?? null, createdBy],
       );
@@ -84,7 +84,7 @@ export class DepartmentGroupsService {
         const placeholders = data.departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
         await connection.execute(
-          `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
+          `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by)
            VALUES ${placeholders}`,
           values.flat(),
         );
@@ -93,7 +93,7 @@ export class DepartmentGroupsService {
       await connection.commit();
 
       // Log the creation
-      await RootLog.log(
+      await rootLog.log(
         'department_group_created',
         createdBy,
         tenantId,
@@ -125,10 +125,10 @@ export class DepartmentGroupsService {
     try {
       // Get all groups with member count
       const [groups] = await execute<GroupRow[]>(
-        `SELECT g.*, 
+        `SELECT g.*,
          (SELECT COUNT(*) FROM department_group_members dgm WHERE dgm.group_id = g.id) as member_count
          FROM department_groups g
-         WHERE g.tenant_id = ? 
+         WHERE g.tenant_id = ?
          ORDER BY g.parent_group_id, g.name`,
         [tenantId],
       );
@@ -206,7 +206,7 @@ export class DepartmentGroupsService {
   async getGroupById(groupId: number, tenantId: number): Promise<DepartmentGroup> {
     try {
       const [rows] = await execute<GroupRow[]>(
-        `SELECT g.*, 
+        `SELECT g.*,
          (SELECT COUNT(*) FROM department_group_members dgm WHERE dgm.group_id = g.id) as member_count
          FROM department_groups g
          WHERE g.id = ? AND g.tenant_id = ?`,
@@ -250,8 +250,8 @@ export class DepartmentGroupsService {
   ): Promise<void> {
     try {
       const [result] = await execute<ResultSetHeader>(
-        `UPDATE department_groups 
-         SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP 
+        `UPDATE department_groups
+         SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND tenant_id = ?`,
         [data.name, data.description ?? null, groupId, tenantId],
       );
@@ -261,7 +261,7 @@ export class DepartmentGroupsService {
       }
 
       // Log the update
-      await RootLog.log(
+      await rootLog.log(
         'department_group_updated',
         updatedBy,
         tenantId,
@@ -291,7 +291,7 @@ export class DepartmentGroupsService {
 
       // Check if any admin has permissions on this group
       const [permissions] = await connection.execute<RowDataPacket[]>(
-        `SELECT COUNT(*) as count FROM admin_group_permissions 
+        `SELECT COUNT(*) as count FROM admin_group_permissions
          WHERE group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
@@ -305,7 +305,7 @@ export class DepartmentGroupsService {
 
       // Check if group has subgroups
       const [subgroups] = await connection.execute<RowDataPacket[]>(
-        `SELECT COUNT(*) as count FROM department_groups 
+        `SELECT COUNT(*) as count FROM department_groups
          WHERE parent_group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
@@ -315,7 +315,11 @@ export class DepartmentGroupsService {
       }
 
       // Get group name for logging
-      const [groupData] = await connection.execute<RowDataPacket[]>(
+      interface GroupNameRow extends RowDataPacket {
+        name: string;
+      }
+
+      const [groupData] = await connection.execute<GroupNameRow[]>(
         `SELECT name FROM department_groups WHERE id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
@@ -328,14 +332,14 @@ export class DepartmentGroupsService {
 
       // Delete department assignments
       await connection.execute(
-        `DELETE FROM department_group_members 
+        `DELETE FROM department_group_members
          WHERE group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
 
       // Delete the group
       await connection.execute(
-        `DELETE FROM department_groups 
+        `DELETE FROM department_groups
          WHERE id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
@@ -343,7 +347,7 @@ export class DepartmentGroupsService {
       await connection.commit();
 
       // Log the deletion
-      await RootLog.log(
+      await rootLog.log(
         'department_group_deleted',
         deletedBy,
         tenantId,
@@ -392,14 +396,14 @@ export class DepartmentGroupsService {
 
       // Insert with ON DUPLICATE KEY UPDATE to handle existing assignments
       await execute(
-        `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
+        `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by)
          VALUES ${placeholders}
          ON DUPLICATE KEY UPDATE added_by = VALUES(added_by), added_at = CURRENT_TIMESTAMP`,
         values.flat(),
       );
 
       // Log the action
-      await RootLog.log(
+      await rootLog.log(
         'departments_added_to_group',
         addedBy,
         tenantId,
@@ -427,7 +431,7 @@ export class DepartmentGroupsService {
   ): Promise<void> {
     try {
       const [result] = await execute<ResultSetHeader>(
-        `DELETE FROM department_group_members 
+        `DELETE FROM department_group_members
          WHERE group_id = ? AND department_id = ? AND tenant_id = ?`,
         [groupId, departmentId, tenantId],
       );
@@ -437,7 +441,7 @@ export class DepartmentGroupsService {
       }
 
       // Log the action
-      await RootLog.log(
+      await rootLog.log(
         'department_removed_from_group',
         removedBy,
         tenantId,
@@ -508,8 +512,12 @@ export class DepartmentGroupsService {
     const departments = new Map<number, GroupDepartment>();
 
     // Get all subgroups
-    const [subgroups] = await execute<RowDataPacket[]>(
-      `SELECT id FROM department_groups 
+    interface SubgroupRow extends RowDataPacket {
+      id: number;
+    }
+
+    const [subgroups] = await execute<SubgroupRow[]>(
+      `SELECT id FROM department_groups
        WHERE parent_group_id = ? AND tenant_id = ?`,
       [parentGroupId, tenantId],
     );
@@ -543,8 +551,12 @@ export class DepartmentGroupsService {
   ): Promise<boolean> {
     if (groupId === targetId) return true;
 
-    const [parents] = await execute<RowDataPacket[]>(
-      `SELECT parent_group_id FROM department_groups 
+    interface ParentRow extends RowDataPacket {
+      parent_group_id: number | null;
+    }
+
+    const [parents] = await execute<ParentRow[]>(
+      `SELECT parent_group_id FROM department_groups
        WHERE id = ? AND tenant_id = ?`,
       [groupId, tenantId],
     );

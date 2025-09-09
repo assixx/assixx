@@ -100,6 +100,8 @@ export function snakeToCamel(obj: unknown): unknown {
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const camelKey = snakeToCamelString(key);
+      // ESLint disable needed: camelKey is derived from object's own properties (checked with hasOwnProperty)
+      // eslint-disable-next-line security/detect-object-injection
       converted[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key]);
     }
   }
@@ -126,6 +128,8 @@ export function camelToSnake(obj: unknown): unknown {
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const snakeKey = camelToSnakeString(key);
+      // ESLint disable needed: snakeKey is derived from object's own properties (checked with hasOwnProperty)
+      // eslint-disable-next-line security/detect-object-injection
       converted[snakeKey] = camelToSnake((obj as Record<string, unknown>)[key]);
     }
   }

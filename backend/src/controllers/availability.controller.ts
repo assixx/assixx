@@ -7,6 +7,8 @@ import { Request, Response } from 'express';
 import availabilityService from '../services/availability.service';
 import type { AuthenticatedRequest } from '../types/request.types';
 
+const AUTH_REQUIRED_ERROR = 'Authentication required';
+
 // Type guard to check if request has authenticated user
 /**
  *
@@ -29,7 +31,7 @@ class AvailabilityController {
   async getAll(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;
@@ -62,7 +64,7 @@ class AvailabilityController {
   async getCurrentStatus(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;
@@ -84,7 +86,7 @@ class AvailabilityController {
   async getSummary(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;
@@ -116,7 +118,7 @@ class AvailabilityController {
   async getById(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;
@@ -145,7 +147,7 @@ class AvailabilityController {
   async create(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;
@@ -229,7 +231,7 @@ class AvailabilityController {
   async update(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;
@@ -307,7 +309,7 @@ class AvailabilityController {
   async delete(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: AUTH_REQUIRED_ERROR });
         return;
       }
       const tenantId = req.user.tenant_id;

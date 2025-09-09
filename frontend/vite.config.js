@@ -10,6 +10,7 @@ const getHtmlInputs = () => {
     .filter((file) => file.endsWith('.html'))
     .forEach((file) => {
       const name = file.replace('.html', '');
+      // eslint-disable-next-line security/detect-object-injection -- Safe: name comes from local filesystem during build
       inputs[name] = resolve(pagesDir, file);
     });
 

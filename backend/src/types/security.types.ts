@@ -209,6 +209,7 @@ export function hasPermission(userPermissions: string[], requiredPermission: str
     userPermissions.includes(requiredPermission) ||
     userPermissions.includes('*') ||
     userPermissions.some((p) => {
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Pattern is derived from controlled user permission strings, not user input
       const regex = new RegExp('^' + p.replace(/\*/g, '.*') + '$');
       return regex.test(requiredPermission);
     })

@@ -22,28 +22,34 @@ export const fieldMapper = {
 
       // Handle Date objects
       if (value instanceof Date) {
+        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = value.toISOString();
       }
       // Handle null values
       else if (value === null) {
+        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = null;
       }
       // Handle boolean conversions (MySQL returns 0/1)
       else if (key.startsWith('is_') || key.startsWith('has_') || key === 'active') {
+        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = Boolean(value);
       }
       // Recursively handle nested objects
       else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = this.dbToApi(value as Record<string, unknown>);
       }
       // Handle arrays
       else if (Array.isArray(value)) {
+        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = value.map((item) =>
           item != null && typeof item === 'object' ?
             this.dbToApi(item as Record<string, unknown>)
           : (item as unknown),
         );
       } else {
+        // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
         result[camelKey] = value;
       }
     }
@@ -64,24 +70,29 @@ export const fieldMapper = {
 
       // Handle Date strings
       if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+        // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
         result[snakeKey] = value;
       }
       // Handle null values
       else if (value === null) {
+        // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
         result[snakeKey] = null;
       }
       // Recursively handle nested objects
       else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
         result[snakeKey] = this.apiToDb(value as Record<string, unknown>);
       }
       // Handle arrays
       else if (Array.isArray(value)) {
+        // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
         result[snakeKey] = value.map((item) =>
           item != null && typeof item === 'object' ?
             this.apiToDb(item as Record<string, unknown>)
           : (item as unknown),
         );
       } else {
+        // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
         result[snakeKey] = value;
       }
     }
@@ -99,6 +110,7 @@ export const fieldMapper = {
     };
 
     if (direction === 'toApi') {
+      // eslint-disable-next-line security/detect-object-injection -- field is a controlled parameter from internal code, not user input
       return customMappings[field] || camelCase(field);
     } else {
       // Reverse lookup for toDb

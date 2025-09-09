@@ -3,8 +3,8 @@
  */
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import Document from '../models/document.js';
-import User from '../models/user.js';
+import documentModel from '../models/document.js';
+import userModel from '../models/user.js';
 import type { DocumentRequest } from '../types/request.types.js';
 import { logger } from '../utils/logger.js';
 
@@ -17,9 +17,6 @@ export interface DocumentAccessOptions {
 /**
  * Prüft, ob der Benutzer Zugriff auf ein Dokument hat
  * @param options - Konfigurationsoptionen
- * @param options.allowAdmin - Ob Admins Zugriff haben sollen
- * @param options.allowDepartmentHeads - Ob Abteilungsleiter Zugriff auf Dokumente ihrer Abteilungsmitglieder haben dürfen
- * @param options.requireOwnership - Ob der Benutzer der Besitzer des Dokuments sein muss
  */
 export const checkDocumentAccess = (
   options: DocumentAccessOptions = {
@@ -52,7 +49,7 @@ export const checkDocumentAccess = (
       );
 
       // Prüfe, ob das Dokument existiert
-      const document = await Document.findById(Number.parseInt(documentId, 10));
+      const document = await documentModel.findById(Number.parseInt(documentId, 10));
       if (!document) {
         logger.warn(`Document ${documentId} not found`);
         res.status(404).json({
@@ -123,8 +120,8 @@ export const checkDocumentAccess = (
         document.recipient_type === 'user' &&
         document.user_id
       ) {
-        const user = await User.findById(userId, tenantId);
-        const documentOwner = await User.findById(document.user_id, tenantId);
+        const user = await userModel.findById(userId, tenantId);
+        const documentOwner = await userModel.findById(document.user_id, tenantId);
 
         if (user && documentOwner && user.department === documentOwner.department) {
           logger.info(
@@ -179,7 +176,7 @@ export const checkPublicDocumentAccess = async (
   try {
     const { documentId } = req.params;
 
-    const document = await Document.findById(Number.parseInt(documentId, 10));
+    const document = await documentModel.findById(Number.parseInt(documentId, 10));
     if (!document) {
       res.status(404).json({
         error: 'Dokument nicht gefunden',

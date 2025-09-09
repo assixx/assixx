@@ -176,8 +176,13 @@ export function isEmpty(obj: object): boolean {
  */
 export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
   return array.reduce((result: Record<string, T[]>, item: T) => {
+    // ESLint disable needed: key is typed as keyof T, ensuring it's a valid property
+    // eslint-disable-next-line security/detect-object-injection
     const group = String(item[key]);
+    // ESLint disable needed: group is derived from controlled input (keyof T)
+    // eslint-disable-next-line security/detect-object-injection
     result[group] ??= [];
+    // eslint-disable-next-line security/detect-object-injection
     result[group].push(item);
     return result;
   }, {});
@@ -192,6 +197,8 @@ export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
 export function removeDuplicates<T>(array: T[], key: keyof T): T[] {
   const seen = new Set();
   return array.filter((item: T) => {
+    // ESLint disable needed: key is typed as keyof T, ensuring it's a valid property
+    // eslint-disable-next-line security/detect-object-injection
     const value = item[key];
     if (seen.has(value)) return false;
     seen.add(value);

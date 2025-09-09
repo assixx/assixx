@@ -20,9 +20,9 @@ export class RolesController {
    * @param _req - The _req parameter
    * @param res - The response object
    */
-  async getAllRoles(_req: AuthenticatedRequest, res: Response): Promise<void> {
+  getAllRoles(_req: AuthenticatedRequest, res: Response): void {
     try {
-      const roles = await rolesService.getAllRoles();
+      const roles = rolesService.getAllRoles();
 
       res.json({
         success: true,
@@ -45,7 +45,7 @@ export class RolesController {
    * @param req - The request object
    * @param res - The response object
    */
-  async getRoleById(req: AuthenticatedRequest, res: Response): Promise<void> {
+  getRoleById(req: AuthenticatedRequest, res: Response): void {
     // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -65,7 +65,7 @@ export class RolesController {
 
     try {
       const roleId = req.params.id as RoleName;
-      const role = await rolesService.getRoleById(roleId);
+      const role = rolesService.getRoleById(roleId);
 
       res.json({
         success: true,
@@ -98,9 +98,9 @@ export class RolesController {
    * @param _req - The _req parameter
    * @param res - The response object
    */
-  async getRoleHierarchy(_req: AuthenticatedRequest, res: Response): Promise<void> {
+  getRoleHierarchy(_req: AuthenticatedRequest, res: Response): void {
     try {
-      const hierarchy = await rolesService.getRoleHierarchy();
+      const hierarchy = rolesService.getRoleHierarchy();
 
       res.json({
         success: true,
@@ -123,10 +123,10 @@ export class RolesController {
    * @param req - The request object
    * @param res - The response object
    */
-  async getAssignableRoles(req: AuthenticatedRequest, res: Response): Promise<void> {
+  getAssignableRoles(req: AuthenticatedRequest, res: Response): void {
     try {
       const currentUserRole = req.user.role as RoleName;
-      const assignableRoles = await rolesService.getAssignableRoles(currentUserRole);
+      const assignableRoles = rolesService.getAssignableRoles(currentUserRole);
 
       res.json({
         success: true,

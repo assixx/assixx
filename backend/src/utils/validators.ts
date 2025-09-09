@@ -143,6 +143,7 @@ export function validateSubdomain(subdomain: string): SubdomainValidationResult 
   if (subdomain.length > 63) {
     errors.push('Subdomain must not exceed 63 characters');
   }
+  // eslint-disable-next-line security/detect-unsafe-regex -- Pattern is simple and has no catastrophic backtracking
   if (!/^[0-9a-z]+(-[0-9a-z]+)*$/.test(subdomain)) {
     errors.push(
       'Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)',
@@ -168,6 +169,7 @@ export function validateRequiredFields(
   const missingFields: string[] = [];
 
   requiredFields.forEach((field: string) => {
+    // eslint-disable-next-line security/detect-object-injection -- Field names come from controlled requiredFields array, not user input
     const value = data[field];
     if (value == null || value === '' || (typeof value === 'string' && value.trim() === '')) {
       missingFields.push(field);

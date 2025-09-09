@@ -5,13 +5,30 @@ import { body, param, query } from 'express-validator';
 
 import { handleValidationErrors } from '../../../middleware/validation.js';
 
+// Constants for validation messages
+const SETTING_KEY_MESSAGE = 'Setting key must be alphanumeric with underscores, dots, or hyphens';
+const INVALID_CATEGORY_MESSAGE = 'Invalid category';
+const SETTING_VALUE_REQUIRED_MESSAGE = 'Setting value is required';
+
+// Available categories
+const SETTING_CATEGORIES = [
+  'general',
+  'appearance',
+  'notifications',
+  'security',
+  'workflow',
+  'integration',
+  'shifts',
+  'other',
+];
+
 // Common validations
 const settingKeyValidation = param('key')
   .isString()
   .trim()
   .isLength({ min: 1, max: 100 })
   .matches(/^[\w\-.]+$/)
-  .withMessage('Setting key must be alphanumeric with underscores, dots, or hyphens');
+  .withMessage(SETTING_KEY_MESSAGE);
 
 const valueTypeValidation = body('value_type')
   .optional()
@@ -20,33 +37,12 @@ const valueTypeValidation = body('value_type')
 
 const categoryValidation = body('category')
   .optional()
-  .isIn([
-    'general',
-    'appearance',
-    'notifications',
-    'security',
-    'workflow',
-    'integration',
-    'shifts',
-    'other',
-  ])
-  .withMessage('Invalid category');
+  .isIn(SETTING_CATEGORIES)
+  .withMessage(INVALID_CATEGORY_MESSAGE);
 
 // System settings validations
 export const getSystemSettingsValidation = [
-  query('category')
-    .optional()
-    .isIn([
-      'general',
-      'appearance',
-      'notifications',
-      'security',
-      'workflow',
-      'integration',
-      'shifts',
-      'other',
-    ])
-    .withMessage('Invalid category'),
+  query('category').optional().isIn(SETTING_CATEGORIES).withMessage(INVALID_CATEGORY_MESSAGE),
   query('is_public')
     .optional()
     .isIn(['true', 'false'])
@@ -68,8 +64,8 @@ export const createSystemSettingValidation = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .matches(/^[\w\-.]+$/)
-    .withMessage('Setting key must be alphanumeric with underscores, dots, or hyphens'),
-  body('setting_value').exists().withMessage('Setting value is required'),
+    .withMessage(SETTING_KEY_MESSAGE),
+  body('setting_value').exists().withMessage(SETTING_VALUE_REQUIRED_MESSAGE),
   valueTypeValidation,
   categoryValidation,
   body('description')
@@ -84,7 +80,7 @@ export const createSystemSettingValidation = [
 
 export const updateSystemSettingValidation = [
   settingKeyValidation,
-  body('setting_value').exists().withMessage('Setting value is required'),
+  body('setting_value').exists().withMessage(SETTING_VALUE_REQUIRED_MESSAGE),
   valueTypeValidation,
   categoryValidation,
   body('description')
@@ -101,19 +97,7 @@ export const deleteSystemSettingValidation = [settingKeyValidation, handleValida
 
 // Tenant settings validations
 export const getTenantSettingsValidation = [
-  query('category')
-    .optional()
-    .isIn([
-      'general',
-      'appearance',
-      'notifications',
-      'security',
-      'workflow',
-      'integration',
-      'shifts',
-      'other',
-    ])
-    .withMessage('Invalid category'),
+  query('category').optional().isIn(SETTING_CATEGORIES).withMessage(INVALID_CATEGORY_MESSAGE),
   query('search')
     .optional()
     .isString()
@@ -131,8 +115,8 @@ export const createTenantSettingValidation = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .matches(/^[\w\-.]+$/)
-    .withMessage('Setting key must be alphanumeric with underscores, dots, or hyphens'),
-  body('setting_value').exists().withMessage('Setting value is required'),
+    .withMessage(SETTING_KEY_MESSAGE),
+  body('setting_value').exists().withMessage(SETTING_VALUE_REQUIRED_MESSAGE),
   valueTypeValidation,
   categoryValidation,
   handleValidationErrors,
@@ -140,7 +124,7 @@ export const createTenantSettingValidation = [
 
 export const updateTenantSettingValidation = [
   settingKeyValidation,
-  body('setting_value').exists().withMessage('Setting value is required'),
+  body('setting_value').exists().withMessage(SETTING_VALUE_REQUIRED_MESSAGE),
   valueTypeValidation,
   categoryValidation,
   handleValidationErrors,
@@ -150,19 +134,7 @@ export const deleteTenantSettingValidation = [settingKeyValidation, handleValida
 
 // User settings validations
 export const getUserSettingsValidation = [
-  query('category')
-    .optional()
-    .isIn([
-      'general',
-      'appearance',
-      'notifications',
-      'security',
-      'workflow',
-      'integration',
-      'shifts',
-      'other',
-    ])
-    .withMessage('Invalid category'),
+  query('category').optional().isIn(SETTING_CATEGORIES).withMessage(INVALID_CATEGORY_MESSAGE),
   query('search')
     .optional()
     .isString()
@@ -180,8 +152,8 @@ export const createUserSettingValidation = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .matches(/^[\w\-.]+$/)
-    .withMessage('Setting key must be alphanumeric with underscores, dots, or hyphens'),
-  body('setting_value').exists().withMessage('Setting value is required'),
+    .withMessage(SETTING_KEY_MESSAGE),
+  body('setting_value').exists().withMessage(SETTING_VALUE_REQUIRED_MESSAGE),
   valueTypeValidation,
   categoryValidation,
   handleValidationErrors,
@@ -189,7 +161,7 @@ export const createUserSettingValidation = [
 
 export const updateUserSettingValidation = [
   settingKeyValidation,
-  body('setting_value').exists().withMessage('Setting value is required'),
+  body('setting_value').exists().withMessage(SETTING_VALUE_REQUIRED_MESSAGE),
   valueTypeValidation,
   categoryValidation,
   handleValidationErrors,
@@ -212,7 +184,7 @@ export const bulkUpdateValidation = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .matches(/^[\w\-.]+$/)
-    .withMessage('Setting key must be alphanumeric with underscores, dots, or hyphens'),
+    .withMessage(SETTING_KEY_MESSAGE),
   body('settings.*.setting_value').exists().withMessage('Setting value is required'),
   body('settings.*.value_type')
     .optional()

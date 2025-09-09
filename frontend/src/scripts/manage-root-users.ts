@@ -396,7 +396,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
     // Set department if exists
     const departmentSelect = $('#rootDepartmentId') as HTMLSelectElement | null;
-    if (departmentSelect !== null && user.departmentId !== undefined && user.departmentId !== null) {
+    if (departmentSelect !== null && user.departmentId !== undefined) {
       departmentSelect.value = user.departmentId.toString();
     }
 

@@ -396,10 +396,72 @@ export async function generateRotationShifts(
  */
 type ShiftAssignmentRow = RowDataPacket & {
   user_id: number;
-  shift_group: 'F' | 'S' | 'N';
+  shift_group: string;
   id: number;
   team_id: number | null;
 };
+
+/**
+ * Determine shift type for F/S alternation with night shift ignored
+ */
+function determineAlternatingShiftType(shiftGroup: string, cycleWeek: number): 'F' | 'S' | 'N' {
+  if (shiftGroup === 'F') {
+    return cycleWeek === 0 ? 'F' : 'S';
+  }
+  if (shiftGroup === 'S') {
+    return cycleWeek === 0 ? 'S' : 'F';
+  }
+  // Night shift workers (N) and any other unexpected values
+  // WICHTIG: Bei ignoreNightShift bleiben N-Mitarbeiter IMMER in Nachtschicht!
+  return shiftGroup === 'N' ? 'N' : 'F';
+}
+
+/**
+ * Determine shift type for a given date and pattern
+ */
+function determineShiftType(
+  assignment: ShiftAssignmentRow,
+  pattern: ShiftRotationPattern,
+  weeksSinceStart: number,
+  date: Date,
+): 'F' | 'S' | 'N' {
+  const config: PatternConfig = pattern.patternConfig;
+  const ignoreNightShift = config.ignoreNightShift ?? false;
+
+  // Fixed night shift pattern
+  if (pattern.patternType === 'fixed_n') {
+    return 'N';
+  }
+
+  // Weekly rotation patterns
+  const isWeeklyRotation =
+    pattern.patternType === 'alternate_fs' ||
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- patternType is a runtime value that can be different strings
+    (pattern.patternType === 'custom' && config.cycleWeeks === 1);
+
+  if (!isWeeklyRotation) {
+    // Custom pattern - would need more complex logic
+    return assignment.shift_group as 'F' | 'S' | 'N';
+  }
+
+  // Weekly rotation with ignoreNightShift
+  if (ignoreNightShift) {
+    const cycleWeek = weeksSinceStart % 2; // Only 2-week cycle for F/S alternation
+
+    // Debug logging
+    console.info(
+      `[ROTATION DEBUG] Date: ${date.toISOString().split('T')[0]}, User: ${assignment.user_id}, Shift Group: ${assignment.shift_group}, Weeks Since Start: ${weeksSinceStart}, Cycle Week: ${cycleWeek}`,
+    );
+
+    return determineAlternatingShiftType(assignment.shift_group, cycleWeek);
+  }
+
+  // Original 3-shift rotation (F -> S -> N)
+  const cycleWeek = weeksSinceStart % 3;
+  if (cycleWeek === 0) return 'F';
+  if (cycleWeek === 1) return 'S';
+  return 'N';
+}
 
 function generateShiftsForAssignment(
   assignment: ShiftAssignmentRow,
@@ -420,10 +482,9 @@ function generateShiftsForAssignment(
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;
   const config: PatternConfig = pattern.patternConfig;
   const skipWeekends = config.skipWeekends ?? true;
-  const ignoreNightShift = config.ignoreNightShift ?? false;
 
   console.info(
-    `[ROTATION CONFIG] skipWeekends: ${skipWeekends}, ignoreNightShift: ${ignoreNightShift}, cycleWeeks: ${config.cycleWeeks ?? 'undefined'}`,
+    `[ROTATION CONFIG] skipWeekends: ${skipWeekends}, ignoreNightShift: ${config.ignoreNightShift ?? false}, cycleWeeks: ${config.cycleWeeks ?? 'undefined'}`,
   );
 
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
@@ -431,50 +492,7 @@ function generateShiftsForAssignment(
     if (skipWeekends && (date.getDay() === 0 || date.getDay() === 6)) continue;
 
     const weeksSinceStart = Math.floor((date.getTime() - patternStart.getTime()) / msPerWeek);
-    let shiftType: 'F' | 'S' | 'N';
-
-    if (
-      pattern.patternType === 'alternate_fs' ||
-      (pattern.patternType === 'custom' && config.cycleWeeks === 1)
-    ) {
-      // For weekly rotation with ignoreNightShift, only alternate between F and S
-      if (ignoreNightShift) {
-        // Use the assignment shift_group as starting point
-        // If shift_group is 'F', weeks 0,2,4... are F, weeks 1,3,5... are S
-        // If shift_group is 'S', weeks 0,2,4... are S, weeks 1,3,5... are F
-        const cycleWeek = weeksSinceStart % 2; // Only 2-week cycle for F/S alternation
-
-        // Debug logging
-        console.info(
-          `[ROTATION DEBUG] Date: ${date.toISOString().split('T')[0]}, User: ${assignment.user_id}, Shift Group: ${assignment.shift_group}, Weeks Since Start: ${weeksSinceStart}, Cycle Week: ${cycleWeek}`,
-        );
-
-        if (assignment.shift_group === 'F') {
-          shiftType = cycleWeek === 0 ? 'F' : 'S';
-        } else if (assignment.shift_group === 'S') {
-          shiftType = cycleWeek === 0 ? 'S' : 'F';
-        } else if (assignment.shift_group === 'N') {
-          // WICHTIG: Bei ignoreNightShift bleiben N-Mitarbeiter IMMER in Nachtschicht!
-          shiftType = 'N';
-        } else {
-          // Fallback for any unexpected values
-          shiftType = 'F';
-        }
-      } else {
-        // Original 3-shift rotation (F -> S -> N)
-        const cycleWeek = weeksSinceStart % 3;
-        shiftType =
-          cycleWeek === 0 ? 'F'
-          : cycleWeek === 1 ? 'S'
-          : 'N';
-      }
-    } else if (pattern.patternType === 'fixed_n') {
-      // Always N shift
-      shiftType = 'N';
-    } else {
-      // Custom pattern - would need more complex logic
-      shiftType = assignment.shift_group;
-    }
+    const shiftType = determineShiftType(assignment, pattern, weeksSinceStart, date);
 
     shifts.push({
       user_id: assignment.user_id,

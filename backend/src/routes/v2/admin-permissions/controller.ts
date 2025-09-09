@@ -14,6 +14,18 @@ import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
 import { BulkPermissionsRequest, PermissionLevel, SetPermissionsRequest } from './types.js';
 
+// Constants for error messages
+const VALIDATION_ERROR = 'VALIDATION_ERROR';
+const FORBIDDEN_ERROR = 'FORBIDDEN';
+const NOT_FOUND_ERROR = 'NOT_FOUND';
+const SERVER_ERROR = 'SERVER_ERROR';
+const ROOT_ACCESS_REQUIRED = 'Root access required';
+const ADMIN_NOT_FOUND = 'Admin not found';
+const INVALID_INPUT = 'Invalid input';
+
+// SQL Queries
+const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'";
+
 export const adminPermissionsController = {
   /**
    * Get permissions for a specific admin
@@ -41,14 +53,14 @@ export const adminPermissionsController = {
           field: error.type === 'field' ? error.path : 'general',
           message: error.msg,
         }));
-        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', validationErrors));
+        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
 
       // Check permissions
       if (req.user.role !== 'root') {
         logger.info('[Admin Permissions v2] Access denied - not root');
-        res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
 
@@ -56,13 +68,10 @@ export const adminPermissionsController = {
       logger.info('[Admin Permissions v2] Admin ID:', adminId);
 
       // Get the admin's tenant ID
-      const [adminRows] = await execute<RowDataPacket[]>(
-        "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'",
-        [adminId],
-      );
+      const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
       if (adminRows.length === 0) {
-        res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, ADMIN_NOT_FOUND));
         return;
       }
 
@@ -78,7 +87,7 @@ export const adminPermissionsController = {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get permissions'));
+        res.status(500).json(errorResponse(SERVER_ERROR, 'Failed to get permissions'));
       }
     }
   },
@@ -119,7 +128,7 @@ export const adminPermissionsController = {
       if (error instanceof ServiceError) {
         res.status(error.statusCode).json(errorResponse(error.code, error.message));
       } else {
-        res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get permissions'));
+        res.status(500).json(errorResponse(SERVER_ERROR, 'Failed to get permissions'));
       }
     }
   },
@@ -139,13 +148,13 @@ export const adminPermissionsController = {
           field: error.type === 'field' ? error.path : 'general',
           message: error.msg,
         }));
-        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', validationErrors));
+        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
 
       // Check permissions
       if (req.user.role !== 'root') {
-        res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
 
@@ -157,13 +166,10 @@ export const adminPermissionsController = {
       } = req.body as SetPermissionsRequest;
 
       // Get the admin's tenant ID
-      const [adminRows] = await execute<RowDataPacket[]>(
-        "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'",
-        [adminId],
-      );
+      const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
       if (adminRows.length === 0) {
-        res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, ADMIN_NOT_FOUND));
         return;
       }
 
@@ -215,13 +221,13 @@ export const adminPermissionsController = {
           field: error.type === 'field' ? error.path : 'general',
           message: error.msg,
         }));
-        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', validationErrors));
+        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
 
       // Check permissions
       if (req.user.role !== 'root') {
-        res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
 
@@ -229,13 +235,10 @@ export const adminPermissionsController = {
       const departmentId = Number.parseInt(req.params.departmentId);
 
       // Get the admin's tenant ID
-      const [adminRows] = await execute<RowDataPacket[]>(
-        "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'",
-        [adminId],
-      );
+      const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
       if (adminRows.length === 0) {
-        res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, ADMIN_NOT_FOUND));
         return;
       }
 
@@ -274,13 +277,13 @@ export const adminPermissionsController = {
           field: error.type === 'field' ? error.path : 'general',
           message: error.msg,
         }));
-        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', validationErrors));
+        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
 
       // Check permissions
       if (req.user.role !== 'root') {
-        res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
 
@@ -288,13 +291,10 @@ export const adminPermissionsController = {
       const groupId = Number.parseInt(req.params.groupId);
 
       // Get the admin's tenant ID
-      const [adminRows] = await execute<RowDataPacket[]>(
-        "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'",
-        [adminId],
-      );
+      const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
       if (adminRows.length === 0) {
-        res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, ADMIN_NOT_FOUND));
         return;
       }
 
@@ -333,13 +333,13 @@ export const adminPermissionsController = {
           field: error.type === 'field' ? error.path : 'general',
           message: error.msg,
         }));
-        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', validationErrors));
+        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
 
       // Check permissions
       if (req.user.role !== 'root' || !req.tenantId) {
-        res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
 
@@ -385,13 +385,13 @@ export const adminPermissionsController = {
           field: error.type === 'field' ? error.path : 'general',
           message: error.msg,
         }));
-        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', validationErrors));
+        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
 
       // Check permissions
       if (req.user.role !== 'root') {
-        res.status(403).json(errorResponse('FORBIDDEN', 'Root access required'));
+        res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
 
@@ -401,13 +401,10 @@ export const adminPermissionsController = {
         req.params.permissionLevel ? (req.params.permissionLevel as PermissionLevel) : 'read';
 
       // Get the admin's tenant ID
-      const [adminRows] = await execute<RowDataPacket[]>(
-        "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'",
-        [adminId],
-      );
+      const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
       if (adminRows.length === 0) {
-        res.status(404).json(errorResponse('NOT_FOUND', 'Admin not found'));
+        res.status(404).json(errorResponse(NOT_FOUND_ERROR, ADMIN_NOT_FOUND));
         return;
       }
 

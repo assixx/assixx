@@ -133,7 +133,9 @@ router.get(
   '/',
   ...userAuth,
   auditTrailValidation.getEntries,
-  typed.auth(auditTrailController.getEntries),
+  typed.auth(async (req, res) => {
+    await auditTrailController.getEntries(req, res);
+  }),
 );
 
 /**
@@ -179,7 +181,9 @@ router.get(
   '/stats',
   ...adminAuth,
   auditTrailValidation.getStats,
-  typed.auth(auditTrailController.getStats),
+  typed.auth(async (req, res) => {
+    await auditTrailController.getStats(req, res);
+  }),
 );
 
 /**
@@ -290,7 +294,9 @@ router.get(
   '/export',
   ...adminAuth,
   auditTrailValidation.exportEntries,
-  typed.auth(auditTrailController.exportEntries),
+  typed.auth(async (req, res) => {
+    await auditTrailController.exportEntries(req, res);
+  }),
 );
 
 /**
@@ -355,7 +361,7 @@ router.delete(
 
 /**
 
- * /api/v2/audit-trail/{id}:
+ * /api/v2/audit-trail/\{id\}:
  *   get:
  *     summary: Get specific audit entry
  *     description: Get a specific audit entry by ID. Users can only see their own entries unless they are root.
@@ -392,7 +398,9 @@ router.get(
   '/:id',
   ...userAuth,
   auditTrailValidation.getEntry,
-  typed.auth(auditTrailController.getEntry),
+  typed.auth(async (req, res) => {
+    await auditTrailController.getEntry(req, res);
+  }),
 );
 
 export default router;

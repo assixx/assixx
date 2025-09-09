@@ -6,6 +6,8 @@ import { body, param, query } from 'express-validator';
 
 import { handleValidationErrors } from '../../../middleware/validation.js';
 
+const TEAM_ID_ERROR_MSG = 'Team ID must be a positive integer';
+
 export const teamsValidation = {
   /**
    * List teams validation
@@ -27,10 +29,7 @@ export const teamsValidation = {
   /**
    * Get team by ID validation
    */
-  getById: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  getById: [param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG), handleValidationErrors],
 
   /**
    * Create team validation
@@ -62,7 +61,7 @@ export const teamsValidation = {
    * Update team validation
    */
   update: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG),
     body('name')
       .optional()
       .trim()
@@ -92,16 +91,13 @@ export const teamsValidation = {
   /**
    * Delete team validation
    */
-  delete: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  delete: [param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG), handleValidationErrors],
 
   /**
    * Get team members validation
    */
   getMembers: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG),
     handleValidationErrors,
   ],
 
@@ -109,7 +105,7 @@ export const teamsValidation = {
    * Add team member validation
    */
   addMember: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG),
     body('userId')
       .notEmpty()
       .withMessage('User ID is required')
@@ -122,7 +118,7 @@ export const teamsValidation = {
    * Remove team member validation
    */
   removeMember: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG),
     param('userId').isInt({ min: 1 }).withMessage('User ID must be a positive integer'),
     handleValidationErrors,
   ],
@@ -131,7 +127,7 @@ export const teamsValidation = {
    * Add machine to team validation
    */
   addMachine: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG),
     body('machineId')
       .notEmpty()
       .withMessage('Machine ID is required')
@@ -144,7 +140,7 @@ export const teamsValidation = {
    * Remove machine from team validation
    */
   removeMachine: [
-    param('id').isInt({ min: 1 }).withMessage('Team ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(TEAM_ID_ERROR_MSG),
     param('machineId').isInt({ min: 1 }).withMessage('Machine ID must be a positive integer'),
     handleValidationErrors,
   ],

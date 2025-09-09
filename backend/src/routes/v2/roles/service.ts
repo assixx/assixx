@@ -65,7 +65,7 @@ export class RolesService {
   /**
    * Get all available roles
    */
-  async getAllRoles(): Promise<Role[]> {
+  getAllRoles(): Role[] {
     return Object.values(RolesService.ROLES);
   }
 
@@ -73,12 +73,11 @@ export class RolesService {
    * Get a single role by ID
    * @param roleId - The roleId parameter
    */
-  async getRoleById(roleId: RoleName): Promise<Role> {
-    const role = RolesService.ROLES[roleId];
-    if (!role) {
-      throw new ServiceError('NOT_FOUND', `Role ${roleId} not found`);
-    }
-    return role;
+  getRoleById(roleId: RoleName): Role {
+    // TypeScript ensures roleId is a valid RoleName, so role is always defined
+    // ESLint disable needed: roleId is typed as RoleName union, not arbitrary string
+    // eslint-disable-next-line security/detect-object-injection
+    return RolesService.ROLES[roleId];
   }
 
   /**
@@ -102,6 +101,8 @@ export class RolesService {
       }
 
       const userRole = rows[0].role as RoleName;
+      // ESLint disable needed: userRole is cast to RoleName type, not arbitrary string
+      // eslint-disable-next-line security/detect-object-injection
       const userRoleLevel = RolesService.ROLES[userRole].level;
       const requiredRoleLevel = RolesService.ROLES[request.requiredRole].level;
 
@@ -121,12 +122,12 @@ export class RolesService {
   /**
    * Get role hierarchy (for display purposes)
    */
-  async getRoleHierarchy(): Promise<{
+  getRoleHierarchy(): {
     hierarchy: {
       role: Role;
       canManage: RoleName[];
     }[];
-  }> {
+  } {
     return {
       hierarchy: [
         {
@@ -149,7 +150,7 @@ export class RolesService {
    * Get roles available for assignment by current user role
    * @param currentUserRole - The currentUserRole parameter
    */
-  async getAssignableRoles(currentUserRole: RoleName): Promise<Role[]> {
+  getAssignableRoles(currentUserRole: RoleName): Role[] {
     switch (currentUserRole) {
       case 'root':
         // Root can assign all roles

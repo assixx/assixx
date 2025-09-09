@@ -2,7 +2,19 @@ import { Router } from 'express';
 
 import { security } from '../../../middleware/security';
 import { typed } from '../../../utils/routeHandlers';
-import { FeaturesController } from './features.controller';
+import {
+  activateFeature,
+  deactivateFeature,
+  getAllFeatures,
+  getAllTenantsWithFeatures,
+  getFeatureByCode,
+  getFeaturesByCategory,
+  getMyFeatures,
+  getTenantFeatures,
+  getTenantFeaturesSummary,
+  getUsageStats,
+  testFeatureAccess,
+} from './features.controller';
 import {
   activateFeatureValidation,
   deactivateFeatureValidation,
@@ -18,35 +30,30 @@ import {
 const router = Router();
 
 // Public endpoints
-router.get(
-  '/',
-  ...security.public(),
-  getAllFeaturesValidation,
-  typed.auth(FeaturesController.getAllFeatures),
-);
+router.get('/', ...security.public(), getAllFeaturesValidation, typed.auth(getAllFeatures));
 
 router.get(
   '/categories',
   ...security.public(),
   getFeaturesByCategoryValidation,
-  typed.auth(FeaturesController.getFeaturesByCategory),
+  typed.auth(getFeaturesByCategory),
 );
 
 // Authenticated endpoints
-router.get('/my-features', ...security.user(), typed.auth(FeaturesController.getMyFeatures));
+router.get('/my-features', ...security.user(), typed.auth(getMyFeatures));
 
 router.get(
   '/test/:featureCode',
   ...security.user(),
   testFeatureAccessValidation,
-  typed.auth(FeaturesController.testFeatureAccess),
+  typed.auth(testFeatureAccess),
 );
 
 router.get(
   '/usage/:featureCode',
   ...security.user(),
   getUsageStatsValidation,
-  typed.auth(FeaturesController.getUsageStats),
+  typed.auth(getUsageStats),
 );
 
 // Admin endpoints
@@ -54,43 +61,34 @@ router.get(
   '/tenant/:tenantId',
   ...security.admin(),
   getTenantFeaturesValidation,
-  typed.auth(FeaturesController.getTenantFeatures),
+  typed.auth(getTenantFeatures),
 );
 
 router.get(
   '/tenant/:tenantId/summary',
   ...security.admin(),
   getTenantFeaturesSummaryValidation,
-  typed.auth(FeaturesController.getTenantFeaturesSummary),
+  typed.auth(getTenantFeaturesSummary),
 );
 
 router.post(
   '/activate',
   ...security.admin(),
   activateFeatureValidation,
-  typed.auth(FeaturesController.activateFeature),
+  typed.auth(activateFeature),
 );
 
 router.post(
   '/deactivate',
   ...security.admin(),
   deactivateFeatureValidation,
-  typed.auth(FeaturesController.deactivateFeature),
+  typed.auth(deactivateFeature),
 );
 
 // Root-only endpoints - MUST BE BEFORE /:code ROUTE
-router.get(
-  '/all-tenants',
-  ...security.root(),
-  typed.auth(FeaturesController.getAllTenantsWithFeatures),
-);
+router.get('/all-tenants', ...security.root(), typed.auth(getAllTenantsWithFeatures));
 
 // This route MUST BE LAST as it catches all GET requests
-router.get(
-  '/:code',
-  ...security.user(),
-  getFeatureByCodeValidation,
-  typed.auth(FeaturesController.getFeatureByCode),
-);
+router.get('/:code', ...security.user(), getFeatureByCodeValidation, typed.auth(getFeatureByCode));
 
 export default router;

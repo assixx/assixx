@@ -12,7 +12,6 @@
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .toggle-btn {
@@ -62,7 +61,6 @@
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
 }
 
 .document-card:hover {
@@ -93,7 +91,6 @@
   color: rgb(255 255 255 / 60%);
 
   background: rgb(255 255 255 / 10%);
-  backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -266,7 +263,6 @@
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
   box-shadow: var(--shadow-sm);
 }
 
@@ -338,7 +334,6 @@
   border-radius: 12px;
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
 
@@ -436,7 +431,6 @@
 
   background: rgb(255 255 255 / 3%);
   backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .dropdown-display:hover {
@@ -464,9 +458,8 @@
   border-radius: 8px;
 
   visibility: hidden;
-  opacity: 0;
+  opacity: 0%;
   background: rgb(18 18 18 / 90%);
-  backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 }
@@ -474,7 +467,7 @@
 .dropdown-options.active {
   transform: translateY(0);
   visibility: visible;
-  opacity: 1;
+  opacity: 100%;
 }
 
 .dropdown-option {
@@ -514,7 +507,6 @@
 
   background: rgb(0 0 0 / 80%);
   backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
 }
 
 .modal-content {
@@ -529,7 +521,6 @@
   border-radius: 16px;
 
   background: rgb(18 18 18 / 95%);
-  backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
 }

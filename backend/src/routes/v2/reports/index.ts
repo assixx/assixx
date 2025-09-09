@@ -678,8 +678,7 @@ router.post(
 );
 
 /**
-
- * /api/v2/reports/export/{type}:
+ * /api/v2/reports/export/\{type\}:
  *   get:
  *     summary: Export report
  *     description: Export any report as PDF, Excel or CSV

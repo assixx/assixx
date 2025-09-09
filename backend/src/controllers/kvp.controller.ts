@@ -9,6 +9,10 @@ import pool from '../config/database.js';
 import kvpPermissionService from '../services/kvpPermission.service.js';
 import { query as executeQuery } from '../utils/db.js';
 
+const UNKNOWN_ERROR_MESSAGE = 'Unknown error';
+const INVALID_ID_ERROR = 'Invalid ID';
+const NO_PERMISSION_ERROR = 'Keine Berechtigung';
+
 // Extended Request interface with tenant database and user
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -238,7 +242,7 @@ class KvpController {
       console.error('Error in KvpController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Vorschläge',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -258,7 +262,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -271,7 +275,7 @@ class KvpController {
       );
 
       if (!canView) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: NO_PERMISSION_ERROR });
         return;
       }
 
@@ -307,7 +311,7 @@ class KvpController {
       console.error('Error in KvpController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen des Vorschlags',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -410,7 +414,7 @@ class KvpController {
       console.error('Error in KvpController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen des Vorschlags',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -430,7 +434,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -544,7 +548,7 @@ class KvpController {
       console.error('Error in KvpController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -564,7 +568,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -601,7 +605,7 @@ class KvpController {
       console.error('Error in KvpController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Archivieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -621,7 +625,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -691,7 +695,7 @@ class KvpController {
       console.error('Error in KvpController.shareSuggestion:', error);
       res.status(500).json({
         error: 'Fehler beim Teilen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -711,7 +715,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -770,7 +774,7 @@ class KvpController {
       console.error('Error in KvpController.unshareSuggestion:', error);
       res.status(500).json({
         error: 'Fehler beim Rückgängigmachen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -865,7 +869,7 @@ class KvpController {
       console.error('Error in KvpController.getStatistics:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Statistiken',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -895,7 +899,7 @@ class KvpController {
       console.error('Error in KvpController.getCategories:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Kategorien',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -915,7 +919,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -928,7 +932,7 @@ class KvpController {
       );
 
       if (!canView) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: NO_PERMISSION_ERROR });
         return;
       }
 
@@ -960,7 +964,7 @@ class KvpController {
       console.error('Error in KvpController.getComments:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Kommentare',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -986,7 +990,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -1009,7 +1013,7 @@ class KvpController {
       );
 
       if (!canView) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: NO_PERMISSION_ERROR });
         return;
       }
 
@@ -1031,7 +1035,7 @@ class KvpController {
       console.error('Error in KvpController.addComment:', error);
       res.status(500).json({
         error: 'Fehler beim Hinzufügen des Kommentars',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -1051,7 +1055,7 @@ class KvpController {
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: INVALID_ID_ERROR });
         return;
       }
 
@@ -1064,7 +1068,7 @@ class KvpController {
       );
 
       if (!canView) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: NO_PERMISSION_ERROR });
         return;
       }
 
@@ -1087,7 +1091,7 @@ class KvpController {
       console.error('Error in KvpController.getAttachments:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Anhänge',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -1147,7 +1151,7 @@ class KvpController {
       console.info('Has permission:', hasPermission);
 
       if (!hasPermission) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: NO_PERMISSION_ERROR });
         return;
       }
 
@@ -1188,7 +1192,7 @@ class KvpController {
       console.error('Error in KvpController.uploadAttachment:', error);
       res.status(500).json({
         error: 'Fehler beim Hochladen der Fotos',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -1237,7 +1241,7 @@ class KvpController {
       );
 
       if (!hasPermission) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: NO_PERMISSION_ERROR });
         return;
       }
 
@@ -1247,7 +1251,7 @@ class KvpController {
       console.error('Error in KvpController.downloadAttachment:', error);
       res.status(500).json({
         error: 'Fehler beim Herunterladen der Datei',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }

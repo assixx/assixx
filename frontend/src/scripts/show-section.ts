@@ -23,7 +23,7 @@ export function showSection(sectionName: string): void {
     sectionId = `${sectionName}-section`;
   }
 
-  const targetSection = document.getElementById(sectionId);
+  const targetSection = document.querySelector<HTMLElement>(`#${sectionId}`);
   if (targetSection) {
     targetSection.style.display = 'block';
     targetSection.classList.add('active');

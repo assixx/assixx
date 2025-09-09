@@ -19,11 +19,7 @@ export const auditTrailController = {
    */
   async getEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      log('[Audit Trail v2] getEntries called with user:', req.user?.id);
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
-        return;
-      }
+      log('[Audit Trail v2] getEntries called with user:', req.user.id);
 
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
@@ -96,11 +92,6 @@ export const auditTrailController = {
    */
   async getEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
-        return;
-      }
-
       const id = Number.parseInt(req.params.id);
       const entry = await auditTrailService.getEntryById(id, req.user.tenant_id);
 
@@ -128,11 +119,6 @@ export const auditTrailController = {
    */
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
-        return;
-      }
-
       // Only admin and root users can view statistics
       if (!['admin', 'root'].includes(req.user.role)) {
         res.status(403).json(errorResponse('FORBIDDEN', 'Insufficient permissions'));
@@ -165,11 +151,6 @@ export const auditTrailController = {
    */
   async generateReport(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
-        return;
-      }
-
       // Only admin and root users can generate reports
       if (!['admin', 'root'].includes(req.user.role)) {
         res.status(403).json(errorResponse('FORBIDDEN', 'Insufficient permissions'));
@@ -208,18 +189,13 @@ export const auditTrailController = {
    */
   async exportEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
-        return;
-      }
-
       // Only admin and root users can export
       if (!['admin', 'root'].includes(req.user.role)) {
         res.status(403).json(errorResponse('FORBIDDEN', 'Insufficient permissions'));
         return;
       }
 
-      const format = (req.query.format as string) ?? 'json';
+      const format = (req.query.format as string) || 'json';
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
         dateFrom: req.query.dateFrom as string,
@@ -272,11 +248,6 @@ export const auditTrailController = {
    */
   async deleteOldEntries(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
-        return;
-      }
-
       // Only root users can delete audit entries
       if (req.user.role !== 'root') {
         res

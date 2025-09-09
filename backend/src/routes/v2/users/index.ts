@@ -115,7 +115,7 @@ router.get('/me', authenticateV2 as RequestHandler, typed.auth(usersController.g
 
 /**
 
- * /api/v2/users/{id}:
+ * /api/v2/users/\{id\}:
  *   get:
  *     summary: Get user by ID
  *     description: Get a specific user by their ID (admin only)
@@ -182,7 +182,7 @@ router.get(
  *               email:
  *                 type: string
  *                 format: email
- *                 example: newuser@example.com
+ *                 example: newuser\@example.com
  *               password:
  *                 type: string
  *                 format: password
@@ -270,7 +270,7 @@ router.post(
 
 /**
 
- * /api/v2/users/{id}:
+ * /api/v2/users/\{id\}:
  *   put:
  *     summary: Update user
  *     description: Update user information (admin only)
@@ -519,7 +519,7 @@ router.put(
 
 /**
 
- * /api/v2/users/{id}:
+ * /api/v2/users/\{id\}:
  *   delete:
  *     summary: Delete user
  *     description: Permanently delete a user (admin only)
@@ -572,7 +572,7 @@ router.delete(
 
 /**
 
- * /api/v2/users/{id}/archive:
+ * /api/v2/users/\{id\}/archive:
  *   post:
  *     summary: Archive user
  *     description: Archive a user account (admin only)
@@ -618,7 +618,7 @@ router.post(
 
 /**
 
- * /api/v2/users/{id}/unarchive:
+ * /api/v2/users/\{id\}/unarchive:
  *   post:
  *     summary: Unarchive user
  *     description: Unarchive a user account (admin only)
@@ -746,8 +746,8 @@ router.post(
   '/me/profile-picture',
   authenticateV2 as RequestHandler,
   rateLimiter.upload, // Limit uploads
-  typed.auth((req, res) => {
-    usersController.uploadProfilePicture(req, res);
+  typed.auth(async (req, res) => {
+    await usersController.uploadProfilePicture(req, res);
   }),
 );
 
@@ -792,7 +792,7 @@ router.delete(
 
 /**
 
- * /api/v2/users/{id}/availability:
+ * /api/v2/users/\{id\}/availability:
  *   put:
  *     summary: Update availability
  *     description: Update user's availability status (admin only)

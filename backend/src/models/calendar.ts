@@ -935,6 +935,7 @@ export async function canManageEvent(
 /**
  * Generate recurring events based on recurrence rule
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function generateRecurringEvents(
   parentEvent: DbCalendarEvent,
   recurrenceRule: string,

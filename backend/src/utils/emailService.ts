@@ -40,14 +40,17 @@ function sanitizeHtml(html: string): string {
   for (let i = 0; i < 3; i++) {
     dangerousTags.forEach((tag) => {
       // Entferne komplette Tags mit Inhalt (inkl. malformed end tags)
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(fullTagRegex, '');
 
       // Entferne self-closing und einzelne Tags
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(singleTagRegex, '');
 
       // Entferne closing Tags falls übrig (inkl. malformed tags)
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const closeTagRegex = new RegExp(`</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(closeTagRegex, '');
     });
@@ -94,10 +97,11 @@ function sanitizeHtml(html: string): string {
       }
 
       // Für data: URLs - nur Bilder erlauben
-      if (lowerUrl.startsWith('data:')) {
-        if (!/^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml)/i.test(lowerUrl)) {
-          return match.replace(url, '#');
-        }
+      if (
+        lowerUrl.startsWith('data:') &&
+        !/^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml)/i.test(lowerUrl)
+      ) {
+        return match.replace(url, '#');
       }
 
       return match;
@@ -227,6 +231,7 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   transporter = nodemailer.createTransport(transportConfig);
 
   // Test SMTP-Verbindung
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- nodemailer.verify only supports callback API
   transporter.verify((error: Error | null): void => {
     if (error) {
       logger.error(`E-Mail-Konfiguration fehlgeschlagen: ${error.message}`);
@@ -236,6 +241,23 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   });
 
   return transporter;
+}
+
+/**
+ * Helper function to escape HTML special characters
+ * @param str - String to escape
+ * @returns Escaped string
+ */
+function escapeHtmlTemplate(str: string): string {
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  // eslint-disable-next-line security/detect-object-injection -- match is from regex match, always one of the keys
+  return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
 }
 
 /**
@@ -250,25 +272,16 @@ async function loadTemplate(
 ): Promise<string> {
   try {
     const templatePath = path.join(process.cwd(), 'templates/email', `${templateName}.html`);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- templateName is validated and controlled internally
     let templateContent = await fs.promises.readFile(templatePath, 'utf8');
-
-    // Helper function to escape HTML
-    const escapeHtml = (str: string): string => {
-      const htmlEscapes: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-      };
-      return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
-    };
 
     // Platzhalter ersetzen (Format: {{variable}})
     Object.keys(replacements).forEach((key: string): void => {
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Key is from controlled object keys
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       // Escape replacement values to prevent XSS
-      const safeValue = escapeHtml(replacements[key]);
+      // eslint-disable-next-line security/detect-object-injection -- Key is from Object.keys iteration
+      const safeValue = escapeHtmlTemplate(replacements[key]);
       templateContent = templateContent.replace(regex, safeValue);
     });
 
@@ -278,19 +291,7 @@ async function loadTemplate(
       `Fehler beim Laden des E-Mail-Templates '${templateName}': ${(error as Error).message}`,
     );
     // Fallback-Template
-    // Escape HTML to prevent XSS
-    const escapeHtml = (str: string): string => {
-      const htmlEscapes: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-      };
-      return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
-    };
-
-    const safeMessage = escapeHtml(replacements.message || 'Keine Nachricht verfügbar');
+    const safeMessage = escapeHtmlTemplate(replacements.message || 'Keine Nachricht verfügbar');
     return `
       <html>
         <body>
@@ -332,8 +333,8 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       // Zusätzliche Sicherheitsvalidierung als Backup
       // Pattern das auch malformed end tags erkennt (z.B. </script foo="bar">)
       // codeql[js/bad-tag-filter] - This is a backup check after comprehensive sanitization
-      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi;
-      const eventHandlerPattern = /\bon\w+\s*=/gi;
+      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script[^>]*>/i;
+      const eventHandlerPattern = /\bon\w+\s*=/i;
 
       if (
         sanitizedHtml &&

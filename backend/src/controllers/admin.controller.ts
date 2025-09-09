@@ -9,6 +9,9 @@ import type { RootLogCreateData as AdminLogCreateData } from '../models/rootLog'
 import adminService from '../services/admin.service';
 import { AuthenticatedRequest } from '../types/request.types';
 
+const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
+const UNKNOWN_ERROR_MESSAGE = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends AuthenticatedRequest {
   tenantDb?: Pool;
@@ -71,7 +74,7 @@ class AdminLogController {
   async getAll(req: AdminLogQueryRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb == null) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -101,7 +104,7 @@ class AdminLogController {
       console.error('Error in AdminLogController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -115,7 +118,7 @@ class AdminLogController {
   async getById(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb == null) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -135,7 +138,7 @@ class AdminLogController {
       console.error('Error in AdminLogController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -149,7 +152,7 @@ class AdminLogController {
   async create(req: AdminLogCreateRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb == null) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -172,7 +175,7 @@ class AdminLogController {
       console.error('Error in AdminLogController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -186,7 +189,7 @@ class AdminLogController {
   async update(req: AdminLogUpdateRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb == null) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -202,7 +205,7 @@ class AdminLogController {
       console.error('Error in AdminLogController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -216,7 +219,7 @@ class AdminLogController {
   async delete(req: AdminLogGetRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb == null) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -232,7 +235,7 @@ class AdminLogController {
       console.error('Error in AdminLogController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }

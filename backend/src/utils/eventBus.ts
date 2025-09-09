@@ -31,7 +31,7 @@ interface KvpEvent {
 }
 
 class NotificationEventBus extends EventEmitter {
-  private static instance: NotificationEventBus;
+  private static instance: NotificationEventBus | null = null;
 
   private constructor() {
     super();
@@ -40,9 +40,7 @@ class NotificationEventBus extends EventEmitter {
   }
 
   static getInstance(): NotificationEventBus {
-    if (!NotificationEventBus.instance) {
-      NotificationEventBus.instance = new NotificationEventBus();
-    }
+    NotificationEventBus.instance ??= new NotificationEventBus();
     return NotificationEventBus.instance;
   }
 

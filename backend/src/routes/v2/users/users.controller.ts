@@ -24,6 +24,12 @@ import {
   UpdateUserBody,
 } from './users.types';
 
+// Constants
+const VALIDATION_ERROR_CODE = 'VALIDATION_ERROR';
+const VALIDATION_ERROR_MESSAGE = 'Invalid input';
+const TENANT_ID_MISSING = 'Tenant ID missing';
+const USER_OR_TENANT_ID_MISSING = 'User ID or Tenant ID missing';
+
 interface User {
   id: number;
   email: string;
@@ -56,13 +62,17 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
       const result = await usersService.listUsers(req.tenantId, req.query as ListUsersQuery);
@@ -86,7 +96,7 @@ export const usersController = {
   getCurrentUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
       const user = await usersService.getUserById(req.userId, req.tenantId);
@@ -109,14 +119,18 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
       const user = await usersService.getUserById(userId, req.tenantId);
@@ -139,14 +153,18 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       const body = req.body as CreateUserBody;
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
       const user = await usersService.createUser(body, req.tenantId);
@@ -191,7 +209,11 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
@@ -199,7 +221,7 @@ export const usersController = {
       const userId = Number.parseInt(req.params.id, 10);
       const body = req.body as UpdateUserBody;
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
 
@@ -257,14 +279,18 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       const body = req.body as UpdateProfileBody;
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
       const user = await usersService.updateProfile(req.userId, body, req.tenantId);
@@ -288,14 +314,18 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       const { currentPassword, newPassword } = req.body as ChangePasswordBody;
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
       await usersService.changePassword(req.userId, req.tenantId, currentPassword, newPassword);
@@ -319,14 +349,18 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
 
@@ -384,8 +418,8 @@ export const usersController = {
           .status(400)
           .json(
             errorResponse(
-              "VALIDATION_ERROR",
-              "Invalid input",
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
               mapValidationErrors(errors.array()),
             ),
           );
@@ -395,7 +429,7 @@ export const usersController = {
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
       await usersService.archiveUser(userId, req.tenantId);
@@ -419,14 +453,18 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
       await usersService.unarchiveUser(userId, req.tenantId);
@@ -446,7 +484,7 @@ export const usersController = {
   getProfilePicture: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
       const filePath = await usersService.getProfilePicturePath(req.userId, req.tenantId);
@@ -490,7 +528,7 @@ export const usersController = {
       }
 
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
       const user = await usersService.updateProfilePicture(req.userId, req.file.path, req.tenantId);
@@ -510,7 +548,7 @@ export const usersController = {
   deleteProfilePicture: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       if (req.userId === undefined || req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User ID or Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
       }
       await usersService.deleteProfilePicture(req.userId, req.tenantId);
@@ -533,7 +571,11 @@ export const usersController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              VALIDATION_ERROR_CODE,
+              VALIDATION_ERROR_MESSAGE,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
@@ -541,7 +583,7 @@ export const usersController = {
       const userId = Number.parseInt(req.params.id, 10);
       const body = req.body as UpdateAvailabilityBody;
       if (req.tenantId === undefined) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
       }
       const user = await usersService.updateAvailability(userId, body, req.tenantId);

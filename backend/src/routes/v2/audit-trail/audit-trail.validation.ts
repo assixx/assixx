@@ -64,8 +64,14 @@ export const auditTrailValidation = {
     body('dateFrom').isISO8601().withMessage('Date from must be a valid ISO date'),
     body('dateTo').isISO8601().withMessage('Date to must be a valid ISO date'),
     body('dateTo').custom((value, { req }) => {
-      const dateFrom = new Date(req.body.dateFrom);
-      const dateTo = new Date(value);
+      // Type assertion safe because dateFrom is validated as ISO8601 string above
+      const requestBody = req.body as { dateFrom: string };
+      const dateFromStr = requestBody.dateFrom;
+      const dateToStr = value as string;
+
+      const dateFrom = new Date(dateFromStr);
+      const dateTo = new Date(dateToStr);
+
       if (dateTo < dateFrom) {
         throw new Error('Date to must be after date from');
       }

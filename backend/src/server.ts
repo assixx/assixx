@@ -56,7 +56,9 @@ function createRequiredDirectories(): void {
   ];
 
   dirs.forEach((dir: string): void => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Directory paths are hardcoded constants, not user input
     if (!fs.existsSync(dir)) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Directory paths are hardcoded constants, not user input
       fs.mkdirSync(dir, { recursive: true });
       logger.info(`Created directory: ${dir}`);
     }

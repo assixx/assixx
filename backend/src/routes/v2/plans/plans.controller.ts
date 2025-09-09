@@ -324,8 +324,7 @@ router.get(
 );
 
 /**
-
- * /api/v2/plans/{id}:
+ * /api/v2/plans/\{id\}:
  *   get:
  *     summary: Get plan by ID
  *     description: Retrieve a specific plan by its ID
@@ -391,8 +390,7 @@ router.get(
 );
 
 /**
-
- * /api/v2/plans/{id}/features:
+ * /api/v2/plans/\{id\}/features:
  *   get:
  *     summary: Get plan features
  *     description: Retrieve all features included in a specific plan
@@ -451,8 +449,7 @@ router.get(
 );
 
 /**
-
- * /api/v2/plans/{id}/upgrade:
+ * /api/v2/plans/\{id\}/upgrade:
  *   put:
  *     summary: Upgrade or downgrade plan
  *     description: Change the subscription plan for the authenticated tenant

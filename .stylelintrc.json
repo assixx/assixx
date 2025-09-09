@@ -30,7 +30,6 @@
     ],
     "declaration-block-no-redundant-longhand-properties": true,
     "declaration-block-single-line-max-declarations": 1,
-    "font-family-name-quotes": "always-where-recommended",
     "font-weight-notation": "numeric",
     "function-name-case": "lower",
     "function-url-quotes": "always",
@@ -39,7 +38,6 @@
     "keyframe-selector-notation": "percentage-unless-within-keyword-only-block",
     "length-zero-no-unit": true,
     "lightness-notation": "percentage",
-    "max-line-length": 120,
     "max-nesting-depth": 3,
     "media-feature-range-notation": "context",
     "no-descending-specificity": true,
@@ -111,7 +109,7 @@
     "selector-type-case": "lower",
     "selector-type-no-unknown": true,
     "shorthand-property-no-redundant-values": true,
-    "string-quotes": "double",
+    "font-family-name-quotes": "always-where-recommended",
     "time-min-milliseconds": 100,
     "unit-allowed-list": [
       "em",
@@ -137,7 +135,6 @@
     {
       "files": ["**/lib/**/*.css", "**/vendor/**/*.css", "**/*.min.css"],
       "rules": {
-        "max-line-length": null,
         "selector-class-pattern": null,
         "selector-id-pattern": null,
         "selector-max-specificity": null,

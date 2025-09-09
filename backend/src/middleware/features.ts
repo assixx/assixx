@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import Feature from '../models/feature.js';
+import featureModel from '../models/feature.js';
 import { AuthenticatedRequest } from '../types/request.types.js';
 import { RowDataPacket, query } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
@@ -32,7 +32,7 @@ export const checkFeature =
 
       // Debug logging
       logger.info(
-        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify({ id: req.user.id, tenant_id: req.user.tenant_id })}`,
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${String(req.tenantId)}, req.user: ${JSON.stringify({ id: req.user.id, tenant_id: req.user.tenant_id })}`,
       );
 
       if (req.tenantId != null) {
@@ -72,7 +72,7 @@ export const checkFeature =
       logger.info(`Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`);
 
       // Prüfe ob Feature aktiv ist
-      const hasFeature = await Feature.checkTenantAccess(numericTenantId, featureCode);
+      const hasFeature = await featureModel.checkTenantAccess(numericTenantId, featureCode);
 
       if (!hasFeature) {
         const errorMessage =
@@ -152,7 +152,7 @@ export const checkAnyFeature =
 
       // Prüfe jedes Feature
       for (const featureCode of featureCodes) {
-        const hasFeature = await Feature.checkTenantAccess(numericTenantId, featureCode);
+        const hasFeature = await featureModel.checkTenantAccess(numericTenantId, featureCode);
         if (hasFeature) {
           logger.info(
             `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`,
@@ -233,7 +233,7 @@ export const checkAllFeatures =
       // Prüfe jedes Feature
       const missingFeatures: string[] = [];
       for (const featureCode of featureCodes) {
-        const hasFeature = await Feature.checkTenantAccess(numericTenantId, featureCode);
+        const hasFeature = await featureModel.checkTenantAccess(numericTenantId, featureCode);
         if (!hasFeature) {
           missingFeatures.push(featureCode);
         }

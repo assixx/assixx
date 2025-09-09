@@ -77,7 +77,7 @@ export async function showConfirm(message: string): Promise<boolean> {
       }
       .btn-confirm-yes {
         background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-        color: white;
+        color: #ffffff;
       }
       .btn-confirm-yes:hover {
         transform: translateY(-2px);

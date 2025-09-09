@@ -95,7 +95,7 @@ router.get(
 
 /**
 
- * /api/v2/department-groups/{id}:
+ * /api/v2/department-groups/\{id\}:
  *   get:
  *     summary: Get a department group by ID
  *     description: Get a single department group by its ID
@@ -208,7 +208,7 @@ router.post(
 
 /**
 
- * /api/v2/department-groups/{id}:
+ * /api/v2/department-groups/\{id\}:
  *   put:
  *     summary: Update a department group
  *     description: Update a department group (root only)
@@ -274,7 +274,7 @@ router.put(
 
 /**
 
- * /api/v2/department-groups/{id}:
+ * /api/v2/department-groups/\{id\}:
  *   delete:
  *     summary: Delete a department group
  *     description: Delete a department group (root only). Cannot delete if group has admin permissions or subgroups.
@@ -321,7 +321,7 @@ router.delete(
 
 /**
 
- * /api/v2/department-groups/{id}/departments:
+ * /api/v2/department-groups/\{id\}/departments:
  *   post:
  *     summary: Add departments to a group
  *     description: Add one or more departments to a department group (root only)
@@ -383,7 +383,7 @@ router.post(
 
 /**
 
- * /api/v2/department-groups/{id}/departments/{departmentId}:
+ * /api/v2/department-groups/\{id\}/departments/\{departmentId\}:
  *   delete:
  *     summary: Remove a department from a group
  *     description: Remove a department from a department group (root only)
@@ -434,7 +434,7 @@ router.delete(
 
 /**
 
- * /api/v2/department-groups/{id}/departments:
+ * /api/v2/department-groups/\{id\}/departments:
  *   get:
  *     summary: Get departments in a group
  *     description: Get all departments in a department group

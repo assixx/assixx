@@ -18,6 +18,10 @@ declare const DOMPurify: {
 // Initialize API client
 const apiClient = ApiClient.getInstance();
 
+// Display style constants
+const DISPLAY_INLINE_FLEX = 'inline-flex';
+const DISPLAY_NONE = 'none';
+
 /**
  * Escapes a string for safe use in JavaScript string literals
  * Handles backslashes, quotes, newlines, etc.
@@ -216,6 +220,7 @@ function initializeBlackboard() {
   console.info('[Blackboard] Script loaded at:', new Date().toISOString());
 
   // Check if user is logged in
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   void (async () => {
     try {
       await checkLoggedIn();
@@ -237,8 +242,8 @@ function initializeBlackboard() {
           // Show/hide "New Entry" button based on permissions
           const newEntryBtn = $$('#newEntryBtn');
           if (newEntryBtn) {
-            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
-            newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
+            newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
           } else {
             console.info('[Blackboard] newEntryBtn not found!');
           }
@@ -260,8 +265,11 @@ function initializeBlackboard() {
 
             const newEntryBtn = $$('#newEntryBtn');
             if (newEntryBtn !== null) {
-              console.info('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
-              newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+              console.info(
+                '[Blackboard] Setting newEntryBtn display after API:',
+                isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE,
+              );
+              newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
             } else {
               console.info('[Blackboard] newEntryBtn not found after API call!');
             }
@@ -288,8 +296,8 @@ function initializeBlackboard() {
 
           const newEntryBtn = $$('#newEntryBtn');
           if (newEntryBtn !== null) {
-            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
-            newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
+            newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
           } else {
             console.info('[Blackboard] newEntryBtn not found!');
           }
@@ -1105,7 +1113,7 @@ function changePage(page: number): void {
  * Open entry form for creating/editing
  */
 function openEntryForm(entryId?: number): void {
-  const modal = document.querySelector('#entryFormModal');
+  const modal = document.querySelector('.entry-form-modal');
   if (!modal) return;
 
   // Reset form

@@ -117,6 +117,7 @@ export class FeatureFlagManager {
       return true;
     }
     // Otherwise check the specific flag
+    // eslint-disable-next-line security/detect-object-injection -- flag is from known FeatureFlags type keys
     return this.flags[flag];
   }
 
@@ -124,6 +125,7 @@ export class FeatureFlagManager {
    * Enable a specific feature flag
    */
   enable(flag: keyof FeatureFlags): void {
+    // eslint-disable-next-line security/detect-object-injection -- flag is from known FeatureFlags type keys
     this.flags[flag] = true;
     this.saveFlags();
     console.info(`[FeatureFlags] Enabled: ${flag}`);
@@ -133,6 +135,7 @@ export class FeatureFlagManager {
    * Disable a specific feature flag
    */
   disable(flag: keyof FeatureFlags): void {
+    // eslint-disable-next-line security/detect-object-injection -- flag is from known FeatureFlags type keys
     this.flags[flag] = false;
     this.saveFlags();
     console.info(`[FeatureFlags] Disabled: ${flag}`);
@@ -142,8 +145,10 @@ export class FeatureFlagManager {
    * Toggle a specific feature flag
    */
   toggle(flag: keyof FeatureFlags): void {
+    // eslint-disable-next-line security/detect-object-injection -- flag is from known FeatureFlags type keys
     this.flags[flag] = !this.flags[flag];
     this.saveFlags();
+    // eslint-disable-next-line security/detect-object-injection -- flag is from known FeatureFlags type keys
     console.info(`[FeatureFlags] Toggled: ${flag} = ${String(this.flags[flag])}`);
   }
 
@@ -153,6 +158,7 @@ export class FeatureFlagManager {
   enableAllV2Apis(): void {
     Object.keys(this.flags).forEach((key) => {
       if (key.startsWith('USE_API_V2_')) {
+        // eslint-disable-next-line security/detect-object-injection -- key is from Object.keys of this.flags
         (this.flags as unknown as Record<string, boolean>)[key] = true;
       }
     });
@@ -166,6 +172,7 @@ export class FeatureFlagManager {
   disableAllV2Apis(): void {
     Object.keys(this.flags).forEach((key) => {
       if (key.startsWith('USE_API_V2_')) {
+        // eslint-disable-next-line security/detect-object-injection -- key is from Object.keys of this.flags
         (this.flags as unknown as Record<string, boolean>)[key] = false;
       }
     });
@@ -214,6 +221,7 @@ export class FeatureFlagManager {
           data.data.forEach((feature: { code: string; isActive: boolean }) => {
             const flagKey = `USE_API_V2_${feature.code.toUpperCase().replace(/-/g, '_')}`;
             if (flagKey in this.flags) {
+              // eslint-disable-next-line security/detect-object-injection -- flagKey is constructed from safe feature.code
               (this.flags as unknown as Record<string, boolean>)[flagKey] = feature.isActive;
             }
           });

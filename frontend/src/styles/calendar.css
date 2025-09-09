@@ -432,9 +432,6 @@
   position: fixed;
   z-index: 2000;
   inset: 0;
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
 
   display: flex;
   align-items: center;
@@ -443,27 +440,33 @@
   padding: 24px;
 
   visibility: hidden;
-  opacity: 0;
+  opacity: 0%;
   backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
 }
 
 .modal-overlay.active {
   visibility: visible;
-  opacity: 1;
+  opacity: 100%;
 }
 
 .modal-container {
-  overflow: auto;
-  background: hsla(0, 0%, 6.7%, 0.77);
-  max-height: 85vh !important;
   transform: translateY(0);
+
+  overflow: auto;
   display: flex;
   flex-direction: column;
+
   width: 90%;
   max-width: 900px;
+  max-height: 85vh !important;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-md);
+
+  background: hsl(0deg 0% 6.7% / 77%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgb(0 0 0 / 40%),
@@ -527,16 +530,17 @@
 }
 
 .modal-footer {
-  flex-shrink: 0 !important;
-  padding: var(--spacing-lg) !important;
-  padding: var(--spacing-md) var(--spacing-lg) !important;
-  background: #ffffff05 !important;
   display: flex !important;
+  flex-shrink: 0 !important;
   gap: var(--spacing-md) !important;
   justify-content: center !important;
-  padding: var(--spacing-lg) !important;
+
   margin-top: 0 !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  padding: var(--spacing-lg) !important;
   border-top: 0 !important;
+
+  background: #ffffff05 !important;
 }
 
 /* Detail modal - angepasst an Assixx Design */
@@ -842,14 +846,14 @@
   margin: 0 !important;
   border-radius: 0 !important;
 
-  /*background: linear-gradient(
+  /* background: linear-gradient(
     5deg,
     transparent,
     rgb(0 142 255 / 10%) 100%,
     #01000482 0,
     rgb(0 0 4 / 60%) 100%,
     #000
-  ) !important;*/
+  ) !important; */
 
   /* background: linear-gradient(0deg,#0088bd29,rgba(0, 142, 255, 0.16) 100%,#010004 0,rgba(0, 0, 4, 0) 100%,#000) !important; */
 }
@@ -1044,7 +1048,7 @@ textarea.form-control {
 
 .dropdown-display.disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 50%;
 }
 
 .dropdown-options {
@@ -1062,9 +1066,8 @@ textarea.form-control {
   border-radius: var(--radius-sm);
 
   visibility: hidden;
-  opacity: 0;
+  opacity: 0%;
   background: rgb(18 18 18 / 80%);
-  backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgb(0 0 0 / 40%),
@@ -1074,7 +1077,7 @@ textarea.form-control {
 .dropdown-options.active {
   transform: translateY(0);
   visibility: visible;
-  opacity: 1;
+  opacity: 100%;
 }
 
 .dropdown-option {
@@ -1150,7 +1153,6 @@ textarea.form-control {
 
   font-size: 0.7rem;
   color: #fff;
-  color: #fff;
 
   background-color: var(--text-secondary);
 }
@@ -1163,7 +1165,6 @@ textarea.form-control {
   border-radius: var(--radius-sm);
 
   font-size: 0.7rem;
-  color: #fff;
   color: #fff;
 
   background-color: var(--success-color);
@@ -1178,7 +1179,6 @@ textarea.form-control {
 
   font-size: 0.7rem;
   color: #fff;
-  color: #fff;
 
   background-color: var(--error-color);
 }
@@ -1191,7 +1191,6 @@ textarea.form-control {
   border-radius: var(--radius-sm);
 
   font-size: 0.7rem;
-  color: #fff;
   color: #fff;
 
   background-color: var(--warning-color);
@@ -1320,8 +1319,6 @@ select.big-input {
   border: 1px solid rgb(255 255 255 / 12%);
 
   appearance: none;
-  appearance: none;
-  appearance: none;
   background: rgb(255 255 255 / 4%);
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
@@ -1355,7 +1352,7 @@ select.big-input:focus {
 /* Disabled Select */
 select.big-input:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 50%;
   background: rgb(255 255 255 / 2%);
   background-image: none;
 }
@@ -1674,7 +1671,6 @@ select.big-input:disabled {
   border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 24px;
 
-  appearance: none;
   appearance: none;
   background-color: rgb(255 255 255 / 10%);
 }

@@ -60,7 +60,7 @@ function initModals(): void {
  * Öffnet ein Modal
  */
 function openModal(modalId: string): void {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector<HTMLElement>(`#${modalId}`);
   if (modal) {
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -73,7 +73,7 @@ function openModal(modalId: string): void {
  * Schließt ein Modal
  */
 function closeModal(modalId: string): void {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector<HTMLElement>(`#${modalId}`);
   if (modal) {
     modal.style.opacity = '0';
     modal.style.visibility = 'hidden';
@@ -154,6 +154,7 @@ async function setupUserAndLogout(): Promise<void> {
       } catch (error) {
         console.error('Fehler beim Laden der Benutzerdaten:', error);
         // Bei Fehler zur Login-Seite weiterleiten
+        // eslint-disable-next-line require-atomic-updates -- Safe: window is a global object
         window.location.href = '/login';
       }
     } else {
@@ -200,7 +201,7 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
   // Create toast element
   const toast = document.createElement('div');
   toast.className = `toast toast-${type} fade-in`;
-  toast.innerHTML = message;
+  toast.textContent = message;
 
   // Add to container
   toastContainer.append(toast);

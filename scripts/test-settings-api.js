@@ -218,7 +218,11 @@ async function runTests() {
 }
 
 // Run the tests
-runTests().catch((error) => {
-  console.error('\n❌ Test runner failed:', error.message);
-  process.exit(1);
-});
+(async () => {
+  try {
+    await runTests();
+  } catch (error) {
+    console.error('\n❌ Test runner failed:', error.message);
+    process.exit(1);
+  }
+})();

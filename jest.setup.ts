@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * Jest Setup File
  * Runs for each test file

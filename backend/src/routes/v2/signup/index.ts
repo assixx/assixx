@@ -47,11 +47,11 @@ const router = Router();
  *                 type: string
  *                 format: email
  *                 description: Company contact email
- *                 example: contact@acme.com
+ *                 example: contact\@acme.com
  *               phone:
  *                 type: string
  *                 description: Phone number with country code
- *                 pattern: ^\+[0-9]{7,29}$
+ *                 pattern: ^\+[0-9]\{7,29\}$
  *                 example: +491234567890
  *               address:
  *                 type: string
@@ -61,7 +61,7 @@ const router = Router();
  *                 type: string
  *                 format: email
  *                 description: Admin user email
- *                 example: admin@acme.com
+ *                 example: admin\@acme.com
  *               adminPassword:
  *                 type: string
  *                 format: password
@@ -153,7 +153,7 @@ router.post(
 
 /**
 
- * /api/v2/signup/check-subdomain/{subdomain}:
+ * /api/v2/signup/check-subdomain/\{subdomain\}:
  *   get:
  *     summary: Check subdomain availability
  *     description: Check if a subdomain is available for registration

@@ -6,6 +6,7 @@
 import { ApiClient } from '../utils/api-client';
 import { mapMachines, type MachineAPIResponse } from '../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
+import { escapeHtml } from '../utils/dom-utils';
 // Role switch will be loaded by HTML
 
 interface Machine {
@@ -233,25 +234,26 @@ class MachinesManager {
       machinesEmpty.classList.add('u-hidden');
     }
 
+    // eslint-disable-next-line no-unsanitized/property -- All user data is escaped with escapeHtml()
     tbody.innerHTML = this.machines
       .map(
         (machine) => `
       <tr>
         <td>
-          <strong>${machine.name}</strong>
+          <strong>${escapeHtml(machine.name)}</strong>
           ${machine.qrCode !== undefined && machine.qrCode !== '' ? `<i class="fas fa-qrcode ms-2" title="QR-Code verfügbar"></i>` : ''}
         </td>
-        <td>${machine.model ?? '-'}</td>
-        <td>${machine.manufacturer ?? '-'}</td>
-        <td>${machine.departmentName ?? '-'}</td>
+        <td>${escapeHtml(machine.model ?? '-')}</td>
+        <td>${escapeHtml(machine.manufacturer ?? '-')}</td>
+        <td>${escapeHtml(machine.departmentName ?? '-')}</td>
         <td>
           <span class="badge ${this.getStatusBadgeClass(machine.status)}">
-            ${this.getStatusLabel(machine.status)}
+            ${escapeHtml(this.getStatusLabel(machine.status))}
           </span>
         </td>
-        <td>${machine.operatingHours !== undefined && machine.operatingHours > 0 ? `${machine.operatingHours}h` : '-'}</td>
+        <td>${machine.operatingHours !== undefined && machine.operatingHours > 0 ? escapeHtml(`${machine.operatingHours}h`) : '-'}</td>
         <td>
-          ${machine.nextMaintenance !== undefined && machine.nextMaintenance.length > 0 ? new Date(machine.nextMaintenance).toLocaleDateString('de-DE') : '-'}
+          ${machine.nextMaintenance !== undefined && machine.nextMaintenance.length > 0 ? escapeHtml(new Date(machine.nextMaintenance).toLocaleDateString('de-DE')) : '-'}
           ${this.getMaintenanceWarning(machine.nextMaintenance)}
         </td>
         <td>
@@ -449,6 +451,7 @@ class MachinesManager {
     // Convert FormData to object
     formData.forEach((value, key) => {
       if (typeof value === 'string' && value.length > 0) {
+        // eslint-disable-next-line security/detect-object-injection -- key comes from FormData which is from controlled form elements
         machineData[key] = value;
       }
     });

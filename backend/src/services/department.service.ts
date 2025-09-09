@@ -4,7 +4,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import Department, {
+import department, {
   DepartmentCreateData,
   DbDepartment as DepartmentData,
   DepartmentUpdateData,
@@ -44,7 +44,7 @@ class DepartmentService {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
       // TODO: Add pagination support to Department model
-      return await Department.findAll(tenantId);
+      return await department.findAll(tenantId);
     } catch (error: unknown) {
       console.error('Error in DepartmentService.getAll:', error);
       throw error;
@@ -59,7 +59,7 @@ class DepartmentService {
    */
   async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<DepartmentData | null> {
     try {
-      return await Department.findById(id, tenantId);
+      return await department.findById(id, tenantId);
     } catch (error: unknown) {
       console.error('Error in DepartmentService.getById:', error);
       throw error;
@@ -73,8 +73,8 @@ class DepartmentService {
    */
   async create(_tenantDb: Pool, data: DepartmentCreateData): Promise<DepartmentData> {
     try {
-      const id = await Department.create(data);
-      const created = await Department.findById(id, data.tenant_id);
+      const id = await department.create(data);
+      const created = await department.findById(id, data.tenant_id);
       if (!created) {
         throw new Error('Failed to retrieve created department');
       }
@@ -99,9 +99,9 @@ class DepartmentService {
     data: DepartmentUpdateData,
   ): Promise<DepartmentData | null> {
     try {
-      const success = await Department.update(id, data);
+      const success = await department.update(id, data);
       if (success) {
-        return await Department.findById(id, tenantId);
+        return await department.findById(id, tenantId);
       }
       return null;
     } catch (error: unknown) {
@@ -117,7 +117,7 @@ class DepartmentService {
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {
-      return await Department.delete(id);
+      return await department.delete(id);
     } catch (error: unknown) {
       console.error('Error in DepartmentService.delete:', error);
       throw error;

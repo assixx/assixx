@@ -18,7 +18,7 @@ function escapeHtml(unsafe) {
 
 class BlackboardWidget {
   constructor(containerId, limit = 3, isDashboard = true) {
-    this.container = document.getElementById(containerId);
+    this.container = document.querySelector(`#${containerId}`);
     this.limit = limit;
     this.isDashboard = isDashboard;
 
@@ -176,6 +176,7 @@ class BlackboardWidget {
 
     html += '</div>';
 
+    // eslint-disable-next-line no-unsanitized/property -- HTML is sanitized via escapeHtml function
     this.container.innerHTML = html;
 
     // Add event listeners for confirmation buttons
@@ -230,6 +231,7 @@ class BlackboardWidget {
 
     html += '</ul>';
 
+    // eslint-disable-next-line no-unsanitized/property -- HTML is sanitized via escapeHtml function
     this.container.innerHTML = html;
 
     // Add event listeners for confirmation buttons

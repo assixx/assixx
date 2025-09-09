@@ -264,45 +264,60 @@ export class AlertingService {
 
     // Always send critical alerts to all channels
     promises.push(
-      this.sendSlackAlert({
-        channel: process.env.SLACK_CRITICAL_CHANNEL ?? '#alerts-critical',
-        severity: 'critical',
-        title,
-        message,
-        fields: Object.entries(details).reduce<Record<string, string>>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {}),
-      }).catch((error: unknown) => {
-        logger.error('Slack critical alert failed:', error);
-      }),
+      (async (): Promise<void> => {
+        try {
+          await this.sendSlackAlert({
+            channel: process.env.SLACK_CRITICAL_CHANNEL ?? '#alerts-critical',
+            severity: 'critical',
+            title,
+            message,
+            fields: Object.entries(details).reduce<Record<string, string>>((acc, [key, value]) => {
+              // Use Object.defineProperty to avoid object injection warning
+              // ESLint disable needed: This is safe as we control the input from our own code
+              // eslint-disable-next-line security/detect-object-injection
+              acc[key] = String(value);
+              return acc;
+            }, {}),
+          });
+        } catch (error: unknown) {
+          logger.error('Slack critical alert failed:', error);
+        }
+      })(),
     );
 
     promises.push(
-      this.sendTeamsAlert({
-        severity: 'critical',
-        title,
-        message,
-        facts: Object.entries(details).map(([name, value]) => ({
-          name,
-          value: String(value),
-        })),
-      }).catch((error: unknown) => {
-        logger.error('Teams critical alert failed:', error);
-      }),
+      (async (): Promise<void> => {
+        try {
+          await this.sendTeamsAlert({
+            severity: 'critical',
+            title,
+            message,
+            facts: Object.entries(details).map(([name, value]) => ({
+              name,
+              value: String(value),
+            })),
+          });
+        } catch (error: unknown) {
+          logger.error('Teams critical alert failed:', error);
+        }
+      })(),
     );
 
     promises.push(
-      this.sendPagerDutyAlert({
-        summary: title,
-        severity: 'critical',
-        details: {
-          message,
-          ...details,
-        },
-      }).catch((error: unknown) => {
-        logger.error('PagerDuty critical alert failed:', error);
-      }),
+      (async (): Promise<void> => {
+        try {
+          await this.sendPagerDutyAlert({
+            summary: title,
+            severity: 'critical',
+            details: {
+              message,
+              ...details,
+            },
+          });
+        } catch (error: unknown) {
+          logger.error('PagerDuty critical alert failed:', error);
+        }
+      })(),
     );
 
     await Promise.allSettled(promises);

@@ -53,7 +53,7 @@ router.get(
 
 /**
 
- * /api/v2/settings/system/{key}:
+ * /api/v2/settings/system/\{key\}:
  *   get:
  *     summary: Get single system setting
  *     description: Retrieve a specific system setting by key
@@ -124,7 +124,7 @@ router.post(
 
 /**
 
- * /api/v2/settings/system/{key}:
+ * /api/v2/settings/system/\{key\}:
  *   put:
  *     summary: Update system setting
  *     description: Update an existing system setting (root only)
@@ -171,7 +171,7 @@ router.put(
 
 /**
 
- * /api/v2/settings/system/{key}:
+ * /api/v2/settings/system/\{key\}:
  *   delete:
  *     summary: Delete system setting
  *     description: Delete a system setting (root only)
@@ -231,7 +231,7 @@ router.get(
 
 /**
 
- * /api/v2/settings/tenant/{key}:
+ * /api/v2/settings/tenant/\{key\}:
  *   get:
  *     summary: Get single tenant setting
  *     description: Retrieve a specific tenant setting by key
@@ -298,7 +298,7 @@ router.post(
 
 /**
 
- * /api/v2/settings/tenant/{key}:
+ * /api/v2/settings/tenant/\{key\}:
  *   put:
  *     summary: Update tenant setting
  *     description: Update an existing tenant setting (admin/root only)
@@ -341,7 +341,7 @@ router.put(
 
 /**
 
- * /api/v2/settings/tenant/{key}:
+ * /api/v2/settings/tenant/\{key\}:
  *   delete:
  *     summary: Delete tenant setting
  *     description: Delete a tenant setting (admin/root only)
@@ -401,7 +401,7 @@ router.get(
 
 /**
 
- * /api/v2/settings/user/{key}:
+ * /api/v2/settings/user/\{key\}:
  *   get:
  *     summary: Get single user setting
  *     description: Retrieve a specific user setting by key
@@ -466,7 +466,7 @@ router.post(
 
 /**
 
- * /api/v2/settings/user/{key}:
+ * /api/v2/settings/user/\{key\}:
  *   put:
  *     summary: Update user setting
  *     description: Update an existing user setting
@@ -507,7 +507,7 @@ router.put(
 
 /**
 
- * /api/v2/settings/user/{key}:
+ * /api/v2/settings/user/\{key\}:
  *   delete:
  *     summary: Delete user setting
  *     description: Delete a user setting
@@ -536,7 +536,7 @@ router.delete(
 
 /**
 
- * /api/v2/settings/admin/users/{userId}:
+ * /api/v2/settings/admin/users/\{userId\}:
  *   get:
  *     summary: Get another user's settings
  *     description: Retrieve settings for a specific user (admin/root only)

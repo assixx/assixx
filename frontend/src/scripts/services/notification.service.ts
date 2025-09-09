@@ -134,7 +134,7 @@ export class NotificationService {
    * @param id
    */
   dismiss(id: string): void {
-    const element = document.getElementById(`notification-${id}`);
+    const element = document.querySelector<HTMLElement>(`#notification-${id}`);
     if (element) {
       // Apply slideOutRight animation like role-switch toast
       element.style.animation = 'slideOutRight 0.3s ease-in';
@@ -227,7 +227,7 @@ export class NotificationService {
                 font-size: 14px;
               "
             >
-              ${action.label}
+              ${this.escapeHtml(action.label)}
             </button>
           `,
             )
@@ -256,9 +256,10 @@ export class NotificationService {
     // Combine title and message into one text
     const displayText =
       notification.message !== undefined && notification.message !== ''
-        ? `${notification.title}: ${notification.message}`
-        : notification.title;
+        ? `${this.escapeHtml(notification.title)}: ${this.escapeHtml(notification.message)}`
+        : this.escapeHtml(notification.title);
 
+    // eslint-disable-next-line no-unsanitized/property -- iconHtml is hardcoded SVG, displayText and actionsHtml are escaped
     element.innerHTML = `
       <span style="color: ${textColor}; display: flex; align-items: center;">
         ${iconHtml}
@@ -292,6 +293,15 @@ export class NotificationService {
    */
   private generateId(): string {
     return `notif-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Escape HTML to prevent XSS
+   */
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   /**

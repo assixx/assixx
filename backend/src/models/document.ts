@@ -101,13 +101,13 @@ export async function createDocument({
   let logMessage = `Creating new document in category ${category} for `;
   switch (recipientType) {
     case 'user':
-      logMessage += `user ${userId}`;
+      logMessage += `user ${userId ?? 'unknown'}`;
       break;
     case 'team':
-      logMessage += `team ${teamId}`;
+      logMessage += `team ${teamId ?? 'unknown'}`;
       break;
     case 'department':
-      logMessage += `department ${departmentId}`;
+      logMessage += `department ${departmentId ?? 'unknown'}`;
       break;
     case 'company':
       logMessage += `entire company (tenant ${tenant_id})`;
@@ -476,6 +476,7 @@ export async function findDocumentsByUser(userId: number): Promise<DbDocument[]>
 }
 
 // Find all documents accessible to an employee (personal, team, department, company)
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function findDocumentsByEmployeeWithAccess(
   userId: number,
   tenant_id: number,
@@ -593,8 +594,7 @@ export async function findDocumentsByEmployeeWithAccess(
     const countParams = [...params];
 
     // Remove ordering params from count query
-    const countParamsLength =
-      filters?.orderBy != null && filters.orderBy !== '' ? countParams.length : countParams.length;
+    const countParamsLength = countParams.length;
 
     const [countResult] = await executeQuery<CountResult[]>(
       countQuery,
@@ -663,6 +663,7 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
 }
 
 // Find documents with flexible filters
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function findDocumentsWithFilters(
   tenantId: number,
   filters: DocumentFilters,

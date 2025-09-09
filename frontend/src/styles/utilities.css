@@ -230,7 +230,7 @@
 }
 
 .u-opacity-100 {
-  opacity: 1 !important;
+  opacity: 100% !important;
 }
 
 /* === Additional Margin Utilities === */
@@ -270,19 +270,19 @@
 }
 
 .empty-state-icon {
-  font-size: 64px;
   margin-bottom: 20px;
-  opacity: 0.5;
+  font-size: 64px;
+  opacity: 50%;
 }
 
 .empty-state-text {
+  margin-bottom: 8px;
   font-size: 18px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 8px;
+  color: rgb(255 255 255 / 90%);
 }
 
 .empty-state-subtext {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgb(255 255 255 / 60%);
 }

@@ -58,13 +58,6 @@
       }
     ],
     "lightness-notation": "percentage",
-    "max-line-length": [
-      120,
-      {
-        "ignore": ["comments", "regex"],
-        "ignorePattern": "/https?://[^\\s]*/i"
-      }
-    ],
     "max-nesting-depth": [
       4,
       {
@@ -170,7 +163,7 @@
       }
     ],
     "shorthand-property-no-redundant-values": true,
-    "string-quotes": "double",
+    "font-family-name-quotes": "always-where-recommended",
     "time-min-milliseconds": 100,
     "unit-allowed-list": [
       "em",

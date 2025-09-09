@@ -95,7 +95,7 @@ export const documentsValidation = {
       .optional()
       .custom((value: string) => {
         try {
-          const tags = JSON.parse(value);
+          const tags = JSON.parse(value) as unknown;
           if (!Array.isArray(tags)) return false;
           return tags.every((tag) => typeof tag === 'string' && tag.length <= 50);
         } catch {
