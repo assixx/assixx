@@ -64,12 +64,12 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
   const {
     name,
     description,
-    manager_id,
-    parent_id,
-    area_id,
+    manager_id: managerId,
+    parent_id: parentId,
+    area_id: areaId,
     status = 'active',
     visibility = 'public',
-    tenant_id,
+    tenant_id: tenantId,
   } = departmentData;
   logger.info(`Creating new department: ${name}`);
 
@@ -87,14 +87,14 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
           INSERT INTO departments (name, description, manager_id, parent_id, area_id, status, visibility, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
-      params = [name, description, manager_id, parent_id, area_id, status, visibility, tenant_id];
+      params = [name, description, managerId, parentId, areaId, status, visibility, tenantId];
     } else {
       logger.warn('Status/visibility columns not found, using basic query');
       query = `
           INSERT INTO departments (name, description, manager_id, parent_id, area_id, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?)
         `;
-      params = [name, description, manager_id, parent_id, area_id, tenant_id];
+      params = [name, description, managerId, parentId, areaId, tenantId];
     }
 
     const [result] = await executeQuery<ResultSetHeader>(query, params);
@@ -107,9 +107,9 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
 }
 
 export async function findAllDepartments(
-  tenant_id: number, // PFLICHT!
+  tenantId: number, // PFLICHT!
 ): Promise<DbDepartment[]> {
-  logger.info(`Fetching all departments for tenant ${tenant_id}`);
+  logger.info(`Fetching all departments for tenant ${tenantId}`);
 
   try {
     // First try with extended query
@@ -124,7 +124,7 @@ export async function findAllDepartments(
         ORDER BY d.name
       `;
 
-    const [rows] = await executeQuery<DbDepartment[]>(query, [tenant_id]);
+    const [rows] = await executeQuery<DbDepartment[]>(query, [tenantId]);
     logger.info(`Retrieved ${rows.length} departments with extended info`);
 
     return rows;
@@ -135,7 +135,7 @@ export async function findAllDepartments(
 
     // Fallback to simple query
     const simpleQuery = 'SELECT * FROM departments WHERE tenant_id = ? ORDER BY name';
-    const [rows] = await executeQuery<DbDepartment[]>(simpleQuery, [tenant_id]);
+    const [rows] = await executeQuery<DbDepartment[]>(simpleQuery, [tenantId]);
     logger.info(`Retrieved ${rows.length} departments with simple query`);
 
     return rows;
@@ -144,13 +144,13 @@ export async function findAllDepartments(
 
 export async function findDepartmentById(
   id: number,
-  tenant_id: number,
+  tenantId: number,
 ): Promise<DbDepartment | null> {
-  logger.info(`Fetching department with ID ${id} for tenant ${tenant_id}`);
+  logger.info(`Fetching department with ID ${id} for tenant ${tenantId}`);
   const query = 'SELECT * FROM departments WHERE id = ? AND tenant_id = ?';
 
   try {
-    const [rows] = await executeQuery<DbDepartment[]>(query, [id, tenant_id]);
+    const [rows] = await executeQuery<DbDepartment[]>(query, [id, tenantId]);
     if (rows.length === 0) {
       logger.warn(`Department with ID ${id} not found`);
       return null;
@@ -262,14 +262,14 @@ export async function getUsersByDepartment(departmentId: number): Promise<DbUser
 }
 
 // Count departments by tenant
-export async function countDepartmentsByTenant(tenant_id: number): Promise<number> {
+export async function countDepartmentsByTenant(tenantId: number): Promise<number> {
   try {
     interface CountResult extends RowDataPacket {
       count: number;
     }
     const [rows] = await executeQuery<CountResult[]>(
       'SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?',
-      [tenant_id],
+      [tenantId],
     );
     return rows[0]?.count ?? 0;
   } catch (error: unknown) {
@@ -279,14 +279,14 @@ export async function countDepartmentsByTenant(tenant_id: number): Promise<numbe
 }
 
 // Count teams by tenant (assuming teams are linked to departments)
-export async function countTeamsByTenant(tenant_id: number): Promise<number> {
+export async function countTeamsByTenant(tenantId: number): Promise<number> {
   try {
     interface CountResult extends RowDataPacket {
       count: number;
     }
     const [rows] = await executeQuery<CountResult[]>(
       'SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?',
-      [tenant_id],
+      [tenantId],
     );
     return rows[0]?.count ?? 0;
   } catch (error: unknown) {

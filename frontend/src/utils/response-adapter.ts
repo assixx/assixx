@@ -481,7 +481,7 @@ const ResponseAdapterInternal = {
     dateFields.forEach((field) => {
       if (data[field] != null && typeof data[field] === 'string') {
         const date = new Date(data[field]);
-        if (!isNaN(date.getTime())) {
+        if (!Number.isNaN(date.getTime())) {
           data[field] = date.toISOString();
         }
       }
@@ -541,7 +541,7 @@ const ResponseAdapterInternal = {
     numericFields.forEach((field) => {
       if (data[field] != null && typeof data[field] === 'string') {
         const num = Number(data[field]);
-        if (!isNaN(num)) {
+        if (!Number.isNaN(num)) {
           data[field] = num;
         }
       }

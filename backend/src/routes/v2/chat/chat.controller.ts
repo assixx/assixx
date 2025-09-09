@@ -7,7 +7,7 @@ import { NextFunction, Response } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { getUploadDirectory, validatePath } from '../../../utils/pathSecurity.js';
@@ -18,6 +18,10 @@ import type {
   MessageFilters,
   SendMessageData,
 } from './chat.service.js';
+
+// Constants
+const NOT_IMPLEMENTED = 'NOT_IMPLEMENTED';
+const NOT_IMPLEMENTED_MESSAGE = 'Feature not yet implemented';
 
 interface ChatConversationResult {
   id: number;
@@ -36,6 +40,16 @@ interface ChatMessageResult {
  */
 export class ChatController {
   /**
+   * Helper function for unimplemented features
+   */
+  private notImplemented(res: Response, next: NextFunction): void {
+    try {
+      res.status(501).json(errorResponse(NOT_IMPLEMENTED, NOT_IMPLEMENTED_MESSAGE));
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+  /**
    * Get available chat users
    * @param req - The request object
    * @param res - The response object
@@ -44,10 +58,6 @@ export class ChatController {
   async getChatUsers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
       const search = req.query.search as string | undefined;
@@ -78,10 +88,6 @@ export class ChatController {
   ): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
 
@@ -92,8 +98,8 @@ export class ChatController {
           : req.query.isGroup === 'false' ? false
           : undefined,
         hasUnread: req.query.hasUnread === 'true',
-        page: Number.parseInt(req.query.page as string) ?? 1,
-        limit: Number.parseInt(req.query.limit as string) ?? 20,
+        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+        limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
       };
 
       const result = await chatService.getConversations(tenantId, userId, filters);
@@ -117,10 +123,6 @@ export class ChatController {
   ): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
 
@@ -143,13 +145,13 @@ export class ChatController {
       const result = await chatService.createConversation(tenantId, userId, data);
 
       // Log conversation creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'create',
         entity_type: 'chat_conversation',
         entity_id:
-          (result as unknown as ChatConversationResult).conversationId ??
+          (result as unknown as ChatConversationResult).conversationId ||
           (result as unknown as ChatConversationResult).id,
         details: `Erstellt: ${data.name ?? 'Chat-Unterhaltung'}`,
         new_values: {
@@ -180,10 +182,6 @@ export class ChatController {
   async getMessages(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
       const conversationId = Number.parseInt(req.params.id);
@@ -193,8 +191,8 @@ export class ChatController {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
         hasAttachment: req.query.hasAttachment === 'true',
-        page: Number.parseInt(req.query.page as string) ?? 1,
-        limit: Number.parseInt(req.query.limit as string) ?? 50,
+        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+        limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
       };
 
       const result = await chatService.getMessages(tenantId, conversationId, userId, filters);
@@ -214,10 +212,6 @@ export class ChatController {
   async sendMessage(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
       const conversationId = Number.parseInt(req.params.id);
@@ -252,13 +246,13 @@ export class ChatController {
       const result = await chatService.sendMessage(tenantId, conversationId, userId, data);
 
       // Log message sending
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'send_message',
         entity_type: 'chat_message',
         entity_id:
-          (result as unknown as ChatMessageResult).messageId ??
+          (result as unknown as ChatMessageResult).messageId ||
           (result as unknown as ChatMessageResult).id,
         details: `Nachricht gesendet${data.attachment ? ' mit Anhang' : ''}`,
         new_values: {
@@ -293,10 +287,6 @@ export class ChatController {
   ): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
 
@@ -318,11 +308,6 @@ export class ChatController {
     try {
       logError('[Chat Controller] markAsRead called');
       const { user } = req;
-      if (!user) {
-        logError('[Chat Controller] No user found!');
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const userId = user.id;
       const conversationId = Number.parseInt(req.params.id);
       logError('[Chat Controller] markAsRead - conversationId:', conversationId, 'userId:', userId);
@@ -349,10 +334,6 @@ export class ChatController {
   ): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const userId = user.id;
       const userRole = user.role;
       const conversationId = Number.parseInt(req.params.id);
@@ -360,7 +341,7 @@ export class ChatController {
       await chatService.deleteConversation(conversationId, userId, userRole);
 
       // Log conversation deletion
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: user.tenant_id,
         user_id: userId,
         action: 'delete',
@@ -424,15 +405,9 @@ export class ChatController {
 
       // Set appropriate headers
       if (forceDownload) {
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${String(path.basename(filename))}"`,
-        );
+        res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filename)}"`);
       } else {
-        res.setHeader(
-          'Content-Disposition',
-          `inline; filename="${String(path.basename(filename))}"`,
-        );
+        res.setHeader('Content-Disposition', `inline; filename="${path.basename(filename)}"`);
       }
 
       res.sendFile(filePath);
@@ -454,10 +429,6 @@ export class ChatController {
   ): Promise<void> {
     try {
       const { user } = req;
-      if (!user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
-        return;
-      }
       const tenantId = user.tenant_id;
       const userId = user.id;
       const conversationId = Number.parseInt(req.params.id);
@@ -482,17 +453,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async updateConversation(
-    _req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TODO: Implement conversation update (name change, etc.)
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  updateConversation(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement conversation update (name change, etc.)
+    this.notImplemented(res, next);
   }
 
   /**
@@ -501,17 +464,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async addParticipants(
-    _req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TODO: Implement adding participants to group conversations
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  addParticipants(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement adding participants to group conversations
+    this.notImplemented(res, next);
   }
 
   /**
@@ -520,17 +475,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async removeParticipant(
-    _req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TODO: Implement removing participants from group conversations
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  removeParticipant(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement removing participants from group conversations
+    this.notImplemented(res, next);
   }
 
   /**
@@ -539,17 +486,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async leaveConversation(
-    _req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TODO: Implement leaving a group conversation
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  leaveConversation(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement leaving a group conversation
+    this.notImplemented(res, next);
   }
 
   /**
@@ -558,17 +497,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async searchMessages(
-    _req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TODO: Implement global message search
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  searchMessages(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement global message search
+    this.notImplemented(res, next);
   }
 
   /**
@@ -577,17 +508,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async deleteMessage(
-    _req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      // TODO: Implement message deletion (soft delete)
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  deleteMessage(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement message deletion (soft delete)
+    this.notImplemented(res, next);
   }
 
   /**
@@ -596,13 +519,9 @@ export class ChatController {
    * @param res - The response object
    * @param next - The next middleware function
    */
-  async editMessage(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // TODO: Implement message editing
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', 'Feature not yet implemented'));
-    } catch (error: unknown) {
-      next(error);
-    }
+  editMessage(_req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+    // TODO: Implement message editing
+    this.notImplemented(res, next);
   }
 }
 

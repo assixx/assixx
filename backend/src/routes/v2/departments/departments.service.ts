@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Department, { DbDepartment } from '../../../models/department.js';
 import { logger } from '../../../utils/logger.js';
 

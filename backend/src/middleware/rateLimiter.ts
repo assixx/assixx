@@ -106,7 +106,11 @@ const rateLimiters = Object.entries(rateLimiterConfigs).reduce(
 
 // Type-safe rate limiter middleware factory
 export const rateLimiter: RateLimiterMiddleware = Object.assign(
-  (type: RateLimiterType) => rateLimiters[type],
+  (type: RateLimiterType) => {
+    // Safe: type is an enum value, not user input
+    // eslint-disable-next-line security/detect-object-injection
+    return rateLimiters[type];
+  },
   {
     public: rateLimiters[RateLimiterType.PUBLIC],
     auth: rateLimiters[RateLimiterType.AUTH],

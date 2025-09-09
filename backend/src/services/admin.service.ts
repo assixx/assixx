@@ -4,7 +4,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import RootLog, {
+import rootLog, {
   type DbRootLog,
   type RootLogCreateData as ModelRootLogCreateData,
 } from '../models/rootLog';
@@ -58,7 +58,7 @@ class AdminLogService {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
       if (filters.user_id != null && filters.user_id !== 0) {
-        const logs = await RootLog.getByUserId(filters.user_id);
+        const logs = await rootLog.getByUserId(filters.user_id);
         return logs.map((log: DbRootLog) => ({
           ...log,
           created_at: log.timestamp as Date,
@@ -100,7 +100,7 @@ class AdminLogService {
         user_agent: data.user_agent,
         was_role_switched: data.was_role_switched,
       };
-      const id = await RootLog.create(modelData);
+      const id = await rootLog.create(modelData);
       // Return the data without trying to match RowDataPacket structure
       return {
         id: id,

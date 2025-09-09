@@ -1,4 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import PlanModel from '../../../models/plan';
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import RootLog from '../../../models/rootLog';
 import { query } from '../../../utils/db';
 import {
@@ -24,8 +26,9 @@ type ModelDbPlan = DbPlan & { description?: string };
 type ModelDbTenantPlan = DbTenantPlan & { expires_at?: Date | null };
 
 /**
- *
+ * Plans service with static methods
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class PlansService {
   /**
    * Convert DB plan to API format (snake_case to camelCase)
@@ -259,11 +262,11 @@ export class PlansService {
    */
   static async getTenantAddons(tenantId: number): Promise<TenantAddons> {
     const [dbAddons] = await query<DbAddonResult[]>(
-      `SELECT 
+      `SELECT
         COALESCE(MAX(CASE WHEN addon_type = 'employees' THEN quantity END), 0) as extra_employees,
         COALESCE(MAX(CASE WHEN addon_type = 'admins' THEN quantity END), 0) as extra_admins,
         COALESCE(MAX(CASE WHEN addon_type = 'storage_gb' THEN quantity END), 0) as extra_storage_gb
-      FROM tenant_addons 
+      FROM tenant_addons
       WHERE tenant_id = ? AND status = 'active'`,
       [tenantId],
     );
@@ -277,9 +280,9 @@ export class PlansService {
     }
 
     return {
-      employees: dbAddons[0].extra_employees ?? 0,
-      admins: dbAddons[0].extra_admins ?? 0,
-      storageGb: dbAddons[0].extra_storage_gb ?? 0,
+      employees: dbAddons[0].extra_employees,
+      admins: dbAddons[0].extra_admins,
+      storageGb: dbAddons[0].extra_storage_gb,
     };
   }
 

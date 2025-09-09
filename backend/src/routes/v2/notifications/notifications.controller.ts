@@ -10,6 +10,9 @@ import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import * as notificationsService from './notifications.service.js';
 import { NotificationData, NotificationPreferences } from './types.js';
 
+// Constants
+const INTERNAL_ERROR_MSG = 'An unexpected error occurred';
+
 /**
  * @param req - The request object
  * @param res - The response object
@@ -58,12 +61,11 @@ import { NotificationData, NotificationPreferences } from './types.js';
  *             schema:
  *               $ref: '#/components/schemas/NotificationListResponse'
  */
-export const listNotifications = async (req: AuthenticatedRequest, res: Response) => {
+export const listNotifications = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const filters = {
       type: req.query.type as string | undefined,
       priority: req.query.priority as string | undefined,
@@ -81,9 +83,9 @@ export const listNotifications = async (req: AuthenticatedRequest, res: Response
     res.json(successResponse(result));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -114,12 +116,11 @@ export const listNotifications = async (req: AuthenticatedRequest, res: Response
  *       403:
  *         description: Forbidden - Admin only
  */
-export const createNotification = async (req: AuthenticatedRequest, res: Response) => {
+export const createNotification = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     // Check admin permission
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can create notifications', 403);
@@ -136,9 +137,9 @@ export const createNotification = async (req: AuthenticatedRequest, res: Respons
     res.status(201).json(successResponse(result));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -147,7 +148,7 @@ export const createNotification = async (req: AuthenticatedRequest, res: Respons
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/notifications/{id}/read:
+ * /api/v2/notifications/\{id\}/read:
  *   put:
  *     summary: Mark notification as read
  *     tags: [Notifications]
@@ -166,21 +167,17 @@ export const createNotification = async (req: AuthenticatedRequest, res: Respons
  *       404:
  *         description: Notification not found
  */
-export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
+export const markAsRead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const notificationId = Number.parseInt(req.params.id);
     await notificationsService.markAsRead(notificationId, req.user.id, req.user.tenant_id);
 
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -212,20 +209,16 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
  *                       type: integer
  *                       description: Number of notifications marked as read
  */
-export const markAllAsRead = async (req: AuthenticatedRequest, res: Response) => {
+export const markAllAsRead = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const result = await notificationsService.markAllAsRead(req.user.id, req.user.tenant_id);
 
     res.json(successResponse(result));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -234,7 +227,7 @@ export const markAllAsRead = async (req: AuthenticatedRequest, res: Response) =>
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/notifications/{id}:
+ * /api/v2/notifications/\{id\}:
  *   delete:
  *     summary: Delete notification
  *     tags: [Notifications]
@@ -253,12 +246,11 @@ export const markAllAsRead = async (req: AuthenticatedRequest, res: Response) =>
  *       404:
  *         description: Notification not found
  */
-export const deleteNotification = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteNotification = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const notificationId = Number.parseInt(req.params.id);
     await notificationsService.deleteNotification(
       notificationId,
@@ -272,9 +264,9 @@ export const deleteNotification = async (req: AuthenticatedRequest, res: Respons
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -297,20 +289,16 @@ export const deleteNotification = async (req: AuthenticatedRequest, res: Respons
  *             schema:
  *               $ref: '#/components/schemas/NotificationPreferencesResponse'
  */
-export const getPreferences = async (req: AuthenticatedRequest, res: Response) => {
+export const getPreferences = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const preferences = await notificationsService.getPreferences(req.user.id, req.user.tenant_id);
 
     res.json(successResponse({ preferences }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -335,12 +323,11 @@ export const getPreferences = async (req: AuthenticatedRequest, res: Response) =
  *       200:
  *         description: Preferences updated successfully
  */
-export const updatePreferences = async (req: AuthenticatedRequest, res: Response) => {
+export const updatePreferences = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     await notificationsService.updatePreferences(
       req.user.id,
       req.user.tenant_id,
@@ -352,9 +339,9 @@ export const updatePreferences = async (req: AuthenticatedRequest, res: Response
     res.json(successResponse(null));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -379,12 +366,8 @@ export const updatePreferences = async (req: AuthenticatedRequest, res: Response
  *       403:
  *         description: Forbidden - Admin only
  */
-export const getStatistics = async (req: AuthenticatedRequest, res: Response) => {
+export const getStatistics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     // Check admin permission
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can view statistics', 403);
@@ -395,9 +378,9 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response) =>
     res.json(successResponse(stats));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -420,20 +403,16 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response) =>
  *             schema:
  *               $ref: '#/components/schemas/PersonalStatsResponse'
  */
-export const getPersonalStats = async (req: AuthenticatedRequest, res: Response) => {
+export const getPersonalStats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     const stats = await notificationsService.getPersonalStats(req.user.id, req.user.tenant_id);
 
     res.json(successResponse(stats));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -470,22 +449,18 @@ export const getPersonalStats = async (req: AuthenticatedRequest, res: Response)
  *                     subscriptionId:
  *                       type: string
  */
-export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
+export const subscribe = (_req: AuthenticatedRequest, res: Response): void => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     // TODO: Implement push notification subscription
     // For now, return a mock subscription ID
-    const subscriptionId = `sub_${String(Date.now())}_${String(Math.random().toString(36).substr(2, 9))}`;
+    const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     res.json(successResponse({ subscriptionId }, 'Successfully subscribed to notifications'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -494,7 +469,7 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
  * @param req - The request object
  * @param res - The response object
 
- * /api/v2/notifications/subscribe/{id}:
+ * /api/v2/notifications/subscribe/\{id\}:
  *   delete:
  *     summary: Unsubscribe from push notifications
  *     tags: [Notifications]
@@ -511,19 +486,15 @@ export const subscribe = async (req: AuthenticatedRequest, res: Response) => {
  *       200:
  *         description: Successfully unsubscribed
  */
-export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
+export const unsubscribe = (_req: AuthenticatedRequest, res: Response): void => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     // TODO: Implement push notification unsubscription
     res.json(successResponse(null, 'Successfully unsubscribed from notifications'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -548,12 +519,8 @@ export const unsubscribe = async (req: AuthenticatedRequest, res: Response) => {
  *       403:
  *         description: Forbidden - Admin only
  */
-export const getTemplates = async (req: AuthenticatedRequest, res: Response) => {
+export const getTemplates = (req: AuthenticatedRequest, res: Response): void => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     // Check admin permission
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can view templates', 403);
@@ -564,9 +531,9 @@ export const getTemplates = async (req: AuthenticatedRequest, res: Response) => 
     res.json(successResponse({ templates: [] }));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };
@@ -599,12 +566,8 @@ export const getTemplates = async (req: AuthenticatedRequest, res: Response) => 
  *       404:
  *         description: Template not found
  */
-export const createFromTemplate = async (req: AuthenticatedRequest, res: Response) => {
+export const createFromTemplate = (req: AuthenticatedRequest, res: Response): void => {
   try {
-    if (!req.user) {
-      throw new ServiceError('UNAUTHORIZED', 'User not authenticated');
-    }
-
     // Check admin permission
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can create notifications', 403);
@@ -615,9 +578,9 @@ export const createFromTemplate = async (req: AuthenticatedRequest, res: Respons
     throw new ServiceError('NOT_FOUND', 'Template not found', 404);
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode ?? 500).json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', INTERNAL_ERROR_MSG));
     }
   }
 };

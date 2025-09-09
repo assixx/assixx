@@ -61,7 +61,7 @@ router.get(
 
 /**
 
- * /api/v2/teams/{id}:
+ * /api/v2/teams/\{id\}:
  *   get:
  *     summary: Get team by ID
  *     tags: [Teams v2]
@@ -131,7 +131,7 @@ router.post(
 
 /**
 
- * /api/v2/teams/{id}:
+ * /api/v2/teams/\{id\}:
  *   put:
  *     summary: Update team
  *     tags: [Teams v2]
@@ -174,7 +174,7 @@ router.put(
 
 /**
 
- * /api/v2/teams/{id}:
+ * /api/v2/teams/\{id\}:
  *   delete:
  *     summary: Delete team
  *     tags: [Teams v2]
@@ -213,7 +213,7 @@ router.delete(
 
 /**
 
- * /api/v2/teams/{id}/members:
+ * /api/v2/teams/\{id\}/members:
  *   get:
  *     summary: Get team members
  *     tags: [Teams v2]
@@ -247,7 +247,7 @@ router.get(
 
 /**
 
- * /api/v2/teams/{id}/members:
+ * /api/v2/teams/\{id\}/members:
  *   post:
  *     summary: Add member to team
  *     tags: [Teams v2]
@@ -298,7 +298,7 @@ router.post(
 
 /**
 
- * /api/v2/teams/{id}/members/{userId}:
+ * /api/v2/teams/\{id\}/members/\{userId\}:
  *   delete:
  *     summary: Remove member from team
  *     tags: [Teams v2]
@@ -343,7 +343,7 @@ router.delete(
 
 /**
 
- * /api/v2/teams/{id}/machines:
+ * /api/v2/teams/\{id\}/machines:
  *   get:
  *     summary: Get team machines
  *     tags: [Teams v2]
@@ -394,7 +394,7 @@ router.get(
 
 /**
 
- * /api/v2/teams/{id}/machines:
+ * /api/v2/teams/\{id\}/machines:
  *   post:
  *     summary: Add machine to team
  *     tags: [Teams v2]
@@ -445,7 +445,7 @@ router.post(
 
 /**
 
- * /api/v2/teams/{id}/machines/{machineId}:
+ * /api/v2/teams/\{id\}/machines/\{machineId\}:
  *   delete:
  *     summary: Remove machine from team
  *     tags: [Teams v2]

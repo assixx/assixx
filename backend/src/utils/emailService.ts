@@ -8,6 +8,7 @@ import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
 import type { Attachment } from 'nodemailer/lib/mailer';
 import path from 'path';
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Feature from '../models/feature';
 import { logger } from './logger';
 

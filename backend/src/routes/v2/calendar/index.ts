@@ -11,6 +11,16 @@ import { createValidation } from '../../../middleware/validation.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as calendarController from './calendar.controller.js';
 
+// Type for request body
+interface CalendarEventBody {
+  title?: string;
+  startTime?: string;
+  endTime?: string;
+  allDay?: boolean;
+  orgLevel?: string;
+  orgId?: number;
+}
+
 const router = Router();
 
 // All routes require authentication
@@ -25,8 +35,10 @@ const eventValidation = createValidation([
     .isISO8601()
     .withMessage('Valid end time is required')
     .custom((value, { req }) => {
-      const start = new Date(req.body.startTime);
-      const end = new Date(value);
+      const body = req.body as CalendarEventBody;
+      const startTime = body.startTime ?? '';
+      const start = new Date(startTime);
+      const end = new Date(value as string);
       return end > start;
     })
     .withMessage('End time must be after start time'),
@@ -39,7 +51,8 @@ const eventValidation = createValidation([
     .optional()
     .isInt({ min: 1 })
     .custom((value, { req }) => {
-      if (req.body.orgLevel === 'department' || req.body.orgLevel === 'team') {
+      const body = req.body as CalendarEventBody;
+      if (body.orgLevel === 'department' || body.orgLevel === 'team') {
         return value !== undefined;
       }
       return true;
@@ -64,9 +77,10 @@ const updateEventValidation = createValidation([
     .optional()
     .isISO8601()
     .custom((value, { req }) => {
-      if (req.body.startTime && value) {
-        const start = new Date(req.body.startTime);
-        const end = new Date(value);
+      const body = req.body as CalendarEventBody;
+      if (body.startTime && value) {
+        const start = new Date(body.startTime);
+        const end = new Date(value as string);
         return end > start;
       }
       return true;

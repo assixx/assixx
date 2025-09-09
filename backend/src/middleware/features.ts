@@ -39,7 +39,7 @@ export const checkFeature =
         // Check if tenantId is already numeric (from auth middleware)
         if (typeof req.tenantId === 'number') {
           numericTenantId = req.tenantId;
-        } else if (!isNaN(Number(req.tenantId))) {
+        } else if (!Number.isNaN(Number(req.tenantId))) {
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
@@ -121,7 +121,7 @@ export const checkAnyFeature =
         // Check if tenantId is already numeric (from auth middleware)
         if (typeof req.tenantId === 'number') {
           numericTenantId = req.tenantId;
-        } else if (!isNaN(Number(req.tenantId))) {
+        } else if (!Number.isNaN(Number(req.tenantId))) {
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
@@ -201,7 +201,7 @@ export const checkAllFeatures =
         // Check if tenantId is already numeric (from auth middleware)
         if (typeof req.tenantId === 'number') {
           numericTenantId = req.tenantId;
-        } else if (!isNaN(Number(req.tenantId))) {
+        } else if (!Number.isNaN(Number(req.tenantId))) {
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up

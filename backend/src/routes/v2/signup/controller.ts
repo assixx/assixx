@@ -5,7 +5,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { logger } from '../../../utils/logger.js';
 import { signupService } from './service.js';
@@ -29,7 +29,7 @@ export class SignupController {
   async signup(req: Request, res: Response): Promise<void> {
     console.info('[SignupController] METHOD START');
     logger.info('[SignupController] Received signup request:', {
-      body: req.body,
+      body: req.body as unknown,
       headers: {
         contentType: req.get('Content-Type'),
         origin: req.get('Origin'),
@@ -65,7 +65,7 @@ export class SignupController {
       logger.info('[SignupController] Registration successful:', result);
 
       // Log tenant registration
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: (result as SignupResult).tenantId,
         user_id: (result as SignupResult).userId,
         action: 'register',

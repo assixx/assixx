@@ -2,7 +2,7 @@
  * Calendar v2 Service Layer
  * Handles all business logic for calendar events
  */
-import CalendarModel from '../../../models/calendar.js';
+import calendarModel from '../../../models/calendar.js';
 import type {
   CalendarEvent,
   DbCalendarEvent,
@@ -76,7 +76,15 @@ export class CalendarService {
     userDepartmentId: number | null,
     userTeamId: number | null,
     filters: CalendarFilters,
-  ) {
+  ): Promise<{
+    events: CalendarEvent[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
     const page = Math.max(1, Number.parseInt(filters.page ?? '1', 10));
     // Performance-Limit: max 200 Events
     const limit = Math.min(200, Math.max(1, Number.parseInt(filters.limit ?? '50', 10)));
@@ -108,7 +116,7 @@ export class CalendarService {
     };
 
     try {
-      const result = (await CalendarModel.getAllEvents(
+      const result = (await calendarModel.getAllEvents(
         tenantId,
         userId,
         queryOptions,
@@ -118,19 +126,19 @@ export class CalendarService {
       };
 
       // Map events to API format
-      const events = result.events.map((event: CalendarEvent) => dbToApiEvent(event));
+      const events = result.events.map(
+        (event: DbCalendarEvent) => dbToApiEvent(event) as CalendarEvent,
+      );
 
       const totalPages = Math.ceil(result.pagination.total / limit);
 
       return {
-        data: events,
+        events,
         pagination: {
-          currentPage: page,
+          page,
+          limit,
+          total: result.pagination.total,
           totalPages,
-          pageSize: limit,
-          totalItems: result.pagination.total,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
         },
       };
     } catch {
@@ -150,17 +158,17 @@ export class CalendarService {
     tenantId: number,
     userId: number,
     _userDepartmentId?: number | null,
-  ) {
+  ): Promise<CalendarEvent> {
     try {
-      const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+      const event = await calendarModel.getEventById(eventId, tenantId, userId);
       if (!event) {
         throw new ServiceError('NOT_FOUND', 'Event not found', 404);
       }
 
       // Get attendees
-      const attendees = await CalendarModel.getEventAttendees(eventId, tenantId);
+      const attendees = await calendarModel.getEventAttendees(eventId, tenantId);
 
-      const apiEvent = dbToApiEvent(event);
+      const apiEvent = dbToApiEvent(event) as CalendarEvent;
       return {
         ...apiEvent,
         attendees: attendees.map((attendee: EventAttendee) => ({
@@ -198,47 +206,9 @@ export class CalendarService {
     userRole: string,
     userDepartmentId?: number | null,
     userTeamId?: number | null,
-  ) {
-    // Validate required fields
-    if (!eventData.title) {
-      throw new ServiceError('BAD_REQUEST', 'Title is required', 400, [
-        { field: 'title', message: 'Title is required' },
-      ]);
-    }
-
-    if (!eventData.startTime) {
-      throw new ServiceError('BAD_REQUEST', 'Start time is required', 400, [
-        { field: 'startTime', message: 'Start time is required' },
-      ]);
-    }
-
-    if (!eventData.endTime) {
-      throw new ServiceError('BAD_REQUEST', 'End time is required', 400, [
-        { field: 'endTime', message: 'End time is required' },
-      ]);
-    }
-
-    if (!eventData.orgLevel) {
-      throw new ServiceError('BAD_REQUEST', 'Organization level is required', 400, [
-        { field: 'orgLevel', message: 'Organization level is required' },
-      ]);
-    }
-
-    // Validate dates
-    const startDate = new Date(eventData.startTime);
-    const endDate = new Date(eventData.endTime);
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      throw new ServiceError('BAD_REQUEST', 'Invalid date format', 400, [
-        { field: 'startTime/endTime', message: 'Must be valid ISO 8601 date' },
-      ]);
-    }
-
-    if (endDate <= startDate) {
-      throw new ServiceError('BAD_REQUEST', 'End time must be after start time', 400, [
-        { field: 'endTime', message: 'Must be after start time' },
-      ]);
-    }
+  ): Promise<{ eventId: number }> {
+    // Validate event data
+    this.validateEventData(eventData);
 
     // PERMISSION CHECKS basierend auf org_level
     switch (eventData.orgLevel) {
@@ -322,7 +292,7 @@ export class CalendarService {
     };
 
     try {
-      const createdEvent = await CalendarModel.createEvent(createData);
+      const createdEvent = await calendarModel.createEvent(createData);
 
       if (!createdEvent) {
         throw new ServiceError('SERVER_ERROR', 'Failed to create event', 500);
@@ -331,7 +301,7 @@ export class CalendarService {
       // Add attendees if provided (für alle Event-Typen möglich)
       if (eventData.attendeeIds && eventData.attendeeIds.length > 0) {
         for (const attendeeId of eventData.attendeeIds) {
-          await CalendarModel.addEventAttendee(
+          await calendarModel.addEventAttendee(
             createdEvent.id,
             attendeeId,
             'pending',
@@ -341,7 +311,8 @@ export class CalendarService {
       }
 
       // Retrieve and return the created event with attendees
-      return await this.getEventById(createdEvent.id, tenantId, userId);
+      const event = await this.getEventById(createdEvent.id, tenantId, userId);
+      return { eventId: event.id };
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -364,15 +335,15 @@ export class CalendarService {
     tenantId: number,
     userId: number,
     userRole: string,
-  ) {
+  ): Promise<{ success: boolean }> {
     // First check if event exists
-    const eventExists = await CalendarModel.checkEventExists(eventId, tenantId);
+    const eventExists = await calendarModel.checkEventExists(eventId, tenantId);
     if (!eventExists) {
       throw new ServiceError('NOT_FOUND', 'Event not found', 404);
     }
 
     // Then check if user has permission to view
-    const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+    const event = await calendarModel.getEventById(eventId, tenantId, userId);
     if (!event) {
       throw new ServiceError('FORBIDDEN', "You don't have permission to access this event", 403);
     }
@@ -412,13 +383,13 @@ export class CalendarService {
     };
 
     try {
-      const success = await CalendarModel.updateEvent(eventId, dbUpdateData, tenantId);
+      const success = await calendarModel.updateEvent(eventId, dbUpdateData, tenantId);
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to update event', 500);
       }
 
-      // Return updated event
-      return await this.getEventById(eventId, tenantId, userId);
+      // Return success status
+      return { success: true };
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -434,15 +405,20 @@ export class CalendarService {
    * @param userId - The user ID
    * @param userRole - The userRole parameter
    */
-  async deleteEvent(eventId: number, tenantId: number, userId: number, userRole: string) {
+  async deleteEvent(
+    eventId: number,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<{ success: boolean }> {
     // First check if event exists
-    const eventExists = await CalendarModel.checkEventExists(eventId, tenantId);
+    const eventExists = await calendarModel.checkEventExists(eventId, tenantId);
     if (!eventExists) {
       throw new ServiceError('NOT_FOUND', 'Event not found', 404);
     }
 
     // Then check if user has permission to view
-    const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+    const event = await calendarModel.getEventById(eventId, tenantId, userId);
     if (!event) {
       throw new ServiceError('FORBIDDEN', "You don't have permission to access this event", 403);
     }
@@ -453,11 +429,11 @@ export class CalendarService {
     }
 
     try {
-      const success = await CalendarModel.deleteEvent(eventId, tenantId);
+      const success = await calendarModel.deleteEvent(eventId, tenantId);
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to delete event', 500);
       }
-      return true;
+      return { success: true };
     } catch (error: unknown) {
       // Re-throw ServiceErrors to preserve their status codes
       if (error instanceof ServiceError) {
@@ -479,15 +455,15 @@ export class CalendarService {
     userId: number,
     response: 'accepted' | 'declined' | 'tentative',
     tenantId: number,
-  ) {
+  ): Promise<{ success: boolean }> {
     try {
       // Check if event exists
-      const event = await CalendarModel.getEventById(eventId, tenantId, userId);
+      const event = await calendarModel.getEventById(eventId, tenantId, userId);
       if (!event) {
         throw new ServiceError('NOT_FOUND', 'Event not found', 404);
       }
 
-      const success = await CalendarModel.respondToEvent(eventId, userId, response);
+      const success = await calendarModel.respondToEvent(eventId, userId, response);
       if (!success) {
         throw new ServiceError('BAD_REQUEST', 'Failed to update response', 400);
       }
@@ -513,9 +489,9 @@ export class CalendarService {
     userId: number,
     _userDepartmentId: number | null,
     format: 'ics' | 'csv',
-  ) {
+  ): Promise<string> {
     try {
-      const result = (await CalendarModel.getAllEvents(
+      const result = (await calendarModel.getAllEvents(
         tenantId,
         userId,
         { limit: 1000 }, // Export up to 1000 events
@@ -534,14 +510,75 @@ export class CalendarService {
   }
 
   /**
+   * Validate event data fields
+   * @param eventData - The event data to validate
+   */
+  private validateEventData(eventData: CalendarEventData): void {
+    if (!eventData.title) {
+      throw new ServiceError('BAD_REQUEST', 'Title is required', 400, [
+        { field: 'title', message: 'Title is required' },
+      ]);
+    }
+
+    if (!eventData.startTime) {
+      throw new ServiceError('BAD_REQUEST', 'Start time is required', 400, [
+        { field: 'startTime', message: 'Start time is required' },
+      ]);
+    }
+
+    if (!eventData.endTime) {
+      throw new ServiceError('BAD_REQUEST', 'End time is required', 400, [
+        { field: 'endTime', message: 'End time is required' },
+      ]);
+    }
+
+    const startDate = new Date(eventData.startTime);
+    const endDate = new Date(eventData.endTime);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new ServiceError('BAD_REQUEST', 'Invalid date format', 400, [
+        { field: 'startTime/endTime', message: 'Must be valid ISO 8601 date' },
+      ]);
+    }
+
+    if (endDate <= startDate) {
+      throw new ServiceError('BAD_REQUEST', 'End time must be after start time', 400, [
+        { field: 'endTime', message: 'Must be after start time' },
+      ]);
+    }
+  }
+
+  /**
+   * Convert description field to string (handles Buffer types)
+   * @param description - The description field that can be string, Buffer, or Buffer-like object
+   */
+  private convertDescriptionToString(
+    description?: string | Buffer | { type: 'Buffer'; data: number[] },
+  ): string {
+    if (!description) return '';
+    if (typeof description === 'string') return description;
+    if (Buffer.isBuffer(description)) return description.toString('utf8');
+    // Handle Buffer-like object from MySQL
+    if (
+      typeof description === 'object' &&
+      'type' in description &&
+      'data' in description &&
+      Array.isArray(description.data)
+    ) {
+      return Buffer.from(description.data).toString('utf8');
+    }
+    return '';
+  }
+
+  /**
    * Generate CSV export
    * @param events - The events parameter
    */
   private generateCSV(events: CalendarEvent[]): string {
     const headers = ['Title', 'Description', 'Location', 'Start', 'End', 'All Day', 'Status'];
-    const rows = events.map((event) => [
+    const rows: string[][] = events.map((event) => [
       event.title,
-      event.description ?? '',
+      this.convertDescriptionToString(event.description),
       event.location ?? '',
       event.start_date.toISOString(),
       event.end_date.toISOString(),
@@ -559,11 +596,22 @@ export class CalendarService {
    * @param tenantId - The tenant ID
    * @param userId - The user ID
    */
-  async getUnreadEvents(tenantId: number, userId: number) {
+  async getUnreadEvents(
+    tenantId: number,
+    userId: number,
+  ): Promise<{
+    totalUnread: number;
+    eventsRequiringResponse: {
+      id: number;
+      title: string;
+      startTime: string;
+      requiresResponse: boolean;
+    }[];
+  }> {
     try {
       // Get all events where user is an attendee with pending response
       const query = `
-        SELECT 
+        SELECT
           e.id,
           e.title,
           e.start_date as startTime,
@@ -571,8 +619,8 @@ export class CalendarService {
           a.response_status
         FROM calendar_events e
         JOIN calendar_attendees a ON e.id = a.event_id
-        WHERE 
-          e.tenant_id = ? 
+        WHERE
+          e.tenant_id = ?
           AND a.user_id = ?
           AND a.response_status = 'pending'
           AND e.requires_response = 1
@@ -636,9 +684,9 @@ DTSTAMP:${new Date()
 DTSTART:${dtstart}Z
 DTEND:${dtend}Z
 SUMMARY:${event.title}
-DESCRIPTION:${event.description ?? ''}
+DESCRIPTION:${this.convertDescriptionToString(event.description)}
 LOCATION:${event.location ?? ''}
-STATUS:${String((event.status ?? 'CONFIRMED').toUpperCase())}
+STATUS:${(event.status ?? 'CONFIRMED').toUpperCase()}
 END:VEVENT`;
       })
       .join('\n');

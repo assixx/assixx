@@ -131,12 +131,16 @@ interface ChatUserRow extends RowDataPacket {
   id: number;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   profile_picture: string | null;
   department_id: number | null;
   department_name: string | null;
   role: string;
+}
+
+interface CountResult extends RowDataPacket {
+  total: number;
 }
 
 interface ConversationRow extends RowDataPacket {
@@ -148,6 +152,7 @@ interface ConversationRow extends RowDataPacket {
   last_message_id: number | null;
   last_message_content: string | null;
   last_message_created_at: Date | null;
+  last_message_time: Date | null; // Added for SQL alias
   last_message_sender_id: number | null;
   last_message_sender_username: string | null;
   unread_count: number;
@@ -158,8 +163,8 @@ interface MessageRow extends RowDataPacket {
   conversation_id: number;
   sender_id: number;
   sender_username: string;
-  sender_first_name: string;
-  sender_last_name: string;
+  sender_first_name: string | null;
+  sender_last_name: string | null;
   sender_profile_picture: string | null;
   content: string;
   attachment_path: string | null;
@@ -167,6 +172,8 @@ interface MessageRow extends RowDataPacket {
   attachment_type: string | null;
   is_system: number;
   created_at: Date;
+  is_read?: number;
+  read_at?: Date | null;
 }
 
 /**
@@ -202,7 +209,7 @@ export class ChatService {
       // Admins and roots can see all users in tenant
       if (currentUser.role === 'admin' || currentUser.role === 'root') {
         query = `
-          SELECT 
+          SELECT
             u.id,
             u.username,
             u.email,
@@ -220,7 +227,7 @@ export class ChatService {
       } else {
         // Employees can only see users in their department + all admins
         query = `
-          SELECT 
+          SELECT
             u.id,
             u.username,
             u.email,
@@ -232,7 +239,7 @@ export class ChatService {
             u.role
           FROM users u
           LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ? 
+          WHERE u.tenant_id = ?
             AND u.id != ?
             AND (u.department_id = ? OR u.role IN ('admin', 'root'))
         `;
@@ -243,7 +250,7 @@ export class ChatService {
 
       // Apply search filter if provided
       let filteredUsers = users;
-      if (search !== null && search !== undefined && search !== '') {
+      if (search !== undefined && search !== '') {
         const searchLower = search.toLowerCase();
         filteredUsers = users.filter((user) => {
           const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
@@ -324,7 +331,7 @@ export class ChatService {
         ${whereClause}
       `;
 
-      const [countResult] = await execute<RowDataPacket[]>(countQuery, params);
+      const [countResult] = await execute<CountResult[]>(countQuery, params);
       const totalItems = countResult[0]?.total ?? 0;
 
       // Get conversations with last message info
@@ -335,15 +342,15 @@ export class ChatService {
           c.is_group,
           c.created_at,
           c.updated_at,
-          (SELECT m.content 
-           FROM messages m 
-           WHERE m.conversation_id = c.id 
-           ORDER BY m.created_at DESC 
+          (SELECT m.content
+           FROM messages m
+           WHERE m.conversation_id = c.id
+           ORDER BY m.created_at DESC
            LIMIT 1) as last_message_content,
-          (SELECT m.created_at 
-           FROM messages m 
-           WHERE m.conversation_id = c.id 
-           ORDER BY m.created_at DESC 
+          (SELECT m.created_at
+           FROM messages m
+           WHERE m.conversation_id = c.id
+           ORDER BY m.created_at DESC
            LIMIT 1) as last_message_time
         FROM conversations c
         INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
@@ -360,12 +367,23 @@ export class ChatService {
 
       // Get participants for each conversation
       const conversationIds = conversations.map((c) => c.id);
-      let participants: RowDataPacket[] = [];
+
+      interface ParticipantRow extends RowDataPacket {
+        conversation_id: number;
+        user_id: number;
+        joined_at: Date;
+        username: string;
+        first_name: string | null;
+        last_name: string | null;
+        profile_picture: string | null;
+      }
+
+      let participants: ParticipantRow[] = [];
       let unreadCounts = new Map<number, number>();
 
       if (conversationIds.length > 0) {
         const participantsQuery = `
-          SELECT 
+          SELECT
             cp.conversation_id,
             cp.user_id,
             cp.joined_at,
@@ -376,10 +394,10 @@ export class ChatService {
             u.profile_picture
           FROM conversation_participants cp
           INNER JOIN users u ON cp.user_id = u.id
-          WHERE cp.conversation_id IN (${String(conversationIds.map(() => '?').join(','))})
+          WHERE cp.conversation_id IN (${conversationIds.map(() => '?').join(',')})
         `;
 
-        const [participantRows] = await execute<RowDataPacket[]>(
+        const [participantRows] = await execute<ParticipantRow[]>(
           participantsQuery,
           conversationIds,
         );
@@ -387,24 +405,28 @@ export class ChatService {
 
         // Get unread counts for each conversation
         const unreadQuery = `
-          SELECT 
+          SELECT
             m.conversation_id,
             COUNT(*) as unread_count
           FROM messages m
-          LEFT JOIN conversation_participants cp 
-            ON cp.conversation_id = m.conversation_id 
+          LEFT JOIN conversation_participants cp
+            ON cp.conversation_id = m.conversation_id
             AND cp.user_id = ${userId}
-          WHERE m.conversation_id IN (${String(conversationIds.map(() => '?').join(','))})
+          WHERE m.conversation_id IN (${conversationIds.map(() => '?').join(',')})
             AND m.sender_id != ${userId}
             AND m.id > COALESCE(cp.last_read_message_id, 0)
           GROUP BY m.conversation_id
         `;
 
-        const [unreadRows] = await execute<RowDataPacket[]>(unreadQuery, conversationIds);
+        interface UnreadCountRow extends RowDataPacket {
+          conversation_id: number;
+          unread_count: number;
+        }
+        const [unreadRows] = await execute<UnreadCountRow[]>(unreadQuery, conversationIds);
 
         // Map unread counts
         for (const row of unreadRows) {
-          unreadCounts.set(row.conversation_id, Number(row.unread_count));
+          unreadCounts.set(row.conversation_id, row.unread_count);
         }
       }
 
@@ -428,10 +450,10 @@ export class ChatService {
 
         // Build last message object if available
         let lastMessage = null;
-        if (conv.last_message_content) {
+        if (conv.last_message_content && conv.last_message_time) {
           lastMessage = {
             content: conv.last_message_content,
-            created_at: conv.last_message_time, // Use snake_case for frontend
+            created_at: new Date(conv.last_message_time), // Ensure it's a Date object
           };
         }
 
@@ -498,7 +520,7 @@ export class ChatService {
       if (!isGroup && data.participantIds.length === 1) {
         // Check if 1:1 conversation already exists
         const [existing] = await execute<RowDataPacket[]>(
-          `SELECT c.id 
+          `SELECT c.id
            FROM conversations c
            WHERE c.tenant_id = ?
            AND c.is_group = 0
@@ -607,7 +629,7 @@ export class ChatService {
 
       // First check if user is participant of the conversation
       const [participant] = await execute<RowDataPacket[]>(
-        `SELECT 1 FROM conversation_participants 
+        `SELECT 1 FROM conversation_participants
          WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
         [conversationId, userId, tenantId],
       );
@@ -650,13 +672,13 @@ export class ChatService {
         ${whereClause}
       `;
 
-      const [countResult] = await execute<RowDataPacket[]>(countQuery, params);
+      const [countResult] = await execute<CountResult[]>(countQuery, params);
       const totalItems = countResult[0]?.total ?? 0;
       const totalPages = Math.ceil(totalItems / limit);
 
       // Get messages with sender info - using string interpolation
       const messagesQuery = `
-        SELECT 
+        SELECT
           m.id,
           m.conversation_id,
           m.sender_id,
@@ -670,15 +692,15 @@ export class ChatService {
           u.first_name as sender_first_name,
           u.last_name as sender_last_name,
           u.profile_picture as sender_profile_picture,
-          CASE 
+          CASE
             WHEN m.sender_id = ${userId} THEN 1
             WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN 1
             ELSE 0
           END as is_read,
-          CASE 
-            WHEN m.id <= COALESCE(cp.last_read_message_id, 0) 
-            THEN cp.last_read_at 
-            ELSE NULL 
+          CASE
+            WHEN m.id <= COALESCE(cp.last_read_message_id, 0)
+            THEN cp.last_read_at
+            ELSE NULL
           END as read_at
         FROM messages m
         INNER JOIN users u ON m.sender_id = u.id
@@ -696,8 +718,8 @@ export class ChatService {
         conversationId: msg.conversation_id,
         senderId: msg.sender_id,
         senderName:
-          `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim() ?? 'Unknown',
-        senderUsername: msg.sender_username ?? 'unknown',
+          `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim() || 'Unknown',
+        senderUsername: msg.sender_username || 'unknown',
         senderProfilePicture: msg.sender_profile_picture,
         content: msg.content,
         attachment:
@@ -749,7 +771,7 @@ export class ChatService {
     try {
       // First check if sender is participant of the conversation
       const [participant] = await execute<RowDataPacket[]>(
-        `SELECT 1 FROM conversation_participants 
+        `SELECT 1 FROM conversation_participants
          WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
         [conversationId, senderId, tenantId],
       );
@@ -764,7 +786,7 @@ export class ChatService {
 
       // Insert message
       const [messageResult] = await execute<ResultSetHeader>(
-        `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, 
+        `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
            attachment_path, attachment_name, attachment_type, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
@@ -784,8 +806,15 @@ export class ChatService {
       await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = ?`, [conversationId]);
 
       // Get sender info
-      const [senderRows] = await execute<RowDataPacket[]>(
-        `SELECT username, first_name, last_name, profile_picture 
+      interface SenderRow extends RowDataPacket {
+        username: string;
+        first_name: string | null;
+        last_name: string | null;
+        profile_picture: string | null;
+      }
+
+      const [senderRows] = await execute<SenderRow[]>(
+        `SELECT username, first_name, last_name, profile_picture
          FROM users WHERE id = ?`,
         [senderId],
       );
@@ -797,7 +826,7 @@ export class ChatService {
         id: messageId,
         conversationId,
         senderId,
-        senderName: `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim() ?? 'Unknown',
+        senderName: `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim() || 'Unknown',
         senderUsername: sender.username,
         senderProfilePicture: sender.profile_picture,
         content: data.content,
@@ -834,13 +863,13 @@ export class ChatService {
       // Get unread messages grouped by conversation
       // Using conversation_participants.last_read_message_id instead of message_read_receipts
       const query = `
-        SELECT 
+        SELECT
           c.id as conversationId,
           c.name as conversationName,
-          COUNT(CASE 
-            WHEN m.id > COALESCE(cp.last_read_message_id, 0) 
+          COUNT(CASE
+            WHEN m.id > COALESCE(cp.last_read_message_id, 0)
             AND m.sender_id != ${userId}
-            THEN 1 
+            THEN 1
           END) as unreadCount,
           MAX(m.created_at) as lastMessageTime
         FROM conversations c
@@ -854,7 +883,14 @@ export class ChatService {
         ORDER BY lastMessageTime DESC
       `;
 
-      const [rows] = await execute<RowDataPacket[]>(query);
+      interface UnreadRow extends RowDataPacket {
+        conversationId: number;
+        conversationName: string | null;
+        unreadCount: string | number;
+        lastMessageTime: string | Date;
+      }
+
+      const [rows] = await execute<UnreadRow[]>(query);
 
       const conversations = rows.map((row) => ({
         conversationId: row.conversationId,
@@ -889,7 +925,7 @@ export class ChatService {
 
       // First check if user is participant - using string interpolation
       const [participant] = await execute<RowDataPacket[]>(
-        `SELECT 1 FROM conversation_participants 
+        `SELECT 1 FROM conversation_participants
          WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
       );
 
@@ -904,9 +940,12 @@ export class ChatService {
       log('[Chat Service] User is participant, updating last read message');
 
       // Get the latest message id in the conversation
-      const [latestMessage] = await execute<RowDataPacket[]>(
-        `SELECT MAX(id) as lastMessageId 
-         FROM messages 
+      interface LatestMessageRow extends RowDataPacket {
+        lastMessageId: number | null;
+      }
+      const [latestMessage] = await execute<LatestMessageRow[]>(
+        `SELECT MAX(id) as lastMessageId
+         FROM messages
          WHERE conversation_id = ${conversationId}`,
       );
 
@@ -914,15 +953,19 @@ export class ChatService {
 
       // Update last_read_message_id in conversation_participants
       await execute(
-        `UPDATE conversation_participants 
+        `UPDATE conversation_participants
          SET last_read_message_id = ?, last_read_at = NOW()
          WHERE conversation_id = ? AND user_id = ?`,
         [lastMessageId, conversationId, userId],
       );
 
       // Count how many messages were marked as read
-      const [unreadCount] = await execute<RowDataPacket[]>(
-        `SELECT COUNT(*) as count 
+      interface CountRow extends RowDataPacket {
+        count: number;
+      }
+
+      const [unreadCount] = await execute<CountRow[]>(
+        `SELECT COUNT(*) as count
          FROM messages m
          JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id
          WHERE m.conversation_id = ${conversationId}
@@ -954,7 +997,7 @@ export class ChatService {
     try {
       // Check if user is participant
       const [participant] = await execute<RowDataPacket[]>(
-        `SELECT is_admin FROM conversation_participants 
+        `SELECT is_admin FROM conversation_participants
          WHERE conversation_id = ? AND user_id = ?`,
         [conversationId, userId],
       );
@@ -969,7 +1012,7 @@ export class ChatService {
 
       // Check permissions: must be admin or the only participant
       const [participantCount] = await execute<RowDataPacket[]>(
-        `SELECT COUNT(*) as count FROM conversation_participants 
+        `SELECT COUNT(*) as count FROM conversation_participants
          WHERE conversation_id = ?`,
         [conversationId],
       );
@@ -1017,7 +1060,7 @@ export class ChatService {
     try {
       // Check if user is participant
       const [participant] = await execute<RowDataPacket[]>(
-        `SELECT 1 FROM conversation_participants 
+        `SELECT 1 FROM conversation_participants
          WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
       );
 
@@ -1027,7 +1070,7 @@ export class ChatService {
 
       // Get conversation details
       const [conversations] = await execute<ConversationRow[]>(
-        `SELECT 
+        `SELECT
           c.id,
           c.name,
           c.is_group,
@@ -1044,8 +1087,17 @@ export class ChatService {
       const conv = conversations[0];
 
       // Get participants
-      const [participants] = await execute<RowDataPacket[]>(
-        `SELECT 
+      interface ConvParticipantRow extends RowDataPacket {
+        user_id: number;
+        is_admin: number;
+        joined_at: string | Date;
+        username: string;
+        first_name: string | null;
+        last_name: string | null;
+        profile_picture: string | null;
+      }
+      const [participants] = await execute<ConvParticipantRow[]>(
+        `SELECT
           cp.user_id,
           cp.is_admin,
           cp.joined_at,

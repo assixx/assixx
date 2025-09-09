@@ -148,7 +148,7 @@ export const documentsValidation = {
         if (value === null || value === undefined) return true;
         // Check if it's a valid date string
         const date = new Date(value as string);
-        return !isNaN(date.getTime());
+        return !Number.isNaN(date.getTime());
       })
       .withMessage('expiresAt must be null or a valid date'),
     handleValidationErrors,

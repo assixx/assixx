@@ -9,13 +9,17 @@
 import { NextFunction, Response } from 'express';
 
 import type { CalendarEvent } from '../../../models/calendar.js';
-import CalendarModel from '../../../models/calendar.js';
-import RootLog from '../../../models/rootLog';
+import calendarModel from '../../../models/calendar.js';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { ServiceError } from '../users/users.service.js';
 import { calendarService } from './calendar.service.js';
 import type { CalendarEventData, CalendarEventUpdateData } from './calendar.service.js';
+
+// Constants
+const INTERNAL_SERVER_ERROR = 'Internal server error';
+const USER_AGENT_HEADER = 'user-agent';
 
 /**
  * @param req - The request object
@@ -117,7 +121,7 @@ export async function listEvents(
       const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
       res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
@@ -127,7 +131,7 @@ export async function listEvents(
  * @param res - The response object
  * @param _next - The _next parameter
 
- * /api/v2/calendar/events/{id}:
+ * /api/v2/calendar/events/\{id\}:
  *   get:
  *     summary: Get event by ID
  *     tags: [Calendar v2]
@@ -170,7 +174,7 @@ export async function getEvent(
       const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
       res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
@@ -257,7 +261,7 @@ export async function createEvent(
     );
 
     // Log calendar event creation
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
       user_id: userId,
       action: 'create',
@@ -276,7 +280,7 @@ export async function createEvent(
         created_by: user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -286,7 +290,7 @@ export async function createEvent(
       const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
       res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
@@ -296,7 +300,7 @@ export async function createEvent(
  * @param res - The response object
  * @param next - The next middleware function
 
- * /api/v2/calendar/events/{id}:
+ * /api/v2/calendar/events/\{id\}:
  *   put:
  *     summary: Update an event
  *     tags: [Calendar v2]
@@ -390,7 +394,7 @@ export async function updateEvent(
 
     // Log calendar event update (only if we have old values)
     if (oldEvent) {
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'update',
@@ -413,12 +417,12 @@ export async function updateEvent(
           updated_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
     } else {
       // Log without old values if we couldn't access them
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'update',
@@ -434,7 +438,7 @@ export async function updateEvent(
           updated_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
     }
@@ -450,7 +454,7 @@ export async function updateEvent(
  * @param res - The response object
  * @param next - The next middleware function
 
- * /api/v2/calendar/events/{id}:
+ * /api/v2/calendar/events/\{id\}:
  *   delete:
  *     summary: Delete an event
  *     tags: [Calendar v2]
@@ -502,7 +506,7 @@ export async function deleteEvent(
 
     // Log calendar event deletion
     if (deletedEvent) {
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'delete',
@@ -519,12 +523,12 @@ export async function deleteEvent(
           deleted_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
     } else {
       // Log without details if we couldn't access the event
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'delete',
@@ -535,7 +539,7 @@ export async function deleteEvent(
           deleted_by: user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
     }
@@ -551,7 +555,7 @@ export async function deleteEvent(
  * @param res - The response object
  * @param _next - The _next parameter
 
- * /api/v2/calendar/events/{id}/attendees/response:
+ * /api/v2/calendar/events/\{id\}/attendees/response:
  *   put:
  *     summary: Update attendee response
  *     tags: [Calendar v2]
@@ -599,7 +603,7 @@ export async function updateAttendeeResponse(
     await calendarService.updateAttendeeResponse(eventId, userId, response, tenantId);
 
     // Log attendee response update
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
       user_id: userId,
       action: 'update_attendee_response',
@@ -611,7 +615,7 @@ export async function updateAttendeeResponse(
         responded_by: user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -621,7 +625,7 @@ export async function updateAttendeeResponse(
       const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
       res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
@@ -681,7 +685,7 @@ export async function exportEvents(
       const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
       res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Internal server error'));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
@@ -742,7 +746,7 @@ export async function getDashboardEvents(
     const days = Number.parseInt((req.query.days ?? '7') as string, 10);
     const limit = Number.parseInt((req.query.limit ?? '5') as string, 10);
 
-    const events = await CalendarModel.getDashboardEvents(tenantId, userId, days, limit);
+    const events = await calendarModel.getDashboardEvents(tenantId, userId, days, limit);
 
     res.json(successResponse(events));
   } catch (error: unknown) {

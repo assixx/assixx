@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Survey Controller
  * Handles survey-related operations including templates and statistics

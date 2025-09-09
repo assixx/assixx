@@ -811,6 +811,7 @@ export default [
       'backend/**/*.spec.ts',
       'frontend/**/*.test.ts',
       'frontend/**/*.spec.ts',
+      'backend/src/routes/mocks/**',
       '**/__tests__/**',
       '**/test/**',
       '**/tests/**',

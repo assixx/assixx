@@ -4,9 +4,12 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Department from '../../../models/department.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Team from '../../../models/team.js';
 import type { TeamCreateData, TeamUpdateData } from '../../../models/team.js';
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import User from '../../../models/user.js';
 import { execute } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';

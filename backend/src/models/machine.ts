@@ -88,7 +88,7 @@ export interface MachineFilters {
 
 class MachineModel {
   // Find all machines with filters
-  async findAll(tenant_id: number, filters: MachineFilters = {}): Promise<Machine[]> {
+  async findAll(tenantId: number, filters: MachineFilters = {}): Promise<Machine[]> {
     let query = `
       SELECT m.*, 
              d.name as department_name,
@@ -100,7 +100,7 @@ class MachineModel {
       LEFT JOIN users u2 ON m.updated_by = u2.id
       WHERE m.tenant_id = ?
     `;
-    const params: (string | number | boolean | null)[] = [tenant_id];
+    const params: (string | number | boolean | null)[] = [tenantId];
 
     if (filters.status != null && filters.status !== '') {
       query += ' AND m.status = ?';
@@ -141,7 +141,7 @@ class MachineModel {
   }
 
   // Find machine by ID
-  async findById(id: number, tenant_id: number): Promise<Machine | null> {
+  async findById(id: number, tenantId: number): Promise<Machine | null> {
     const query = `
       SELECT m.*, 
              d.name as department_name
@@ -149,7 +149,7 @@ class MachineModel {
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
       WHERE m.id = ? AND m.tenant_id = ?
     `;
-    const [rows] = await executeQuery<Machine[]>(query, [id, tenant_id]);
+    const [rows] = await executeQuery<Machine[]>(query, [id, tenantId]);
     return rows[0] ?? null;
   }
 
@@ -198,7 +198,7 @@ class MachineModel {
   }
 
   // Update machine
-  async update(id: number, tenant_id: number, data: Partial<Machine>): Promise<boolean> {
+  async update(id: number, tenantId: number, data: Partial<Machine>): Promise<boolean> {
     const fields = [];
     const params = [];
 
@@ -248,48 +248,48 @@ class MachineModel {
       SET ${fields.join(', ')}
       WHERE id = ? AND tenant_id = ?
     `;
-    params.push(id, tenant_id);
+    params.push(id, tenantId);
 
     const [result] = await executeQuery<ResultSetHeader>(query, params);
     return result.affectedRows > 0;
   }
 
   // Delete machine (hard delete)
-  async delete(id: number, tenant_id: number): Promise<boolean> {
+  async delete(id: number, tenantId: number): Promise<boolean> {
     const query = `
       DELETE FROM machines 
       WHERE id = ? AND tenant_id = ?
     `;
-    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     return result.affectedRows > 0;
   }
 
   // Deactivate machine (soft delete)
-  async deactivate(id: number, tenant_id: number): Promise<boolean> {
+  async deactivate(id: number, tenantId: number): Promise<boolean> {
     const query = `
       UPDATE machines 
       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `;
-    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     return result.affectedRows > 0;
   }
 
   // Activate machine
-  async activate(id: number, tenant_id: number): Promise<boolean> {
+  async activate(id: number, tenantId: number): Promise<boolean> {
     const query = `
       UPDATE machines 
       SET is_active = TRUE, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
     `;
-    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     return result.affectedRows > 0;
   }
 
   // Get maintenance history
   async getMaintenanceHistory(
-    machine_id: number,
-    tenant_id: number,
+    machineId: number,
+    tenantId: number,
   ): Promise<MachineMaintenanceHistory[]> {
     const query = `
       SELECT mh.*,
@@ -301,7 +301,7 @@ class MachineModel {
       WHERE mh.machine_id = ? AND mh.tenant_id = ?
       ORDER BY mh.performed_date DESC
     `;
-    const [rows] = await executeQuery<MachineMaintenanceHistory[]>(query, [machine_id, tenant_id]);
+    const [rows] = await executeQuery<MachineMaintenanceHistory[]>(query, [machineId, tenantId]);
     return rows;
   }
 
@@ -363,7 +363,7 @@ class MachineModel {
   }
 
   // Get upcoming maintenance
-  async getUpcomingMaintenance(tenant_id: number, days = 30): Promise<Machine[]> {
+  async getUpcomingMaintenance(tenantId: number, days = 30): Promise<Machine[]> {
     const query = `
       SELECT m.*, d.name as department_name
       FROM machines m
@@ -374,12 +374,12 @@ class MachineModel {
         AND m.status != 'decommissioned'
       ORDER BY m.next_maintenance ASC
     `;
-    const [rows] = await executeQuery<Machine[]>(query, [tenant_id, days]);
+    const [rows] = await executeQuery<Machine[]>(query, [tenantId, days]);
     return rows;
   }
 
   // Get statistics
-  async getStatistics(tenant_id: number): Promise<MachineStatistics> {
+  async getStatistics(tenantId: number): Promise<MachineStatistics> {
     const query = `
       SELECT 
         COUNT(*) as total_machines,
@@ -392,7 +392,7 @@ class MachineModel {
       FROM machines
       WHERE tenant_id = ? AND is_active = TRUE
     `;
-    const [rows] = await executeQuery<MachineStatistics[]>(query, [tenant_id]);
+    const [rows] = await executeQuery<MachineStatistics[]>(query, [tenantId]);
     return rows[0];
   }
 

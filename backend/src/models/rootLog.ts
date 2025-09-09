@@ -50,17 +50,17 @@ export async function logRootAction(
 
 export async function createRootLog(logData: RootLogCreateData): Promise<number> {
   const {
-    user_id,
+    user_id: userId,
     action,
-    ip_address,
-    tenant_id,
-    entity_type,
-    entity_id,
+    ip_address: ipAddress,
+    tenant_id: tenantId,
+    entity_type: entityType,
+    entity_id: entityId,
     details,
-    old_values,
-    new_values,
-    user_agent,
-    was_role_switched,
+    old_values: oldValues,
+    new_values: newValues,
+    user_agent: userAgent,
+    was_role_switched: wasRoleSwitched,
   } = logData;
 
   const query = `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, details, old_values, new_values, ip_address, user_agent, was_role_switched) 
@@ -68,17 +68,17 @@ export async function createRootLog(logData: RootLogCreateData): Promise<number>
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [
-      tenant_id,
-      user_id,
+      tenantId,
+      userId,
       action,
-      entity_type ?? null,
-      entity_id ?? null,
+      entityType ?? null,
+      entityId ?? null,
       details ?? null,
-      old_values ? JSON.stringify(old_values) : null,
-      new_values ? JSON.stringify(new_values) : null,
-      ip_address ?? null,
-      user_agent ?? null,
-      was_role_switched ?? false,
+      oldValues ? JSON.stringify(oldValues) : null,
+      newValues ? JSON.stringify(newValues) : null,
+      ipAddress ?? null,
+      userAgent ?? null,
+      wasRoleSwitched ?? false,
     ]);
     return result.insertId;
   } catch (error: unknown) {

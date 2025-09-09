@@ -11,22 +11,27 @@ const validateQuestions: ValidationChain = body('questions')
   .optional()
   .isArray({ min: 1 })
   .withMessage('Questions must be a non-empty array')
-  .custom((questions) => {
-    for (const [index, question] of questions.entries()) {
+  .custom((questions: unknown[]) => {
+    for (const [index, item] of questions.entries()) {
+      const question = item as Record<string, unknown>;
       if (!question.questionText || typeof question.questionText !== 'string') {
         throw new Error(`Question ${index + 1}: questionText is required`);
       }
 
       const validTypes = ['text', 'single_choice', 'multiple_choice', 'rating', 'number'];
-      if (!validTypes.includes(question.questionType)) {
+      if (
+        typeof question.questionType !== 'string' ||
+        !validTypes.includes(question.questionType)
+      ) {
         throw new Error(`Question ${index + 1}: Invalid questionType`);
       }
 
       // Check options for choice questions
-      if (['single_choice', 'multiple_choice'].includes(question.questionType)) {
-        if (!Array.isArray(question.options) || question.options.length < 2) {
-          throw new Error(`Question ${index + 1}: Choice questions need at least 2 options`);
-        }
+      if (
+        ['single_choice', 'multiple_choice'].includes(question.questionType) &&
+        (!Array.isArray(question.options) || question.options.length < 2)
+      ) {
+        throw new Error(`Question ${index + 1}: Choice questions need at least 2 options`);
       }
 
       // Check orderPosition
@@ -41,10 +46,11 @@ const validateAssignments: ValidationChain = body('assignments')
   .optional()
   .isArray()
   .withMessage('Assignments must be an array')
-  .custom((assignments) => {
-    for (const [index, assignment] of assignments.entries()) {
+  .custom((assignments: unknown[]) => {
+    for (const [index, item] of assignments.entries()) {
+      const assignment = item as Record<string, unknown>;
       const validTypes = ['all_users', 'department', 'team', 'user'];
-      if (!validTypes.includes(assignment.type)) {
+      if (typeof assignment.type !== 'string' || !validTypes.includes(assignment.type)) {
         throw new Error(`Assignment ${index + 1}: Invalid type`);
       }
 
@@ -99,7 +105,7 @@ export const surveysValidation = {
       .optional({ nullable: true })
       .custom((value) => {
         if (value === null || value === undefined || value === '') return true;
-        if (!isNaN(Date.parse(value))) return true;
+        if (!Number.isNaN(Date.parse(value as string))) return true;
         throw new Error('Invalid date format');
       })
       .withMessage('Invalid start date format'),
@@ -107,14 +113,15 @@ export const surveysValidation = {
       .optional({ nullable: true })
       .custom((value) => {
         if (value === null || value === undefined || value === '') return true;
-        if (!isNaN(Date.parse(value))) return true;
+        if (!Number.isNaN(Date.parse(value as string))) return true;
         throw new Error('Invalid date format');
       })
       .withMessage('Invalid end date format')
       .custom((endDate, { req }) => {
-        if (!endDate || !req.body.startDate) return true;
-        const start = new Date(req.body.startDate);
-        const end = new Date(endDate);
+        const body = req.body as { startDate?: unknown };
+        if (!endDate || !body.startDate) return true;
+        const start = new Date(body.startDate as string);
+        const end = new Date(endDate as string);
         if (end < start) {
           throw new Error('End date must be after start date');
         }
@@ -146,7 +153,7 @@ export const surveysValidation = {
       .optional({ nullable: true })
       .custom((value) => {
         if (value === null || value === undefined || value === '') return true;
-        if (!isNaN(Date.parse(value))) return true;
+        if (!Number.isNaN(Date.parse(value as string))) return true;
         throw new Error('Invalid date format');
       })
       .withMessage('Invalid start date format'),
@@ -154,14 +161,15 @@ export const surveysValidation = {
       .optional({ nullable: true })
       .custom((value) => {
         if (value === null || value === undefined || value === '') return true;
-        if (!isNaN(Date.parse(value))) return true;
+        if (!Number.isNaN(Date.parse(value as string))) return true;
         throw new Error('Invalid date format');
       })
       .withMessage('Invalid end date format')
       .custom((endDate, { req }) => {
-        if (!endDate || !req.body.startDate) return true;
-        const start = new Date(req.body.startDate);
-        const end = new Date(endDate);
+        const body = req.body as { startDate?: unknown };
+        if (!endDate || !body.startDate) return true;
+        const start = new Date(body.startDate as string);
+        const end = new Date(endDate as string);
         if (end < start) {
           throw new Error('End date must be after start date');
         }

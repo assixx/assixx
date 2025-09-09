@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import * as fs from 'fs/promises';
@@ -87,7 +88,7 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
     trialEndsAt.setDate(trialEndsAt.getDate() + 14); // 14 Tage Trial
 
     const [tenantResult] = await connection.query<ResultSetHeader>(
-      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email) 
+      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [company_name, subdomain, email, phone, address, trialEndsAt, admin_email],
     );
@@ -114,7 +115,7 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
     const employeeNumber = `TEMP-${timestamp}${random}`;
 
     const [userResult] = await connection.query<ResultSetHeader>(
-      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number) 
+      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number)
          VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
       [
         admin_email,
@@ -155,7 +156,7 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
 
       // Erstelle tenant_plans Eintrag
       await connection.query(
-        `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
+        `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
            VALUES (?, ?, 'trial', NOW())`,
         [tenantId, basicPlanId],
       );
@@ -203,7 +204,7 @@ async function activateTrialFeatures(
   // Aktiviere alle Features für 14 Tage Trial
   for (const feature of features) {
     await conn.query(
-      `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at) 
+      `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at)
          VALUES (?, ?, TRUE, DATE_ADD(NOW(), INTERVAL 14 DAY))`,
       [tenantId, feature.id],
     );
@@ -309,10 +310,10 @@ export async function upgradeTenantToPlan(
   stripeSubscriptionId: string,
 ): Promise<void> {
   await executeQuery(
-    `UPDATE tenants 
-       SET status = 'active', 
-           current_plan = ?, 
-           stripe_customer_id = ?, 
+    `UPDATE tenants
+       SET status = 'active',
+           current_plan = ?,
+           stripe_customer_id = ?,
            stripe_subscription_id = ?
        WHERE id = ?`,
     [plan, stripeCustomerId, stripeSubscriptionId, tenantId],
@@ -331,7 +332,7 @@ async function activatePlanFeatures(tenantId: number, plan: string): Promise<voi
 
   // Hole Features für den Plan
   const [planFeatures] = await executeQuery<DbFeature[]>(
-    `SELECT feature_id 
+    `SELECT feature_id
        FROM plan_features pf
        JOIN subscription_plans sp ON pf.plan_id = sp.id
        WHERE sp.name = ?`,
@@ -341,7 +342,7 @@ async function activatePlanFeatures(tenantId: number, plan: string): Promise<voi
   // Aktiviere neue Features
   for (const feature of planFeatures) {
     await executeQuery(
-      `INSERT INTO tenant_features (tenant_id, feature_id, is_active) 
+      `INSERT INTO tenant_features (tenant_id, feature_id, is_active)
          VALUES (?, ?, TRUE)
          ON DUPLICATE KEY UPDATE is_active = TRUE, expires_at = NULL`,
       [tenantId, feature.feature_id],

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { RowDataPacket, query as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger';
 
@@ -77,10 +78,10 @@ export async function checkTenantFeatureAccess(
 ): Promise<boolean> {
   try {
     const query = `
-        SELECT tf.*, f.code, f.name 
+        SELECT tf.*, f.code, f.name
         FROM tenant_features tf
         JOIN features f ON tf.feature_id = f.id
-        WHERE tf.tenant_id = ? 
+        WHERE tf.tenant_id = ?
         AND f.code = ?
         AND tf.is_active = 1
         AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
@@ -127,7 +128,7 @@ export async function activateFeatureForTenant(
     const { activatedBy = null, expiresAt = null, config = null } = options;
 
     const query = `
-        INSERT INTO tenant_features 
+        INSERT INTO tenant_features
         (tenant_id, feature_id, is_active, activated_by, expires_at, custom_config)
         VALUES (?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
@@ -167,7 +168,7 @@ export async function deactivateFeatureForTenant(
     }
 
     const query = `
-        UPDATE tenant_features 
+        UPDATE tenant_features
         SET is_active = false, updated_at = CURRENT_TIMESTAMP
         WHERE tenant_id = ? AND feature_id = ?
       `;
@@ -217,13 +218,13 @@ export async function logFeatureUsage(
 export async function getTenantFeatures(tenant_id: number): Promise<DbTenantFeature[]> {
   try {
     const query = `
-        SELECT 
+        SELECT
           f.*,
           tf.is_active,
           tf.activated_at,
           tf.expires_at,
           tf.custom_config,
-          CASE 
+          CASE
             WHEN tf.is_active = TRUE AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 1
             ELSE 0
           END as is_available
@@ -255,12 +256,12 @@ export async function getFeatureUsageStats(
     }
 
     const query = `
-        SELECT 
+        SELECT
           DATE(usage_date) as date,
           COUNT(*) as usage_count,
           COUNT(DISTINCT user_id) as unique_users
         FROM feature_usage_logs
-        WHERE tenant_id = ? 
+        WHERE tenant_id = ?
         AND feature_id = ?
         AND usage_date BETWEEN ? AND ?
         GROUP BY DATE(usage_date)

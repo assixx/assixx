@@ -1,7 +1,8 @@
 /**
  * Logs API v2 Routes
  * Root-only access to system audit logs
- * @swagger
+ * 
+ * API Documentation:
  * tags:
  *   name: Logs v2
  *   description: System audit logs API v2 (Root only)
@@ -17,7 +18,6 @@ const router: Router = express.Router();
 
 /**
  * @param handler - The handler parameter
- * @swagger
  * /api/v2/logs:
  *   get:
  *     summary: Get system logs
@@ -109,11 +109,12 @@ router.get(
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.listLogs,
-  debugWrapper(typed.auth(logsController.getLogs))
+  debugWrapper(typed.auth((req, res) => {
+    void logsController.getLogs(req, res);
+  }))
 );
 
 /**
- * @swagger
  * /api/v2/logs/stats:
  *   get:
  *     summary: Get log statistics
@@ -175,11 +176,12 @@ router.get(
   "/stats",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
-  typed.auth(logsController.getStats)
+  typed.auth((req, res) => {
+    void logsController.getStats(req, res);
+  })
 );
 
 /**
- * @swagger
  * /api/v2/logs:
  *   delete:
  *     summary: Delete logs
@@ -238,7 +240,9 @@ router.delete(
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.deleteLogs,
-  typed.auth(logsController.deleteLogs)
+  typed.auth((req, res) => {
+    void logsController.deleteLogs(req, res);
+  })
 );
 
 export default router;

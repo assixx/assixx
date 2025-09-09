@@ -37,7 +37,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     };
 
     console.info(
-      `Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`,
+      `Verwende Datenbank ${dbConfig.database ?? 'undefined'} für Tenant ${tenantId} (Entwicklungsmodus)`,
     );
 
     // Verbindungspool erstellen

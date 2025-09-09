@@ -59,7 +59,8 @@ export const createNotification = [
     .withMessage('Recipient ID must be a positive integer')
     .custom((value, { req }) => {
       // recipient_id is required for specific recipient types
-      if (req.body.recipient_type !== 'all' && !value) {
+      const body = req.body as { recipient_type?: string };
+      if (body.recipient_type !== 'all' && !value) {
         throw new Error('Recipient ID is required for this recipient type');
       }
       return true;
@@ -113,12 +114,13 @@ export const updatePreferences = [
     .optional()
     .isObject()
     .withMessage('Notification types must be an object')
-    .custom((value) => {
+    .custom((value: unknown) => {
       // Validate structure of notification_types
       const validTypes = ['system', 'task', 'message', 'announcement'];
       const validChannels = ['email', 'push', 'sms'];
 
-      for (const [type, settings] of Object.entries(value)) {
+      const typedValue = value as Record<string, unknown>;
+      for (const [type, settings] of Object.entries(typedValue)) {
         if (!validTypes.includes(type)) {
           throw new Error(`Invalid notification type: ${type}`);
         }

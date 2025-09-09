@@ -164,7 +164,7 @@ describe('Calendar ServiceError', () => {
 
       validDates.forEach((dateStr) => {
         const date = new Date(dateStr);
-        expect(isNaN(date.getTime())).toBe(false);
+        expect(Number.isNaN(date.getTime())).toBe(false);
       });
     });
 
@@ -177,7 +177,7 @@ describe('Calendar ServiceError', () => {
 
       invalidDates.forEach((dateStr) => {
         const date = new Date(dateStr);
-        expect(isNaN(date.getTime())).toBe(true);
+        expect(Number.isNaN(date.getTime())).toBe(true);
       });
     });
 

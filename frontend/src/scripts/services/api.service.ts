@@ -123,6 +123,8 @@ export class ApiService {
 
     // Check if we should use v2 API
     const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
+    // Safe: featureKey is constructed from endpoint string, not user input
+    // eslint-disable-next-line security/detect-object-injection
     const useV2ForThisEndpoint = window.FEATURE_FLAGS?.[featureKey] ?? this.useV2;
 
     if (useV2ForThisEndpoint) {
@@ -188,6 +190,8 @@ export class ApiService {
         // Handle 401 Unauthorized
         if (response.status === 401) {
           this.setToken(null);
+          // Safe: window.location is a global property, no race condition possible
+          // eslint-disable-next-line require-atomic-updates
           window.location.href = '/login';
           throw new Error('Unauthorized');
         }
@@ -320,6 +324,8 @@ export class ApiService {
       // Ignore logout errors
     } finally {
       this.setToken(null);
+      // Safe: window.location is a global property, no race condition possible
+      // eslint-disable-next-line require-atomic-updates
       window.location.href = '/login';
     }
   }

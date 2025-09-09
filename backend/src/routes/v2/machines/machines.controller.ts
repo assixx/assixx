@@ -12,6 +12,14 @@ import { logger } from '../../../utils/logger';
 import { machinesService } from './machines.service';
 import { MachineCreateRequest, MachineUpdateRequest, MaintenanceRecordRequest } from './types';
 
+// Error message constants
+const ERROR_MESSAGES = {
+  TENANT_ID_MISSING: 'Tenant ID missing',
+  TENANT_OR_USER_ID_MISSING: 'Tenant ID or User ID missing',
+  INVALID_MACHINE_ID: 'Invalid machine ID',
+  INVALID_INPUT: 'Invalid input',
+} as const;
+
 // Helper to map validation errors to our error response format
 /**
  *
@@ -38,13 +46,17 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              'VALIDATION_ERROR',
+              ERROR_MESSAGES.INVALID_INPUT,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       if (!req.tenantId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_ID_MISSING));
         return;
       }
 
@@ -88,13 +100,13 @@ export const machinesController = {
   async getMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_ID_MISSING));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
-      if (isNaN(machineId)) {
-        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
+      if (Number.isNaN(machineId)) {
+        res.status(400).json(errorResponse('INVALID_ID', ERROR_MESSAGES.INVALID_MACHINE_ID));
         return;
       }
 
@@ -123,13 +135,19 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              'VALIDATION_ERROR',
+              ERROR_MESSAGES.INVALID_INPUT,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       if (!req.tenantId || !req.userId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
+        res
+          .status(401)
+          .json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_OR_USER_ID_MISSING));
         return;
       }
 
@@ -173,19 +191,25 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              'VALIDATION_ERROR',
+              ERROR_MESSAGES.INVALID_INPUT,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       if (!req.tenantId || !req.userId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
+        res
+          .status(401)
+          .json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_OR_USER_ID_MISSING));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
-      if (isNaN(machineId)) {
-        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
+      if (Number.isNaN(machineId)) {
+        res.status(400).json(errorResponse('INVALID_ID', ERROR_MESSAGES.INVALID_MACHINE_ID));
         return;
       }
 
@@ -226,13 +250,15 @@ export const machinesController = {
   async deleteMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId || !req.userId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
+        res
+          .status(401)
+          .json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_OR_USER_ID_MISSING));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
-      if (isNaN(machineId)) {
-        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
+      if (Number.isNaN(machineId)) {
+        res.status(400).json(errorResponse('INVALID_ID', ERROR_MESSAGES.INVALID_MACHINE_ID));
         return;
       }
 
@@ -264,13 +290,15 @@ export const machinesController = {
   async deactivateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId || !req.userId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
+        res
+          .status(401)
+          .json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_OR_USER_ID_MISSING));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
-      if (isNaN(machineId)) {
-        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
+      if (Number.isNaN(machineId)) {
+        res.status(400).json(errorResponse('INVALID_ID', ERROR_MESSAGES.INVALID_MACHINE_ID));
         return;
       }
 
@@ -302,13 +330,15 @@ export const machinesController = {
   async activateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId || !req.userId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
+        res
+          .status(401)
+          .json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_OR_USER_ID_MISSING));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
-      if (isNaN(machineId)) {
-        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
+      if (Number.isNaN(machineId)) {
+        res.status(400).json(errorResponse('INVALID_ID', ERROR_MESSAGES.INVALID_MACHINE_ID));
         return;
       }
 
@@ -340,13 +370,13 @@ export const machinesController = {
   async getMaintenanceHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_ID_MISSING));
         return;
       }
 
       const machineId = Number.parseInt(req.params.id);
-      if (isNaN(machineId)) {
-        res.status(400).json(errorResponse('INVALID_ID', 'Invalid machine ID'));
+      if (Number.isNaN(machineId)) {
+        res.status(400).json(errorResponse('INVALID_ID', ERROR_MESSAGES.INVALID_MACHINE_ID));
         return;
       }
 
@@ -375,13 +405,19 @@ export const machinesController = {
         res
           .status(400)
           .json(
-            errorResponse('VALIDATION_ERROR', 'Invalid input', mapValidationErrors(errors.array())),
+            errorResponse(
+              'VALIDATION_ERROR',
+              ERROR_MESSAGES.INVALID_INPUT,
+              mapValidationErrors(errors.array()),
+            ),
           );
         return;
       }
 
       if (!req.tenantId || !req.userId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID or User ID missing'));
+        res
+          .status(401)
+          .json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_OR_USER_ID_MISSING));
         return;
       }
 
@@ -421,12 +457,12 @@ export const machinesController = {
   async getUpcomingMaintenance(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_ID_MISSING));
         return;
       }
 
       const days = req.query.days ? Number.parseInt(req.query.days as string) : 30;
-      if (isNaN(days) || days < 1 || days > 365) {
+      if (Number.isNaN(days) || days < 1 || days > 365) {
         res.status(400).json(errorResponse('INVALID_DAYS', 'Days must be between 1 and 365'));
         return;
       }
@@ -452,7 +488,7 @@ export const machinesController = {
   async getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantId) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'Tenant ID missing'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_ID_MISSING));
         return;
       }
 

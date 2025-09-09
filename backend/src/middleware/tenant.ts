@@ -4,7 +4,7 @@
  */
 import { NextFunction, Request, Response } from 'express';
 
-import TenantModel from '../models/tenant';
+import tenantModel from '../models/tenant';
 import { TenantInfo } from '../types/tenant.types';
 import { logger } from '../utils/logger';
 
@@ -24,7 +24,7 @@ interface RequestWithBody extends Request {
 
 /**
  * Extrahiert den Tenant aus der Subdomain
- * Beispiel: bosch.assixx.de -> bosch
+ * Beispiel: bosch.assixx.de -\> bosch
  */
 function getTenantFromHost(hostname: string): string | null {
   const parts = hostname.split('.');
@@ -83,7 +83,7 @@ export async function tenantMiddleware(
       (tenantSubdomain == null || tenantSubdomain === '') &&
       reqWithBody.user?.tenant_id != null
     ) {
-      const tenant = await TenantModel.findById(reqWithBody.user.tenant_id);
+      const tenant = await tenantModel.findById(reqWithBody.user.tenant_id);
       if (tenant) {
         tenantSubdomain = tenant.subdomain;
       }
@@ -97,7 +97,7 @@ export async function tenantMiddleware(
     }
 
     // 2. Tenant aus Datenbank laden
-    const tenant = await TenantModel.findBySubdomain(tenantSubdomain);
+    const tenant = await tenantModel.findBySubdomain(tenantSubdomain);
 
     if (!tenant) {
       res.status(404).json({
@@ -116,7 +116,7 @@ export async function tenantMiddleware(
     }
 
     // 4. Trial-Status prüfen
-    const trialStatus = await TenantModel.checkTrialStatus(tenant.id);
+    const trialStatus = await tenantModel.checkTrialStatus(tenant.id);
     if (trialStatus && trialStatus.isExpired && tenant.status === 'trial') {
       res.status(402).json({
         error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
@@ -135,8 +135,12 @@ export async function tenantMiddleware(
       trialStatus: trialStatus ?? undefined,
     };
 
+    // Safe: req is isolated per request in Express middleware, no race condition possible
+    // eslint-disable-next-line require-atomic-updates
     req.tenant = tenantInfo;
     // Wichtig: tenant_id für alle DB-Queries verfügbar machen
+    // Safe: req is isolated per request in Express middleware, no race condition possible
+    // eslint-disable-next-line require-atomic-updates
     req.tenantId = tenant.id;
 
     // 6. Wenn User eingeloggt ist, prüfe ob er zu diesem Tenant gehört

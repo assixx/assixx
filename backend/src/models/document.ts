@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger';
 
@@ -314,7 +315,7 @@ export async function findAllDocuments(category: string | null = null): Promise<
     `Fetching all documents${category != null && category !== '' ? ` of category ${category}` : ''}`,
   );
   let query = `
-      SELECT d.*, u.first_name, u.last_name, 
+      SELECT d.*, u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
       LEFT JOIN users u ON d.user_id = u.id`;
@@ -372,7 +373,7 @@ export async function searchDocumentsWithEmployeeAccess(
         CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
         t.name as team_name,
         dept.name as department_name,
-        CASE 
+        CASE
           WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
           WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
           WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
@@ -483,12 +484,12 @@ export async function findDocumentsByEmployeeWithAccess(
   logger.info(`Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`);
 
   let query = `
-      SELECT DISTINCT d.*, 
+      SELECT DISTINCT d.*,
         u.first_name, u.last_name,
         CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
         t.name as team_name,
         dept.name as department_name,
-        CASE 
+        CASE
           WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
           WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
           WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
@@ -669,7 +670,7 @@ export async function findDocumentsWithFilters(
   logger.info('Finding documents with filters', filters);
 
   let query = `
-      SELECT d.*, u.first_name, u.last_name, 
+      SELECT d.*, u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
       LEFT JOIN users u ON d.user_id = u.id
@@ -893,7 +894,7 @@ export async function getDocumentCountsByCategory(
   userId: number,
 ): Promise<Record<string, number>> {
   const query = `
-      SELECT 
+      SELECT
         d.category,
         COUNT(DISTINCT d.id) as count
       FROM documents d

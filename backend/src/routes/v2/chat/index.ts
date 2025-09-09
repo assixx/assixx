@@ -82,15 +82,14 @@ const attachmentValidation = createValidation([
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    const uploadPath = getUploadDirectory('chat');
-    cb(null, uploadPath);
+  destination: (_req, _file) => {
+    return getUploadDirectory('chat');
   },
-  filename: (_req, file, cb) => {
+  filename: (_req, file) => {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
-    cb(null, `chat-${uniqueSuffix}${ext}`);
+    return `chat-${uniqueSuffix}${ext}`;
   },
 });
 
@@ -99,6 +98,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback pattern
   fileFilter: (_req, file, cb) => {
     const allowedTypes = [
       'image/jpeg',
@@ -114,8 +114,10 @@ const upload = multer({
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback pattern
       cb(null, true);
     } else {
+      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback pattern
       cb(new Error('File type not allowed'));
     }
   },
@@ -146,8 +148,8 @@ const upload = multer({
 router.get(
   '/users',
   getUsersValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.getChatUsers(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.getChatUsers(req, res, next);
   }),
 );
 
@@ -180,8 +182,8 @@ router.get(
 router.get(
   '/conversations',
   getConversationsValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.getConversations(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.getConversations(req, res, next);
   }),
 );
 
@@ -220,14 +222,14 @@ router.get(
 router.post(
   '/conversations',
   createConversationValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.createConversation(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.createConversation(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}:
+ * /api/v2/chat/conversations/\{id\}:
  *   get:
  *     summary: Get conversation details
  *     tags: [Chat v2]
@@ -247,14 +249,14 @@ router.post(
 router.get(
   '/conversations/:id',
   conversationIdValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.getConversation(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.getConversation(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}:
+ * /api/v2/chat/conversations/\{id\}:
  *   put:
  *     summary: Update conversation
  *     tags: [Chat v2]
@@ -282,14 +284,14 @@ router.get(
 router.put(
   '/conversations/:id',
   conversationIdValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.updateConversation(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.updateConversation(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}:
+ * /api/v2/chat/conversations/\{id\}:
  *   delete:
  *     summary: Delete conversation
  *     tags: [Chat v2]
@@ -308,14 +310,14 @@ router.put(
 router.delete(
   '/conversations/:id',
   conversationIdValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.deleteConversation(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.deleteConversation(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}/messages:
+ * /api/v2/chat/conversations/\{id\}/messages:
  *   get:
  *     summary: Get messages from conversation
  *     tags: [Chat v2]
@@ -351,14 +353,14 @@ router.delete(
 router.get(
   '/conversations/:id/messages',
   getMessagesValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.getMessages(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.getMessages(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}/messages:
+ * /api/v2/chat/conversations/\{id\}/messages:
  *   post:
  *     summary: Send message to conversation
  *     tags: [Chat v2]
@@ -400,14 +402,14 @@ router.post(
   '/conversations/:id/messages',
   upload.single('attachment'),
   sendMessageValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.sendMessage(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.sendMessage(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/messages/{id}:
+ * /api/v2/chat/messages/\{id\}:
  *   put:
  *     summary: Edit a message
  *     tags: [Chat v2]
@@ -436,14 +438,14 @@ router.post(
  */
 router.put(
   '/messages/:id',
-  typed.auth(async (req, res, next) => {
-    await chatController.editMessage(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.editMessage(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/messages/{id}:
+ * /api/v2/chat/messages/\{id\}:
  *   delete:
  *     summary: Delete a message
  *     tags: [Chat v2]
@@ -461,14 +463,14 @@ router.put(
  */
 router.delete(
   '/messages/:id',
-  typed.auth(async (req, res, next) => {
-    await chatController.deleteMessage(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.deleteMessage(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}/read:
+ * /api/v2/chat/conversations/\{id\}/read:
  *   post:
  *     summary: Mark conversation as read
  *     tags: [Chat v2]
@@ -487,8 +489,8 @@ router.delete(
 router.post(
   '/conversations/:id/read',
   conversationIdValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.markAsRead(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.markAsRead(req, res, next);
   }),
 );
 
@@ -506,14 +508,14 @@ router.post(
  */
 router.get(
   '/unread-count',
-  typed.auth(async (req, res, next) => {
-    await chatController.getUnreadCount(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.getUnreadCount(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/attachments/{filename}:
+ * /api/v2/chat/attachments/\{filename\}:
  *   get:
  *     summary: Download chat attachment
  *     tags: [Chat v2]
@@ -542,14 +544,14 @@ router.get(
 router.get(
   '/attachments/:filename',
   attachmentValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.downloadAttachment(req, res, next);
+  typed.auth((req, res, next) => {
+    void chatController.downloadAttachment(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}/participants:
+ * /api/v2/chat/conversations/\{id\}/participants:
  *   post:
  *     summary: Add participants to conversation
  *     tags: [Chat v2]
@@ -581,14 +583,14 @@ router.get(
 router.post(
   '/conversations/:id/participants',
   conversationIdValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.addParticipants(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.addParticipants(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}/participants/{userId}:
+ * /api/v2/chat/conversations/\{id\}/participants/\{userId\}:
  *   delete:
  *     summary: Remove participant from conversation
  *     tags: [Chat v2]
@@ -611,14 +613,14 @@ router.post(
  */
 router.delete(
   '/conversations/:id/participants/:userId',
-  typed.auth(async (req, res, next) => {
-    await chatController.removeParticipant(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.removeParticipant(req, res, next);
   }),
 );
 
 /**
 
- * /api/v2/chat/conversations/{id}/leave:
+ * /api/v2/chat/conversations/\{id\}/leave:
  *   post:
  *     summary: Leave conversation
  *     tags: [Chat v2]
@@ -637,8 +639,8 @@ router.delete(
 router.post(
   '/conversations/:id/leave',
   conversationIdValidation,
-  typed.auth(async (req, res, next) => {
-    await chatController.leaveConversation(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.leaveConversation(req, res, next);
   }),
 );
 
@@ -665,8 +667,8 @@ router.post(
  */
 router.get(
   '/search',
-  typed.auth(async (req, res, next) => {
-    await chatController.searchMessages(req, res, next);
+  typed.auth((req, res, next) => {
+    chatController.searchMessages(req, res, next);
   }),
 );
 

@@ -17,6 +17,9 @@ import type {
   PointsData,
 } from './kvp.service.js';
 
+// Constants
+const USER_AGENT_HEADER = 'user-agent';
+
 // Request body interfaces
 interface CreateSuggestionBody {
   title: string;
@@ -192,7 +195,7 @@ export async function createSuggestion(req: AuthenticatedRequest, res: Response)
         created_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -271,7 +274,7 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
         updated_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -323,7 +326,7 @@ export async function deleteSuggestion(req: AuthenticatedRequest, res: Response)
         deleted_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -403,7 +406,7 @@ export async function addComment(req: AuthenticatedRequest, res: Response): Prom
         comment_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -498,7 +501,7 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
         uploaded_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -582,7 +585,7 @@ export async function awardPoints(req: AuthenticatedRequest, res: Response): Pro
         awarded_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -682,7 +685,7 @@ export async function unshareSuggestion(req: AuthenticatedRequest, res: Response
         orgId: suggestion.teamId,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -780,7 +783,7 @@ export async function shareSuggestion(req: AuthenticatedRequest, res: Response):
         orgId,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 

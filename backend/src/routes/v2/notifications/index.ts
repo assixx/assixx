@@ -5,6 +5,7 @@
 import { Router } from 'express';
 
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as notificationsController from './notifications.controller.js';
 import * as notificationsValidation from './notifications.validation.js';
@@ -94,12 +95,12 @@ router.delete(
 // SSE Stream endpoint for real-time notifications
 const sseController = new SSENotificationController();
 router.get('/stream', authenticateV2, (req, res) => {
-  void sseController.stream(req as any, res);
+  void sseController.stream(req as AuthenticatedRequest, res);
 });
 
 // SSE Statistics endpoint for monitoring
 router.get('/stream/stats', authenticateV2, (req, res) => {
-  void sseController.getStats(req as any, res);
+  void sseController.getStats(req as AuthenticatedRequest, res);
 });
 
 export default router;

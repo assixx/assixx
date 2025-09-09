@@ -6,14 +6,14 @@ import { body, param, query } from 'express-validator';
 
 import { handleValidationErrors } from '../../../middleware/validation.js';
 
+// Validation Messages
+const SUGGESTION_ID_MSG = 'Suggestion ID must be a positive integer';
+
 export const kvpValidation = {
   /**
    * Validation for getting suggestion by ID
    */
-  getById: [
-    param('id').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  getById: [param('id').isInt({ min: 1 }).withMessage(SUGGESTION_ID_MSG), handleValidationErrors],
 
   /**
    * Validation for listing suggestions with filters
@@ -86,7 +86,7 @@ export const kvpValidation = {
    * Validation for updating a suggestion
    */
   update: [
-    param('id').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(SUGGESTION_ID_MSG),
     body('title')
       .optional()
       .trim()
@@ -138,16 +138,13 @@ export const kvpValidation = {
   /**
    * Validation for deleting a suggestion
    */
-  delete: [
-    param('id').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  delete: [param('id').isInt({ min: 1 }).withMessage(SUGGESTION_ID_MSG), handleValidationErrors],
 
   /**
    * Validation for adding a comment
    */
   addComment: [
-    param('id').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(SUGGESTION_ID_MSG),
     body('comment')
       .trim()
       .notEmpty()
@@ -163,7 +160,7 @@ export const kvpValidation = {
    */
   awardPoints: [
     body('userId').isInt({ min: 1 }).withMessage('User ID must be a positive integer'),
-    body('suggestionId').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
+    body('suggestionId').isInt({ min: 1 }).withMessage(SUGGESTION_ID_MSG),
     body('points').isInt({ min: 1, max: 1000 }).withMessage('Points must be between 1 and 1000'),
     body('reason')
       .trim()
@@ -194,7 +191,7 @@ export const kvpValidation = {
    * Validation for sharing a suggestion
    */
   share: [
-    param('id').isInt({ min: 1 }).withMessage('Suggestion ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(SUGGESTION_ID_MSG),
     body('orgLevel')
       .isIn(['company', 'department', 'team'])
       .withMessage('Organization level must be company, department, or team'),

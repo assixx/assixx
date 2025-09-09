@@ -82,7 +82,7 @@ router.get(
 
 /**
 
- * /api/v2/departments/{id}:
+ * /api/v2/departments/\{id\}:
  *   get:
  *     summary: Get department by ID
  *     description: Retrieve a specific department by its ID
@@ -161,7 +161,7 @@ router.post(
 
 /**
 
- * /api/v2/departments/{id}:
+ * /api/v2/departments/\{id\}:
  *   put:
  *     summary: Update a department
  *     description: Update an existing department (admin/root only)
@@ -209,7 +209,7 @@ router.put(
 
 /**
 
- * /api/v2/departments/{id}:
+ * /api/v2/departments/\{id\}:
  *   delete:
  *     summary: Delete a department
  *     description: Delete a department (admin/root only). Cannot delete if users are assigned.
@@ -251,7 +251,7 @@ router.delete(
 
 /**
 
- * /api/v2/departments/{id}/members:
+ * /api/v2/departments/\{id\}/members:
  *   get:
  *     summary: Get department members
  *     description: Retrieve all users assigned to a specific department

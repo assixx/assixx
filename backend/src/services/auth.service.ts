@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Authentication Service
  * Handles authentication business logic
@@ -388,8 +389,8 @@ class AuthService {
       // Store in oauth_tokens table with 7 day expiry (if table exists)
       try {
         await execute<ResultSetHeader>(
-          `INSERT INTO oauth_tokens 
-          (tenant_id, user_id, token, token_type, expires_at, created_at) 
+          `INSERT INTO oauth_tokens
+          (tenant_id, user_id, token, token_type, expires_at, created_at)
           VALUES (?, ?, ?, 'refresh', DATE_ADD(NOW(), INTERVAL 7 DAY), NOW())`,
           [tenantId, userId, hashedToken],
         );
@@ -423,12 +424,12 @@ class AuthService {
     try {
       // Get all non-revoked, non-expired refresh tokens from database
       const [tokens] = await execute<RowDataPacket[]>(
-        `SELECT ot.*, u.username, u.email, u.role, u.first_name, u.last_name, 
+        `SELECT ot.*, u.username, u.email, u.role, u.first_name, u.last_name,
                 u.department_id, u.is_active, u.position
          FROM oauth_tokens ot
          INNER JOIN users u ON ot.user_id = u.id
-         WHERE ot.token_type = 'refresh' 
-         AND ot.revoked = 0 
+         WHERE ot.token_type = 'refresh'
+         AND ot.revoked = 0
          AND ot.expires_at > NOW()
          ORDER BY ot.created_at DESC`,
       );

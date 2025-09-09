@@ -85,7 +85,9 @@ router.get(
   '/',
   authenticateV2 as RequestHandler,
   machineValidation.listMachines,
-  typed.auth(machinesController.listMachines),
+  typed.auth((req, res) => {
+    void machinesController.listMachines(req, res);
+  }),
 );
 
 /**
@@ -137,7 +139,9 @@ router.get(
 router.get(
   '/statistics',
   authenticateV2 as RequestHandler,
-  typed.auth(machinesController.getStatistics),
+  typed.auth((req, res) => {
+    void machinesController.getStatistics(req, res);
+  }),
 );
 
 /**
@@ -182,7 +186,9 @@ router.get(
 router.get(
   '/categories',
   authenticateV2 as RequestHandler,
-  typed.auth(machinesController.getCategories),
+  typed.auth((req, res) => {
+    void machinesController.getCategories(req, res);
+  }),
 );
 
 /**
@@ -227,7 +233,9 @@ router.get(
   '/upcoming-maintenance',
   authenticateV2 as RequestHandler,
   machineValidation.upcomingMaintenance,
-  typed.auth(machinesController.getUpcomingMaintenance),
+  typed.auth((req, res) => {
+    void machinesController.getUpcomingMaintenance(req, res);
+  }),
 );
 
 /**
@@ -323,12 +331,14 @@ router.post(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machineValidation.addMaintenanceRecord,
-  typed.auth(machinesController.addMaintenanceRecord),
+  typed.auth((req, res) => {
+    void machinesController.addMaintenanceRecord(req, res);
+  }),
 );
 
 /**
 
- * /api/v2/machines/{id}:
+ * /api/v2/machines/\{id\}:
  *   get:
  *     summary: Get machine by ID
  *     description: Get detailed information about a specific machine
@@ -363,12 +373,14 @@ router.get(
   '/:id',
   authenticateV2 as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.getMachine),
+  typed.auth((req, res) => {
+    void machinesController.getMachine(req, res);
+  }),
 );
 
 /**
 
- * /api/v2/machines/{id}/maintenance:
+ * /api/v2/machines/\{id\}/maintenance:
  *   get:
  *     summary: Get maintenance history
  *     description: Get all maintenance records for a specific machine
@@ -407,7 +419,9 @@ router.get(
   '/:id/maintenance',
   authenticateV2 as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.getMaintenanceHistory),
+  typed.auth((req, res) => {
+    void machinesController.getMaintenanceHistory(req, res);
+  }),
 );
 
 /**
@@ -547,12 +561,14 @@ router.post(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machineValidation.createMachine,
-  typed.auth(machinesController.createMachine),
+  typed.auth((req, res) => {
+    void machinesController.createMachine(req, res);
+  }),
 );
 
 /**
 
- * /api/v2/machines/{id}:
+ * /api/v2/machines/\{id\}:
  *   put:
  *     summary: Update machine
  *     description: Update an existing machine's information (admin only)
@@ -684,12 +700,14 @@ router.put(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machineValidation.updateMachine,
-  typed.auth(machinesController.updateMachine),
+  typed.auth((req, res) => {
+    void machinesController.updateMachine(req, res);
+  }),
 );
 
 /**
 
- * /api/v2/machines/{id}:
+ * /api/v2/machines/\{id\}:
  *   delete:
  *     summary: Delete machine
  *     description: Hard delete a machine (permanently removes from database, admin only)
@@ -731,12 +749,14 @@ router.delete(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.deleteMachine),
+  typed.auth((req, res) => {
+    void machinesController.deleteMachine(req, res);
+  }),
 );
 
 /**
 
- * /api/v2/machines/{id}/deactivate:
+ * /api/v2/machines/\{id\}/deactivate:
  *   put:
  *     summary: Deactivate machine
  *     description: Deactivate a machine (marks as inactive, admin only)
@@ -778,12 +798,14 @@ router.put(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.deactivateMachine),
+  typed.auth((req, res) => {
+    void machinesController.deactivateMachine(req, res);
+  }),
 );
 
 /**
 
- * /api/v2/machines/{id}/activate:
+ * /api/v2/machines/\{id\}/activate:
  *   put:
  *     summary: Activate machine
  *     description: Activate a previously deactivated machine (admin only)
@@ -825,7 +847,9 @@ router.put(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.activateMachine),
+  typed.auth((req, res) => {
+    void machinesController.activateMachine(req, res);
+  }),
 );
 
 export default router;

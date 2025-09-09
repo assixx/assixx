@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Tenant Deletion Service
  * Handles complete tenant deletion with background processing, audit trail, and rollback capability
@@ -21,6 +22,10 @@ import { logger } from '../utils/logger';
 import { alertingService } from './alerting.service.stub';
 
 const execAsync = promisify(exec);
+
+// Constants for tenant deletion status
+const TENANT_STATUS_SUSPENDED = 'suspended' as const;
+const UPDATE_TENANT_STATUS_QUERY = 'UPDATE tenants SET deletion_status = ? WHERE id = ?' as const;
 
 type ConnectionWrapper = DbConnectionWrapper;
 
@@ -139,14 +144,16 @@ export class TenantDeletionService {
         handler: async (tenantId: number, _queueId: number) => {
           const exportPath = await this.createTenantDataExport(tenantId);
 
+          // SICHER: exportPath wird von createTenantDataExport() konstruiert
+          // Format: /exports/tenant_${tenantId}/tenant_${tenantId}_export_${timestamp}.tar.gz
+          // tenantId ist eine Nummer aus der DB, kein User-Input
+          // Kein Directory Traversal möglich da der Pfad programmatisch gebaut wird
+          // eslint-disable-next-line security/detect-non-literal-fs-filename
+          const fileSize = (await fs.stat(exportPath)).size;
+
           await execute(
             'INSERT INTO tenant_data_exports (tenant_id, file_path, file_size, checksum, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 90 DAY))',
-            [
-              tenantId,
-              exportPath,
-              (await fs.stat(exportPath)).size,
-              await this.calculateFileChecksum(exportPath),
-            ],
+            [tenantId, exportPath, fileSize, await this.calculateFileChecksum(exportPath)],
           );
 
           return 1;
@@ -167,6 +174,7 @@ export class TenantDeletionService {
 
           await execute(
             'INSERT INTO tenant_deletion_backups (tenant_id, backup_file, backup_size, backup_type) VALUES (?, ?, ?, ?)',
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- backupFile is safely constructed from tenantId (number) and Date.now() (number)
             [tenantId, backupFile, (await fs.stat(backupFile)).size, 'final'],
           );
 
@@ -590,6 +598,7 @@ export class TenantDeletionService {
               // Prüfe ob Datei existiert
               try {
                 await fs.access(fullPath);
+                // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath is safely constructed from validated database values
                 await fs.unlink(fullPath);
               } catch (error: unknown) {
                 if (error instanceof Error && 'code' in error && error.code !== 'ENOENT') {
@@ -1567,8 +1576,8 @@ export class TenantDeletionService {
       );
 
       // Update tenant status to suspended (immediate effect)
-      await connection.query('UPDATE tenants SET deletion_status = ? WHERE id = ?', [
-        'suspended',
+      await connection.query(UPDATE_TENANT_STATUS_QUERY, [
+        TENANT_STATUS_SUSPENDED,
         queue.tenant_id,
       ]);
 
@@ -1789,10 +1798,7 @@ export class TenantDeletionService {
         );
 
         // 2. Update tenant status to suspended (immediate logout)
-        await connection.query('UPDATE tenants SET deletion_status = ? WHERE id = ?', [
-          'suspended',
-          tenantId,
-        ]);
+        await connection.query(UPDATE_TENANT_STATUS_QUERY, [TENANT_STATUS_SUSPENDED, tenantId]);
 
         // 3. Log out all users immediately
         await connection.query(
@@ -1802,7 +1808,7 @@ export class TenantDeletionService {
       });
 
       // 5. Now mark as deleting
-      await execute('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['deleting', tenantId]);
+      await execute(UPDATE_TENANT_STATUS_QUERY, ['deleting', tenantId]);
 
       // 6. Process each step
       let completedSteps = 0;
@@ -1910,7 +1916,7 @@ export class TenantDeletionService {
       );
 
       if (queueItemRows.length > 0) {
-        await execute('UPDATE tenants SET deletion_status = ? WHERE id = ?', [
+        await execute(UPDATE_TENANT_STATUS_QUERY, [
           'active',
           (queueItemRows[0] as unknown as QueueRow).tenant_id,
         ]);
@@ -1996,7 +2002,7 @@ export class TenantDeletionService {
     );
 
     // Revert tenant status to active
-    await execute('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['active', tenantId]);
+    await execute(UPDATE_TENANT_STATUS_QUERY, ['active', tenantId]);
 
     // Log final status
     await execute(
@@ -2128,10 +2134,12 @@ export class TenantDeletionService {
     const exportFile = `${exportDir}/tenant_${tenantId}_export_${timestamp}.tar.gz`;
 
     // Create export directory
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- exportDir is safely constructed from tenantId (number)
     await fs.mkdir(exportDir, { recursive: true });
 
     // Create JSON export directory instead of zip for now
     const jsonExportDir = `${exportDir}/json_export`;
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- jsonExportDir is safely constructed from tenantId (number)
     await fs.mkdir(jsonExportDir, { recursive: true });
 
     // Export all tenant data as JSON files
@@ -2161,6 +2169,7 @@ export class TenantDeletionService {
         [tenantId],
       );
       if (data.length > 0) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is safely constructed from tenantId and known table names
         await fs.writeFile(`${jsonExportDir}/${table}.json`, JSON.stringify(data, null, 2));
       }
     }
@@ -2178,6 +2187,9 @@ export class TenantDeletionService {
    * @param filePath - The filePath parameter
    */
   private async calculateFileChecksum(filePath: string): Promise<string> {
+    // SICHER: filePath kommt von createTenantDataExport() oder ähnlichen internen Funktionen
+    // Niemals direkt von User-Input. Pfad wird programmatisch erstellt.
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     const fileBuffer = await fs.readFile(filePath);
     const hashSum = crypto.createHash('sha256');
     hashSum.update(fileBuffer);
@@ -2319,7 +2331,7 @@ export class TenantDeletionService {
           <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${scheduledDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> endgültig gelöscht.</p>
           <h3>Was Sie jetzt tun können:</h3>
           <ul>
-            <li>Laden Sie Ihre Daten herunter über das <a href="${process.env.APP_URL}/export-data">Export-Tool</a></li>
+            <li>Laden Sie Ihre Daten herunter über das <a href="${process.env.APP_URL ?? ''}/export-data">Export-Tool</a></li>
             <li>Kontaktieren Sie den Support, wenn dies ein Fehler ist</li>
             <li>Sichern Sie wichtige Dokumente und Informationen</li>
           </ul>
@@ -2426,7 +2438,7 @@ export class TenantDeletionService {
           <h3>Aktion erforderlich:</h3>
           <p>Als zweiter Root-User müssen Sie diese Löschung genehmigen oder ablehnen.</p>
           <p>
-            <a href="${process.env.APP_URL}/root/deletion-approvals/${queueId}"
+            <a href="${process.env.APP_URL ?? ''}/root/deletion-approvals/${queueId}"
                style="background: #dc3545; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px;">
               Zur Genehmigung
             </a>

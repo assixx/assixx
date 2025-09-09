@@ -125,7 +125,7 @@ class FeatureController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -189,7 +189,7 @@ class FeatureController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }
@@ -219,7 +219,7 @@ class FeatureController {
       }
 
       const id = Number.parseInt(req.params.id, 10);
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         res.status(400).json({ error: 'Invalid ID' });
         return;
       }

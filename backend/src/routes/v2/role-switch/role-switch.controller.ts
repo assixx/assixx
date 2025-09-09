@@ -7,7 +7,7 @@ import { Response } from 'express';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../types/response.types.js';
 import { getErrorMessage } from '../../../utils/errorHandler.js';
-import { RoleSwitchService, ServiceError } from './role-switch.service.js';
+import { ServiceError, roleSwitchService } from './role-switch.service.js';
 
 /**
  *
@@ -26,7 +26,7 @@ export class RoleSwitchController {
       const userId = req.user.id;
       const tenantId = req.user.tenant_id;
 
-      const result = await RoleSwitchService.switchToEmployee(userId, tenantId);
+      const result = await roleSwitchService.switchToEmployee(userId, tenantId);
 
       res.json(
         successResponse({
@@ -60,7 +60,7 @@ export class RoleSwitchController {
       const userId = req.user.id;
       const tenantId = req.user.tenant_id;
 
-      const result = await RoleSwitchService.switchToOriginalRole(userId, tenantId);
+      const result = await roleSwitchService.switchToOriginalRole(userId, tenantId);
 
       res.json(
         successResponse({
@@ -94,7 +94,7 @@ export class RoleSwitchController {
       const userId = req.user.id;
       const tenantId = req.user.tenant_id;
 
-      const result = await RoleSwitchService.rootToAdmin(userId, tenantId);
+      const result = await roleSwitchService.rootToAdmin(userId, tenantId);
 
       res.json(
         successResponse({

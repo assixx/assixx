@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Blackboard Model
  * Handles database operations for the blackboard entries and confirmations
@@ -132,7 +133,7 @@ export async function getAllEntries(
 
     // Build base query
     let query = `
-        SELECT e.*, 
+        SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
                u.last_name as author_last_name,
@@ -156,7 +157,7 @@ export async function getAllEntries(
     // Apply access control for non-admin users
     if (role !== 'admin' && role !== 'root') {
       query += ` AND (
-          e.org_level = 'company' OR 
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.org_id = ?) OR
           (e.org_level = 'team' AND e.org_id = ?)
         )`;
@@ -220,7 +221,7 @@ export async function getAllEntries(
 
     // Count total entries for pagination
     let countQuery = `
-        SELECT COUNT(*) as total 
+        SELECT COUNT(*) as total
         FROM blackboard_entries e
         WHERE e.tenant_id = ? AND e.status = ?
       `;
@@ -236,7 +237,7 @@ export async function getAllEntries(
     // Apply access control for non-admin users for count
     if (role !== 'admin' && role !== 'root') {
       countQuery += ` AND (
-          e.org_level = 'company' OR 
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.org_id = ?) OR
           (e.org_level = 'team' AND e.org_id = ?)
         )`;
@@ -282,7 +283,7 @@ export async function getEntryById(
 
     // Query the entry with confirmation status
     const query = `
-        SELECT e.*, 
+        SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
                u.last_name as author_last_name,
@@ -370,7 +371,7 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
 
     // Insert new entry
     const query = `
-        INSERT INTO blackboard_entries 
+        INSERT INTO blackboard_entries
         (tenant_id, title, content, org_level, org_id, author_id, expires_at, priority, color, requires_confirmation)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
@@ -627,7 +628,7 @@ export async function getDashboardEntries(
 
     // Build query for dashboard entries
     let query = `
-        SELECT e.*, 
+        SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
                u.last_name as author_last_name,
@@ -645,7 +646,7 @@ export async function getDashboardEntries(
     // Apply access control for non-admin users
     if (role !== 'admin' && role !== 'root') {
       query += ` AND (
-          e.org_level = 'company' OR 
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.org_id = ?) OR
           (e.org_level = 'team' AND e.org_id = ?)
         )`;
@@ -654,10 +655,10 @@ export async function getDashboardEntries(
 
     // Prioritize unconfirmed entries that require confirmation
     query += `
-        ORDER BY 
+        ORDER BY
           (e.requires_confirmation = 1 AND c.id IS NULL) DESC,
-          e.priority = 'urgent' DESC, 
-          e.priority = 'high' DESC, 
+          e.priority = 'urgent' DESC,
+          e.priority = 'high' DESC,
           e.created_at DESC
         LIMIT ?
       `;
@@ -796,8 +797,8 @@ export async function addAttachment(
 ): Promise<number> {
   try {
     const [result] = await executeQuery<ResultSetHeader>(
-      `INSERT INTO blackboard_attachments 
-         (entry_id, filename, original_name, file_size, mime_type, file_path, uploaded_by) 
+      `INSERT INTO blackboard_attachments
+         (entry_id, filename, original_name, file_size, mime_type, file_path, uploaded_by)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         entryId,
@@ -825,7 +826,7 @@ export async function addAttachment(
 export async function getEntryAttachments(entryId: number): Promise<DbBlackboardAttachment[]> {
   try {
     const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
-      `SELECT a.*, u.username as uploader_name 
+      `SELECT a.*, u.username as uploader_name
          FROM blackboard_attachments a
          LEFT JOIN users u ON a.uploaded_by = u.id
          WHERE a.entry_id = ?
@@ -848,7 +849,7 @@ export async function getAttachmentById(
 ): Promise<DbBlackboardAttachment | null> {
   try {
     const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
-      `SELECT a.* 
+      `SELECT a.*
          FROM blackboard_attachments a
          INNER JOIN blackboard_entries e ON a.entry_id = e.id
          WHERE a.id = ? AND e.tenant_id = ?`,

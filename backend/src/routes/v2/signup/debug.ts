@@ -3,6 +3,8 @@
  */
 import { Request, Response, Router } from 'express';
 
+// Sequelize Models müssen PascalCase sein (Klassen/Konstruktoren)
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Tenant from '../../../models/tenant.js';
 import { logger } from '../../../utils/logger.js';
 import { SignupService } from './service.js';

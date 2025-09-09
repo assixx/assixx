@@ -45,6 +45,8 @@ export async function checkTenantStatus(
     ];
 
     const isWhitelisted = whitelistedPaths.some((path) => {
+      // Safe: whitelistedPaths is a hardcoded array, not user input
+      // eslint-disable-next-line security/detect-non-literal-regexp
       const regex = new RegExp('^' + path.replace(/:[^/]+/g, '[^/]+') + '$');
       return regex.test(req.path);
     });
@@ -129,12 +131,26 @@ export async function checkTenantStatus(
 /**
  * Stricter version that only allows active tenants
  */
-export function requireActiveTenant(req: Request, res: Response, next: NextFunction): void {
-  void checkTenantStatus(req, res, (err?: unknown) => {
-    if (err !== null && err !== undefined && err !== '') {
-      next(err);
-      return;
-    }
+export async function requireActiveTenant(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    // First check regular tenant status
+    await new Promise<void>((resolve, reject) => {
+      void checkTenantStatus(req, res, (err?: unknown) => {
+        if (err !== null && err !== undefined && err !== '') {
+          reject(
+            err instanceof Error ? err : (
+              new Error(typeof err === 'string' ? err : JSON.stringify(err))
+            ),
+          );
+        } else {
+          resolve();
+        }
+      });
+    });
 
     const authReq = req as AuthenticatedRequest;
     if (!authReq.user.tenant_id) {
@@ -143,22 +159,24 @@ export function requireActiveTenant(req: Request, res: Response, next: NextFunct
     }
 
     // Additional check for marked_for_deletion
-    query<TenantStatusRow[]>('SELECT deletion_status FROM tenants WHERE id = ?', [
-      authReq.user.tenant_id,
-    ])
-      .then(([rows]) => {
-        if (rows.length > 0 && rows[0].deletion_status !== 'active') {
-          res.status(403).json({
-            error: 'This action requires an active tenant',
-            code: 'TENANT_NOT_ACTIVE',
-            status: rows[0].deletion_status,
-          });
-        } else {
-          next();
-        }
-      })
-      .catch(next);
-  });
+    const [rows] = await query<TenantStatusRow[]>(
+      'SELECT deletion_status FROM tenants WHERE id = ?',
+      [authReq.user.tenant_id],
+    );
+
+    if (rows.length > 0 && rows[0].deletion_status !== 'active') {
+      res.status(403).json({
+        error: 'This action requires an active tenant',
+        code: 'TENANT_NOT_ACTIVE',
+        status: rows[0].deletion_status,
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
 
 /**

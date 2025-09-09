@@ -163,9 +163,13 @@ export const securityHeaders = helmet({
 
 // CORS with Subdomain Whitelist
 export const corsOptions: cors.CorsOptions = {
-  origin(origin, callback) {
+  // Safe: Express CORS library requires callback pattern, not async/await
+  // eslint-disable-next-line promise/prefer-await-to-callbacks
+  origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (origin == null || origin === '') {
+      // Safe: Express CORS library requires callback pattern, not async/await
+      // eslint-disable-next-line promise/prefer-await-to-callbacks
       callback(null, true);
       return;
     }
@@ -181,8 +185,12 @@ export const corsOptions: cors.CorsOptions = {
     const isAllowed = allowedPatterns.some((pattern) => pattern.test(origin));
 
     if (isAllowed) {
+      // Safe: Express CORS library requires callback pattern, not async/await
+      // eslint-disable-next-line promise/prefer-await-to-callbacks
       callback(null, true);
     } else {
+      // Safe: Express CORS library requires callback pattern, not async/await
+      // eslint-disable-next-line promise/prefer-await-to-callbacks
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -501,6 +509,8 @@ export const auditLogger =
     const endFunction = function (
       chunk?: string | Buffer | (() => void),
       encoding?: globalThis.BufferEncoding | (() => void),
+      // Safe: Node.js response.end() requires callback pattern
+      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb?: () => void,
     ): Response {
       // Handle different argument patterns

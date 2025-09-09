@@ -9,7 +9,7 @@
 import { Response } from 'express';
 import multer from 'multer';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { logger } from '../../../utils/logger';
@@ -324,7 +324,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
     );
 
     // Log document upload
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'upload',
@@ -514,7 +514,7 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
     );
 
     // Log document deletion
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'delete',

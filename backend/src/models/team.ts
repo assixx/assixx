@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger';
 

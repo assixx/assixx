@@ -8,6 +8,9 @@ import { ValidationChain, body, param, query, validationResult } from 'express-v
 import { ValidationMiddleware } from '../types/middleware.types';
 import { errorResponse } from '../utils/apiResponse';
 
+// Constants
+const INVALID_TIME_FORMAT_MSG = 'Invalid time format';
+
 // Helper to handle validation results
 export function handleValidationErrors(req: Request, res: Response, next: NextFunction): void {
   const errors = validationResult(req);
@@ -228,59 +231,59 @@ export const validationSchemas = {
     body('monday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('monday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('tuesday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('tuesday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('wednesday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('wednesday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('thursday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('thursday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('friday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('friday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('saturday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('saturday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('sunday_start')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     body('sunday_end')
       .optional()
       .matches(/^\d{2}:\d{2}$/)
-      .withMessage('Invalid time format'),
+      .withMessage(INVALID_TIME_FORMAT_MSG),
     handleValidationErrors,
   ] as ValidationMiddleware,
 };

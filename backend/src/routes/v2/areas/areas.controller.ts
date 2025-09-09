@@ -4,7 +4,7 @@
  */
 import { Response } from 'express';
 
-import RootLog from '../../../models/rootLog.js';
+import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../types/response.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -80,7 +80,7 @@ export async function getAreaByIdController(
   try {
     const areaId = Number.parseInt(req.params.id);
 
-    if (isNaN(areaId)) {
+    if (Number.isNaN(areaId)) {
       res.status(400).json(errorResponse('Invalid area ID', 400));
       return;
     }
@@ -120,7 +120,7 @@ export async function createAreaController(
     const newArea = await createArea(data, req.user.tenant_id, req.user.id);
 
     // Log area creation
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'create',
@@ -170,7 +170,7 @@ export async function updateAreaController(
 
     const areaId = Number.parseInt(req.params.id);
 
-    if (isNaN(areaId)) {
+    if (Number.isNaN(areaId)) {
       res.status(400).json(errorResponse('Invalid area ID', 400));
       return;
     }
@@ -182,13 +182,13 @@ export async function updateAreaController(
     const updatedArea = await updateArea(areaId, data, req.user.tenant_id);
 
     // Log area update
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'update',
       entity_type: 'area',
       entity_id: areaId,
-      details: `Aktualisiert: ${data.name}`,
+      details: `Aktualisiert: ${data.name ?? 'Unbekannt'}`,
       old_values: {
         name: oldArea?.name,
         type: oldArea?.type,
@@ -241,7 +241,7 @@ export async function deleteAreaController(
 
     const areaId = Number.parseInt(req.params.id);
 
-    if (isNaN(areaId)) {
+    if (Number.isNaN(areaId)) {
       res.status(400).json(errorResponse('Invalid area ID', 400));
       return;
     }
@@ -252,7 +252,7 @@ export async function deleteAreaController(
     await deleteArea(areaId, req.user.tenant_id);
 
     // Log area deletion
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'delete',

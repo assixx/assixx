@@ -7,6 +7,11 @@ import jwt from 'jsonwebtoken';
 
 import { logger } from '../utils/logger.js';
 
+// Constants
+const EMPLOYEE_DASHBOARD_PATH = '/employee-dashboard';
+const ADMIN_DASHBOARD_PATH = '/admin-dashboard';
+const ROOT_DASHBOARD_PATH = '/root-dashboard';
+
 interface PageConfig {
   allowedRoles: string[];
   redirectOnFail: string;
@@ -24,9 +29,9 @@ interface DecodedToken {
 // Define which pages are accessible by which roles
 const pagePermissions: Partial<Record<string, PageConfig>> = {
   // Admin pages
-  '/admin-dashboard': {
+  [ADMIN_DASHBOARD_PATH]: {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/employee-dashboard',
+    redirectOnFail: EMPLOYEE_DASHBOARD_PATH,
   },
   '/admin-profile': {
     allowedRoles: ['admin', 'root'],
@@ -34,11 +39,11 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
   },
   '/admin-config': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/employee-dashboard',
+    redirectOnFail: EMPLOYEE_DASHBOARD_PATH,
   },
   '/feature-management': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/employee-dashboard',
+    redirectOnFail: EMPLOYEE_DASHBOARD_PATH,
   },
   '/documents': {
     allowedRoles: ['employee', 'admin', 'root'],
@@ -50,15 +55,15 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
   },
   '/org-management': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/employee-dashboard',
+    redirectOnFail: EMPLOYEE_DASHBOARD_PATH,
   },
   '/archived-employees': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/employee-dashboard',
+    redirectOnFail: EMPLOYEE_DASHBOARD_PATH,
   },
 
   // Employee pages
-  '/employee-dashboard': {
+  [EMPLOYEE_DASHBOARD_PATH]: {
     allowedRoles: ['employee', 'admin', 'root'],
     redirectOnFail: '/login',
   },
@@ -80,9 +85,9 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
   },
 
   // Root pages
-  '/root-dashboard': {
+  [ROOT_DASHBOARD_PATH]: {
     allowedRoles: ['root'],
-    redirectOnFail: '/admin-dashboard',
+    redirectOnFail: ADMIN_DASHBOARD_PATH,
   },
   '/root-profile': {
     allowedRoles: ['root'],
@@ -94,35 +99,35 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
   },
   '/manage-admins': {
     allowedRoles: ['root'],
-    redirectOnFail: '/admin-dashboard',
+    redirectOnFail: ADMIN_DASHBOARD_PATH,
   },
   '/storage-upgrade': {
     allowedRoles: ['root'],
-    redirectOnFail: '/admin-dashboard',
+    redirectOnFail: ADMIN_DASHBOARD_PATH,
   },
   '/manage-root-users': {
     allowedRoles: ['root'],
-    redirectOnFail: '/root-dashboard',
+    redirectOnFail: ROOT_DASHBOARD_PATH,
   },
   '/account-settings': {
     allowedRoles: ['root'],
-    redirectOnFail: '/root-dashboard',
+    redirectOnFail: ROOT_DASHBOARD_PATH,
   },
   '/tenant-deletion-status': {
     allowedRoles: ['root'],
-    redirectOnFail: '/root-dashboard',
+    redirectOnFail: ROOT_DASHBOARD_PATH,
   },
   '/logs': {
     allowedRoles: ['root'],
-    redirectOnFail: '/root-dashboard',
+    redirectOnFail: ROOT_DASHBOARD_PATH,
   },
   '/departments': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/admin-dashboard',
+    redirectOnFail: ADMIN_DASHBOARD_PATH,
   },
   '/manage-department-groups': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/admin-dashboard',
+    redirectOnFail: ADMIN_DASHBOARD_PATH,
   },
 
   // Shared pages (all authenticated users)
@@ -217,11 +222,11 @@ function getTokenFromRequest(req: Request): string | null {
 function getDashboardForRole(role: string): string {
   switch (role) {
     case 'employee':
-      return '/employee-dashboard';
+      return EMPLOYEE_DASHBOARD_PATH;
     case 'admin':
-      return '/admin-dashboard';
+      return ADMIN_DASHBOARD_PATH;
     case 'root':
-      return '/root-dashboard';
+      return ROOT_DASHBOARD_PATH;
     default:
       return '/login';
   }
@@ -236,6 +241,8 @@ export function protectPage(req: Request, res: Response, next: NextFunction): vo
   // Use Object.prototype.hasOwnProperty for safe property access
   const pageConfig =
     Object.prototype.hasOwnProperty.call(pagePermissions, pagePath) ?
+      // Safe: pagePath is from req.path, and we've already checked it exists
+      // eslint-disable-next-line security/detect-object-injection
       pagePermissions[pagePath]
     : undefined;
 

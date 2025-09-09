@@ -20,7 +20,7 @@ export interface TenantFeature {
   featureId: number;
   featureCode: string;
   featureName: string;
-  status: 'active' | 'trial' | 'disabled';
+  status: 'active' | 'trial' | 'disabled' | 'expired';
   isActive: boolean;
   validFrom?: string;
   validUntil?: string;

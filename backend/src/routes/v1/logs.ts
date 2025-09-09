@@ -435,7 +435,7 @@ router.delete(
 );
 
 // Log-Eintrag erstellen (interne Funktion)
-// DEPRECATED: Use RootLog.create() instead - this function now writes to root_logs for compatibility
+// DEPRECATED: Use rootLog.create() instead - this function now writes to root_logs for compatibility
 export async function createLog(
   userId: number,
   tenantId: number | null,

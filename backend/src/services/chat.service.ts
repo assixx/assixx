@@ -143,7 +143,7 @@ class ChatService {
       const numericTenantId = Number.parseInt(tenantId.toString());
       const numericUserId = Number.parseInt(userId.toString());
 
-      if (isNaN(numericTenantId) || isNaN(numericUserId)) {
+      if (Number.isNaN(numericTenantId) || Number.isNaN(numericUserId)) {
         throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
       }
 
@@ -283,7 +283,7 @@ class ChatService {
       const numericTenantId = Number.parseInt(tenantId.toString());
       const numericUserId = Number.parseInt(userId.toString());
 
-      if (isNaN(numericTenantId) || isNaN(numericUserId)) {
+      if (Number.isNaN(numericTenantId) || Number.isNaN(numericUserId)) {
         throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
       }
 

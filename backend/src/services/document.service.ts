@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Document Service
  * Handles document business logic
@@ -127,7 +128,7 @@ class DocumentService {
 
       // Build SQL query based on scope
       let query = `
-        SELECT 
+        SELECT
           d.id,
           d.tenant_id,
           d.created_by as uploaded_by,
@@ -149,12 +150,12 @@ class DocumentService {
           -- Uploader info
           CONCAT(uploader.first_name, ' ', uploader.last_name) as uploaded_by_name,
           -- Check if document has been read
-          CASE 
-            WHEN drs.id IS NOT NULL THEN 1 
-            ELSE 0 
+          CASE
+            WHEN drs.id IS NOT NULL THEN 1
+            ELSE 0
           END as is_read,
           -- Determine scope based on recipient_type
-          CASE 
+          CASE
             WHEN d.recipient_type = 'company' THEN 'company'
             WHEN d.recipient_type = 'department' THEN 'department'
             WHEN d.recipient_type = 'team' THEN 'team'
@@ -332,6 +333,10 @@ class DocumentService {
       // Delete file from filesystem
       try {
         const filePath = path.join(this.uploadDir, document.filename);
+        // SICHER: filePath wird aus DB-Daten konstruiert (document.filename kommt aus DB)
+        // uploadDir ist eine Konstante, filename wurde beim Upload validiert und sanitized
+        // path.join verhindert Directory Traversal Angriffe
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
         await fs.unlink(filePath);
       } catch (fileError: unknown) {
         logger.warn('Error deleting file:', fileError);

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import RootLog from '../../../models/rootLog';
 import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError';
 import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db';
@@ -19,8 +20,11 @@ import {
 } from './types';
 
 /**
- *
+ * Features service with static methods
+ * DESIGN PATTERN: Service als Klasse mit statischen Methoden für bessere Organisation
+ * und Namespace-Gruppierung. Alternative wäre ein Objekt mit Funktionen.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class FeaturesService {
   // Get all available features
   /**
@@ -120,7 +124,7 @@ export class FeaturesService {
         // Parse custom_config if it's a string
         if (row.custom_config && typeof row.custom_config === 'string') {
           try {
-            mapped.customConfig = JSON.parse(row.custom_config);
+            mapped.customConfig = JSON.parse(row.custom_config) as Record<string, unknown>;
           } catch {
             mapped.customConfig = {};
           }
@@ -128,7 +132,7 @@ export class FeaturesService {
         // Set status based on is_active and expires_at
         if (row.is_active) {
           if (row.expires_at && new Date(row.expires_at) < new Date()) {
-            mapped.status = 'disabled';
+            mapped.status = 'expired';
           } else {
             mapped.status = 'active';
           }
@@ -151,7 +155,7 @@ export class FeaturesService {
    */
   static async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
     try {
-      const [rows] = await query<(DbFeature & Partial<DbTenantFeature>)[]>(
+      const [rows] = await query<(DbFeature & Partial<DbTenantFeature> & { status: string })[]>(
         `
         SELECT
           f.*,
@@ -416,13 +420,18 @@ export class FeaturesService {
       };
 
       features.forEach((feature) => {
-        if (feature.status === 'active') {
-          summary.activeFeatures++;
-          // Note: customPrice would be added here if it existed in DB
-        } else if (feature.status === 'trial') {
-          summary.trialFeatures++;
-        } else if (feature.status === 'disabled') {
-          summary.disabledFeatures++;
+        switch (feature.status) {
+          case 'active':
+            summary.activeFeatures++;
+            // Note: customPrice would be added here if it existed in DB
+            break;
+          case 'trial':
+            summary.trialFeatures++;
+            break;
+          case 'disabled':
+          case 'expired':
+            summary.disabledFeatures++;
+            break;
         }
       });
 
@@ -504,7 +513,14 @@ export class FeaturesService {
    */
   static async getAllTenantsWithFeatures(): Promise<TenantWithFeatures[]> {
     try {
-      const [tenants] = await query<RowDataPacket[]>(`
+      interface TenantRow extends RowDataPacket {
+        id: number;
+        subdomain: string;
+        company_name: string;
+        status: string;
+      }
+
+      const [tenants] = await query<TenantRow[]>(`
         SELECT id, subdomain, company_name, status
         FROM tenants
         ORDER BY company_name

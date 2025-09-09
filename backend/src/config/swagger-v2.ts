@@ -1,3 +1,5 @@
+/* eslint-disable sonarjs/no-duplicate-string */
+/* eslint-disable no-secrets/no-secrets */
 /**
  * Swagger/OpenAPI Configuration for Assixx API v2
  * Enhanced specifications for the new API version

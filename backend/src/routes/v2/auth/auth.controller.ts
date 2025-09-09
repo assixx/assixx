@@ -23,6 +23,9 @@ const JWT_REFRESH_SECRET =
 const ACCESS_TOKEN_EXPIRES = '30m'; // 30 Minuten
 const REFRESH_TOKEN_EXPIRES = '7d';
 
+// HTTP Headers
+const USER_AGENT_HEADER = 'user-agent';
+
 /**
  * Generate JWT tokens
  * @param userId - The user ID
@@ -124,7 +127,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       foundUser.id,
       `Angemeldet als ${foundUser.role}`,
       req.ip ?? req.socket.remoteAddress,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     // 2. Log to root_logs for detailed audit
@@ -141,7 +144,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         login_method: 'password',
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -240,7 +243,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
       userId,
       `Neuer Benutzer erstellt: ${email} (${role})`,
       req.ip ?? req.socket.remoteAddress,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     // 2. Log to root_logs for detailed audit
@@ -260,7 +263,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
         created_by: authUser.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 
@@ -300,7 +303,7 @@ export async function logout(req: AuthenticatedRequest, res: Response): Promise<
       req.user.id,
       'Abgemeldet',
       req.ip ?? req.socket.remoteAddress,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     // 2. Log to root_logs for detailed audit
@@ -316,7 +319,7 @@ export async function logout(req: AuthenticatedRequest, res: Response): Promise<
         role: req.user.role,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
+      user_agent: req.get(USER_AGENT_HEADER),
       was_role_switched: false,
     });
 

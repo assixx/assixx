@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Response } from "express";
-import User from "../../../models/user.js";
+import user from "../../../models/user.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";
@@ -22,12 +22,12 @@ export const logsController = {
     
     logger.info("[Logs v2 Controller] =====START===== getLogs endpoint called");
     logger.info("[Logs v2 Controller] Query params:", req.query);
-    logger.info("[Logs v2 Controller] User info:", { id: req.user?.id, role: req.user?.role });
+    logger.info("[Logs v2 Controller] User info:", { id: req.user.id, role: req.user.role });
     
     try {
       // Only root users can access logs
-      if (req.user?.role !== 'root') {
-        logger.warn("[Logs v2 Controller] Access denied - user role:", req.user?.role);
+      if (req.user.role !== 'root') {
+        logger.warn("[Logs v2 Controller] Access denied - user role:", req.user.role);
         res.status(403).json(errorResponse("FORBIDDEN", "Only root users can access logs"));
         return;
       }
@@ -85,7 +85,7 @@ export const logsController = {
   async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Only root users can access logs
-      if (req.user?.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse("FORBIDDEN", "Only root users can access logs"));
         return;
       }
@@ -108,7 +108,7 @@ export const logsController = {
   async deleteLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Only root users can delete logs
-      if (req.user?.role !== 'root') {
+      if (req.user.role !== 'root') {
         res.status(403).json(errorResponse("FORBIDDEN", "Only root users can delete logs"));
         return;
       }
@@ -126,7 +126,7 @@ export const logsController = {
       console.log('[Logs v2 DELETE] Filters:', { userId, tenantId, olderThanDays, action, entityType });
 
       // Verify root password
-      const rootUser = await User.findById(req.user.id, req.user.tenant_id);
+      const rootUser = await user.findById(req.user.id, req.user.tenant_id);
       if (!rootUser) {
         res.status(401).json(errorResponse("UNAUTHORIZED", "User not found"));
         return;

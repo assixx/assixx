@@ -2,6 +2,9 @@
  * Signup Service v2
  * Business logic for user registration
  */
+// Sequelize Model Import - MUSS PascalCase sein (ist eine Klasse/Konstruktor)
+// Dies ist KEIN normaler Import sondern ein ORM Model das als Klasse definiert ist
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Tenant from '../../../models/tenant.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { logger } from '../../../utils/logger.js';

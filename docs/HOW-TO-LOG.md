@@ -58,7 +58,7 @@ interface RootLogData {
 
 ```typescript
 // IMMER beide Informationen loggen:
-await RootLog.create({
+await rootLog.create({
   tenant_id: req.user.tenant_id,
   user_id: req.user.id,
   action: 'login', // z.B. login, logout, create, update, delete

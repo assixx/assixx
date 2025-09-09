@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Shift Controller
  * Handles shift planning and scheduling operations

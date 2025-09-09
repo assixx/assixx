@@ -1,10 +1,13 @@
 import { NextFunction, Response } from 'express';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
 import { departmentService } from './departments.service.js';
+
+const DEFAULT_ERROR_MESSAGE = 'Error occurred';
+const INTERNAL_SERVER_ERROR = 'Internal server error';
 
 interface Department {
   id: number;
@@ -54,12 +57,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -78,7 +81,7 @@ export class DepartmentController {
     try {
       const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
+      if (Number.isNaN(departmentId)) {
         res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
@@ -102,12 +105,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -156,7 +159,7 @@ export class DepartmentController {
       );
 
       // Log department creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'create',
@@ -195,12 +198,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               errorCode,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -227,7 +230,7 @@ export class DepartmentController {
 
       const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
+      if (Number.isNaN(departmentId)) {
         res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
@@ -263,13 +266,13 @@ export class DepartmentController {
       );
 
       // Log department update
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'update',
         entity_type: 'department',
         entity_id: departmentId,
-        details: `Aktualisiert: ${body.name}`,
+        details: `Aktualisiert: ${body.name ?? 'Unbekannt'}`,
         old_values: {
           name: (oldDepartment as unknown as Department | null)?.name,
           description: (oldDepartment as unknown as Department | null)?.description,
@@ -306,12 +309,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -338,7 +341,7 @@ export class DepartmentController {
 
       const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
+      if (Number.isNaN(departmentId)) {
         res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
@@ -352,7 +355,7 @@ export class DepartmentController {
       await departmentService.deleteDepartment(departmentId, req.user.tenant_id);
 
       // Log department deletion
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'delete',
@@ -391,12 +394,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -415,7 +418,7 @@ export class DepartmentController {
     try {
       const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
+      if (Number.isNaN(departmentId)) {
         res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
@@ -439,12 +442,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -477,12 +480,12 @@ export class DepartmentController {
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? 'Error occurred',
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
               errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res.status(500).json(errorResponse('DEPT_500', 'Internal server error'));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }

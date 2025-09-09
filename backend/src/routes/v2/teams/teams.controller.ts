@@ -4,11 +4,15 @@
  */
 import { Response } from 'express';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
 import { ServiceError, teamsService } from './teams.service.js';
+
+// Constants
+const USER_NOT_AUTHENTICATED_MSG = 'User not authenticated';
+const USER_AGENT_HEADER = 'user-agent';
 
 interface Team {
   id: number;
@@ -77,8 +81,10 @@ export class TeamsController {
         includeMembers: req.query.includeMembers === 'true',
       };
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const teams = await teamsService.listTeams(req.user.tenant_id, filters);
@@ -110,8 +116,10 @@ export class TeamsController {
   async getTeamById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const teamId = Number.parseInt(req.params.id);
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const team = await teamsService.getTeamById(teamId, req.user.tenant_id);
@@ -150,14 +158,16 @@ export class TeamsController {
         leaderId: body.leaderId,
       };
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const team = await teamsService.createTeam(teamData, req.user.tenant_id);
 
       // Log team creation
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'create',
@@ -172,7 +182,7 @@ export class TeamsController {
           created_by: req.user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -211,8 +221,10 @@ export class TeamsController {
         leaderId: body.leaderId,
       };
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       // Get old team data for logging
@@ -221,13 +233,13 @@ export class TeamsController {
       const team = await teamsService.updateTeam(teamId, updateData, req.user.tenant_id);
 
       // Log team update
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'update',
         entity_type: 'team',
         entity_id: teamId,
-        details: `Aktualisiert: ${updateData.name}`,
+        details: `Aktualisiert: ${updateData.name ?? 'Team'}`,
         old_values: {
           name: (oldTeam as Team | null)?.name,
           description: (oldTeam as Team | null)?.description,
@@ -242,7 +254,7 @@ export class TeamsController {
           updated_by: req.user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -276,8 +288,10 @@ export class TeamsController {
       // Get force parameter from query string (e.g., /teams/123?force=true)
       const force = req.query.force === 'true';
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       // Get team data before deletion for logging
@@ -286,7 +300,7 @@ export class TeamsController {
       const result = await teamsService.deleteTeam(teamId, req.user.tenant_id, force);
 
       // Log team deletion
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'delete',
@@ -301,7 +315,7 @@ export class TeamsController {
           deleted_by: req.user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -332,8 +346,10 @@ export class TeamsController {
   async getTeamMembers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const teamId = Number.parseInt(req.params.id);
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const members = await teamsService.getTeamMembers(teamId, req.user.tenant_id);
@@ -368,14 +384,16 @@ export class TeamsController {
       const body = req.body as AddMemberBody;
       const userId = body.userId;
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const result = await teamsService.addTeamMember(teamId, userId, req.user.tenant_id);
 
       // Log team member addition
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'add_member',
@@ -387,7 +405,7 @@ export class TeamsController {
           added_by: req.user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -420,8 +438,10 @@ export class TeamsController {
       const teamId = Number.parseInt(req.params.id);
       const userId = Number.parseInt(req.params.userId);
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const result = await teamsService.removeTeamMember(teamId, userId, req.user.tenant_id);
@@ -453,8 +473,10 @@ export class TeamsController {
   async getTeamMachines(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const teamId = Number.parseInt(req.params.id);
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const machines = await teamsService.getTeamMachines(teamId, req.user.tenant_id);
@@ -489,8 +511,10 @@ export class TeamsController {
       const body = req.body as AddMachineBody;
       const machineId = body.machineId;
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const result = await teamsService.addTeamMachine(
@@ -501,7 +525,7 @@ export class TeamsController {
       );
 
       // Log team machine addition
-      await RootLog.create({
+      await rootLog.create({
         tenant_id: req.user.tenant_id,
         user_id: req.user.id,
         action: 'add_machine',
@@ -513,7 +537,7 @@ export class TeamsController {
           added_by: req.user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
+        user_agent: req.get(USER_AGENT_HEADER),
         was_role_switched: false,
       });
 
@@ -546,8 +570,10 @@ export class TeamsController {
       const teamId = Number.parseInt(req.params.id);
       const machineId = Number.parseInt(req.params.machineId);
 
+      // Note: This check is necessary as the type system doesn't guarantee user exists
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!req.user) {
-        res.status(401).json(errorResponse('UNAUTHORIZED', 'User not authenticated'));
+        res.status(401).json(errorResponse('UNAUTHORIZED', USER_NOT_AUTHENTICATED_MSG));
         return;
       }
       const result = await teamsService.removeTeamMachine(teamId, machineId, req.user.tenant_id);

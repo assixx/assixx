@@ -117,18 +117,27 @@ export class BrowserFingerprint {
       const gl = canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
       if (!gl || !(gl instanceof WebGLRenderingContext)) return 'no-webgl';
 
-      interface WebGLDebugRendererInfo {
-        UNMASKED_VENDOR_WEBGL: number;
-        UNMASKED_RENDERER_WEBGL: number;
+      // Try modern approach first (standard WebGL parameters)
+      const vendor = gl.getParameter(gl.VENDOR) as string;
+      const renderer = gl.getParameter(gl.RENDERER) as string;
+
+      // If standard parameters don't give enough info, try debug extension as fallback
+      if (vendor === 'WebKit' && renderer === 'WebKit WebGL') {
+        interface WebGLDebugRendererInfo {
+          UNMASKED_VENDOR_WEBGL: number;
+          UNMASKED_RENDERER_WEBGL: number;
+        }
+
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as WebGLDebugRendererInfo | null;
+        if (debugInfo) {
+          return JSON.stringify({
+            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) as string,
+            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string,
+          });
+        }
       }
 
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as WebGLDebugRendererInfo | null;
-      if (!debugInfo) return 'no-debug-info';
-
-      return JSON.stringify({
-        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) as string,
-        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string,
-      });
+      return JSON.stringify({ vendor, renderer });
     } catch {
       return 'webgl-blocked';
     }
@@ -225,13 +234,13 @@ export class BrowserFingerprint {
     span.style.position = 'absolute';
     span.style.left = '-9999px';
     span.style.fontSize = testSize;
-    span.innerHTML = testString;
+    span.textContent = testString;
     document.body.append(span);
 
-    const baseFontWidths: Record<string, number> = {};
+    const baseFontWidths = new Map<string, number>();
     for (const baseFont of baseFonts) {
       span.style.fontFamily = baseFont;
-      baseFontWidths[baseFont] = span.offsetWidth;
+      baseFontWidths.set(baseFont, span.offsetWidth);
     }
 
     const detectedFonts = [];
@@ -239,7 +248,7 @@ export class BrowserFingerprint {
       let detected = false;
       for (const baseFont of baseFonts) {
         span.style.fontFamily = `'${font}', ${baseFont}`;
-        if (span.offsetWidth !== baseFontWidths[baseFont]) {
+        if (span.offsetWidth !== baseFontWidths.get(baseFont)) {
           detected = true;
           break;
         }

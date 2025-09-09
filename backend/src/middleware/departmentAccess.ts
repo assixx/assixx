@@ -47,31 +47,31 @@ export const checkDepartmentAccess = async (
   // For admin users, check department permissions
   if (user.role === 'admin') {
     // Extract department_id from various sources
-    let department_id: number | undefined;
+    let departmentId: number | undefined;
 
     // Check body
     if (authReq.body.department_id != null) {
-      department_id = Number.parseInt(String(authReq.body.department_id));
+      departmentId = Number.parseInt(String(authReq.body.department_id));
     }
     // Check query parameters
     else if (req.query.department_id != null) {
-      department_id = Number.parseInt(req.query.department_id as string);
+      departmentId = Number.parseInt(req.query.department_id as string);
     }
     // Check route parameters
     else if ('department_id' in req.params && req.params.department_id) {
-      department_id = Number.parseInt(req.params.department_id);
+      departmentId = Number.parseInt(req.params.department_id);
     }
     // Check for departmentId variant
     else if (authReq.body.departmentId != null) {
-      department_id = Number.parseInt(String(authReq.body.departmentId));
+      departmentId = Number.parseInt(String(authReq.body.departmentId));
     } else if (req.query.departmentId != null) {
-      department_id = Number.parseInt(req.query.departmentId as string);
+      departmentId = Number.parseInt(req.query.departmentId as string);
     } else if ('departmentId' in req.params && req.params.departmentId) {
-      department_id = Number.parseInt(req.params.departmentId);
+      departmentId = Number.parseInt(req.params.departmentId);
     }
 
     // If department_id is found, check access
-    if (department_id != null && !isNaN(department_id) && department_id !== 0) {
+    if (departmentId != null && !Number.isNaN(departmentId) && departmentId !== 0) {
       // Determine required permission level based on HTTP method
       let requiredPermission: 'read' | 'write' | 'delete' = 'read';
 
@@ -83,14 +83,14 @@ export const checkDepartmentAccess = async (
 
       const hasAccess = await adminPermissionService.hasAccess(
         user.id,
-        department_id,
+        departmentId,
         user.tenant_id,
         requiredPermission,
       );
 
       if (!hasAccess) {
         logger.warn(
-          `Admin ${user.id} attempted to access department ${department_id} without permission (${requiredPermission})`,
+          `Admin ${user.id} attempted to access department ${departmentId} without permission (${requiredPermission})`,
         );
         res.status(403).json({
           error: 'Keine Berechtigung für diese Abteilung',

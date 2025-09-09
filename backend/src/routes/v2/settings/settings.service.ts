@@ -4,7 +4,7 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import RootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
@@ -192,7 +192,7 @@ export async function upsertSystemSetting(
   if (existing) {
     // Update existing
     await executeQuery(
-      `UPDATE system_settings 
+      `UPDATE system_settings
        SET setting_value = ?, value_type = ?, category = ?, description = ?, is_public = ?, updated_at = NOW()
        WHERE setting_key = ?`,
       [
@@ -207,7 +207,7 @@ export async function upsertSystemSetting(
   } else {
     // Insert new
     await executeQuery(
-      `INSERT INTO system_settings 
+      `INSERT INTO system_settings
        (setting_key, setting_value, value_type, category, description, is_public)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
@@ -222,7 +222,7 @@ export async function upsertSystemSetting(
   }
 
   // Log the action for system settings
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId, // Use the root user's tenant_id
     user_id: userId,
     action: existing ? 'system_setting_updated' : 'system_setting_created',
@@ -269,7 +269,7 @@ export async function deleteSystemSetting(
   await executeQuery(`DELETE FROM system_settings WHERE setting_key = ?`, [key]);
 
   // Log the action for system settings
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId, // Use the root user's tenant_id
     user_id: userId,
     action: 'system_setting_deleted',
@@ -370,7 +370,7 @@ export async function upsertTenantSetting(
   if (existing) {
     // Update existing
     await executeQuery(
-      `UPDATE tenant_settings 
+      `UPDATE tenant_settings
        SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
        WHERE setting_key = ? AND tenant_id = ?`,
       [
@@ -384,7 +384,7 @@ export async function upsertTenantSetting(
   } else {
     // Insert new
     await executeQuery(
-      `INSERT INTO tenant_settings 
+      `INSERT INTO tenant_settings
        (tenant_id, setting_key, setting_value, value_type, category)
        VALUES (?, ?, ?, ?, ?)`,
       [
@@ -398,7 +398,7 @@ export async function upsertTenantSetting(
   }
 
   // Log the action
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action: existing ? 'tenant_setting_updated' : 'tenant_setting_created',
@@ -448,7 +448,7 @@ export async function deleteTenantSetting(
   ]);
 
   // Log the action
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action: 'tenant_setting_deleted',
@@ -563,8 +563,8 @@ export async function upsertUserSetting(
 
   // Check if setting exists
   const [[existing]] = await executeQuery<RowDataPacket[]>(
-    `SELECT id FROM user_settings 
-     WHERE setting_key = ? AND user_id = ? AND tenant_id = ? 
+    `SELECT id FROM user_settings
+     WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
      AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
     [data.setting_key, userId, tenantId, settingTeamId, settingTeamId],
   );
@@ -572,7 +572,7 @@ export async function upsertUserSetting(
   if (existing) {
     // Update existing
     await executeQuery(
-      `UPDATE user_settings 
+      `UPDATE user_settings
        SET setting_value = ?, value_type = ?, category = ?, updated_at = NOW()
        WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
        AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
@@ -590,7 +590,7 @@ export async function upsertUserSetting(
   } else {
     // Insert new
     await executeQuery(
-      `INSERT INTO user_settings 
+      `INSERT INTO user_settings
        (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [

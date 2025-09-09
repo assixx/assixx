@@ -236,6 +236,7 @@ class AvailabilityController {
       const userId = req.user.id;
 
       const id = Number.parseInt(req.params.id);
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       const { status, start_date, end_date, reason, notes } = req.body as {
         status?: string;
         start_date?: string;

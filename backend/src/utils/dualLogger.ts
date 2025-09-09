@@ -2,7 +2,7 @@
  * Dual Logger Utility
  * Logs to both activity_logs (for frontend) and root_logs (for audit)
  */
-import RootLog from '../models/rootLog';
+import rootLog from '../models/rootLog';
 import { createLog } from '../routes/v1/logs';
 
 interface DualLogOptions {
@@ -55,7 +55,7 @@ export async function dualLog(options: DualLogOptions): Promise<void> {
   );
 
   // 2. Log to root_logs for detailed audit
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId,
     user_id: userId,
     action,
@@ -130,7 +130,11 @@ export function getActionDetails(
     tenant: 'Mandant',
   };
 
+  // SICHER: Keys (action, entityType) kommen aus internem Code (logActivity Funktion),
+  // NICHT aus User-Input. Die Maps sind hardcoded Übersetzungstabellen.
+  // eslint-disable-next-line security/detect-object-injection
   const actionText = actionMap[action] ?? action;
+  // eslint-disable-next-line security/detect-object-injection
   const entityText = entityMap[entityType] ?? entityType;
 
   // Build detail string
