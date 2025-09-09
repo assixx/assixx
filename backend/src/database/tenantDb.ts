@@ -85,11 +85,9 @@ export async function initializeTenantDatabase(tenantId: string): Promise<void> 
     }
 
     // Datenbank erstellen - tenantId is now validated
-    // lgtm[js/sql-injection] - False positive: tenantId is validated against /^\w+$/ regex above
-    // codeql-ignore[js/sql-injection]: Input sanitized via regex validation (alphanumeric only)
+    // codeql[js/sql-injection] - False positive: tenantId is validated against /^\w+$/ regex above (alphanumeric only)
     await connection.query(`CREATE DATABASE IF NOT EXISTS assixx_${tenantId}`);
-    // lgtm[js/sql-injection] - False positive: tenantId is validated against /^\w+$/ regex above
-    // codeql-ignore[js/sql-injection]: Input sanitized via regex validation (alphanumeric only)
+    // codeql[js/sql-injection] - False positive: tenantId is validated against /^\w+$/ regex above (alphanumeric only)
     await connection.query(`USE assixx_${tenantId}`);
 
     // Tabellen erstellen (Schema aus schema.sql verwenden)

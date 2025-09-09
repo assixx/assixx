@@ -62,7 +62,7 @@ app.use(morgan('combined'));
 app.use(cors(corsOptions));
 app.use(securityHeaders);
 app.use(contentSecurityPolicy); // Add CSP headers
-// lgtm[js/missing-token-validation] - Application uses JWT Bearer tokens as primary auth
+// codeql[js/missing-token-validation] - Application uses JWT Bearer tokens as primary auth
 // Cookies are only fallback with SameSite=strict protection
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
@@ -75,8 +75,7 @@ app.use(sanitizeInputs);
 const distPath = path.join(currentDirPath, '../../frontend/dist');
 
 // Serve feature-flags.js with correct MIME type
-// lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-// codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
+// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
 app.get('/feature-flags.js', rateLimiter.public, (_req: Request, res: Response): void => {
   let featureFlagsPath = '';
 
@@ -131,8 +130,7 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 });
 
 // Protect HTML pages based on user role with rate limiting
-// lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-// codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
+// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
 app.use(rateLimiter.public, (req: Request, res: Response, next: NextFunction) => {
   if (req.path.endsWith('.html')) {
     protectPage(req, res, next);
@@ -201,8 +199,7 @@ app.use(
 );
 
 // Handle /js/ requests - map to TypeScript files in development
-// lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-// codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
+// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
 app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
   // Map JS requests to TypeScript source files
   const jsFileName = path.basename(req.path, '.js');
@@ -277,8 +274,7 @@ app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
 app.use(
   '/scripts',
   rateLimiter.public,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.path.endsWith('.ts')) {
       next();

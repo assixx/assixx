@@ -20,8 +20,7 @@ router.use(authenticateToken);
 router.get(
   '/',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
   async (req, res) => {
     await kvpController.getAll(req, res);
   },
@@ -29,8 +28,7 @@ router.get(
 router.get(
   '/categories',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.getCategories(req, res);
 });
@@ -40,8 +38,7 @@ router.get('/stats', rateLimiter.admin, checkRole(['admin', 'root']), async (req
 router.get(
   '/:id',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.getById(req as unknown as Parameters<typeof kvpController.getById>[0], res);
 });
@@ -50,8 +47,7 @@ router.get(
 router.post(
   '/',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.create(req as unknown as Parameters<typeof kvpController.create>[0], res);
 });
@@ -60,8 +56,7 @@ router.post(
 router.put(
   '/:id',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.update(req as unknown as Parameters<typeof kvpController.update>[0], res);
 });
@@ -70,8 +65,7 @@ router.put(
 router.delete(
   '/:id',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.delete(req as unknown as Parameters<typeof kvpController.delete>[0], res);
 });
@@ -100,8 +94,7 @@ router.get('/:id/comments', rateLimiter.authenticated, async (req, res) => {
 router.post(
   '/:id/comments',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.addComment(
     req as unknown as Parameters<typeof kvpController.addComment>[0],
@@ -113,8 +106,7 @@ router.post(
 router.get(
   '/:id/attachments',
   rateLimiter.authenticated,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
   await kvpController.getAttachments(
     req as unknown as Parameters<typeof kvpController.getAttachments>[0],
@@ -124,8 +116,7 @@ router.get(
 router.post(
   '/:id/attachments',
   rateLimiter.upload,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req: Request, res: Response) => {
   await kvpController.uploadAttachment(
     req as unknown as Parameters<typeof kvpController.uploadAttachment>[0],
@@ -139,8 +130,7 @@ router.get(
   '/attachments/:attachmentId/download',
   // Rate limiting middleware to prevent DoS attacks
   rateLimiter.download,
-  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
-  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
   // Controller handler that performs file system access
   async (req: Request, res: Response) => {
     await kvpController.downloadAttachment(
