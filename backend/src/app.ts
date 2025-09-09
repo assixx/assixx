@@ -75,7 +75,8 @@ app.use(sanitizeInputs);
 const distPath = path.join(currentDirPath, '../../frontend/dist');
 
 // Serve feature-flags.js with correct MIME type
-// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
+// lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
+// codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
 app.get('/feature-flags.js', rateLimiter.public, (_req: Request, res: Response): void => {
   let featureFlagsPath = '';
 
@@ -130,8 +131,9 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 });
 
 // Protect HTML pages based on user role with rate limiting
+// lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
+// codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
 app.use(rateLimiter.public, (req: Request, res: Response, next: NextFunction) => {
-  // lgtm[js/missing-rate-limiting]
   if (req.path.endsWith('.html')) {
     protectPage(req, res, next);
     return;
@@ -199,8 +201,9 @@ app.use(
 );
 
 // Handle /js/ requests - map to TypeScript files in development
+// lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
+// codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
 app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
-  // lgtm[js/missing-rate-limiting]
   // Map JS requests to TypeScript source files
   const jsFileName = path.basename(req.path, '.js');
 
@@ -274,8 +277,9 @@ app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
 app.use(
   '/scripts',
   rateLimiter.public,
+  // lgtm[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
+  // codeql-ignore[js/missing-rate-limiting]: Rate limiter is present as middleware parameter
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // lgtm[js/missing-rate-limiting]
     if (!req.path.endsWith('.ts')) {
       next();
       return;
