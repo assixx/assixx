@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - develop
+      - "feature/*"
       - "feature/docker-*"
     tags:
       - "v*"
