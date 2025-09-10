@@ -80,17 +80,17 @@ Fertig. Mehr nicht nötig.
 
 | Seite | Script Tag | DOMPurify benutzt | Status |
 |-------|------------|-------------------|---------|
-| admin-dashboard.html | ❌ Entfernt | Ja (2x) | ⚠️ Broken |
-| document-upload.html | ❌ Entfernt | Ja (2x) | ⚠️ Broken |
-| employee-dashboard.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
-| employee-documents.html | ❌ Entfernt | Ja (6x) | ⚠️ Broken |
-| employee-profile.html | ❌ Entfernt | Ja (5x) | ⚠️ Broken |
-| manage-employees.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
-| kvp.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
-| login.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
-| root-features.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
-| root-profile.html | ❌ Entfernt | Ja (3x) | ⚠️ Broken |
-| salary-documents.html | ❌ Entfernt | Ja (3x) | ⚠️ Broken |
+| admin-dashboard.html | ✅ CDN | Ja (2x) | ✅ OK |
+| document-upload.html | ✅ CDN | Ja (2x) | ✅ OK |
+| employee-dashboard.html | ✅ CDN | Ja (1x) | ✅ OK |
+| employee-documents.html | ✅ CDN | Ja (6x) | ✅ OK |
+| employee-profile.html | ✅ CDN | Ja (5x) | ✅ OK |
+| manage-employees.html | ✅ CDN | Ja (1x) | ✅ OK |
+| kvp.html | ✅ CDN | Ja (1x) | ✅ OK |
+| login.html | ✅ CDN | Ja (1x) | ✅ OK |
+| root-features.html | ✅ CDN | Ja (1x) | ✅ OK |
+| root-profile.html | ✅ CDN | Ja (3x) | ✅ OK |
+| salary-documents.html | ✅ CDN | Ja (3x) | ✅ OK |
 | signup.html | ❌ Entfernt | Nein | ✅ OK |
 | survey-admin-test.html | ✅ CDN | Ja (1x) | ✅ OK |
 | survey-details.html | ✅ CDN | Ja (2x) | ✅ OK |
