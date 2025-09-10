@@ -67,9 +67,14 @@ jobs:
   integration-test-docker-compose:
     runs-on: ubuntu-latest
     needs: [build-and-push-image, security-scan-trivy]
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    # Run ONLY on:
+    # - Pull requests (for review)
+    # - Direct pushes to master/develop (for hotfixes/releases)
+    # - Skip push events on feature branches (PR already tests them)
+    if: |
+      github.event_name == 'pull_request' || 
+      (github.event_name == 'push' && contains('refs/heads/master refs/heads/develop', github.ref))
     # Prevent multiple integration tests from running simultaneously
-    # This ensures only ONE integration test runs at a time globally
     concurrency:
       group: docker-integration-test
       cancel-in-progress: false  # Don't cancel, wait for completion

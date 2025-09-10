@@ -17,7 +17,6 @@
 
 ### RESTful Design
 
-
 - **Ressourcen-orientiert:** URLs repräsentieren Ressourcen, nicht Aktionen
 - **Stateless:** Jeder Request enthält alle notwendigen Informationen
 - **Uniform Interface:** Konsistente Patterns über alle Endpoints
