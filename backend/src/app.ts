@@ -71,6 +71,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Input sanitization middleware - apply globally to all routes
 app.use(sanitizeInputs);
 
+// CSRF Protection - MUST be applied BEFORE routes to protect them
+// This middleware:
+// - Skips validation for Bearer token auth (JWT)
+// - Skips validation for public endpoints (login, signup)
+// - Validates CSRF tokens for cookie-based sessions
+console.info('[DEBUG] Applying CSRF protection middleware');
+app.use(validateCSRFToken);
+
 // Define paths early for feature-flags.js handler
 const distPath = path.join(currentDirPath, '../../frontend/dist');
 
@@ -633,10 +641,6 @@ app.use(
     },
   }),
 );
-
-// CSRF Protection - applied to all routes except specified exceptions
-console.info('[DEBUG] Applying CSRF protection');
-app.use(validateCSRFToken);
 
 // Tenant Status Middleware - check tenant deletion status
 console.info('[DEBUG] Applying tenant status middleware');
