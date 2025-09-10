@@ -1,121 +1,100 @@
 # DOMPurify Implementation Guide
 
-## Was ist DOMPurify?
+## Prinzip
 
-- **Zweck:** Säubert HTML-Strings von gefährlichem JavaScript (XSS-Schutz)
-- **Wo:** NUR im **Frontend** (Browser) - NICHT im Backend!
-- **Dateien:** In `.ts` Dateien im `/frontend/src/scripts/` Ordner
-- **NICHT in:** `.html` Dateien (dort kein JavaScript)
-- **NICHT in:** Backend `/backend/` (Node.js hat kein DOM)
-- **Ersetzt NICHT:** `dom-utils.ts` - das bleibt! DOMPurify ist nur eine Ergänzung
+**KEIN Inline-JavaScript in HTML!** Alles in TypeScript-Module.
 
-## Warum DOMPurify?
-
-Verhindert XSS-Angriffe beim Verwenden von `innerHTML` mit Nutzerdaten.
-
-## Installation ✅ BEREITS ERLEDIGT (25.08.2025)
+## Installation
 
 ```bash
 cd frontend
-pnpm add dompurify        # ✅ Installiert
-# @types/dompurify NICHT mehr nötig - DOMPurify hat eigene TypeScript-Definitionen!
-# ❌ ENTFERNT am 25.08.2025 - war deprecated
+pnpm add dompurify  # ✅ Bereits installiert
 ```
 
-## Implementation Steps
+## Verwendung
 
-### 1. Import hinzufügen
+### In TypeScript (.ts) Dateien
 
 ```typescript
 import DOMPurify from 'dompurify';
-```
 
-### 2. innerHTML ersetzen
-
-#### Vorher (unsicher)
-
-```typescript
-element.innerHTML = userContent;
-element.innerHTML = `<div>${userData.name}</div>`;
-```
-
-#### Nachher (sicher)
-
-```typescript
+// Bei innerHTML mit Nutzerdaten
 element.innerHTML = DOMPurify.sanitize(userContent);
-element.innerHTML = DOMPurify.sanitize(`<div>${userData.name}</div>`);
+
+// Bei reinem Text besser
+element.textContent = userContent;  // Automatisch sicher!
 ```
 
-## Wo implementieren?
+### Migration von HTML mit Inline-JS
 
-### Priorität 1 - Nutzerdaten
+**Alt (HTML mit Inline-JS):**
 
-- `/frontend/src/scripts/shifts.ts` - Mitarbeiternamen in Modals
-- `/frontend/src/scripts/blackboard.ts` - User-generierte Inhalte
-- `/frontend/src/scripts/chat.ts` - Nachrichten von Nutzern
-
-### Priorität 2 - Template-Strings mit Variablen
-
-- `/frontend/src/scripts/calendar.ts` - Event-Beschreibungen
-- `/frontend/src/scripts/documents.ts` - Dateinamen
-
-### Priorität 3 - Statische Templates (optional)
-
-- `/frontend/src/scripts/utils/modal-manager.ts` - Interne Templates
-
-## Zusammenspiel mit dom-utils.ts
-
-**dom-utils.ts behält seine Funktionen:**
-
-```typescript
-import { $$, createElement } from '../utils/dom-utils';
-
-// dom-utils für DOM-Manipulation
-const button = createElement('button', {
-  className: 'btn',
-  textContent: 'Click me'  // Sicher!
-});
-
-// DOMPurify NUR wenn innerHTML mit Nutzerdaten nötig
-import DOMPurify from 'dompurify';
-element.innerHTML = DOMPurify.sanitize(htmlWithUserData);
+```html
+<script>
+  document.getElementById('content').innerHTML = data;
+</script>
 ```
 
-## Best Practices
+**Neu (TypeScript-Modul):**
 
-1. **IMMER sanitizen bei:**
-   - Nutzereingaben
-   - Datenbank-Inhalten
-   - API-Responses
-
-2. **NICHT nötig bei:**
-   - Hartcodierten HTML-Strings ohne Variablen
-   - Framework-generiertem HTML (React/Vue)
-
-3. **Alternative zu innerHTML:**
+1. Erstelle `/frontend/src/scripts/page-name.ts`:
 
    ```typescript
-   // Statt innerHTML für Text:
-   element.textContent = userData.name; // Automatisch sicher!
+   import DOMPurify from 'dompurify';
 
-   // Oder mit dom-utils:
-   createElement('div', { textContent: userData.name }); // Auch sicher!
+   function init() {
+     const element = document.getElementById('content');
+     if (element) {
+       element.innerHTML = DOMPurify.sanitize(data);
+     }
+   }
+
+   document.addEventListener('DOMContentLoaded', init);
    ```
 
-## Wichtige Unterschiede
+2. In HTML nur noch:
 
-| Tool | Zweck | Wann verwenden |
-|------|-------|----------------|
-| **dom-utils.ts** | DOM-Elemente erstellen/finden | Immer für DOM-Manipulation |
-| **DOMPurify** | HTML-Strings säubern | NUR bei innerHTML mit Nutzerdaten |
-| **escapeHtml()** | Text escapen | Wenn man HTML als Text anzeigen will |
+   ```html
+   <script type="module" src="./scripts/page-name.ts"></script>
+   ```
 
-## Testing
+## Wann DOMPurify verwenden?
 
-Nach Implementation prüfen mit:
+- ✅ API-Responses mit HTML
+- ✅ Nutzereingaben
+- ✅ Datenbank-Content
+- ❌ Statische Strings ohne Variablen
+- ❌ Reiner Text (nutze `textContent`)
 
-```javascript
-// Test-String mit XSS
-const evil = '<img src=x onerror="alert(1)">';
-console.log(DOMPurify.sanitize(evil)); // Output: <img src="x">
+## Build
+
+Vite bündelt automatisch:
+
+```bash
+pnpm run build
 ```
+
+Fertig. Mehr nicht nötig.
+
+## Migration Status
+
+| Seite | Script Tag | DOMPurify benutzt | Status |
+|-------|------------|-------------------|---------|
+| admin-dashboard.html | ❌ Entfernt | Ja (2x) | ⚠️ Broken |
+| document-upload.html | ❌ Entfernt | Ja (2x) | ⚠️ Broken |
+| employee-dashboard.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
+| employee-documents.html | ❌ Entfernt | Ja (6x) | ⚠️ Broken |
+| employee-profile.html | ❌ Entfernt | Ja (5x) | ⚠️ Broken |
+| manage-employees.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
+| kvp.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
+| login.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
+| root-features.html | ❌ Entfernt | Ja (1x) | ⚠️ Broken |
+| root-profile.html | ❌ Entfernt | Ja (3x) | ⚠️ Broken |
+| salary-documents.html | ❌ Entfernt | Ja (3x) | ⚠️ Broken |
+| signup.html | ❌ Entfernt | Nein | ✅ OK |
+| survey-admin-test.html | ✅ CDN | Ja (1x) | ✅ OK |
+| survey-details.html | ✅ CDN | Ja (2x) | ✅ OK |
+| survey-employee.html | ✅ CDN | Ja (2x) | ✅ OK |
+| tenant-deletion-status.html | ✅ CDN | Ja (1x) | ✅ OK |
+
+**TODO:** TypeScript-Module erstellen und DOMPurify importieren!

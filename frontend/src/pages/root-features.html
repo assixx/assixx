@@ -1233,7 +1233,9 @@
           const categoryDiv = document.createElement('div');
           categoryDiv.className = 'feature-category';
 
-          categoryDiv.innerHTML = `
+          // Safe: HTML is generated from server data and sanitized with DOMPurify
+          // eslint-disable-next-line no-unsanitized/property
+          categoryDiv.innerHTML = DOMPurify.sanitize(`
             <div class="category-header">
               <div class="category-icon">${categoryData.icon}</div>
               <h3 class="category-title">${categoryName}</h3>
@@ -1277,7 +1279,7 @@
                 })
                 .join('')}
             </div>
-          `;
+          `);
 
           container.append(categoryDiv);
         });

@@ -210,12 +210,14 @@
         const errorDiv = document.createElement('div');
         const isTimeout = message.includes('Sitzung');
         errorDiv.className = `alert ${isTimeout ? 'alert-timeout' : 'alert-error'}`;
-        errorDiv.innerHTML = `
+        // Safe: HTML is generated from error message and sanitized with DOMPurify
+        // eslint-disable-next-line no-unsanitized/property
+        errorDiv.innerHTML = DOMPurify.sanitize(`
           <div class="alert-content">
             ${isTimeout ? '<strong>⏱️ Sitzung abgelaufen</strong><br>' : '<strong>Fehler!</strong><br>'}
             ${message.replace(/\n/g, '<br>')}
           </div>
-        `;
+        `);
         document.querySelector('.login-card').insertBefore(errorDiv, document.querySelector('#loginForm'));
 
         // Remove after 10 seconds

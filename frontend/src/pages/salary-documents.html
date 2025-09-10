@@ -302,10 +302,10 @@
             transition: width 0.3s;
           }
 
-          /* Loading Spinner Animation */
+          /* Loading Spinner Animation
           .loading-spinner {
-            /* animation: spin 1.5s linear infinite; */
-          }
+            animation: spin 1.5s linear infinite;
+          }*/
 
           @keyframes spin {
             0% {
@@ -432,7 +432,8 @@
 
                 if (documents.length === 0) {
                   // Keine Dokumente vorhanden
-                  container.innerHTML = `
+                  // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+                  container.innerHTML = DOMPurify.sanitize(`
                             <div class="empty-state">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     ${
@@ -451,7 +452,7 @@
                                     : 'Hier werden Ihre aktuellen Gehaltsabrechnungen angezeigt, sobald sie verfügbar sind.'
                                 }</p>
                             </div>
-                        `;
+                        `);
                   return;
                 }
 
@@ -471,7 +472,8 @@
                           day: 'numeric',
                         });
 
-                  card.innerHTML = `
+                  // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+                  card.innerHTML = DOMPurify.sanitize(`
                             <div class="document-header">
                                 <h3 class="document-title">${doc.file_name}</h3>
                                 <span class="document-date">${dateInfo}</span>
@@ -513,7 +515,7 @@
                                     <div class="download-progress-bar"></div>
                                 </div>
                             </div>
-                        `;
+                        `);
 
                   container.append(card);
                 });
@@ -583,13 +585,14 @@
             try {
               // Button Zustand aktualisieren
               buttonEl.disabled = true;
-              buttonEl.innerHTML = `
+              // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+              buttonEl.innerHTML = DOMPurify.sanitize(`
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="loading-spinner">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M12 6v6l4 2"></path>
                     </svg>
                     ${isViewMode ? 'Wird geladen...' : 'Wird vorbereitet...'}
-                `;
+                `);
 
               // Progress-Container anzeigen
               progressContainer.style.display = 'block';
@@ -618,21 +621,6 @@
 
                   progressBar.style.width = '80%';
 
-                  // Das Dokument basierend auf dem viewInBrowser-Parameter öffnen
-                  if (viewInBrowser) {
-                    // PDF im Browser öffnen
-                    window.open(url, '_blank');
-                  } else {
-                    // Datei herunterladen
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = `gehaltsdokument-${documentId}.pdf`;
-                    document.body.append(a);
-                    a.click();
-                    a.remove();
-                  }
-
                   // URL-Objekt später freigeben
                   setTimeout(() => {
                     URL.revokeObjectURL(url);
@@ -649,10 +637,28 @@
                   // Button und Progress zurücksetzen
                   setTimeout(() => {
                     buttonEl.disabled = false;
+                    // eslint-disable-next-line no-unsanitized/property -- Restoring original button content that was already sanitized
                     buttonEl.innerHTML = buttonContent;
                     progressContainer.style.display = 'none';
                     progressBar.style.width = '0%';
                   }, 1000);
+
+                  // Das Dokument basierend auf dem viewInBrowser-Parameter öffnen
+                  if (viewInBrowser) {
+                    // PDF im Browser öffnen
+                    window.open(url, '_blank');
+                  } else {
+                    // Datei herunterladen
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `gehaltsdokument-${documentId}.pdf`;
+                    document.body.append(a);
+                    a.click();
+                    a.remove();
+                  }
+
+                  return undefined; // Explicit return for promise chain
                 })
                 .catch((error) => {
                   console.error('Fehler beim Herunterladen des Dokuments:', error);
@@ -660,6 +666,7 @@
 
                   // Button wieder aktivieren, wenn ein Fehler auftritt
                   buttonEl.disabled = false;
+                  // eslint-disable-next-line no-unsanitized/property -- Restoring original button content that was already sanitized
                   buttonEl.innerHTML = buttonContent;
                   progressContainer.style.display = 'none';
                   progressBar.style.width = '0%';
@@ -670,6 +677,7 @@
 
               // Button wieder aktivieren, wenn ein Fehler auftritt
               buttonEl.disabled = false;
+              // eslint-disable-next-line no-unsanitized/property -- Restoring original button content that was already sanitized
               buttonEl.innerHTML = buttonContent;
               progressContainer.style.display = 'none';
             }

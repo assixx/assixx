@@ -1239,11 +1239,11 @@
             };
 
         const submitButton = e.target.querySelector('button[type="submit"]');
-        const originalText = submitButton.innerHTML;
+        const originalText = submitButton.textContent;
 
         try {
           submitButton.disabled = true;
-          submitButton.innerHTML = '⏳ Wird erstellt...';
+          submitButton.textContent = '⏳ Wird erstellt...';
 
           // API URL based on feature flag (useV2 already defined above)
           const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
@@ -1274,7 +1274,7 @@
             const errorMessage = result.error?.message || result.message || 'Fehler bei der Registrierung';
             alert(errorMessage);
             submitButton.disabled = false;
-            submitButton.innerHTML = originalText;
+            submitButton.textContent = originalText;
             return;
           }
 
@@ -1297,13 +1297,13 @@
             // v1 error handling
             alert(result.message || 'Fehler bei der Registrierung');
             submitButton.disabled = false;
-            submitButton.innerHTML = originalText;
+            submitButton.textContent = originalText;
           }
         } catch (error) {
           console.error('Signup error:', error);
           alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
           submitButton.disabled = false;
-          submitButton.innerHTML = originalText;
+          submitButton.textContent = originalText;
         }
       });
     </script>

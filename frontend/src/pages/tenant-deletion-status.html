@@ -22,6 +22,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -348,7 +349,8 @@
           return;
         }
 
-        container.innerHTML = statusData.map((item) => createStatusCard(item)).join('');
+        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        container.innerHTML = DOMPurify.sanitize(statusData.map((item) => createStatusCard(item)).join(''));
       }
 
       function createStatusCard(item) {

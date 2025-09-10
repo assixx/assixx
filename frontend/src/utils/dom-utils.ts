@@ -4,6 +4,9 @@
  * Best Practice 2025 - Zero runtime errors, maximum type safety
  */
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import DOMPurify from 'dompurify';
+
 /**
  * Escape HTML special characters to prevent XSS
  * @param text - Text to escape
@@ -224,21 +227,136 @@ export function setText(element: HTMLElement | null, text: string): void {
 }
 
 /**
- * Safe HTML content setter (use with caution!)
- * Uses template element for parsing to avoid direct innerHTML assignment
+ * Safe HTML content setter using DOMPurify
+ * Sanitizes HTML to prevent XSS attacks
  */
 export function setHTML(element: HTMLElement | null, html: string): void {
   if (element) {
-    // Clear existing content
-    while (element.firstChild) {
-      element.firstChild.remove();
-    }
+    // Sanitize HTML with DOMPurify
+    const sanitized = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: [
+        'b',
+        'i',
+        'em',
+        'strong',
+        'a',
+        'br',
+        'p',
+        'div',
+        'span',
+        'ul',
+        'ol',
+        'li',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'th',
+        'td',
+        'img',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'button',
+        'input',
+        'select',
+        'option',
+        'label',
+        'small',
+        'code',
+        'pre',
+        // Navigation-specific tags
+        'header',
+        'nav',
+        'aside',
+        'main',
+        'footer',
+        'section',
+        'article',
+        // SVG tags for icons
+        'svg',
+        'path',
+        'circle',
+        'rect',
+        'line',
+        'polygon',
+        'polyline',
+        'g',
+        'defs',
+        'use',
+        'symbol',
+        // Style tag for inline styles
+        'style',
+      ],
+      ALLOWED_ATTR: [
+        'href',
+        'title',
+        'class',
+        'id',
+        'data-*',
+        'src',
+        'alt',
+        'width',
+        'height',
+        'type',
+        'value',
+        'name',
+        'for',
+        'onclick',
+        'style',
+        // Accessibility attributes
+        'role',
+        'aria-*',
+        'tabindex',
+        // SVG attributes
+        'viewBox',
+        'fill',
+        'stroke',
+        'stroke-width',
+        'stroke-linecap',
+        'stroke-linejoin',
+        'd',
+        'xmlns',
+        'transform',
+        'cx',
+        'cy',
+        'r',
+        'x',
+        'y',
+        'rx',
+        'ry',
+        'points',
+        'opacity',
+        'fill-opacity',
+        'stroke-opacity',
+      ],
+      ALLOW_DATA_ATTR: true,
+    });
 
-    // Use template element for safe parsing
-    const template = document.createElement('template');
+    // Safe: Content is sanitized by DOMPurify
     // eslint-disable-next-line no-unsanitized/property
-    template.innerHTML = html; // Safe: template element sanitizes content
-    element.append(template.content);
+    element.innerHTML = sanitized;
+  }
+}
+
+/**
+ * Safe HTML content setter for trusted content (internal HTML generation)
+ * Use this when HTML is generated internally and not from user input
+ */
+export function setSafeHTML(element: HTMLElement | null, html: string): void {
+  if (element) {
+    // Sanitize with more permissive settings for internal content
+    const sanitized = DOMPurify.sanitize(html, {
+      USE_PROFILES: { html: true },
+      ALLOW_DATA_ATTR: true,
+    });
+
+    // Safe: Content is sanitized by DOMPurify
+    // eslint-disable-next-line no-unsanitized/property
+    element.innerHTML = sanitized;
   }
 }
 

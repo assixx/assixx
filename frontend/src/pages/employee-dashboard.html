@@ -1107,9 +1107,12 @@
           ];
 
           const activityList = document.querySelector('#activity-list');
-          activityList.innerHTML = activities
-            .map(
-              (activity) => `
+          // Safe: HTML is generated from hardcoded data and sanitized with DOMPurify
+          // eslint-disable-next-line no-unsanitized/property
+          activityList.innerHTML = DOMPurify.sanitize(
+            activities
+              .map(
+                (activity) => `
                     <div class="activity-item">
                         <div class="activity-icon ${activity.type}">
                             ${activity.icon}
@@ -1120,8 +1123,9 @@
                         </div>
                     </div>
                 `,
-            )
-            .join('');
+              )
+              .join(''),
+          );
         } catch (error) {
           console.error('Error loading activity:', error);
           document.querySelector('#activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';

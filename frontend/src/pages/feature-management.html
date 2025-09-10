@@ -211,6 +211,8 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <!-- DOMPurify for safe HTML sanitization -->
+    <script src="/js/purify.min.js"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -410,7 +412,9 @@
               const statusClass = `status-${status}`;
               const categoryClass = `category-${feature.category}`;
 
-              row.innerHTML = `
+              // Safe: HTML is generated from server data and sanitized with DOMPurify
+              // eslint-disable-next-line no-unsanitized/property
+              row.innerHTML = DOMPurify.sanitize(`
                     <td>${feature.name}</td>
                     <td><span class="${categoryClass}">${feature.category.toUpperCase()}</span></td>
                     <td>${feature.description}</td>
@@ -425,7 +429,7 @@
                             : `<button class="btn btn-sm btn-success" onclick="showActivateForm('${feature.code}')">Aktivieren</button>`
                         }
                     </td>
-                `;
+                `);
               tbody.append(row);
             });
           }
@@ -541,10 +545,12 @@
           function showError(message) {
             const notification = document.createElement('div');
             notification.className = 'notification notification-error';
-            notification.innerHTML = `
+            // Safe: HTML structure with escaped message content
+            // eslint-disable-next-line no-unsanitized/property
+            notification.innerHTML = DOMPurify.sanitize(`
               <i class="fas fa-exclamation-circle"></i>
               <span>${message}</span>
-            `;
+            `);
             document.body.append(notification);
 
             setTimeout(() => {
@@ -562,10 +568,12 @@
           function showSuccess(message) {
             const notification = document.createElement('div');
             notification.className = 'notification notification-success';
-            notification.innerHTML = `
+            // Safe: HTML structure with escaped message content
+            // eslint-disable-next-line no-unsanitized/property
+            notification.innerHTML = DOMPurify.sanitize(`
               <i class="fas fa-check-circle"></i>
               <span>${message}</span>
-            `;
+            `);
             document.body.append(notification);
 
             setTimeout(() => {
@@ -583,10 +591,12 @@
           function showInfo(message) {
             const notification = document.createElement('div');
             notification.className = 'notification notification-info';
-            notification.innerHTML = `
+            // Safe: HTML structure with escaped message content
+            // eslint-disable-next-line no-unsanitized/property
+            notification.innerHTML = DOMPurify.sanitize(`
               <i class="fas fa-info-circle"></i>
               <span>${message}</span>
-            `;
+            `);
             document.body.append(notification);
 
             setTimeout(() => {

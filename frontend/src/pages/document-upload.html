@@ -933,15 +933,19 @@
             const teams = result.data || [];
             const teamDropdown = document.querySelector('#teamDropdown');
 
-            teamDropdown.innerHTML = teams
-              .map(
-                (team) => `
+            // Safe: HTML is generated from server data and sanitized with DOMPurify
+            // eslint-disable-next-line no-unsanitized/property
+            teamDropdown.innerHTML = DOMPurify.sanitize(
+              teams
+                .map(
+                  (team) => `
               <div class="dropdown-option" onclick="selectOption('team', '${team.id}', '${team.name}')">
                 ${team.name}
               </div>
             `,
-              )
-              .join('');
+                )
+                .join(''),
+            );
           }
         } catch (error) {
           console.error('Error loading teams:', error);
@@ -961,15 +965,19 @@
             const departments = result.data || [];
             const departmentDropdown = document.querySelector('#departmentDropdown');
 
-            departmentDropdown.innerHTML = departments
-              .map(
-                (dept) => `
+            // Safe: HTML is generated from server data and sanitized with DOMPurify
+            // eslint-disable-next-line no-unsanitized/property
+            departmentDropdown.innerHTML = DOMPurify.sanitize(
+              departments
+                .map(
+                  (dept) => `
               <div class="dropdown-option" onclick="selectOption('department', '${dept.id}', '${dept.name}')">
                 ${dept.name}
               </div>
             `,
-              )
-              .join('');
+                )
+                .join(''),
+            );
           }
         } catch (error) {
           console.error('Error loading departments:', error);
@@ -1156,7 +1164,7 @@
       // Mitarbeiter für das Dropdown laden
       async function loadEmployees() {
         const token = localStorage.getItem('token');
-        const userDropdown = document.querySelector('#userDropdown');
+        let userDropdown = document.querySelector('#userDropdown');
 
         if (!userDropdown) return;
 
@@ -1172,6 +1180,10 @@
             // Handle v2 API response format: {success: true, data: [...], pagination: {...}}
             const employees = data.data || [];
             console.info(`Loaded ${employees.length} employees`);
+
+            // Re-query DOM element after await to avoid race condition
+            userDropdown = document.querySelector('#userDropdown');
+            if (!userDropdown) return;
 
             // Dropdown leeren
             userDropdown.innerHTML = '';

@@ -708,6 +708,8 @@
         border-radius: var(--radius-md);
       }
     </style>
+    <!-- DOMPurify for safe HTML sanitization -->
+    <script src="/js/purify.min.js"></script>
   </head>
   <body>
     <!-- Navigation Container -->
@@ -1124,7 +1126,9 @@
               <span class="role-badge root">Root</span>
             </div>
           `;
-          roleIndicator.outerHTML = badgesHtml;
+          // Safe: HTML is hardcoded and sanitized with DOMPurify
+          // eslint-disable-next-line no-unsanitized/property
+          roleIndicator.outerHTML = DOMPurify.sanitize(badgesHtml);
         }
       }, 500);
     </script>

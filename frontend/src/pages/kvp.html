@@ -1298,10 +1298,12 @@
           const preview = document.querySelector('#photoPreview');
           const item = document.createElement('div');
           item.className = 'photo-preview-item';
-          item.innerHTML = `
+          // Safe: HTML is generated from file reader data and sanitized with DOMPurify
+          // eslint-disable-next-line no-unsanitized/property
+          item.innerHTML = DOMPurify.sanitize(`
             <img src="${e.target.result}" alt="Vorschau">
             <button class="remove-photo" onclick="removePhoto(${index})" type="button">&times;</button>
-          `;
+          `);
           preview.append(item);
         };
         reader.readAsDataURL(file);

@@ -21,6 +21,7 @@
       })();
     </script>
     <script src="/feature-flags.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -907,7 +908,8 @@
         const daysLeft = deadline ? Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24)) : null;
         const isUrgent = daysLeft && daysLeft <= 7;
 
-        card.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        card.innerHTML = DOMPurify.sanitize(`
                 <div class="survey-card-header">
                     <h3 class="survey-card-title">${getQuestionText(survey.title)}</h3>
                     <div>
@@ -933,7 +935,7 @@
                         ${completed ? '<i class="fas fa-check"></i> Abgeschlossen' : '<i class="fas fa-arrow-right"></i> Teilnehmen'}
                     </button>
                 </div>
-            `;
+            `);
 
         return card;
       }
@@ -1008,7 +1010,8 @@
         const div = document.createElement('div');
         div.className = 'question-item';
 
-        div.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        div.innerHTML = DOMPurify.sanitize(`
                 <div class="question-header">
                     <span class="question-number">${index + 1}</span>
                     <div class="question-text">
@@ -1019,7 +1022,7 @@
                 <div class="answer-container">
                     ${createAnswerInput(question)}
                 </div>
-            `;
+            `);
 
         return div;
       }

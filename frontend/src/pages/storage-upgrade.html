@@ -479,9 +479,14 @@
         loadStorageInfo();
 
         // Initialize breadcrumb
-        import('/scripts/components/breadcrumb.js').then((module) => {
-          module.initBreadcrumb();
-        });
+        import('/scripts/components/breadcrumb.js')
+          .then((module) => {
+            module.initBreadcrumb();
+            return undefined;
+          })
+          .catch((error) => {
+            console.error('Failed to load breadcrumb module:', error);
+          });
       });
     </script>
   </body>

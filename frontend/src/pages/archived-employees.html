@@ -22,6 +22,8 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <!-- DOMPurify for safe HTML sanitization -->
+    <script src="/js/purify.min.js"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -203,9 +205,12 @@
             } else {
               // Mitarbeiter anzeigen
               emptyMessage.style.display = 'none';
-              tableBody.innerHTML = employees
-                .map(
-                  (emp) => `
+              // Safe: HTML is generated from server data and sanitized with DOMPurify
+              // eslint-disable-next-line no-unsanitized/property
+              tableBody.innerHTML = DOMPurify.sanitize(
+                employees
+                  .map(
+                    (emp) => `
                             <tr data-employee-id="${emp.id}">
                                 <td>${emp.first_name} ${emp.last_name}</td>
                                 <td>${emp.email}</td>
@@ -219,8 +224,9 @@
                                 </td>
                             </tr>
                         `,
-                )
-                .join('');
+                  )
+                  .join(''),
+              );
             }
           } else {
             console.error('Error loading archived employees:', response.statusText);
@@ -265,10 +271,12 @@
         const confirmButton = document.querySelector('#confirm-modal-ok');
 
         modalTitle.textContent = 'Mitarbeiter endgültig löschen';
-        modalBody.innerHTML = `
+        // Safe: HTML is generated from server data and sanitized with DOMPurify
+        // eslint-disable-next-line no-unsanitized/property
+        modalBody.innerHTML = DOMPurify.sanitize(`
                 <p>Möchten Sie den Mitarbeiter <strong>${employeeName}</strong> wirklich endgültig löschen?</p>
                 <p class="text-danger"><strong>Warnung:</strong> Diese Aktion kann nicht rückgängig gemacht werden und alle zugeordneten Dokumente werden ebenfalls gelöscht.</p>
-            `;
+            `);
 
         confirmButton.onclick = () => {
           deleteEmployeeForce(employeeId);

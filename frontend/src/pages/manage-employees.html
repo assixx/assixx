@@ -783,9 +783,9 @@
                   // Check both snake_case and camelCase fields (API v1 vs v2)
                   // Priority: Check isActive first (API v2), then is_active (API v1/DB)
                   let isActive = true; // Default to active
-                  if (emp.hasOwnProperty('isActive')) {
+                  if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
                     isActive = emp.isActive === true || emp.isActive === 1;
-                  } else if (emp.hasOwnProperty('is_active')) {
+                  } else if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
                     isActive = emp.is_active === true || emp.is_active === 1;
                   }
 
@@ -826,7 +826,9 @@
           </table>
         `;
 
-        container.innerHTML = tableHTML;
+        // Safe: HTML is generated from server data and sanitized with DOMPurify
+        // eslint-disable-next-line no-unsanitized/property
+        container.innerHTML = DOMPurify.sanitize(tableHTML);
       }
 
       // Modal functions
@@ -932,9 +934,9 @@
             form.birthday.value = emp.birthday.split('T')[0];
           }
           // Handle both is_active (API v1/DB) and isActive (API v2)
-          if (emp.hasOwnProperty('isActive')) {
+          if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
             form.isActive.value = emp.isActive === true || emp.isActive === 1 ? '1' : '0';
-          } else if (emp.hasOwnProperty('is_active')) {
+          } else if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
             form.isActive.value = emp.is_active === true || emp.is_active === 1 ? '1' : '0';
           } else {
             form.isActive.value = '1'; // Default to active

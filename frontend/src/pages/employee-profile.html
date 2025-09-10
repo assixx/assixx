@@ -594,8 +594,11 @@
 
         // Profilbild
         if (userData.profile_picture) {
-          document.querySelector('#profile-image').innerHTML =
-            `<img src="/${userData.profile_picture}" alt="${userData.first_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+          // Safe: HTML is generated from server data and sanitized with DOMPurify
+          // eslint-disable-next-line no-unsanitized/property
+          document.querySelector('#profile-image').innerHTML = DOMPurify.sanitize(
+            `<img src="/${userData.profile_picture}" alt="${userData.first_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`,
+          );
         } else {
           document.querySelector('#profile-image').textContent = `${userData.first_name.charAt(0)}${userData.last_name.charAt(0)}`;
         }
@@ -636,13 +639,15 @@
 
           const date = new Date(doc.upload_date).toLocaleString();
 
-          row.innerHTML = `
+          // Safe: HTML is generated from server data and sanitized with DOMPurify
+          // eslint-disable-next-line no-unsanitized/property
+          row.innerHTML = DOMPurify.sanitize(`
                     <td>${doc.file_name}</td>
                     <td>${date}</td>
                     <td>
                         <button onclick="downloadDocument('${doc.id}')" class="btn btn-primary">Herunterladen</button>
                     </td>
-                `;
+                `);
 
           tableBody.append(row);
         });
@@ -834,10 +839,12 @@
       function showError(message) {
         const notification = document.createElement('div');
         notification.className = 'notification notification-error';
-        notification.innerHTML = `
+        // Safe: HTML structure with escaped message content
+        // eslint-disable-next-line no-unsanitized/property
+        notification.innerHTML = DOMPurify.sanitize(`
           <i class="fas fa-exclamation-circle"></i>
           <span>${message}</span>
-        `;
+        `);
         document.body.append(notification);
 
         setTimeout(() => {
@@ -855,10 +862,12 @@
       function showSuccess(message) {
         const notification = document.createElement('div');
         notification.className = 'notification notification-success';
-        notification.innerHTML = `
+        // Safe: HTML structure with escaped message content
+        // eslint-disable-next-line no-unsanitized/property
+        notification.innerHTML = DOMPurify.sanitize(`
           <i class="fas fa-check-circle"></i>
           <span>${message}</span>
-        `;
+        `);
         document.body.append(notification);
 
         setTimeout(() => {
@@ -876,10 +885,12 @@
       function showInfo(message) {
         const notification = document.createElement('div');
         notification.className = 'notification notification-info';
-        notification.innerHTML = `
+        // Safe: HTML structure with escaped message content
+        // eslint-disable-next-line no-unsanitized/property
+        notification.innerHTML = DOMPurify.sanitize(`
           <i class="fas fa-info-circle"></i>
           <span>${message}</span>
-        `;
+        `);
         document.body.append(notification);
 
         setTimeout(() => {

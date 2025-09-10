@@ -972,7 +972,7 @@
                 console.info('[Root Profile] User data:', user);
                 console.info('[Root Profile] Setting initials:', { firstName, lastName, initials });
                 container.classList.add('avatar-initials');
-                container.innerHTML = initials;
+                container.textContent = initials;
               }
             }
           } else {
@@ -1137,7 +1137,7 @@
                   const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
 
                   container.classList.add('avatar-initials');
-                  container.innerHTML = initials;
+                  container.textContent = initials;
                 }
                 document.querySelector('#remove-picture-btn').style.display = 'none';
                 showMessage('Profilbild erfolgreich entfernt', 'success');
@@ -1177,12 +1177,13 @@
       function showMessage(message, type) {
         const container = document.querySelector('#message-container');
         if (container) {
-          container.innerHTML = `
+          // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+          container.innerHTML = DOMPurify.sanitize(`
                 <div class="alert alert-${type}">
                     <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
                     ${message}
                 </div>
-            `;
+            `);
 
           setTimeout(() => {
             container.innerHTML = '';
@@ -1194,7 +1195,8 @@
       function showSuccessOverlay(text = 'Erfolgreich!') {
         const overlay = document.createElement('div');
         overlay.className = 'success-overlay';
-        overlay.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        overlay.innerHTML = DOMPurify.sanitize(`
           <div class="success-message">
             <div class="success-icon">
               <i class="fas fa-check-circle"></i>
@@ -1203,7 +1205,7 @@
               ${text}
             </div>
           </div>
-        `;
+        `);
         document.body.append(overlay);
 
         // Remove after animation - immer 2 Sekunden
@@ -1256,7 +1258,8 @@
 
           if (approvals.length > 0) {
             approvalSection.style.display = 'block';
-            approvalList.innerHTML = approvals.map((approval) => createApprovalItem(approval)).join('');
+            // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+            approvalList.innerHTML = DOMPurify.sanitize(approvals.map((approval) => createApprovalItem(approval)).join(''));
           } else {
             approvalSection.style.display = 'none';
             approvalList.innerHTML = ''; // Clear any existing content
@@ -1405,15 +1408,15 @@
                 const firstInitial = firstName.charAt(0).toUpperCase() || '';
                 const lastInitial = lastName.charAt(0).toUpperCase() || '';
                 const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : '...';
-                container.innerHTML = initials;
+                container.textContent = initials;
               } else {
-                container.innerHTML = '...';
+                container.textContent = '...';
               }
             } catch (e) {
-              container.innerHTML = '...';
+              container.textContent = '...';
             }
           } else {
-            container.innerHTML = '...';
+            container.textContent = '...';
           }
         }
       }
