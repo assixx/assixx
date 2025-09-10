@@ -17,6 +17,7 @@
 
 ### RESTful Design
 
+
 - **Ressourcen-orientiert:** URLs repräsentieren Ressourcen, nicht Aktionen
 - **Stateless:** Jeder Request enthält alle notwendigen Informationen
 - **Uniform Interface:** Konsistente Patterns über alle Endpoints
@@ -403,6 +404,6 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 
 ---
 
-**Version:** 1.0  
-**Gültig ab:** [Datum nach Workshop]  
+**Version:** 1.0
+**Gültig ab:** [Datum nach Workshop]
 **Nächste Review:** [Datum + 6 Monate]
